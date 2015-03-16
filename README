@@ -1,0 +1,23 @@
+AUTO2 - a best-first-search theorem prover based on Isabelle
+
+Please see doc.pdf for documentation.
+
+To see the examples:
+
+Get development version of Isabelle. Follow directions in
+
+http://isabelle.in.tum.de/repos/isabelle/file/tip/README_REPOSITORY
+
+(this code does not work with Isabelle2014, due to recent changes to
+the Isabelle library, although only a few modifications are needed to
+make it work there).
+
+Open primes_ex.thy in jEdit to see the program prove selected theorems
+in elementary number theory (from HOL/Number_Theory/Primes.thy).
+
+Copyright (C) 2015 Bohua Zhan
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 2 of the License, or (at
+your option) any later version.
