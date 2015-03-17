@@ -1,5 +1,5 @@
-theory auto2
-imports Main logic_thms arith_thms
+theory Auto2
+imports Main Logic_Thms Arith_Thms
 begin
 
 ML_file "util.ML"

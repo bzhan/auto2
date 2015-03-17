@@ -1,5 +1,5 @@
-theory primes_ex
-imports auto2
+theory Primes_Ex
+imports Auto2
 begin
 
 definition prime :: "nat \<Rightarrow> bool"

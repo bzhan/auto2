@@ -1,4 +1,4 @@
-theory arith_thms
+theory Arith_Thms
 imports Main "~~/src/HOL/GCD"
 begin
 

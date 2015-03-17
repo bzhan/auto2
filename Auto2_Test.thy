@@ -1,5 +1,5 @@
-theory auto2_test
-imports auto2
+theory Auto2_Test
+imports Auto2
 begin
 
 setup {* clear_ac_data *}

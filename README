@@ -12,7 +12,7 @@ http://isabelle.in.tum.de/repos/isabelle/file/tip/README_REPOSITORY
 the Isabelle library, although only a few modifications are needed to
 make it work there).
 
-Open primes_ex.thy in jEdit to see the program prove selected theorems
+Open Primes_Ex.thy in jEdit to see the program prove selected theorems
 in elementary number theory (from HOL/Number_Theory/Primes.thy).
 
 Copyright (C) 2015 Bohua Zhan

@@ -1,4 +1,4 @@
-theory logic_thms
+theory Logic_Thms
 imports Main
 begin
 
