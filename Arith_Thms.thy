@@ -34,7 +34,7 @@ theorem any_n_dvd_0: "\<not> (\<exists> k. k dvd (0::nat) \<and> P k) \<Longrigh
 
 (* Induction. *)
 thm nat.induct
-theorem nat_shift: "(\<And>n::nat. P (n-1) \<Longrightarrow> P n) \<Longrightarrow> P n \<Longrightarrow> P (Suc n)" by simp
+theorem nat_shift: "(\<And>m::nat. P (m-(1::nat)) \<Longrightarrow> P m) \<Longrightarrow> P n \<Longrightarrow> P (Suc n)" by simp
 theorem nat_zero: "(\<And>n::nat. n = 0 \<Longrightarrow> P n) \<Longrightarrow> P 0" by blast
 
 thm nat_less_induct

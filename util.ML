@@ -20,6 +20,7 @@ sig
   val subsets: 'a list -> 'a list list
   val nth_drop_list: int list -> 'a list -> 'a list
   val the_pair: 'a list -> 'a * 'a
+  val apply2: ('a -> 'b) -> 'a * 'a -> 'b * 'b
 
   (* Managing matching environments. *)
   val fo_init: Type.tyenv * Envir.tenv
@@ -189,6 +190,8 @@ fun the_pair lst =
     case lst of [i1, i2] => (i1, i2)
               | _ => raise AUTO2 "the_pair: list is not of length 2."
 
+val apply2 = pairself
+
 val fo_init = (Vartab.empty, Vartab.empty)
 
 (* Lookup a Vartab inst with string and integer specifying indexname. *)
@@ -270,10 +273,10 @@ fun trace_fullthm_ctxt ctxt s th =
 val trace_t = trace_t_ctxt @{context}
 val trace_fullthm = trace_fullthm_ctxt @{context}
 
-fun cert ctxt t = Thm.cterm_of ctxt t
-fun tycert ctxt ty = Thm.ctyp_of ctxt ty
-fun cert_thy thy t = Thm.global_cterm_of thy t
-fun tycert_thy thy ty = Thm.global_ctyp_of thy ty
+fun cert ctxt t = Thm.cterm_of (Proof_Context.theory_of ctxt) t
+fun tycert ctxt ty = Thm.ctyp_of (Proof_Context.theory_of ctxt) ty
+fun cert_thy thy t = Thm.cterm_of thy t
+fun tycert_thy thy ty = Thm.ctyp_of thy ty
 
 (* Returns whether the given term is Trueprop. *)
 fun is_Trueprop t =

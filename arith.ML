@@ -4,6 +4,8 @@ val _ = Theory.setup add_arith_ac_data
 
 val _ = Theory.setup (
       fold add_rewrite_rule [
+        ([WithTerm @{term_pat "even (?a::nat)"}], @{thm even_iff_2_dvd}),
+
         ([WithTerm @{term_pat "(?b::nat) dvd ?a"}], @{thm dvd_def}),
 
         ([WithTerm @{term_pat "~ (?x::nat) < ?y"}],
@@ -212,8 +214,8 @@ val _ = Theory.setup (
 val _ = Theory.setup (
       add_gen_prfstep (
         "gcd_def",
-        [WithTerm @{term_pat "gcd (?a::nat) ?b"},
-         GetFact (@{term_pat "gcd (?a::nat) ?b dvd ?a"}, @{thm gcd_dvd1_nat})]))
+        [WithTerm @{term_pat "gcd (?m::nat) ?n"},
+         GetFact (@{term_pat "gcd (?m::nat) ?n dvd ?m"}, @{thm gcd_dvd1_nat})]))
 
 (* Various facts about coprimality. *)
 val _ = Theory.setup (
