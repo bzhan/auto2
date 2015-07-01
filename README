@@ -2,16 +2,23 @@ AUTO2 - a best-first-search theorem prover based on Isabelle
 
 Please see doc.pdf for documentation.
 
-To see the examples:
+Current version of the program works with Isabelle2015.
 
-The code is compatible with Isabelle2014, see
+Description of the examples:
 
-http://isabelle.in.tum.de/installation.html
+- Primes_Ex: elementary number theory of primes, up to the proof of
+  infinitude of primes and the unique factorization theorem. Follows
+  theories Primes and UniqueFactorization in HOL/Number_Theory.
 
-for installation instructions.
+- Lists_Ex, RBT_Ex: lists, trees, and red-black trees. Some standard
+  material on lists and trees follow Chapter 2 (Programming and
+  Proving) of "Concrete Semantics". The material on red-black trees
+  follows Section 8.4 of "Certified Programming with Dependent Types",
+  and some of theory RBT_Impl in HOL/Library.
 
-Open Primes_Ex.thy in jEdit to see the program prove selected theorems
-in elementary number theory (from HOL/Number_Theory/Primes.thy).
+- Hoare_Exp, Hoare_States, Hoare_Equiv, Hoare_Rules: development of
+  Hoare logic. Follows chapters Imp, Equiv, Hoare, and Hoare2 in
+  "Software Foundations".
 
 Copyright (C) 2015 Bohua Zhan
 

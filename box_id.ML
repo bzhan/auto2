@@ -7,12 +7,16 @@ sig
 
   type box_lattice
   val empty: box_lattice
+  val get_focus: box_lattice -> box_id
+  val set_focus: box_id -> box_lattice -> box_lattice
   val num_prim_id: box_lattice -> int
   val get_parent_prim: box_lattice -> int -> box_id
   val get_ancestors_prim: box_lattice -> box_id -> int list
+  val get_extras_prim: box_lattice -> box_id -> int list
   val reduce_box_id: box_lattice -> int list -> box_id
   val get_parent_at_i: box_lattice -> box_id -> int -> box_id
   val merge_boxes: box_lattice -> box_id * box_id -> box_id
+  val get_all_merges: box_lattice -> box_id list list -> box_id list
   val is_eq_ancestor: box_lattice -> box_id -> box_id -> bool
   val is_eq_descendent: box_lattice -> box_id -> box_id -> bool
   val is_ancestor: box_lattice -> box_id -> box_id -> bool
@@ -35,17 +39,22 @@ structure Boxidtab = Table (type key = box_id val ord = list_ord int_ord)
 
 type box_lattice = {
   parents: box_id Inttab.table,
+  focus: box_id,
   resolved: box_id list
 }
 
-val empty = {parents = Inttab.empty, resolved = []}
+val empty = {parents = Inttab.empty, focus = [], resolved = []}
+
+fun get_focus {focus, ...} = focus
+fun set_focus foc {parents, focus = _, resolved} =
+    {parents = parents, focus = foc, resolved = resolved}
 
 fun num_prim_id {parents, ...} = length (Inttab.keys parents)
 
 fun get_parent_prim {parents, ...} prim_id = the (Inttab.lookup parents prim_id)
 
-(* Obtain the list of all primitive ancestor ids of box_id. Result may
-   not be in order.
+(* Returns the list of primitive ancestors of id. Result may not be in
+   order.
  *)
 fun get_ancestors_prim {parents, ...} id =
     let
@@ -61,6 +70,12 @@ fun get_ancestors_prim {parents, ...} id =
     in
       helper id id
     end
+
+(* Returns the list of primitive ancestors of id that are not also
+   primitive ancestors of focus. Result may not be in order.
+ *)
+fun get_extras_prim (lat as {focus, ...}) id =
+    subtract (op =) (get_ancestors_prim lat focus) (get_ancestors_prim lat id)
 
 (* For any {a, b} in ids where a is an ancestor of b, remove a from
    ids. Assume input is in order. Output is a valid box_id.
@@ -107,6 +122,18 @@ fun merge_boxes lat (id1, id2) =
       else reduce_box_id lat merged
     end
 
+(* Returns list of ids that are all possible intersections of subsets
+   of ids.
+ *)
+fun get_all_merges lat id_lsts =
+    let
+      fun merge2 ids1 ids2 =
+          maps (fn id1 => map (fn id2 => merge_boxes lat (id1, id2)) ids2) ids1
+               |> distinct (op =)
+    in
+      fold merge2 id_lsts [[]]
+    end
+
 (* Returns whether id is an ancestor / descendent of id'. *)
 fun is_eq_ancestor lat id id' = (id' = merge_boxes lat (id, id'))
 fun is_eq_descendent lat id id' = (id = merge_boxes lat (id, id'))
@@ -120,16 +147,16 @@ val is_box_unresolved = not oo is_box_resolved
 fun is_box_supported lat id =
     forall (fn prim_id => is_box_unresolved lat [prim_id]) id
 
-fun add_prim_id parent_id {parents, resolved} =
+fun add_prim_id parent_id {parents, focus, resolved} =
     let
       val prim_id = length (Inttab.keys parents)
       val parents' = Inttab.update_new (prim_id, parent_id) parents
     in
-      (prim_id, {parents = parents', resolved = resolved})
+      (prim_id, {parents = parents', focus = focus, resolved = resolved})
     end
 
-fun add_resolved id (lat as {parents, resolved}) =
-    {parents = parents,
+fun add_resolved id (lat as {parents, focus, resolved}) =
+    {parents = parents, focus = focus,
      resolved = if exists (is_eq_descendent lat id) resolved then resolved
                 else id :: filter_out (is_eq_ancestor lat id) resolved}
 

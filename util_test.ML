@@ -19,7 +19,7 @@ val test_normalize_pred_comm =
     let
       fun test (ct1, ct2) =
           let
-            val th = normalize_pred_comm ct1
+            val th = Logic_ProofSteps.normalize_pred_comm ct1
             val (ct1', ct2') = Thm.dest_equals (Thm.cprop_of th)
           in
             if ct1 aconvc ct1' andalso ct2 aconvc ct2' then ()
@@ -39,37 +39,37 @@ fun assert_eq_prop t txt th =
 val test_prop1 =
     let
       fun err n = "test_prop1: " ^ (string_of_int n)
-      val thm = @{thm or_elim}
+      val thm = @{thm Meson.make_pos_rule'}
     in
-      thm |> assert_eq_prop (@{term_pat "?A | ?B ==> ~ ?A ==> ~ ?B ==> False"})
+      thm |> assert_eq_prop (@{term_pat "?P | ?Q ==> ~ ?P ==> ?Q"})
           (err 0)
           |> rewrite_thm_to_contra_form
-          |> assert_eq_prop (@{term_pat "?A | ?B ==> ~ ?A ==> ~ ?B ==> False"})
+          |> assert_eq_prop (@{term_pat "?P | ?Q ==> ~ ?P ==> ~ ?Q ==> False"})
           (err 1)
           |> apply_to_thm (move_to_front_conv 2)
-          |> assert_eq_prop (@{term_pat "~ ?B ==> ?A | ?B ==> ~ ?A ==> False"})
+          |> assert_eq_prop (@{term_pat "~ ?Q ==> ?P | ?Q ==> ~ ?P ==> False"})
           (err 2)
           |> rewrite_thm_from_contra_form
-          |> assert_eq_prop (@{term_pat "~ ?B ==> ?A | ?B ==> ?A"}) (err 3)
+          |> assert_eq_prop (@{term_pat "~ ?Q ==> ?P | ?Q ==> ?P"}) (err 3)
     end
 
 val test_prop2 =
     let
       fun err n = "test_prop2: " ^ (string_of_int n)
-      val thm = @{thm and_intro2}
+      val thm = @{thm HOL.conjI}
     in
-      thm |> assert_eq_prop (@{term_pat "?A ==> ~ (?A & ?B) ==> ~ ?B"}) (err 0)
+      thm |> assert_eq_prop (@{term_pat "?P ==> ?Q ==> ?P & ?Q"}) (err 0)
           |> rewrite_thm_to_contra_form
-          |> assert_eq_prop (@{term_pat "?A ==> ~ (?A & ?B) ==> ?B ==> False"})
+          |> assert_eq_prop (@{term_pat "?P ==> ?Q ==> ~ (?P & ?Q) ==> False"})
           (err 1)
           |> rotate_prems_conv_thm
           (map HOLogic.mk_Trueprop
-               [@{term_pat "?B::bool"}, @{term_pat "~ (?A & ?B)"},
-                @{term_pat "?A::bool"}])
-          |> assert_eq_prop (@{term_pat "?B ==> ~ (?A & ?B) ==> ?A ==> False"})
+               [@{term_pat "?Q::bool"}, @{term_pat "~ (?P & ?Q)"},
+                @{term_pat "?P::bool"}])
+          |> assert_eq_prop (@{term_pat "?Q ==> ~ (?P & ?Q) ==> ?P ==> False"})
           (err 2)
           |> rewrite_thm_from_contra_form
-          |> assert_eq_prop (@{term_pat "?B ==> ~ (?A & ?B) ==> ~ ?A"}) (err 3)
+          |> assert_eq_prop (@{term_pat "?Q ==> ~ (?P & ?Q) ==> ~ ?P"}) (err 3)
     end
 
 val test_to_obj_conv =
@@ -87,4 +87,6 @@ val test_to_obj_conv =
               @{cprop "A ==> B ==> (!(n::nat). C n) ==> D"} (err 1)
       val _ = assert_eq (to_meta_all_conv ctxt ct3)
               @{cprop "!!(y::nat) (x::nat). (P x y --> (!z. Q x y z))"} (err 2)
+      val _ = assert_eq (to_obj_conv_on_horn ctxt ct1)
+              @{cprop "A ==> B ==> (!(n::nat). C n) ==> D"} (err 4)
     in () end

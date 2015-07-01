@@ -60,6 +60,7 @@ fun assert_eq_info (info, info') txt tbl =
 fun assert_eq_edges (t1, t2) ids txt tbl =
     let
       val ids' = (equiv_neighs tbl t1)
+                     |> map snd
                      |> map to_term_info
                      |> filter (fn (_, t2') => t2 aconv t2') |> map fst
     in
@@ -171,13 +172,22 @@ fun assert_num_match_with_id id (t, u) count txt (tbl as {lat, ...}) =
 
 (* Modification functions using terms. *)
 fun add_equiv' id (t1, t2) tbl =
-    add_equiv (id, assume_eq (theory_of tbl) (t1, t2)) tbl
+    add_equiv (id, assume_meta_eq (theory_of tbl) (t1, t2)) false tbl
+fun add_term' t tbl = add_term ([], t) tbl
+
+fun index_reps tbl =
+    let
+      fun index_reps_t t =
+          fold update_subsimp (get_subterm_rewrite_info tbl t)
+    in
+      fold index_reps_t (get_all_terms tbl) tbl
+    end
 
 val test_equiv_basic =
     let
       fun err n = "test_equiv_basic: " ^ (string_of_int n)
     in
-      init |> add_term a |> add_term b |> add_term c |> add_term d
+      init |> add_term' a |> add_term' b |> add_term' c |> add_term' d
            |> add_equiv' [1] (a, b) |> assert_eq_edges (a, b) [[1]] (err 0)
            |> add_equiv' [2] (b, c) |> assert_eq_edges (b, c) [[2]] (err 1)
            |> add_equiv' [] (a, b)  |> assert_eq_edges (a, b) [[]] (err 2)
@@ -189,13 +199,14 @@ val test_equiv_basic =
     end
 
 fun update_simp' id (t1, t2) tbl =
-    update_simp (id, assume_eq (theory_of tbl) (t1, t2)) tbl
+    update_simp (id, assume_meta_eq (theory_of tbl) (t1, t2)) tbl
 
 val test_simp_basic =
     let
       fun err n = "test_simp_basic: " ^ (string_of_int n)
     in
-      init |> add_term a |> add_term b |> add_term c |> add_term d |> add_term e
+      init |> add_term' a |> add_term' b |> add_term' c |> add_term' d
+           |> add_term' e
            |> update_simp' [1] (e, d) |> assert_rewrite [1, 2] (e, d) (err 0)
            |> update_simp' [2] (e, c) |> assert_rewrite [2] (e, c) (err 1)
            |> update_simp' [2] (e, b) |> assert_rewrite [1, 2] (e, b) (err 2)
@@ -211,7 +222,7 @@ val test_head_rep =
     let
       fun err n = "test_head_rep: " ^ (string_of_int n)
     in
-      init |> add_term fbd
+      init |> add_term' fbd
            |> update_simp' [1] (d, c)
            |> update_simp' [2] (b, a)
            |> assert_srew_info fbd [([], fbd), ([1], fbc),
@@ -229,7 +240,7 @@ val test_head_rep2 =
     let
       fun err n = "test_head_rep2: " ^ (string_of_int n)
     in
-      init |> add_term fbc |> add_term fad
+      init |> add_term' fbc |> add_term' fad
            |> update_simp' [1] (d, c)
            |> update_simp' [2] (b, a)
            |> index_reps
@@ -246,10 +257,10 @@ val test_add_term =
       init |> add_rewrite [1] (d, c)
            |> add_rewrite [2] (b, a)
            |> index_reps
-           |> add_term fbc |> add_term fad
+           |> add_term' fbc |> add_term' fad
            |> assert_head_rep ([], fac) [([1], fad), ([2], fbc)] (err 0)
            |> assert_eq_edges (fad, fbc) [[1, 2]] (err 1)
-           |> add_term fac |> add_term fbd
+           |> add_term' fac |> add_term' fbd
            |> assert_head_rep ([], fac) [([], fac), ([1], fad), ([2], fbc),
                                          ([1, 2], fbd)] (err 2)
            |> assert_equiv [1, 2] (fac, fbd) (err 3)
@@ -262,16 +273,16 @@ val test_add_rewrite =
     let
       fun err n = "test_add_rewrite: " ^ (string_of_int n)
     in
-      init |> add_term fad
+      init |> add_term' fad
            |> add_rewrite [1] (d, c)
            |> assert_head_rep ([], fac) [([1], fad)] (err 0)
-           |> add_term fbd
+           |> add_term' fbd
            |> assert_head_rep ([], fbc) [([1], fbd)] (err 1)
            |> add_rewrite [2] (a, b)
            |> assert_eq_edges (fad, fbd) [[2]] (err 2)
            |> assert_rew_info fbd [([], fbd), ([1], fbc), ([2], fad),
                                    ([1, 2], fac)] (err 3)
-           |> add_term fbc
+           |> add_term' fbc
            |> assert_head_rep ([], fac) [([1], fad), ([2], fbc),
                                          ([1, 2], fbd)] (err 4)
            |> to_string_full |> prefix "test_add_rewrite -- " |> writeln
@@ -295,7 +306,7 @@ val test_simplify =
            |> assert_simpl [1, 2] (fad, e) (err 8)
            |> add_rewrite [] (fbd, e)
            |> assert_simpl_info fbd [([], e)] (err 9)
-           |> add_term fac
+           |> add_term' fac
            |> assert_equiv [1, 2] (fac, fbd) (err 10)
            |> to_string_full |> prefix "test_simplify -- " |> writeln
     end
@@ -337,7 +348,7 @@ val test_head_equivs =
            |> assert_head_equivs ([1], fbc) [([1], fbc), ([1], e)] (err 2)
            |> assert_head_equivs ([], fbc) [([], fbc), ([1], e)] (err 3)
            |> assert_head_equivs ([], fac) [([], fac), ([1, 2], e)] (err 4)
-           |> add_term fac
+           |> add_term' fac
            |> assert_head_equivs ([], fbd) [([], fbd), ([0], e)] (err 5)
            |> assert_head_equivs ([], fac) [([], fac), ([1, 2], e)] (err 6)
            |> assert_head_equivs ([], fbc) [([], fbc), ([1], e)] (err 7)
@@ -467,9 +478,9 @@ val test_fo_match_list2 =
           |> (assert_match_list [(false, (pat2, @{term "TERM (2::nat)"}))]
                                 [([], [@{prop "(2::nat) = 2"}]),
                                  ([], [@{prop "(2::nat) = 1"}])] (err 3))
+          (* There is no 1 = 2 because 1 is constant name but 2 is not. *)
           |> (assert_match_list [(false, (pat2, @{term "TERM (1::nat)"}))]
-                                [([], [@{prop "(1::nat) = 1"}]),
-                                 ([], [@{prop "(1::nat) = 2"}])] (err 4))
+                                [([], [@{prop "(1::nat) = 1"}])] (err 4))
           |> to_string |> prefix "test_fo_match_list2 -- " |> writeln
     end
 
@@ -918,6 +929,57 @@ val test_fo_match_ac12 =
                             @{term "((q::nat), (x::nat))"})
                            [([1], @{term "((p::nat), (x::nat) * z)"})] (err 5))
           |> to_string |> prefix "test_fo_match_ac12 -- " |> writeln
+    end
+
+val test_add_dir_rewrite =
+    let
+      fun err n = "test_add_dir_rewrite: " ^ (string_of_int n)
+      val tbl = empty ctxt' |> map_lat (K lattice)
+      val x = @{term "x::nat"}
+      val y = @{term "y::nat"}
+      val z = @{term "z::nat"}
+    in
+      tbl |> add_simp_rewrite [1] (y, x)
+          |> assert_match (x, y) [([1], x)] (err 0)
+          |> assert_match (y, x) [([1], y)] (err 1)
+          |> assert_head_equivs ([], y) [([], y), ([1], x)] (err 2)
+          |> assert_head_equivs ([], x) [([], x)] (err 3)
+          |> add_rewrite [2] (y, z)
+          |> assert_head_equivs ([], x) [([], x), ([1, 2], y), ([1, 2], z)]
+          (err 4)
+          |> assert_head_equivs ([], y) [([], y), ([1], x), ([2], z)] (err 5)
+          |> to_string |> prefix "test_add_dir_rewrite -- " |> writeln
+    end
+
+val test_const_simp =
+    let
+      fun err n = "test_const_simp: " ^ (string_of_int n)
+      val tbl = empty ctxt' |> map_lat (K lattice)
+      val x = @{term "x::nat"}
+      val y = @{term "y::nat"}
+      val one = @{term "1::nat"}
+      val zero = @{term "0::nat"}
+    in
+      tbl |> add_rewrite [1] (x, one)
+          |> add_rewrite [2] (y, one)
+          |> assert_head_equivs ([], one) [([], one)] (err 0)
+          |> assert_head_equivs ([], x) [([], x), ([1], one)] (err 1)
+          |> add_rewrite [2] (x, zero)
+          |> assert_head_equivs ([], one) [([], one), ([1, 2], zero)] (err 2)
+          |> to_string |> prefix "test_const_simp -- " |> writeln
+    end
+
+val test_ac_numc =
+    let
+      fun err n = "test_ac_numc: " ^ (string_of_int n)
+      val tbl = (empty ctxt')
+                    |> add_rewrite [] (@{term "m::nat"}, @{term "3::nat"})
+    in
+      tbl |> (assert_match
+                  (@{term_pat "TERM ((?NUMC1::nat) + ?NUMC2)"},
+                   @{term "TERM ((m::nat) + m)"})
+                  [([], @{term "TERM ((3::nat) + 3)"})] (err 0))
+          |> to_string |> prefix "test_ac_numc -- " |> writeln
     end
 
 end;  (* local *)

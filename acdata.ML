@@ -17,10 +17,10 @@ Theory_Data (
 
 fun get_swap_cv assoc_r comm_th assoc_th =
     let
-      val comm_cv = Conv.rewr_conv (to_meta_eq comm_th)
-      val assoc_cv = Conv.rewr_conv (to_meta_eq assoc_th)
-      val assoc_invcv = Conv.rewr_conv (to_meta_eq (obj_sym assoc_th))
-    in      
+      val comm_cv = rewr_obj_eq comm_th
+      val assoc_cv = rewr_obj_eq assoc_th
+      val assoc_invcv = rewr_obj_eq (obj_sym assoc_th)
+    in
       if assoc_r = false then
         (* (a . b) . c -> a . (b . c) -> a . (c . b) -> (a . c) . b. *)
         assoc_cv then_conv (Conv.arg_conv comm_cv) then_conv assoc_invcv
@@ -31,8 +31,8 @@ fun get_swap_cv assoc_r comm_th assoc_th =
 
 fun get_unit_cv comm_th unit_th =
     let
-      val comm_cv = Conv.rewr_conv (to_meta_eq comm_th)
-      val unit_cv = Conv.rewr_conv (to_meta_eq unit_th)
+      val comm_cv = rewr_obj_eq comm_th
+      val unit_cv = rewr_obj_eq unit_th
     in
       unit_cv else_conv (comm_cv then_conv unit_cv)
     end
@@ -228,7 +228,7 @@ fun rearrange_subterms_gen
         keep_unit (ac_itm as {assoc_r, comm_thm, swap_conv, unit_val,
                               unit_conv, ...}) ct =
     let
-      val comm_cv = Conv.rewr_conv (to_meta_eq comm_thm)
+      val comm_cv = rewr_obj_eq comm_thm
 
       (* If there are two terms a.b, swap if a > b. If there are at
          least three terms, in the left associate case this is
@@ -305,8 +305,8 @@ fun rearrange_subterms_rhs ac_itm = apply_to_rhs (rearrange_subterms ac_itm)
 fun rearrange_assoc (ac_itm as {assoc_r, assoc_thm, ...}) ct =
     let
       val rewr_cv =
-          if assoc_r then Conv.rewr_conv (to_meta_eq assoc_thm)
-          else Conv.rewr_conv (to_meta_eq (obj_sym assoc_thm))
+          if assoc_r then rewr_obj_eq assoc_thm
+          else rewr_obj_eq (obj_sym assoc_thm)
       val arg_conv = if assoc_r then Conv.arg_conv else Conv.arg1_conv
     in
       if head_agrees ac_itm (Thm.term_of ct) then
@@ -377,29 +377,3 @@ fun rearrange_assoc_full thy ct =
     end
 
 end  (* structure ACUtil. *)
-
-(* Definitions of common ac data. *)
-fun add_logic_ac_data thy =
-    thy |> add_ac_data {fname = @{const_name disj}, assoc_r = true,
-                        unit_val = @{term False}, comm_th = @{thm disj_commute},
-                        assoc_th = @{thm disj_assoc},
-                        unit_th = @{thm disj_false_neutral}}
-        |> add_ac_data {fname = @{const_name conj}, assoc_r = true,
-                        unit_val = @{term True}, comm_th = @{thm conj_commute},
-                        assoc_th = @{thm conj_assoc},
-                        unit_th = @{thm conj_true_neutral}}
-
-fun add_arith_ac_data thy =
-    thy |> add_ac_data {fname = @{const_name plus}, assoc_r = false,
-                        unit_val = @{term 0}, comm_th = @{thm add_ac(2)},
-                        assoc_th = @{thm add_ac(1)},
-                        unit_th = @{thm Groups.monoid_add_class.add_0_left}}
-        |> add_ac_data {fname = @{const_name times}, assoc_r = false,
-                        unit_val = @{term 1}, comm_th = @{thm mult_ac(2)},
-                        assoc_th = @{thm mult_ac(1)},
-                        unit_th = @{thm Groups.monoid_mult_class.mult_1_left}}
-        |> add_ac_data {fname = @{const_name gcd}, assoc_r = false,
-                        unit_val = @{term "0::nat"},
-                        comm_th = @{thm gcd_nat.commute},
-                        assoc_th = @{thm gcd_nat.assoc},
-                        unit_th = @{thm GCD.gcd_nat.left_neutral}}
