@@ -20,6 +20,11 @@ Description of the examples:
   Hoare logic. Follows chapters Imp, Equiv, Hoare, and Hoare2 in
   "Software Foundations".
 
+- Imp_Ex_Reverse, Imp_Ex_Quicksort, Imp_Ex_Linked_Lists,
+  Imp_Ex_Binary_Trees: verification of imperative programs based on
+  Imperative_HOL. The first three examples follow the corresponding
+  example in HOL/Imperative_HOL/ex.
+
 Copyright (C) 2015 Bohua Zhan
 
 This program is free software; you can redistribute it and/or modify
