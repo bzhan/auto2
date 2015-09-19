@@ -2,6 +2,8 @@ theory Primes_Ex
 imports Auto2
 begin
 
+section {* Definition and basic properties of primes *}
+
 definition prime :: "nat \<Rightarrow> bool"
   where "prime p = (1 < p \<and> (\<forall>m. m dvd p \<longrightarrow> m = 1 \<or> m = p))"
 setup {* add_rewrite_rule @{thm prime_def} *}
@@ -17,18 +19,14 @@ setup {* add_backward2_prfstep @{thm prime_imp_coprime_nat} *}
 
 lemma prime_dvd_mult_nat: "prime p \<Longrightarrow> p dvd m * n \<Longrightarrow> p dvd m \<or> p dvd n" by auto2
 setup {* add_forward_prfstep_cond @{thm prime_dvd_mult_nat}
-  (with_filts [canonical_split_filter @{const_name times} "m" "n",
-               term_neq_filter @{const_name times} "p" "m",
-               term_neq_filter @{const_name times} "p" "n"])
-*}
+  (with_filts [canonical_split_filter @{const_name times} "m" "n"] @
+   with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
 
 theorem prime_dvd_intro: "prime p \<Longrightarrow> p * q = m * n \<Longrightarrow> p dvd m \<or> p dvd n"
   by (tactic {* auto2s_tac @{context} (OBTAIN "p dvd m * n") *})
 setup {* add_forward_prfstep_cond @{thm prime_dvd_intro}
-  (with_filts [canonical_split_filter @{const_name times} "m" "n",
-               term_neq_filter @{const_name times} "p" "m",
-               term_neq_filter @{const_name times} "p" "n"])
-*}
+  (with_filts [canonical_split_filter @{const_name times} "m" "n"] @
+   with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
 
 lemma prime_dvd_mult_eq_nat: "prime p \<Longrightarrow> p dvd m * n = (p dvd m \<or> p dvd n)" by auto2
 
@@ -60,6 +58,8 @@ lemma prime_power_mult: "prime p \<Longrightarrow> x * y = p ^ k \<Longrightarro
   by (tactic {* auto2s_tac @{context} (
     CASE "k = 0" THEN INDUCT ("k", [OnFact "k \<noteq> 0"] @ Arbitraries ["x", "y"])) *})
 
+section {* Infinitude of primes *}
+
 theorem bigger_prime: "\<exists>p. prime p \<and> n < p"
   by (tactic {* auto2s_tac @{context} (
     CHOOSE "(p, prime p \<and> p dvd fact n + 1)" THEN
@@ -69,6 +69,8 @@ setup {* add_resolve_prfstep @{thm bigger_prime} *}
 theorem primes_infinite: "\<not> finite {p. prime p}"
   by (tactic {* auto2s_tac @{context} (
     CHOOSE "(b, prime b \<and> Max {p. prime p} < b)") *})
+
+section {* Existence and uniqueness of prime factorization *}
 
 theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<in>set_of M. prime p) \<and> n = (\<Prod>i\<in>#M. i)"
   by (tactic {* auto2s_tac @{context} (

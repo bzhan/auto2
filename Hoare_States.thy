@@ -43,7 +43,7 @@ fun eval_update_conv ctxt ct =
         val step1_cv = rewr_obj_eq @{thm eval_update} then_conv rewr_obj_eq_top @{thm id.simps(1)} ctxt
       in
         if nx1 = nx2 then (step1_cv then_conv rewr_obj_eq @{thm if_true'}) ct
-        else let val neq_th = eq_is_false (nx1, nx2)
+        else let val neq_th = to_eqF_th (Nat_Arith.nat_neq_th nx1 nx2)
              in (step1_cv then_conv rewr_obj_eq_top neq_th ctxt then_conv rewr_obj_eq @{thm HOL.if_False}) ct end
       end
     else Conv.no_conv ct
@@ -55,7 +55,7 @@ theorem update_example: "eval (ES {Id 2 \<rightarrow> n}) (Id 3) = 0" by auto2
 theorem update_shadow: "st {x \<rightarrow> m} {x \<rightarrow> n} = st {x \<rightarrow> n}" by auto2
 theorem update_same: "eval st x = n \<Longrightarrow> st {x \<rightarrow> n} = st" by auto2
 theorem update_permute: "x \<noteq> y \<Longrightarrow> st {y \<rightarrow> m} {x \<rightarrow> n} = st {x \<rightarrow> n} {y \<rightarrow> m}" by auto2
-setup {* add_forward_prfstep_cond @{thm update_same} [with_term "?st {?x \<rightarrow> ?n}"] *}
+setup {* add_rewrite_rule @{thm update_same} *}
 
 abbreviation X :: id where "X \<equiv> Id 0"
 abbreviation Y :: id where "Y \<equiv> Id 1"
@@ -175,12 +175,9 @@ setup {* add_backward_prfstep @{thm ceval.intros(2)} *}
 setup {* add_backward1_prfstep @{thm ceval.intros(3)} *}
 setup {* fold add_backward2_prfstep [@{thm ceval.intros(3)}, @{thm ceval.intros(4)}, @{thm ceval.intros(5)}] *}
 setup {* add_resolve_prfstep @{thm ceval.intros(6)} *}
-theorem ceval_intros7':
-  "beval st b \<Longrightarrow> \<not>(ceval (WHILE b DO c OD) st st'') \<Longrightarrow> ceval c st st' \<Longrightarrow> \<not>(ceval (WHILE b DO c OD) st' st'')" using ceval.intros(7) by blast
-setup {* add_prfstep_thm ("ceval.intros7",
-  [WithFact @{term_pat "beval ?st ?b"},
-   WithGoal @{term_pat "ceval (WHILE ?b DO ?c OD) ?st ?st''"}],
-  @{thm ceval_intros7'}) *}
+theorem ceval_intros7': "beval st b \<Longrightarrow> \<not>(ceval (WHILE b DO c OD) st st'') \<Longrightarrow>
+  \<forall>st'. ceval c st st' \<longrightarrow> \<not>(ceval (WHILE b DO c OD) st' st'')" using ceval.intros(7) by blast
+setup {* add_forward_prfstep @{thm ceval_intros7'} *}
 
 (* Automatically step forward an assignment step. *)
 theorem ceval_assign: "ceval B (st { x \<rightarrow> aeval st a }) st' \<Longrightarrow> ceval (x := a; B) st st'"
@@ -191,16 +188,14 @@ setup {* add_backward_prfstep @{thm ceval_assign'} *}
 
 (* Automatically step forward a skip step. *)
 theorem ceval_skip_left: "ceval C st st' \<Longrightarrow> ceval (SKIP; C) st st'"
-by (tactic {* auto2s_tac @{context} (OBTAIN "ceval SKIP st st") *})
+  by (tactic {* auto2s_tac @{context} (OBTAIN "ceval SKIP st st") *})
 setup {* add_backward_prfstep @{thm ceval_skip_left} *}
 
 theorem ceval_example1: "ceval (X := ANum 2; IF BLe (AId X) (ANum 1) THEN Y := ANum 3 ELSE Z := ANum 4 FI)
-  ES (ES {X \<rightarrow> 2} {Z \<rightarrow> 4})"
-by auto2
+  ES (ES {X \<rightarrow> 2} {Z \<rightarrow> 4})" by auto2
 
 theorem ceval_example2: "ceval (X := ANum 0; Y := ANum 1; Z := ANum 2)
-  ES (ES {X \<rightarrow> 0} {Y \<rightarrow> 1} {Z \<rightarrow> 2})"
-by auto2
+  ES (ES {X \<rightarrow> 0} {Y \<rightarrow> 1} {Z \<rightarrow> 2})" by auto2
 
 definition pup_to_n :: com where "pup_to_n =
   Y := ANum 0;

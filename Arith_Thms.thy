@@ -4,45 +4,123 @@ begin
 
 setup {* fold add_rew_const [@{term "0::nat"}, @{term "1::nat"}] *}
 
+(* Linear ordering. *)
+
+(* Reducing inequality on natural numbers. *)
+theorem reduce_le_plus_consts: "(x::nat) + n1 \<le> y + n2 \<Longrightarrow> x \<le> y + (n2-n1)" by simp
+theorem reduce_le_plus_consts': "n1 \<ge> n2 \<Longrightarrow> (x::nat) + n1 \<le> y + n2 \<Longrightarrow> x + (n1-n2) \<le> y" by simp
+theorem reduce_less_plus_consts: "(x::nat) + n1 < y + n2 \<Longrightarrow> x < y + (n2-n1)" by simp
+theorem reduce_less_plus_consts': "n1 \<ge> n2 \<Longrightarrow> (x::nat) + n1 < y + n2 \<Longrightarrow> x + (n1-n2) < y" by simp
+
+(* To normal form. *)
+theorem norm_less_lminus: "(x::nat) - n < y \<Longrightarrow> x \<le> y + (n-1)" by simp
+theorem norm_less_lplus:  "(x::nat) + n < y \<Longrightarrow> x + (n+1) \<le> y" by simp
+theorem norm_less_rminus: "(x::nat) < y - n \<Longrightarrow> x + (n+1) \<le> y" by simp
+theorem norm_less_rplus:  "(x::nat) < y + n \<Longrightarrow> x \<le> y + (n-1)" by simp
+theorem norm_less:        "(x::nat) < y     \<Longrightarrow> x + 1 \<le> y"     by simp
+theorem norm_le_lminus: "(x::nat) - n \<le> y \<Longrightarrow> x \<le> y + n"  by simp
+theorem norm_le_rminus: "(x::nat) \<le> y - n \<Longrightarrow> x \<le> y + 0"  by simp
+theorem norm_le: "(x::nat) \<le> y \<Longrightarrow> x \<le> y + 0" by simp
+
+(* Transitive resolve. *)
+theorem trans_resolve1: "n1 > 0 \<Longrightarrow> (x::nat) + n1 \<le> y \<Longrightarrow> (y::nat) + n2 \<le> x \<Longrightarrow> False" by simp
+theorem trans_resolve2: "n1 > n2 \<Longrightarrow> (x::nat) + n1 \<le> y \<Longrightarrow> (y::nat) \<le> x + n2 \<Longrightarrow> False" by simp
+
+(* Transitive. *)
+theorem trans1: "(x::nat) + n1 \<le> y \<Longrightarrow> y + n2 \<le> z \<Longrightarrow> x + (n1+n2) \<le> z" by simp
+theorem trans2: "(x::nat) \<le> y + n1 \<Longrightarrow> y \<le> z + n2 \<Longrightarrow> x \<le> z + (n1+n2)" by simp
+theorem trans3: "(x::nat) + n1 \<le> y \<Longrightarrow> y \<le> z + n2 \<Longrightarrow> x \<le> z + (n2-n1)" by simp
+theorem trans4: "n1 > n2 \<Longrightarrow> (x::nat) + n1 \<le> y \<Longrightarrow> y \<le> z + n2 \<Longrightarrow> x + (n1-n2) \<le> z" by simp
+theorem trans5: "(x::nat) \<le> y + n1 \<Longrightarrow> y + n2 \<le> z \<Longrightarrow> x \<le> z + (n1-n2)" by simp
+theorem trans6: "n2 > n1 \<Longrightarrow> (x::nat) \<le> y + n1 \<Longrightarrow> y + n2 \<le> z \<Longrightarrow> x + (n2-n1) \<le> z" by simp
+
+(* Resolve. *)
+theorem single_resolve: "n > 0 \<Longrightarrow> (x::nat) + n \<le> x \<Longrightarrow> False" by simp
+theorem single_resolve_const: "n > 0 \<Longrightarrow> (x::nat) + n \<le> 0 \<Longrightarrow> False" by simp
+
+(* Comparison with constants. *)
+theorem cv_const1: "(x::nat) + n \<le> y \<Longrightarrow> 0 + (x+n) \<le> y" by simp  (* x is const *)
+theorem cv_const2: "(x::nat) + n \<le> y \<Longrightarrow> x \<le> 0 + (y-n)" by simp  (* y is const *)
+theorem cv_const3: "y < n \<Longrightarrow> (x::nat) + n \<le> y \<Longrightarrow> x + (n-y) \<le> 0" by simp  (* y is const (contradiction with 0 \<le> x) *)
+theorem cv_const4: "(x::nat) \<le> y + n \<Longrightarrow> 0 + (x-n) \<le> y" by simp  (* x is const *)
+theorem cv_const5: "(x::nat) \<le> y + n \<Longrightarrow> 0 \<le> y + (n-x)" by simp  (* x is const (trivial) *)
+theorem cv_const6: "(x::nat) \<le> y + n \<Longrightarrow> x \<le> 0 + (y+n)" by simp  (* y is const *)
+
+theorem nat_eq_to_ineqs: "(x::nat) = y + n \<Longrightarrow> x \<le> y + n \<and> x \<ge> y + n" by simp
+
+ML_file "arith.ML"
+ML_file "order.ML"
+
 (* Ordering: lattice. *)
 setup {* add_forward_prfstep (equiv_forward_th @{thm Orderings.linorder_not_less}) *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm Orderings.linorder_not_le}) *}
-setup {* add_resolve_prfstep @{thm Nat.less_not_refl} *}
-setup {* add_forward_prfstep @{thm Nat.less_imp_le_nat} *}
-setup {* add_forward_prfstep_cond @{thm Nat.le_trans} (with_conds ["?i \<noteq> ?j", "?j \<noteq> ?k"]) *}
-setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
-setup {* add_forward_prfstep_cond @{thm Nat.le_antisym} [with_filt (order_filter "m" "n"), with_cond "?m \<noteq> ?n"] *}
+setup {* add_forward_prfstep_cond @{thm Orderings.order_class.order.trans} [with_filt (not_type_filter "a" @{typ nat})] *}
+setup {* add_forward_prfstep_cond @{thm Orderings.order_class.order.strict_trans} [with_filt (not_type_filter "a" @{typ nat})] *}
+setup {* add_resolve_prfstep @{thm Orderings.order_class.order.irrefl} *}
+setup {* add_forward_prfstep_cond @{thm Orderings.le_neq_trans} [with_cond "?a \<noteq> ?b"] *}
+setup {* add_forward_prfstep_cond @{thm Orderings.order_antisym} [with_filt (order_filter "x" "y"), with_cond "?x \<noteq> ?y"] *}
+setup {* add_forward_prfstep_cond @{thm HOL.not_sym} [with_filt (not_type_filter "s" @{typ bool})] *}
 
 (* Ordering: max and min. *)
-theorem min_le_same: "(a::nat) \<le> b \<Longrightarrow> a \<le> c \<Longrightarrow> a \<le> min b c" by simp
-setup {* add_backward2_prfstep @{thm min_le_same} *}
-theorem max_le_same: "(a::nat) \<le> c \<Longrightarrow> b \<le> c \<Longrightarrow> max a b \<le> c" by simp
-setup {* add_backward2_prfstep @{thm max_le_same} *}
-theorem min_le_pair: "(a::nat) \<le> b \<Longrightarrow> c \<le> d \<Longrightarrow> min a c \<le> min b d" using min.mono by blast
-setup {* add_backward2_prfstep @{thm min_le_pair} *}
-setup {* add_simp_rule @{thm min.idem} *}
+theorem nat_min_boundedI: "(a::nat) < b \<Longrightarrow> a < c \<Longrightarrow> a < min b c" by simp
+theorem nat_max_boundedI: "(a::nat) \<ge> b \<Longrightarrow> a \<ge> c \<Longrightarrow> a \<ge> max b c" by simp
+theorem max_boundedI': "(a::('a::linorder)) \<ge> b \<Longrightarrow> a < max b c \<Longrightarrow> a < c" by (simp add: leD less_max_iff_disj)
+theorem nat_min_mono: "(a::nat) \<le> c \<Longrightarrow> b \<le> d \<Longrightarrow> min a b \<le> min c d" using min.mono by simp
+setup {* add_backward2_prfstep @{thm nat_min_boundedI} *}
+setup {* add_backward2_prfstep @{thm nat_max_boundedI} *}
+setup {* add_forward_prfstep @{thm max_boundedI'} *}
+setup {* add_backward2_prfstep @{thm nat_min_mono} *}
+setup {* add_rewrite_rule @{thm min.idem} *}
 
 (* Ordering on Nats. *)
-theorem nat_not_sym: "(m::nat) \<noteq> n \<Longrightarrow> n \<noteq> m" by simp
-setup {* add_forward_prfstep @{thm nat_not_sym} *}
-setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_cond "?k \<noteq> 1"] *}
 theorem lt_one: "(m::nat) < 1 \<Longrightarrow> m = 0" by simp
 setup {* add_forward_prfstep_cond @{thm lt_one} [with_cond "?m \<noteq> 0"] *}
-theorem gt_zero: "(m::nat) > C \<Longrightarrow> m > 0" by simp
-setup {* add_forward_prfstep_cond @{thm gt_zero} [with_cond "?C \<noteq> 0"] *}
+setup {* add_resolve_prfstep @{thm Nat.le0} *}
+setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_cond "?k \<noteq> 1"] *}
 setup {* add_resolve_prfstep @{thm Nat.trans_le_add2} *}
+setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_filt (not_numc_filter "j")] *}
+theorem not_minus_less: "\<not>(i::nat) < (i - j)" by simp
+setup {* add_resolve_prfstep_cond @{thm not_minus_less} [with_filt (not_numc_filter "j")] *}
+
+setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Nat.le_diff_conv}) [with_term "?i + ?k", with_filt (not_numc_filter "k")] *}
+setup {* add_rewrite_rule_cond @{thm Nat.le_diff_conv2} [with_term "?i + ?k"] *}
+theorem nat_less_diff_conv: "(i::nat) < j - k \<Longrightarrow> i + k < j" by simp
+setup {* add_forward_prfstep_cond @{thm nat_less_diff_conv} [with_filt (not_numc_filter "k"), with_term "?i + ?k"]*}
+theorem Nat_le_diff_conv2_same: "(i::nat) \<le> i - j \<Longrightarrow> j \<le> i \<Longrightarrow> j = 0" by simp
+setup {* add_forward_prfstep @{thm Nat_le_diff_conv2_same} *}
+theorem Nat_le_diff1_conv: "(n::nat) \<le> n - 1 \<Longrightarrow> n = 0" by simp
+setup {* add_forward_prfstep @{thm Nat_le_diff1_conv} *}
+theorem nat_gt_zero: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
+setup {* add_forward_prfstep @{thm nat_gt_zero} *}
+setup {* add_rewrite_rule @{thm Nat.le_add_diff_inverse} *}
+setup {* add_rewrite_rule @{thm Nat.diff_diff_cancel} *}
+
+(* Intervals. *)
+definition open_interval :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" ("_ < _ < _" [50,50,50] 50) where "a < b < c \<longleftrightarrow> a < b \<and> b < c"
+definition closed_interval :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" ("_ \<le> _ \<le> _" [50,50,50] 50) where "a \<le> b \<le> c \<longleftrightarrow> a \<le> b \<and> b \<le> c"
+setup {* fold add_rewrite_rule [@{thm open_interval_def}, @{thm closed_interval_def}] *}
 
 (* Natural numbers. *)
-setup {* add_simp_rule @{thm Nat.minus_nat.diff_0} *}
-theorem n_minus_1_eq_0: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 = 0 \<Longrightarrow> n = 1" by simp
-setup {* add_forward_prfstep @{thm n_minus_1_eq_0} *}
 setup {* add_rewrite_rule_cond @{thm Nat.nat_distrib(2)}
   (with_filt (canonical_split_filter @{const_name plus} "m" "n") ::
    with_conds ["?k \<noteq> 1", "?m \<noteq> 0", "?n \<noteq> 0"]) *}
 setup {* add_forward_prfstep @{thm Nat.add_eq_self_zero} *}
 
+(* Diff. *)
+setup {* add_rewrite_rule @{thm Nat.minus_nat.diff_0} *}
+setup {* add_rewrite_rule @{thm Nat.diff_self_eq_0} *}
+setup {* add_rewrite_rule @{thm Nat.diff_add_inverse} *}
+theorem n_minus_1_eq_0: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 = 0 \<Longrightarrow> n = 1" by simp
+setup {* add_forward_prfstep @{thm n_minus_1_eq_0} *}
+theorem diff_distrib: "(i::nat) \<le> k \<Longrightarrow> k \<le> j \<Longrightarrow> j - (k - i) = j - k + i" by simp
+setup {* add_rewrite_rule_cond @{thm diff_distrib} (with_filts [size1_filter "j", size1_filter "k", size1_filter "i"]) *}
+
+theorem diff_eq_zero: "j - k = 0 \<Longrightarrow> (k::nat) \<le> j \<Longrightarrow> j = k" by simp
+theorem diff_eq_zero': "j - k + i = j \<Longrightarrow> (k::nat) \<le> j \<Longrightarrow> k = i" by simp
+setup {* fold add_forward_prfstep [@{thm diff_eq_zero}, @{thm diff_eq_zero'}] *}
+
 (* Divides. *)
-setup {* add_rewrite_rule @{thm dvd_def} *}
+setup {* add_rewrite_rule_cond @{thm dvd_def} (with_conds ["?a \<noteq> ?b", "?a \<noteq> ?b * ?k"]) *}
 theorem dvd_transitive: "(m::nat) dvd n \<Longrightarrow> n dvd p \<Longrightarrow> m dvd p" using dvd_trans by blast
 theorem dvd_transitive': "(m::nat) dvd n \<Longrightarrow> n dvd m \<Longrightarrow> m = n" by (simp add: dvd.eq_iff)
 setup {*
@@ -56,39 +134,49 @@ setup {* add_forward_prfstep (equiv_forward_th @{thm dvd_add_right_iff}) *}
 theorem n_dvd_n: "(n::nat) dvd n" by simp
 setup {* add_resolve_prfstep @{thm n_dvd_n} *}
 setup {* add_prfstep_two_stage ("exists_n_dvd_n",
-  [WithGoal @{term_pat "\<exists> k. k dvd (?n::nat) \<and> ?A"},
+  [WithGoal @{term_pat "\<exists> k. k dvd (?n::nat) \<and> ?A k"},
    GetFact (@{term_pat "(?n::nat) dvd ?n"}, @{thm n_dvd_n})],
   @{thm exists_intro}) *}
 
 theorem dvd_prod: "(a::nat) dvd a * b" by simp
 setup {* add_prfstep_two_stage ("dvd_prod",
-  [WithFact @{term_pat "\<forall> m::nat. m dvd (?a * ?b) \<longrightarrow> ?C"},
+  [WithFact @{term_pat "\<forall> m::nat. m dvd (?a * ?b) \<longrightarrow> ?C m"},
    GetFact (@{term_pat "(?a::nat) dvd (?a * ?b)"}, @{thm dvd_prod}),
    Filter (ac_atomic_filter @{const_name times} "a"),
    Filter (neqt_filter "a" @{term "1::nat"}),
    Filter (neqt_filter "b" @{term "1::nat"})],
-  @{thm forall_resolve}) *}
+  @{thm forall_impl}) *}
 
 theorem one_dvd_any: "1 dvd (n::nat)" by simp
 setup {* add_resolve_prfstep @{thm one_dvd_any} *}
 
 theorem any_n_dvd_0: "\<not> (\<exists> k. k dvd (0::nat) \<and> P k) \<Longrightarrow> \<not> (\<exists> k. P k)" by simp
-setup {* add_prfstep_thm ("any_n_dvd_0",
-  [WithGoal @{term_pat "(\<exists> k. k dvd (0::nat) \<and> ?A)"}], @{thm any_n_dvd_0}) *}
+setup {* add_forward_prfstep @{thm any_n_dvd_0} *}
 
 theorem n_dvd_one: "(n::nat) dvd 1 \<Longrightarrow> n = 1" by simp
 setup {* add_forward_prfstep_cond @{thm n_dvd_one} [with_cond "?n \<noteq> 1"] *}
 
 (* Products. *)
-setup {* add_simp_rule @{thm mult_zero_left} *}
-theorem prod_ineqs: "(m::nat) * k > 0 \<Longrightarrow> 1 \<le> m \<and> m \<le> m * k" by simp
+setup {* add_rewrite_rule @{thm mult_zero_left} *}
+theorem prod_ineqs: "(n::nat) = m * k \<Longrightarrow> n > 0 \<Longrightarrow> 1 \<le> m \<and> m \<le> n" by simp
 setup {* add_forward_prfstep_cond @{thm prod_ineqs}
-  (with_filt (ac_atomic_filter @{const_name times} "m") :: with_conds ["?m \<noteq> 1", "?k \<noteq> 1"]) *}
+  ([with_filt (ac_atomic_filter @{const_name times} "m"),
+    with_filt (size1_filter "n")] @
+   (with_conds ["?m \<noteq> 1", "?k \<noteq> 1", "?n \<noteq> ?m", "?n \<noteq> ?k"])) *}
+setup {* add_prfstep_thm_fn
+  ("prod_ineqs'",
+   [WithFact @{term_pat "(?NUMC::nat) = ?m * ?k"},
+    Filter (fn _ => fn (_, inst) => Nat_Arith.lookup_numc0 inst >= 2),
+    Filter (ac_atomic_filter @{const_name times} "m"),
+    Filter (not_numc_filter "m")],
+   [Update.ADD_ITEMS],
+   (fn _ => fn ((_, inst), ths) =>
+       [the_single ths, Nat_Arith.nat_less_th 0 (Nat_Arith.lookup_numc0 inst)] MRS @{thm prod_ineqs})) *}
 
-theorem prod_cancel: "(a::nat) > 0 \<Longrightarrow> a * b = a * c \<Longrightarrow> b = c" by simp
+theorem prod_cancel: "(a::nat) * b = a * c \<Longrightarrow> a > 0 \<Longrightarrow> b = c" by auto
 setup {* add_forward_prfstep_cond @{thm prod_cancel} [with_cond "?b \<noteq> ?c"] *}
 
-theorem mult_n1n: "(n::nat) = m * n \<Longrightarrow> n > 0 \<Longrightarrow> m = 1" by simp
+theorem mult_n1n: "(n::nat) = m * n \<Longrightarrow> n > 0 \<Longrightarrow> m = 1" by auto
 setup {* add_forward_prfstep_cond @{thm mult_n1n} [with_cond "?m \<noteq> 1"] *}
 
 theorem prod_is_one: "(x::nat) * y = 1 \<Longrightarrow> x = 1" by simp
@@ -104,14 +192,17 @@ setup {* add_forward_prfstep_cond @{thm gcd_dvd1_nat} [with_term "gcd ?a ?b"] *}
 (* Coprimality. *)
 setup {* add_backward_prfstep @{thm coprime_exp_nat} *}
 setup {* add_backward1_prfstep @{thm coprime_dvd_mult_nat} *}
-theorem coprime_dvd: "coprime (a::nat) b \<Longrightarrow> p dvd a \<Longrightarrow> (p > 1 \<longrightarrow> (\<not> p dvd b))" by (metis coprime_nat neq_iff)
+theorem coprime_dvd: "coprime (a::nat) b \<Longrightarrow> p dvd a \<Longrightarrow> p > 1 \<Longrightarrow> \<not> p dvd b" by (metis coprime_nat neq_iff)
 setup {* add_forward_prfstep @{thm coprime_dvd} *}
 
 (* Powers. *)
-setup {* add_simp_rule @{thm power_0} *}
-setup {* add_simp_rule_cond @{thm power_one} [with_cond "?n \<noteq> 0"] *}
-setup {* add_simp_rule_cond @{thm power_one_right} [with_cond "?a \<noteq> 1"] *}
-setup {* add_rewrite_rule_cond @{thm power_eq_if} (with_conds ["?p \<noteq> 1", "?m \<noteq> 0", "?m \<noteq> 1"]) *}
+setup {* add_rewrite_rule @{thm power_0} *}
+setup {* add_rewrite_rule_cond @{thm power_one} [with_cond "?n \<noteq> 0"] *}
+setup {* add_rewrite_rule_cond @{thm power_one_right} [with_cond "?a \<noteq> 1"] *}
+theorem power_ge_0: "m \<noteq> 0 \<Longrightarrow> p ^ m = p * (p ^ (m - 1))" by (simp add: power_eq_if)
+setup {* add_rewrite_rule @{thm power_ge_0} *}
+setup {* add_gen_prfstep ("power_case_intro",
+  [WithTerm @{term_pat "?p ^ (?FREE::nat)"}, CreateCase ([@{term_pat "(?FREE::nat) = 0"}], [])]) *}
 
 theorem power_0': "(1::nat) = a ^ 0" by simp
 setup {* add_prfstep_two_stage ("one_is_power_zero",
@@ -142,7 +233,9 @@ setup {*
   add_prfstep_strong_induction @{thm nat_less_induct}
 *}
 
-(* Extra proofsteps in ML. *)
-ML_file "arith.ML"
+(* More evaluations of if. *)
+theorem if_eq: "if (m::nat) = n then x else y \<Longrightarrow> m < n \<Longrightarrow> y" by simp
+theorem if_eq': "if (m::nat) = n then x else y \<Longrightarrow> m > n \<Longrightarrow> y" by simp
+setup {* fold add_forward_prfstep [@{thm if_eq}, @{thm if_eq'}] *}
 
 end

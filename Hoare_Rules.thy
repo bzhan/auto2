@@ -183,7 +183,7 @@ definition subtract_slowly_dec :: "nat \<Rightarrow> nat \<Rightarrow> dcom" whe
     {{ Assert (\<lambda>st. eval st Z = p - m) }})
 "
 theorem cancel_sub_1: "x \<noteq> 0 \<Longrightarrow> ((y::nat) - 1) - (x - 1) = y - x" by simp
-setup {* add_forward_prfstep_cond @{thm cancel_sub_1} [with_term "(?y - 1) - (?x - 1)"] *}
+setup {* add_rewrite_rule @{thm cancel_sub_1} *}
 setup {* add_rewrite_rule @{thm subtract_slowly_dec_def} *}
 theorem subtract_slowly_dec_correct: "dec_correct (subtract_slowly_dec m p)" by auto2
 

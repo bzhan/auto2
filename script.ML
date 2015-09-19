@@ -8,7 +8,7 @@ sig
   datatype script
     = Script_Task of {assums: term list, concls: term list, subs: script list,
                       cb: Update.resolve_callback}
-    | Script_Info of {prfstep: proofstep, source: term list}
+    | Script_Info of {prfstep: proofstep, source: (string * term list) list}
   type scripts = script list
   type pre_scripts = Proof.context -> scripts * Proof.context
   val no_script: pre_scripts
@@ -26,7 +26,7 @@ struct
 datatype script
   = Script_Task of {assums: term list, concls: term list, subs: script list,
                     cb: Update.resolve_callback}
-  | Script_Info of {prfstep: proofstep, source: term list}
+  | Script_Info of {prfstep: proofstep, source: (string * term list) list}
 type scripts = script list
 type pre_scripts = Proof.context -> scripts * Proof.context
 
@@ -75,27 +75,8 @@ fun CHOOSE str ctxt =
                      ("CHOOSE: variable name(s) already used.")
       val ctxt' = ctxt |> Variable.add_fixes_direct nms
                        |> fold Variable.declare_term freevars
-
-      (* Given ex_cond_th verifying ex_cond, instantiate the existence
-         statement with explicit variable freevar. Code is similar to
-         exists_elim proofstep.
-       *)
       fun exists_callback (id, ex_cond_th) =
-          let
-            val cond' = HOLogic.mk_Trueprop cond
-            val new_th = Thm.trivial (cert ctxt' cond')
-            fun ready (t, ts) =
-                forall (fn t' => t' aconv t orelse
-                                 not (occurs_frees freevars t')) ts
-            fun handler (t, th) =
-                th |> Thm.implies_intr (cert ctxt' t)
-                   |> fold (ex_elim ctxt) (rev freevars)
-                   |> Thm.elim_implies ex_cond_th
-            val ritems = (map FreeVar freevars) @
-                         [Fact new_th, Handler (cond', (ready, handler))]
-          in
-            [Update.AddItems {id = id, raw_items = ritems}]
-          end
+          Update.apply_exists (id, ex_cond_th) ctxt' nms
     in
       ([Script_Task {assums = [], subs = [], concls = [ex_cond],
                      cb = exists_callback}], ctxt')

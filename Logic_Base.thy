@@ -2,23 +2,25 @@ theory Logic_Base
 imports Main
 begin
 
-definition simp_eq :: "['a, 'a] \<Rightarrow> bool" (infix "simp=" 1) where
-  "simp_eq \<equiv> op ="
-theorem simp_eq_rewr: "(x simp= y) \<equiv> (x = y)" by (simp add: simp_eq_def)
+theorem to_contra_form: "Trueprop A \<equiv> (\<not>A \<Longrightarrow> False)" by (rule equal_intr_rule) auto
+theorem to_contra_form': "Trueprop (\<not>A) \<equiv> (A \<Longrightarrow> False)" by (rule equal_intr_rule) auto
 
-theorem contra1: "A \<Longrightarrow> (\<not>A \<Longrightarrow> False)" by simp
-theorem contra2: "(\<not>A \<Longrightarrow> False) \<Longrightarrow> A" by blast
-theorem contra3: "\<not>A \<Longrightarrow> (A \<Longrightarrow> False)" by simp
-theorem contra4: "(A \<Longrightarrow> False) \<Longrightarrow> \<not>A" by blast
-ML {*
-  val contra_eq1_th = Thm.equal_intr @{thm contra1} @{thm contra2}
-  val contra_eq2_th = Thm.equal_intr @{thm contra3} @{thm contra4}
-*}
-
+theorem contra_triv: "\<not>A \<Longrightarrow> A \<Longrightarrow> False" by simp
 theorem or_intro1: "\<not> (P \<or> Q) \<Longrightarrow> \<not> P" by simp
 theorem or_intro2: "\<not> (P \<or> Q) \<Longrightarrow> \<not> Q" by simp
-theorem exE': "(\<And>x. P x \<Longrightarrow> False) \<Longrightarrow> \<exists>x. P x \<Longrightarrow> False" by auto
+theorem exE': "(\<And>x. P x \<Longrightarrow> Q) \<Longrightarrow> \<exists>x. P x \<Longrightarrow> Q" by auto
+theorem eq_False': "((\<not>A) = False) = A" by simp
 
-ML {* val use_vardef_th = @{thm HOL.simp_thms(42)} *}
+theorem use_vardef: "(\<forall>x. x = t \<longrightarrow> P x) = P t" by simp
+
+theorem obj_sym: "Trueprop (t = s) \<equiv> Trueprop (s = t)" by (rule equal_intr_rule) auto
+theorem meta_sym: "(y \<equiv> x) \<equiv> (x \<equiv> y)" by (rule equal_intr_rule) auto
+theorem to_meta_eq: "Trueprop (t = s) \<equiv> (t \<equiv> s)" by (rule equal_intr_rule) auto
+theorem to_obj_eq: "(t \<equiv> s) \<equiv> Trueprop (t = s)" by (rule equal_intr_rule) auto
+
+theorem backward_conv: "(A \<Longrightarrow> B) \<equiv> (\<not>B \<Longrightarrow> \<not>A)" by (rule equal_intr_rule) auto
+theorem backward1_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\<not>C \<Longrightarrow> B \<Longrightarrow> \<not>A)" by (rule equal_intr_rule) auto
+theorem backward2_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\<not>C \<Longrightarrow> A \<Longrightarrow> \<not>B)" by (rule equal_intr_rule) auto
+ML {* val nn_cancel_th = @{thm HOL.nnf_simps(6)} *}
 
 end

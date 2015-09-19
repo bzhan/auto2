@@ -5,7 +5,7 @@ local
   open ACUtil
 
   val thy = @{theory}
-  val thy' = thy |> add_logic_ac_data |> add_arith_ac_data
+  val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
 in
 
 val test_comb_ac_equiv =

@@ -2,11 +2,11 @@
 
 signature SUBTERMS =
 sig
-  val dest_subterms: theory -> term -> term * term list
-  val list_subterms: theory -> term -> term list
-  val get_all_subterms: theory -> term -> term list
+  val triv_subterms: term -> term * term list
+  val dest_subterms: theory -> bool -> term -> term * term list
+  val list_subterms: theory -> bool -> term -> term list
+  val get_all_subterms: theory -> bool -> term -> term list
   val subst_subterms: term * term list -> term
-  val map_subterms: theory -> (term -> term) -> term -> term
   val build_equiv: Proof.context -> thm list -> term -> thm
 
   val get_head_ac_item: theory -> term -> ac_item option
@@ -24,8 +24,10 @@ fun is_if f =
 
 fun get_subvar n t = Var (("SUB", n), fastype_of t)
 
+fun triv_subterms t = (get_subvar 0 t, [t])
+
 (* Destruct t into head and subterm structure. *)
-fun dest_subterms thy t =
+fun dest_subterms thy skip_if t =
     let
       (* t is eligible as a subterm, expand in special cases. The
          prevs list record previous subterms.
@@ -70,7 +72,7 @@ fun dest_subterms thy t =
               let
                 val (tf, targs) = Term.strip_comb t
               in
-                if is_if tf then
+                if skip_if andalso is_if tf then
                   let val (prevs', t') = dest_at_head (prevs, hd targs)
                   in (prevs', Term.list_comb (tf, t' :: tl targs)) end
                 else
@@ -120,14 +122,14 @@ fun dest_subterms thy t =
       (t', rev rev_subs)
     end
 
-fun list_subterms thy t = snd (dest_subterms thy t)
+fun list_subterms thy skip_if t = snd (dest_subterms thy skip_if t)
 
 (* List all (closed) subterms. Larger ones will be listed first. *)
-fun get_all_subterms thy t =
+fun get_all_subterms thy skip_if t =
     let
-      val args = list_subterms thy t
+      val args = list_subterms thy skip_if t
       val subs = fold (curry (merge (op aconv)))
-                      (map (get_all_subterms thy) args) []
+                      (map (get_all_subterms thy skip_if) args) []
     in
       t :: subs
     end
@@ -141,13 +143,6 @@ fun subst_subterms (t, subs) =
                       |> map (fn (i, sub') => (get_subvar i sub', sub'))
     in
       subst_atomic subst t
-    end
-
-fun map_subterms thy f t =
-    let
-      val (t', subs) = dest_subterms thy t
-    in
-      subst_subterms (t', map f subs)
     end
 
 (* Given a decomposition into (t, subs) of a term u, and a list of

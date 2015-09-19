@@ -11,7 +11,7 @@ definition bequiv :: "bexp \<Rightarrow> bexp \<Rightarrow> bool" where
 definition cequiv :: "com \<Rightarrow> com \<Rightarrow> bool" where
   "cequiv c1 c2 = (\<forall>st st'. ceval c1 st st' \<longleftrightarrow> ceval c2 st st')"
 
-setup {* add_simp_rule @{thm Nat.diff_self_eq_0} *}
+setup {* add_rewrite_rule @{thm Nat.diff_self_eq_0} *}
 setup {* fold add_rewrite_rule [@{thm aequiv_def}, @{thm bequiv_def}, @{thm cequiv_def}] *}
 theorem aequiv_example: "aequiv (AMinus (AId X) (AId X)) (ANum 0)" by auto2
 theorem bequiv_example: "bequiv (BEq (AMinus (AId X) (AId X)) (ANum 0)) BTrue" by auto2

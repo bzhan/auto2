@@ -2,91 +2,59 @@
 
 signature LOGIC_PROOFSTEPS =
 sig
-  val var_count_filter: string -> int -> prfstep_filter
-  val bdvar_split_filter: string -> string -> prfstep_filter
-  val add_quantifier_proofsteps: theory -> theory
+  val shadow_item: bool -> proofstep_fn
+  val add_logic_proofsteps: theory -> theory
   val normalize_pred_comm: conv
-  val imp_to_disj_cv: Proof.context -> conv
-  val DISJ_MUT: string
-  val DISJ_MUT_ACTIVE: string
-  val disj_update: mut_update
-  val disj_concl: bool -> mut_concl
-  val disj_eq_better: mut_eq_better
-  val add_disj_mut_proofsteps: theory -> theory
+
+  val TY_DISJ: string
+  val TY_DISJ_ACTIVE: string
+  val imp_to_disj_cv: conv
+  val to_disj_cv: Proof.context -> conv
+  val not_ex_cv: Proof.context -> conv
+  val forall_elim_sch: thm -> thm
+  val analyze_disj_th: Proof.context -> thm -> bool * thm
+  val disj_intro_gen: string * prfstep_descriptor list -> proofstep
+
+  val disj_to_update: bool -> box_id * thm -> Update.raw_update
+  val disj_update_gen:
+      (box_id -> rewrite_type -> thm * box_item -> (box_id * thm) list) *
+      string * (term -> bool) * pre_filter -> proofstep list
+  val disj_self_update_gen:
+      (box_id -> rewrite_type -> thm -> (box_id * thm) list) *
+      string * (term -> bool) -> proofstep list
+  val eq_update:
+      box_id -> rewrite_type -> thm * box_item -> (box_id * thm) list
+  val match_update_fn: proofstep_fn
+  val match_update: string * (term -> bool) * string -> proofstep list
+  val disj_create_case: proofstep_fn
+  val disj_shadow: proofstep_fn
+  val add_disj_proofsteps: theory -> theory
 end;
 
 structure Logic_ProofSteps : LOGIC_PROOFSTEPS =
 struct
 
-(* Verify number of bound variables in s. *)
-fun var_count_filter s n _ (_, inst) =
-    let val var_s = Term.add_vars (lookup_inst inst s) []
-    in length var_s = n end
-
-(* In expressions of the form (EX/!) x y. (...), where ?s1 and ?s2
-   appear inside, require that ?s1 depends only on x, and ?s2 depends
-   only on y.
- *)
-fun bdvar_split_filter s1 s2 _ (_, inst) =
+(* Shadowing based on equivalence. *)
+fun shadow_item is_subequiv items rtype {lat, ...} =
     let
-      val var_s1 = Term.add_vars (lookup_inst inst s1) []
-      val var_s2 = Term.add_vars (lookup_inst inst s2) []
+      val id = merged_id rtype items
+      val (item1, item2) = the_pair items
+      val (tname1, tname2) = (get_single_tname item1, get_single_tname item2)
+      val equiv_fun = if is_subequiv then RewriteTable.subequiv_info
+                      else RewriteTable.equiv_info
+      val tbl = RewriteTable.table_of_rtype rtype
+      val equiv_ids = (equiv_fun tbl id (tname1, tname2))
+                          |> RewriteTable.replace_id_for_type' rtype |> map fst
+                          |> max_partial (BoxID.is_eq_ancestor lat)
+      fun process_id id' =
+          if id' = id_of_item item1 then
+            Update.ShadowItem {id = id', item = hd items}
+          else Update.ShadowItem {id = id', item = nth items 1}
     in
-      if length var_s1 <> 1 orelse length var_s2 <> 1 then false
-      else let val ((_, i), _) = the_single var_s1
-               val ((_, j), _) = the_single var_s2
-           in i = 0 andalso j = 1 end
+      map process_id equiv_ids
     end
-
-fun resolve_impl items rtype st =
-    let
-      val ((item1 as {id = id1, ...}), item2) = the_pair items
-      val (fact1, fact2) = (get_fact item1, get_fact item2)
-    in
-      if not (is_implies fact1) orelse has_vars fact2 then [] else
-      let
-        val A = fact1 |> Logic.dest_implies |> fst
-        val insts = get_insts [A] [item2] rtype
-        fun inst_to_updt ((id, _), ths) =
-            Update.thm_update (Status.merge_boxes st (id, id1),
-                               ths MRS (get_thm item1))
-      in
-        map inst_to_updt insts
-      end
-    end
-val resolve_impl_filt = [fn _ => is_implies o get_fact,
-                         fn _ => not o has_vars o get_fact]
-
-fun resolve_eq items rtype (st as {ctxt, ...}) =
-    let
-      val ((item1 as {id = id1, ...}), item2) = the_pair items
-      val (fact1, fact2) = (get_fact item1, get_fact item2)
-    in
-      if not (is_equals_term fact1) orelse has_vars fact2 then [] else
-      let
-        val tbl = RewriteTable.table_of_rewrite_type rtype
-        val A = fact1 |> Logic.dest_equals |> fst
-        val insts = get_insts [Logic.mk_term A] [item2] rtype
-        val cv = Conv.rewr_conv (get_thm item1)
-        fun inst_to_updt ((id, _), ths) =
-            let
-              val ct = ths |> the_single |> Thm.prop_of |> Logic.dest_term
-                           |> cert ctxt
-              val eq_th = (Conv.try_conv cv) ct
-              val (lhs, rhs) = Logic.dest_equals (Thm.prop_of eq_th)
-            in
-              if lhs aconv rhs then
-                raise AUTO2CT ("resolve_eq failed.", [ct])
-              else if RewriteTable.is_equiv id tbl (lhs, rhs) then []
-              else [Update.thm_update (Status.merge_boxes st (id, id1),
-                                       eq_th |> to_obj_eq)]
-            end
-      in
-        maps inst_to_updt insts
-      end
-    end
-val resolve_eq_filt = [fn _ => is_equals_term o get_fact,
-                       fn _ => not o has_vars o get_fact]
+val shadow_prop_filt = replicate 2 {ty_str = TY_PROP, pre_filt = no_prereq_fn}
+val shadow_term_filt = replicate 2 {ty_str = TY_TERM, pre_filt = no_prereq_fn}
 
 (* Given an assumption of the form EX x. A, we produce an assumption A
    with x in A replaced by a free variable. To avoid name collisions,
@@ -97,21 +65,19 @@ val resolve_eq_filt = [fn _ => is_equals_term o get_fact,
  *)
 val exists_elim =
     prfstep_custom
-        "exists_elim"
-        [WithFact @{term_pat "EX x. ?A"}]
-        (fn ((id, inst), ths) => fn (st as {ctxt, ...}) =>
+        @{theory} "exists_elim"
+        [WithFact @{term_pat "EX x. ?A x"}]
+        [Update.ADD_ITEMS]
+        (fn ((id, inst), ths) => fn {tbl, ctxt, ...} =>
             let
-              val tbl = Status.get_rewrite_table st
-              val patA = HOLogic.mk_Trueprop (lookup_inst inst "A")
-              val var = Var (the_single (Term.add_vars patA []))
-                        handle List.Empty =>
-                               raise AUTO2 "exists without bound variable."
-              val new_th = Thm.trivial (cert ctxt patA)
-              val prev_th = the_single ths
+              val (nm, T, body) =
+                  case lookup_inst inst "A" of
+                      Abs (nm, T, body) => (Name.internal nm, T, body)
+                    | _ => raise AUTO2 "exists_elim: unexpected inst for A"
 
-              (* Whether patA is the body of a trivial exists statement. *)
+              (* Whether A is the body of a trivial exists statement. *)
               val detect_trivial =
-                  case HOLogic.dest_Trueprop patA of
+                  case Term.subst_bound (Var (("u_",0), T), body) of
                       Const ("HOL.eq", _) $ A $ B =>
                       if has_vars A andalso has_vars B then false else
                       let
@@ -122,28 +88,9 @@ val exists_elim =
                         length insts <> 0
                       end
                     | _ => false
-
-              fun extract_freevar t =
-                  let
-                    val ((nm, i), _) = dest_Var var
-                    val inst = pattern_fo_match ctxt (patA, t)
-                  in
-                    lookup_instn inst (nm, i)
-                  end
-
-              fun ready (t, ts) =
-                  forall (fn t' => t' aconv t orelse
-                                   not (occurs_free (extract_freevar t) t')) ts
-
-              fun handler (t, th) =
-                  th |> Thm.implies_intr (cert ctxt t)
-                     |> ex_elim ctxt (extract_freevar t)
-                     |> Thm.elim_implies prev_th
             in
-              if detect_trivial then [] else
-              [Update.AddItems {
-                  id = id, raw_items = [FreeVar var, Fact new_th,
-                                        Handler (patA, (ready, handler))]}]
+              if detect_trivial then []
+              else Update.apply_exists (id, the_single ths) ctxt [nm]
             end)
 
 (* Normalize order of existence and forall statements. *)
@@ -157,102 +104,12 @@ fun normalize_pred_comm ct =
       else Conv.all_conv ct
     end
 
-val add_quantifier_proofsteps =
-    fold add_prfstep_thm [
-      ("exists_intro",
-       [WithGoal @{term_pat "EX x. ?P & ?Q"},
-        Filter (ac_atomic_filter @{const_name conj} "P"),
-        Filter (subset_var_filter "Q" "P")],
-       @{thm exists_intro}),
-
-      ("exists_intro2",
-       [WithGoal @{term_pat "EX x y. ?P & ?Q"},
-        Filter (ac_atomic_filter @{const_name conj} "P"),
-        Filter (subset_var_filter "Q" "P")],
-       @{thm exists_intro2}),
-
-      ("exists_resolve",
-       [WithGoal @{term_pat "EX x. ?P"},
-        Filter (var_count_filter "P" 1)],
-       @{thm exists_resolve}),
-
-      ("forall_resolve0",
-       [WithFact @{term_pat "! x. ?P"},
-        Filter (fn _ => fn (_, inst) => not (is_neg (lookup_inst inst "P"))),
-        Filter (var_count_filter "P" 1)],
-       @{thm forall_resolve0}),
-
-      ("forall_resolve0'",
-       [WithFact @{term_pat "! x. ~ ?P"},
-        Filter (var_count_filter "P" 1)],
-       @{thm forall_resolve0'}),
-
-      ("forall_resolve",
-       [WithFact @{term_pat "! x. ?P --> ?Q"},
-        Filter (subset_var_filter "Q" "P")],
-       @{thm forall_resolve}),
-
-      ("forall_resolve_opp",
-       [WithFact @{term_pat "! x. ?P --> (~ ?Q)"},
-        Filter (subset_var_filter "P" "Q")],
-       @{thm forall_resolve_opp}),
-
-      ("forall_resolve2",
-       [WithFact @{term_pat "! x y. ?P --> ?Q"},
-        Filter (subset_var_filter "Q" "P")],
-       @{thm forall_resolve2}),
-
-      (* Result is used for rewriting P -> Q. *)
-      ("forall_eq",
-       [WithFact @{term_pat "! x. ?P = ?Q"},
-        Filter (subset_var_filter "Q" "P")],
-       @{thm forall_eq}),
-
-      (* Result is used for rewriting Q -> P. *)
-      ("forall_eq'",
-       [WithFact @{term_pat "! x. ?P = ?Q"},
-        Filter (subset_var_filter "P" "Q")],
-       @{thm forall_eq'}),
-
-      (* Result is used for rewriting P -> Q. *)
-      ("forall_eq2",
-       [WithFact @{term_pat "! x y. ?P = ?Q"},
-        Filter (subset_var_filter "Q" "P")],
-       @{thm forall_eq2}),
-
-      (* Result is used for rewriting Q -> P. *)
-      ("forall_eq2'",
-       [WithFact @{term_pat "! x y. ?P = ?Q"},
-        Filter (subset_var_filter "P" "Q")],
-       @{thm forall_eq2'})
-
-    ] #> fold add_prfstep_conv [
-      ("exists_split",
-       [WithTerm @{term_pat "EX x y. ?P & ?Q"},
-        Filter (bdvar_split_filter "P" "Q")],
-       (rewr_obj_eq @{thm exists_split})),
-
-      ("forall_split1",
-       [WithTerm @{term_pat "! x y. ?P & ?Q --> ?R"},
-        Filter (bdvar_split_filter "P" "Q")],
-       (rewr_obj_eq @{thm forall_split1})),
-
-      ("forall_split2",
-       [WithTerm @{term_pat "! x y. ?P & ?Q --> ?R"},
-        Filter (bdvar_split_filter "P" "Q")],
-       (rewr_obj_eq @{thm forall_split2})),
-
-      ("forall_or",
-       [WithTerm @{term_pat "! x. (?A | ?B) --> ?C"}],
-       (rewr_obj_eq @{thm forall_or})),
-
-      ("rewrite_not_forall",
-       [WithTerm @{term_pat "~ (! x. ?A)"}],
-       (rewr_obj_eq @{thm HOL.not_all}))
-
-    ] #> fold add_prfstep [
-      {name = "resolve_impl", filt = resolve_impl_filt, func = resolve_impl},
-      {name = "resolve_eq", filt = resolve_eq_filt, func = resolve_eq},
+val add_logic_proofsteps =
+    fold add_prfstep [
+      {name = "shadow_prop", filt = shadow_prop_filt,
+       res_types = [Update.SHADOW_ITEM], func = shadow_item false},
+      {name = "shadow_term", filt = shadow_term_filt,
+       res_types = [Update.SHADOW_ITEM], func = shadow_item true},
       exists_elim
 
     ] #> fold add_eq_th_normalizer [
@@ -263,35 +120,46 @@ val add_quantifier_proofsteps =
 (* Disjunctive mutable states. *)
 val disj_ac = the (lookup_ac_data @{theory} @{const_name disj})
 val dest_disj_prop = ACUtil.dest_ac disj_ac o prop_of'
-val DISJ_MUT = "DISJ_MUT"
-val DISJ_MUT_ACTIVE = "DISJ_MUT_ACTIVE"
+fun dest_disj_subterms thy th =
+    if length (dest_disj_prop th) = 1 then Subterms.triv_subterms (prop_of' th)
+    else Subterms.dest_subterms thy false (prop_of' th)
+val TY_DISJ = "DISJ"
+val TY_DISJ_ACTIVE = "DISJ_ACTIVE"
+fun TY_DISJ_of is_active = if is_active then TY_DISJ_ACTIVE else TY_DISJ
+fun get_DISJ_is_active ty_str =
+    case ty_str of "DISJ" => false | "DISJ_ACTIVE" => true
+                   | _ => raise AUTO2 "get_DISJ_is_active: wrong ty_str."
 
-val disj_state_intro =
-    prfstep_custom
-        "disj_state_intro"
-        [WithFact @{term_pat "?A | ?B"},
-         Filter (canonical_split_filter @{const_name disj} "A" "B")]
-        (fn ((id, _), ths) => fn _ =>
-            [Update.AddMutState {id = id, mut_type = DISJ_MUT_ACTIVE,
-                                 sval = the_single ths}])
+fun disj_to_update is_active (id, th) =
+    if Thm.prop_of th aconv prop_False then
+      Update.ResolveBox {id = id, th = th}
+    else
+      let
+        val subs = dest_disj_prop th
+        val ty_str = if length subs = 1 andalso not (has_vars (Thm.prop_of th))
+                     then TY_PROP else TY_DISJ_of is_active
+      in
+        Update.AddItems {id = id, raw_items = [Fact (ty_str, subs, th)]}
+      end
 
 (* Convert term of form A_1 --> ... --> A_n to ~A_1 | ... | ~A_(n-1) |
    A_n. Note each A_i remains the same.
  *)
-fun imp_conv_disj_cv ct =
+fun imp_to_disj_cv ct =
     case Thm.term_of ct of
         Const ("HOL.implies", _) $ _ $ _ =>
         (rewr_obj_eq @{thm imp_conv_disj}
-                          then_conv (Conv.arg_conv imp_conv_disj_cv)) ct
+                          then_conv (Conv.arg_conv imp_to_disj_cv)) ct
       | _ => Conv.all_conv ct
 
 (* Convert proposition of form A_1 --> ... --> A_n to ~A_1 | ... |
    ~A_(n-1) | A_n. Expand any ~A_i of form ~(A_i1 & ... & A_in) using
-   de Morgan's law.
+   de Morgan's law. This converts any statements of form A | B, ~(A &
+   B), and A --> B to disjunction form.
  *)
-fun imp_to_disj_cv ctxt =
+fun to_disj_cv ctxt =
     let
-      val cv_imp = Conv.arg_conv imp_conv_disj_cv
+      val cv_imp = Conv.arg_conv imp_to_disj_cv
       val cv_deMorgan = rewr_obj_eq_top @{thm de_Morgan_conj} ctxt
       val cv_nn = rewr_obj_eq_top nn_cancel_th ctxt
       val cv_assoc = Conv.arg_conv (ACUtil.rearrange_assoc disj_ac)
@@ -299,118 +167,375 @@ fun imp_to_disj_cv ctxt =
       cv_imp then_conv cv_deMorgan then_conv cv_nn then_conv cv_assoc
     end
 
-val conj_goal_intro =
-    prfstep_custom
-        "conj_goal_intro"
-        [WithGoal @{term_pat "?A & ?B"},
-         Filter (canonical_split_filter @{const_name conj} "A" "B")]
-        (fn ((id, _), ths) => fn {ctxt, ...} =>
-            let
-              (* Only using the cv_deMorgan and cv_nn parts. *)
-              val disj_th = apply_to_thm (imp_to_disj_cv ctxt) (the_single ths)
-            in
-              [Update.AddMutState {id = id, mut_type = DISJ_MUT_ACTIVE,
-                                   sval = disj_th}]
-            end)
-
-val imp_disj_state_intro =
-    prfstep_custom
-        "imp_disj_state_intro"
-        [WithFact @{term_pat "?A --> ?B"}]
-        (fn ((id, _), ths) => fn {ctxt, ...} =>
-            let
-              val disj_th = apply_to_thm (imp_to_disj_cv ctxt) (the_single ths)
-            in
-              [Update.AddMutState {id = id, mut_type = DISJ_MUT,
-                                   sval = disj_th}]
-            end)
-
-(* sval is of form A_1 | ... | A_n. Look for equivalences between item
-   and ~A_i.
+(* Convert term of form ~ (EX x y. P x y) to !x y. ~ P x y (arbitrary
+   number of existence quantifiers).
  *)
-fun disj_update (id, sval) rtype item (st as {ctxt, ...}) =
-    if length (dest_disj_prop sval) = 1 then [] else
-    let
-      val thy = Status.theory_of st
-      val tbl = RewriteTable.table_of_rewrite_type rtype
+fun not_ex_cv ctxt ct =
+    case Thm.term_of ct of
+        Const ("HOL.Not", _) $ (Const ("HOL.Ex", _) $ _) =>
+        ((rewr_obj_eq @{thm HOL.not_ex})
+             then_conv (Conv.binder_conv (not_ex_cv o snd) ctxt))
+            ct
+      | _ => Conv.all_conv ct
 
-      (* Given a term t (part of ts), find equivalences between ~t and
-         the given item. Write resulting theorems in t = False form.
+(* Convert theorems of form !!x y. P x y into P ?x ?y (arbitrary
+   number of quantifiers).
+ *)
+fun forall_elim_sch th =
+    let
+      val thy = Thm.theory_of_thm th
+    in
+      case Thm.prop_of th of
+          Const ("Pure.all", _) $ Abs (nm, T, _) =>
+          th |> Thm.forall_elim (cert_thy thy (Var ((nm, 0), T)))
+             |> forall_elim_sch
+        | _ => th
+    end
+
+(* Given a theorem th, return equivalent theorem in disjunctive form,
+   with possible schematic variables. Also return whether th is
+   "active", that is, whether it is originally a conjunctive goal or
+   disjunctive fact, as opposed to implications.
+ *)
+fun analyze_disj_th ctxt th =
+    let
+      val th' = th |> apply_to_thm (Conv.arg_conv (not_ex_cv ctxt))
+                   |> apply_to_thm (to_meta_all_conv ctxt)
+                   |> forall_elim_sch
+      val is_active =
+          case prop_of' th' of
+              Const ("HOL.Not", _) $ (Const ("HOL.conj", _) $ _ $ _) => true
+            | Const ("HOL.disj", _) $ _ $ _ => true
+            | _ => false
+      val disj_th = apply_to_thm (to_disj_cv ctxt) th'
+    in
+      (is_active, disj_th)
+    end
+
+fun disj_intro_gen (name, desc) =
+    prfstep_custom
+        @{theory} name desc [Update.ADD_ITEMS]
+        (fn ((id, _), ths) => fn {ctxt, ...} =>
+            let
+              val (is_active, disj_th) = analyze_disj_th ctxt (the_single ths)
+            in
+              [disj_to_update is_active (id, disj_th)]
+            end)
+
+(* A generic function for disj_update. Input a function f which takes
+   a term t and tries to justify ~t using rtype and item. The output
+   of f is a list of (id', th) pairs, where th is of form ~t.
+ *)
+fun disj_update_gen_fn f items rtype (st as {ctxt, ...}) =
+    let
+      val ((item1 as {id = id1, ...}), item2) = the_pair items
+      val is_active = get_DISJ_is_active (get_ty_str item1)
+      val sval = get_thm item1
+      val thy = Status.theory_of st
+      val tbl = RewriteTable.table_of_rtype rtype
+
+      (* For each t, find rewrites of t to False using rtype and
+         item. Convert to meta_eq and add t == t if necessary.
        *)
       fun get_rewrs t =
-          let
-            val negt = t |> HOLogic.mk_Trueprop |> get_neg'
-            val insts = get_insts [negt] [item] rtype
-            fun process_inst ((id', _), ths) =
-                let
-                  val negt_th = the_single ths
-                  val eq_False_th = if is_neg t then @{thm eq_False'}
-                                    else @{thm eq_False}
-                  val eq_False_cv =
-                      Conv.arg_conv (rewr_obj_eq (obj_sym eq_False_th))
-                  val teqF = (apply_to_thm eq_False_cv negt_th) |> to_meta_eq
-                in
-                  (Status.merge_boxes st (id, id'), teqF)
-                end
-            val all_rewrs = map process_inst insts
+          if has_vars t then []
+          else let
+            val prop = t |> HOLogic.mk_Trueprop
+            val t_th = prop |> assume_thm ctxt
+            fun process_resolve (id', contra_th) =
+                (id', contra_th |> Thm.implies_intr (cert ctxt prop)
+                                |> rewrite_thm_from_contra_form
+                                |> to_eqF_th |> to_meta_eq)
+            val all_rewrs = map process_resolve (f id1 rtype (t_th, item2))
+          in
+            if exists (fn (id', _) => id' = id1) all_rewrs then all_rewrs
+            else (id1, Thm.reflexive (cert ctxt t)) :: all_rewrs
+          end
+
+      val (sval', subs) = dest_disj_subterms thy sval
+      val ac_len = length subs
+      fun no_new_rewrs rewrs = (length rewrs = 1 andalso
+                                Thm.is_reflexive (snd (hd rewrs)))
+      val rewrs_subs = map get_rewrs subs
+    in
+      if forall no_new_rewrs rewrs_subs then [] else
+      (RewriteTable.merge_simp_infos tbl rewrs_subs)
+          |> map (apsnd (fn equivs => Subterms.build_equiv ctxt equivs sval'))
+          |> map (apsnd (apply_to_rhs (ACUtil.rearrange_subterms disj_ac)))
+          |> RewriteTable.reduce_simp_info tbl
+          |> map (apsnd (fn eq_th =>
+                            Thm.equal_elim (make_trueprop_eq eq_th) sval))
+          |> filter (fn (_, th') => length (dest_disj_prop th') < ac_len)
+          |> maps (fn (id, th) => [disj_to_update is_active (id, th),
+                                   Update.ShadowItem {id = id, item = item1}])
+    end
+
+fun disj_update_gen (f, name, filt1, filt2) =
+    let
+      fun pre_filt1 _ {tname, ...} = exists filt1 tname
+      fun filt is_active =
+          [{ty_str = TY_DISJ_of is_active, pre_filt = pre_filt1}, filt2]
+      fun res is_active =
+          {name = name ^ (if is_active then "@active" else ""),
+           filt = filt is_active,
+           res_types = [
+             Update.ADD_ITEMS, Update.RESOLVE_BOX, Update.SHADOW_ITEM],
+           func = disj_update_gen_fn f}
+    in
+      map res [true, false]
+    end
+
+(* A generic function for disj_self_update. Input a function f which
+   takes a term t and tries to justify ~t using rtype. The output of f
+   is a list of (id', th) pairs, where th is of form ~t.
+ *)
+fun disj_self_update_gen_fn f items rtype (st as {ctxt, ...}) =
+    let
+      val (item as {id, ...}) = the_single items
+      val is_active = get_DISJ_is_active (get_ty_str item)
+      val sval = get_thm item
+      val thy = Status.theory_of st
+      val tbl = RewriteTable.table_of_rtype rtype
+
+      (* For each t, find rewrites of t to False using rtype. Convert
+         to meta_eq and add t == t if necessary.
+       *)
+      fun get_rewrs t =
+          if has_vars t then []
+          else let
+            val prop = t |> HOLogic.mk_Trueprop
+            val t_th = prop |> assume_thm ctxt
+            fun process_resolve (id', contra_th) =
+                (id', contra_th |> Thm.implies_intr (cert ctxt prop)
+                                |> rewrite_thm_from_contra_form
+                                |> to_eqF_th |> to_meta_eq)
+            val all_rewrs = map process_resolve (f id rtype t_th)
           in
             if exists (fn (id', _) => id' = id) all_rewrs then all_rewrs
             else (id, Thm.reflexive (cert ctxt t)) :: all_rewrs
           end
 
-      val (sval', subs) = Subterms.dest_subterms thy (prop_of' sval)
+      val (sval', subs) = dest_disj_subterms thy sval
       val ac_len = length subs
+      fun no_new_rewrs rewrs = (length rewrs = 1 andalso
+                                Thm.is_reflexive (snd (hd rewrs)))
+      val rewrs_subs = map get_rewrs subs
     in
-      (map get_rewrs subs)
+      if forall no_new_rewrs rewrs_subs then [] else
+      rewrs_subs
           |> RewriteTable.merge_simp_infos tbl
-          |> map (fn (id, equivs) =>
-                     (id, Subterms.build_equiv ctxt equivs sval'))
+          |> map (apsnd (fn equivs => Subterms.build_equiv ctxt equivs sval'))
           |> map (apsnd (apply_to_rhs (ACUtil.rearrange_subterms disj_ac)))
           |> RewriteTable.reduce_simp_info tbl
-          |> map (fn (id, eq_th) =>
-                     (id, Thm.equal_elim (make_trueprop_eq eq_th) sval))
+          |> map (apsnd (fn eq_th =>
+                            Thm.equal_elim (make_trueprop_eq eq_th) sval))
           |> filter (fn (_, th') => length (dest_disj_prop th') < ac_len)
+          |> maps (fn (id, th) => [disj_to_update is_active (id, th),
+                                   Update.ShadowItem {id = id, item = item}])
     end
 
-fun disj_concl is_active (id, sval) _ =
+fun disj_self_update_gen (f, name, filt) =
     let
-      val ts = dest_disj_prop sval
-      val single_updt =
-          if length ts = 1 then [Update.thm_update (id, sval)] else []
-      val case_updt =
-          if not is_active then []
-          else if length ts = 1 then []
-          else [Update.AddBoxes {
-                   id = id, freevars = [],
-                   assums = [HOLogic.mk_Trueprop (hd ts)],
-                   concls = [], cb = Update.null_callback}]
+      fun pre_filt _ {tname, ...} = exists filt tname
+      fun filt is_active =
+          [{ty_str = TY_DISJ_of is_active, pre_filt = pre_filt}]
+      fun res is_active =
+          {name = name ^ (if is_active then "@active" else ""),
+           filt = filt is_active,
+           res_types = [
+             Update.ADD_ITEMS, Update.RESOLVE_BOX, Update.SHADOW_ITEM],
+           func = disj_self_update_gen_fn f}
     in
-      single_updt @ case_updt
+      map res [true, false]
     end
+
+(* Simplest case: simply match ~th with item. *)
+fun eq_update id rtype (th, item) =
+    let
+      val negt = Thm.prop_of th |> get_neg'
+      val insts = get_insts [ItemIO_Data.univ_matcher] [negt] [item] rtype
+      val {lat, ...} = RewriteTable.table_of_rtype rtype
+      fun process_inst ((id', _), ths) =
+          (BoxID.merge_boxes lat (id, id'),
+           if is_neg (prop_of' th) then
+             [th, the_single ths] MRS @{thm contra_triv}
+           else [the_single ths, th] MRS @{thm contra_triv})
+    in
+      map process_inst insts
+    end
+
+(* Next simplest case: match a term with the largest number of
+   schematic variables with item.
+ *)
+fun match_update_fn items rtype (st as {lat, ctxt, ...}) =
+    let
+      val (item1, item2) = the_pair items
+      val is_active = get_DISJ_is_active (get_ty_str item1)
+      val id = merged_id rtype items
+      val sval = get_thm item1
+      val thy = Status.theory_of st
+      val subs = get_tname item1
+      fun count_var t = length (Term.add_vars t [])
+      val max_nvar = fold (curry Int.max) (map count_var subs) 0
+
+      (* Match the negation of subs[i] with th2. For each match,
+          instantiate in sval all schematic variables in t, so that t
+          becomes ~th2. Then remove t from sval in the instantiated
+          version.
+       *)
+      fun get_matches i =
+          if count_var (nth subs i) < max_nvar then [] else
+          let
+            val t = nth subs i
+            val negt = HOLogic.mk_Trueprop (get_neg t)
+            val insts =
+                get_insts [ItemIO_Data.univ_matcher] [negt] [item2] rtype
+            fun process_inst ((id', inst), ths) =
+                let
+                  val teqF = to_meta_eq (to_eqF_th (the_single ths))
+                  val sval_inst = sval |> subst_thm_thy thy inst
+                  val (sval_inst', subs') = dest_disj_subterms thy sval_inst
+                  val base_equivs = map (Thm.reflexive o cert ctxt) subs'
+                  val equivs = take i base_equivs @ [teqF] @
+                               drop (i+1) base_equivs
+                  val sval_equiv =
+                      (Subterms.build_equiv ctxt equivs sval_inst')
+                          |> apply_to_rhs (ACUtil.rearrange_subterms disj_ac)
+                          |> make_trueprop_eq
+                  val sval_new = Thm.equal_elim sval_equiv sval_inst
+                in
+                  disj_to_update
+                      is_active (BoxID.merge_boxes lat (id, id'), sval_new)
+                end
+          in
+            map process_inst insts
+          end
+    in
+      maps get_matches (0 upto (length subs - 1))
+    end
+
+fun match_update (name, filt, ty_str2) =
+    let
+      fun pre_filt1 _ {tname, ...} = exists filt tname
+      fun filt is_active =
+          [{ty_str = TY_DISJ_of is_active, pre_filt = pre_filt1},
+           {ty_str = ty_str2, pre_filt = no_prereq_fn}]
+      fun res is_active =
+          {name = name ^ (if is_active then "@active" else ""),
+           filt = filt is_active,
+           res_types = [Update.ADD_ITEMS, Update.RESOLVE_BOX],
+           func = match_update_fn}
+    in
+      map res [true, false]
+    end
+
+(* When the disj has one equality term (with schematic variables), use
+   it as a bidirectional rewriting rule.
+ *)
+fun match_rewrite_fn items rtype (st as {tbl, ...}) =
+    let
+      val (item1, item2) = the_pair items
+      val id = merged_id rtype items
+      val sval = get_thm item1
+      val thy = Status.theory_of st
+      val (lhs, rhs) = sval |> prop_of' |> HOLogic.dest_eq
+      fun insts t = (ItemIO_Data.term_match t item2 tbl (id, fo_init))
+                        |> RewriteTable.replace_id_for_type rtype
+      fun inst_to_updt ((id, inst), _) =
+          Update.thm_update thy (id, subst_thm_thy thy inst sval)
+      val lhs_vars = map Var (Term.add_vars lhs [])
+      val rhs_vars = map Var (Term.add_vars rhs [])
+      val match_sides =
+          (if subset (op aconv) (rhs_vars, lhs_vars) then [lhs] else []) @
+          (if subset (op aconv) (lhs_vars, rhs_vars) then [rhs] else [])
+    in
+      map inst_to_updt (maps insts match_sides)
+    end
+
+val match_rewrite =
+    let
+      fun filt1 _ {tname, ...} =
+          length tname = 1 andalso is_eq_term (the_single tname)
+      fun res is_active =
+          {name = "match_rewrite" ^ (if is_active then "@active" else ""),
+           filt = [{ty_str = TY_DISJ_of is_active, pre_filt = filt1},
+                   {ty_str = TY_TERM, pre_filt = no_prereq_fn}],
+           res_types = [Update.ADD_ITEMS],
+           func = match_rewrite_fn}
+    in
+      map res [true, false]
+    end
+
+(* For active case, create box checking the next case. *)
+fun disj_create_case items rtype _ =
+    if not (RewriteTable.is_single_rtype rtype) then [] else
+    if has_vars (prop_of' (get_thm (the_single items))) then [] else
+    let
+      val (item as {id, tname, ...}) = the_single items
+      val _ = assert (get_ty_str item = TY_DISJ_ACTIVE)
+                     "disj_concl_active: wrong type."
+    in
+      if length tname = 1 then []
+      else [Update.AddBoxes {id = id, vars = [],
+                             assums = [HOLogic.mk_Trueprop (hd tname)],
+                             concls = [], cb = Update.null_callback}]
+    end
+val disj_create_case_filt = [{ty_str = TY_DISJ_ACTIVE, pre_filt = no_prereq_fn}]
 
 (* sval1 dominates sval2 if the disjunctive terms in sval1 is a subset
    of that for sval2.
  *)
-fun disj_eq_better sval1 sval2 =
+fun disj_shadow items rtype _ =
+    if not (RewriteTable.is_single_rtype rtype) then [] else
     let
-      val ts1 = prop_of' sval1 |> ACUtil.dest_ac disj_ac
-      val ts2 = prop_of' sval2 |> ACUtil.dest_ac disj_ac
+      val id = merged_id rtype items
     in
-      subset (op aconv) (ts1, ts2)
+      if subset (op aconv) (apply2 get_tname (the_pair items))
+      then [Update.ShadowItem {id = id, item = nth items 1}] else []
     end
+val disj_shadow_filt = replicate 2 {ty_str = TY_DISJ, pre_filt = no_prereq_fn}
+val disj_shadow_active_filt =
+    replicate 2 {ty_str = TY_DISJ_ACTIVE, pre_filt = no_prereq_fn}
+val disj_shadow_mixed_filt = [
+  {ty_str = TY_DISJ_ACTIVE, pre_filt = no_prereq_fn},
+  {ty_str = TY_DISJ, pre_filt = no_prereq_fn}]
 
-fun add_disj_mut_proofsteps thy =
-    thy |> add_prfstep imp_disj_state_intro
-        |> add_mut_update (DISJ_MUT, disj_update)
-        |> add_mut_concl (DISJ_MUT, disj_concl false)
-        |> add_mut_eq_better (DISJ_MUT, disj_eq_better)
-        |> add_prfstep disj_state_intro
-        |> add_prfstep conj_goal_intro
-        |> add_mut_update (DISJ_MUT_ACTIVE, disj_update)
-        |> add_mut_concl (DISJ_MUT_ACTIVE, disj_concl true)
-        |> add_mut_eq_better (DISJ_MUT_ACTIVE, disj_eq_better)
+val add_disj_proofsteps =
+    fold add_prfstep (
+      (* Update proofsteps. *)
+      disj_update_gen (eq_update, "disj_update", K true, ItemIO_Data.univ_filt)
+      @ match_update ("disj_match_update", K true, "") @ match_rewrite @
+
+      (* Introducing proofsteps. *)
+      map disj_intro_gen [
+        ("conj_goal_intro",
+         [WithGoal @{term_pat "?A & ?B"},
+          Filter (canonical_split_filter @{const_name conj} "A" "B")]),
+        ("disj_state_intro",
+         [WithFact @{term_pat "?A | ?B"},
+          Filter (canonical_split_filter @{const_name disj} "A" "B")]),
+        ("imp_disj_state_intro", [WithFact @{term_pat "?A --> ?B"}]),
+        ("forall_fact_intro", [WithFact @{term_pat "!x. ?P x"}]),
+        ("exists_goal_intro", [WithFact @{term_pat "~ (EX x. ?P x)"}])] @
+
+      (* Case creation and shadowing. *)
+      [{name = "disj_create_case", filt = disj_create_case_filt,
+        res_types = [Update.ADD_BOXES], func = disj_create_case},
+       {name = "disj_shadow", filt = disj_shadow_filt,
+        res_types = [Update.SHADOW_ITEM], func = disj_shadow},
+       {name = "disj_shadow_active", filt = disj_shadow_active_filt,
+        res_types = [Update.SHADOW_ITEM], func = disj_shadow},
+       {name = "disj_shadow_mixed", filt = disj_shadow_mixed_filt,
+        res_types = [Update.SHADOW_ITEM], func = disj_shadow}
+
+    ]) #> fold add_fixed_sc (
+      map (rpair 1) [
+        "conj_goal_intro", "disj_state_intro", "imp_disj_state_intro",
+        "forall_fact_intro", "exists_goal_intro",
+        "disj_update", "disj_update@active"
+    ])
 
 end  (* structure Logic_ProofSteps. *)
 
-val _ = Theory.setup Logic_ProofSteps.add_quantifier_proofsteps
-val _ = Theory.setup Logic_ProofSteps.add_disj_mut_proofsteps
+val _ = Theory.setup Logic_ProofSteps.add_logic_proofsteps
+val _ = Theory.setup Logic_ProofSteps.add_disj_proofsteps

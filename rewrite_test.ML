@@ -18,7 +18,7 @@ local
 
   (* Rewriting information. *)
   val thy = @{theory}
-  val thy' = thy |> add_logic_ac_data |> add_arith_ac_data
+  val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
   val ctxt' = Proof_Context.init_global thy'
 
 in
@@ -60,7 +60,6 @@ fun assert_eq_info (info, info') txt tbl =
 fun assert_eq_edges (t1, t2) ids txt tbl =
     let
       val ids' = (equiv_neighs tbl t1)
-                     |> map snd
                      |> map to_term_info
                      |> filter (fn (_, t2') => t2 aconv t2') |> map fst
     in
@@ -105,9 +104,10 @@ fun assert_head_equivs_t t (id, u) info txt tbl =
 (* Check th is actually t(env) == u. *)
 fun check_info (t, u) txt tbl ((_, inst), th) =
     let
-      val t' = Envir.subst_term inst t |> inplace_abstract_over
+      val t' = Envir.subst_term inst t |> Envir.beta_norm
+      val (lhs, rhs) = Logic.dest_equals (Thm.prop_of th)
     in
-      if Thm.prop_of th aconv Logic.mk_equals (t', u) then ()
+      if lhs aconv t' andalso rhs aconv u then ()
       else let
         val thy = theory_of tbl
         val _ = tracing ("inst does not match th.\nt', u' = " ^
@@ -172,7 +172,7 @@ fun assert_num_match_with_id id (t, u) count txt (tbl as {lat, ...}) =
 
 (* Modification functions using terms. *)
 fun add_equiv' id (t1, t2) tbl =
-    add_equiv (id, assume_meta_eq (theory_of tbl) (t1, t2)) false tbl
+    add_equiv (id, assume_meta_eq (theory_of tbl) (t1, t2)) tbl
 fun add_term' t tbl = add_term ([], t) tbl
 
 fun index_reps tbl =
@@ -459,31 +459,6 @@ val test_fo_match_list =
           |> to_string |> prefix "test_fo_match_list -- " |> writeln
     end
 
-(* Matching of equality statements in a list. *)
-val test_fo_match_list2 =
-    let
-      fun err n = "test_fo_match_list2: " ^ (string_of_int n)
-      val pat = @{term_pat "Trueprop (?a = ?a * ?a)"}
-      val pat2 = @{term_pat "Trueprop ((?NUMC1::nat) = ?NUMC2)"}
-      val tbl =
-          init |> add_rewrite [] (@{term "k::nat"}, @{term "(k::nat) * k"})
-               |> add_rewrite [] (@{term "2::nat"}, @{term "1::nat"})
-    in
-      tbl |> (assert_match_list [(false, (pat, @{term "(k::nat) = k * k"}))]
-                                [] (err 0))
-          |> (assert_match_list [(false, (pat, @{term "TERM (k::nat)"}))]
-                                [([], [@{prop "(k::nat) = k * k"}])] (err 1))
-          |> (assert_match_list [(false, (pat, @{term "TERM (k * k)"}))]
-                                [] (err 2))
-          |> (assert_match_list [(false, (pat2, @{term "TERM (2::nat)"}))]
-                                [([], [@{prop "(2::nat) = 2"}]),
-                                 ([], [@{prop "(2::nat) = 1"}])] (err 3))
-          (* There is no 1 = 2 because 1 is constant name but 2 is not. *)
-          |> (assert_match_list [(false, (pat2, @{term "TERM (1::nat)"}))]
-                                [([], [@{prop "(1::nat) = 1"}])] (err 4))
-          |> to_string |> prefix "test_fo_match_list2 -- " |> writeln
-    end
-
 val test_fo_match_diff =
     let
       fun err n = "test_fo_match_diff: " ^ (string_of_int n)
@@ -512,7 +487,7 @@ val test_fo_match_quant =
     let
       fun err n = "test_fo_match_quant: " ^ (string_of_int n)
       val trm = @{term "EX m k. (n::nat) = m * k & 1 < m"}
-      val pat = @{term_pat "EX (x::nat) (y::nat). ?A & ?B"}
+      val pat = @{term_pat "EX (x::nat) (y::nat). ?A x y & ?B x"}
     in
       init |> assert_match (pat, trm) [([], trm)] (err 0)
            |> to_string |> prefix "test_fo_match_quant -- " |> writeln
@@ -525,9 +500,12 @@ val test_fo_match_quant2 =
       val dvd = Const ("Rings.dvd_class.dvd", @{typ "nat => nat => bool"})
       val trm = Abs ("x", @{typ nat},
                      Abs ("x", @{typ nat}, dvd $ (Bound 0) $ (Bound 1)))
-      val pat = @{term_pat "%(x::nat). %(y::nat). ((?a::nat) dvd (?b::nat))"}
+      val pat = @{term_pat
+                      "%(x::nat). %(y::nat). (?a::(nat => nat => bool)) x y"}
+      val pat2 = @{term_pat "%(x::nat). %(y::nat). (?a::(nat => bool)) x"}
     in
       init |> assert_match (pat, trm) [([], trm)] (err 0)
+           |> assert_match (pat2, trm) [] (err 1)
            |> to_string |> prefix "test_fo_match_quant2 -- " |> writeln
     end
 
@@ -557,7 +535,7 @@ val test_fo_match_quant3 =
       fun err n = "test_fo_match_quant3: " ^ (string_of_int n)
       val n = @{term "n::nat"}
       val zero = @{term "0::nat"}
-      val pat = @{term_pat "EX (k::nat). k dvd (0::nat) & ?A"}
+      val pat = @{term_pat "EX (k::nat). k dvd (0::nat) & ?A k"}
       val trm = @{term     "EX (p::nat). p dvd (n::nat) & (prime (p::nat))"}
       val ans = @{term     "EX (p::nat). p dvd (0::nat) & (prime (p::nat))"}
     in
@@ -600,7 +578,7 @@ val test_fo_match_eq =
     let
       fun err n = "test_fo_match_eq: " ^ (string_of_int n)
       val pat = @{term_pat "?A = ?A"}
-      val pat2 = @{term_pat "EX a. ?A = ?A"}
+      val pat2 = @{term_pat "EX a. ?A a = ?A a"}
     in
       init |> add_rewrite [] (@{term "x::nat"}, @{term "y::nat"})
            |> (assert_match (pat, @{term "(x::nat) = y"})
@@ -882,26 +860,6 @@ val test_fo_match_ac11 =
           |> to_string |> prefix "test_fo_match_ac11 -- " |> writeln
     end
 
-val test_fo_match_list3 =
-    let
-      fun err n = "test_fo_match_list3: " ^ (string_of_int n)
-      val tbl = empty ctxt'
-    in
-      tbl |> add_rewrite [] (@{term "p::nat"}, @{term "(p::nat) * q"})
-          |> add_rewrite [] (@{term "q::nat"}, @{term "(p::nat) * q"})
-          |> assert_head_equivs_t (@{term "a*b"}) ([], @{term "(p::nat) * q"})
-          [([], @{term "(p::nat) * p"}), ([], @{term "(p::nat) * p * p"}),
-           ([], @{term "(p::nat) * p * p * p"})] (err 0)
-          |> (assert_match_list
-                  [(false, (@{term_pat "(?n::nat) > 0"},
-                            @{term "0 < (p::nat) * q"})),
-                   (false, (@{term_pat "Trueprop ((?n::nat) = ?m * ?n)"},
-                            @{term "TERM ((p::nat) * q)"}))]
-                  [([], [@{term "0 < (p::nat) * q"},
-                         @{prop "(p::nat) * q = p * (p * q)"}])] (err 1))
-          |> to_string |> prefix "test_fo_match_list3 -- " |> writeln
-    end
-
 val test_fo_match_ac12 =
     let
       fun err n = "test_fo_match_ac12: " ^ (string_of_int n)
@@ -931,26 +889,6 @@ val test_fo_match_ac12 =
           |> to_string |> prefix "test_fo_match_ac12 -- " |> writeln
     end
 
-val test_add_dir_rewrite =
-    let
-      fun err n = "test_add_dir_rewrite: " ^ (string_of_int n)
-      val tbl = empty ctxt' |> map_lat (K lattice)
-      val x = @{term "x::nat"}
-      val y = @{term "y::nat"}
-      val z = @{term "z::nat"}
-    in
-      tbl |> add_simp_rewrite [1] (y, x)
-          |> assert_match (x, y) [([1], x)] (err 0)
-          |> assert_match (y, x) [([1], y)] (err 1)
-          |> assert_head_equivs ([], y) [([], y), ([1], x)] (err 2)
-          |> assert_head_equivs ([], x) [([], x)] (err 3)
-          |> add_rewrite [2] (y, z)
-          |> assert_head_equivs ([], x) [([], x), ([1, 2], y), ([1, 2], z)]
-          (err 4)
-          |> assert_head_equivs ([], y) [([], y), ([1], x), ([2], z)] (err 5)
-          |> to_string |> prefix "test_add_dir_rewrite -- " |> writeln
-    end
-
 val test_const_simp =
     let
       fun err n = "test_const_simp: " ^ (string_of_int n)
@@ -976,9 +914,9 @@ val test_ac_numc =
                     |> add_rewrite [] (@{term "m::nat"}, @{term "3::nat"})
     in
       tbl |> (assert_match
-                  (@{term_pat "TERM ((?NUMC1::nat) + ?NUMC2)"},
-                   @{term "TERM ((m::nat) + m)"})
-                  [([], @{term "TERM ((3::nat) + 3)"})] (err 0))
+                  (@{term_pat "(?NUMC1::nat) + ?NUMC2"},
+                   @{term "(m::nat) + m"})
+                  [([], @{term "(3::nat) + 3"})] (err 0))
           |> to_string |> prefix "test_ac_numc -- " |> writeln
     end
 

@@ -23,7 +23,7 @@ fun aeval :: "aexp \<Rightarrow> nat" where
 | "aeval (APlus m n) = aeval m + aeval n"
 | "aeval (AMinus m n) = aeval m - aeval n"
 | "aeval (AMult m n) = aeval m * aeval n"
-setup {* fold add_simp_rule @{thms aeval.simps} *}
+setup {* fold add_rewrite_rule @{thms aeval.simps} *}
 
 theorem test_aeval1: "aeval (APlus (ANum 2) (ANum 2)) = 4" by auto2
 
@@ -34,7 +34,7 @@ fun beval :: "bexp \<Rightarrow> bool" where
 | "beval (BLe a1 a2) = (aeval a1 \<le> aeval a2)"
 | "beval (BNot b) = (\<not> beval b)"
 | "beval (BAnd b1 b2) = (beval b1 \<and> beval b2)"
-setup {* fold add_simp_rule @{thms beval.simps} *}
+setup {* fold add_rewrite_rule @{thms beval.simps} *}
 
 theorem test_beval1: "beval (BEq (ANum 2) (ANum 3)) = False" by auto2
 

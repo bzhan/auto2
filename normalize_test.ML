@@ -7,17 +7,19 @@ val test_normalize =
       fun err n = "test_normalize: " ^ (string_of_int n)
       fun test n (t, ts) =
           let
-            val th = assume_thm ctxt (HOLogic.mk_Trueprop t)
-            val ths = normalize ctxt th
-            val ts' = map (HOLogic.dest_Trueprop o Thm.prop_of) ths
+            val ritem =
+                thm_to_ritem thy (assume_thm ctxt (HOLogic.mk_Trueprop t))
+            val ritems' = normalize ctxt ritem
+            val ts' = map (HOLogic.dest_Trueprop o Thm.prop_of o get_thm_raw)
+                          ritems'
           in
             if length ts = length ts' andalso eq_set (op aconv) (ts, ts')
             then ()
-            else raise AUTO2CT (err n, map Thm.cprop_of ths)
+            else raise AUTO2CT (err n, map (cert ctxt) ts)
           end
       val _ = test 0 (@{term "A | C | D | B"}, [@{term "A | B | C | D"}])
       val _ = test 1 (@{term "P a = True"}, [@{term "(P a)::bool"}])
-      val _ = test 2 (@{term "P a simp= False"}, [@{term "~ (P a)"}])
+      val _ = test 2 (@{term "P a = False"}, [@{term "~ (P a)"}])
       val _ = test 3 (@{term "A & B & C"},
                       [@{term "A::bool"}, @{term "B::bool"}, @{term "C::bool"}])
       val _ = test 4 (@{term "~ (A | B | C)"},

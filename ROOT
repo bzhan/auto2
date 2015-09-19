@@ -29,3 +29,25 @@ session Hoare = AUTO2 +
     Hoare_Exp
     Hoare_Equiv
     Hoare_Rules
+
+session Imp_Array = AUTO2 +
+  description {*
+    Verification in imperative HOL, arrays.
+  *}
+  theories
+    Imp_Ex_Reverse
+    Imp_Ex_Quicksort
+
+session Imp_LinkedList = RBT +
+  description {*
+    Verification in imperative HOL, linked lists.
+  *}
+  theories
+    Imp_Ex_Linked_Lists
+
+session Imp_BinaryTree = RBT +
+  description {*
+    Verification in imperative HOL, binary trees.
+  *}
+  theories
+    Imp_Ex_Binary_Trees

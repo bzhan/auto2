@@ -5,7 +5,7 @@ local
   open Subterms
 
   val thy = @{theory}
-  val thy' = thy |> add_logic_ac_data |> add_arith_ac_data
+  val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
   val ctxt' = Proof_Context.init_global thy'
 
   val a = @{term "a::nat"}
@@ -22,7 +22,7 @@ val test_dest_subterms =
       fun err n = "test_dest_subterms: " ^ (string_of_int n)
       fun test n (t, t', subs) =
           let
-            val (t'', subs') = dest_subterms thy' t
+            val (t'', subs') = dest_subterms thy' true t
           in
             if t' aconv t'' andalso eq_list (op aconv) (subs, subs') then ()
             else raise AUTO2CT (err n, map (cert_thy thy') (t'' :: subs'))
@@ -75,7 +75,7 @@ val test_get_all_subterms =
       fun err n = "test_get_all_subterms: " ^ (string_of_int n)
       fun test n (t, subs) =
           let
-            val subs' = get_all_subterms thy' t
+            val subs' = get_all_subterms thy' true t
           in
             if eq_list (op aconv) (subs, subs') then ()
             else raise AUTO2CT (err n, map (cert_thy thy') subs')
@@ -85,23 +85,6 @@ val test_get_all_subterms =
       val _ = test 1 (@{term "(a::nat) * (b * c)"},
                       [@{term "(a::nat) * (b * c)"}, a, @{term "(b::nat) * c"},
                        b, c])
-    in () end
-
-val test_map_subterms =
-    let
-      fun err n = "test_map_subterms: " ^ (string_of_int n)
-      fun test n (t, f, t') =
-          let
-            val t'' = map_subterms thy' f t
-          in
-            if t' aconv t'' then ()
-            else raise AUTO2CT (err n, [cert_thy thy' t''])
-          end
-      val _ = test 0 (@{term "(a::nat) * (b * c)"}, (K a),
-                      @{term "(a::nat) * a"})
-      val _ = test 1 (@{term "(a::nat) + (c * b) + (gcd f e) + (h ^ g)"},
-                      rearrange_fast thy',
-                      @{term "(a::nat) + (b * c) + (gcd e f) + (h ^ g)"})
     in () end
 
 val test_build_equiv =

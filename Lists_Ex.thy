@@ -1,225 +1,185 @@
 theory Lists_Ex
-imports Auto2
+imports Auto2 Lists_Thms
 begin
 
-setup {* add_rew_const @{term "[]"} *}
-
-(* Case checking. *)
-setup {* add_gen_prfstep ("list_case_intro",
-  [WithTerm @{term_pat "?x::?'a list"},
-   Filter (unique_free_filter "x"),
-   CreateCase ([@{term_pat "(?x::?'a list) = []"}], [])]) *}
-
-setup {* add_forward_prfstep @{thm list.collapse} *}  (* Case checking after [] case. *)
-setup {* add_resolve_prfstep @{thm list.distinct(2)} *}
-
-(* Definition of append and rev. *)
-setup {* fold add_simp_rule (@{thms List.append.simps} @ @{thms List.rev.simps}) *}
-
-(* Induction. *)
-theorem list_induct': "P [] \<Longrightarrow> (\<forall>l. P (tl l) \<longrightarrow> P l) \<Longrightarrow> P l" by (metis list.sel(3) list_nonempty_induct)
-setup {* add_prfstep_induction @{thm list_induct'} *}
-
-(* Some results on append and rev. *)
-theorem app_simp1: "[x] @ y = x # y" by auto2
-setup {* add_simp_rule @{thm app_simp1} *}
-
-theorem rev_simp1: "rev [x] = [x]" by auto2
-setup {* add_simp_rule @{thm rev_simp1} *}
-
-theorem app_nil2: "x @ [] = x" by auto2
-setup {* add_simp_rule @{thm app_nil2} *}
-
-theorem app_assoc: "(x @ y) @ z = x @ y @ z"
-  by (tactic {* auto2s_tac @{context} (CASE "x = []" THEN INDUCT ("x", [OnFact "x \<noteq> []"])) *})
-setup {* add_rewrite_rule_bidir_cond @{thm app_assoc} (with_conds ["?x ~= []", "?y ~= []", "?z ~= []"]) *}
-
-theorem rev_app: "rev (x @ y) = (rev y) @ (rev x)"
-  by (tactic {* auto2s_tac @{context} (CASE "x = []" THEN INDUCT ("x", [OnFact "x \<noteq> []"])) *})
-setup {* add_rewrite_rule_cond @{thm rev_app} (with_conds ["?x ~= []", "?y ~= []"]) *}
-
-theorem rev_rev: "rev (rev x) = x" by auto2
+section {* Linear time version of rev *}
 
 fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "itrev []       ys = ys" |
   "itrev (x # xs) ys = itrev xs (x # ys)"
-setup {* add_simp_rule @{thm itrev.simps(1)} #> add_rewrite_rule @{thm itrev.simps(2)} *}
+setup {* fold add_rewrite_rule @{thms itrev.simps} *}
 
 lemma itrev_prop: "itrev x y = rev x @ y"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "x = []" THEN INDUCT ("x", [OnFact "x \<noteq> []", Arbitrary "y"])) *})
-setup {* add_simp_rule @{thm itrev_prop} *}
+  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("x", ["y"])) *})
+setup {* add_rewrite_rule @{thm itrev_prop} *}
 
 lemma itrev_eq_rev: "itrev x [] = rev x" by auto2
 
-(* Present function on lists. *)
-fun list_present :: "'a list \<Rightarrow> 'a \<Rightarrow> bool" where
-  "list_present [] x = False"
-| "list_present (y # ya) x = (if x = y then True else list_present ya x)"
+section {* sorted function on lists *}
 
-setup {* fold add_rewrite_rule @{thms list_present.simps} *}
+fun strict_sorted :: "'a::linorder list \<Rightarrow> bool" where
+  "strict_sorted [] = True"
+| "strict_sorted (x # ys) = ((\<forall>y\<in>set ys. x < y) \<and> strict_sorted ys)"
+setup {* fold add_rewrite_rule @{thms strict_sorted.simps} *}
 
-theorem list_present_app: "list_present (l1 @ l2) x = (list_present l1 x \<or> list_present l2 x)"
-  by (tactic {* auto2s_tac @{context} (CASE "l1 = []" THEN INDUCT ("l1", [OnFact "l1 \<noteq> []"])) *})
-setup {* add_rewrite_rule @{thm list_present_app} *}
+theorem strict_sorted_single: "strict_sorted [x]" by auto2
+setup {* add_resolve_prfstep @{thm strict_sorted_single} #>
+  del_prfstep_thm @{thm strict_sorted.simps(2)} #>
+  add_rewrite_rule_cond @{thm strict_sorted.simps(2)} [with_cond "?ys \<noteq> []"] *}
 
-setup {* add_rewrite_rule_back @{thm list_present_app} *}
-theorem list_present_app':
-  "(\<forall>x. list_present (l1 @ l2) x \<longrightarrow> C x) = (\<forall>x. (list_present l1 x \<or> list_present l2 x) \<longrightarrow> C x)" by auto2
-setup {* del_prfstep "list_present_app@sym" *}
+theorem strict_sorted_append:
+  "strict_sorted (xs @ ys) =
+    ((\<forall>x y. x \<in> set xs \<longrightarrow> y \<in> set ys \<longrightarrow> x < y) \<and> strict_sorted xs \<and> strict_sorted ys)"
+  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", [])) *})
+setup {* add_rewrite_rule @{thm strict_sorted_append} *}
 
-setup {* add_prfstep_conv ("list_present_app'",
-  [WithTerm @{term_pat "\<forall>x. list_present (?l1.0 @ ?l2.0) x \<longrightarrow> ?C"}],
-  (rewr_obj_eq @{thm list_present_app'})) *}
+theorem strict_sorted_append_one:
+  "strict_sorted (xs @ [y]) = (\<forall>x\<in>set xs. x < y \<and> strict_sorted xs)" by auto2
 
-theorem list_present1: "list_present [x] y = (x = y)" by auto2
-setup {* add_rewrite_rule @{thm list_present1} *}
+section {* Insertion sort *}
 
-theorem list_present1': "list_present [x] x" by auto2
-setup {* add_prfstep_two_stage ("list_present1'",
-  [WithFact @{term_pat "\<forall>x. list_present [?x::?'a] x \<longrightarrow> ?C"},
-   GetFact (@{term_pat "list_present [?x::?'a] ?x"}, @{thm list_present1'})],
-  @{thm forall_resolve}) *}
+fun ordered_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+  "ordered_insert x [] = [x]"
+| "ordered_insert x (y # ys) = (
+    if x < y then x # (y # ys)
+    else y # ordered_insert x ys)"
+setup {* fold add_rewrite_rule @{thms ordered_insert.simps} *}
 
-(* Sortedness on lists. *)
-fun list_sorted :: "nat list \<Rightarrow> bool" where
-  "list_sorted [] = True"
-| "list_sorted (y # ys) = ((\<forall>x. list_present ys x \<longrightarrow> y < x) \<and> list_sorted ys)"
+theorem ordered_insert_multiset: "multiset_of (ordered_insert x ys) = {#x#} + multiset_of ys" by auto2
+setup {* add_rewrite_rule @{thm ordered_insert_multiset} *}
+theorem ordered_insert_set: "set (ordered_insert x ys) = {x} \<union> set ys" by auto2
+setup {* add_rewrite_rule @{thm ordered_insert_set} *}
 
-setup {* fold add_rewrite_rule @{thms list_sorted.simps} *}
+theorem ordered_insert_sorted: "sorted ys \<Longrightarrow> sorted (ordered_insert x ys)" by auto2
+setup {* add_backward_prfstep @{thm ordered_insert_sorted} *}
 
-theorem list_sorted1: "list_sorted [x]" by auto2
-setup {* add_known_fact @{thm list_sorted1} *}
+section {* Deleting an element *}
 
-definition elt_less_list :: "nat \<Rightarrow> nat list \<Rightarrow> bool" (infix "<<" 60) where
-  "elt_less_list y ys = (\<forall>x. list_present ys x \<longrightarrow> y < x)"
-definition elt_greater_list :: "nat \<Rightarrow> nat list \<Rightarrow> bool" (infix ">>" 60) where
-  "elt_greater_list y ys = (\<forall>x. list_present ys x \<longrightarrow> x < y)"
-definition list_less :: "nat list \<Rightarrow> nat list \<Rightarrow> bool" (infix "<<<" 60) where
-  "list_less xs ys = (\<forall>x y. list_present xs x \<and> list_present ys y \<longrightarrow> x < y)"
+fun remove_elt_list :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+  "remove_elt_list x [] = []"
+| "remove_elt_list x (y # ys) = (if y = x then remove_elt_list x ys else y # remove_elt_list x ys)"
+setup {* fold add_rewrite_rule @{thms remove_elt_list.simps} *}
 
-setup {* fold add_rewrite_rule
-  [@{thm list_less_def}, @{thm elt_less_list_def}, @{thm elt_greater_list_def}] *}
+theorem remove_elt_list_correct: "set (remove_elt_list x ys) = set ys - {x}" by auto2
+setup {* add_rewrite_rule @{thm remove_elt_list_correct} *}
 
-theorem list_less_trans: "y >> xs \<Longrightarrow> y << zs \<Longrightarrow> xs <<< zs" by auto2
-setup {* add_forward_prfstep @{thm list_less_trans} *}
+theorem remove_elt_list_sorted: "sorted ys \<Longrightarrow> sorted (remove_elt_list x ys)" by auto2
+theorem remove_elt_list_strict_sorted: "strict_sorted ys \<Longrightarrow> strict_sorted (remove_elt_list x ys)" by auto2
+setup {* fold add_backward_prfstep [@{thm remove_elt_list_sorted}, @{thm remove_elt_list_strict_sorted}] *}
 
-theorem list_less_simp1: "([x] <<< ys) = (x << ys)" by auto2
-theorem list_less_simp2: "(ys <<< [x]) = (x >> ys)" by auto2
-theorem list_less_empty: "[] <<< ys" by auto2
-setup {* fold add_rewrite_rule [@{thm list_less_simp1}, @{thm list_less_simp2}] *}
-setup {* add_known_fact @{thm list_less_empty} *}
+section {* Merge sort *}
 
-theorem list_less_distrib1: "(x << (ys @ zs)) = (x << ys \<and> x << zs)" by auto2
-theorem list_less_distrib2: "(xs @ ys) <<< zs = (xs <<< zs \<and> ys <<< zs)" by auto2
-theorem list_less_distrib3: "xs <<< (ys @ zs) = (xs <<< ys \<and> xs <<< zs)" by auto2
-setup {* fold add_rewrite_rule
-  [@{thm list_less_distrib1}, @{thm list_less_distrib2}, @{thm list_less_distrib3}] *}
+fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+  "merge_list xs [] = xs"
+| "merge_list [] ys = ys"
+| "merge_list (x # xs) (y # ys) = (
+    if x \<le> y then x # (merge_list xs (y # ys))
+    else y # (merge_list (x # xs) ys))"
+setup {* fold add_rewrite_rule @{thms merge_list.simps} *}
+theorem merge_list_simp2': "merge_list [] ys = ys" by auto2
+setup {* del_prfstep_thm @{thm merge_list.simps(2)} #> add_rewrite_rule @{thm merge_list_simp2'} *}
 
-theorem list_less_distrib4: "(x # ys) <<< zs = (x << zs \<and> ys <<< zs)"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "x # ys = [x] @ ys") *})
-setup {* add_rewrite_rule @{thm list_less_distrib4} *}
+theorem merge_list_correct: "set (merge_list xs ys) = set xs \<union> set ys"
+  by (tactic {* auto2s_tac @{context} (LIST_DOUBLE_INDUCT ("xs", "ys", [])) *})
+setup {* add_rewrite_rule @{thm merge_list_correct} *}
 
-setup {* del_prfstep_thm @{thm list_less_def} *}
+theorem merge_list_sorted: "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> sorted (merge_list xs ys)"
+  by (tactic {* auto2s_tac @{context} (LIST_DOUBLE_INDUCT ("xs", "ys", [])) *})
+setup {* add_backward2_prfstep @{thm merge_list_sorted} *}
 
-theorem sorted_dom': "list_sorted (x # xs) = ((x << xs) \<and> list_sorted xs)" by auto2
-setup {* add_rewrite_rule @{thm sorted_dom'} *}
+section {* Definition and setup for trees *}
 
-theorem sorted_dom: "list_sorted (xs @ ys) = (xs <<< ys \<and> list_sorted xs \<and> list_sorted ys)"
-  by (tactic {* auto2s_tac @{context} (CASE "xs = []" THEN INDUCT ("xs", [OnFact "xs \<noteq> []"])) *})
-setup {* add_rewrite_rule_cond @{thm sorted_dom} [with_cond "?xs \<noteq> ?xs1 @ ?xs2"] *}
-
-theorem sorted_dom2: "list_sorted (xs @ [y]) = ((y >> xs) \<and> list_sorted xs)" by auto2
-
-(* Definition of trees. *)
 datatype 'a tree =
     Tip
   | Node (lsub: "'a tree") (nval: 'a) (rsub: "'a tree")
 
 setup {* add_rew_const @{term "Tip"} *}
+setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
+setup {* add_forward_prfstep (equiv_forward_th (@{thm tree.simps(1)})) *}
+theorem if_not_Tip: "(if Node l v r = Tip then a else b) = b" by simp
+setup {* add_rewrite_rule @{thm if_not_Tip} *}
+
+text {* Case checking for trees: first verify the Tip case, then can assume t is
+  in the form Node l n r. *}
 
 setup {* add_gen_prfstep ("tree_case_intro",
   [WithTerm @{term_pat "?t::?'a tree"},
    Filter (unique_free_filter "t"),
    CreateCase ([@{term_pat "(?t::?'a tree) = Tip"}], [])]) *}
+setup {* add_forward_prfstep_cond @{thm tree.collapse} [with_cond "?tree \<noteq> Node ?l ?v ?r"] *}
 
-setup {* add_forward_prfstep @{thm tree.collapse} *}  (* Case checking after Tip case. *)
-setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
+text {* Induction on trees: after checking Tip case, can assume P (lsub t)
+  and P (rsub t) holds when trying to prove P t. *}
 
-theorem if_not_Tip: "(if Node l v r = Tip then a else b) = b" by simp
-setup {* add_simp_rule @{thm if_not_Tip} *}
-
-(* Induction on trees. *)
 theorem tree_induct': "P Tip \<Longrightarrow> (\<forall>t. P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
   apply (induction t) apply blast by (metis tree.sel(1) tree.sel(3))
 setup {* add_prfstep_induction @{thm tree_induct'} *}
 
-(* mirror function. *)
-fun mirror :: "'a tree \<Rightarrow> 'a tree" where
-  "mirror Tip = Tip" |
-  "mirror (Node l a r) = Node (mirror r) a (mirror l)"
+ML {*
+fun TREE_INDUCT (var, extra_vars) =
+  CASE (var ^ " = Tip") THEN INDUCT (var, (OnFact (var ^ " \<noteq> Tip") :: Arbitraries extra_vars))
+fun TREE_INDUCT_NEWVAR (exp, var, extra_vars) =
+  CASE (exp ^ " = Tip") THEN
+  INDUCT (var ^ " = " ^ exp, (OnFact (exp ^ " \<noteq> Tip") :: Arbitraries extra_vars))
+*}
 
-setup {* fold add_rewrite_rule @{thms mirror.simps} *}
+section {* Inorder traversal, and set of elements of a tree *}
 
-lemma "mirror (mirror (t::nat tree)) = t" by auto2
-
-(* Inorder traversal, and present function on trees. *)
 fun in_traverse :: "'a tree \<Rightarrow> 'a list" where
   "in_traverse Tip = []"
 | "in_traverse (Node l a r) = (in_traverse l) @ [a] @ (in_traverse r)"
 
-fun tree_present :: "nat tree \<Rightarrow> nat \<Rightarrow> bool" where
-  "tree_present Tip x = False"
-| "tree_present (Node l y r) x = (tree_present l x \<or> x = y \<or> tree_present r x)"
+fun tree_set :: "'a tree \<Rightarrow> 'a set" where
+  "tree_set Tip = {}"
+| "tree_set (Node l y r) = {y} \<union> tree_set l \<union> tree_set r"
+setup {* fold add_rewrite_rule (@{thms in_traverse.simps} @ @{thms tree_set.simps}) *}
 
-setup {* fold add_rewrite_rule (@{thms in_traverse.simps} @ @{thms tree_present.simps}) *}
+theorem in_traverse_non_empty: "t \<noteq> Tip \<Longrightarrow> in_traverse t \<noteq> []" by auto2
+setup {* add_forward_prfstep_cond @{thm in_traverse_non_empty} [with_term "in_traverse ?t"] *}
 
-theorem inorder_prop: "list_present (in_traverse t) x = tree_present t x" by auto2
-theorem inorder_prop': "(\<forall>x. list_present (in_traverse t) x \<longrightarrow> C x) = (\<forall>x. tree_present t x \<longrightarrow> C x)"
-  by (simp add: inorder_prop)
-setup {* add_prfstep_conv ("inorder_prop'",
-  [WithTerm @{term_pat "\<forall>x. list_present (in_traverse ?t) x \<longrightarrow> ?C"}],
-  (rewr_obj_eq @{thm inorder_prop'})) *}
+theorem inorder_preserve_set: "set (in_traverse t) = tree_set t" by auto2
+setup {* add_rewrite_rule_bidir @{thm inorder_preserve_set} *}
 
-(* Sortedness on trees. *)
-fun tree_sorted :: "nat tree \<Rightarrow> bool" where
+section {* Sortedness on trees *}
+
+fun tree_sorted :: "'a::linorder tree \<Rightarrow> bool" where
   "tree_sorted Tip = True"
-| "tree_sorted (Node l a r) = ((\<forall>x. tree_present l x \<longrightarrow> x < a) \<and> (\<forall>x. tree_present r x \<longrightarrow> a < x)
+| "tree_sorted (Node l a r) = ((\<forall>x\<in>tree_set l. x < a) \<and> (\<forall>x\<in>tree_set r. a < x)
                               \<and> tree_sorted l \<and> tree_sorted r)"
-
 setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
 
-theorem inorder_sorted: "list_sorted (in_traverse t) = tree_sorted t" by auto2
+theorem inorder_sorted: "strict_sorted (in_traverse t) = tree_sorted t" by auto2
 setup {* add_rewrite_rule_bidir @{thm inorder_sorted} *}
 
-(* Rotate function. *)
-abbreviation LL :: "'a tree \<Rightarrow> 'a tree" where "LL t \<equiv> lsub (lsub t)"
-abbreviation LR :: "'a tree \<Rightarrow> 'a tree" where "LR t \<equiv> rsub (lsub t)"
-abbreviation RL :: "'a tree \<Rightarrow> 'a tree" where "RL t \<equiv> lsub (rsub t)"
-abbreviation RR :: "'a tree \<Rightarrow> 'a tree" where "RR t \<equiv> rsub (rsub t)"
-abbreviation LV :: "'a tree \<Rightarrow> 'a" where "LV t \<equiv> nval (lsub t)"
-abbreviation RV :: "'a tree \<Rightarrow> 'a" where "RV t \<equiv> nval (rsub t)"
+section {* Rotation on trees *}
 
-definition rotateL :: "'a tree \<Rightarrow> 'a tree" where
-  "rotateL t = (if t = Tip then t else if rsub t = Tip then t
-                else Node (Node (lsub t) (nval t) (RL t)) (RV t) (RR t))"
-definition rotateR :: "'a tree \<Rightarrow> 'a tree" where
-  "rotateR t = (if t = Tip then t else if lsub t = Tip then t
-                else Node (LL t) (LV t) (Node (LR t) (nval t) (rsub t)))"
+fun rotateL :: "'a tree \<Rightarrow> 'a tree" where
+  "rotateL Tip = Tip"
+| "rotateL (Node a x Tip) = Node a x Tip"
+| "rotateL (Node a x (Node b y c)) = Node (Node a x b) y c"
 
-setup {*
-  add_rewrite_rule_cond @{thm rotateL_def} (with_conds ["?t \<noteq> lsub ?s", "?t \<noteq> rsub ?s"]) #>
-  add_rewrite_rule_cond @{thm rotateR_def} (with_conds ["?t \<noteq> lsub ?s", "?t \<noteq> rsub ?s"]) *}
+fun rotateR :: "'a tree \<Rightarrow> 'a tree" where
+  "rotateR Tip = Tip"
+| "rotateR (Node Tip x a) = Node Tip x a"
+| "rotateR (Node (Node a x b) y c) = Node a x (Node b y c)"
+setup {* fold add_rewrite_rule (@{thms rotateL.simps} @ @{thms rotateR.simps}) *}
 
-theorem rotateL_in_trav: "in_traverse (rotateL t) = in_traverse t" by auto2
-theorem rotateR_in_trav: "in_traverse (rotateR t) = in_traverse t" by auto2
+ML {* val rotateL_cases = CASE "t = Tip" THEN CASE "rsub t = Tip"
+      val rotateR_cases = CASE "t = Tip" THEN CASE "lsub t = Tip" *}
+
+theorem rotateL_in_trav: "in_traverse (rotateL t) = in_traverse t"
+  by (tactic {* auto2s_tac @{context} rotateL_cases *})
+theorem rotateR_in_trav: "in_traverse (rotateR t) = in_traverse t"
+  by (tactic {* auto2s_tac @{context} rotateR_cases *})
 setup {* fold add_rewrite_rule [@{thm rotateL_in_trav}, @{thm rotateR_in_trav}] *}
 
 theorem rotateL_sorted: "tree_sorted (rotateL t) = tree_sorted t" by auto2
 theorem rotateR_sorted: "tree_sorted (rotateR t) = tree_sorted t" by auto2
+setup {* fold add_rewrite_rule [@{thm rotateL_sorted}, @{thm rotateR_sorted}] *}
 
-(* Search on sorted trees. *)
-fun tree_search :: "nat tree \<Rightarrow> nat \<Rightarrow> bool" where
+section {* Search on sorted trees *}
+
+fun tree_search :: "'a::ord tree \<Rightarrow> 'a \<Rightarrow> bool" where
   "tree_search Tip x = False"
 | "tree_search (Node l y r) x =
   (if x = y then True
@@ -227,10 +187,11 @@ fun tree_search :: "nat tree \<Rightarrow> nat \<Rightarrow> bool" where
    else tree_search r x)"
 setup {* fold add_rewrite_rule @{thms tree_search.simps} *}
 
-theorem tree_search_correct: "tree_sorted t \<Longrightarrow> (tree_search t x = tree_present t x)" by auto2
+theorem tree_search_correct: "tree_sorted t \<Longrightarrow> (tree_search t x \<longleftrightarrow> x \<in> tree_set t)" by auto2
 
-(* Insertion on trees. *)
-fun tree_insert :: "nat \<Rightarrow> nat tree \<Rightarrow> nat tree" where
+section {* Insertion on trees *}
+
+fun tree_insert :: "'a::ord \<Rightarrow> 'a tree \<Rightarrow> 'a tree" where
   "tree_insert x Tip = Node Tip x Tip"
 | "tree_insert x (Node l y r) =
     (if x = y then Node l y r
@@ -238,16 +199,60 @@ fun tree_insert :: "nat \<Rightarrow> nat tree \<Rightarrow> nat tree" where
      else Node l y (tree_insert x r))"
 setup {* fold add_rewrite_rule @{thms tree_insert.simps} *}
 
-theorem insert_present: "tree_present (tree_insert x t) y = (x = y \<or> tree_present t y)" by auto2
+theorem insert_present: "tree_set (tree_insert x t) = {x} \<union> tree_set t" by auto2
 setup {* add_rewrite_rule @{thm insert_present} *}
 
-theorem insert_sorted: "tree_sorted t \<Longrightarrow> tree_sorted (tree_insert x t)"
-  by (tactic {* auto2s_tac @{context}
-    (CASE "t = Tip" THEN CASE "x = nval t" THEN CASE "x < nval t") *})
+theorem insert_sorted: "tree_sorted t \<Longrightarrow> tree_sorted (tree_insert x t)" by auto2
+setup {* add_backward_prfstep @{thm insert_sorted} *}
 
-(* More on rotation functions, to be used in rbt. *)
-theorem rotateL_def': "rotateL (Node a x (Node b y c)) = Node (Node a x b) y c" by (simp add: rotateL_def)
-theorem rotateR_def': "rotateR (Node (Node a x b) y c) = Node a x (Node b y c)" by (simp add: rotateR_def)
+section {* Deletion on trees *}
+
+fun min_tree :: "'a tree \<Rightarrow> 'a" where
+  "min_tree Tip = undefined"
+| "min_tree (Node Tip y rt) = y"
+| "min_tree (Node lt y rt) = min_tree lt"
+setup {* fold add_rewrite_rule @{thms min_tree.simps(2-3)} *}
+
+theorem min_tree_is_hd: "t \<noteq> Tip \<Longrightarrow> min_tree t = hd (in_traverse t)"
+  by (tactic {* auto2s_tac @{context} (CASE "lsub t = Tip") *})
+setup {* add_rewrite_rule @{thm min_tree_is_hd} *}
+
+fun delete_min_tree :: "'a tree \<Rightarrow> 'a tree" where
+  "delete_min_tree Tip = undefined"
+| "delete_min_tree (Node Tip y rt) = rt"
+| "delete_min_tree (Node lt y rt) = Node (delete_min_tree lt) y rt"
+setup {* fold add_rewrite_rule @{thms delete_min_tree.simps(2-3)} *}
+
+theorem delete_min_del_hd: "t \<noteq> Tip \<Longrightarrow> in_traverse (delete_min_tree t) = tl (in_traverse t)"
+  by (tactic {* auto2s_tac @{context} (CASE "lsub t = Tip") *})
+setup {* add_rewrite_rule @{thm delete_min_del_hd} *}
+
+fun delete_elt_tree :: "'a tree \<Rightarrow> 'a tree" where
+  "delete_elt_tree Tip = undefined"
+| "delete_elt_tree (Node Tip v rt) = rt"
+| "delete_elt_tree (Node lt v Tip) = lt"
+| "delete_elt_tree (Node lt v rt) = Node lt (min_tree rt) (delete_min_tree rt)"
+setup {* fold add_rewrite_rule @{thms delete_elt_tree.simps(2-4)} *}
+
+theorem delete_elt_in_traverse:
+  "in_traverse (delete_elt_tree (Node lt v rt)) = in_traverse lt @ in_traverse rt"
+  by (tactic {* auto2s_tac @{context} (CASE "lt = Tip" THEN CASE "rt = Tip") *})
+setup {* add_rewrite_rule @{thm delete_elt_in_traverse} *}
+
+theorem delete_elt_on_set:
+  "tree_sorted (Node lt v rt) \<Longrightarrow> tree_set (delete_elt_tree (Node lt v rt)) = tree_set (Node lt v rt) - {v}"
+  by (tactic {* auto2s_tac @{context}
+    (OBTAIN "tree_set (delete_elt_tree (Node lt v rt)) = tree_set lt \<union> tree_set rt" THEN
+     OBTAIN "v \<notin> tree_set lt \<union> tree_set rt" WITH OBTAIN "v \<notin> tree_set lt") *})
+setup {* add_rewrite_rule @{thm delete_elt_on_set} *}
+
+theorem delete_elt_sorted:
+  "tree_sorted (Node lt v rt) \<Longrightarrow> tree_sorted (delete_elt_tree (Node lt v rt))" by auto2
+setup {* add_backward_prfstep @{thm delete_elt_sorted} *}
+
+setup {* del_prfstep_thm @{thm min_tree_is_hd} *}
+
+section {* More on rotation functions, to be used in RBT_Ex *}
 
 fun rotateL_at_L :: "'a tree \<Rightarrow> 'a tree" where
   "rotateL_at_L Tip = Tip"
@@ -256,12 +261,10 @@ fun rotateL_at_L :: "'a tree \<Rightarrow> 'a tree" where
 fun rotateR_at_R :: "'a tree \<Rightarrow> 'a tree" where
   "rotateR_at_R Tip = Tip"
 | "rotateR_at_R (Node l a r) = Node l a (rotateR r)"
+setup {* fold add_rewrite_rule (@{thms rotateL_at_L.simps} @ @{thms rotateR_at_R.simps}) *}
 
-setup {* fold add_rewrite_rule
-  ([@{thm rotateL_def'}, @{thm rotateR_def'}] @ @{thms rotateL_at_L.simps} @ @{thms rotateR_at_R.simps}) *}
-
-theorem rotateL_at_L_def': "rotateL_at_L (Node (Node a z (Node b y c)) x d) = Node (Node (Node a z b) y c) x d" by (simp add: rotateL_def)
-theorem rotateR_at_R_def': "rotateR_at_R (Node a x (Node (Node b y c) z d)) = Node a x (Node b y (Node c z d))" by (simp add: rotateR_def)
+theorem rotateL_at_L_def': "rotateL_at_L (Node (Node a z (Node b y c)) x d) = Node (Node (Node a z b) y c) x d" by auto2
+theorem rotateR_at_R_def': "rotateR_at_R (Node a x (Node (Node b y c) z d)) = Node a x (Node b y (Node c z d))" by auto2
 setup {* fold add_rewrite_rule [@{thm rotateL_at_L_def'}, @{thm rotateR_at_R_def'}] *}
 
 theorem rotateL_at_L_sorted: "tree_sorted (rotateL_at_L t) = tree_sorted t" by auto2
@@ -269,5 +272,8 @@ theorem rotateR_at_R_sorted: "tree_sorted (rotateR_at_R t) = tree_sorted t" by a
 
 setup {* fold add_rewrite_rule
   [@{thm rotateL_sorted}, @{thm rotateR_sorted}, @{thm rotateL_at_L_sorted}, @{thm rotateR_at_R_sorted}] *}
+
+(* Forbid the introduction of in_traverse in future proofs. *)
+setup {* fold del_prfstep ["inorder_preserve_set@sym", "inorder_sorted@sym"] *}
 
 end
