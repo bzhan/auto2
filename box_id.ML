@@ -17,6 +17,8 @@ sig
   val get_parent_at_i: box_lattice -> box_id -> int -> box_id
   val merge_boxes: box_lattice -> box_id * box_id -> box_id
   val get_all_merges: box_lattice -> box_id list list -> box_id list
+  val get_all_merges_info:
+      box_lattice -> (box_id * 'a) list list -> (box_id * 'a list) list
   val is_eq_ancestor: box_lattice -> box_id -> box_id -> bool
   val is_eq_descendent: box_lattice -> box_id -> box_id -> bool
   val is_ancestor: box_lattice -> box_id -> box_id -> bool
@@ -134,6 +136,20 @@ fun get_all_merges lat id_lsts =
       fold merge2 id_lsts [[]]
     end
 
+(* Given a list a_p, where each a_p is a list of entries b_{pq}, where
+   each entry is of the form (id_{pq}, x_{pq}), return all ways of
+   choosing one entry b_{pq} from each a_p, combining them by merging
+   id_{pq} and putting x_{pq} into a list.
+ *)
+fun get_all_merges_info lat lsts =
+    let
+      fun merge (id1, x) (id2, xs) = (merge_boxes lat (id1, id2), x :: xs)
+      fun merge2 (lst1, lst2) =
+          maps (fn i2 => map (fn i1 => merge i1 i2) lst1) lst2
+    in
+      Library.foldr merge2 (lsts, [([], [])])
+    end
+
 (* Returns whether id is an ancestor / descendent of id'. *)
 fun is_eq_ancestor lat id id' = (id' = merge_boxes lat (id, id'))
 fun is_eq_descendent lat id id' = (id = merge_boxes lat (id, id'))
@@ -162,4 +178,8 @@ fun add_resolved id (lat as {parents, focus, resolved}) =
 
 end  (* structure BoxID *)
 
+type box_id = BoxID.box_id
+type id_inst = box_id * (Type.tyenv * Envir.tenv)
+type id_inst_th = id_inst * thm
+type id_inst_ths = id_inst * thm list
 structure Boxidtab = Table (type key = BoxID.box_id val ord = list_ord int_ord)

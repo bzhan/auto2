@@ -1,5 +1,5 @@
 theory Hoare_Exp
-imports Auto2
+imports "../Auto2"
 begin
 
 datatype aexp =
@@ -49,7 +49,7 @@ setup {* fold add_backward2_prfstep
 setup {* add_prfstep_prop_induction @{thm aevalR.induct} *}
 
 theorem test_aevalR1: "(APlus (ANum 2) (ANum 2)) \<Down> 4"
-by (metis aeval.simps(1) aeval.simps(2) aevalR.intros(1) aevalR.intros(2) test_aeval1)
+  by (metis aeval.simps(1) aeval.simps(2) aevalR.intros(1) aevalR.intros(2) test_aeval1)
 
 inductive bevalR :: "bexp \<Rightarrow> bool \<Rightarrow> bool" where
   "bevalR BTrue True"
@@ -65,25 +65,23 @@ setup {* fold add_backward_prfstep [@{thm bevalR_intros1'}, @{thm bevalR_intros2
 setup {* fold add_backward2_prfstep [@{thm bevalR.intros(3)}, @{thm bevalR.intros(4)}, @{thm bevalR.intros(6)}] *}
 
 theorem test_bevalR1: "bevalR (BEq (ANum 2) (ANum 3)) False"
-by (metis (full_types) aevalR.intros(1) bevalR.intros(3) numeral_eq_iff semiring_norm(88))
+  by (metis (full_types) aevalR.intros(1) bevalR.intros(3) numeral_eq_iff semiring_norm(88))
 
 setup {* add_prfstep_var_induction @{thm aexp.induct} *}
 setup {* add_prfstep_var_induction @{thm bexp.induct} *}
 
 (* Equivalence of definitions. *)
-theorem aevalR_to_aeval: "a \<Down> n \<Longrightarrow> aeval a = n" by auto2
+theorem aevalR_to_aeval [forward]: "a \<Down> n \<Longrightarrow> aeval a = n" by auto2
 theorem aeval_to_aevalR: "aeval a = n \<Longrightarrow> a \<Down> n"
   by (tactic {* auto2s_tac @{context} (VAR_INDUCT ("a", [Arbitrary "n"])) *})
 theorem aeval_to_aevalR': "a \<Down> aeval a" by (simp add: aeval_to_aevalR)
-setup {* add_forward_prfstep @{thm aevalR_to_aeval} *}
 setup {* add_forward_prfstep_cond @{thm aeval_to_aevalR'} [with_term "aeval ?a"] *}
 theorem aeval_iff_aevalR: "a \<Down> n \<longleftrightarrow> aeval a = n" by auto2
 
-theorem bevalR_to_beval: "bevalR b v \<Longrightarrow> (beval b = v)" by auto2
+theorem bevalR_to_beval [forward]: "bevalR b v \<Longrightarrow> (beval b = v)" by auto2
 theorem beval_to_bevalR: "(beval b = v) \<Longrightarrow> bevalR b v"
   by (tactic {* auto2s_tac @{context} (VAR_INDUCT ("b", [Arbitrary "v"])) *})
 theorem beval_to_bevalR': "bevalR b (beval b)" by (simp add: beval_to_bevalR)
-setup {* add_forward_prfstep @{thm bevalR_to_beval} *}
 setup {* add_forward_prfstep_cond @{thm beval_to_bevalR'} [with_term "beval ?b"] *}
 theorem beval_iff_bevalR: "bevalR b v \<longleftrightarrow> (beval b = v)" by auto2
 

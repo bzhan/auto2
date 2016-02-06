@@ -11,7 +11,6 @@ definition bequiv :: "bexp \<Rightarrow> bexp \<Rightarrow> bool" where
 definition cequiv :: "com \<Rightarrow> com \<Rightarrow> bool" where
   "cequiv c1 c2 = (\<forall>st st'. ceval c1 st st' \<longleftrightarrow> ceval c2 st st')"
 
-setup {* add_rewrite_rule @{thm Nat.diff_self_eq_0} *}
 setup {* fold add_rewrite_rule [@{thm aequiv_def}, @{thm bequiv_def}, @{thm cequiv_def}] *}
 theorem aequiv_example: "aequiv (AMinus (AId X) (AId X)) (ANum 0)" by auto2
 theorem bequiv_example: "bequiv (BEq (AMinus (AId X) (AId X)) (ANum 0)) BTrue" by auto2
@@ -36,12 +35,11 @@ theorem refl_aequiv: "aequiv a a" by auto2
 theorem sym_aequiv: "aequiv a1 a2 \<Longrightarrow> aequiv a2 a1" by auto2
 theorem trans_aequiv: "aequiv a1 a2 \<Longrightarrow> aequiv a2 a3 \<Longrightarrow> aequiv a1 a3" by auto2
 theorem refl_bequiv: "bequiv b b" by auto2
-theorem sym_bequiv: "bequiv b1 b2 \<Longrightarrow> bequiv b2 b1" by auto2
+theorem sym_bequiv [backward]: "bequiv b1 b2 \<Longrightarrow> bequiv b2 b1" by auto2
 theorem trans_bequiv: "bequiv b1 b2 \<Longrightarrow> bequiv b2 b3 \<Longrightarrow> bequiv b1 b3" by auto2
 theorem refl_cequiv: "cequiv c c" by auto2
-theorem sym_cequiv: "cequiv c1 c2 \<Longrightarrow> cequiv c2 c1" by auto2
+theorem sym_cequiv [backward]: "cequiv c1 c2 \<Longrightarrow> cequiv c2 c1" by auto2
 theorem trans_equiv: "cequiv c1 c2 \<Longrightarrow> cequiv c2 c3 \<Longrightarrow> cequiv c1 c3" by auto2
-setup {* fold add_backward_prfstep [@{thm sym_bequiv}, @{thm sym_cequiv}] *}
 
 (* Behavior equivalence is a congruence. *)
 theorem assign_cong: "aequiv a a' \<Longrightarrow> cequiv (x := a) (x := a')" by auto2
@@ -49,9 +47,8 @@ theorem seq_cong: "cequiv c1 c1' \<Longrightarrow> cequiv c2 c2' \<Longrightarro
 theorem if_cong: "bequiv b b' \<Longrightarrow> cequiv c1 c1' \<Longrightarrow> cequiv c2 c2' \<Longrightarrow>
   cequiv (IF b THEN c1 ELSE c2 FI) (IF b' THEN c1' ELSE c2' FI)" by auto2
 
-theorem while_cong1: "bequiv b b' \<and> cequiv c c' \<Longrightarrow> ceval (WHILE b DO c OD) st st' \<Longrightarrow> ceval (WHILE b' DO c' OD) st st'"
+theorem while_cong1 [backward1]: "bequiv b b' \<and> cequiv c c' \<Longrightarrow> ceval (WHILE b DO c OD) st st' \<Longrightarrow> ceval (WHILE b' DO c' OD) st st'"
   by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("ceval (WHILE b DO c OD) st st'", [])) *})
-setup {* add_backward1_prfstep @{thm while_cong1} *}
 theorem while_cong: "bequiv b b' \<Longrightarrow> cequiv c c' \<Longrightarrow> cequiv (WHILE b DO c OD) (WHILE b' DO c' OD)" by auto2
 setup {* del_prfstep_thm @{thm while_cong1} *}
 

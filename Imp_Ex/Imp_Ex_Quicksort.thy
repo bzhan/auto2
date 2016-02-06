@@ -2,7 +2,7 @@ theory Imp_Ex_Quicksort
 imports Imp_Thms
 begin
 
-fun swap :: "'a\<Colon>heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+fun swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "swap a i j = do {
      x \<leftarrow> Array.nth a i;
      y \<leftarrow> Array.nth a j;
@@ -26,15 +26,12 @@ by pat_completeness auto termination by (relation "measure (\<lambda>(_,l,r,_). 
 
 (* Properties of swap. *)
 setup {* add_rewrite_rule @{thm swap.simps} *}
-lemma swap_pointwise: "effect (swap a i j) h h' r \<Longrightarrow>
-  Array.get h' a ! k = (if k = i then Array.get h a ! j else if k = j then Array.get h a ! i else Array.get h a ! k)" by auto2
-lemma swap_permutes: "effect (swap a i j) h h' rs \<Longrightarrow>
-  multiset_of (Array.get h' a) = multiset_of (Array.get h a)" by auto2
-lemma swap_length: "effect (swap a i j) h h' r \<Longrightarrow> Array.length h' a = Array.length h a" by auto2
-lemma swap_succeed: "i < Array.length h a \<and> j < Array.length h a \<Longrightarrow> success (swap a i j) h" by auto2
-setup {* del_prfstep_thm @{thm swap.simps}
-      #> fold add_rewrite_rule [@{thm swap_pointwise}, @{thm swap_permutes}, @{thm swap_length}]
-      #> add_backward_prfstep @{thm swap_succeed} *}
+lemma swap_pointwise [rewrite]: "effect (swap a i j) h h' r \<Longrightarrow> Array.get h' a ! k =
+  (if k = i then Array.get h a ! j else if k = j then Array.get h a ! i else Array.get h a ! k)" by auto2
+lemma swap_permutes [rewrite]: "effect (swap a i j) h h' rs \<Longrightarrow> mset (Array.get h' a) = mset (Array.get h a)" by auto2
+lemma swap_length [rewrite]: "effect (swap a i j) h h' r \<Longrightarrow> Array.length h' a = Array.length h a" by auto2
+lemma swap_succeed [backward]: "i < Array.length h a \<and> j < Array.length h a \<Longrightarrow> success (swap a i j) h" by auto2
+setup {* del_prfstep_thm @{thm swap.simps} *}
 
 (* Induction rule for part1. *)
 setup {* add_rewrite_rule_cond @{thm part1.simps} (with_filts [size1_filter "left", size1_filter "right"]) *}
@@ -46,25 +43,24 @@ theorem part1_induct': "(\<forall>a left right p.
 setup {* add_prfstep_imp_induction @{term_pat "part1 ?a ?l ?r ?p"} @{thm part1_induct'} *}
 
 (* Properties of part1. *)
-lemma part1_permutes: "effect (part1 a l r p) h h' rs \<Longrightarrow>
-  multiset_of (Array.get h' a) = multiset_of (Array.get h a)" by auto2
-setup {* add_rewrite_rule @{thm part1_permutes} *}
+lemma part1_permutes [rewrite]:
+  "effect (part1 a l r p) h h' rs \<Longrightarrow> mset (Array.get h' a) = mset (Array.get h a)" by auto2
 
 lemma part1_returns_index_in_bounds': "effect (part1 a l r p) h h' rs \<Longrightarrow>
   if r \<le> l then rs = r else l \<le> rs \<and> rs \<le> r" by auto2
-lemma part1_returns_index_in_bounds: "effect (part1 a l r p) h h' rs \<Longrightarrow>
+lemma part1_returns_index_in_bounds [forward]: "effect (part1 a l r p) h h' rs \<Longrightarrow>
   l \<le> r \<Longrightarrow> l \<le> rs \<and> rs \<le> r" by (metis order_refl part1_returns_index_in_bounds')
-setup {* add_forward_prfstep @{thm part1_returns_index_in_bounds} *}
 
-lemma part1_outer_remains: "effect (part1 a l r p) h h' rs \<Longrightarrow> outer_remains h h' a l r" by auto2
-setup {* add_forward_prfstep @{thm part1_outer_remains} *}
+lemma part1_outer_remains [forward]:
+  "effect (part1 a l r p) h h' rs \<Longrightarrow> outer_remains h h' a l r" by auto2
 
-lemma part1_partitions1: "effect (part1 a l r p) h h' rs \<Longrightarrow> l \<le> i \<and> i < rs \<Longrightarrow> Array.get h' a ! i \<le> p" by auto2
-lemma part1_partitions2: "effect (part1 a l r p) h h' rs \<Longrightarrow> rs < i \<and> i \<le> r \<Longrightarrow> Array.get h' a ! i \<ge> p" by auto2
-setup {* fold add_backward2_prfstep [@{thm part1_partitions1}, @{thm part1_partitions2}] *}
+lemma part1_partitions1 [backward2]:
+  "effect (part1 a l r p) h h' rs \<Longrightarrow> l \<le> i \<and> i < rs \<Longrightarrow> Array.get h' a ! i \<le> p" by auto2
+lemma part1_partitions2 [backward2]:
+  "effect (part1 a l r p) h h' rs \<Longrightarrow> rs < i \<and> i \<le> r \<Longrightarrow> Array.get h' a ! i \<ge> p" by auto2
 
-lemma part1_succeed: "l < Array.length h a \<and> r < Array.length h a \<Longrightarrow> success (part1 a l r p) h" by auto2
-setup {* add_backward_prfstep @{thm part1_succeed} *}
+lemma part1_succeed [backward]:
+  "l < Array.length h a \<and> r < Array.length h a \<Longrightarrow> success (part1 a l r p) h" by auto2
 
 setup {* fold del_prfstep_thm [@{thm part1.simps}, @{thm part1_induct'}] *}
 
@@ -85,27 +81,23 @@ where
 
 (* Properties of partition. *)
 setup {* add_rewrite_rule @{thm partition.simps} *}
-lemma partition_succeed: "l < r \<and> r < Array.length h a \<Longrightarrow> success (partition a l r) h" by auto2
-setup {* add_backward_prfstep @{thm partition_succeed} *}
+lemma partition_succeed [backward]:
+  "l < r \<and> r < Array.length h a \<Longrightarrow> success (partition a l r) h" by auto2
 
-lemma partition_permutes: "effect (partition a l r) h h' rs \<Longrightarrow>
-  multiset_of (Array.get h' a) = multiset_of (Array.get h a)" by auto2
-setup {* add_rewrite_rule @{thm partition_permutes} *}
+lemma partition_permutes [rewrite]:
+  "effect (partition a l r) h h' rs \<Longrightarrow> mset (Array.get h' a) = mset (Array.get h a)" by auto2
 
-lemma partition_outer_remains: "effect (partition a l r) h h' rs \<Longrightarrow>
+lemma partition_outer_remains [forward]: "effect (partition a l r) h h' rs \<Longrightarrow>
   l < r \<Longrightarrow> outer_remains h h' a l r" by auto2
-setup {* add_forward_prfstep @{thm partition_outer_remains} *}
 
-lemma partition_returns_index_in_bounds: "effect (partition a l r) h h' rs \<Longrightarrow>
+lemma partition_returns_index_in_bounds [forward]: "effect (partition a l r) h h' rs \<Longrightarrow>
   l < r \<Longrightarrow> l \<le> rs \<le> r" by auto2
-setup {* add_forward_prfstep @{thm partition_returns_index_in_bounds} *}
 
-lemma partition_partitions1: "effect (partition a l r) h h' rs \<Longrightarrow> l < r \<Longrightarrow>
+lemma partition_partitions1 [forward]: "effect (partition a l r) h h' rs \<Longrightarrow> l < r \<Longrightarrow>
   (\<forall>x\<in>set (subarray l rs a h'). x \<le> Array.get h' a ! rs)" by auto2
-lemma partition_partitions2: "effect (partition a l r) h h' rs \<Longrightarrow> l < r \<Longrightarrow>
+lemma partition_partitions2 [forward]: "effect (partition a l r) h h' rs \<Longrightarrow> l < r \<Longrightarrow>
   (\<forall>y\<in>set (subarray (rs + 1) (r + 1) a h'). Array.get h' a ! rs \<le> y)" by auto2
-setup {* del_prfstep_thm @{thm partition.simps}
-  #> fold add_forward_prfstep [@{thm partition_partitions1}, @{thm partition_partitions2}] *}
+setup {* del_prfstep_thm @{thm partition.simps} *}
 
 (* Quicksort function *)
 function quicksort :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap"
@@ -131,23 +123,20 @@ theorem quicksort_induct': "(\<forall>arr left right.
   apply (induct rule: quicksort.induct) by (metis closed_interval_def)
 setup {* add_prfstep_imp_induction @{term_pat "quicksort ?a ?left ?right"} @{thm quicksort_induct'} *}
 
-lemma quicksort_outer_remains: "effect (quicksort a l r) h h' rs \<Longrightarrow> outer_remains h h' a l r" by auto2
-setup {* add_forward_prfstep @{thm quicksort_outer_remains} *}
+lemma quicksort_outer_remains [forward]:
+  "effect (quicksort a l r) h h' rs \<Longrightarrow> outer_remains h h' a l r" by auto2
 
-lemma quicksort_permutes: "effect (quicksort a l r) h h' rs \<Longrightarrow>
-  multiset_of (Array.get h' a) = multiset_of (Array.get h a)" by auto2
-setup {* add_forward_prfstep @{thm quicksort_permutes} *}
+lemma quicksort_permutes [forward]:
+  "effect (quicksort a l r) h h' rs \<Longrightarrow> mset (Array.get h' a) = mset (Array.get h a)" by auto2
 
-theorem quicksort_permutes': "effect (quicksort a l r) h h' rs \<Longrightarrow>
-  r < Array.length h a \<Longrightarrow> multiset_of (subarray l (r + 1) a h) = multiset_of (subarray l (r + 1) a h')"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "multiset_of (Array.get h' a) = multiset_of (Array.get h a)") *})
-setup {* del_prfstep_thm @{thm quicksort_permutes} #> add_forward_prfstep @{thm quicksort_permutes'} *}
+theorem quicksort_permutes' [forward]: "effect (quicksort a l r) h h' rs \<Longrightarrow>
+  r < Array.length h a \<Longrightarrow> mset (subarray l (r + 1) a h) = mset (subarray l (r + 1) a h')"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "mset (Array.get h' a) = mset (Array.get h a)") *})
+setup {* del_prfstep_thm @{thm quicksort_permutes} *}
 
-lemma quicksort_is_skip: "effect (quicksort a l r) h h' rs \<Longrightarrow> r \<le> l \<Longrightarrow> h' = h" by auto2
-setup {* add_forward_prfstep @{thm quicksort_is_skip} *}
+lemma quicksort_is_skip [forward]: "effect (quicksort a l r) h h' rs \<Longrightarrow> r \<le> l \<Longrightarrow> h' = h" by auto2
 
-lemma quicksort_success_skip: "\<not>r > l \<Longrightarrow> success (quicksort a l r) h" by auto2
-setup {* add_backward_prfstep @{thm quicksort_success_skip} *}
+lemma quicksort_success_skip [backward]: "\<not>r > l \<Longrightarrow> success (quicksort a l r) h" by auto2
 
 lemma quicksort_success: "l < Array.length h a \<and> r < Array.length h a \<Longrightarrow>
   success (quicksort a l r) h" by auto2
@@ -173,15 +162,13 @@ theorem sorted_pivoted_list: "sorted (sublist' l pivot xs) \<Longrightarrow> sor
   by (tactic {* auto2s_tac @{context} (
       OBTAIN "sublist' pivot r xs = xs ! pivot # sublist' (pivot + 1) r xs" THEN
       CASE "pivot = 0" THEN OBTAIN "sublist' l r xs = sublist' l pivot xs @ sublist' pivot r xs") *})
-setup {* del_prfstep_thm @{thm sorted_append} #> add_forward_prfstep @{thm sorted_pivoted_list} *}
+setup {* del_prfstep_thm @{thm sorted_append} #> add_forward_prfstep (swap_prems_th @{thm sorted_pivoted_list}) *}
 
-theorem sorted_pivoted_list': "sorted (sublist' 1 r xs) \<Longrightarrow>
+theorem sorted_pivoted_list' [forward]: "sorted (sublist' 1 r xs) \<Longrightarrow>
   \<forall>y\<in>set (sublist' 1 r xs). xs ! 0 \<le> y \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' 0 r xs)"
   by (tactic {* auto2s_tac @{context} (OBTAIN "sublist' 0 r xs = xs ! 0 # sublist' 1 r xs") *})
-setup {* add_forward_prfstep @{thm sorted_pivoted_list'} *}
 
 lemma quicksort_sorts: "effect (quicksort a l r) h h' rs \<Longrightarrow>
-  l < Array.length h a \<Longrightarrow> r < Array.length h a \<Longrightarrow>
-  sorted (subarray l (r + 1) a h')" by auto2
+  l < Array.length h a \<Longrightarrow> r < Array.length h a \<Longrightarrow> sorted (subarray l (r + 1) a h')" by auto2
 
 end

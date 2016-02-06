@@ -19,7 +19,7 @@ fun item_score ritem =
       | Fact (ty_str, tname, _) =>
         (case ty_str of
              "VAR" => 10  (* cost of introducing a variable. *)
-           | _ => Integer.sum (map size_of_term tname))
+           | _ => size_of_term tname)
 
 fun items_score raw_items = max int_ord (map item_score raw_items)
 
@@ -50,10 +50,11 @@ end  (* structure SCORES. *)
  *)
 signature PROOFSTATUS =
 sig
+  val reserved_prfstep_names: string list
   val check_hyps: box_id -> raw_item -> status -> unit
   val is_rtype_resolved: status -> rewrite_type -> bool
   val scoring: proofstep -> int -> box_item list -> rewrite_type -> status ->
-               Update.update list
+               (box_item -> Update.raw_update list) -> Update.update list
   val apply_callback:
       box_id * thm -> int -> Update.resolve_callback -> status -> status
   val process_shadow: Update.update -> status -> status
@@ -70,7 +71,7 @@ sig
   val step: status -> status
   val step_until: (status -> bool) -> int * status -> int * status
   val solve_focus: int * status -> int * status
-  val wait_for_items: box_id -> (string * term list) list -> int * status ->
+  val wait_for_items: box_id -> (string * term) list -> int * status ->
                       int * status
   val run_script: script -> int * status -> int * status
   val solve_root: int -> term * scripts * status -> thm * status
@@ -81,6 +82,9 @@ struct
 
 open Status
 open Script
+
+val reserved_prfstep_names =
+    ["TERM", "RESOLVE", "INIT_BOX", "INIT", "SCRIPT", "CALLBACK"]
 
 fun check_hyps id ritem (st as {ctxt, ...}) =
     let
@@ -100,9 +104,13 @@ fun is_rtype_resolved {lat, ...} rtype =
         RewriteTable.SINGLE _ => false
       | RewriteTable.LAST (_, id) => BoxID.is_box_resolved lat id
 
-fun scoring {name, res_types, func, ...} sc items rtype st =
+(* Perform preliminary checks before matching the last item of a
+   proofstep, and process the resulting updates.
+ *)
+fun scoring {name, res_types, ...} sc items rtype (st as {ctxt, ...}) func =
     let
-      val merged_id = ProofStep.merged_id rtype items
+      val {lat, ...} = RewriteTable.table_of_rtype rtype
+      val merged_id = merged_id lat items
     in
       if is_box_resolved st merged_id orelse
          is_rtype_resolved st rtype orelse
@@ -111,24 +119,25 @@ fun scoring {name, res_types, func, ...} sc items rtype st =
         let
           val scs = map score_of_item items
           val max_sc = fold (curry Int.max) scs sc
-          val raw_updts = func items rtype st
+          val raw_updts = func (List.last items)
           fun process_raw_updt raw_updt =
               let
-                val ty_str = Update.type_of_update raw_updt
+                val updt_ty = Update.type_of_update raw_updt
                 val id = Update.target_of_update raw_updt
               in
-                if not (member (op =) res_types ty_str) then
-                  raise AUTO2 ("unexpected update type from proofstep " ^ name)
+                if not (member (op =) res_types updt_ty) then
+                  raise AUTO2 ("unexpected update type " ^
+                               Update.string_of_update_type updt_ty ^
+                               " from proofstep " ^ name)
                 (* Perform resolved and shadowed tests again since id
                    may be descendent of merged_id.
                  *)
                 else if is_box_resolved st id then []
                 else if exists (query_shadowed st id) items then []
                 else let
-                  val add_sc =
-                      case get_fixed_sc (theory_of st) name of
-                          NONE => Scores.get_score raw_updt
-                        | SOME v => v
+                  val add_sc = case get_fixed_sc ctxt name of
+                                   NONE => Scores.get_score raw_updt
+                                 | SOME v => v
                   val id_sc = Scores.get_id_score st raw_updt
                 in
                   [{sc = add_sc + id_sc + max_sc, prfstep_name = name,
@@ -150,7 +159,7 @@ fun apply_callback (id, th) sc cb st =
     let
       val eval_cb = cb (id, th)
       fun form_cb_updts raw_updt =
-          {sc = sc, prfstep_name = "CALLBACK", source = [],raw_updt = raw_updt}
+          {sc = sc, prfstep_name = "CALLBACK", source = [], raw_updt = raw_updt}
       val cb_updts = map form_cb_updts eval_cb
     in
       st |> fold apply_update_instant cb_updts
@@ -212,13 +221,20 @@ and apply_update_instant (updt as {raw_updt, ...}) st =
         |_ => st' |> add_to_queue updt
     end
 
-fun process_step_single sc rtype items (prfstep as {filt, ...}) st =
+fun process_step_single sc rtype items (prfstep as {args, func, ...}) st =
     if is_rtype_resolved st rtype then st else
     let
-      val items' = filter (apply_pre_filter_ty_only (the_single filt)) items
+      val arg = the_single args
+      val tbl = RewriteTable.table_of_rtype rtype
+      val items' = filter (ItemIO_Data.pre_match_arg tbl arg) items
+      val f = case func of
+                  OneStep f => f
+                | TwoStep _ =>
+                  raise AUTO2 "process_step_single: wrong type of func."
+
       fun process_one_item item st =
           let
-            val updts = (scoring prfstep sc) [item] rtype st
+            val updts = scoring prfstep sc [item] rtype st (f rtype st)
           in
             st |> fold apply_update_instant updts
           end
@@ -226,41 +242,46 @@ fun process_step_single sc rtype items (prfstep as {filt, ...}) st =
       st |> fold process_one_item items'
     end
 
-fun process_step_pair sc rtype items (prfstep as {filt, ...}) st =
+fun process_step_pair sc rtype items (prfstep as {args, func, ...}) st =
     if is_rtype_resolved st rtype then st else
     if forall (query_removed st) items then st else
     let
       val items' = maps (get_items st) (get_unresolved st)
       val inters = inter pointer_eq items items'
       val tbl = RewriteTable.table_of_rtype rtype
+      val (arg1, arg2) = the_pair args
+      val pre_match_arg = ItemIO_Data.pre_match_arg
+      val f = case func of
+                  OneStep _ =>
+                  raise AUTO2 "process_step_pair: wrong type of func."
+                | TwoStep f => f
 
       fun process_pairs (left, right) no_int st =
           let
-            val (filt1, filt2) = the_pair filt
             val (left', right') =
                 if length left < length right then
                   let
-                    val left' = filter (apply_pre_filter tbl filt1) left
+                    val left' = filter (pre_match_arg tbl arg1) left
                   in
-                    if length left' = 0 then ([], []) else
-                    (left', filter (apply_pre_filter tbl filt2) right)
+                    if length left' = 0 then ([], [])
+                    else (left', filter (pre_match_arg tbl arg2) right)
                   end
                 else
                   let
-                    val right' = filter (apply_pre_filter tbl filt2) right
+                    val right' = filter (pre_match_arg tbl arg2) right
                   in
-                    if length right' = 0 then ([], []) else
-                    (filter (apply_pre_filter tbl filt1) left, right')
+                    if length right' = 0 then ([], [])
+                    else (filter (pre_match_arg tbl arg1) left, right')
                   end
 
             (* One step in the iteration, fixing both left and right
                items. Do not match item with itself.
              *)
-            fun process_pair left_item right_item st =
+            fun process_pair left_item func right_item st =
                 if pointer_eq (left_item, right_item) then st else
                 let
                   val updts =
-                      (scoring prfstep sc) [left_item, right_item] rtype st
+                      scoring prfstep sc [left_item, right_item] rtype st func
                 in
                   st |> fold apply_update_instant updts
                 end
@@ -275,8 +296,9 @@ fun process_step_pair sc rtype items (prfstep as {filt, ...}) st =
                       if no_int andalso member pointer_eq inters left_item then
                         subtract pointer_eq inters right'
                       else right'
+                  val func = f rtype st left_item
                 in
-                  st |> fold (process_pair left_item) right''
+                  st |> fold (process_pair left_item func) right''
                 end
           in
             st |> fold loop_right left'
@@ -286,8 +308,8 @@ fun process_step_pair sc rtype items (prfstep as {filt, ...}) st =
          |> process_pairs (items', items) true
     end
 
-fun process_prfstep sc rtype items (prfstep as {filt, ...}) st =
-    if length filt = 1 then
+fun process_prfstep sc rtype items (prfstep as {args, ...}) st =
+    if length args = 1 then
       st |> process_step_single sc rtype items prfstep
     else
       st |> process_step_pair sc rtype items prfstep
@@ -296,10 +318,9 @@ fun process_prfstep sc rtype items (prfstep as {filt, ...}) st =
    given ID. Given fact should belong either to that box or to an
    ancestor box.
  *)
-fun process_fact_prfsteps sc rtype items st =
+fun process_fact_prfsteps sc rtype items (st as {ctxt, ...}) =
     let
-      val thy = theory_of st
-      val prfsteps = get_prfsteps thy
+      val prfsteps = get_prfsteps ctxt
 
       (* Divide into three parts: those with shadowing, those with
          resolves, and the rest. Produce the ordered list of prfsteps.
@@ -325,11 +346,10 @@ fun process_fact_rewrite (item as {id, sc, ...}) (st as {tbl, ...}) =
     let
       val eq_th = get_thm item
       val rtype = get_incr_type st id eq_th
-      val (lhs, rhs) = the_pair (get_tname item)
+      val (lhs, rhs) = HOLogic.dest_prod (get_tname item)
       val updated_trms = RewriteTable.get_reachable_terms true tbl [lhs, rhs]
-      fun to_visit_item (item' as {tname, ...}) =
-          not (exists has_vars (get_tname item')) andalso
-          exists (has_subterm updated_trms) tname
+      fun to_visit_item {tname, ...} =
+          not (has_vars tname) andalso has_subterm updated_trms tname
 
       val all_ids = get_unresolved st |> filter (
             fn id' => is_box_unresolved st (merge_boxes st (id, id')))
@@ -339,13 +359,13 @@ fun process_fact_rewrite (item as {id, sc, ...}) (st as {tbl, ...}) =
          |> process_fact_prfsteps sc rtype items
     end
 
-fun process_add_terms (item as {id, sc, ...}) (st as {tbl, ...}) =
-    if match_ty_str "TERM" item orelse exists has_vars (get_tname item) then st
-    else let
+fun process_add_terms (item as {id, sc, tname, ...}) (st as {tbl, ...}) =
+    if match_ty_str "TERM" item orelse has_vars tname then st else
+    let
       fun qualify_term t =
           case t of Abs _ => false | _ => true
 
-      val terms = map (pair id) (get_tname item)
+      val terms = map (pair id) (HOLogic.strip_tuple tname)
       val tbl' = tbl |> fold RewriteTable.add_term terms
       val new_trms = (RewriteTable.get_new_terms (tbl, tbl'))
                          |> map snd |> filter qualify_term
@@ -369,13 +389,26 @@ fun process_fact_all item st =
         st' |> process_fact_prfsteps 0 (get_init_type st') [item]
     end
 
-fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
+fun is_shadowing_prfstep prfstep_name ctxt =
+    (* Reserved names can represent shadowing prfsteps. Moreover, we
+       want to avoid checking shadowing for TERM prfsteps.
+     *)
+    if is_reserved_name ctxt prfstep_name then true
+    else let
+      val {res_types, ...} = get_prfstep_by_name ctxt prfstep_name
+    in
+      member (op =) res_types Update.SHADOW_ITEM
+    end
+
+fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
                       (st as {ctxt, ...}) =
     case raw_updt of
         Update.AddItems {id, raw_items = ritems} =>
-        let
-          val (ctxt', csubst) = obtain_variant_frees (ctxt, ritems)
-          val ritems' = ritems |> map (instantiate csubst)
+        if not (is_shadowing_prfstep prfstep_name ctxt) andalso
+           exists (query_shadowed st id) source then st
+        else let
+          val (ctxt', inst) = obtain_variant_frees (ctxt, ritems)
+          val ritems' = ritems |> map (instantiate inst)
                                |> maps (normalize ctxt')
                                |> distinct eq_ritem
           val items = ritems' |> filter_out (is_triv_eq st id)
@@ -397,25 +430,30 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
         end
       | _ => raise AUTO2 "process_add_items: wrong type of update"
 
-fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
+fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
+                      (st as {ctxt, ...}) =
     case raw_updt of
         Update.AddBoxes {id, vars, assums, concls, cb} =>
-        let
+        if not (is_shadowing_prfstep prfstep_name ctxt) andalso
+           exists (query_shadowed st id) source then st
+        else let
           (* First form the raw items, possibly containing internal
              schematic variables.
            *)
           val init_facts = assums @ (map get_neg' concls)
-          val ritems = map (thm_to_ritem_ctxt ctxt o Thm.trivial o cert ctxt)
+          val ritems = map (Update.thm_to_ritem o Thm.trivial o cert ctxt)
                            init_facts @
                        map var_to_fact vars
 
           (* Obtain the fresh variables, and replace into both the raw
              items and the initial facts.
            *)
-          val (ctxt', csubst) = obtain_variant_frees (ctxt, ritems)
-          val ritems' = ritems |> map (instantiate csubst)
+          val (ctxt', inst) = obtain_variant_frees (ctxt, ritems)
+          val ritems' = ritems |> map (instantiate inst)
                                |> maps (normalize ctxt')
-          val subst = map (apply2 Thm.term_of) csubst
+          val subst =
+              map (fn ((idx, T), ct) => (Var (idx, T), Thm.term_of ct)) inst
+
           val vars' = map (subst_atomic subst) vars
           val assums' = map (subst_atomic subst) assums
           val concls' = map (subst_atomic subst) concls
@@ -473,17 +511,21 @@ fun apply_update (updt as {raw_updt, ...}) st =
                | Update.ShadowItem _ => process_shadow updt)
     end
 
-fun init_status ctxt subgoal =
+fun init_status ctxt obj_goal =
     let
-      val (assums, concl) = Logic.strip_horn subgoal
-      val vars = map Free (all_frees (concl :: assums))
+      val (assums, concl) =
+          obj_goal |> HOLogic.dest_Trueprop |> strip_obj_imp
+                   |> apfst (map HOLogic.mk_Trueprop)
+                   |> apsnd HOLogic.mk_Trueprop
+      val vars = map Free (fold Term.add_frees (concl :: assums) [])
       val raw_updt = Update.AddBoxes {
             id = [], vars = vars, assums = assums, concls = [concl],
             cb = Update.null_callback}
       val updt = {sc = 0, prfstep_name = "INIT", source = [],
                   raw_updt = raw_updt}
     in
-      empty_status ctxt |> apply_update updt |> set_focus [0]
+      (empty_status ctxt) |> add_composite_box [] |> add_item null_item
+                          |> apply_update updt |> set_focus [0]
     end
 
 fun step (st as {queue, ...}) =
@@ -533,14 +575,14 @@ fun run_script scrpt (steps, (st as {ctxt, queue, ...})) =
       val id = get_focus st
     in
       case scrpt of
-          Script_Task {assums, concls, subs, cb} =>
+          Script_Task {vars, assums, concls, subs, cb, ...} =>
           let
             val raw_updt =
-                Update.AddBoxes {id = id, vars = [], assums = assums,
+                Update.AddBoxes {id = id, vars = vars, assums = assums,
                                  concls = concls, cb = cb}
             val updt = {sc = sc, prfstep_name = "SCRIPT", source = [],
                         raw_updt = raw_updt}
-            val neg_form = get_neg_form ctxt ([], assums, concls)
+            val neg_form = get_neg_form ctxt (vars, assums, concls)
           in
             case find_fact st id neg_form of
                 SOME ({id = id', prop, ...}, eq_th) =>
@@ -558,7 +600,7 @@ fun run_script scrpt (steps, (st as {ctxt, queue, ...})) =
                                                |> apsnd (set_focus id)
                 end
           end
-        | Script_Info {prfstep = {name, func, ...}, source} =>
+        | Script_Info {prfstep, source, ...} =>
           let
             (* Make sure the source statements exist. *)
             val (steps', st') = (steps, st) |> wait_for_items id source
@@ -567,10 +609,11 @@ fun run_script scrpt (steps, (st as {ctxt, queue, ...})) =
                 handle Option.Option =>
                        raise AUTO2 "run_script (info): cannot find sources."
             fun process_raw_updt raw_updt =
-                {sc = sc, prfstep_name = name, source = items,
+                {sc = sc, prfstep_name = #name prfstep, source = items,
                  raw_updt = raw_updt}
-            val updts = (func items (get_init_type st) st)
-                            |> map process_raw_updt
+            val rtype = get_init_type st
+            val updts = (apply_prfstep rtype st items prfstep)
+                                |> map process_raw_updt
             val _ = assert (length updts > 0)
                            "run_script (info): failed to apply proofstep."
           in
@@ -578,10 +621,8 @@ fun run_script scrpt (steps, (st as {ctxt, queue, ...})) =
           end
     end
 
-fun solve_root steps (subgoal, scrpts, (st as {ctxt, ...})) =
+fun solve_root steps (obj_goal, scrpts, st) =
     let
-      val nprems = length (Logic.strip_imp_prems subgoal)
-      val obj_goal = (cert ctxt subgoal) |> to_obj_conv ctxt |> rhs_of
       fun find_obj_goal queue =
           let
             val ({raw_updt, ...}, queue') =
@@ -591,8 +632,7 @@ fun solve_root steps (subgoal, scrpts, (st as {ctxt, ...})) =
             case raw_updt of
                 Update.AddItems {id = [], raw_items = [raw_item]} =>
                 if Thm.prop_of (get_thm_raw raw_item) aconv obj_goal then
-                  apply_to_thm (to_meta_imp_conv_n nprems)
-                               (get_thm_raw raw_item)
+                  get_thm_raw raw_item
                 else find_obj_goal queue'
               | _ => find_obj_goal queue'
           end
@@ -612,20 +652,25 @@ fun auto2_gen ctxt steps pre_scrpts state =
     let
       val prop = Thm.prop_of state
       val subgoals = prop |> Logic.strip_imp_prems
-    in if length subgoals = 0 then state else
-       let
-         val subgoal = hd subgoals
-         val _ = tracing (
-               "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
-               (subgoal |> pretty_term ctxt |> str) ^ "\n")
-         val (scrpts, ctxt') = pre_scrpts ctxt
-         val st = ProofStatus.init_status ctxt' subgoal
-         val (th, _) =
-             timer ("Total time: ",
-                    fn _ => ProofStatus.solve_root steps (subgoal, scrpts, st))
-       in
-         Thm.implies_elim state th
-       end
+    in
+      if length subgoals = 0 then state else
+      let
+        val subgoal = hd subgoals
+        val _ = tracing (
+              "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
+              (subgoal |> pretty_term ctxt |> str) ^ "\n")
+        val to_obj_eq = (cert ctxt subgoal) |> to_obj_conv ctxt
+        val obj_goal = rhs_of to_obj_eq
+        val scrpts = pre_scrpts ctxt
+        val ctxt' = ctxt |> fold declare_free_term (get_all_vars scrpts)
+        val st = ProofStatus.init_status ctxt' obj_goal
+        val (obj_th, _) =
+            timer ("Total time: ",
+                   fn _ => ProofStatus.solve_root steps (obj_goal, scrpts, st))
+        val th = Thm.equal_elim (meta_sym to_obj_eq) obj_th
+      in
+        Thm.implies_elim state th
+      end
     end
 
 fun auto2_tac ctxt = PRIMITIVE (auto2_gen ctxt 2000 no_script)
@@ -633,3 +678,5 @@ fun auto2l_tac ctxt steps = PRIMITIVE (auto2_gen ctxt steps no_script)
 fun auto2s_tac ctxt pre_scrpts = PRIMITIVE (auto2_gen ctxt 2000 pre_scrpts)
 fun auto2ls_tac ctxt steps pre_scrpts =
     PRIMITIVE (auto2_gen ctxt steps pre_scrpts)
+
+val _ = Theory.setup (fold add_reserved_name ProofStatus.reserved_prfstep_names)

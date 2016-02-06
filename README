@@ -1,8 +1,9 @@
-AUTO2 - a best-first-search theorem prover based on Isabelle
+AUTO2 - a best-first-search theorem prover implemented in Isabelle
 
-Please see doc.pdf for documentation.
+Please see doc.pdf for documentation (it is slightly out of date -
+refers to the third public version).
 
-Current version of the program works with Isabelle2015.
+Current version of the program works with Isabelle2016-RC0.
 
 Description of the examples:
 
@@ -25,7 +26,11 @@ Description of the examples:
   Imperative_HOL. The first three examples follow the corresponding
   example in HOL/Imperative_HOL/ex.
 
-Copyright (C) 2015 Bohua Zhan
+- Analysis: construction of real numbers using Cauchy sequences. Proof
+  of completeness of real numbers in several forms. Partly follows
+  theory Real in HOL/.
+
+Copyright (C) 2015, 2016 Bohua Zhan
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

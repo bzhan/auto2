@@ -9,9 +9,8 @@ sig
   val subst_subterms: term * term list -> term
   val build_equiv: Proof.context -> thm list -> term -> thm
 
-  val get_head_ac_item: theory -> term -> ac_item option
-  val rearrange_fast: theory -> term -> term
-  val rearrange_subterms: theory -> ac_item -> conv
+  val get_head_ac_info_with_inv: theory -> term -> ac_inst_info option
+  val normalize_all_ac: Proof.context -> ac_inst_info -> conv
 end;
 
 structure Subterms : SUBTERMS =
@@ -34,87 +33,62 @@ fun dest_subterms thy skip_if t =
        *)
       fun dest_at_head (prevs, t) =
           case t of
-              _ $ _ => if Term.is_open t then dest (prevs, t)
-                       else (t :: prevs, get_subvar (length prevs) t)
+              _ $ _ =>
+              if Term.is_open t then
+                dest (prevs, t)
+              else
+                (t :: prevs, get_subvar (length prevs) t)
             | Abs (nm, T, t') =>
               let
                 val (prevs', t'') = dest_at_head (prevs, t')
-              in (prevs', Abs (nm, T, t'')) end
+              in
+                (prevs', Abs (nm, T, t''))
+              end
             | Bound _ => (prevs, t)
             | _ => (t :: prevs, get_subvar (length prevs) t)
 
-      (* Special case, for AC functions. *)
-      and dest_ac_at_head (ac_itm as {assoc_r, ...}) (prevs, t) =
-          if Term.is_open t then dest (prevs, t)
-          else if ACUtil.head_agrees ac_itm t then
-            let
-              val (tf, (arg1, arg2)) = dest_binop t
-            in
-              if assoc_r then
+      and dest_list_at_head (prevs, ts) =
+          let
+            fun append_dest t (prevs', prev_ts') =
                 let
-                  val prevs' = arg1 :: prevs
-                  val (prevs'', t') = dest_ac_at_head ac_itm (prevs', arg2)
+                  val (prevs'', t') = dest_at_head (prevs', t)
                 in
-                  (prevs'', tf $ (get_subvar (length prevs) arg1) $ t')
+                  (prevs'', t' :: prev_ts')
                 end
-              else
-                let
-                  val (prevs', t') = dest_ac_at_head ac_itm (prevs, arg1)
-                in
-                  (arg2 :: prevs', tf $ t' $ (get_subvar (length prevs') arg2))
-                end
-            end
-          else (t :: prevs, get_subvar (length prevs) t)
+            val (prevs', rev_ts') = fold append_dest ts (prevs, [])
+          in
+            (prevs', rev rev_ts')
+          end
 
       and dest (prevs, t) =
           case t of
               _ $ _ =>
               let
                 val (tf, targs) = Term.strip_comb t
+                val ac_info_opt = ACUtil.get_head_ac_info thy t
               in
                 if skip_if andalso is_if tf then
-                  let val (prevs', t') = dest_at_head (prevs, hd targs)
-                  in (prevs', Term.list_comb (tf, t' :: tl targs)) end
+                  let
+                    val (prevs', t') = dest_at_head (prevs, hd targs)
+                  in
+                    (prevs', Term.list_comb (tf, t' :: tl targs))
+                  end
+                else if is_none ac_info_opt then
+                  let
+                    val (prevs', ts') = dest_list_at_head (prevs, targs)
+                  in
+                    (prevs', Term.list_comb (tf, ts'))
+                  end
                 else
-                  case ACUtil.get_head_ac_item thy t of
-                      NONE =>
-                      let
-                        fun append_dest targ (prevs', prev_args) =
-                            let
-                              val (prevs'', targ') = dest_at_head (prevs', targ)
-                            in
-                              (prevs'', targ' :: prev_args)
-                            end
-                        val (prevs', targs_rev) =
-                            fold append_dest targs (prevs, [])
-                        val t' = Term.list_comb (tf, rev targs_rev)
-                      in
-                        (prevs', t')
-                      end
-                    | SOME (ac_itm as {assoc_r, ...}) =>
-                      let
-                        val (arg1, arg2) = the_pair targs
-                      in
-                        if assoc_r then
-                          let
-                            val (prevs', arg1') = dest_at_head (prevs, arg1)
-                            val (prevs'', arg2') =
-                                dest_ac_at_head ac_itm (prevs', arg2)
-                          in
-                            (prevs'', Term.list_comb (tf, [arg1', arg2']))
-                          end
-                        else
-                          let
-                            val (prevs', arg1') =
-                                dest_ac_at_head ac_itm (prevs, arg1)
-                            val (prevs'', arg2') = dest_at_head (prevs', arg2)
-                          in
-                            (prevs'', Term.list_comb (tf, [arg1', arg2']))
-                          end
-                      end
+                  let
+                    val ac_info = the ac_info_opt
+                    val ac_args = ACUtil.dest_ac ac_info t
+                    val (prevs', ts') = dest_list_at_head (prevs, ac_args)
+                  in
+                    (prevs', ACUtil.list_ac ac_info ts')
+                  end
               end
-            | Abs (nm, T, t') => let val (prevs', t'') = dest (prevs, t')
-                                 in (prevs', Abs (nm, T, t'')) end
+            | Abs _ => dest_at_head (prevs, t)
             | _ => (prevs, t)
 
       val (rev_subs, t') = dest ([], t)
@@ -174,21 +148,16 @@ fun build_equiv ctxt equivs t =
 (* Wrapper around functions in ACUtil, adapted to take account of
    binders.
  *)
-fun get_head_ac_item thy t =
+fun get_head_ac_info_with_inv thy t =
     case t of
-        _ $ Abs (_, _, t') => get_head_ac_item thy t'
-      | _ => ACUtil.get_head_ac_item thy t
+        _ $ Abs (_, _, t') => get_head_ac_info_with_inv thy t'
+      | _ => ACUtil.get_head_ac_info_with_inv thy t
 
-fun rearrange_fast thy t =
-    case t of
-        f $ Abs (nm, T, t') => f $ Abs (nm, T, rearrange_fast thy t')
-      | _ => ACUtil.rearrange_fast thy t
-
-fun rearrange_subterms thy ac_itm ct =
+fun normalize_all_ac ctxt ac_info ct =
     case Thm.term_of ct of
-        _ $ Abs _ => Conv.arg_conv (
-                      Conv.abs_conv (fn _ => rearrange_subterms thy ac_itm)
-                                    (Proof_Context.init_global thy)) ct
-      | _ => ACUtil.rearrange_subterms ac_itm ct
+        _ $ Abs _ =>
+        Conv.arg_conv (
+          Conv.abs_conv (fn _ => normalize_all_ac ctxt ac_info) ctxt) ct
+      | _ => ACUtil.normalize_all_ac ac_info ct
 
 end  (* structure Subterms. *)

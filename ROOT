@@ -26,28 +26,35 @@ session Hoare = AUTO2 +
     Examples in Hoare logic.
   *}
   theories
-    Hoare_Exp
-    Hoare_Equiv
-    Hoare_Rules
+    "Hoare/Hoare_Exp"
+    "Hoare/Hoare_Equiv"
+    "Hoare/Hoare_Rules"
 
 session Imp_Array = AUTO2 +
   description {*
     Verification in imperative HOL, arrays.
   *}
   theories
-    Imp_Ex_Reverse
-    Imp_Ex_Quicksort
+    "Imp_Ex/Imp_Ex_Reverse"
+    "Imp_Ex/Imp_Ex_Quicksort"
 
 session Imp_LinkedList = RBT +
   description {*
     Verification in imperative HOL, linked lists.
   *}
   theories
-    Imp_Ex_Linked_Lists
+    "Imp_Ex/Imp_Ex_Linked_Lists"
 
 session Imp_BinaryTree = RBT +
   description {*
     Verification in imperative HOL, binary trees.
   *}
   theories
-    Imp_Ex_Binary_Trees
+    "Imp_Ex/Imp_Ex_Binary_Trees"
+
+session Real = AUTO2 +
+  description {*
+    Real analysis.
+  *}
+  theories
+    "Analysis/Real_Auto2"

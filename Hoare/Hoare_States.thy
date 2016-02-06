@@ -1,5 +1,5 @@
 theory Hoare_States
-imports Auto2
+imports "../Auto2"
 begin
 
 datatype id = Id nat
@@ -17,11 +17,11 @@ fun eval :: "state \<Rightarrow> id \<Rightarrow> nat" where "eval (State f) x =
 definition update :: "state \<Rightarrow> id \<Rightarrow> nat \<Rightarrow> state" (" _ { _ \<rightarrow> _ }" [89,90,90] 90) where
   "st { x \<rightarrow> n } = State (\<lambda>x'. (if x = x' then n else eval st x'))"
 
-theorem state_ext: "\<forall>x. eval s x = eval t x \<Longrightarrow> s = t" apply (cases s) apply (cases t) by auto
-theorem eval_update: "eval (st { x \<rightarrow> n }) x' = (if x = x' then n else eval st x')" by (simp add: update_def)
-theorem eval_empty: "eval ES n = 0" by (simp add: empty_state_def)
-setup {* add_backward_prfstep @{thm state_ext} *}
-setup {* fold add_rewrite_rule [@{thm eval_update}, @{thm eval_empty}] *}
+theorem state_ext [backward]:
+  "\<forall>x. eval s x = eval t x \<Longrightarrow> s = t" apply (cases s) apply (cases t) by auto
+theorem eval_update [rewrite]:
+  "eval (st { x \<rightarrow> n }) x' = (if x = x' then n else eval st x')" by (simp add: update_def)
+theorem eval_empty [rewrite]: "eval ES n = 0" by (simp add: empty_state_def)
 
 (* Evaluation on empty state. *)
 setup {* add_top_eq_th_const_normalizer @{thm eval_empty} *}
@@ -42,7 +42,7 @@ fun eval_update_conv ctxt ct =
         val nx2 = dest_numc x2
         val step1_cv = rewr_obj_eq @{thm eval_update} then_conv rewr_obj_eq_top @{thm id.simps(1)} ctxt
       in
-        if nx1 = nx2 then (step1_cv then_conv rewr_obj_eq @{thm if_true'}) ct
+        if nx1 = nx2 then (step1_cv then_conv rewr_obj_eq @{thm if_eq}) ct
         else let val neq_th = to_eqF_th (Nat_Arith.nat_neq_th nx1 nx2)
              in (step1_cv then_conv rewr_obj_eq_top neq_th ctxt then_conv rewr_obj_eq @{thm HOL.if_False}) ct end
       end
@@ -53,9 +53,8 @@ setup {* add_top_conv_normalizer ("eval_update", eval_update_conv) *}
 
 theorem update_example: "eval (ES {Id 2 \<rightarrow> n}) (Id 3) = 0" by auto2
 theorem update_shadow: "st {x \<rightarrow> m} {x \<rightarrow> n} = st {x \<rightarrow> n}" by auto2
-theorem update_same: "eval st x = n \<Longrightarrow> st {x \<rightarrow> n} = st" by auto2
+theorem update_same [rewrite]: "eval st x = n \<Longrightarrow> st {x \<rightarrow> n} = st" by auto2
 theorem update_permute: "x \<noteq> y \<Longrightarrow> st {y \<rightarrow> m} {x \<rightarrow> n} = st {x \<rightarrow> n} {y \<rightarrow> m}" by auto2
-setup {* add_rewrite_rule @{thm update_same} *}
 
 abbreviation X :: id where "X \<equiv> Id 0"
 abbreviation Y :: id where "Y \<equiv> Id 1"
@@ -157,7 +156,6 @@ where
 | "beval st b \<Longrightarrow> ceval c st st' \<Longrightarrow> ceval (WHILE b DO c OD) st' st'' \<Longrightarrow> ceval (WHILE b DO c OD) st st''"
 
 (* Using the introduction rules. *)
-thm ceval.intros
 setup {* add_gen_prfstep ("ceval_if_intro",
   [WithFact @{term_pat "ceval (IF ?b THEN ?c1 ELSE ?c2 FI) ?st ?st'"},
    CreateCase ([@{term_pat "beval ?st ?b"}], [])]) *}
@@ -175,21 +173,17 @@ setup {* add_backward_prfstep @{thm ceval.intros(2)} *}
 setup {* add_backward1_prfstep @{thm ceval.intros(3)} *}
 setup {* fold add_backward2_prfstep [@{thm ceval.intros(3)}, @{thm ceval.intros(4)}, @{thm ceval.intros(5)}] *}
 setup {* add_resolve_prfstep @{thm ceval.intros(6)} *}
-theorem ceval_intros7': "beval st b \<Longrightarrow> \<not>(ceval (WHILE b DO c OD) st st'') \<Longrightarrow>
+theorem ceval_intros7' [forward]: "beval st b \<Longrightarrow> \<not>(ceval (WHILE b DO c OD) st st'') \<Longrightarrow>
   \<forall>st'. ceval c st st' \<longrightarrow> \<not>(ceval (WHILE b DO c OD) st' st'')" using ceval.intros(7) by blast
-setup {* add_forward_prfstep @{thm ceval_intros7'} *}
 
 (* Automatically step forward an assignment step. *)
-theorem ceval_assign: "ceval B (st { x \<rightarrow> aeval st a }) st' \<Longrightarrow> ceval (x := a; B) st st'"
-by (tactic {* auto2s_tac @{context} (OBTAIN "ceval (x := a) st (st { x \<rightarrow> aeval st a })") *})
-setup {* add_backward_prfstep @{thm ceval_assign} *}
-theorem ceval_assign': "st' = st { x \<rightarrow> aeval st a } \<Longrightarrow> ceval (x := a) st st'" by auto2
-setup {* add_backward_prfstep @{thm ceval_assign'} *}
+theorem ceval_assign [backward]: "ceval B (st { x \<rightarrow> aeval st a }) st' \<Longrightarrow> ceval (x := a; B) st st'"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "ceval (x := a) st (st { x \<rightarrow> aeval st a })") *})
+theorem ceval_assign' [backward]: "st' = st { x \<rightarrow> aeval st a } \<Longrightarrow> ceval (x := a) st st'" by auto2
 
 (* Automatically step forward a skip step. *)
-theorem ceval_skip_left: "ceval C st st' \<Longrightarrow> ceval (SKIP; C) st st'"
+theorem ceval_skip_left [backward]: "ceval C st st' \<Longrightarrow> ceval (SKIP; C) st st'"
   by (tactic {* auto2s_tac @{context} (OBTAIN "ceval SKIP st st") *})
-setup {* add_backward_prfstep @{thm ceval_skip_left} *}
 
 theorem ceval_example1: "ceval (X := ANum 2; IF BLe (AId X) (ANum 1) THEN Y := ANum 3 ELSE Z := ANum 4 FI)
   ES (ES {X \<rightarrow> 2} {Z \<rightarrow> 4})" by auto2
@@ -207,14 +201,16 @@ setup {* add_rewrite_rule @{thm pup_to_n_def} *}
 
 theorem pup_to_2_ceval: "ceval pup_to_n (ES { X \<rightarrow> 2 })
   (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"
-by (tactic {* auto2s_tac @{context} (OBTAIN
-  ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
-   "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0})" ^
-   "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})") THEN OBTAIN
-  ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
-   "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})" ^
-   "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"))
-*})
+  by (tactic {* auto2s_tac @{context}
+    (OBTAIN
+      ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
+       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0})" ^
+       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})")
+     THEN OBTAIN
+      ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
+       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})" ^
+       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"))
+  *})
 
 (* Inversion rules. *)
 theorem skip_invert: "ceval SKIP st st' \<Longrightarrow> st = st'" using ceval.cases by auto
@@ -224,10 +220,9 @@ theorem if_invert: "ceval (IF b THEN c ELSE d FI) st st' \<Longrightarrow> beval
 theorem if_invert2: "ceval (IF b THEN c ELSE d FI) st st' \<Longrightarrow> \<not>(beval st b) \<Longrightarrow> ceval d st st'" using ceval.cases by auto
 theorem while_invert: "ceval (WHILE b DO c OD) st st' \<Longrightarrow> \<not>(beval st b) \<Longrightarrow> st = st'" using ceval.cases by auto
 theorem while_invert2: "ceval (WHILE b DO c OD) st st' \<Longrightarrow> beval st b \<Longrightarrow> \<exists>st''. ceval c st st'' \<and> ceval (WHILE b DO c OD) st'' st'"
-using ceval.cases by blast
-setup {* fold add_forward_prfstep [@{thm skip_invert}, @{thm assign_invert}, @{thm seq_invert}] *}
-setup {* fold add_forward_prfstep [@{thm if_invert}, @{thm if_invert2}] *}
-setup {* fold add_forward_prfstep [@{thm while_invert}, @{thm while_invert2}] *}
+  using ceval.cases by blast
+setup {* fold add_forward_prfstep [@{thm skip_invert}, @{thm assign_invert}, @{thm seq_invert},
+  @{thm if_invert}, @{thm if_invert2}, @{thm while_invert}, @{thm while_invert2}] *}
 
 setup {* add_rewrite_rule @{thm plus2_def} *}
 theorem plus2_spec: "eval st X = n \<Longrightarrow> ceval plus2 st st' \<Longrightarrow> eval st' X = n + 2" by auto2
@@ -242,7 +237,6 @@ setup {* add_prfstep_prop_induction @{thm ceval.induct} *}
 theorem ceval_deterministic: "ceval c st st1 \<Longrightarrow> ceval c st st2 \<Longrightarrow> st1 = st2"
   by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("ceval c st st1", [Arbitrary "st2"])) *})
 
-thm loop_def
 setup {* add_rewrite_rule @{thm loop_def} *}
 theorem loop_never_stops: "\<not>(ceval loop st st')"
   by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("ceval loop st st'", [])) *})

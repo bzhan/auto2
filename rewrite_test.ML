@@ -95,16 +95,17 @@ fun assert_simpl id (t, t') txt tbl =
 
 fun assert_head_equivs (id, u) info txt tbl =
     assert_eq_info (info, (get_head_equiv tbl u)
-                              |> merge_box_with_info tbl id
-                              |> reduce_equivs tbl) txt tbl
+                              |> maps snd |> map fst
+                              |> merge_box_with_info tbl id) txt tbl
 
 fun assert_head_equivs_t t (id, u) info txt tbl =
-    assert_eq_info (info, get_head_equiv_with_t tbl t (id, u)) txt tbl
+    assert_eq_info (info, (get_head_equiv_with_t tbl (id, u) t)
+                              |> map fst) txt tbl
 
 (* Check th is actually t(env) == u. *)
 fun check_info (t, u) txt tbl ((_, inst), th) =
     let
-      val t' = Envir.subst_term inst t |> Envir.beta_norm
+      val t' = subst_term_norm inst t
       val (lhs, rhs) = Logic.dest_equals (Thm.prop_of th)
     in
       if lhs aconv t' andalso rhs aconv u then ()
@@ -498,8 +499,7 @@ val test_fo_match_quant2 =
     let
       fun err n = "test_fo_match_quant2: " ^ (string_of_int n)
       val dvd = Const ("Rings.dvd_class.dvd", @{typ "nat => nat => bool"})
-      val trm = Abs ("x", @{typ nat},
-                     Abs ("x", @{typ nat}, dvd $ (Bound 0) $ (Bound 1)))
+      val trm = Abs ("x", natT, Abs ("x", natT, dvd $ (Bound 0) $ (Bound 1)))
       val pat = @{term_pat
                       "%(x::nat). %(y::nat). (?a::(nat => nat => bool)) x y"}
       val pat2 = @{term_pat "%(x::nat). %(y::nat). (?a::(nat => bool)) x"}
@@ -918,6 +918,84 @@ val test_ac_numc =
                    @{term "(m::nat) + m"})
                   [([], @{term "(3::nat) + 3"})] (err 0))
           |> to_string |> prefix "test_ac_numc -- " |> writeln
+    end
+
+val test_match_type =
+    let
+      fun err n = "test_match_type: " ^ (string_of_int n)
+      val tbl = empty ctxt'
+    in
+      tbl |> (assert_match (@{term_pat "image_mset ?f {#}"},
+                            @{term "{#i. i :# {#}#}"})
+                           [([], @{term "{#i. i :# {#}#}"})] (err 0))
+          |> (assert_match (@{term_pat "sorted []"}, @{term "sorted []"})
+                           [([], @{term "sorted []"})] (err 1))
+          |> to_string |> prefix "test_match_type -- " |> writeln
+    end
+
+val test_fo_match_ac13 =
+    let
+      fun err n = "test_fo_match_ac13: " ^ (string_of_int n)
+      val tbl = empty ctxt'
+    in
+      tbl |> (assert_match (@{term_pat "(?r::rat) / 2"},
+                            @{term "(r::rat) * inverse 2"})
+                           [([], @{term "(r::rat) / 2"})] (err 0))
+          |> (assert_match (@{term_pat "(?r::rat) + ?s - ?s"},
+                            @{term "(r::rat) + s + -s"})
+                           [([], @{term "(r::rat) + s - s"})] (err 1))
+          |> to_string |> prefix "test_fo_match_ac13 -- " |> writeln
+    end
+
+(* Difference between ?NUMC and ?NUMCu, between ?a and ?au. *)
+val test_fo_match_ac14 =
+    let
+      fun err n = "test_fo_match_ac14: " ^ (string_of_int n)
+      val tbl = empty ctxt'
+    in
+      tbl |> (assert_match (@{term_pat "(?NUMC::nat) * ?m * ?m"},
+                            @{term "(m::nat) * m"}) [] (err 0))
+          |> (assert_match (@{term_pat "(?NUMCu::nat) * ?m * ?m"},
+                            @{term "(m::nat) * m"})
+                           [([], @{term "(1::nat) * m * m"})] (err 1))
+          |> (assert_match (@{term_pat "(?NUMCu::nat) * ?m * ?m"},
+                            @{term "(k::nat) * m * m"}) [] (err 2))
+          |> (assert_match (@{term_pat "(?NUMCu::nat) * ?m * ?m"},
+                            @{term "(2::nat) * m * m"})
+                           [([], @{term "(2::nat) * m * m"})] (err 3))
+          |> (assert_match (@{term_pat "(?au::nat) * ?b"},
+                            @{term "b::nat"})
+                           [([], @{term "(1::nat) * b"})] (err 4))
+          |> (assert_match (@{term_pat "(?au::nat) * ?b"},
+                            @{term "(a::nat) * b"})
+                           [([], @{term "(a::nat) * b"}),
+                            ([], @{term "(b::nat) * a"}),
+                            ([], @{term "(1::nat) * (a * b)"})] (err 5))
+          |> (assert_match (@{term_pat "(?mu::int) * ?n"},
+                            @{term "n::int"})
+                           [([], @{term "(1::int) * n"})] (err 6))
+          |> (assert_match (@{term_pat "(?mu::int) + (-?n)"},
+                            @{term "-(n::int)"})
+                           [([], @{term "(0::int) + (-n)"})] (err 7))
+          |> (assert_match (@{term_pat "(?mu::int) + (?n * ?NUMCu)"},
+                            @{term "a::int"})
+                           [([], @{term "(0::int) + (a * 1)"})] (err 8))
+          |> (assert_match (@{term_pat "(?mu::int) + (?n * ?NUMCu)"},
+                            @{term "(a::int) * 2"})
+                           [([], @{term "(0::int) + (a * 2)"}),
+                            ([], @{term "(0::int) + (a * 2) * 1"})] (err 9))
+          |> to_string |> prefix "test_fo_match_ac14 -- " |> writeln
+    end
+
+val test_fo_match_quant4 =
+    let
+      fun err n = "test_fo_match_quant4: " ^ (string_of_int n)
+      val tbl = empty ctxt'
+    in
+      tbl |> (assert_match (@{term_pat "(EX i. ?f i < 0, ?f ?n)"},
+                            @{term "(EX i. i + a < 0, n + a)"})
+                           [([], @{term "(EX i. i + a < 0, n + a)"})] (err 0))
+          |> to_string |> prefix "test_fo_match_quant4 -- " |> writeln
     end
 
 end;  (* local *)

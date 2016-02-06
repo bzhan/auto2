@@ -6,8 +6,8 @@ datatype assertion = Assert "state \<Rightarrow> bool"
 
 fun aseval :: "assertion \<Rightarrow> state \<Rightarrow> bool" where "aseval (Assert f) st = f st"
 setup {* add_rewrite_rule @{thm aseval.simps} *}
-theorem assert_ext: "\<forall>st. aseval A1 st = aseval A2 st \<Longrightarrow> A1 = A2" apply (cases A1) apply (cases A2) by auto
-setup {* add_backward_prfstep @{thm assert_ext} *}
+theorem assert_ext [backward]:
+  "\<forall>st. aseval A1 st = aseval A2 st \<Longrightarrow> A1 = A2" apply (cases A1) apply (cases A2) by auto
 
 definition assert_implies :: "assertion \<Rightarrow> assertion \<Rightarrow> bool" (infix "\<longmapsto>" 50) where
   "assert_implies P Q = (\<forall>st. aseval P st \<longrightarrow> aseval Q st)"
@@ -22,9 +22,8 @@ setup {* add_rewrite_rule @{thm hoare_triple_def} *}
 setup {* add_rewrite_rule @{thm assert_implies_def} *}
 setup {* add_rewrite_rule @{thm assert_iff_def} *}
 
-theorem assert_implies_triv: "P \<longmapsto> P" by auto2
-theorem assert_iff_triv: "assert_iff P P" by auto2
-setup {* fold add_known_fact [@{thm assert_implies_triv}, @{thm assert_iff_triv}] *}
+theorem assert_implies_triv [known_fact]: "P \<longmapsto> P" by auto2
+theorem assert_iff_triv [known_fact]: "assert_iff P P" by auto2
 
 theorem hoare_post_true: "\<forall>st. aseval Q st \<Longrightarrow> {{ P }} c {{ Q }}" by auto2
 theorem hoare_pre_false: "\<forall>st. \<not>(aseval P st) \<Longrightarrow> {{ P }} c {{ Q }}" by auto2
@@ -38,34 +37,40 @@ theorem hoare_seq: "{{ Q }} c2 {{ R }} \<Longrightarrow> {{ P }} c1 {{ Q }} \<Lo
 
 definition assign_sub :: "assertion \<Rightarrow> id \<Rightarrow> aexp \<Rightarrow> assertion" (" _ [ _ \<rightarrow> _ ]" [94,95,95] 95) where
   "(P [ x \<rightarrow> a ]) = Assert (\<lambda>st. aseval P (st {x \<rightarrow> aeval st a}))"
-theorem eval_assign_sub: "aseval (P [ x \<rightarrow> a ]) st = aseval P (st {x \<rightarrow> aeval st a})" by (simp add: assign_sub_def)
-setup {* add_rewrite_rule @{thm eval_assign_sub} *}
+theorem eval_assign_sub [rewrite]:
+  "aseval (P [ x \<rightarrow> a ]) st = aseval P (st {x \<rightarrow> aeval st a})" by (simp add: assign_sub_def)
 
 (* Example for assign_sub. *)
 definition Xle5 :: assertion where "Xle5 = Assert (\<lambda>st. eval st X \<le> 5)"
-definition incrXle5 :: assertion where "incrXle5 = Xle5 [ X \<rightarrow> (APlus (AId X) (ANum 1)) ]"
-setup {* fold add_rewrite_rule [@{thm Xle5_def}, @{thm incrXle5_def}] *}
+setup {* add_rewrite_rule @{thm Xle5_def} *}
 theorem Xle5_test: "aseval (Xle5 [ X \<rightarrow> ANum 3 ]) st" by auto2
+
+definition incrXle5 :: assertion where "incrXle5 = Xle5 [ X \<rightarrow> (APlus (AId X) (ANum 1)) ]"
+setup {* add_rewrite_rule @{thm incrXle5_def} *}
 theorem incrXle5_spec: "incrXle5 = Assert (\<lambda>st. eval st X \<le> 4)" by auto2
+
 definition XtimesYis6 :: assertion where "XtimesYis6 = Assert (\<lambda>st. eval st X * eval st Y = 6)"
 setup {* add_rewrite_rule @{thm XtimesYis6_def} *}
 theorem XtimesYis6_test: "XtimesYis6 [ X \<rightarrow> ANum 2 ] [Y \<rightarrow> ANum 3 ] = Assert (\<lambda>st. True)" by auto2
 
 theorem hoare_assign: "{{ Q [ x \<rightarrow> a ] }} (x := a) {{ Q }}" by auto2
 
-definition and_bassn :: "assertion \<Rightarrow> bexp \<Rightarrow> assertion" (infixl "&&" 95) where "(A && b) = Assert (\<lambda>st. aseval A st \<and> beval st b)"
-definition and_nbassn :: "assertion \<Rightarrow> bexp \<Rightarrow> assertion" (infixl "&~" 95) where "(A &~ b) = Assert (\<lambda>st. aseval A st \<and> \<not> beval st b)"
-theorem eval_bassn: "aseval (A && b) st = (aseval A st \<and> beval st b)" by (simp add: and_bassn_def)
-theorem eval_nbassn: "aseval (A &~ b) st = (aseval A st \<and> \<not> beval st b)" by (simp add: and_nbassn_def)
-setup {* fold add_rewrite_rule [@{thm eval_bassn}, @{thm eval_nbassn}] *}
+definition and_bassn :: "assertion \<Rightarrow> bexp \<Rightarrow> assertion" (infixl "&&" 95) where
+  "(A && b) = Assert (\<lambda>st. aseval A st \<and> beval st b)"
+definition and_nbassn :: "assertion \<Rightarrow> bexp \<Rightarrow> assertion" (infixl "&~" 95) where
+  "(A &~ b) = Assert (\<lambda>st. aseval A st \<and> \<not> beval st b)"
+
+theorem eval_bassn [rewrite]: "aseval (A && b) st = (aseval A st \<and> beval st b)"
+  by (simp add: and_bassn_def)
+theorem eval_nbassn [rewrite]: "aseval (A &~ b) st = (aseval A st \<and> \<not> beval st b)"
+  by (simp add: and_nbassn_def)
 
 theorem hoare_if: "{{ (P && b) }} c1 {{ Q }} \<Longrightarrow> {{ P &~ b }} c2 {{ Q }} \<Longrightarrow>
                    {{ P }} (IF b THEN c1 ELSE c2 FI) {{ Q }}" by auto2
 
-theorem hoare_while1:
+theorem hoare_while1 [forward]:
   "{{ P && b }} c {{ P }} \<Longrightarrow> ceval (WHILE b DO c OD) st st' \<Longrightarrow> aseval P st \<Longrightarrow> aseval (P &~ b) st'"
   by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("ceval (WHILE b DO c OD) st st'", [])) *})
-setup {* add_forward_prfstep @{thm hoare_while1} *}
 theorem hoare_while: "{{ P && b }} c {{ P }} \<Longrightarrow> {{ P }} (WHILE b DO c OD) {{ P &~ b }}" by auto2
 setup {* del_prfstep_thm @{thm hoare_while1} *}
 
@@ -80,8 +85,7 @@ datatype dcom =
 | DCPost dcom assertion ("_ \<rightarrow>/ {{ _ }}" [75,76] 75)
 
 definition noCond :: assertion where "noCond = Assert (\<lambda>st. True)"
-theorem eval_noCond: "aseval noCond st" by (simp add: noCond_def)
-setup {* add_known_fact @{thm eval_noCond} *}
+theorem eval_noCond [known_fact]: "aseval noCond st" by (simp add: noCond_def)
 
 fun extract_dcom :: "dcom \<Rightarrow> com" where
   "extract_dcom (DCSkip P) = SKIP"
@@ -182,8 +186,8 @@ definition subtract_slowly_dec :: "nat \<Rightarrow> nat \<Rightarrow> dcom" whe
        BNot (BEq (AId X) (ANum 0)) }}) \<rightarrow>
     {{ Assert (\<lambda>st. eval st Z = p - m) }})
 "
-theorem cancel_sub_1: "x \<noteq> 0 \<Longrightarrow> ((y::nat) - 1) - (x - 1) = y - x" by simp
-setup {* add_rewrite_rule @{thm cancel_sub_1} *}
+theorem cancel_sub_1 [rewrite]: "x \<noteq> 0 \<Longrightarrow> ((y::nat) - 1) - (x - 1) = y - x" by simp
+
 setup {* add_rewrite_rule @{thm subtract_slowly_dec_def} *}
 theorem subtract_slowly_dec_correct: "dec_correct (subtract_slowly_dec m p)" by auto2
 

@@ -2,6 +2,7 @@
    Status, which represents the state of the proof.
  *)
 
+val TY_NULL = "NULL"
 val TY_EQ = "EQ"
 val TY_VAR = "VAR"
 val TY_PROP = "PROP"
@@ -11,7 +12,7 @@ signature BOXITEM =
 sig
   type retro_handler
   datatype raw_item = Handler of term * retro_handler
-                    | Fact of string * term list * thm
+                    | Fact of string * term * thm
   (* Facts. *)
   val var_to_fact: term -> raw_item
   val term_to_fact: term -> raw_item
@@ -20,33 +21,28 @@ sig
   val get_ty_str_raw: raw_item -> string
   val match_ty_str_raw: string -> raw_item -> bool
   val match_ty_strs_raw: string list -> raw_item -> bool
-  val get_tname_raw: raw_item -> term list
-  val get_single_tname_raw: raw_item -> term
+  val get_tname_raw: raw_item -> term
   (* Handlers. *)
   val is_handler_raw: raw_item -> bool
   val dest_handler_raw: raw_item -> term * retro_handler
   (* Misc. functions. *)
   val eq_ritem: raw_item * raw_item -> bool
-  val instantiate: (cterm * cterm) list -> raw_item -> raw_item
-  val obtain_variant_frees:
-      Proof.context * raw_item list -> Proof.context * (cterm * cterm) list
+  val instantiate: ((indexname * typ) * cterm) list -> raw_item -> raw_item
+  val obtain_variant_frees: Proof.context * raw_item list ->
+                            Proof.context * ((indexname * typ) * cterm) list
 
   type box_item
+  val null_item: box_item
   val id_of_item: box_item -> box_id
   val score_of_item: box_item -> int
   val get_thm: box_item -> thm
   val get_ty_str: box_item -> string
   val match_ty_str: string -> box_item -> bool
   val match_ty_strs: string list -> box_item -> bool
-  val get_tname: box_item -> term list
-  val get_single_tname: box_item -> term
+  val get_tname: box_item -> term
   (* Misc. functions. *)
+  val merged_id: box_lattice -> box_item list -> box_id
   val mk_box_item: box_id * int * raw_item -> box_item
-
-  type pre_filter
-  val no_prereq_fn: rewrite_table -> box_item -> bool
-  val apply_pre_filter: rewrite_table -> pre_filter -> box_item -> bool
-  val apply_pre_filter_ty_only: pre_filter -> box_item -> bool
 end;
 
 structure BoxItem : BOXITEM =
@@ -54,10 +50,10 @@ struct
 
 type retro_handler = (term * term list -> bool) * (term * thm -> thm)
 datatype raw_item = Handler of term * retro_handler
-                  | Fact of string * term list * thm
+                  | Fact of string * term * thm
 
-fun var_to_fact t = Fact (TY_VAR, [t], true_th)
-fun term_to_fact t = Fact (TY_TERM, [t], true_th)
+fun var_to_fact t = Fact (TY_VAR, t, true_th)
+fun term_to_fact t = Fact (TY_TERM, t, true_th)
 
 fun is_fact_raw ritem =
     case ritem of Fact _ => true | _ => false
@@ -73,10 +69,7 @@ fun match_ty_strs_raw slist ritem =
     is_fact_raw ritem andalso member (op =) slist (get_ty_str_raw ritem)
 fun get_tname_raw ritem =
     case ritem of Fact (_, tname, _) => tname
-                | _ => raise AUTO2 "get_term_raw: wrong type"
-fun get_single_tname_raw ritem =
-    the_single (get_tname_raw ritem)
-    handle List.Empty => raise AUTO2 "get_single_tname: multiple tnames."
+                | _ => raise AUTO2 "get_tname_raw: wrong type"
 
 fun is_handler_raw ritem =
     case ritem of Handler _ => true | _ => false
@@ -90,18 +83,20 @@ fun eq_ritem (ritem1, ritem2) =
                                      dest_handler_raw ritem2)
     else if is_fact_raw ritem1 andalso is_fact_raw ritem2 then
       (get_ty_str_raw ritem1 = get_ty_str_raw ritem2 andalso
-       eq_list (op aconv) (get_tname_raw ritem1, get_tname_raw ritem2) andalso
-       Thm.eq_thm (get_thm_raw ritem1, get_thm_raw ritem2))
+       get_tname_raw ritem1 aconv get_tname_raw ritem2 andalso
+       Thm.eq_thm_prop (get_thm_raw ritem1, get_thm_raw ritem2))
     else false
 
 fun instantiate inst ritem =
     let
-      val subst = subst_atomic (map (apply2 Thm.term_of) inst)
+      val subst =
+          map (fn ((idx, T), ct) => (Var (idx, T), Thm.term_of ct)) inst
+      val subst_fun = subst_atomic subst
     in
       case ritem of
-          Handler (t, handler) => Handler (subst t, handler)
+          Handler (t, handler) => Handler (subst_fun t, handler)
         | Fact (ty_str, tname, th) =>
-          Fact (ty_str, map subst tname, th |> Thm.instantiate ([], inst)
+          Fact (ty_str, subst_fun tname, th |> Thm.instantiate ([], inst)
                                             |> send_concrete_to_hyps)
     end
 
@@ -115,25 +110,22 @@ fun obtain_variant_frees (ctxt, ritems) =
     let
       (* Original internal variables. *)
       val all_vars =
-          ritems |> filter (match_ty_str_raw TY_VAR) |> map get_single_tname_raw
+          ritems |> filter (match_ty_str_raw TY_VAR) |> map get_tname_raw
                  |> filter is_Var |> map dest_Var
       (* New names for these variables. *)
       val all_vars' =
           all_vars |> map (fn ((nm,_), T) => (Name.dest_internal nm, T))
                    |> Variable.variant_frees ctxt []
           handle Fail "unsuffix" =>
-                 raise AUTO2 "replace_internals_items: dest_internal"
-      val subst = (map Var all_vars) ~~ (map Free all_vars')
-      val csubst = map (apply2 (cert ctxt)) subst
+                 raise AUTO2 "obtain_variant_frees: dest_internal"
+      val subst = all_vars ~~ (map (cert ctxt o Free) all_vars')
     in
-      (* Use add_fixes_direct to update ctxt, since this is called
-         when ctxt is in body.
-       *)
-      (Variable.add_fixes_direct (map fst all_vars') ctxt, csubst)
+      (fold declare_free_term (map Free all_vars') ctxt, subst)
     end
 
-type box_item =
-     {id: box_id, sc: int, ty_str: string, tname: term list, prop: thm}
+type box_item = {id: box_id, sc: int, ty_str: string, tname: term, prop: thm}
+val null_item = {id = [], sc = 0, ty_str = TY_NULL, tname = HOLogic.unit,
+                 prop = true_th}
 fun id_of_item {id, ...} = id
 fun score_of_item {sc, ...} = sc
 fun get_thm {prop, ...} = prop
@@ -141,260 +133,282 @@ fun get_ty_str {ty_str, ...} = ty_str
 fun match_ty_str s {ty_str, ...} = (s = "" orelse s = ty_str)
 fun match_ty_strs slist {ty_str, ...} = member (op =) slist ty_str
 fun get_tname {tname, ...} = tname
-fun get_single_tname {tname, ...} = the_single tname
+
+fun merged_id lat items =
+    let
+      fun merge items =
+          case items of
+              [] => []
+            | {id, ...} :: items' => BoxID.merge_boxes lat (id, merge items')
+    in
+      merge items
+    end
+
 fun mk_box_item (id, sc, ritem) =
     case ritem of
         Handler _ => raise AUTO2 "mk_box_item: ritem must be Fact"
       | Fact (ty_str, tname, prop) =>
         {id = id, sc = sc, ty_str = ty_str, tname = tname, prop = prop}
 
-type pre_filter = {ty_str: string, pre_filt: rewrite_table -> box_item -> bool}
-
-fun no_prereq_fn _ _ = true
-
-fun apply_pre_filter tbl {ty_str, pre_filt} item =
-    (match_ty_str ty_str item andalso pre_filt tbl item)
-fun apply_pre_filter_ty_only {ty_str, ...} item = match_ty_str ty_str item
-
 end  (* structure BoxItem. *)
 
 open BoxItem
 
-(* Registry of functions for matching items to patterns and for
-   converting items to theorems.
- *)
-type match_fn = term -> box_item -> rewrite_table -> id_inst -> id_inst_th list
+(* Specifies a method for matching patterns against items.
 
-datatype item_io_table
-  = ItemIOTable of {
-    item_to_th: ((term -> pre_filter option) * match_fn) list,
-    th_to_item: (term -> thm -> raw_item option) list,
-    str_of_item: (Proof.context -> term list * thm -> string) Symtab.table}
+   - pre_match is a filter function checking whether it is possible
+     for the pattern to match the item, after possibly instantiating
+     some schematic variables in the pattern (for example, this
+     function should always return true if input pattern is ?A).
+
+   - match is the actual matching function, returning instantiation,
+     as well as theorem justifying the instantiated pattern.
+
+   If the matcher is for justifying a proposition, the input term to
+   pre_match and match is of type bool. Othewise, the restrictions
+   depend on type of item to match.
+ *)
+type item_matcher = {
+  pre_match: term -> box_item -> rewrite_table -> bool,
+  match: term -> box_item -> rewrite_table -> id_inst -> id_inst_th list
+}
+
+(* Output function for items of a given type. *)
+type item_output = Proof.context -> term * thm -> string
+
+(* Data structure containing methods involved in the input / output of
+   items of a given type.
+
+   - prop_matchers: methods for matching the item against a desired
+     proposition.
+
+   - typed_matchers: methods for matching the item against a pattern
+     for items of the same type.
+
+   - output_fn: printing function of theorems. Input is tname and the
+     proposition.
+ *)
+type item_io_info = {
+  prop_matchers: item_matcher list, typed_matchers: item_matcher list,
+  output_fn: item_output option}
+
+fun add_prop_matcher_to_info mtch {prop_matchers, typed_matchers, output_fn} =
+    {prop_matchers = mtch :: prop_matchers,
+     typed_matchers = typed_matchers, output_fn = output_fn}
+
+fun add_typed_matcher_to_info mtch {prop_matchers, typed_matchers, output_fn} =
+    {prop_matchers = prop_matchers,
+     typed_matchers = mtch :: typed_matchers, output_fn = output_fn}
+
+fun join_infos ({prop_matchers = pm1, typed_matchers = tm1, output_fn = of1},
+                {prop_matchers = pm2, typed_matchers = tm2, output_fn = of2}) =
+    {prop_matchers = merge pointer_eq (pm1, pm2),
+     typed_matchers = merge pointer_eq (tm1, tm2),
+     output_fn = (if pointer_eq (of1, of2) then of1
+                  else raise AUTO2 "join_infos: output non-equal")}
 
 structure ItemIOData =
 Theory_Data (
-  type T = item_io_table;
-  val empty = ItemIOTable {
-        item_to_th = [], th_to_item = [], str_of_item = Symtab.empty};
+  type T = item_io_info Symtab.table
+  val empty = Symtab.empty
   val extend = I;
-  fun merge (
-    ItemIOTable {item_to_th = ith1, th_to_item = thi1, str_of_item = tab1},
-    ItemIOTable {item_to_th = ith2, th_to_item = thi2, str_of_item = tab2}) =
-      ItemIOTable {item_to_th = Library.merge pointer_eq (ith1, ith2),
-                   th_to_item = Library.merge pointer_eq (thi1, thi2),
-                   str_of_item = Symtab.merge pointer_eq (tab1, tab2)}
+  val merge = Symtab.join (fn _ => join_infos)
 )
+
+datatype match_arg = PropMatch of term | TypedMatch of string * term
+
+fun pat_of_match_arg arg =
+    case arg of PropMatch pat => pat | TypedMatch (_, pat) => pat
+
+fun subst_arg inst arg =
+    case arg of PropMatch pat => PropMatch (subst_term_norm inst pat)
+              | TypedMatch (ty_str, pat) =>
+                TypedMatch (ty_str, subst_term_norm inst pat)
+
+fun assert_valid_arg arg =
+    case arg of PropMatch pat =>
+                assert (fastype_of pat = boolT)
+                       "assert_valid_arg: arg for PropMatch should be bool."
+              | TypedMatch _ => ()
+
+fun check_ty_str ty_str arg =
+    case arg of PropMatch _ => true
+              | TypedMatch (ty_str', _) => ty_str = ty_str'
 
 signature ITEM_IO_DATA =
 sig
-  val add_item_to_th: (term -> pre_filter option) * match_fn -> theory -> theory
-  val add_th_to_item: (term -> thm -> raw_item option) -> theory -> theory
-  val add_str_of_item:
-      string * (Proof.context -> term list * thm -> string) -> theory -> theory
-  val univ_filt: pre_filter
-  val find_th_matcher: theory -> term -> pre_filter * match_fn
-  val univ_matcher: match_fn
-  val prop_match: match_fn
-  val term_match: match_fn
-  val eq_prop_filt: term -> pre_filter option
-  val eq_prop_match: match_fn
-  val thm_to_ritem: theory -> thm -> raw_item
-  val string_of_item_info: Proof.context -> string * term list * thm -> string
+  val add_item_type: string * item_output option -> theory -> theory
+  val add_prop_matcher: string * item_matcher -> theory -> theory
+  val add_typed_matcher: string * item_matcher -> theory -> theory
+  val get_io_info: theory -> string -> item_io_info
+  val get_prop_matchers: theory -> string -> item_matcher list
+  val get_typed_matchers: theory -> string -> item_matcher list
+  val prop_matcher: item_matcher
+  val term_prop_matcher: item_matcher
+  val term_typed_matcher: item_matcher
+  val pre_match_arg: rewrite_table -> match_arg -> box_item -> bool
+  val match_arg: rewrite_table -> match_arg -> box_item -> id_inst ->
+                 id_inst_th list
+  val output_prop_fn: item_output
+  val string_of_item_info: Proof.context -> string * term * thm -> string
   val add_basic_item_io: theory -> theory
 end;
 
 structure ItemIO_Data : ITEM_IO_DATA =
 struct
 
-fun add_item_to_th (filt, matcher) = ItemIOData.map (
-      fn ItemIOTable {item_to_th, th_to_item, str_of_item} =>
-         ItemIOTable {item_to_th = (filt, matcher) :: item_to_th,
-                      th_to_item = th_to_item, str_of_item = str_of_item})
+fun add_item_type (ty_str, output_fn) = ItemIOData.map (
+      Symtab.update_new (ty_str, {prop_matchers = [], typed_matchers = [],
+                                  output_fn = output_fn}))
 
-fun add_th_to_item conv_fn = ItemIOData.map (
-      fn ItemIOTable {item_to_th, th_to_item, str_of_item} =>
-         ItemIOTable {item_to_th = item_to_th,
-                      th_to_item = conv_fn :: th_to_item,
-                      str_of_item = str_of_item})
+fun add_prop_matcher (ty_str, it_match) = ItemIOData.map (
+      Symtab.map_entry ty_str (add_prop_matcher_to_info it_match))
 
-fun add_str_of_item (ty_str, f) = ItemIOData.map (
-      fn ItemIOTable {item_to_th, th_to_item, str_of_item} =>
-         ItemIOTable {
-           item_to_th = item_to_th, th_to_item = th_to_item,
-           str_of_item = str_of_item |> Symtab.update_new (ty_str, f)})
+fun add_typed_matcher (ty_str, it_match) = ItemIOData.map (
+      Symtab.map_entry ty_str (add_typed_matcher_to_info it_match))
 
-(* Matching any Trueprop term with a PROP item. *)
-fun prop_filt t =
+fun get_io_info thy ty_str =
+    the (Symtab.lookup (ItemIOData.get thy) ty_str)
+    handle Option.Option => raise AUTO2 ("get_io_info: not found " ^ ty_str)
+
+fun get_prop_matchers thy ty_str = #prop_matchers (get_io_info thy ty_str)
+fun get_typed_matchers thy ty_str = #typed_matchers (get_io_info thy ty_str)
+
+(* Prop-matching with a PROP item. *)
+val prop_matcher =
     let
-      fun filt pat tbl {id, tname, ...} =
-          length (fo_table_match id tbl (pat, the_single tname)) > 0
-    in
-      case t of
-          Const (@{const_name Trueprop}, _) $ pat =>
-          SOME {ty_str = TY_PROP, pre_filt = filt pat}
-        | _ => NONE
-    end
+      fun pre_match pat {id, tname, ...} tbl =
+          length (fo_table_match id tbl (pat, tname)) > 0
 
-fun prop_match t {tname, prop, ...} tbl (id, inst) =
-    let
-      val pat = HOLogic.dest_Trueprop t
-      val insts' =
-          RewriteTable.fo_rewrite_match tbl (pat, the_single tname) (id, inst)
-      fun process_inst (inst, eq_th) =
-          (inst, Thm.equal_elim (make_trueprop_eq (meta_sym eq_th)) prop)
-    in
-      map process_inst insts'
-    end
-
-(* Universal matcher (find the appropriate matcher for t at runtime). *)
-val univ_filt = {ty_str = "", pre_filt = no_prereq_fn}
-
-fun find_th_matcher thy t =
-    case t of
-        Const (@{const_name Trueprop}, _) $ Var _ => (univ_filt, univ_matcher)
-      | _ =>
-        let
-          val ItemIOTable {item_to_th, ...} = ItemIOData.get thy
-        in
-          case find_first (fn (filt, _) => is_some (filt t)) item_to_th of
-              NONE => raise AUTO2 "find_th_matcher: cannot find matcher."
-            | SOME (filt, matcher) => (the (filt t), matcher)
-        end
-
-and univ_matcher t item tbl (id, inst) =
-    let
-      val thy = RewriteTable.theory_of tbl
-      val (filt, matcher) = find_th_matcher thy t
-      (* Change to default prop matcher, if still univ. *)
-      val (filt', matcher') = if pointer_eq (matcher, univ_matcher) then
-                                (the (prop_filt t), prop_match)
-                              else (filt, matcher)
-    in
-      if apply_pre_filter_ty_only filt' item then
-        matcher' t item tbl (id, inst)
-      else []
-    end
-
-(* Matching any term (not of type prop) with a TERM item. *)
-fun term_filt t =
-    let
-      fun filt tbl {id, tname, ...} =
-          length (RewriteTable.fo_rewrite_match_head
-                      tbl (t, the_single tname) (id, fo_init)) > 0
-    in
-      if fastype_of t = @{typ prop} then NONE
-      else SOME {ty_str = TY_TERM, pre_filt = filt}
-    end
-
-fun term_match t {tname, ...} tbl (id, inst) =
-    let
-      val insts' = RewriteTable.fo_rewrite_match_head
-                       tbl (t, the_single tname) (id, inst)
-      fun process_inst (inst, _) = (inst, true_th)
-    in
-      map process_inst insts'
-    end
-
-(* Matching a Trueprop equality with a TERM item. *)
-fun eq_prop_filt t =
-    let
-      fun filt pat tbl {id, tname, ...} =
-          length (fo_table_match id tbl (pat, the_single tname)) > 0
-    in
-      case t of
-          Const (@{const_name Trueprop}, _) $ (
-            Const (@{const_name HOL.eq}, _) $ lhs $ _) =>
-          SOME {ty_str = TY_TERM, pre_filt = filt lhs}
-        | _ => NONE
-    end
-
-fun eq_prop_match t {tname, ...} tbl (id, inst) =
-    let
-      val (lhs, rhs) = t |> HOLogic.dest_Trueprop |> HOLogic.dest_eq
-      val u = the_single tname
-      val insts' =
-          RewriteTable.fo_rewrite_match_list
-              tbl [(true, (lhs, u)), (false, (rhs, u))] (id, inst)
-      fun process_inst (inst, ths) =
+      fun match pat {tname, prop, ...} tbl (id, inst) =
           let
-            (* th1: lhs(env) == u, th2: rhs(env) == u. *)
-            val (th1, th2) = the_pair ths
+            val insts' =
+                RewriteTable.fo_rewrite_match tbl (pat, tname) (id, inst)
+            fun process_inst (inst, eq_th) =
+                (inst, Thm.equal_elim (make_trueprop_eq (meta_sym eq_th)) prop)
           in
-            (inst, to_obj_eq (transitive_list [th1, meta_sym th2]))
+            map process_inst insts'
           end
     in
-      map process_inst insts'
+      {pre_match = pre_match, match = match}
     end
 
-(* Whether the given term contains a non-internal schematic q
-   variable.
- *)
-fun has_non_internal_var t =
-    exists (fn ((nm, _), _) => not (Name.is_internal nm))
-           (Term.add_vars t [])
-
-(* Remove any initial assumptions that contain no schematic variables
-   or only internal schematic variables (which will be replaced by
-   free variables).
- *)
-fun strip_internal_var_assums prop =
-    case prop of
-        Const ("Pure.imp", _) $ A $ B =>
-        if has_non_internal_var A then prop
-        else strip_internal_var_assums B
-      | _ => prop
-
-fun thm_to_ritem thy th =
+(* Prop-matching with a TERM item (used to justify equalities). *)
+val term_prop_matcher =
     let
-      val ItemIOTable {th_to_item, ...} = ItemIOData.get thy
-      val prop = strip_internal_var_assums (Thm.prop_of th)
+      fun pre_match pat {id, tname, ...} tbl =
+          case pat of
+              Const ("HOL.eq", _) $ lhs $ _ =>
+              length (fo_table_match id tbl (lhs, tname)) > 0
+            | _ => false
+
+      fun match pat {tname = u, ...} tbl (id, inst) =
+          if fastype_of pat <> boolT orelse not (is_eq_term pat) then [] else
+          let
+            val (lhs, rhs) = pat |> HOLogic.dest_eq
+            val insts' =
+                RewriteTable.fo_rewrite_match_list
+                    tbl [(true, (lhs, u)), (false, (rhs, u))] (id, inst)
+            fun process_inst (inst, ths) =
+                let
+                  (* th1: lhs(env) == u, th2: rhs(env) == u. *)
+                  val (th1, th2) = the_pair ths
+                in
+                  (inst, to_obj_eq (transitive_list [th1, meta_sym th2]))
+                end
+          in
+            map process_inst insts'
+          end
     in
-      case get_first (fn conv_fn => conv_fn prop th) th_to_item of
-          NONE => raise AUTO2CT (
-                   "thm_to_ritem: cannot convert theorem.", [Thm.cprop_of th])
-        | SOME ritem => ritem
+      {pre_match = pre_match, match = match}
     end
 
-fun prop_to_ritem prop th =
-    if is_Trueprop prop andalso not (has_non_internal_var prop) then
-      SOME (Fact (TY_PROP, [HOLogic.dest_Trueprop prop], th))
-    else NONE
+(* Typed matching with a TERM item. *)
+val term_typed_matcher =
+    let
+      fun pre_match pat {id, tname, ...} tbl =
+          length (fo_table_match_head id tbl (pat, tname)) > 0
 
-fun eq_to_ritem prop th =
-    if is_eq_term' prop andalso not (has_non_internal_var prop) then
-      SOME (Fact (TY_EQ, list_pair (HOLogic.dest_eq (
-                                       HOLogic.dest_Trueprop prop)), th))
-    else NONE
+      fun match pat {tname, ...} tbl (id, inst) =
+          let
+            val insts' =
+                RewriteTable.fo_rewrite_match_head tbl (pat, tname) (id, inst)
+            fun process_inst (inst, _) = (inst, true_th)
+          in
+            map process_inst insts'
+          end
+    in
+      {pre_match = pre_match, match = match}
+    end
+
+(* Generic pre-matching function. Returns whether there is a possible
+   match among any of the registered matchers.
+ *)
+fun pre_match_arg tbl arg (item as {ty_str, ...}) =
+    if not (check_ty_str ty_str arg) then false else
+    let
+      val _ = assert_valid_arg arg
+      val thy = RewriteTable.theory_of tbl
+      val {prop_matchers, typed_matchers, ...} = get_io_info thy ty_str
+      val pat = pat_of_match_arg arg
+    in
+      if not (is_pattern pat) then true else
+      case (arg, pat) of
+          (PropMatch _, Var _) => true
+        | (PropMatch _, Const ("HOL.Not", _) $ Var _) => true
+        | (PropMatch _, _) =>
+          exists (fn f => f pat item tbl) (map #pre_match prop_matchers)
+        | (TypedMatch _, _) =>
+          exists (fn f => f pat item tbl) (map #pre_match typed_matchers)
+    end
+
+(* Generic matching function. Returns list of all matches (iterating
+   over all registered matchers for the given item type. Note box_id
+   for item is taken into account here.
+ *)
+fun match_arg (tbl as {lat, ...}) arg (item as {id, ty_str, ...}) (id', inst) =
+    if not (check_ty_str ty_str arg) then [] else
+    let
+      val _ = assert_valid_arg arg
+      val thy = RewriteTable.theory_of tbl
+      val {prop_matchers, typed_matchers, ...} = get_io_info thy ty_str
+      val pat = pat_of_match_arg arg
+      val id'' = BoxID.merge_boxes lat (id, id')
+    in
+      case arg of
+          PropMatch _ => maps (fn f => f pat item tbl (id'', inst))
+                              (map #match prop_matchers)
+        | TypedMatch _ => maps (fn f => f pat item tbl (id'', inst))
+                               (map #match typed_matchers)
+    end
+
+fun output_prop_fn ctxt (_, th) = Thm.prop_of th |> pretty_term ctxt |> str
 
 fun string_of_item_info ctxt (ty_str, tname, th) =
     let
       val thy = Proof_Context.theory_of ctxt
-      val ItemIOTable {str_of_item, ...} = ItemIOData.get thy
+      val {output_fn, ...} = get_io_info thy ty_str
     in
-      case Symtab.lookup str_of_item ty_str of
-          NONE => ty_str ^ " " ^ (tname |> pretty_terms ctxt |> str)
+      case output_fn of
+          NONE => ty_str ^ " " ^ (tname |> pretty_term ctxt |> str)
         | SOME f => f ctxt (tname, th)
     end
 
 val add_basic_item_io =
-    fold add_item_to_th [
-      (prop_filt, prop_match),
-      (term_filt, term_match)
+    fold add_item_type [
+      (TY_NULL, NONE), (TY_PROP, SOME output_prop_fn), (TY_TERM, NONE),
+      (TY_EQ, SOME output_prop_fn), (TY_VAR, NONE)
 
-    ] #> fold add_th_to_item [
-      prop_to_ritem, eq_to_ritem
+    ] #> fold add_prop_matcher [
+      (TY_PROP, prop_matcher), (TY_TERM, term_prop_matcher)
 
-    ] #> fold add_str_of_item [
-      (TY_EQ, fn ctxt => fn (_, th) =>
-                 th |> Thm.prop_of |> pretty_term ctxt |> str),
-      (TY_PROP, fn ctxt => fn (_, th) =>
-                   th |> Thm.prop_of |> pretty_term ctxt |> str)
+    ] #> fold add_typed_matcher [
+      (TY_PROP, prop_matcher), (TY_TERM, term_typed_matcher),
+      (TY_VAR, term_typed_matcher)
     ]
 
 end  (* structure ItemIO_Data. *)
 
-val thm_to_ritem = ItemIO_Data.thm_to_ritem
-fun thm_to_ritem_ctxt ctxt = thm_to_ritem (Proof_Context.theory_of ctxt)
 fun string_of_raw_item ctxt ritem =
     case ritem of
         Handler (t, _) => "Handler " ^ (t |> pretty_term ctxt |> str)
@@ -417,11 +431,12 @@ sig
   type resolve_callback
   type update
   val type_of_update: raw_update -> update_type
+  val string_of_update_type: update_type -> string
   val null_callback: resolve_callback
-  val thm_update: theory -> box_id * thm -> raw_update
+  val thm_to_ritem: thm -> raw_item
+  val thm_update: box_id * thm -> raw_update
   val handler_ritems: Proof.context -> term -> retro_handler -> raw_item list
-  val apply_horn_clause:
-      theory -> box_id * thm -> resolve_callback -> raw_update list
+  val apply_horn_clause: box_id * thm -> resolve_callback -> raw_update list
   val apply_exists: box_id * thm -> Proof.context -> string list ->
                     raw_update list
   val target_of_update: raw_update -> box_id
@@ -451,18 +466,56 @@ fun type_of_update raw_updt =
       | ResolveBox _ => RESOLVE_BOX
       | ShadowItem _ => SHADOW_ITEM
 
+fun string_of_update_type updt_ty =
+    case updt_ty of
+        ADD_ITEMS => "ADD_ITEMS"
+      | ADD_BOXES => "ADD_BOXES"
+      | RESOLVE_BOX => "RESOLVE_BOX"
+      | SHADOW_ITEM => "SHADOW_ITEM"
+
 val null_callback = K []
 
-fun thm_update thy (id, th) =
+(* Whether the given term contains a non-internal schematic q
+   variable.
+ *)
+fun has_non_internal_var t =
+    exists (fn ((nm, _), _) => not (Name.is_internal nm))
+           (Term.add_vars t [])
+
+(* Remove any initial assumptions that contain no schematic variables
+   or only internal schematic variables (which will be replaced by
+   free variables).
+ *)
+fun strip_internal_var_assums prop =
+    case prop of
+        Const ("Pure.imp", _) $ A $ B =>
+        if has_non_internal_var A then prop else strip_internal_var_assums B
+      | _ => prop
+
+fun thm_to_ritem th =
+    let
+      val prop = strip_internal_var_assums (Thm.prop_of th)
+      val _ = assert (is_Trueprop prop) "thm_update: prop is not Trueprop."
+      val _ = assert (not (has_non_internal_var prop))
+                     "thm_update: prop has non-internal schematic variables."
+      val prop' = HOLogic.dest_Trueprop prop
+    in
+      if is_eq_term' prop then
+        Fact (TY_EQ, HOLogic.mk_prod (HOLogic.dest_eq prop'), th)
+      else
+        Fact (TY_PROP, prop', th)
+    end
+
+fun thm_update (id, th) =
     if Thm.prop_of th aconv prop_False then
       ResolveBox {id = id, th = th}
     else
-      AddItems {id = id, raw_items = [thm_to_ritem thy th]}
+      AddItems {id = id, raw_items = [thm_to_ritem th]}
 
 fun handler_ritems ctxt t handler =
-    [Handler (t, handler), thm_to_ritem_ctxt ctxt (assume_thm ctxt t)]
+    [Handler (t, handler), thm_to_ritem (assume_thm ctxt t)]
 
-fun apply_horn_clause thy (id, th) cb =
+fun apply_horn_clause (id, th) cb =
     case Thm.prop_of th of
         Const ("Pure.imp", _) $ A $ _ =>
         let
@@ -471,17 +524,17 @@ fun apply_horn_clause thy (id, th) cb =
                                     |> apfst (map HOLogic.mk_Trueprop)
                                     |> apsnd HOLogic.mk_Trueprop
           fun callback (id', th_fst) =
-              apply_horn_clause thy (id', [th_fst] MRS th) cb
+              apply_horn_clause (id', [th_fst] MRS th) cb
         in
           [AddBoxes {id = id, vars = vars, assums = assums, concls = [concl],
                      cb = callback}]
         end
-      | _ => if pointer_eq (cb, null_callback) then [thm_update thy (id, th)]
+      | _ => if pointer_eq (cb, null_callback) then [thm_update (id, th)]
              else cb (id, th)
 
 (* nms specify the names of free variables, either internal (use
-   replace_internals_items to fix) or otherwise (will be put into
-   context as is).
+   obtain_variant_frees to fix) or otherwise (will be put into context
+   as is).
  *)
 fun apply_exists (id, ex_th) ctxt nms =
     let
@@ -541,7 +594,7 @@ fun apply_exists (id, ex_th) ctxt nms =
 
       val ritems = (map var_to_fact vars) @
                    [Handler (new_prop', (ready, handler)),
-                    Fact (TY_PROP, [new_prop], new_th)]
+                    Fact (TY_PROP, new_prop, new_th)]
     in
       [AddItems {id = id, raw_items = ritems}]
     end
@@ -566,8 +619,8 @@ end  (* structure Update. *)
 
 structure ItemTab =
 Table (
-  type key = string * term list
-  val ord = prod_ord string_ord (list_ord Term_Ord.fast_term_ord)
+  type key = string * term
+  val ord = prod_ord string_ord Term_Ord.fast_term_ord
 );
 
 signature BOX =
@@ -586,7 +639,7 @@ sig
   val add_item: box_item -> box -> box
   val is_item_removed: box_item * box_id list -> bool
   val get_items: box -> box_item list
-  val lookup_item: box -> string * term list -> (box_item * box_id list) option
+  val lookup_item: box -> string * term -> (box_item * box_id list) option
   val get_freevars: box -> term list
   val get_dep_vars: box -> term list
 
@@ -632,8 +685,7 @@ fun get_items {items, ...} =
 fun lookup_item {items, ...} (ty_str, tname) =
     ItemTab.lookup items (ty_str, tname)
 
-val get_freevars =
-    map get_single_tname o filter (match_ty_str TY_VAR) o get_items
+val get_freevars = map get_tname o filter (match_ty_str TY_VAR) o get_items
 fun get_dep_vars box =
     subtract (op aconv) (get_init_vars box) (get_freevars box)
 
@@ -706,14 +758,14 @@ sig
   val add_item: box_item -> status -> status
   val add_handler: box_id -> (term * retro_handler) -> status -> status
   val lookup_item:
-      status -> box_id -> string * term list -> (box_item * box_id list) option
+      status -> box_id -> string * term -> (box_item * box_id list) option
   val lookup_item_all:
-      status -> box_id -> string * term list -> (box_item * box_id list) list
+      status -> box_id -> string * term -> (box_item * box_id list) list
   val add_shadowed: box_id * box_item -> status -> status
   val query_shadowed: status -> box_id -> box_item -> bool
   val query_removed: status -> box_item -> bool
 
-  val find_item: status -> box_id -> string * term list -> box_item option
+  val find_item: status -> box_id -> string * term -> box_item option
   val find_fact: status -> box_id -> term -> (box_item * thm) option
   val find_ritem_exact: status -> box_id -> raw_item -> box_item option
   val is_triv_eq: status -> box_id -> raw_item -> bool
@@ -874,7 +926,7 @@ fun query_removed st (item as {id, ...}) = query_shadowed st id item
 fun find_item st id (ty_str, tname) =
     let
       fun match_item (item as {ty_str = ty_str', tname = tname', ...}) =
-          if ty_str = ty_str' andalso eq_list (op aconv) (tname, tname') then
+          if ty_str = ty_str' andalso tname aconv tname' then
             SOME item
           else NONE
     in
@@ -917,7 +969,7 @@ fun find_ritem_exact st id ritem =
  *)
 fun is_triv_eq {tbl, ...} id ritem =
     if match_ty_str_raw "EQ" ritem then
-      RewriteTable.is_equiv id tbl (the_pair (get_tname_raw ritem))
+      RewriteTable.is_equiv id tbl (HOLogic.dest_prod (get_tname_raw ritem))
     else false
 
 (* Invoke a single handler (_, f) on a term t. *)
@@ -1005,7 +1057,7 @@ fun get_on_resolve (st as {ctxt, ...}) full_id prim_id th =
       val _ = assert (Thm.prop_of th'' aconv get_neg_form ctxt inits)
                      "get_on_resolve: wrong value from get_neg_form_thm."
     in
-      thm_to_ritem_ctxt ctxt th''
+      Update.thm_to_ritem th''
     end
 
 (* Find a primitive box (if there is any) whose initial facts agree

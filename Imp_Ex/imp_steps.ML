@@ -99,10 +99,10 @@ fun get_return_var_name inst =
 
 val effect_bind =
     prfstep_custom
-        @{theory} "effect_bind"
+        "effect_bind"
         [WithFact @{term_pat "effect (?f >>= ?g) ?h ?h' ?r'"}]
         [Update.ADD_ITEMS]
-        (fn ((id, inst), ths) => fn {ctxt, ...} =>
+        (fn ((id, inst), ths) => fn _ => fn {ctxt, ...} =>
             let
               val fval = lookup_inst inst "f"
               val hval = lookup_inst inst "h"
@@ -127,11 +127,11 @@ val _ = Theory.setup (add_prfstep effect_bind)
 
 val success_bind =
     prfstep_custom
-        @{theory} "success_bind"
+        "success_bind"
         [WithFact @{term_pat "success (?f::?'a Heap) ?h"},
          WithGoal @{term_pat "success ((?f::?'a Heap) >>= ?g) ?h"}]
         [Update.ADD_ITEMS]
-        (fn ((id, inst), ths) => fn {ctxt, ...} =>
+        (fn ((id, inst), ths) => fn _ => fn {ctxt, ...} =>
             let
               val (th_f, _) = the_pair ths
               val fval = lookup_inst inst "f"
@@ -157,10 +157,10 @@ val success_bind =
             end)
 val _ = Theory.setup (add_prfstep success_bind)
 
-fun prfstep_imp_effect_induction thy name descs ind_th =
+fun prfstep_imp_effect_induction name descs ind_th =
     prfstep_custom
-        thy name descs [Update.ADD_ITEMS]
-        (fn ((id, _), ths) => fn (st as {ctxt, ...}) =>
+        name descs [Update.ADD_ITEMS]
+        (fn ((id, _), ths) => fn _ => fn (st as {ctxt, ...}) =>
             let
               val init_th = the_single ths
               val init_prop = Thm.prop_of init_th
@@ -184,10 +184,10 @@ fun prfstep_imp_effect_induction thy name descs ind_th =
                   else []
             end)
 
-fun prfstep_imp_success_induction thy name descs ind_th =
+fun prfstep_imp_success_induction name descs ind_th =
     prfstep_custom
-        thy name descs [Update.ADD_ITEMS]
-        (fn ((id, _), ths) => fn (st as {ctxt, ...}) =>
+        name descs [Update.ADD_ITEMS]
+        (fn ((id, _), ths) => fn _ => fn (st as {ctxt, ...}) =>
             let
               val init_th = the_single ths
               val init_prop = Thm.prop_of init_th
@@ -231,7 +231,7 @@ fun add_prfstep_imp_induction cmd_pat ind_th thy =
           [WithFact effect_pat] @ [Filter (id_filter (equal [0]))]
       val _ = writeln (name_effect ^ "\n" ^ (string_of_descs thy descs_effect))
       val prfstep_effect =
-          prfstep_imp_effect_induction thy name_effect descs_effect ind_th
+          prfstep_imp_effect_induction name_effect descs_effect ind_th
 
       (* Second part: induction when have success cmd h as goal. *)
       val name_success = name ^ "@success"
@@ -243,7 +243,7 @@ fun add_prfstep_imp_induction cmd_pat ind_th thy =
       val _ = writeln (name_success ^ "\n" ^
                        (string_of_descs thy descs_success))
       val prfstep_success =
-          prfstep_imp_success_induction thy name_success descs_success ind_th
+          prfstep_imp_success_induction name_success descs_success ind_th
     in
       thy |> add_prfstep prfstep_effect
           |> add_prfstep prfstep_success

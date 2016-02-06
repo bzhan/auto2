@@ -6,27 +6,29 @@
  *)
 signature PROOFSTEP =
 sig
-  type proofstep_fn
+  datatype proofstep_fn
+    = OneStep of rewrite_type -> status -> box_item -> Update.raw_update list
+    | TwoStep of rewrite_type -> status -> box_item -> box_item ->
+                 Update.raw_update list
   type proofstep
   type prfstep_filter
-  datatype prfstep_descriptor = WithItem of term
+  datatype prfstep_descriptor = WithProp of term
+                              | WithItem of string * term
                               | GetFact of term * thm
-                              | GetShadow of int
+                              | ShadowFirst | ShadowSecond
                               | CreateCase of term list * term list
                               | Filter of prfstep_filter
+  val apply_prfstep: rewrite_type -> status -> box_item list -> proofstep ->
+                     Update.raw_update list
   val WithFact: term -> prfstep_descriptor
   val WithGoal: term -> prfstep_descriptor
   val WithTerm: term -> prfstep_descriptor
   val string_of_desc: theory -> prfstep_descriptor -> string
   val string_of_descs: theory -> prfstep_descriptor list -> string
-  val get_prfstep_fn: proofstep -> proofstep_fn
-  val merged_id: rewrite_type -> box_item list -> box_id
-  val apply_matchers: rewrite_table -> match_fn list -> term list ->
-                      box_item list -> id_inst -> id_inst_ths list
-  val get_insts_filt: match_fn list -> term list -> box_item list ->
-                      rewrite_type -> prfstep_filter -> id_inst_ths list
-  val get_insts: match_fn list -> term list -> box_item list -> rewrite_type ->
-                 id_inst_ths list
+  val get_insts_filt: match_arg -> box_item -> rewrite_type -> id_inst ->
+                      prfstep_filter -> id_inst_th list
+  val get_insts: match_arg -> box_item -> rewrite_type -> id_inst ->
+                 id_inst_th list
 
   (* prfstep_filter *)
   val all_insts: prfstep_filter
@@ -46,22 +48,19 @@ sig
 
   (* First level proofstep writing functions. *)
   val apply_pat_r: Proof.context -> id_inst_ths -> term * thm -> thm
-  val retrieve_pats: prfstep_descriptor list -> term list
+  val retrieve_args: prfstep_descriptor list -> match_arg list
   val retrieve_pats_r: prfstep_descriptor list -> (term * thm) list
   val retrieve_filts: prfstep_descriptor list -> prfstep_filter
   val retrieve_cases: prfstep_descriptor list -> (term list * term list) list
   val retrieve_shadows: prfstep_descriptor list -> int list
-  val gen_prfstep: theory -> string -> prfstep_descriptor list -> proofstep
-  val prfstep_conv:
-      theory -> string -> prfstep_descriptor list -> conv -> proofstep
-  val prfstep_two_stage:
-      theory -> string -> prfstep_descriptor list -> thm -> proofstep
   val prfstep_custom:
-      theory -> string -> prfstep_descriptor list -> Update.update_type list ->
-      (id_inst_ths -> status -> Update.raw_update list) -> proofstep
-  val prfstep_thm_fn:
-      theory -> string -> prfstep_descriptor list -> Update.update_type list ->
-      (Proof.context -> id_inst_ths -> thm) -> proofstep
+      string -> prfstep_descriptor list -> Update.update_type list ->
+      (id_inst_ths -> box_item list -> status -> Update.raw_update list) ->
+      proofstep
+  val gen_prfstep: string -> prfstep_descriptor list -> proofstep
+  val prfstep_pre_conv: string -> prfstep_descriptor list ->
+                        (Proof.context -> conv) -> proofstep
+  val prfstep_conv: string -> prfstep_descriptor list -> conv -> proofstep
 end;
 
 structure ProofStep : PROOFSTEP =
@@ -71,39 +70,54 @@ open Box
 open Update
 open Status
 
-type proofstep_fn = box_item list -> rewrite_type -> status -> raw_update list
-type proofstep = {name: string, filt: pre_filter list,
+datatype proofstep_fn
+  = OneStep of rewrite_type -> status -> box_item -> raw_update list
+  | TwoStep of rewrite_type -> status -> box_item -> box_item -> raw_update list
+
+type proofstep = {name: string, args: match_arg list,
                   res_types: update_type list, func: proofstep_fn}
+
 type prfstep_filter = rewrite_table -> id_inst -> bool
-datatype prfstep_descriptor = WithItem of term
+
+datatype prfstep_descriptor = WithProp of term
+                            | WithItem of string * term
                             | GetFact of term * thm
-                            | GetShadow of int
+                            | ShadowFirst | ShadowSecond
                             | CreateCase of term list * term list
                             | Filter of prfstep_filter
 
-fun WithFact t = WithItem (HOLogic.mk_Trueprop t)
-fun WithGoal t = WithFact (get_neg t)
-fun WithTerm t =
+fun apply_prfstep rtype st items {func, ...} =
+    case func of
+        OneStep f => f rtype st (the_single items)
+      | TwoStep f => f rtype st (hd items) (nth items 1)
+
+fun WithFact t =
     let
-      val _ = assert (type_of t <> @{typ prop})
-                     "WithTerm: t should not be of type prop."
+      val _ = assert (type_of t = boolT) "WithFact: pat should have type bool."
     in
-      WithItem t
+      WithProp t
     end
+
+fun WithGoal t =
+    let
+      val _ = assert (type_of t = boolT) "WithGoal: pat should have type bool."
+    in
+      WithProp (get_neg t)
+    end
+
+fun WithTerm t = WithItem (TY_TERM, t)
 
 fun string_of_desc thy desc =
     let
       val print = str o pretty_term_thy thy
     in
       case desc of
-          WithItem t =>
-          if fastype_of t = @{typ prop} then
-            if is_Trueprop t andalso is_neg (HOLogic.dest_Trueprop t) then
-              "WithGoal " ^ (print (get_neg' t))
-            else
-              "WithFact " ^ (print t)
-          else
-            "WithTerm " ^ (print t)
+          WithProp t =>
+          if is_neg t then "WithGoal " ^ (print (get_neg t))
+          else "WithFact " ^ (print t)
+        | WithItem (ty_str, t) =>
+          if ty_str = TY_TERM then "WithTerm " ^ (print t)
+          else "With " ^ ty_str ^ " " ^ (print t)
         | GetFact (t, th) =>
           if t aconv @{term False} then
             "GetResolve " ^ (name_of_thm th)
@@ -111,7 +125,7 @@ fun string_of_desc thy desc =
             "GetGoal (" ^ (print (get_neg t)) ^ ", " ^ (name_of_thm th) ^ ")"
           else
             "GetFact (" ^ (print t) ^ ", " ^ (name_of_thm th) ^ ")"
-        | GetShadow n => if n = 1 then "Shadow first" else "Shadow second"
+        | ShadowFirst => "Shadow first" | ShadowSecond => "Shadow second"
         | CreateCase (assums, concls) =>
           "CreateCase " ^ (string_of_list print assums) ^ ", " ^
           (string_of_list print concls)
@@ -128,56 +142,21 @@ fun string_of_descs thy descs =
          (" + " ^ (string_of_int (length filts)) ^ " filters") else "")
     end
 
-fun get_prfstep_fn {func, ...} = func
-
-fun merged_id rtype items =
+(* Obtain list of incremental matches (taking into account rtype)
+   between item and pattern specified by arg. Apply list of filters
+   filt.
+ *)
+fun get_insts_filt arg item rtype (id, inst) filt =
     let
-      val {lat, ...} = RewriteTable.table_of_rtype rtype
-      fun merge items =
-          case items of
-              [] => []
-            | {id, ...} :: items' => BoxID.merge_boxes lat (id, merge items')
-    in
-      merge items
-    end
-
-(* Apply the given matchers in sequence. *)
-fun apply_matchers tbl matchers pats items (id, inst) =
-    case matchers of
-        [] => [((id, inst), [])]
-      | matcher :: rest =>
-        let
-          val pat' = hd pats |> subst_term_norm inst
-          val inst_th' = matcher pat' (hd items) tbl (id, inst)
-          fun process_inst_th (inst', th) =
-              let
-                val insts_rest =
-                    apply_matchers tbl rest (tl pats) (tl items) inst'
-                fun append_th (inst'', ths) =
-                    if pointer_eq (th, true_th) then (inst'', ths)
-                    else (inst'', th :: ths)
-              in
-                map append_th insts_rest
-              end
-        in
-          maps process_inst_th inst_th'
-        end
-
-(* Get ordered matchings between "pats" and "trms". *)
-fun get_insts_filt matchers pats items rtype filt =
-    if length pats <> length items then
-      raise AUTO2 "get_insts_filt: wrong number of arguments"
-    else let
-      val id = merged_id rtype items
       val tbl = RewriteTable.table_of_rtype rtype
     in
-      (apply_matchers tbl matchers pats items (id, fo_init))
+      (ItemIO_Data.match_arg tbl arg item (id, inst))
           |> filter (filt tbl o fst)
           |> RewriteTable.replace_id_for_type rtype
     end
 
-fun get_insts matchers pats items rtype =
-    get_insts_filt matchers pats items rtype (fn _ => fn _ => true)
+fun get_insts arg item rtype (id, inst) =
+    get_insts_filt arg item rtype (id, inst) (K (K true))
 
 (* prfstep_filter *)
 
@@ -219,20 +198,38 @@ fun unique_free_filter s tbl (_, inst) =
     end
 
 fun canonical_split_filter fnm s1 s2 tbl (_, inst) =
-    case lookup_ac_data (RewriteTable.theory_of tbl) fnm of
-        NONE => raise AUTO2 "canonical_split_filter: ac_itm not found"
-      | SOME ac_itm =>
-        let
-          val (A, B) = (lookup_inst inst s1, lookup_inst inst s2)
-        in
-          not (ACUtil.head_agrees ac_itm A) andalso
-          forall (fn B => not (Term_Ord.termless (B, A)))
-                 (ACUtil.dest_ac ac_itm B)
-        end
+    let
+      val thy = RewriteTable.theory_of tbl
+      val pre_info =
+          the (ACUtil.lookup_ac_data (RewriteTable.theory_of tbl) fnm)
+      val (A, B) = (lookup_inst inst s1, lookup_inst inst s2)
+      val (ac_info as {assoc_r, ...}) =
+          ACUtil.inst_ac_info thy (fastype_of A) pre_info
+    in
+      if assoc_r then
+        length (ACUtil.dest_ac ac_info A) = 1 andalso
+        forall (fn B => not (Term_Ord.termless (B, A)))
+               (ACUtil.dest_ac ac_info B)
+      else  (* Associate to the left. *)
+        length (ACUtil.dest_ac ac_info B) = 1 andalso
+        forall (fn A => not (Term_Ord.termless (B, A)))
+               (ACUtil.dest_ac ac_info A)
+    end
+    handle Option.Option =>
+           raise AUTO2 "canonical_split_filter: ac_info not found"
+
 fun ac_atomic_filter fnm s tbl (_, inst) =
-    case lookup_ac_data (RewriteTable.theory_of tbl) fnm of
-        NONE => raise AUTO2 "ac_atomic_filter: ac_itm not found"
-      | SOME ac_itm => not (ACUtil.head_agrees ac_itm (lookup_inst inst s))
+    let
+      val thy = RewriteTable.theory_of tbl
+      val pre_info =
+          the (ACUtil.lookup_ac_data (RewriteTable.theory_of tbl) fnm)
+      val s = lookup_inst inst s
+      val ac_info = ACUtil.inst_ac_info thy (fastype_of s) pre_info
+    in
+      length (ACUtil.dest_ac ac_info s) = 1
+    end
+    handle Option.Option => raise AUTO2 "ac_atomic_filter: ac_info not found"
+
 fun subset_var_filter s1 s2 _ (_, inst) =
     subset (op aconv) (map Var (Term.add_vars (lookup_inst inst s1) []),
                        map Var (Term.add_vars (lookup_inst inst s2) []))
@@ -240,7 +237,9 @@ fun subset_var_filter s1 s2 _ (_, inst) =
 (* First level proofstep writing functions. *)
 fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
     let
-      val inst_new = subst_term_norm inst pat_r
+      val _ = assert (fastype_of pat_r = boolT)
+                     "apply_pat_r: pat_r should be of type bool"
+      val inst_new = subst_term_norm inst (HOLogic.mk_Trueprop pat_r)
       val th' = th |> subst_thm ctxt inst |> fold Thm.elim_implies ths
       val _ = if inst_new aconv (Thm.prop_of th') then () else
               raise AUTO2CT ("apply_pat_r: conclusion mismatch",
@@ -249,13 +248,18 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
       th'
     end
 
-fun retrieve_pats descs =
-    maps (fn desc => case desc of WithItem t => [t] | _ => []) descs
+fun retrieve_args descs =
+    maps (fn desc => case desc of
+                         WithProp t => [PropMatch t]
+                       | WithItem (ty_str, t) => [TypedMatch (ty_str, t)]
+                       | _ => [])
+         descs
 
 fun retrieve_pats_r descs =
-    maps (fn desc => case desc of GetFact (pat_r, th) =>
-                                  [(HOLogic.mk_Trueprop pat_r, th)]
-                                | _ => []) descs
+    maps (fn desc => case desc of
+                         GetFact (pat_r, th) => [(pat_r, th)]
+                       | _ => [])
+         descs
 
 fun retrieve_filts descs =
     let
@@ -279,25 +283,87 @@ fun retrieve_cases descs =
 fun retrieve_shadows descs =
     let
       fun retrieve_shadow desc =
-          case desc of GetShadow n => [n] | _ => []
+          case desc of ShadowFirst => [0] | ShadowSecond => [1] | _ => []
     in
       maps retrieve_shadow descs
+    end
+
+(* Creates a proofstep with specified patterns and filters (in descs),
+   and a custom function converting any instantiations into updates.
+ *)
+fun prfstep_custom name descs res_types updt_fn =
+    let
+      val args = retrieve_args descs
+      val filt = retrieve_filts descs
+    in
+      if length args = 1 then
+        let
+          val arg = the_single args
+          fun prfstep rtype st item =
+              let
+                val inst_ths =
+                    (get_insts_filt arg item rtype ([], fo_init) filt)
+                        |> map (fn (inst, th) =>
+                                   if pointer_eq (th, true_th) then (inst, [])
+                                   else (inst, [th]))
+              in
+                maps (fn inst_th => updt_fn inst_th [item] st) inst_ths
+              end
+        in
+          {name = name, args = args, res_types = res_types,
+           func = OneStep prfstep}
+        end
+      else if length args = 2 then
+        let
+          val (arg1, arg2) = the_pair args
+          fun prfstep1 rtype st item1 =
+              let
+                val tbl = RewriteTable.table_of_rtype rtype
+                val inst_ths =
+                    ItemIO_Data.match_arg tbl arg1 item1 ([], fo_init)
+
+                fun process_inst item2 ((id, inst), th) =
+                    let
+                      val arg2' = subst_arg inst arg2
+                      val inst_ths' =
+                          (get_insts_filt arg2' item2 rtype (id, inst) filt)
+                              |> map (fn (inst', th') =>
+                                         (inst', [th, th']
+                                                     |> filter_out is_true_th))
+                    in
+                      maps (fn inst' => updt_fn inst' [item1, item2] st)
+                           inst_ths'
+                    end
+              in
+                fn item2 => maps (process_inst item2) inst_ths
+              end
+        in
+          {name = name, args = args, res_types = res_types,
+           func = TwoStep prfstep1}
+        end
+      else
+        raise AUTO2 "prfstep_custom: must have 1 or 2 patterns."
     end
 
 (* Create a proofstep from a list of proofstep descriptors. See
    datatype prfstep_descriptor for allowed types of descriptors.
  *)
-fun gen_prfstep thy name descs =
+fun gen_prfstep name descs =
     let
-      val pats = retrieve_pats descs
+      val args = retrieve_args descs
       val pats_r = retrieve_pats_r descs
-      val filt = retrieve_filts descs
       val cases = retrieve_cases descs
       val shadows = retrieve_shadows descs
+      val input_descs =
+          filter (fn desc => case desc of WithProp _ => true
+                                        | WithItem _ => true
+                                        | Filter _ => true
+                                        | _ => false) descs
 
       (* Verify that all schematic variables appearing in pats_r /
          cases appear in pats.
        *)
+      val pats = map pat_of_match_arg args
       val vars = map Var (fold Term.add_vars pats [])
       fun check_pat_r (pat_r, _) =
           subset (op aconv) (map Var (Term.add_vars pat_r []), vars)
@@ -308,15 +374,13 @@ fun gen_prfstep thy name descs =
                      "gen_prfstep: new schematic variable in pats_r / cases."
 
       fun pats_r_to_update ctxt (inst_ths as ((id, _), _)) =
+          if length pats_r = 0 then [] else
           let
             val ths = map (apply_pat_r ctxt inst_ths) pats_r
           in
-            if length ths = 1 then thm_update thy (id, the_single ths)
-            else AddItems {id = id, raw_items = map (thm_to_ritem thy) ths}
+            if length ths = 1 then [thm_update (id, the_single ths)]
+            else [AddItems {id = id, raw_items = map thm_to_ritem ths}]
           end
-
-      fun pat_updts ctxt insts =
-          if length pats_r = 0 then [] else map (pats_r_to_update ctxt) insts
 
       fun case_to_update ((id, inst), _) (assums, concls) =
           AddBoxes {id = id, vars = [],
@@ -324,133 +388,62 @@ fun gen_prfstep thy name descs =
                     concls = map (subst_term_norm inst) concls,
                     cb = null_callback}
       fun cases_to_update inst_ths = map (case_to_update inst_ths) cases
-      fun case_updts insts = maps cases_to_update insts
 
       fun shadow_to_update items ((id, _), _) n =
-          if n = 1 then ShadowItem {id = id, item = nth items 0}
-          else ShadowItem {id = id, item = nth items 1}
+          ShadowItem {id = id, item = nth items n}
       fun shadows_to_update items inst =
           map (shadow_to_update items inst) shadows
-      fun shadow_updts items insts = maps (shadows_to_update items) insts
 
       val res_types =
-          (if exists (fn (t, _) => t aconv prop_False) pats_r then
+          (if exists (fn (t, _) => t aconv bool_False) pats_r then
              [RESOLVE_BOX] else []) @
-          (if exists (fn (t, _) => not (t aconv prop_False)) pats_r then
+          (if exists (fn (t, _) => not (t aconv bool_False)) pats_r then
              [ADD_ITEMS] else []) @
           (if length cases > 0 then [ADD_BOXES] else []) @
           (if length shadows > 0 then [SHADOW_ITEM] else [])
 
-      val matcher_infos = map (ItemIO_Data.find_th_matcher thy) pats
-      val matchers = map snd matcher_infos
-
-      fun prfstep items rtype {ctxt, ...} =
-          let
-            val insts = get_insts_filt matchers pats items rtype filt
-          in
-            pat_updts ctxt insts @ case_updts insts @ shadow_updts items insts
-          end
+      fun updt_fn inst_th items {ctxt, ...} =
+          pats_r_to_update ctxt inst_th @ cases_to_update inst_th @
+          shadows_to_update items inst_th
     in
-      {name = name, filt = map fst matcher_infos, res_types = res_types,
-       func = prfstep}
+      prfstep_custom name input_descs res_types updt_fn
     end
 
-fun prfstep_conv thy name descs cv =
+fun prfstep_pre_conv name descs pre_cv =
     let
-      val pats = retrieve_pats descs
-      val _ = assert (length pats = 1 andalso
-                      fastype_of (the_single pats) <> @{typ prop})
-                     "prfstep_conv: should have exactly one term pattern."
+      val args = retrieve_args descs
+      val t = case args of
+                  [TypedMatch ("TERM", t)] => t
+                | _ => raise AUTO2 ("prfstep_conv: should have exactly one " ^
+                                    "term pattern.")
       val filt = retrieve_filts descs
-      val t = the_single pats
-      val matcher_infos = map (ItemIO_Data.find_th_matcher thy) pats
-      val matchers = map snd matcher_infos
 
-      fun prfstep items rtype {ctxt, ...} =
+      fun prfstep rtype {ctxt, ...} item =
           let
             val tbl = RewriteTable.table_of_rtype rtype
-            val insts = get_insts_filt matchers pats items rtype filt
+            val inst_ths =
+                get_insts_filt (the_single args) item rtype ([], fo_init) filt
             fun inst_to_updt ((id, inst), _) =
                 let
                   val ct = (subst_term_norm inst t) |> cert ctxt
-                  val eq_th = (Conv.try_conv cv) ct
+                  val err = (name ^ ": cv failed.", [ct])
+                  val eq_th = pre_cv ctxt ct
+                              handle CTERM _ => raise AUTO2CT err
                   val (lhs, rhs) = Logic.dest_equals (Thm.prop_of eq_th)
                 in
-                  if lhs aconv rhs then
-                    raise AUTO2CT (name ^ ": cv failed.", [ct])
+                  if lhs aconv rhs then []
                   else if RewriteTable.is_equiv id tbl (lhs, rhs) then []
-                  else [thm_update thy (id, to_obj_eq eq_th)]
+                  else [thm_update (id, to_obj_eq eq_th)]
                 end
           in
-            maps inst_to_updt insts
+            maps inst_to_updt inst_ths
           end
     in
-      {name = name, filt = map fst matcher_infos, res_types = [ADD_ITEMS],
-       func = prfstep}
+      {name = name, args = args, res_types = [ADD_ITEMS],
+       func = OneStep prfstep}
     end
 
-(* pat_r produces a trivial statement, which together with the item
-   matching the main pattern are matched with the hypotheses of th2 to
-   produce the final result.
- *)
-fun prfstep_two_stage thy name descs th2 =
-    let
-      val pats = retrieve_pats descs
-      val _ = assert (length pats = 1)
-                     "prfstep_two_stage: should have one pattern."
-      val pats_r = retrieve_pats_r descs
-      val _ = assert (length pats_r = 1)
-                     "prfstep_two_stage: should have one result."
-      val pat_r = the_single pats_r
-      val filt = retrieve_filts descs
-
-      val res_type = if Thm.nprems_of th2 = 2 andalso
-                        Thm.concl_of th2 aconv prop_False then RESOLVE_BOX
-                     else ADD_ITEMS
-      val matcher_infos = map (ItemIO_Data.find_th_matcher thy) pats
-      val matchers = map snd matcher_infos
-
-      fun prfstep items rtype {ctxt, ...} =
-          let
-            val insts = get_insts_filt matchers pats items rtype filt
-            fun inst_to_updt (instsp as (id, _), ths) =
-                let
-                  val th = apply_pat_r ctxt (instsp, []) pat_r
-                in
-                  thm_update thy (id, (ths @ [th]) MRS th2)
-                end
-          in
-            map inst_to_updt insts
-          end
-    in
-      {name = name, filt = map fst matcher_infos, res_types = [res_type],
-       func = prfstep}
-    end
-
-fun prfstep_custom thy name descs res_types updt_fn =
-    let
-      val pats = retrieve_pats descs
-      val filt = retrieve_filts descs
-      val matcher_infos = map (ItemIO_Data.find_th_matcher thy) pats
-      val matchers = map snd matcher_infos
-
-      fun prfstep items rtype st =
-          let
-            val insts = get_insts_filt matchers pats items rtype filt
-            fun inst_to_updt inst_th = updt_fn inst_th st
-          in
-            maps inst_to_updt insts
-          end
-    in
-      {name = name, filt = map fst matcher_infos, res_types = res_types,
-       func = prfstep}
-    end
-
-fun prfstep_thm_fn thy name descs res_types thm_fn =
-    prfstep_custom
-        thy name descs res_types
-        (fn ((id, inst), ths) => fn {ctxt, ...} =>
-            [thm_update thy (id, thm_fn ctxt ((id, inst), ths))])
+fun prfstep_conv name descs cv = prfstep_pre_conv name descs (K cv)
 
 end  (* structure ProofStep *)
 
@@ -458,36 +451,59 @@ open ProofStep
 
 (* Table of proofsteps, categorized by type. *)
 datatype proofstep_table
-  = ProofStepTable of {prfsteps: proofstep list, fixed_sc: int Symtab.table}
+  = ProofStepTable of
+    {prfsteps: proofstep Symtab.table, fixed_sc: int Symtab.table,
+     reserved_names: string list}
 
 structure ProofStepData =
-Theory_Data (
+Generic_Data (
   type T = proofstep_table;
-  val empty = ProofStepTable {prfsteps = [], fixed_sc = Symtab.empty};
+  val empty = ProofStepTable {prfsteps = Symtab.empty, fixed_sc = Symtab.empty,
+                              reserved_names = []};
   val extend = I;
-  fun merge (ProofStepTable {prfsteps = l1, fixed_sc = sc1},
-             ProofStepTable {prfsteps = l2, fixed_sc = sc2}) =
-      ProofStepTable {prfsteps = Library.merge pointer_eq (l1, l2),
-                      fixed_sc = Symtab.merge (op =) (sc1, sc2)}
+  fun merge (
+    ProofStepTable {prfsteps = p1, fixed_sc = sc1, reserved_names = r1},
+    ProofStepTable {prfsteps = p2, fixed_sc = sc2, reserved_names = r2}) =
+      ProofStepTable {prfsteps = Symtab.merge (op pointer_eq) (p1, p2),
+                      fixed_sc = Symtab.merge (op =) (sc1, sc2),
+                      reserved_names = Library.merge (op =) (r1, r2)}
 )
 
 signature PROOFSTEP_DATA =
 sig
+  val proofstep_data_of: Proof.context -> ProofStepData.T
+  val map_theory_proofsteps:
+      (Proof.context -> Proof.context) -> theory -> theory
+  val map_generic_proofsteps:
+      (Proof.context -> Proof.context) -> Context.generic -> Context.generic
+  val map_proofstep_data_ctxt:
+      (ProofStepData.T -> ProofStepData.T) -> Proof.context -> Proof.context
+  val map_proofstep_data:
+      (ProofStepData.T -> ProofStepData.T) -> theory -> theory
+
   val add_prfstep: proofstep -> theory -> theory
+  val add_prfstep_ctxt: proofstep -> Proof.context -> Proof.context
   val del_prfstep: string -> theory -> theory
   val del_prfstep_thm: thm -> theory -> theory
   val add_fixed_sc: string * int -> theory -> theory
-  val get_prfsteps: theory -> proofstep list
-  val get_fixed_sc: theory -> string -> int option
+  val get_prfstep_by_name: Proof.context -> string -> proofstep
+  val get_prfsteps: Proof.context -> proofstep list
+  val get_fixed_sc: Proof.context -> string -> int option
+  val add_reserved_name: string -> theory -> theory
+  val is_reserved_name: Proof.context -> string -> bool
+
+  val add_prfstep_custom:
+      (string * prfstep_descriptor list * Update.update_type list *
+       (id_inst_ths -> box_item list -> status -> Update.raw_update list)) ->
+      theory -> theory
 
   val add_gen_prfstep: string * prfstep_descriptor list -> theory -> theory
+  val add_gen_prfstep_ctxt:
+      string * prfstep_descriptor list -> Proof.context -> Proof.context
+  val add_prfstep_pre_conv: string * prfstep_descriptor list *
+                            (Proof.context -> conv) -> theory -> theory
   val add_prfstep_conv:
       string * prfstep_descriptor list * conv -> theory -> theory
-  val add_prfstep_two_stage:
-      string * prfstep_descriptor list * thm -> theory -> theory
-  val add_prfstep_thm_fn:
-      string * prfstep_descriptor list * Update.update_type list *
-      (Proof.context -> id_inst_ths -> thm) -> theory -> theory
 
   (* Constructing conditional prfstep_descriptors. *)
   type pre_prfstep_descriptor = Proof.context -> prfstep_descriptor
@@ -500,8 +516,8 @@ sig
       thm -> theory -> pre_prfstep_descriptor list -> prfstep_descriptor list
 
   (* Second level proofstep writing functions. *)
-  val add_and_print_prfstep:
-      string -> prfstep_descriptor list -> theory -> theory
+  val add_and_print_prfstep_ctxt:
+      string -> prfstep_descriptor list -> Proof.context -> Proof.context
   val add_forward_prfstep_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_backward_prfstep_cond:
@@ -519,6 +535,13 @@ sig
   val add_backward2_prfstep: thm -> theory -> theory
   val add_resolve_prfstep: thm -> theory -> theory
 
+  val add_known_fact_ctxt: thm -> Proof.context -> Proof.context
+  val add_forward_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_backward_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_backward1_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_backward2_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_resolve_prfstep_ctxt: thm -> Proof.context -> Proof.context
+
   val add_rewrite_rule_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_rewrite_rule_back_cond:
@@ -528,34 +551,71 @@ sig
   val add_rewrite_rule_bidir: thm -> theory -> theory
   val add_rewrite_rule_bidir_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
+
+  val add_rewrite_rule_ctxt: thm -> Proof.context -> Proof.context
+  val add_rewrite_rule_back_ctxt: thm -> Proof.context -> Proof.context
+  val add_rewrite_rule_bidir_ctxt: thm -> Proof.context -> Proof.context
+
+  val setup_attrib:
+      (thm -> Proof.context -> Proof.context) -> attribute context_parser
 end;
 
 structure ProofStep_Data : PROOFSTEP_DATA =
 struct
 
-fun add_prfstep (prfstep as {filt, ...}) =
-    if length filt >= 1 andalso length filt <= 2 then
-      ProofStepData.map (
-        fn ProofStepTable {prfsteps, fixed_sc} =>
-           ProofStepTable {prfsteps = prfstep :: prfsteps, fixed_sc = fixed_sc})
+fun proofstep_data_of ctxt = ProofStepData.get (Context.Proof ctxt)
+
+fun map_theory_proofsteps f thy =
+    let
+      val ctxt' = f (Proof_Context.init_global thy)
+      val thy' = Proof_Context.theory_of ctxt'
+    in
+      Context.theory_map (ProofStepData.map (K (proofstep_data_of ctxt'))) thy'
+    end
+
+fun map_generic_proofsteps f =
+    Context.mapping
+        (map_theory_proofsteps (f o Context_Position.not_really)) I
+
+fun map_proofstep_data_ctxt f =
+    Context.proof_map (ProofStepData.map f)
+
+val map_proofstep_data = map_theory_proofsteps o map_proofstep_data_ctxt
+
+fun add_prfstep_ctxt (prfstep as {args, ...}) =
+    if length args >= 1 andalso length args <= 2 then
+      map_proofstep_data_ctxt (
+        fn ProofStepTable {prfsteps, fixed_sc, reserved_names} =>
+           if member (op =) reserved_names (#name prfstep) then
+             raise AUTO2 ("add_prfstep: name " ^ (#name prfstep) ^
+                          " is reserved.")
+           else
+             ProofStepTable {prfsteps = prfsteps |> Symtab.update_new (
+                               #name prfstep, prfstep), fixed_sc = fixed_sc,
+                             reserved_names = reserved_names})
     else
       raise AUTO2 "add_proofstep: need 1 or 2 patterns."
+
+val add_prfstep = map_theory_proofsteps o add_prfstep_ctxt
 
 (* Deleting a proofstep. For string inputs, try adding theory
    name. For theorem inputs, try all @-suffixes.
  *)
-fun del_prfstep_pred pred = ProofStepData.map (
-      fn ProofStepTable {prfsteps, fixed_sc} =>
+fun del_prfstep_pred pred =
+    map_proofstep_data (
+      fn ProofStepTable {prfsteps, fixed_sc, reserved_names} =>
          let
-           val steps = prfsteps |> filter (pred o #name)
+           val keys = Symtab.keys prfsteps
+           val to_delete = filter pred keys
          in
-           if length steps = 0 then raise AUTO2 "del_prfstep: not found" else
-           let
-             val _ = map (fn step => tracing ("Delete " ^ (#name step))) steps
+           if length to_delete = 0 then raise AUTO2 "del_prfstep: not found"
+           else let
+             val _ = map (fn name => tracing ("Delete " ^ name)) to_delete
            in
              ProofStepTable {
-               prfsteps = prfsteps |> filter_out (pred o #name),
-               fixed_sc = fixed_sc |> fold Symtab.delete_safe (map #name steps)}
+               prfsteps = prfsteps |> fold Symtab.delete to_delete,
+               fixed_sc = fixed_sc |> fold Symtab.delete_safe to_delete,
+               reserved_names = reserved_names}
            end
          end)
 
@@ -570,32 +630,63 @@ fun del_prfstep_thm th =
       del_prfstep_pred (equal nm orf is_prefix_str (nm ^ "@"))
     end
 
-fun add_fixed_sc (nm, sc) = ProofStepData.map (
-      fn ProofStepTable {prfsteps, fixed_sc} =>
-         case find_first (equal nm o #name) prfsteps of
+fun add_fixed_sc (nm, sc) =
+    map_proofstep_data (
+      fn ProofStepTable {prfsteps, fixed_sc, reserved_names} =>
+         case find_first (equal nm) (Symtab.keys prfsteps) of
              NONE => raise AUTO2 ("add_fixed_sc: not found " ^ nm)
            | _ => ProofStepTable {
                    prfsteps = prfsteps,
-                   fixed_sc = fixed_sc |> Symtab.update_new (nm, sc)})
+                   fixed_sc = fixed_sc |> Symtab.update_new (nm, sc),
+                   reserved_names = reserved_names})
 
-fun get_prfsteps thy =
+fun get_prfstep_by_name ctxt name =
     let
-      val ProofStepTable {prfsteps, ...} = ProofStepData.get thy
-    in prfsteps end
+      val ProofStepTable {prfsteps, ...} = proofstep_data_of ctxt
+    in
+      case Symtab.lookup prfsteps name of
+          NONE => raise AUTO2 ("get_prfstep_by_name: not found " ^ name)
+        | SOME prfstep => prfstep
+    end
 
-fun get_fixed_sc thy nm =
-    let val ProofStepTable {fixed_sc, ...} = ProofStepData.get thy in
+fun get_prfsteps ctxt =
+    let
+      val ProofStepTable {prfsteps, ...} = proofstep_data_of ctxt
+    in
+      Symtab.dest prfsteps |> map snd
+    end
+
+fun get_fixed_sc ctxt nm =
+    let val ProofStepTable {fixed_sc, ...} = proofstep_data_of ctxt in
       Symtab.lookup fixed_sc nm
     end
 
-fun add_gen_prfstep (name, descs) thy =
-    add_prfstep (gen_prfstep thy name descs) thy
-fun add_prfstep_conv (name, descs, cv) thy =
-    add_prfstep (prfstep_conv thy name descs cv) thy
-fun add_prfstep_two_stage (name, descs, th2) thy =
-    add_prfstep (prfstep_two_stage thy name descs th2) thy
-fun add_prfstep_thm_fn (name, descs, res_types, thm_fn) thy =
-    add_prfstep (prfstep_thm_fn thy name descs res_types thm_fn) thy
+fun add_reserved_name nm =
+    map_proofstep_data (
+      fn ProofStepTable {prfsteps, fixed_sc, reserved_names} =>
+         if member (op =) reserved_names nm orelse
+            Symtab.defined prfsteps nm then
+           raise AUTO2 ("add_reserved_name: " ^ nm ^ " already used")
+         else
+           ProofStepTable {prfsteps = prfsteps, fixed_sc = fixed_sc,
+                           reserved_names = nm :: reserved_names})
+
+fun is_reserved_name ctxt nm =
+    let
+      val ProofStepTable {reserved_names, ...} = proofstep_data_of ctxt
+    in
+      member (op =) reserved_names nm
+    end
+
+fun add_prfstep_custom (name, descs, res_types, updt_fn) =
+    add_prfstep (prfstep_custom name descs res_types updt_fn)
+fun add_gen_prfstep (name, descs) = add_prfstep (gen_prfstep name descs)
+fun add_gen_prfstep_ctxt (name, descs) =
+    add_prfstep_ctxt (gen_prfstep name descs)
+fun add_prfstep_pre_conv (name, descs, pre_cv) =
+    add_prfstep (prfstep_pre_conv name descs pre_cv)
+fun add_prfstep_conv (name, descs, cv) =
+    add_prfstep (prfstep_conv name descs cv)
 
 (* Constructing conditional prfstep_descriptors. *)
 
@@ -647,35 +738,54 @@ fun process_conds th thy conds =
 
 (* Second level proofstep writing functions. *)
 
-fun add_and_print_prfstep nm descs thy =
-    let val _ = writeln (nm ^ "\n" ^ (string_of_descs thy descs))
-    in add_gen_prfstep (nm, descs) thy end
+fun add_and_print_prfstep_ctxt nm descs ctxt =
+    let
+      val thy = Proof_Context.theory_of ctxt
+      val _ = writeln (nm ^ "\n" ^ (string_of_descs thy descs))
+    in
+      add_gen_prfstep_ctxt (nm, descs) ctxt
+    end
 
-fun add_forward_prfstep_cond th conds thy =
+fun add_forward_prfstep_cond_ctxt th conds ctxt =
     let
       (* Obtain list of WithTerm conditions. The total number of
          WithTerm conditions and fact/goal conditions must be at most
          two.
        *)
-      val ctxt = Proof_Context.init_global thy
+      val thy = Proof_Context.theory_of ctxt
       val term_conds = maps (
             fn cond => case cond ctxt of WithItem t => [t] | _ => []) conds
       val _ = assert (length term_conds <= 2)
                      "More than two WithTerm conditions"
 
-      (* First, convert to obj imp any extraneous meta imps. *)
+      (* Convert to obj imp any extraneous meta imps. *)
       val max_fact_conds = 2 - length term_conds
       val th' = if Thm.nprems_of th > max_fact_conds then
                   th |> apply_to_thm (to_obj_conv_skip_n ctxt max_fact_conds)
                      |> Thm.put_name_hint (name_of_thm th ^ "@short")
                 else th
-
       val (assums, concl) = strip_horn' th'
-      val descs = (process_conds th' thy conds) @
-                  (map WithFact assums @ [GetFact (concl, th')])
+
+      (* Switch two assumptions if necessary. *)
+      val _ = assert (is_pattern (HOLogic.mk_tuple assums))
+      val (assums', th'') =
+          if length assums = 2 andalso not (is_pattern (hd assums)) then
+            let
+              val _ = writeln ("Switched two assumptions since first one " ^
+                               "is not a pattern.")
+            in
+              ([nth assums 1, hd assums], swap_prems_th th')
+            end
+          else (assums, th')
+
+      val descs = (process_conds th'' thy conds) @
+                  (map WithFact assums' @ [GetFact (concl, th'')])
     in
-      add_and_print_prfstep (name_of_thm th') descs thy
+      add_and_print_prfstep_ctxt (name_of_thm th'') descs ctxt
     end
+
+fun add_forward_prfstep_cond th conds =
+    map_theory_proofsteps (add_forward_prfstep_cond_ctxt th conds)
 
 fun add_backward_prfstep_cond th conds thy =
     add_forward_prfstep_cond (backward_th th) conds thy
@@ -698,7 +808,20 @@ fun add_backward1_prfstep th = add_backward1_prfstep_cond th []
 fun add_backward2_prfstep th = add_backward2_prfstep_cond th []
 fun add_resolve_prfstep th = add_resolve_prfstep_cond th []
 
-fun add_rewrite_rule_cond th conds thy =
+fun add_known_fact_ctxt th =
+    add_forward_prfstep_cond_ctxt
+        th [K (WithTerm (th |> Thm.concl_of |> HOLogic.dest_Trueprop))]
+fun add_forward_prfstep_ctxt th = add_forward_prfstep_cond_ctxt th []
+fun add_backward_prfstep_ctxt th =
+    add_forward_prfstep_cond_ctxt (backward_th th) []
+fun add_backward1_prfstep_ctxt th =
+    add_forward_prfstep_cond_ctxt (backward1_th th) []
+fun add_backward2_prfstep_ctxt th =
+    add_forward_prfstep_cond_ctxt (backward2_th th) []
+fun add_resolve_prfstep_ctxt th =
+    add_forward_prfstep_cond_ctxt (to_contra_th th) []
+
+fun add_rewrite_rule_cond_ctxt th conds ctxt =
     let
       val (lhs, rhs) = th |> strip_horn' |> snd |> HOLogic.dest_eq
       (* If rhs is of form ?n, create filter for ?n not already known
@@ -708,8 +831,12 @@ fun add_rewrite_rule_cond th conds thy =
                          Var ((nm, 0), _) => [with_filt (neqp_filter nm lhs)]
                        | _ => []
     in
-      add_forward_prfstep_cond th ([K (WithTerm lhs)] @ neq_filt @ conds) thy
+      add_forward_prfstep_cond_ctxt
+          th ([K (WithTerm lhs)] @ neq_filt @ conds) ctxt
     end
+
+fun add_rewrite_rule_cond th conds =
+    map_theory_proofsteps (add_rewrite_rule_cond_ctxt th conds)
 
 fun add_rewrite_rule_back_cond th = add_rewrite_rule_cond (obj_sym_th th)
 fun add_rewrite_rule th = add_rewrite_rule_cond th []
@@ -717,6 +844,17 @@ fun add_rewrite_rule_back th = add_rewrite_rule_back_cond th []
 fun add_rewrite_rule_bidir th = add_rewrite_rule th #> add_rewrite_rule_back th
 fun add_rewrite_rule_bidir_cond th conds =
     add_rewrite_rule_cond th conds #> add_rewrite_rule_back_cond th conds
+
+fun add_rewrite_rule_ctxt th = add_rewrite_rule_cond_ctxt th []
+fun add_rewrite_rule_back_ctxt th =
+    add_rewrite_rule_cond_ctxt (obj_sym_th th) []
+fun add_rewrite_rule_bidir_ctxt th =
+    add_rewrite_rule_ctxt th #> add_rewrite_rule_back_ctxt th
+
+fun setup_attrib f = Attrib.add_del
+  (Thm.declaration_attribute (fn th => map_generic_proofsteps (f th)))
+  (Thm.declaration_attribute (
+      fn _ => fn _ => raise AUTO2 "del_step: not implemented."))
 
 end  (* structure ProofStep_Data. *)
 

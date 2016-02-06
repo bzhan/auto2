@@ -48,7 +48,7 @@ fun add_th_normalizer (nm, norm_th_fun) =
                  Handler _ => [ritem]
                | Fact (ty_str, _, th) =>
                  if ty_str = "PROP" then
-                   map (thm_to_ritem_ctxt ctxt) (norm_th_fun ctxt th)
+                   map Update.thm_to_ritem (norm_th_fun ctxt th)
                  else [ritem])
 
 fun add_single_normalizer (nm, norm_single_fun) =
@@ -64,8 +64,8 @@ fun add_ctxt_conv_normalizer (nm, ctxt_cv) =
                  Handler _ => ritem
                | Fact (ty_str, _, th) =>
                  if member (op =) ["PROP", "EQ"] ty_str then
-                   thm_to_ritem_ctxt
-                       ctxt (apply_to_thm (Conv.arg_conv (ctxt_cv ctxt)) th)
+                   Update.thm_to_ritem
+                       (apply_to_thm (Conv.arg_conv (ctxt_cv ctxt)) th)
                  else ritem)
 
 (* Apply cv to the statement (skipping Trueprop) of a PROP item. *)
@@ -82,9 +82,9 @@ fun add_ctxt_prop_normalizer (nm, ctxt_cv) =
                | Fact (ty_str, _, th) =>
                  let val cv = ctxt_cv ctxt in
                    if ty_str = "PROP" then
-                     thm_to_ritem_ctxt ctxt (apply_to_thm (Conv.arg_conv cv) th)
+                     Update.thm_to_ritem (apply_to_thm (Conv.arg_conv cv) th)
                    else if ty_str = "EQ" then
-                     thm_to_ritem_ctxt ctxt (
+                     Update.thm_to_ritem (
                        apply_to_thm (Conv.arg_conv (Conv.arg_conv cv)) th)
                    else ritem
                  end)
@@ -140,9 +140,7 @@ end  (* structure Normalizer. *)
 
 open Normalizer
 
-val _ = Theory.setup (add_ctxt_conv_normalizer (
-                         "rearrange_assoc",
-                         ACUtil.rearrange_assoc_full o Proof_Context.theory_of))
-val _ = Theory.setup (add_ctxt_conv_normalizer (
-                         "rearrange_ac",
-                         ACUtil.rearrange_ac o Proof_Context.theory_of))
+val _ = Theory.setup (
+      add_ctxt_conv_normalizer (
+        "normalize_all_ac_full",
+        ACUtil.normalize_all_ac_full o Proof_Context.theory_of))

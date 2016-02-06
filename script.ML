@@ -6,87 +6,81 @@ infixr 1 WITH
 signature SCRIPT =
 sig
   datatype script
-    = Script_Task of {assums: term list, concls: term list, subs: script list,
-                      cb: Update.resolve_callback}
-    | Script_Info of {prfstep: proofstep, source: (string * term list) list}
+    = Script_Task of {vars: term list, assums: term list, concls: term list,
+                      subs: script list, cb: Update.resolve_callback,
+                      end_vars: term list}
+    | Script_Info of {prfstep: proofstep, source: (string * term) list,
+                      end_vars: term list}
   type scripts = script list
-  type pre_scripts = Proof.context -> scripts * Proof.context
+  type pre_scripts = Proof.context -> scripts
   val no_script: pre_scripts
+  val get_end_vars: scripts -> term list
+  val get_all_vars: scripts -> term list
   val CASE: string -> pre_scripts
   val OBTAIN: string -> pre_scripts
   val THEN: pre_scripts * pre_scripts -> pre_scripts
   val WITH: pre_scripts * pre_scripts -> pre_scripts
-  val CHOOSE: string -> pre_scripts
-  val CHOOSES: string list -> pre_scripts
 end
 
 structure Script : SCRIPT =
 struct
 
 datatype script
-  = Script_Task of {assums: term list, concls: term list, subs: script list,
-                    cb: Update.resolve_callback}
-  | Script_Info of {prfstep: proofstep, source: (string * term list) list}
+  = Script_Task of {vars: term list, assums: term list, concls: term list,
+                    subs: script list, cb: Update.resolve_callback,
+                    end_vars: term list}
+  | Script_Info of {prfstep: proofstep, source: (string * term) list,
+                    end_vars: term list}
 type scripts = script list
-type pre_scripts = Proof.context -> scripts * Proof.context
+type pre_scripts = Proof.context -> scripts
 
-fun no_script ctxt = ([], ctxt)
+val no_script = K []
+
+fun get_end_vars_single s =
+    case s of
+        Script_Task {end_vars, ...} => end_vars
+      | Script_Info {end_vars, ...} => end_vars
+
+fun get_end_vars scrpt = maps get_end_vars_single scrpt
+
+fun get_all_vars_single s =
+    case s of
+        Script_Task {vars, subs, end_vars, ...} =>
+        vars @ end_vars @ get_all_vars subs
+      | Script_Info {end_vars, ...} => end_vars
+
+and get_all_vars scrpt = maps get_all_vars_single scrpt |> distinct (op aconv)
 
 fun CASE str ctxt =
-    ([Script_Task {assums = [HOLogic.mk_Trueprop (Syntax.read_term ctxt str)],
-                   concls = [], subs = [], cb = Update.null_callback}], ctxt)
+    [Script_Task {vars = [],
+                  assums = [HOLogic.mk_Trueprop (Syntax.read_term ctxt str)],
+                  concls = [], subs = [], cb = Update.null_callback,
+                  end_vars = []}]
 
 fun OBTAIN str ctxt =
-    ([Script_Task {assums = [], subs = [],
-                   concls = [HOLogic.mk_Trueprop (Syntax.read_term ctxt str)],
-                   cb = Update.null_callback}], ctxt)
+    [Script_Task {vars = [], assums = [], subs = [],
+                  concls = [HOLogic.mk_Trueprop (Syntax.read_term ctxt str)],
+                  cb = Update.null_callback, end_vars = []}]
 
-fun (s1 THEN s2) =
-    (fn ctxt => let
-       val (s1', ctxt') = s1 ctxt
-       val (s2', ctxt'') = s2 ctxt'
-     in
-       (s1' @ s2', ctxt'')
-     end)
-
-fun (s1 WITH s2) =
-    (fn ctxt =>
-        case s1 ctxt of
-            ([Script_Task {assums, concls, subs = _, cb}], ctxt') =>
-            let
-              val (s2', ctxt'') = s2 ctxt'
-            in
-              ([Script_Task {assums = assums, concls = concls, subs = s2',
-                             cb = cb}], ctxt'')
-            end
-          | _ => raise AUTO2 "WITH: first argument should be single script.")
-
-fun CHOOSE str ctxt =
+fun (s1 THEN s2) ctxt =
     let
-      val ts = Syntax.read_term ctxt str |> HOLogic.strip_tuple
-      val err = "CHOOSE: input should be in the form (var1, ..., varn, cond)."
-      val (freevars, cond) = split_last ts
-      val dest_vars = map Term.dest_Free freevars
-                      handle TERM _ => raise AUTO2 err
-      fun mk_exists' (nm, T) cond = HOLogic.mk_exists (nm, T, cond)
-      val ex_cond = fold mk_exists' (rev dest_vars) cond |> HOLogic.mk_Trueprop
-      val nms = map fst dest_vars
-      val _ = assert (not (exists (Variable.is_fixed ctxt) nms))
-                     ("CHOOSE: variable name(s) already used.")
-      val ctxt' = ctxt |> Variable.add_fixes_direct nms
-                       |> fold Variable.declare_term freevars
-      fun exists_callback (id, ex_cond_th) =
-          Update.apply_exists (id, ex_cond_th) ctxt' nms
+      val s1' = s1 ctxt
+      val ctxt' = ctxt |> fold declare_free_term (get_end_vars s1')
     in
-      ([Script_Task {assums = [], subs = [], concls = [ex_cond],
-                     cb = exists_callback}], ctxt')
+      s1' @ (s2 ctxt')
     end
 
-fun CHOOSES strs =
-    case strs of
-        [str] => CHOOSE str
-      | str :: rest => (CHOOSE str) THEN (CHOOSES rest)
-      | _ => raise AUTO2 "CHOOSES: empty argument"
+fun (s1 WITH s2) ctxt =
+    case s1 ctxt of
+        [Script_Task {vars, assums, concls, subs = _, cb, end_vars}] =>
+        let
+          val ctxt' = ctxt |> fold declare_free_term (vars @ end_vars)
+          val s2' = s2 ctxt'
+        in
+          [Script_Task {vars = vars, assums = assums, concls = concls,
+                        subs = s2', cb = cb, end_vars = end_vars}]
+        end
+      | _ => raise AUTO2 "WITH: first argument should be single script."
 
 end  (* structure Script. *)
 

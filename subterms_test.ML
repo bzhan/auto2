@@ -106,8 +106,7 @@ val test_build_equiv =
       val _ = test 1 (@{term_pat "!a. a + (?SUB::nat) = 0"},
                       [Thm.assume @{cterm "(b::nat) == c"}])
       val dvd = Const ("Rings.dvd_class.dvd", @{typ "nat => nat => bool"})
-      val trm = Abs ("x", @{typ nat},
-                     Abs ("x", @{typ nat}, dvd $ (Bound 0) $ (Bound 1)))
+      val trm = Abs ("x", natT, Abs ("x", natT, dvd $ (Bound 0) $ (Bound 1)))
       val _ = test 2 (trm, [])
       (* build_equiv is not a conversion, so don't use conv facilities. *)
       val _ = test 3 (@{term_pat "!a. a + (?SUB::nat) = 0"},
@@ -117,18 +116,15 @@ val test_build_equiv =
                       [Thm.assume @{cterm "(a::nat) == a"}])
     in () end
 
-val test_rearrange =
+val test_normalize_all_ac =
     let
-      fun err n = "test_rearrange: " ^ (string_of_int n)
+      fun err n = "test_normalize_all_ac: " ^ (string_of_int n)
       fun test n (t, t') =
           let
-            val ac_itm_opt = get_head_ac_item thy' t
-            val _ = assert (is_some ac_itm_opt) (err n)
-            val ac_itm = the ac_itm_opt
-            val t'' = rearrange_fast thy' t
-            val _ = if t' aconv t'' then () else
-                    raise AUTO2CT (err n, [cert_thy thy' t''])
-            val eq_th = rearrange_subterms thy' ac_itm (cert_thy thy' t)
+            val ac_info_opt = get_head_ac_info_with_inv thy' t
+            val _ = assert (is_some ac_info_opt) (err n)
+            val ac_info = the ac_info_opt
+            val eq_th = normalize_all_ac ctxt' ac_info (cert ctxt' t)
             val (l, r) = Logic.dest_equals (Thm.prop_of eq_th)
           in
             if l aconv t andalso r aconv t' then ()
@@ -140,6 +136,8 @@ val test_rearrange =
       val _ = test 2 (@{term "EX (k::nat) l. a + l < k & k < l"},
                       @{term "EX (k::nat) l. k < l & a + l < k"})
       val _ = test 3 (@{term "C & A & B & True"}, @{term "A & B & C"})
+      val _ = test 4 (@{term "EX m k. (n::nat) = m * k & 1 < m"},
+                      @{term "EX m k. 1 < m & (n::nat) = m * k"})
     in () end
 
 end;  (* local *)

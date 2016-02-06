@@ -1,5 +1,5 @@
 theory Lists_Thms
-imports Auto2
+imports Auto2_Base
 begin
 
 section {* Case checking and induction *}
@@ -10,9 +10,8 @@ theorem list_constr: "x # xs = y # ys \<Longrightarrow> x = y \<and> xs = ys" by
 setup {* add_forward_prfstep_cond (conj_left_th @{thm list_constr}) [with_cond "?x \<noteq> ?y"]
   #> add_forward_prfstep_cond (conj_right_th @{thm list_constr}) [with_cond "?xs \<noteq> ?ys"] *}
 
-theorem list_eq_hd: "xs = ys \<Longrightarrow> x # xs = x # ys" by simp
-theorem list_eq_tl: "x = y \<Longrightarrow> x # xs = y # xs" by simp
-setup {* fold add_backward_prfstep [@{thm list_eq_hd}, @{thm list_eq_tl}] *}
+theorem list_eq_hd [backward]: "xs = ys \<Longrightarrow> x # xs = x # ys" by simp
+theorem list_eq_tl [backward]: "x = y \<Longrightarrow> x # xs = y # xs" by simp
 setup {* fold add_rewrite_rule @{thms List.list.sel(1,3)} *}
 setup {* add_rewrite_rule @{thm List.hd_append2} *}
 
@@ -27,7 +26,8 @@ setup {* add_forward_prfstep @{thm list.collapse} *}
 text {* Induction. After proving a property P holds for [], can assume P holds
   for tl l when trying to show P l. *}
 
-theorem list_induct': "P [] \<Longrightarrow> (\<forall>l. P (tl l) \<longrightarrow> P l) \<Longrightarrow> P l" by (metis list.sel(3) list_nonempty_induct)
+theorem list_induct': "P [] \<Longrightarrow> (\<forall>l. P (tl l) \<longrightarrow> P l) \<Longrightarrow> P l"
+  by (metis list.sel(3) list_nonempty_induct)
 setup {* add_prfstep_induction @{thm list_induct'} *}
 
 text {* Simplified writing of induction on lists. Note expanded version still
@@ -40,44 +40,36 @@ fun LIST_INDUCT_NEWVAR (exp, var, extra_vars) =
   INDUCT (var ^ " = " ^ exp, OnFact (exp ^ " \<noteq> []") :: Arbitraries extra_vars)
 *}
 
-text {* Induction on two lists. *}
-
-theorem list_double_induct: "\<forall>ys. P [] ys \<Longrightarrow> \<forall>xs. P xs [] \<Longrightarrow> \<forall>xs ys. P (tl xs) ys \<and> P xs (tl ys) \<longrightarrow> P xs ys \<Longrightarrow> P xs ys"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", []) THEN LIST_INDUCT ("ys", ["xs"])) *})
-setup {* add_prfstep_double_induction @{thm list_double_induct} *}
-
-ML {*
-fun LIST_DOUBLE_INDUCT (var1, var2, extra_vars) =
-  CASE (var1 ^ " = []") THEN CASE (var2 ^ " = []") THEN
-  DOUBLE_INDUCT ((var1, var2), [OnFact (var1 ^ " \<noteq> []"), OnFact (var2 ^ " \<noteq> []")] @ Arbitraries extra_vars)
-fun LIST_DOUBLE_INDUCT_NEWVAR (exp1, var1, exp2, var2, extra_vars) =
-  CASE (exp1 ^ " = []") THEN CASE (exp2 ^ " = []") THEN
-  DOUBLE_INDUCT (
-    (var1 ^ " = " ^ exp1, var2 ^ " = " ^ exp2),
-    [OnFact (exp1 ^ " \<noteq> []"), OnFact (exp2 ^ " \<noteq> []")] @ Arbitraries extra_vars)
-*}
-
 section {* Other functions *}
 
 subsection {* append *}
 
-theorem list_append_one: "[a] @ b = a # b" by simp
-setup {* fold add_rewrite_rule [@{thm List.append.simps(1)}, @{thm List.append_Nil2}] #>
-  add_rewrite_rule @{thm list_append_one} #>
-  add_rewrite_rule_cond @{thm List.append.simps(2)} [with_cond "?xs \<noteq> []"] #>
-  add_rewrite_rule_bidir_cond @{thm List.append_assoc} (with_conds ["?xs \<noteq> []", "?ys \<noteq> []", "?zs \<noteq> []"]) *}
-theorem append_eq_empty: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
-setup {* add_forward_prfstep @{thm append_eq_empty} *}
+lemma append_eq_first [backward]: "b = c \<Longrightarrow> a @ b = a @ c" by simp
+lemma append_eq_second [backward]: "a = b \<Longrightarrow> a @ c = b @ c" by simp
+theorem list_append_one [rewrite]: "[a] @ b = a # b" by simp
+setup {* add_rewrite_rule_cond @{thm List.append.simps(2)} [with_cond "?xs \<noteq> []"] *}
+theorem append_eq_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
+
+ML {*
+val add_list_ac_data =
+  fold ACUtil.add_ac_data [
+    {fname = @{const_name append}, assoc_r = true,
+     assoc_th = @{thm List.append_assoc}, comm_th = true_th,
+     unit_val = @{term "[]"}, unit_th = @{thm List.append.simps(1)}, unitr_th = @{thm List.append_Nil2},
+     uinv_name = "", inv_name = "", double_inv_th = true_th,
+     distr_inv_th = true_th, binop_inv_th = true_th, unit_inv_th = true_th}]
+*}
+setup {* add_list_ac_data *}
 
 subsection {* rev *}
 
-theorem rev_one: "rev [x] = [x]" by simp
+theorem rev_one [rewrite]: "rev [x] = [x]" by simp
 setup {* add_rewrite_rule @{thm List.rev.simps(1)} #>
   add_rewrite_rule_cond @{thm List.rev.simps(2)} [with_cond "?xs \<noteq> []"] #>
-  add_rewrite_rule @{thm rev_one} *}
-setup {* add_rewrite_rule_cond @{thm List.rev_append} (with_conds ["?xs \<noteq> []", "?ys \<noteq> []"]) *}
-theorem rev_nth': "n < length xs \<Longrightarrow> List.rev xs ! n = xs ! (length xs - 1 - n)" using rev_nth by auto
-setup {* fold add_rewrite_rule [@{thm length_rev}, @{thm rev_nth'}] *}
+  add_rewrite_rule @{thm List.rev_append} *}
+theorem rev_nth' [rewrite]:
+  "n < length xs \<Longrightarrow> List.rev xs ! n = xs ! (length xs - 1 - n)" using rev_nth by auto
+setup {* add_rewrite_rule @{thm length_rev} *}
 
 subsection {* sorted *}
 
@@ -93,8 +85,7 @@ setup {* add_rewrite_rule @{thm distinct.simps(1)} #>
 section {* Set of elements of a list *}
 
 setup {* add_rewrite_rule @{thm List.set_simps(1)} *}
-theorem set_list_single: "set [x] = {x}" by simp
-setup {* add_rewrite_rule @{thm set_list_single} *}
+theorem set_list_single [rewrite]: "set [x] = {x}" by simp
 theorem set_list_simp2: "set (x # xs) = {x} \<union> set xs" by simp
 setup {* add_rewrite_rule_cond @{thm set_list_simp2} [with_cond "?xs \<noteq> []"] *}
 setup {* add_forward_prfstep_cond @{thm List.list.set_intros(1)} [with_term "set (?a1.0 # ?a2.0)"] *}
@@ -111,8 +102,7 @@ setup {* add_gen_prfstep ("Un_single_case_list",
 section {* Splitting of lists *}
 
 setup {* add_resolve_prfstep @{thm split_list} *}
-theorem list_split_neq_second: "xs \<noteq> as @ x # xs" by simp
-setup {* add_resolve_prfstep @{thm list_split_neq_second} *}
+theorem list_split_neq_second [resolve]: "xs \<noteq> as @ x # xs" by simp
 
 section {* Showing two lists are equal *}
 setup {* add_backward2_prfstep @{thm nth_equalityI} *}
