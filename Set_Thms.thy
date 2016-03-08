@@ -1,3 +1,5 @@
+(* Setup of proof steps related to sets. *)
+
 theory Set_Thms
 imports Auto2_Base "~~/src/HOL/Library/Multiset"
 begin
@@ -75,11 +77,11 @@ theorem union_subtract_elt [rewrite]: "x \<notin> B \<Longrightarrow> (B \<union
 theorem subset_sub1 [backward]: "x \<in> A \<Longrightarrow> A - {x} \<subset> A" by auto
 
 subsection {* Results on finite sets *}
-setup {* add_known_fact @{thm Finite_Set.finite.emptyI} *}
-theorem set_finite_single [known_fact]: "finite {x}" by simp
+setup {* add_resolve_prfstep @{thm Finite_Set.finite.emptyI} *}
+theorem set_finite_single [resolve]: "finite {x}" by simp
 setup {* add_rewrite_rule_cond @{thm Finite_Set.finite_Un}
   [with_filt (canonical_split_filter @{const_name sup} "F" "G")] *}
-setup {* add_known_fact @{thm List.finite_set} *}
+setup {* add_resolve_prfstep @{thm List.finite_set} *}
 theorem Min_eqI' [backward1]: "finite A \<and> (\<forall>y\<in>A. y \<ge> x) \<Longrightarrow> x \<in> A \<Longrightarrow> Min A = x" using Min_eqI by auto
 theorem Max_ge' [forward]: "finite A \<Longrightarrow> x > Max A \<Longrightarrow> \<not>(x \<in> A)" using Max_ge leD by auto
 

@@ -1,3 +1,5 @@
+(* Theorems in logic used in the auto2 tactic. *)
+
 theory Logic_Base
 imports Main Rat
 begin
@@ -23,5 +25,11 @@ theorem backward1_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\
 theorem backward2_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\<not>C \<Longrightarrow> A \<Longrightarrow> \<not>B)" by (rule equal_intr_rule) auto
 theorem resolve_conv: "(A \<Longrightarrow> B) \<equiv> (\<not>B \<Longrightarrow> A \<Longrightarrow> False)" by (rule equal_intr_rule) auto
 ML {* val nn_cancel_th = @{thm HOL.nnf_simps(6)} *}
+
+(* Quantifiers: swapping out of ALL or EX *)
+theorem swap_ex_conj: "(P \<and> (\<exists>x. Q x)) \<longleftrightarrow> (\<exists>x. P \<and> Q x)" by auto
+
+(* Bounded quantifiers *)
+theorem bex_iff: "(\<exists>x. (x \<in> S \<and> P x)) \<longleftrightarrow> (\<exists>x\<in>S. P x)" by auto
 
 end

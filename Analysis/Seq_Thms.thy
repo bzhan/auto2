@@ -1,3 +1,5 @@
+(* Definition of sequences, and some properties. *)
+
 theory Seq_Thms
 imports Rat_Thms
 begin
@@ -35,7 +37,7 @@ instance proof
   show
     "a * b * c = a * (b * c)"
     "a * b = b * a"
-    "a + b + c = a + (b + c)" 
+    "a + b + c = a + (b + c)"
     "a + b = b + a"
     "a - b = a + (-b)"
     "-a + a = 0"
@@ -113,8 +115,7 @@ theorem monotone_decr_is_neg_incr:
 setup {* add_resolve_prfstep (equiv_forward_th @{thm monotone_decr_is_neg_incr}) *}
 
 theorem monotone_decrI [backward]:
-  "\<forall>n. X\<langle>n+1\<rangle> \<le> X\<langle>n\<rangle> \<Longrightarrow> monotone_decr (X::('a::linordered_idom) seq)"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "monotone_incr (-X)") *})
+  "\<forall>n. X\<langle>n+1\<rangle> \<le> X\<langle>n\<rangle> \<Longrightarrow> monotone_decr (X::('a::linordered_idom) seq)" by auto2
 
 theorem monotone_decrE [backward2]: "monotone_decr X \<Longrightarrow> n \<ge> m \<Longrightarrow> X\<langle>n\<rangle> \<le> X\<langle>m\<rangle>" by auto2
 
@@ -149,7 +150,18 @@ proof -
 qed
 
 theorem convert_eval_Suc_n: "\<forall>(n::nat). f (1+n) = F n \<Longrightarrow> \<forall>n. n \<noteq> 0 \<longrightarrow> f n = F (n-1)"
-  by (metis add.commute nat_minus_add_1)  
+  by (metis add.commute nat_minus_add_1)
+
+definition monotone_pred :: "('a::linorder \<Rightarrow> bool) \<Rightarrow> bool"
+  where "monotone_pred P = (\<forall>n. P n \<longrightarrow> (\<forall>m\<ge>n. P m))"
+setup {* add_rewrite_rule @{thm monotone_pred_def} *}
+
+theorem monotone_pred_ex:
+  "monotone_pred P \<Longrightarrow> monotone_pred Q \<Longrightarrow> (\<exists>k. P k) \<and> (\<exists>k. Q k) \<Longrightarrow> \<exists>k. P k \<and> Q k" by auto2
+
+theorem monotone_pred_ge: "monotone_pred (\<lambda>n. n \<ge> m)" by auto2
+theorem monotone_pred_forall: "monotone_pred (\<lambda>n. \<forall>k\<ge>n. P k)" by auto2
+theorem monotone_pred_forall2: "monotone_pred (\<lambda>n. \<forall>k\<ge>n. \<forall>m\<ge>n. P k m)" by auto2
 
 ML_file "seq_steps.ML"
 

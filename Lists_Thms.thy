@@ -1,3 +1,5 @@
+(* Setup for proof steps related to lists. *)
+
 theory Lists_Thms
 imports Auto2_Base
 begin
@@ -20,7 +22,7 @@ text {* Case checking for lists: first verify the [] case, then split into hd ::
 setup {* add_gen_prfstep ("list_case_intro",
   [WithTerm @{term_pat "?x::?'a list"},
    Filter (unique_free_filter "x"),
-   CreateCase ([@{term_pat "(?x::?'a list) = []"}], [])]) *}
+   CreateCase @{term_pat "(?x::?'a list) = []"}]) *}
 setup {* add_forward_prfstep @{thm list.collapse} *}
 
 text {* Induction. After proving a property P holds for [], can assume P holds
@@ -29,16 +31,6 @@ text {* Induction. After proving a property P holds for [], can assume P holds
 theorem list_induct': "P [] \<Longrightarrow> (\<forall>l. P (tl l) \<longrightarrow> P l) \<Longrightarrow> P l"
   by (metis list.sel(3) list_nonempty_induct)
 setup {* add_prfstep_induction @{thm list_induct'} *}
-
-text {* Simplified writing of induction on lists. Note expanded version still
-  need to be used when there are WITH forms. *}
-ML {*
-fun LIST_INDUCT (var, extra_vars) =
-  CASE (var ^ " = []") THEN INDUCT (var, OnFact (var ^ " \<noteq> []") :: Arbitraries extra_vars)
-fun LIST_INDUCT_NEWVAR (exp, var, extra_vars) =
-  CASE (exp ^ " = []") THEN
-  INDUCT (var ^ " = " ^ exp, OnFact (exp ^ " \<noteq> []") :: Arbitraries extra_vars)
-*}
 
 section {* Other functions *}
 
@@ -78,9 +70,12 @@ setup {* add_rewrite_rule_cond @{thm sorted_Cons} [with_cond "?xs \<noteq> []"]*
 
 subsection {* distinct *}
 
+theorem distinct2 [rewrite]: "distinct [a, b] = (a \<noteq> b)" by simp
+theorem distinct3 [rewrite]: "distinct [a, b, c] = (a \<noteq> b \<and> a \<noteq> c \<and> b \<noteq> c)" by simp
 setup {* add_rewrite_rule @{thm distinct.simps(1)} #>
-  add_known_fact @{thm distinct_singleton} #>
-  add_rewrite_rule_cond @{thm distinct.simps(2)} [with_cond "?xs \<noteq> []"] *}
+  add_resolve_prfstep @{thm distinct_singleton} #>
+  add_rewrite_rule_cond @{thm distinct.simps(2)} (
+    with_conds ["?xs \<noteq> []", "?xs \<noteq> [?a]", "?xs \<noteq> [?a, ?b]"]) *}
 
 section {* Set of elements of a list *}
 
@@ -97,7 +92,7 @@ setup {* add_rewrite_rule @{thm List.set_append} *}
 setup {* add_gen_prfstep ("Un_single_case_list",
   [WithFact @{term_pat "?x \<in> {?a} \<union> set ?B"},
    Filter (neq_filter "x" "a"),
-   CreateCase ([@{term_pat "?x = ?a"}], [])]) *}
+   CreateCase @{term_pat "?x = ?a"}]) *}
 
 section {* Splitting of lists *}
 

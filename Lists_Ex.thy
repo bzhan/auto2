@@ -1,3 +1,6 @@
+(* Examples on lists and binary search trees. The itrev example comes
+   from Section 2.4 in "Programming and Proving in Isabelle/HOL". *)
+
 theory Lists_Ex
 imports Auto2
 begin
@@ -5,19 +8,8 @@ begin
 section {* Induction on two lists. *}
 
 theorem list_double_induct: "\<forall>ys. P [] ys \<Longrightarrow> \<forall>xs. P xs [] \<Longrightarrow> \<forall>xs ys. P (tl xs) ys \<and> P xs (tl ys) \<longrightarrow> P xs ys \<Longrightarrow> P xs ys"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("ys", []) THEN LIST_INDUCT ("xs", ["ys"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", []) THEN INDUCT ("ys", [Arbitrary "xs"])) *})
 setup {* add_prfstep_double_induction @{thm list_double_induct} *}
-
-ML {*
-fun LIST_DOUBLE_INDUCT (var1, var2, extra_vars) =
-  CASE (var1 ^ " = []") THEN CASE (var2 ^ " = []") THEN
-  DOUBLE_INDUCT ((var1, var2), [OnFact (var1 ^ " \<noteq> []"), OnFact (var2 ^ " \<noteq> []")] @ Arbitraries extra_vars)
-fun LIST_DOUBLE_INDUCT_NEWVAR (exp1, var1, exp2, var2, extra_vars) =
-  CASE (exp1 ^ " = []") THEN CASE (exp2 ^ " = []") THEN
-  DOUBLE_INDUCT (
-    (var1 ^ " = " ^ exp1, var2 ^ " = " ^ exp2),
-    [OnFact (exp1 ^ " \<noteq> []"), OnFact (exp2 ^ " \<noteq> []")] @ Arbitraries extra_vars)
-*}
 
 section {* Linear time version of rev *}
 
@@ -27,7 +19,7 @@ fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 setup {* fold add_rewrite_rule @{thms itrev.simps} *}
 
 lemma itrev_prop [rewrite]: "itrev x y = rev x @ y"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("x", ["y"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("x", [Arbitrary "y"])) *})
 
 lemma itrev_eq_rev: "itrev x [] = rev x" by auto2
 
@@ -45,7 +37,7 @@ setup {* del_prfstep_thm @{thm strict_sorted.simps(2)} #>
 theorem strict_sorted_append [rewrite]:
   "strict_sorted (xs @ ys) =
     ((\<forall>x y. x \<in> set xs \<longrightarrow> y \<in> set ys \<longrightarrow> x < y) \<and> strict_sorted xs \<and> strict_sorted ys)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", [])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", [])) *})
 
 theorem strict_sorted_append_one:
   "strict_sorted (xs @ [y]) = (\<forall>x\<in>set xs. x < y \<and> strict_sorted xs)" by auto2
@@ -106,10 +98,10 @@ theorem merge_list_simp2' [rewrite]: "merge_list [] ys = ys" by auto2
 setup {* del_prfstep_thm @{thm merge_list.simps(2)} *}
 
 theorem merge_list_correct [rewrite]: "set (merge_list xs ys) = set xs \<union> set ys"
-  by (tactic {* auto2s_tac @{context} (LIST_DOUBLE_INDUCT ("xs", "ys", [])) *})
+  by (tactic {* auto2s_tac @{context} (DOUBLE_INDUCT (("xs", "ys"), [])) *})
 
 theorem merge_list_sorted [backward2]: "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> sorted (merge_list xs ys)"
-  by (tactic {* auto2s_tac @{context} (LIST_DOUBLE_INDUCT ("xs", "ys", [])) *})
+  by (tactic {* auto2s_tac @{context} (DOUBLE_INDUCT (("xs", "ys"), [])) *})
 
 section {* Definition and setup for trees *}
 
@@ -128,7 +120,7 @@ text {* Case checking for trees: first verify the Tip case, then can assume t is
 setup {* add_gen_prfstep ("tree_case_intro",
   [WithTerm @{term_pat "?t::?'a tree"},
    Filter (unique_free_filter "t"),
-   CreateCase ([@{term_pat "(?t::?'a tree) = Tip"}], [])]) *}
+   CreateCase @{term_pat "(?t::?'a tree) = Tip"}]) *}
 setup {* add_forward_prfstep_cond @{thm tree.collapse} [with_cond "?tree \<noteq> Node ?l ?v ?r"] *}
 
 text {* Induction on trees: after checking Tip case, can assume P (lsub t)
@@ -137,14 +129,6 @@ text {* Induction on trees: after checking Tip case, can assume P (lsub t)
 theorem tree_induct': "P Tip \<Longrightarrow> (\<forall>t. P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
   apply (induct t) apply blast by (metis tree.sel(1) tree.sel(3))
 setup {* add_prfstep_induction @{thm tree_induct'} *}
-
-ML {*
-fun TREE_INDUCT (var, extra_vars) =
-  CASE (var ^ " = Tip") THEN INDUCT (var, (OnFact (var ^ " \<noteq> Tip") :: Arbitraries extra_vars))
-fun TREE_INDUCT_NEWVAR (exp, var, extra_vars) =
-  CASE (exp ^ " = Tip") THEN
-  INDUCT (var ^ " = " ^ exp, (OnFact (exp ^ " \<noteq> Tip") :: Arbitraries extra_vars))
-*}
 
 section {* Inorder traversal, and set of elements of a tree *}
 
@@ -157,7 +141,7 @@ fun tree_set :: "'a tree \<Rightarrow> 'a set" where
 | "tree_set (Node l y r) = {y} \<union> tree_set l \<union> tree_set r"
 setup {* fold add_rewrite_rule (@{thms in_traverse.simps} @ @{thms tree_set.simps}) *}
 
-theorem tree_set_finite [known_fact]: "finite (tree_set t)" by auto2
+theorem tree_set_finite [resolve]: "finite (tree_set t)" by auto2
 
 theorem in_traverse_non_empty: "in_traverse (Node lt v rt) \<noteq> []" by auto2
 setup {* add_forward_prfstep_cond @{thm in_traverse_non_empty} [with_term "in_traverse (Node ?lt ?v ?rt)"] *}

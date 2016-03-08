@@ -6,8 +6,8 @@ val test_normalize =
       val ctxt = Proof_Context.init_global thy
       fun test (str, strs) =
           let
-            val t = Syntax.read_term ctxt str
-            val ts = map (Syntax.read_term ctxt) strs
+            val t = read_term ctxt str
+            val ts = map (read_term ctxt) strs
             val ritem =
                 Update.thm_to_ritem (assume_thm ctxt (HOLogic.mk_Trueprop t))
             val ritems' = normalize ctxt ritem
@@ -31,8 +31,6 @@ val test_normalize =
         ("P a = False", ["~ (P a)"]),
         ("A & B & C", ["A::bool", "B::bool", "C::bool"]),
         ("~ (A | B | C)", ["~ A", "~ B", "~ C"]),
-        ("EX (y::nat) (x::nat). P x y", ["EX (x::nat) (y::nat). P x y"]),
-        ("EX (x::nat) (y::nat). P x y", ["EX (x::nat) (y::nat). P x y"]),
         ("~ ~ (~ A & (~ ~ B))", ["~ A", "B::bool"])
       ]
     in

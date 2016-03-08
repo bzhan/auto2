@@ -1,3 +1,5 @@
+(* Setup of proof steps related to arithmetic on rational numbers. *)
+
 theory Rat_Thms
 imports "../Auto2"
 begin
@@ -54,7 +56,7 @@ theorem mult_strict_mono' [forward]:
   "(b::('a::linordered_field)) * d \<le> a * c \<Longrightarrow> a < b \<Longrightarrow> 0 < b \<Longrightarrow> 0 \<le> c \<Longrightarrow> c \<ge> d"
   by (meson leD leI mult_strict_mono)
 setup {* add_backward2_prfstep @{thm less_imp_inverse_less} *}
-setup {* add_known_fact @{thm le_of_int_ceiling} *}
+setup {* add_resolve_prfstep @{thm le_of_int_ceiling} *}
 theorem two_power_gt_zero: "2 ^ k > (0::('a::linordered_field))" by simp
 setup {* add_forward_prfstep_cond @{thm two_power_gt_zero} [with_term "(2::(?'a::linordered_field)) ^ ?k"] *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm pos_le_divide_eq}) *}

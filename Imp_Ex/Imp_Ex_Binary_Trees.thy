@@ -1,3 +1,5 @@
+(* Imperative binary search trees. *)
+
 theory Imp_Ex_Binary_Trees
 imports Imp_Thms "../Lists_Ex"
 begin
@@ -53,7 +55,7 @@ inductive refs_ofR :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a n
   "Ref.get h p = Empty \<Longrightarrow> refs_ofR h p {p}"
 | "Ref.get h p = Node lp v rp \<Longrightarrow> refs_ofR h lp lps \<and> refs_ofR h rp rps
   \<and> lps \<inter> rps = {} \<and> p \<notin> lps \<and> p \<notin> rps \<Longrightarrow> refs_ofR h p ({p} \<union> lps \<union> rps)"
-setup {* add_known_fact @{thm refs_ofR.intros(1)} *}
+setup {* add_resolve_prfstep @{thm refs_ofR.intros(1)} *}
 setup {* add_backward2_prfstep @{thm refs_ofR.intros(2)} *}
 setup {* add_prfstep_prop_induction @{thm refs_ofR.induct} *}
 
@@ -128,12 +130,12 @@ subsection {* Interaction of partial functions with heap transitions *}
 
 lemma refs_of_set_ref: "p \<notin> refs_of h q \<Longrightarrow> proper_ref h q \<Longrightarrow>
   proper_ref (Ref.set p v h) q \<and> refs_of (Ref.set p v h) q = refs_of h q"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h q", "ts", ["q"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("ts = tree_of h q", [Arbitrary "q"])) *})
 setup {* add_forward_prfstep_cond @{thm refs_of_set_ref} [with_term "Ref.set ?p ?v ?h"] *}
 
 lemma tree_of_set_ref [rewrite]:
   "p \<notin> refs_of h q \<Longrightarrow> proper_ref h q \<Longrightarrow> tree_of (Ref.set p v h) q = tree_of h q"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h q", "ts", ["q"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("ts = tree_of h q", [Arbitrary "q"])) *})
 
 lemma refs_of_set_next_ref: "proper_ref h lp \<Longrightarrow> proper_ref h rp \<Longrightarrow>
   p \<notin> refs_of h lp \<Longrightarrow> p \<notin> refs_of h rp \<Longrightarrow> refs_of h lp \<inter> refs_of h rp = {} \<Longrightarrow>
@@ -160,11 +162,11 @@ lemma eq_on_set_next_refs [forward]:
 
 lemma refs_of_invariant [forward]: "proper_ref h r \<Longrightarrow> eq_on_set h h' (refs_of h r) \<Longrightarrow>
   proper_ref h' r \<and> refs_of h r = refs_of h' r"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h r", "ts", ["r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("ts = tree_of h r", [Arbitrary "r"])) *})
 
 lemma tree_of_invariant [forward]:
   "proper_ref h r \<Longrightarrow> eq_on_set h h' (refs_of h r) \<Longrightarrow> tree_of h r = tree_of h' r"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h r", "ts", ["r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("ts = tree_of h r", [Arbitrary "r"])) *})
 
 lemma effect_update_ref [forward]:
   "effect (p := q) h h' v \<Longrightarrow> Ref.get h p = Node lp v rp \<Longrightarrow> proper_ref h p \<Longrightarrow>
@@ -190,7 +192,7 @@ setup {* fold add_rewrite_rule @{thms make_btree.simps} *}
 
 lemma make_btree_unchanged [forward]:
   "effect (make_btree t) h h' r \<Longrightarrow> Ref.present h r' \<Longrightarrow> Ref.present h' r' \<and> Ref.get h r' = Ref.get h' r'"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT ("t", ["h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["h", "h'", "r"])) *})
 
 lemma make_btree_unchanged_set [forward]:
   "effect (make_btree t) h h' r \<Longrightarrow> present_on_set h rs \<Longrightarrow> eq_on_set h h' rs" by auto2
@@ -199,7 +201,7 @@ lemma make_btree_unchanged_set' [forward]:
   
 lemma make_btree [forward]:
   "effect (make_btree t) h h' r \<Longrightarrow> proper_ref h' r \<and> tree_of h' r = t \<and> not_present_on_set h (refs_of h' r)"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT ("t", ["h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["h", "h'", "r"])) *})
 
 partial_function (heap) traverse :: "'a::heap node ref \<Rightarrow> 'a tree Heap" where
   "traverse p = do { t \<leftarrow> !p;
@@ -210,7 +212,7 @@ partial_function (heap) traverse :: "'a::heap node ref \<Rightarrow> 'a tree Hea
 setup {* add_rewrite_rule_cond @{thm traverse.simps} [with_filt (size1_filter "p")] *}
 
 lemma traverse [forward]: "proper_ref h p \<Longrightarrow> tree_of h p = t \<Longrightarrow> effect (traverse p) h h t"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT ("t", ["p"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t", [Arbitrary "p"])) *})
 
 lemma traverse_make_btree: "effect (make_btree t \<bind> traverse) h h' r \<Longrightarrow> r = t" by auto2
 setup {* del_prfstep_thm @{thm traverse} *}
@@ -236,15 +238,15 @@ setup {* add_rewrite_rule_cond @{thm insert.simps} [with_filt (size1_filter "p")
 
 lemma insert_unchanged [forward]:
   "effect (insert x p) h h' r' \<Longrightarrow> proper_ref h p \<Longrightarrow> unchanged_outer h h' (refs_of h p)"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h p", "t", ["p"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t = tree_of h p", [Arbitrary "p"])) *})
 
 lemma insert_local [forward]: "effect (insert x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow>
   proper_ref h' p \<and> refs_of_extension h (refs_of h p) (refs_of h' p)"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h p", "t", ["p"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t = tree_of h p", [Arbitrary "p"])) *})
 
 theorem insert_correct [forward]:
   "effect (insert x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> tree_of h' p = tree_insert x (tree_of h p)"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h p", "t", ["p"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t = tree_of h p", [Arbitrary "p"])) *})
 setup {* del_prfstep_thm @{thm insert.simps} *}
 
 theorem imp_insert_present [forward]:
@@ -267,16 +269,16 @@ lemma delete_min_non_empty [forward]:
 
 lemma delete_min_unchanged [forward]:
   "effect (delete_min p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> unchanged_outer h h' (refs_of h p)"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h p", "t", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t = tree_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 
 lemma delete_min_local [forward]: "effect (delete_min p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow>
   proper_ref h' p \<and> refs_of_extension h (refs_of h p) (refs_of h' p)"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h p", "t", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t = tree_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 
 lemma delete_min_correct [forward]:
   "effect (delete_min p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow>
    tree_of h' p = delete_min_tree (tree_of h p) \<and> r = min_tree (tree_of h p)"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h p", "t", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t = tree_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 
 lemma delete_min_data_str [forward]:
   "effect (delete_min p) h h' r \<Longrightarrow> proper_sorted_ref h p \<Longrightarrow> tree_of h p \<noteq> Tip \<Longrightarrow>
@@ -289,7 +291,7 @@ lemma delete_min_data_str2 [rewrite_back]:
 
 lemma delete_min_succeed [backward2]:
   "proper_ref h p \<Longrightarrow> Ref.get h p \<noteq> Empty \<Longrightarrow> success (delete_min p) h"
-  by (tactic {* auto2s_tac @{context} (TREE_INDUCT_NEWVAR ("tree_of h p", "t", ["p", "h"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t = tree_of h p", Arbitraries ["p", "h"])) *})
 setup {* del_prfstep_thm @{thm delete_min.simps} *}
 
 partial_function (heap) delete :: "'a::{heap,ord} node ref \<Rightarrow> unit Heap" where
@@ -321,19 +323,19 @@ setup {* fold add_rewrite_rule @{thms insert_list.simps} *}
 
 lemma insert_list_unchanged [forward]:
   "effect (insert_list xs p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> unchanged_outer h h' (refs_of h p)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", ["h"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", [Arbitrary "h"])) *})
 
 lemma insert_list_local [forward]: "effect (insert_list xs p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow>
   proper_ref h' p \<and> refs_of_extension h (refs_of h p) (refs_of h' p)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", ["h"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", [Arbitrary "h"])) *})
 
 lemma insert_list_present [forward]: "effect (insert_list xs p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow>
   tree_set (tree_of h' p) = set xs \<union> tree_set (tree_of h p)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", ["h"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", [Arbitrary "h"])) *})
 
 lemma insert_list_sorted [forward]:
   "effect (insert_list xs p) h h' r \<Longrightarrow> proper_sorted_ref h p \<Longrightarrow> proper_sorted_ref h' p"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", ["h"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", [Arbitrary "h"])) *})
 
 partial_function (heap) extract_sorted_list :: "'a::{heap,ord} node ref \<Rightarrow> 'a list Heap" where
   "extract_sorted_list p = do { t \<leftarrow> !p;
@@ -345,7 +347,7 @@ ML {*
 (* For effect (extract_sorted_list p) h h' r *)
 val extract_sorted_list_script =
   OBTAIN "tree_of h p \<noteq> Tip" THEN
-  FINSET_INDUCT_NEWVAR ("tree_set (tree_of h p)", "A", ["h", "h'", "r"])
+  FINSET_INDUCT ("A = tree_set (tree_of h p)", Arbitraries ["h", "h'", "r"])
 *}
 
 lemma extract_sorted_list_unchanged [forward]:

@@ -58,3 +58,10 @@ session Real = AUTO2 +
   *}
   theories
     "Analysis/Real_Auto2"
+
+session Arrow = AUTO2 +
+  description {*
+    Arrow's impossibility theorem.
+  *}
+  theories
+    "Arrow_Ex/Arrow_Order_Ex"

@@ -7,43 +7,6 @@ local
 
 in
 
-val test_normalize_pred_comm =
-    let
-      val test = test_conv ctxt normalize_pred_comm_conv
-                           "test_normalize_pred_comm"
-
-      val _ = test ("EX i j. ka = p ^ i & y = p ^ j",
-                    "EX i j. ka = p ^ i & y = p ^ j")
-      val _ = test ("EX i j. ka = p ^ j & y = p ^ i",
-                    "EX j i. ka = p ^ j & y = p ^ i")
-      val _ = test ("ka = p ^ j & y = p ^ i",
-                    "ka = p ^ j & y = p ^ i")
-    in () end
-
-val test_swap_quantifiers =
-    let
-      fun test1 counts = test_conv ctxt (swap_foralls_imps_conv counts ctxt)
-                                   "test_swap_forall_imp"
-      fun test2 counts = test_conv ctxt (swap_exs_conjs_conv counts ctxt)
-                                   "test_swap_ex_conj"
-
-      (* Swapping ALL and --> *)
-      val _ = test1 [1] ("!n. P --> Q n", "P --> (!n. Q n)")
-      val _ = test1 [2] ("!n. P --> Q --> R n", "P --> Q --> (!n. R n)")
-      val _ = test1 [0, 1] ("!m n. P m --> Q m n", "!m. P m --> (!n. Q m n)")
-      val _ = test1 [0, 2] ("!m n. P m --> Q m --> R m n",
-                            "!m. P m --> Q m --> (!n. R m n)")
-      val _ = test1 [1, 1] ("!m n. P --> Q m --> R m n",
-                            "P --> (!m. Q m --> (!n. R m n))")
-      val _ = test1 [1, 0] ("!m n. P --> Q m --> R m n",
-                            "P --> (!m n. Q m --> R m n)")
-
-      (* Swapping EX and & *)
-      val _ = test2 [1] ("EX n. P & Q n", "P & (EX n. Q n)")
-      val _ = test2 [0, 1] ("EX m n. P m & Q m n", "EX m. P m & (EX n. Q m n)")
-
-    in () end
-
 val test_not_ex_forall =
     let
       val test = test_conv ctxt (not_ex_forall_cv ctxt) "test_not_ex_forall"
@@ -73,8 +36,7 @@ val test_analyze_disj_th =
     let
       fun test (t_str, (is_active, res_str)) =
           let
-            val t = Syntax.read_term ctxt t_str
-            val res = Proof_Context.read_term_pattern ctxt res_str
+            val (t, res) = (read_term ctxt t_str, read_pat ctxt res_str)
             val th = assume_thm ctxt (HOLogic.mk_Trueprop t)
             val (is_active', th') = analyze_disj_th ctxt th
           in
@@ -94,7 +56,6 @@ val test_analyze_disj_th =
           end
 
       val test_data = [
-        ("A --> B --> ~C & D --> (E | F)", (false, "C | E | F | ~A | ~B | ~D")),
         ("~ (A & B & ~C)", (true, "C | ~A | ~B")),
         ("A --> (!(x::nat). B x --> C x)",
          (false, "~A | (!(x::nat). B x --> C x)")),
@@ -104,7 +65,9 @@ val test_analyze_disj_th =
         ("!(x::nat). A x (y::nat) --> B y x",
          (false, "B (y::nat) (?x::nat) | ~A ?x y")),
         ("A --> False", (false, "~A")),
-        ("A --> B --> False", (false, "~A | ~B"))]
+        ("A --> B --> False", (false, "~A | ~B")),
+        ("A --> B | C", (false, "B | C | ~A")),
+        ("A --> ~(B & C)", (false, "~A | ~(B & C)"))]
     in
       map test test_data
     end
@@ -133,8 +96,7 @@ val test_match_update =
             Fact (TY_DISJ, tname, th)
           end
 
-      fun read_prop str = str |> Proof_Context.read_term_pattern ctxt'
-                              |> HOLogic.mk_Trueprop
+      fun read_prop str = str |> read_pat ctxt' |> HOLogic.mk_Trueprop
 
       fun updt_to_thm updt =
           case updt of

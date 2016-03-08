@@ -1,3 +1,5 @@
+(* Setup for proof steps related to ordering. *)
+
 theory Order_Thms
 imports Auto2_Base
 begin
@@ -48,6 +50,7 @@ setup {* add_forward_prfstep_cond @{thm max_boundedE} [with_cond "?a \<noteq> ?b
 
 subsection {* Existence of numbers satisfying inequalities *}
 
+theorem exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
 setup {* fold add_resolve_prfstep [@{thm lt_ex}, @{thm gt_ex}] *}
 setup {* add_backward_prfstep @{thm dense} *}
 

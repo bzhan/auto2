@@ -35,7 +35,7 @@ val test_comb_ac_equiv =
 (* Generic function for testing conv with ac_info argument. *)
 fun test_ac_conv_gen with_inv ctxt cv err_str (str1, str2) =
     let
-      val t1 = Proof_Context.read_term_pattern ctxt str1
+      val t1 = read_pat ctxt str1
       val ac_info = the (get_head_ac_info_gen with_inv thy' t1)
                     handle Option.Option => raise AUTO2 "test_ac_conv: ac_info"
     in
@@ -118,8 +118,7 @@ val test_move_outmost =
       val err_str = "test_move_outmost"
       fun test (stru, (str1, str2)) =
           let
-            val t1 = Proof_Context.read_term_pattern ctxt str1
-            val u = Proof_Context.read_term_pattern ctxt stru
+            val (t1, u) = (read_pat ctxt str1, read_pat ctxt stru)
             val ac_info =
                 the (get_head_ac_info thy' t1)
                 handle Option.Option => raise AUTO2 (err_str ^ ": ac_info")
@@ -175,9 +174,8 @@ val test_match_ac =
     let
       fun test ctxt (t_str, u_str, exp_insts_t_strs) =
           let
-            val t = Proof_Context.read_term_pattern ctxt t_str
-            val u = Syntax.read_term ctxt u_str
-            val exp_insts_t = map (Syntax.read_term ctxt) exp_insts_t_strs
+            val (t, u) = (read_pat ctxt t_str, read_term ctxt u_str)
+            val exp_insts_t = map (read_term ctxt) exp_insts_t_strs
             val ac_info = the (get_head_ac_info_with_inv thy' t)
                           handle Option.Option =>
                                  raise AUTO2 "test_ac_conv: ac_info"

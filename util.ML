@@ -92,6 +92,8 @@ sig
 
   (* Managing context. *)
   val declare_free_term: term -> Proof.context -> Proof.context
+  val read_term: Proof.context -> string -> term
+  val read_pat: Proof.context -> string -> term
 
   (* Terms. *)
   val null_term: term
@@ -118,14 +120,15 @@ sig
   val strip_obj_all_var: term -> term list * term
   val strip_obj_imp: term -> term list * term
   val lambda_abstract: term -> term -> term
-  val is_const: term -> bool
   val is_order: term -> bool
   val is_linorder: Proof.context -> term -> bool
   val is_pattern: term -> bool
+  val print_term_detail: Proof.context -> term -> string
 
   (* Theorems. *)
   val true_th: thm
   val is_true_th: thm -> bool
+  val apply_on: thm list -> thm -> thm
   val prop_of': thm -> term
   val comb_equiv: cterm * thm list -> thm
   val name_of_thm: thm -> string
@@ -147,6 +150,7 @@ sig
   val obj_sym: thm -> thm
   val meta_sym: thm -> thm
   val rewr_obj_eq: thm -> conv
+  val rewr_obj_eq_top: thm -> Proof.context -> conv
   val apply_to_rhs: conv -> thm -> thm
   val concl_conv: int -> conv -> conv
   val rewrite_to_contra_form: conv
@@ -406,6 +410,8 @@ fun declare_free_term t ctxt =
     if not (is_Free t) then raise AUTO2 "declare_free_term: t not free."
     else ctxt |> Variable.add_fixes_direct [t |> Term.dest_Free |> fst]
               |> Variable.declare_term t
+val read_term = Syntax.read_term
+val read_pat = Proof_Context.read_term_pattern
 
 val null_term = HOLogic.unit
 fun is_null_term t = (t aconv null_term)
@@ -538,10 +544,6 @@ fun strip_obj_imp t =
 (* If stmt is P(t), return lambda t. P(t). *)
 fun lambda_abstract t stmt = lambda t (Term.abstract_over (t, stmt))
 
-(* Whether the given term is entirely constant. *)
-fun is_const t = (length (Term.add_vars t []) = 0 andalso
-                  length (Term.add_frees t []) = 0)
-
 (* Whether the given term is a < b or a <= b. *)
 fun is_order t =
     let
@@ -595,8 +597,21 @@ fun is_pattern t =
       test_term [] t
     end
 
+fun print_term_detail ctxt t =
+    case t of
+        Const (s, ty) => "Const (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str)
+      | Free (s, ty) => "Free (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str)
+      | Var ((nm, i), ty) => "Var ((" ^ nm ^ ", " ^ (string_of_int i) ^ "), " ^
+                             (pretty_typ ctxt ty |> str) ^ ")"
+      | Bound n => "Bound " ^ (string_of_int n)
+      | Abs (s, ty, b) => "Abs (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str) ^
+                          ", " ^ (print_term_detail ctxt b) ^ ")"
+      | u $ v => "(" ^ print_term_detail ctxt u ^ ") $ (" ^
+                 print_term_detail ctxt v ^ ")"
+
 val true_th = @{thm TrueI}
 fun is_true_th th = pointer_eq (th, true_th)
+fun apply_on ths th = ths MRS th
 
 fun prop_of' th = HOLogic.dest_Trueprop (Thm.prop_of th)
 
@@ -767,6 +782,10 @@ val meta_sym = apply_to_thm (Conv.rewr_conv @{thm meta_sym})
 
 (* Obtain rewriting conv from obj equality. *)
 fun rewr_obj_eq eq_th = Conv.rewr_conv (to_meta_eq eq_th)
+
+(* Rewrite on subterms, top order. *)
+fun rewr_obj_eq_top eq_th =
+    Conv.top_conv (K (Conv.try_conv (rewr_obj_eq eq_th)))
 
 (* Apply conv to rewrite the right hand side of th. *)
 fun apply_to_rhs cv th =
@@ -1030,7 +1049,7 @@ val contra_by_arith = contra_by_tac Arith_Data.arith_tac
 (* Generic function for testing a conv. *)
 fun test_conv ctxt cv err_str (str1, str2) =
     let
-      val (t1, t2) = apply2 (Proof_Context.read_term_pattern ctxt) (str1, str2)
+      val (t1, t2) = (read_pat ctxt str1, read_pat ctxt str2)
       val th = cv (cert ctxt t1)
     in
       if t1 aconv (lhs_of th) andalso t2 aconv (rhs_of th) then ()

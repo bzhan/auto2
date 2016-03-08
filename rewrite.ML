@@ -1,4 +1,4 @@
-(* Facility for dealing with equal terms. *)
+(* Rewrite table, basic implementation of E-matching. *)
 
 (* Keeps list of "constants": terms to which rewriting rules are
    always directed.
@@ -1200,7 +1200,8 @@ fun fo_rewrite_match_gen at_head (tbl as {ctxt, ...}) (t, u) (id, env) =
                        if subset (op aconv) (targs, bd_vars) andalso
                           not (has_duplicates (op aconv) targs) then
                          let
-                           val u' = fold lambda_abstract (rev targs) u
+                           val u' = u |> fold lambda_abstract (rev targs)
+                                      |> Envir.eta_contract
                          in
                            map (fn (instsp', _) => (instsp', refl tbl u))
                                (update_inst bd_vars ixn u' instsp)
@@ -1406,103 +1407,6 @@ end  (* structure RewriteTable. *)
 
 type rewrite_table = RewriteTable.rewrite_table
 type rewrite_type = RewriteTable.rewrite_type
-
-fun thm_order (th1, th2) = Term_Ord.term_ord (Thm.prop_of th1, Thm.prop_of th2)
-fun thm_aconv (th1, th2) = Thm.prop_of th1 aconv Thm.prop_of th2
-structure RewriteHeap =
-Heap (
-  type elem = box_id * thm
-  val ord = prod_ord (list_ord int_ord) thm_order
-);
-
-(* A sub-program generating all rewrites of a given term. *)
-signature REWRITE_ALL =
-sig
-  val rewrite_all: (box_id * thm) list -> term -> rewrite_table -> rewrite_table
-end;
-
-structure RewriteAll : REWRITE_ALL =
-struct
-
-open RewriteTable
-
-(* Given an equality theorem A = B (with or without schematic
-   variables), and a term C, produce all ways to apply the rewriting
-   rule A -> B to get some C -> C'. Exclude those rules that are
-   already in table. Produce instantiated version of th that justifies
-   the equality.
- *)
-fun rewrite_once (id, th) trm rtype =
-    let
-      val (lhs, rhs) =
-          Thm.prop_of th |> HOLogic.dest_Trueprop |> HOLogic.dest_eq
-      val tbl as {ctxt, ...} = table_of_rtype rtype
-      val insts = (fo_rewrite_match_head tbl (lhs, trm) (id, fo_init))
-                      |> replace_id_for_type rtype |> map fst
-      fun process_inst tbl t (id', env) =
-          let
-            val rhs' = subst_term_norm env rhs
-            val thy = theory_of tbl
-          in
-            if is_equiv id' tbl (t, rhs') then []
-            else [(id', th |> subst_thm ctxt env
-                           |> apply_to_thm (ACUtil.normalize_all_ac_full thy))]
-          end
-    in
-      maps (process_inst tbl trm) insts
-    end
-
-fun rewrite_once_thms rrules trm rtype =
-    maps (fn rule => rewrite_once rule trm rtype) rrules
-
-fun init_rewrites rrules trm tbl =
-    maps (fn t => rewrite_once_thms rrules t (SINGLE tbl))
-         (Subterms.get_all_subterms (theory_of tbl) true trm)
-
-fun rewrite_step rrules heap tbl =
-    let
-      val ((id, eq_th), heap') = RewriteHeap.min_elem heap
-      val (lhs, rhs) =
-          Thm.prop_of eq_th |> HOLogic.dest_Trueprop |> HOLogic.dest_eq
-    in
-      if is_equiv id tbl (lhs, rhs) then (heap', tbl) else
-      let
-        val tbl' = add_rewrite_thm id eq_th tbl
-        val tbl'' = append_rewrite_thm eq_th tbl
-        val rtype = LAST (tbl'', id)
-        val new_trms =
-            get_new_terms (tbl, tbl') |> map snd |> distinct (op aconv)
-        val updated_trms = get_reachable_terms true tbl [lhs, rhs]
-        val revisit_trms =
-            (get_all_terms tbl') |> filter (has_subterm updated_trms)
-                                 |> subtract (op aconv) new_trms
-        fun rewrite_init trm = rewrite_once_thms rrules trm (SINGLE tbl')
-        fun rewrite_revisit trm = rewrite_once_thms rrules trm rtype
-        val new_pairs =
-            (maps rewrite_init new_trms @ maps rewrite_revisit revisit_trms)
-                |> distinct (eq_pair (op =) thm_aconv)
-      in
-        (fold RewriteHeap.insert new_pairs heap', tbl')
-      end
-    end
-
-fun rewrite_all rrules trm tbl =
-    let
-      val init_heap =
-          RewriteHeap.empty
-              |> fold RewriteHeap.insert (init_rewrites rrules trm tbl)
-      fun loop heap tbl' =
-          if RewriteHeap.is_empty heap then tbl'
-          else let
-            val (heap', tbl'') = rewrite_step rrules heap tbl'
-          in
-            loop heap' tbl''
-          end
-    in
-      loop init_heap tbl
-    end
-
-end  (* structure RewriteAll. *)
 
 (* Internal versions of first-order match without rewriting. *)
 fun fo_table_match id tbl (t, u) =

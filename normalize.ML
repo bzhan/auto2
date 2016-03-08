@@ -24,13 +24,7 @@ sig
   val add_ctxt_prop_normalizer:
       string * (Proof.context -> conv) -> theory -> theory
   val add_eq_th_normalizer: thm -> theory -> theory
-  val rewr_obj_eq_top: thm -> Proof.context -> conv
   val add_top_eq_th_normalizer: thm -> theory -> theory
-  val const_conv: conv -> conv
-  val rewr_obj_eq_const_top: thm -> Proof.context -> conv
-  val add_top_eq_th_const_normalizer: thm -> theory -> theory
-  val add_top_conv_normalizer:
-      string * (Proof.context -> conv) -> theory -> theory
   val get_normalizers: theory -> (string * normalizer) list
   val normalize: Proof.context -> raw_item -> raw_item list
 end;
@@ -65,7 +59,7 @@ fun add_ctxt_conv_normalizer (nm, ctxt_cv) =
                | Fact (ty_str, _, th) =>
                  if member (op =) ["PROP", "EQ"] ty_str then
                    Update.thm_to_ritem
-                       (apply_to_thm (Conv.arg_conv (ctxt_cv ctxt)) th)
+                       (apply_to_thm (HOLogic.Trueprop_conv (ctxt_cv ctxt)) th)
                  else ritem)
 
 (* Apply cv to the statement (skipping Trueprop) of a PROP item. *)
@@ -95,32 +89,10 @@ fun add_ctxt_prop_normalizer (nm, ctxt_cv) =
 fun add_eq_th_normalizer eq_th =
     add_conv_normalizer (name_of_thm eq_th, Conv.try_conv (rewr_obj_eq eq_th))
 
-(* Rewrite on subterms, top order. *)
-fun rewr_obj_eq_top eq_th =
-    Conv.top_conv (K (Conv.try_conv (rewr_obj_eq eq_th)))
-
 (* Add the given eq_th to rewrite on subterms. *)
 fun add_top_eq_th_normalizer eq_th =
-    add_ctxt_prop_normalizer (name_of_thm eq_th, rewr_obj_eq_top eq_th)
-
-(* Return whether a given term is a constant (no free or schematic
-   variables).
- *)
-fun const_conv cv ct =
-    if is_const (Thm.term_of ct) then cv ct else Conv.no_conv ct
-
-(* Rewrite on subterms, top order, only on constants. *)
-fun rewr_obj_eq_const_top eq_th =
-    Conv.top_conv (K (Conv.try_conv (const_conv (rewr_obj_eq eq_th))))
-
-(* Add the given eq_th to rewrite on subterms, only on constants. *)
-fun add_top_eq_th_const_normalizer eq_th =
-    add_ctxt_prop_normalizer (name_of_thm eq_th, rewr_obj_eq_const_top eq_th)
-
-(* Add the given conversion to rewrite on subterms. *)
-fun add_top_conv_normalizer (nm, conv) =
     add_ctxt_prop_normalizer (
-      nm, fn ctxt => Conv.top_conv (K (Conv.try_conv (conv ctxt))) ctxt)
+      (name_of_thm eq_th) ^ "@top", rewr_obj_eq_top eq_th)
 
 fun get_normalizers thy = Symtab.dest (NormData.get thy)
 

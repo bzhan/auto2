@@ -1,3 +1,6 @@
+(* Equivalence of commands, following chapter Equiv in "Software
+   Foundations". *)
+
 theory Hoare_Equiv
 imports Hoare_States
 begin
@@ -47,8 +50,11 @@ theorem seq_cong: "cequiv c1 c1' \<Longrightarrow> cequiv c2 c2' \<Longrightarro
 theorem if_cong: "bequiv b b' \<Longrightarrow> cequiv c1 c1' \<Longrightarrow> cequiv c2 c2' \<Longrightarrow>
   cequiv (IF b THEN c1 ELSE c2 FI) (IF b' THEN c1' ELSE c2' FI)" by auto2
 
+(* Prove lemma by induction separately *)
 theorem while_cong1 [backward1]: "bequiv b b' \<and> cequiv c c' \<Longrightarrow> ceval (WHILE b DO c OD) st st' \<Longrightarrow> ceval (WHILE b' DO c' OD) st st'"
   by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("ceval (WHILE b DO c OD) st st'", [])) *})
+
+(* This lemma is then used twice in the proof below *)
 theorem while_cong: "bequiv b b' \<Longrightarrow> cequiv c c' \<Longrightarrow> cequiv (WHILE b DO c OD) (WHILE b' DO c' OD)" by auto2
 setup {* del_prfstep_thm @{thm while_cong1} *}
 

@@ -1,3 +1,7 @@
+(* Algorithms in linked lists, following theory Linked_Lists in
+   HOL/Imperative_HOL/ex. Added examples on insertion and deletion to
+   a linked list. *)
+
 theory Imp_Ex_Linked_Lists
 imports Imp_Thms "../Lists_Ex"
 begin
@@ -48,7 +52,7 @@ theorem list_ofR_Node [forward]:
 inductive refs_ofR :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a node ref set \<Rightarrow> bool" where
   "Ref.get h p = Empty \<Longrightarrow> refs_ofR h p {p}"
 | "Ref.get h p = Node b n \<Longrightarrow> refs_ofR h n ps \<and> p \<notin> ps \<Longrightarrow> refs_ofR h p ({p} \<union> ps)"
-setup {* add_known_fact @{thm refs_ofR.intros(1)} *}
+setup {* add_resolve_prfstep @{thm refs_ofR.intros(1)} *}
 setup {* add_backward2_prfstep @{thm refs_ofR.intros(2)} *}
 setup {* add_prfstep_prop_induction @{thm refs_ofR.induct} *}
 
@@ -118,12 +122,12 @@ subsection {* Interaction of partial functions with heap transitions *}
 
 lemma refs_of_set_ref: "p \<notin> refs_of h q \<Longrightarrow> proper_ref h q \<Longrightarrow>
   proper_ref (Ref.set p v h) q \<and> refs_of (Ref.set p v h) q = refs_of h q"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h q", "qs", ["q"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("qs = list_of h q", [Arbitrary "q"])) *})
 setup {* add_forward_prfstep_cond @{thm refs_of_set_ref} [with_term "Ref.set ?p ?v ?h"] *}
 
 lemma list_of_set_ref [rewrite]:
   "p \<notin> refs_of h q \<Longrightarrow> proper_ref h q \<Longrightarrow> list_of (Ref.set p v h) q = list_of h q"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h q", "xs", ["q"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs = list_of h q", [Arbitrary "q"])) *})
 
 lemma refs_of_set_next_ref: "proper_ref h n \<Longrightarrow> p \<notin> refs_of h n \<Longrightarrow>
   Ref.present h p \<Longrightarrow> proper_ref (Ref.set p (Node b n) h) p \<and>
@@ -133,7 +137,7 @@ setup {* add_forward_prfstep_cond @{thm refs_of_set_next_ref} [with_term "Ref.se
 
 setup {* add_gen_prfstep ("set_next_ref_case_intro",
   [WithTerm @{term_pat "Ref.set ?p (Node ?b ?n) ?h"},
-   CreateCase ([], [@{term_pat "?p \<notin> refs_of ?h ?n"}])]) *}
+   CreateConcl @{term_pat "?p \<notin> refs_of ?h ?n"}]) *}
 
 subsection {* Invariance of partial functions *}
 
@@ -146,11 +150,11 @@ lemma eq_on_set_next_refs [forward]:
 
 lemma refs_of_invariant [forward]:
   "proper_ref h r \<Longrightarrow> eq_on_set h h' (refs_of h r) \<Longrightarrow> proper_ref h' r \<and> refs_of h r = refs_of h' r"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h r", "rs", ["r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("rs = list_of h r", [Arbitrary "r"])) *})
 
 lemma list_of_invariant [forward]:
   "proper_ref h r \<Longrightarrow> eq_on_set h h' (refs_of h r) \<Longrightarrow> list_of h r = list_of h' r"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h r", "xs", ["r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs = list_of h r", [Arbitrary "r"])) *})
 
 lemma effect_update_ref [forward]:
   "effect (p := q) h h' v \<Longrightarrow> Ref.get h p = Node x n \<Longrightarrow> proper_ref h p \<Longrightarrow>
@@ -179,10 +183,10 @@ partial_function (heap) traverse :: "'a::heap node ref \<Rightarrow> 'a list Hea
 setup {* fold add_rewrite_rule @{thms make_llist.simps} #> add_rewrite_rule @{thm traverse.simps} *}
 
 lemma make_llist [forward]: "effect (make_llist xs) h h' r \<Longrightarrow> proper_ref h' r \<and> list_of h' r = xs"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("xs", ["h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["h", "h'", "r"])) *})
 
 lemma traverse [forward]: "proper_ref h n \<Longrightarrow> list_of h n = r \<Longrightarrow> effect (traverse n) h h r"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT ("r", ["n"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("r", [Arbitrary "n"])) *})
 
 lemma traverse_make_llist: "effect (make_llist xs \<bind> traverse) h h' r \<Longrightarrow> r = xs" by auto2
 setup {* del_prfstep_thm @{thm traverse} *}
@@ -226,16 +230,16 @@ setup {* add_rewrite_rule_cond @{thm insert_in_order.simps} [with_filt (size1_fi
 
 theorem insert_in_order_unchanged [forward]:
   "effect (insert_in_order x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> unchanged_outer h h' (refs_of h p)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "l", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("l = list_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 
 theorem insert_in_order_local [forward]:
   "effect (insert_in_order x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow>
    proper_ref h' r \<and> refs_of_extension h (refs_of h p) (refs_of h' r)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "l", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("l = list_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 
 theorem insert_in_order_correct [forward]:
   "effect (insert_in_order x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> list_of h' r = ordered_insert x (list_of h p)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "l", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("l = list_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 setup {* del_prfstep_thm @{thm insert_in_order.simps} *}
 
 theorem insert_in_order_mset: "effect (insert_in_order x p) h h' r \<Longrightarrow>
@@ -258,16 +262,16 @@ setup {* add_rewrite_rule_cond @{thm remove_element.simps} [with_filt (size1_fil
 
 theorem remove_element_unchanged [forward]:
   "effect (remove_element x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> unchanged_outer h h' (refs_of h p)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "l", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("l = list_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 
 theorem remove_element_local [forward]:
   "effect (remove_element x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow>
-   proper_ref h' r \<and> refs_of_extension h (refs_of h p) (refs_of h' r)" 
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "l", ["p", "h", "h'", "r"])) *})
+   proper_ref h' r \<and> refs_of_extension h (refs_of h p) (refs_of h' r)"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("l = list_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 
 theorem remove_element_correct [forward]:
   "effect (remove_element x p) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> list_of h' r = remove_elt_list x (list_of h p)"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "l", ["p", "h", "h'", "r"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("l = list_of h p", Arbitraries ["p", "h", "h'", "r"])) *})
 setup {* del_prfstep_thm @{thm remove_element.simps} *}
 
 theorem remove_element_set_of: "effect (remove_element x p) h h' r \<Longrightarrow>
@@ -306,15 +310,15 @@ setup {* add_forward_prfstep_cond @{thm set_disjoint_exchange} [with_term "({?p}
 lemma rev'_unchanged [forward]:
   "effect (rev' q p) h h' v' \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
    unchanged_outer h h' (refs_of h p)"
-   by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "ps", ["p", "q", "h"])) *})
+   by (tactic {* auto2s_tac @{context} (INDUCT ("ps = list_of h p", Arbitraries ["p", "q", "h"])) *})
 
 lemma rev'_invariant [forward]:
   "effect (rev' q p) h h' v' \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
    proper_ref h' v' \<and> list_of h' v' = (List.rev (list_of h p) @ list_of h q)"
-   by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "ps", ["p", "q", "h"])) *})
+   by (tactic {* auto2s_tac @{context} (INDUCT ("ps = list_of h p", Arbitraries ["p", "q", "h"])) *})
 
 lemma rev'_succeed [backward]: "proper_ref h p \<Longrightarrow> success (rev' q p) h"
-  by (tactic {* auto2s_tac @{context} (LIST_INDUCT_NEWVAR ("list_of h p", "ps", ["p", "q", "h"])) *})
+  by (tactic {* auto2s_tac @{context} (INDUCT ("ps = list_of h p", Arbitraries ["p", "q", "h"])) *})
 setup {* del_prfstep_thm @{thm rev'.simps} *}
 
 lemma rev_correct: "effect (rev r) h h' r' \<Longrightarrow> proper_ref h r \<Longrightarrow>
@@ -350,21 +354,21 @@ theorem unchanged_outer_union_ref [forward]:
    Ref.present h r \<Longrightarrow> Ref.get h r = Ref.get h' r" by (simp add: unchanged_outer_ref)
 
 theorem merge_unchanged [forward]:
-  "effect (merge p q) h h' r' \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> unchanged_outer h h' (refs_of h p \<union> refs_of h q)"
+  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> unchanged_outer h h' (refs_of h p \<union> refs_of h q)"
   by (tactic {* auto2s_tac @{context} (
-    LIST_DOUBLE_INDUCT_NEWVAR ("list_of h p", "pl", "list_of h q", "ql", ["p", "q", "h'", "r'"])) *})
+    DOUBLE_INDUCT (("pl = list_of h p", "ql = list_of h q"), Arbitraries ["p", "q", "h'", "r"])) *})
 
 theorem merge_local [forward]:
   "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
    proper_ref h' r \<and> refs_of h' r \<subseteq> refs_of h p \<union> refs_of h q"
   by (tactic {* auto2s_tac @{context} (
-    LIST_DOUBLE_INDUCT_NEWVAR ("list_of h p", "pl", "list_of h q", "ql", ["p", "q", "h'", "r"])) *})
+    DOUBLE_INDUCT (("pl = list_of h p", "ql = list_of h q"), Arbitraries ["p", "q", "h'", "r"])) *})
 
 theorem merge_correct [forward]:
   "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
    list_of h' r = merge_list (list_of h p) (list_of h q)"
   by (tactic {* auto2s_tac @{context} (
-    LIST_DOUBLE_INDUCT_NEWVAR ("list_of h p", "pl", "list_of h q", "ql", ["p", "q", "h'", "r"])) *})
+    DOUBLE_INDUCT (("pl = list_of h p", "ql = list_of h q"), Arbitraries ["p", "q", "h'", "r"])) *})
 setup {* del_prfstep_thm @{thm merge.simps} *}
 
 theorem merge_set_of:

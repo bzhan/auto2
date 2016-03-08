@@ -2,22 +2,19 @@
 
 signature LOGIC_PROOFSTEPS =
 sig
+  (* General logic *)
   val shadow_prop_item: proofstep
   val shadow_term_item: proofstep
 
   val exists_elim: box_id * thm -> Proof.context -> Update.raw_update list
-  val normalize_pred_comm_conv: conv
-  val swap_forall_imps_conv: int -> conv
-  val swap_foralls_imps_conv: int list -> Proof.context -> conv
-  val swap_ex_conjs_conv: int -> conv
-  val swap_exs_conjs_conv: int list -> Proof.context -> conv
-  val extract_vars: term list -> term list * int list
-  val OBTAIN_FORALL: string -> pre_scripts
+  val extract_new_vars: Proof.context -> term list -> (string * typ) list
+  val form_exists_prop: ((string * typ) * term) list -> term -> term
   val CHOOSE: string -> pre_scripts
   val CHOOSES: string list -> pre_scripts
   val not_ex_forall_cv: Proof.context -> conv
   val add_logic_proofsteps: theory -> theory
 
+  (* DISJ and DISJ_ACTIVE *)
   val TY_DISJ: string
   val TY_DISJ_ACTIVE: string
   val imp_to_disj_cv: conv
@@ -35,6 +32,12 @@ sig
   val disj_create_case_prfstep: proofstep
   val disj_shadow_prfsteps: proofstep list
   val add_disj_proofsteps: theory -> theory
+
+  (* TERM_DEF *)
+  val TY_TERM_DEF: string
+  val CHOOSE_FUN_N: int -> string -> pre_scripts
+  val match_term_def_prfstep: proofstep
+  val add_term_def_proofsteps: theory -> theory
 end;
 
 structure Logic_ProofSteps : LOGIC_PROOFSTEPS =
@@ -89,138 +92,81 @@ fun exists_elim (id, th) ctxt =
       Update.apply_exists (id, th) ctxt [nm]
     end
 
-(* Normalize order of existence and forall statements. *)
-fun normalize_pred_comm_conv ct =
-    let
-      val cv = Conv.try_conv (
-            Conv.first_conv (map rewr_obj_eq [@{thm ex_comm}, @{thm all_comm}]))
-      val th = cv ct
-    in
-      if Term_Ord.termless (Thm.prop_of th |> Logic.dest_equals) then th
-      else Conv.all_conv ct
-    end
-
-(* Given ct of the form !x. P1 --> P2 --> ... --> Pn --> Q x,
-   rewriting it to P1 --> P2 --> ... --> Pn --> !x. Q x. Here n
-   specifies the number of imps to move out.
-*)
-fun swap_forall_imps_conv n =
-    if n = 0 then Conv.all_conv
-    else (rewr_obj_eq @{thm swap_forall_imp})
-             then_conv (Conv.arg_conv (swap_forall_imps_conv (n-1)))
-
-(* Given ct of the form !v1 ... vn. P1 --> ... --> Pk --> Q, rewrite
-   it to one with i0 imps before foralls, i1 imps after !v1, ...,
-   i_{n-1} imps after !v_{n-1}, and remaining ones after !vn, where
-   [i0, i1, ..., i_{n-1}] is the given list counts.
+(* Given a list of terms, where each term contains exactly one new
+   variable that does not appear in ctxt or the previous terms, return
+   the list of new variables as a list.
  *)
-fun swap_foralls_imps_conv counts ctxt ct =
-    case counts of
-        [] => Conv.all_conv ct
-      | n :: ns =>
-        case Thm.term_of ct of
-            Const (@{const_name HOL.All}, _) $ Abs _ =>
-            let
-              val ns' = map (fn n' => n' + n) ns
-            in
-              ((Conv.binder_conv ((swap_foralls_imps_conv ns') o snd) ctxt)
-                   then_conv (swap_forall_imps_conv n)) ct
-            end
-          | _ => raise AUTO2 "swap_foralls_imps_conv: not enough foralls."
-
-(* Similar to swap_forall_imps_conv, for EX and &. *)
-fun swap_ex_conjs_conv n =
-    if n = 0 then Conv.all_conv
-    else (rewr_obj_eq @{thm swap_ex_conj})
-             then_conv (Conv.arg_conv (swap_ex_conjs_conv (n-1)))
-
-(* Similar to swap_foralls_imps_conv, for EX and &. *)
-fun swap_exs_conjs_conv counts ctxt ct =
-    case counts of
-        [] => Conv.all_conv ct
-      | n :: ns =>
-        case Thm.term_of ct of
-            Const (@{const_name HOL.Ex}, _) $ Abs _ =>
-            let
-              val ns' = map (fn n' => n' + n) ns
-            in
-              ((Conv.binder_conv ((swap_exs_conjs_conv ns') o snd) ctxt)
-                   then_conv (swap_ex_conjs_conv n)) ct
-            end
-          | _ => raise AUTO2 "swap_exs_conjs_conv: not enough exists."
-
-(* Extract from a mixed list of variables and conditions the list of
-   variables, and the number of conditions in front of each
-   variable. For example: C1 v1 C2 C3 v2 C4 would return ([v1, v2],
-   [1, 2]). This is used in OBTAIN_FORALL and CHOOSE below.
- *)
-fun extract_vars conds =
-    case conds of
-        cond :: conds' =>
+fun extract_new_vars ctxt ts =
+    case ts of
+        [] => []
+      | t :: ts' =>
         let
-          val (vars', counts') = extract_vars conds'
+          val vars = Term.add_frees t []
+          val new_vars =
+              filter_out (fn (nm, _) => Variable.is_fixed ctxt nm) vars
         in
-          if Term.is_Free cond then
-            (cond :: vars', 0 :: counts')
+          if length new_vars = 1 then
+            let
+              val (nm, T) = the_single new_vars
+              val ctxt' = ctxt |> declare_free_term (Free (nm, T))
+            in
+              (nm, T) :: extract_new_vars ctxt' ts'
+            end
           else
-            (vars', if counts' = [] then [] else (hd counts' + 1) :: tl counts')
+            raise AUTO2 "extract_new_vars: number of new variables is not 1."
         end
-      | _ => ([], [])
 
-fun OBTAIN_FORALL str ctxt =
+(* Form the exists proposition. conds_spec is a list of pairs ((nm,
+   T), cond), where Free (nm, T) is the new variable appearing in
+   cond.
+ *)
+fun form_exists_prop conds_spec concl =
+    case conds_spec of
+        [] => concl
+      | ((nm, T), cond) :: rest =>
+        let
+          val concl' = form_exists_prop rest concl
+        in
+          if Free (nm, T) aconv cond then
+            HOLogic.mk_exists (nm, T, concl')
+          else
+            case cond of
+                Const ("Set.member", _) $ _ $ S =>
+                let
+                  val setT = HOLogic.mk_setT T
+                  val bexT = setT --> (T --> boolT) --> boolT
+                in
+                  Const ("Set.Bex", bexT) $ S $ absfree (nm, T) concl'
+                end
+              | _ =>
+                HOLogic.mk_exists (nm, T, HOLogic.mk_conj (cond, concl'))
+        end
+
+fun read_choose_str str ctxt =
     let
-      val ts = Syntax.read_term ctxt ("(" ^ str ^ ")") |> HOLogic.strip_tuple
+      val ts = read_term ctxt ("(" ^ str ^ ")") |> HOLogic.strip_tuple
       val (conds, concl) = split_last ts
-      val (vars, counts) = extract_vars conds
-      val nms = map (fst o Term.dest_Free) vars
-      val _ = assert (not (exists (Variable.is_fixed ctxt) nms))
-                     ("OBTAIN_FORALL: variable name(s) already used.")
-      fun obtain_forall_callback (id, th) =
-          let
-            val ctxt' = ctxt |> fold declare_free_term vars
-            val th' = apply_to_thm (
-                  Conv.arg_conv (swap_foralls_imps_conv counts ctxt')) th
-          in
-            [Update.thm_update (id, th')]
-          end
-      val assums = map HOLogic.mk_Trueprop (filter_out Term.is_Free conds)
-      val concls = [HOLogic.mk_Trueprop concl]
+      val new_vars = extract_new_vars ctxt conds
+
+      (* Exist proposition to prove. *)
+      val ex_prop =
+          HOLogic.mk_Trueprop (form_exists_prop (new_vars ~~ conds) concl)
+
+      (* Check the variable names are new, and add to ctxt. *)
+      val _ = assert (not (exists (Variable.is_fixed ctxt) (map fst new_vars)))
+                     "CHOOSE: variable name(s) already used."
     in
-      [Script_Task {vars = vars, assums = assums, subs = [], concls = concls,
-                    cb = obtain_forall_callback, end_vars = []}]
+      (new_vars, ex_prop)
     end
 
 fun CHOOSE str ctxt =
     let
-      val ts = Syntax.read_term ctxt ("(" ^ str ^ ")") |> HOLogic.strip_tuple
-      val (vars, counts) = extract_vars ts
-
-      (* Form proposition EX [vars]. [conds]. *)
-      val cond = ts |> filter_out Term.is_Free
-                    |> ACUtil.list_ac conj_ac
-      val dest_vars = map Term.dest_Free vars
-      fun mk_exists' (nm, T) cond = HOLogic.mk_exists (nm, T, cond)
-      val ex_cond = cond |> fold mk_exists' (rev dest_vars)
-                         |> HOLogic.mk_Trueprop
-
-      (* Check the variable names are new, and add to ctxt. *)
-      val nms = map fst dest_vars
-      val _ = assert (not (exists (Variable.is_fixed ctxt) nms))
-                     ("CHOOSE: variable name(s) already used.")
-
-      val ctxt' = ctxt |> fold declare_free_term vars
-      val eq_th = Conv.arg_conv (swap_exs_conjs_conv counts ctxt')
-                                (cert ctxt' ex_cond)
-      val ex_cond' = rhs_of eq_th
-      fun choose_callback (id, th) =
-          let
-            val th' = Thm.equal_elim (meta_sym eq_th) th
-          in
-            Update.apply_exists (id, th') ctxt' nms
-          end
+      val (new_vars, ex_prop) = read_choose_str str ctxt
+      fun choose_callback ((id, th), {ctxt, ...}) =
+          Update.apply_exists (id, th) ctxt (map fst new_vars)
     in
-      [Script_Task {vars = [], assums = [], subs = [], concls = [ex_cond'],
-                    cb = choose_callback, end_vars = vars}]
+      [Script_Task {inits = [Update.InitAssum (get_neg' ex_prop)], subs = [],
+                    cb = choose_callback, end_vars = map Free new_vars}]
     end
 
 fun CHOOSES strs =
@@ -297,8 +243,7 @@ val add_logic_proofsteps =
     ] #> fold add_prfstep_pre_conv [
       ("rewrite_not_ex", [WithTerm @{term_pat "~ (EX x. ?P x)"}],
        not_ex_forall_cv)
-
-    ] #> add_conv_normalizer ("normalize_pred", normalize_pred_comm_conv)
+    ]
 
 (* Disjunctive mutable states. *)
 val dest_disj_prop = ACUtil.dest_ac disj_ac o prop_of'
@@ -340,16 +285,17 @@ fun imp_to_disj_cv ct =
    de Morgan's law. This converts any statements of form A | B, ~(A &
    B), and A --> B to disjunction form.
  *)
-fun to_disj_cv ctxt =
+fun to_disj_cv ctxt ct =
     let
-      val cv_imp = Conv.arg_conv imp_to_disj_cv
-      val cv_deMorgan = rewr_obj_eq_top @{thm de_Morgan_conj} ctxt
+      val cv_start =
+          case HOLogic.dest_Trueprop (Thm.term_of ct) of
+              Const ("HOL.implies", _) $ _ $ _ => Conv.arg_conv imp_to_disj_cv
+            | _ => rewr_obj_eq_top @{thm de_Morgan_conj} ctxt
       val cv_nn = rewr_obj_eq_top nn_cancel_th ctxt
       val cv_assoc = Conv.arg_conv (ACUtil.normalize_assoc disj_ac)
       val cv_comm = Conv.arg_conv (ACUtil.normalize_cu disj_ac)
     in
-      cv_imp then_conv cv_deMorgan then_conv cv_nn then_conv cv_assoc
-             then_conv cv_comm
+      (cv_start then_conv cv_nn then_conv cv_assoc then_conv cv_comm) ct
     end
 
 (* Convert term of form ~ (EX x y. P x y) to !x y. ~ P x y (arbitrary
@@ -384,7 +330,10 @@ fun forall_elim_sch th =
  *)
 fun analyze_disj_th ctxt th =
     let
-      val th' = th |> apply_to_thm (Conv.arg_conv (not_ex_cv ctxt))
+      val try_not_bex_cv =
+          Conv.try_conv (Conv.arg_conv (rewr_obj_eq (obj_sym @{thm bex_iff})))
+      val th' = th |> apply_to_thm (HOLogic.Trueprop_conv try_not_bex_cv)
+                   |> apply_to_thm (HOLogic.Trueprop_conv (not_ex_cv ctxt))
                    |> apply_to_thm (to_meta_all_conv ctxt)
                    |> forall_elim_sch
       val is_active =
@@ -420,7 +369,8 @@ val disj_intro_prfsteps = map disj_intro_gen [
         Filter (canonical_split_filter @{const_name disj} "A" "B")]),
       ("imp_disj_state_intro", [WithFact @{term_pat "?A --> ?B"}]),
       ("forall_fact_intro", [WithFact @{term_pat "!x. ?P x"}]),
-      ("exists_goal_intro", [WithFact @{term_pat "~ (EX x. ?P x)"}])]
+      ("exists_goal_intro", [WithFact @{term_pat "~ (EX x. ?P x)"}]),
+      ("bex_goal_intro", [WithFact @{term_pat "~ (EX x:?S. ?P x)"}])]
 
 (* Pre-matching function for DISJ / DISJ_ACTIVE items. There are only
    three possible patterns to consider: ?C | ?D, ?C = ?D, and ?C. No
@@ -591,11 +541,11 @@ fun disj_create_case_fn rtype _ {id, tname, ty_str, ...} =
     let
       val _ = assert (ty_str = TY_DISJ_ACTIVE) "disj_concl_active: wrong type."
       val subs = HOLogic.strip_tuple tname
+      val assum = HOLogic.mk_Trueprop (hd subs)
     in
       if length subs = 1 then []
-      else [Update.AddBoxes {id = id, vars = [],
-                             assums = [HOLogic.mk_Trueprop (hd subs)],
-                             concls = [], cb = Update.null_callback}]
+      else [Update.AddBoxes {
+               id = id, inits = [Update.InitAssum assum], cbs = []}]
     end
 
 val disj_create_case_prfstep =
@@ -650,10 +600,115 @@ val add_disj_proofsteps =
         "disj_match_update@active"
     ])
 
+(* TERM_DEF *)
+val TY_TERM_DEF = "TERM_DEF"
+fun term_def_updt (id, (pat, th)) =
+    let
+      val ritem = Fact (TY_TERM_DEF, HOLogic.mk_prod (pat, Thm.prop_of th), th)
+    in
+      [Update.AddItems {id = id, raw_items = [ritem]}]
+    end
+
+fun match_term_def_fn rtype {ctxt, ...} item1 item2 =
+    let
+      val {id, tname, prop, ...} = item1
+      val (pat, _) = HOLogic.dest_prod tname
+      val insts =
+          get_insts (TypedMatch (TY_TERM, pat)) item2 rtype (id, fo_init)
+
+      fun process_inst ((id, inst), _) =
+          Update.thm_update (id, subst_thm ctxt inst prop)
+    in
+      map process_inst insts
+    end
+
+val match_term_def_prfstep =
+    {name = "match_term_def",
+     args = [TypedMatch (TY_TERM_DEF, @{term_pat "?a"}),
+             TypedMatch (TY_TERM, @{term_pat "?t"})],
+     res_types = [Update.ADD_ITEMS],
+     func = TwoStep match_term_def_fn}
+
+fun CHOOSE_FUN_N n str ctxt =
+    let
+      val (new_vars, ex_prop) = read_choose_str str ctxt
+      val _ = assert (length new_vars = 1)
+                     "CHOOSE_FUN_N: only permit defining one function."
+
+      (* Given a theorem about function f, for example
+
+         !x. P (f x) & !y. Q (f x y),
+
+         extract the properties of successive applications of f,
+         returning them as term_def items. In the example above, the
+         result would be [(f ?x, P (f ?x)), (f ?x ?y1), Q (f ?x ?y1)].
+       *)
+      fun prop_f_to_updt ctxt count id (f, prop_f_th) =
+          let
+            val _ = trace_thm "prop_f_th" prop_f_th
+          in
+          case prop_of' prop_f_th of
+              Const ("HOL.All", _) $ Abs (nm, T, _) =>
+              let
+                val sch_var = Var ((nm, count), T)
+                val (ths, next) =
+                    prop_f_th |> apply_to_thm (Conv.rewr_conv (
+                                                  meta_sym @{thm atomize_all}))
+                              |> Thm.forall_elim (cert ctxt sch_var)
+                              |> split_conj_th |> split_last
+                val pat = f $ sch_var
+                fun to_updt th = term_def_updt (id, (pat, th))
+              in
+                if count = n - 1 then
+                  maps to_updt (ths @ [next])
+                else
+                  maps to_updt ths @
+                  prop_f_to_updt ctxt (count + 1) id (pat, next)
+              end
+            | _ => raise AUTO2 "CHOOSE_FUN_N: wrong form of prop_f_th."
+          end
+
+      fun choose_callback ((id, th), {ctxt, ...}) =
+          let
+            val err = "CHOOSE_FUN_N: wrong output from apply_exists."
+            val raw_updts = Update.apply_exists (id, th) ctxt (map fst new_vars)
+            val ritems =
+                case raw_updts of
+                    [Update.AddItems {raw_items, ...}] => raw_items
+                  | _ => raise AUTO2 err
+
+            fun extract_prop ritem =
+                case ritem of Fact ("PROP", _, th) => [th] | _ => []
+
+            (* When choosing function F, this is the theorem !x. P (F i). *)
+            val prop_f_th = ritems |> maps extract_prop |> the_single
+                                   |> split_conj_th |> split_last |> snd
+                            handle List.Empty => raise AUTO2 err
+            val f = Free (the_single new_vars)
+          in
+            raw_updts @ prop_f_to_updt ctxt 0 id (f, prop_f_th)
+          end
+    in
+      [Script_Task {inits = [Update.InitAssum (get_neg' ex_prop)], subs = [],
+                    cb = choose_callback, end_vars = map Free new_vars}]
+    end
+
+val add_term_def_proofsteps =
+    fold ItemIO_Data.add_item_type [
+      (TY_TERM_DEF, NONE)
+
+    ] #> fold ItemIO_Data.add_typed_matcher [
+      (TY_TERM_DEF, ItemIO_Data.univ_matcher)
+
+    ] #> add_prfstep match_term_def_prfstep
+
 end  (* structure Logic_ProofSteps. *)
 
 val _ = Theory.setup Logic_ProofSteps.add_logic_proofsteps
 val _ = Theory.setup Logic_ProofSteps.add_disj_proofsteps
-val OBTAIN_FORALL = Logic_ProofSteps.OBTAIN_FORALL
+val _ = Theory.setup Logic_ProofSteps.add_term_def_proofsteps
 val CHOOSE = Logic_ProofSteps.CHOOSE
 val CHOOSES = Logic_ProofSteps.CHOOSES
+val CHOOSE_FUN_N = Logic_ProofSteps.CHOOSE_FUN_N
+val CHOOSE_FUN = CHOOSE_FUN_N 1
+val CHOOSE_FUN2 = CHOOSE_FUN_N 2

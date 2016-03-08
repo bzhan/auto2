@@ -21,13 +21,18 @@ fun item_score ritem =
              "VAR" => 10  (* cost of introducing a variable. *)
            | _ => size_of_term tname)
 
+fun init_score init =
+    case init of
+        Update.InitVar _ => 0
+      | Update.InitAssum t => size_of_term t
+
 fun items_score raw_items = max int_ord (map item_score raw_items)
 
 fun get_score raw_updt =
     case raw_updt of
         Update.AddItems {raw_items, ...} => items_score raw_items
-      | Update.AddBoxes {assums, concls, ...} =>
-        20 + 10 * Integer.sum (map size_of_term (assums @ concls))
+      | Update.AddBoxes {inits, ...} =>
+        20 + 5 * Integer.sum (map init_score inits)
       | Update.ResolveBox _ => ~1
       | Update.ShadowItem _ => ~1
 
@@ -56,7 +61,7 @@ sig
   val scoring: proofstep -> int -> box_item list -> rewrite_type -> status ->
                (box_item -> Update.raw_update list) -> Update.update list
   val apply_callback:
-      box_id * thm -> int -> Update.resolve_callback -> status -> status
+      box_id * thm -> int -> Update.resolve_callback list -> status -> status
   val process_shadow: Update.update -> status -> status
   val process_resolve: Update.update -> status -> status
   val apply_update_instant: Update.update -> status -> status
@@ -68,13 +73,10 @@ sig
   val process_add_boxes: Update.update -> status -> status
   val apply_update: Update.update -> status -> status
   val init_status: Proof.context -> term -> status
-  val step: status -> status
   val step_until: (status -> bool) -> int * status -> int * status
   val solve_focus: int * status -> int * status
-  val wait_for_items: box_id -> (string * term) list -> int * status ->
-                      int * status
   val run_script: script -> int * status -> int * status
-  val solve_root: int -> term * scripts * status -> thm * status
+  val solve_root: int -> scripts * status -> thm * status
 end;
 
 structure ProofStatus : PROOFSTATUS =
@@ -90,8 +92,7 @@ fun check_hyps id ritem (st as {ctxt, ...}) =
     let
       val th = get_thm_raw ritem
       val hyps = Thm.hyps_of th
-      val inits = get_all_init_assums st id @
-                  map get_neg' (get_all_init_concls st id)
+      val inits = get_all_init_assums st id
       val handlers = map fst (get_all_handlers st id)
       val extra = subtract (op aconv) (inits @ handlers) hyps
     in
@@ -155,12 +156,12 @@ fun process_shadow {raw_updt, ...} st =
         st |> add_shadowed (shadow_id, item)
       | _ => raise AUTO2 "process_shadow: wrong type of update"
 
-fun apply_callback (id, th) sc cb st =
+fun apply_callback (id, th) sc cbs st =
     let
-      val eval_cb = cb (id, th)
+      fun eval_cb cb = cb (id, th)
       fun form_cb_updts raw_updt =
           {sc = sc, prfstep_name = "CALLBACK", source = [], raw_updt = raw_updt}
-      val cb_updts = map form_cb_updts eval_cb
+      val cb_updts = map form_cb_updts (maps eval_cb cbs)
     in
       st |> fold apply_update_instant cb_updts
     end
@@ -170,7 +171,7 @@ fun apply_callback (id, th) sc cb st =
    boxes. 2. Add the appropriate fact to each of the immediate parent
    boxes (or invoke callback if available).
  *)
-and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
+and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
     case raw_updt of
         Update.ResolveBox {id, th} =>
         let
@@ -180,8 +181,8 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
           val box = get_box st id
           fun update_one i st =
               let
-                val cur_parent = get_parent_at_i st id i
-                val ritem = get_on_resolve st id (nth id i) th
+                val cur_parent = BoxID.get_parent_at_i lat id i
+                val ritem = get_on_resolve st id i th
                 val _ = check_hyps cur_parent ritem st
                 val resolve_updt =
                     {sc = sc', prfstep_name = "RESOLVE", source = [],
@@ -191,13 +192,14 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
                    parent id) and add the updates, omitting
                    resolve_updt from output.
                  *)
-                val cbs = if length id > 1 then [] else Box.get_callbacks box
+                val (cbs, st') = if length id > 1 then ([], st) else
+                                 (Box.get_callbacks box,
+                                  st |> set_resolve_th id (get_thm_raw ritem))
               in
                 if length cbs = 0 then
-                  st |> apply_update_instant resolve_updt
+                  st' |> apply_update_instant resolve_updt
                 else
-                  st |> fold (apply_callback (
-                                 cur_parent, get_thm_raw ritem) sc') cbs
+                  st' |> apply_callback (cur_parent, get_thm_raw ritem) sc' cbs
               end
         in
           if is_box_resolved st id then st
@@ -433,17 +435,20 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
 fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
                       (st as {ctxt, ...}) =
     case raw_updt of
-        Update.AddBoxes {id, vars, assums, concls, cb} =>
+        Update.AddBoxes {id, inits, cbs} =>
         if not (is_shadowing_prfstep prfstep_name ctxt) andalso
            exists (query_shadowed st id) source then st
         else let
           (* First form the raw items, possibly containing internal
              schematic variables.
            *)
-          val init_facts = assums @ (map get_neg' concls)
-          val ritems = map (Update.thm_to_ritem o Thm.trivial o cert ctxt)
-                           init_facts @
-                       map var_to_fact vars
+          val vars = maps Update.dest_init_var inits
+          val assums = maps Update.dest_init_assum inits
+          val ritems = map var_to_fact vars @
+                       map (Update.thm_to_ritem o Thm.trivial o cert ctxt)
+                           assums
+          val _ = assert (forall (fn t => fastype_of t = propT) assums)
+                         "process_add_boxes: assumption is not of type prop."
 
           (* Obtain the fresh variables, and replace into both the raw
              items and the initial facts.
@@ -454,18 +459,21 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
           val subst =
               map (fn ((idx, T), ct) => (Var (idx, T), Thm.term_of ct)) inst
 
-          val vars' = map (subst_atomic subst) vars
-          val assums' = map (subst_atomic subst) assums
-          val concls' = map (subst_atomic subst) concls
+          fun subst_init init =
+              case init of
+                  Update.InitVar v => Update.InitVar (subst_atomic subst v)
+                | Update.InitAssum assum => Update.InitAssum (
+                                             subst_atomic subst assum)
+          val inits' = map subst_init inits
 
           (* Find neg_form and check if already present. *)
-          val neg_form = get_neg_form ctxt' (vars', assums', concls')
+          val neg_form = Update.get_neg_form ctxt' inits'
           val neg_form_opt = find_fact st id neg_form
         in
           (* Do nothing if there is already a box with the same
              assumptions and conclusions.
            *)
-          if is_some (find_prim_box st id (assums', concls')) then st
+          if is_some (find_prim_box st id inits') then st
 
           (* If the conclusion already exists, apply callback. *)
           else if is_some neg_form_opt then
@@ -473,15 +481,15 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
               val ({id = id', prop, ...}, eq_th) = the neg_form_opt
               val th' = Thm.equal_elim eq_th prop
             in
-              st |> apply_callback (id', th') sc cb
+              st |> apply_callback (id', th') sc cbs
             end
 
           (* Otherwise, proceed to create the box. *)
           else let
             val _ = tracing ("Add box under " ^ (string_of_box_id id) ^ " (" ^
                              (Update.source_info ctxt' updt) ^ ")")
-            val init_box = (Box.init_box (vars', assums', concls'))
-                               |> Box.add_callback cb
+            val init_box = (Box.init_box inits')
+                               |> fold Box.add_callback cbs
             val (prim_id, st') = add_prim_box id init_box st
             val new_id = [prim_id]
             val _ = tracing (
@@ -517,132 +525,96 @@ fun init_status ctxt obj_goal =
           obj_goal |> HOLogic.dest_Trueprop |> strip_obj_imp
                    |> apfst (map HOLogic.mk_Trueprop)
                    |> apsnd HOLogic.mk_Trueprop
-      val vars = map Free (fold Term.add_frees (concl :: assums) [])
-      val raw_updt = Update.AddBoxes {
-            id = [], vars = vars, assums = assums, concls = [concl],
-            cb = Update.null_callback}
+      val vars = map Free (Term.add_frees obj_goal [])
+      val inits = map Update.InitVar vars @
+                  map Update.InitAssum (assums @ [get_neg' concl])
+      val raw_updt = Update.AddBoxes {id = [], inits = inits, cbs = []}
       val updt = {sc = 0, prfstep_name = "INIT", source = [],
                   raw_updt = raw_updt}
     in
       (empty_status ctxt) |> add_composite_box [] |> add_item null_item
-                          |> apply_update updt |> set_focus [0]
+                          |> set_focus [0] |> apply_update updt
     end
 
-fun step (st as {queue, ...}) =
-    let
-      val updt = Updates_Heap.min queue
-                 handle List.Empty => raise AUTO2 "No more moves"
-    in
-      st |> delmin_from_queue |> apply_update updt
-    end
+fun show_current_focus (st as {ctxt, ...}) =
+    warning ("Resolving box " ^ (string_of_box_id (get_focus st)) ^ ": " ^
+             (Box.short_string_of_box ctxt (get_box st (get_focus st))))
 
 (* Given a condition status -> bool, step until the condition is
    satisfied. Return steps remaining as well as updated status.
  *)
-fun step_until cond (steps, st) =
+fun step_until cond (steps, (st as {queue, ...})) =
     if cond st then
       (steps, st)
     else if steps = 0 then
-      raise AUTO2 ("Maximum number of steps reached when resolving box " ^
-                   (string_of_box_id (get_focus st)))
-    else
-      step_until cond (steps - 1, step st)
-      handle AUTO2 "No more moves" =>
-             raise AUTO2 ("No more moves when resolving box " ^
-                          (string_of_box_id (get_focus st)) ^ " (" ^
-                          (string_of_int steps) ^ " steps remain.")
+      let val _ = show_current_focus st in
+        raise AUTO2 "Maximum number of steps reached"
+      end
+    else let
+      val updt = Updates_Heap.min queue
+                 handle List.Empty => let val _ = show_current_focus st in
+                                        raise AUTO2 "No more moves"
+                                      end
+      val st' = st |> delmin_from_queue |> apply_update updt
+    in
+      step_until cond (steps - 1, st')
+    end
 
 (* Solve for the ID given by focus id. *)
 val solve_focus = step_until (fn st => is_box_resolved st (get_focus st))
 
-(* Wait for certain items to be present at given id. *)
-fun wait_for_items id item_specs =
-    let
-      fun cond st =
-          forall (fn spec => is_some (find_item st id spec)) item_specs
-    in
-      step_until cond
-    end
-
 (* Run the given script at focus id. Returns the new count of steps
    remaining, and the updated status.
  *)
-fun run_script scrpt (steps, (st as {ctxt, queue, ...})) =
+fun run_script (Script_Task {inits, subs, cb, ...})
+               (steps, (st as {ctxt, queue, ...})) =
     let
       fun get_min_score queue =
           #sc (Updates_Heap.min queue) handle List.Empty => 0
       val sc = get_min_score queue
       val id = get_focus st
+      val neg_form = Update.get_neg_form ctxt inits
+
+      val (steps', st', th) =
+          case find_fact st id neg_form of
+              NONE =>
+              let
+                val updt = {sc = sc, prfstep_name = "SCRIPT", source = [],
+                            raw_updt = Update.AddBoxes {
+                              id = id, inits = inits,
+                              cbs = [Update.null_callback]}}
+                val st' = process_add_boxes updt st
+                val id' = the (find_prim_box st' id inits)
+                          handle Option.Option =>
+                                 raise AUTO2 "run_script: failed to add box."
+
+                val (steps', st'') = (steps, st') |> apsnd (set_focus id')
+                                                  |> fold run_script subs
+                                                  |> solve_focus
+                                                  |> apsnd (set_focus id)
+              in
+                (steps', st'', get_resolve_th st'' id')
+              end
+            | SOME ({prop, ...}, eq_th) =>
+              (steps, st, Thm.equal_elim eq_th prop)
     in
-      case scrpt of
-          Script_Task {vars, assums, concls, subs, cb, ...} =>
-          let
-            val raw_updt =
-                Update.AddBoxes {id = id, vars = vars, assums = assums,
-                                 concls = concls, cb = cb}
-            val updt = {sc = sc, prfstep_name = "SCRIPT", source = [],
-                        raw_updt = raw_updt}
-            val neg_form = get_neg_form ctxt (vars, assums, concls)
-          in
-            case find_fact st id neg_form of
-                SOME ({id = id', prop, ...}, eq_th) =>
-                (steps, st |> apply_callback
-                           (id', Thm.equal_elim eq_th prop) sc cb)
-              | NONE =>
-                let
-                  val st' = process_add_boxes updt st
-                in
-                  case find_prim_box st' id (assums, concls) of
-                      NONE => (steps, st')
-                    | SOME id' => (steps, st') |> apsnd (set_focus id')
-                                               |> fold run_script subs
-                                               |> solve_focus
-                                               |> apsnd (set_focus id)
-                end
-          end
-        | Script_Info {prfstep, source, ...} =>
-          let
-            (* Make sure the source statements exist. *)
-            val (steps', st') = (steps, st) |> wait_for_items id source
-            val items =
-                map (the o find_item st' id) source
-                handle Option.Option =>
-                       raise AUTO2 "run_script (info): cannot find sources."
-            fun process_raw_updt raw_updt =
-                {sc = sc, prfstep_name = #name prfstep, source = items,
-                 raw_updt = raw_updt}
-            val rtype = get_init_type st
-            val updts = (apply_prfstep rtype st items prfstep)
-                                |> map process_raw_updt
-            val _ = assert (length updts > 0)
-                           "run_script (info): failed to apply proofstep."
-          in
-            (steps', st' |> fold apply_update updts)
-          end
+      let
+        val raw_updts = cb ((id, th), st')
+        val updts = map (fn raw_updt =>
+                            {sc = 0, prfstep_name = "SCRIPT", source = [],
+                             raw_updt = raw_updt}) raw_updts
+      in
+        (steps', st' |> fold add_to_queue updts)
+      end
     end
 
-fun solve_root steps (obj_goal, scrpts, st) =
+fun solve_root steps (scrpts, st) =
     let
-      fun find_obj_goal queue =
-          let
-            val ({raw_updt, ...}, queue') =
-                Updates_Heap.min_elem queue
-                handle List.Empty => raise AUTO2 "solve_root: goal not found"
-          in
-            case raw_updt of
-                Update.AddItems {id = [], raw_items = [raw_item]} =>
-                if Thm.prop_of (get_thm_raw raw_item) aconv obj_goal then
-                  get_thm_raw raw_item
-                else find_obj_goal queue'
-              | _ => find_obj_goal queue'
-          end
-
-      val (steps', st' as {queue, ...}) =
-          (steps, st) |> fold run_script scrpts |> solve_focus
-      val _ = writeln ("Finished in " ^ (string_of_int (steps - steps')) ^
-                       " steps.")
+      val (steps', st') = (steps, st) |> fold run_script scrpts |> solve_focus
+      val _ = writeln (
+            "Finished in " ^ (string_of_int (steps - steps')) ^ " steps.")
     in
-      (find_obj_goal queue, st')
+      (get_resolve_th st' [0], st')
     end
 
 end  (* structure ProofStatus. *)
@@ -666,7 +638,7 @@ fun auto2_gen ctxt steps pre_scrpts state =
         val st = ProofStatus.init_status ctxt' obj_goal
         val (obj_th, _) =
             timer ("Total time: ",
-                   fn _ => ProofStatus.solve_root steps (obj_goal, scrpts, st))
+                   fn _ => ProofStatus.solve_root steps (scrpts, st))
         val th = Thm.equal_elim (meta_sym to_obj_eq) obj_th
       in
         Thm.implies_elim state th

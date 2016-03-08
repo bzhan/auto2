@@ -1,3 +1,6 @@
+(* Quicksort on an array, following Imperative_Quicksort in
+   HOL/Imperative_HOL/ex. *)
+
 theory Imp_Ex_Quicksort
 imports Imp_Thms
 begin
@@ -144,7 +147,7 @@ lemma quicksort_success: "l < Array.length h a \<and> r < Array.length h a \<Lon
 (* Now for the final theorem. *)
 setup {* add_gen_prfstep ("quicksort_case",
   [WithFact @{term_pat "effect (quicksort ?a ?l ?r) ?h ?h' ?rs"},
-   CreateCase ([@{term_pat "(?l::nat) < ?r"}], [])]) *}
+   CreateCase @{term_pat "(?l::nat) < ?r"}]) *}
 
 (* Outer remains theorems particular to quicksort. *)
 theorem outer_remains_qs1: "outer_remains h h' a (l+1) r \<Longrightarrow>

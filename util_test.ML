@@ -45,7 +45,7 @@ val test_is_pattern =
       val ctxt = @{context}
       fun test b str =
           let
-            val t = Proof_Context.read_term_pattern ctxt str
+            val t = read_pat ctxt str
           in
             if b = is_pattern t then ()
             else raise AUTO2CT ("test_is_pattern", [cert ctxt t])

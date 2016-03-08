@@ -1,3 +1,5 @@
+(* Setup for proof steps related to arithmetic, mostly on natural numbers. *)
+
 theory Arith_Thms
 imports Auto2_Base Order_Thms Logic_Thms Binomial
 begin
@@ -103,11 +105,9 @@ theorem diff_eq_zero' [forward]: "j - k + i = j \<Longrightarrow> (k::nat) \<le>
 
 (* Divides. *)
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm dvd_def}) (with_conds ["?a \<noteq> ?b", "?a \<noteq> ?b * ?k"]) *}
-theorem dvd_transitive: "(m::nat) dvd n \<Longrightarrow> n dvd p \<Longrightarrow> m dvd p" using dvd_trans by blast
-theorem dvd_transitive': "(m::nat) dvd n \<Longrightarrow> n dvd m \<Longrightarrow> m = n" by (simp add: dvd.eq_iff)
-setup {*
-  add_forward_prfstep_cond @{thm dvd_transitive} (with_conds ["?m \<noteq> ?n", "?n \<noteq> ?p", "?m \<noteq> ?p"]) #>
-  add_forward_prfstep_cond @{thm dvd_transitive'} [with_cond "?m \<noteq> ?n"] *}
+setup {* add_forward_prfstep_cond @{thm Nat.dvd.order.trans}
+  (with_conds ["?a \<noteq> ?b", "?b \<noteq> ?c", "?a \<noteq> ?c"]) *}
+setup {* add_forward_prfstep_cond @{thm Nat.dvd.antisym} [with_cond "?x \<noteq> ?y"] *}
 theorem dvd_cancel [backward1]: "c > 0 \<Longrightarrow> (a::nat) * c dvd b * c \<Longrightarrow> a dvd b" by simp
 setup {* add_forward_prfstep (equiv_forward_th @{thm dvd_add_right_iff}) *}
 
@@ -168,7 +168,7 @@ setup {* add_rewrite_rule_cond @{thm power_one} [with_cond "?n \<noteq> 0"] *}
 setup {* add_rewrite_rule_cond @{thm power_one_right} [with_cond "?a \<noteq> 1"] *}
 theorem power_ge_0 [rewrite]: "m \<noteq> 0 \<Longrightarrow> p ^ m = p * (p ^ (m - 1))" by (simp add: power_eq_if)
 setup {* add_gen_prfstep ("power_case_intro",
-  [WithTerm @{term_pat "?p ^ (?FREE::nat)"}, CreateCase ([@{term_pat "(?FREE::nat) = 0"}], [])]) *}
+  [WithTerm @{term_pat "?p ^ (?FREE::nat)"}, CreateCase @{term_pat "(?FREE::nat) = 0"}]) *}
 
 theorem one_is_power_of_any: "\<exists>i. (1::nat) = a ^ i" by (metis power.simps(1))
 setup {* add_resolve_prfstep @{thm one_is_power_of_any} *}

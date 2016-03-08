@@ -6,6 +6,7 @@ sig
   val ex_seq_def: proofstep
   val ind_seq_def: proofstep
   val ind_seq_mutual_def: proofstep
+  val monotone_pred_ex_prfstep: proofstep
 end;
 
 structure Seq_ProofSteps : SEQ_PROOFSTEPS =
@@ -53,9 +54,56 @@ val ind_seq_mutual_def =
                 id, (ths @ [@{thm ex_mutual_ind_seq}]) MRS @{thm contra_triv})]
             handle THM _ => [])
 
+fun get_monotone_pred_for_th ctxt p gen_th =
+    let
+      val pat = gen_th |> prop_of' |> strip_comb |> snd |> the_single
+      val inst = pattern_match ctxt (pat, p)
+    in
+      SOME (subst_thm ctxt inst gen_th)
+    end
+    handle Pattern.MATCH => NONE
+
+fun get_monotone_pred ctxt p =
+    get_first (get_monotone_pred_for_th ctxt p)
+              [@{thm monotone_pred_ge}, @{thm monotone_pred_forall},
+               @{thm monotone_pred_forall2}]
+
+val monotone_pred_ex_prfstep =
+    prfstep_custom
+        "monotone_pred_ex"
+        [WithGoal @{term_pat "EX x. ?P x & ?Q x"}]
+        [Update.SHADOW_ITEM, Update.ADD_ITEMS]
+        (fn ((id, _), ths) => fn items => fn {ctxt, ...} =>
+            let
+              val ex_prop = ths |> the_single |> prop_of' |> get_neg
+              val (P, Q) =
+                  case ex_prop of
+                      Const (@{const_name HOL.Ex}, _) $
+                            Abs (nm, T, Const (@{const_name conj}, _) $ P $ Q)
+                      => (Abs (nm, T, P), Abs (nm, T, Q))
+                    | _ => raise AUTO2 "get_monotone_pred: wrong form of prop"
+            in
+              if Term_Ord.termless (Q, P) then []
+              else let
+                val p_th = get_monotone_pred ctxt P
+                val q_th = get_monotone_pred ctxt Q
+              in
+                if is_none p_th orelse is_none q_th then []
+                else let
+                  val th = @{thm monotone_pred_ex}
+                                |> apply_on [the p_th, the q_th]
+                                |> backward_th |> apply_on ths
+                in
+                  [Update.ShadowItem {id = id, item = the_single items},
+                   Update.thm_update (id, th)]
+                end
+              end
+            end)
+
 end  (* structure Seq_ProofSteps. *)
 
 val _ = Theory.setup (add_prfstep Seq_ProofSteps.convert_eval_Suc_n)
 val _ = Theory.setup (add_prfstep Seq_ProofSteps.ex_seq_def)
 val _ = Theory.setup (add_prfstep Seq_ProofSteps.ind_seq_def)
 val _ = Theory.setup (add_prfstep Seq_ProofSteps.ind_seq_mutual_def)
+val _ = Theory.setup (add_prfstep Seq_ProofSteps.monotone_pred_ex_prfstep)

@@ -1,3 +1,5 @@
+(* Unit tests for auto2. *)
+
 theory Auto2_Test
 imports Auto2
 begin

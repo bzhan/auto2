@@ -1,3 +1,5 @@
+(* Auto2 tactic, plus setups for basic theorems in Main. *)
+
 theory Auto2
 imports
   Auto2_Base

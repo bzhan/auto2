@@ -1,3 +1,6 @@
+(* Hoare logic, following chapters Hoare and Hoare2 in "Software
+   Foundations". *)
+
 theory Hoare_Rules
 imports Hoare_States
 begin
@@ -22,8 +25,8 @@ setup {* add_rewrite_rule @{thm hoare_triple_def} *}
 setup {* add_rewrite_rule @{thm assert_implies_def} *}
 setup {* add_rewrite_rule @{thm assert_iff_def} *}
 
-theorem assert_implies_triv [known_fact]: "P \<longmapsto> P" by auto2
-theorem assert_iff_triv [known_fact]: "assert_iff P P" by auto2
+theorem assert_implies_triv [resolve]: "P \<longmapsto> P" by auto2
+theorem assert_iff_triv [resolve]: "assert_iff P P" by auto2
 
 theorem hoare_post_true: "\<forall>st. aseval Q st \<Longrightarrow> {{ P }} c {{ Q }}" by auto2
 theorem hoare_pre_false: "\<forall>st. \<not>(aseval P st) \<Longrightarrow> {{ P }} c {{ Q }}" by auto2
@@ -68,24 +71,23 @@ theorem eval_nbassn [rewrite]: "aseval (A &~ b) st = (aseval A st \<and> \<not> 
 theorem hoare_if: "{{ (P && b) }} c1 {{ Q }} \<Longrightarrow> {{ P &~ b }} c2 {{ Q }} \<Longrightarrow>
                    {{ P }} (IF b THEN c1 ELSE c2 FI) {{ Q }}" by auto2
 
-theorem hoare_while1 [forward]:
-  "{{ P && b }} c {{ P }} \<Longrightarrow> ceval (WHILE b DO c OD) st st' \<Longrightarrow> aseval P st \<Longrightarrow> aseval (P &~ b) st'"
-  by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("ceval (WHILE b DO c OD) st st'", [])) *})
-theorem hoare_while: "{{ P && b }} c {{ P }} \<Longrightarrow> {{ P }} (WHILE b DO c OD) {{ P &~ b }}" by auto2
-setup {* del_prfstep_thm @{thm hoare_while1} *}
+theorem hoare_while: "{{ P && b }} c {{ P }} \<Longrightarrow> {{ P }} (WHILE b DO c OD) {{ P &~ b }}"
+  by (tactic {* auto2s_tac @{context}
+    (OBTAIN "\<forall>st st'. ceval (WHILE b DO c OD) st st' \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'"
+      WITH PROP_INDUCT ("ceval (WHILE b DO c OD) st st'", [])) *})
 
 (* Formally decorated programs. *)
 datatype dcom =
   DCSkip assertion   ("DSKIP {{ _ }}")
 | DCAss id aexp assertion  ("(2_ ::=/ _) {{ _ }}" [70, 65] 60)
-| DCSeq dcom dcom    ("(_ ;;/ _)" [61,60] 61)  (* infixr *)
+| DCSeq dcom dcom    (infixr ";;" 60)
 | DCIf bexp assertion dcom assertion dcom assertion ("(1IF _/ THEN {{ _ }}/ _/ ELSE {{ _ }}/ _/ FI {{ _ }})" [0,0,0] 61)
 | DCWhile bexp assertion dcom assertion  ("(1WHILE _/ DO {{ _ }} _ /OD {{ _ }})" [0,0] 61)
 | DCPre assertion dcom  ("{{ _ }}/ _" [80,79] 80)
 | DCPost dcom assertion ("_ \<rightarrow>/ {{ _ }}" [75,76] 75)
 
 definition noCond :: assertion where "noCond = Assert (\<lambda>st. True)"
-theorem eval_noCond [known_fact]: "aseval noCond st" by (simp add: noCond_def)
+theorem eval_noCond [resolve]: "aseval noCond st" by (simp add: noCond_def)
 
 fun extract_dcom :: "dcom \<Rightarrow> com" where
   "extract_dcom (DCSkip P) = SKIP"
@@ -95,7 +97,7 @@ fun extract_dcom :: "dcom \<Rightarrow> com" where
 | "extract_dcom (WHILE b DO {{ P }} d OD {{ Q }}) = WHILE b DO extract_dcom d OD"
 | "extract_dcom ({{ P }} d) = extract_dcom d"
 | "extract_dcom (d \<rightarrow> {{ Q }}) = extract_dcom d"
-setup {* fold add_rewrite_rule @{thms extract_dcom.simps} *}
+setup {* add_eval_fun_prfsteps @{thms extract_dcom.simps} *}
 
 fun post :: "dcom \<Rightarrow> assertion" where
   "post (DCSkip P) = P"
@@ -105,15 +107,14 @@ fun post :: "dcom \<Rightarrow> assertion" where
 | "post (WHILE b DO {{ P }} d OD {{ Q }}) = Q"
 | "post ({{ P }} d) = post d"
 | "post (d \<rightarrow> {{ Q }}) = Q"
-setup {* fold add_rewrite_rule @{thms post.simps} *}
-setup {* fold add_top_eq_th_normalizer @{thms post.simps} *}
+setup {* add_eval_fun_prfsteps @{thms post.simps} *}
 
 fun pre :: "dcom \<Rightarrow> assertion" where
   "pre (d1 ;; d2) = pre d1"
 | "pre ({{ P }} d) = P"
 | "pre (d \<rightarrow> {{ Q }}) = pre d"
 | "pre _ = noCond"
-setup {* fold add_rewrite_rule @{thms pre.simps} *}
+setup {* add_eval_fun_prfsteps @{thms pre.simps} *}
 
 definition dec_correct :: "dcom \<Rightarrow> bool" where
   "dec_correct d = {{ pre d }} (extract_dcom d) {{ post d }}"
@@ -132,8 +133,8 @@ fun vcond :: "assertion \<Rightarrow> dcom \<Rightarrow> bool" where
    vcond Pbody d)"
 | "vcond P ({{ P' }} d) = (P \<longmapsto> P' \<and> vcond P' d)"
 | "vcond P (d \<rightarrow> {{ Q }}) = (vcond P d \<and> post d \<longmapsto> Q)"
-setup {* fold add_rewrite_rule @{thms vcond.simps} *}
-setup {* fold add_top_eq_th_normalizer @{thms vcond.simps} *}
+setup {* add_eval_fun_prfsteps' @{thms vcond.simps}
+  (@{thms vcond.simps} @ @{thms post.simps} @ @{thms pre.simps}) *}
 
 setup {* add_prfstep_var_induction @{thm dcom.induct} *}
 
@@ -144,8 +145,8 @@ ML {* val hoare_rules =
    @{thm hoare_consequence}, @{thm hoare_consequence_pre}, @{thm hoare_consequence_post}] *}
 setup {* fold add_backward1_prfstep [@{thm hoare_consequence_pre}, @{thm hoare_consequence_post}] *}
 setup {* fold add_forward_prfstep [@{thm hoare_consequence_pre}, @{thm hoare_consequence_post}] *}
-setup {* add_known_fact @{thm hoare_skip} *}
-setup {* add_known_fact @{thm hoare_assign} *}
+setup {* add_resolve_prfstep @{thm hoare_skip} *}
+setup {* add_resolve_prfstep @{thm hoare_assign} *}
 setup {* add_backward1_prfstep @{thm hoare_seq} *}
 setup {* add_backward1_prfstep @{thm hoare_if} *}
 setup {* add_backward_prfstep @{thm hoare_while} *}

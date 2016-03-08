@@ -308,7 +308,7 @@ val combine_terms_prfsteps =
         "?bu + ?a * ?NUMCu + ?a * ?NUMCu1",
         "?bu + ?a * ?NUMCu + -(?a * ?NUMCu1)"
       ]
-      val pats = map (Proof_Context.read_term_pattern ctxt') pat_strs
+      val pats = map (read_pat ctxt') pat_strs
       fun prfstep_i i =
           combine_terms_prfstep_fn
               ("combine_terms_" ^ (string_of_int i), nth pats i)
@@ -356,7 +356,7 @@ fun ring_pat str =
                         @{term_pat "?a::(?'a::linordered_idom)"},
                         @{term_pat "?s::(?'a::linordered_idom)"}]
     in
-      Proof_Context.read_term_pattern ctxt' str
+      read_pat ctxt' str
     end
 
 end  (* local ctxt = @{context}. *)

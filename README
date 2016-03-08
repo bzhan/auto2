@@ -1,9 +1,8 @@
 AUTO2 - a best-first-search theorem prover implemented in Isabelle
 
-Please see doc.pdf for documentation (it is slightly out of date -
-refers to the third public version).
+Please see doc.pdf for documentation.
 
-Current version of the program works with Isabelle2016-RC0.
+Current version of the program works with Isabelle2016.
 
 Description of the examples:
 
@@ -29,6 +28,10 @@ Description of the examples:
 - Analysis: construction of real numbers using Cauchy sequences. Proof
   of completeness of real numbers in several forms. Partly follows
   theory Real in HOL/.
+
+- Arrow_Ex: Arrow's impossibility theorem, following Arrow_Order in
+  AFP/ArrowImpossibilityGS. The original theory is one of seven test
+  cases in "Sledgehammer: Judgement Day".
 
 Copyright (C) 2015, 2016 Bohua Zhan
 

@@ -1,3 +1,6 @@
+(* Red-black trees, following Section 8.4 of "Certified Programming
+   with Dependent Types", and RBT_Impl in HOL/Library. *)
+
 theory RBT_Ex
 imports Auto2 Lists_Ex
 begin
@@ -22,7 +25,7 @@ text {* Case checking: after checking the Leaf case, can assume t is in the
 setup {* add_gen_prfstep ("rbt_case_intro",
      [WithTerm @{term_pat "?t::?'a pre_rbt"},
       Filter (unique_free_filter "t"),
-      CreateCase ([@{term_pat "(?t::?'a pre_rbt) = Leaf"}], [])]) *}
+      CreateCase @{term_pat "(?t::?'a pre_rbt) = Leaf"}]) *}
 setup {* add_forward_prfstep @{thm pre_rbt.collapse} *}
 
 text {* Induction: after checking the Leaf case, can assume P (lsub t) and
@@ -104,8 +107,7 @@ theorem depth_max: "is_rbt t \<Longrightarrow> if cl t = R then max_depth t \<le
 setup {* fold add_forward_prfstep [@{thm depth_min}, @{thm depth_max}] *}
 theorem balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_depth t + 1"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "max_depth t \<le> 2 * black_depth t + 1"
-     THEN OBTAIN "2 * black_depth t + 1 \<le> 2 * min_depth t + 1") *})
+    (OBTAIN "max_depth t \<le> 2 * black_depth t + 1") *})
 setup {* fold del_prfstep_thm [@{thm depth_min}, @{thm depth_max}] *}
 
 section {* Balancing function on RBT *}

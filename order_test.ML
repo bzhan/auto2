@@ -1,3 +1,5 @@
+(* Unit test for order.ML. *)
+
 local
 
   open Nat_Order
@@ -19,7 +21,7 @@ local
   val st = Status.empty_status ctxt'
 
   (* Read strings as terms in ctxt'. *)
-  val read_as_term = Proof_Context.read_term_pattern ctxt'
+  val read_as_term = read_pat ctxt'
 in
 
 (* Convert proposition to nat_order item, by applying one of the

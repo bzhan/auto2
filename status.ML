@@ -243,6 +243,7 @@ sig
   val get_io_info: theory -> string -> item_io_info
   val get_prop_matchers: theory -> string -> item_matcher list
   val get_typed_matchers: theory -> string -> item_matcher list
+  val univ_matcher: item_matcher
   val prop_matcher: item_matcher
   val term_prop_matcher: item_matcher
   val term_typed_matcher: item_matcher
@@ -273,6 +274,10 @@ fun get_io_info thy ty_str =
 
 fun get_prop_matchers thy ty_str = #prop_matchers (get_io_info thy ty_str)
 fun get_typed_matchers thy ty_str = #typed_matchers (get_io_info thy ty_str)
+
+val univ_matcher =
+    {pre_match = fn _ => fn _ => fn _ => true,
+     match = fn _ => fn _ => fn _ => fn (id, inst) => [((id, inst), true_th)]}
 
 (* Prop-matching with a PROP item. *)
 val prop_matcher =
@@ -420,23 +425,34 @@ val _ = Theory.setup ItemIO_Data.add_basic_item_io
 
 signature UPDATE =
 sig
-  datatype update_type
-    = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
+  datatype update_type = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
+  datatype init_info = InitVar of term | InitAssum of term
+  type resolve_callback
   datatype raw_update
     = AddItems of {id: box_id, raw_items: raw_item list}
-    | AddBoxes of {id: box_id, vars: term list, assums: term list,
-                   concls: term list, cb: box_id * thm -> raw_update list}
+    | AddBoxes of {id: box_id, inits: init_info list,
+                   cbs: resolve_callback list}
     | ResolveBox of {id: box_id, th: thm}
     | ShadowItem of {id: box_id, item: box_item}
-  type resolve_callback
   type update
+  val dest_init_var: init_info -> term list
+  val dest_init_assum: init_info -> term list
+  val build_init_infos: term list * term list -> init_info list
+  val string_of_init_info: Proof.context -> init_info -> string
+  val get_neg_form: Proof.context -> init_info list -> term
+  val get_neg_form_thm: Proof.context -> init_info list -> thm -> thm
+
   val type_of_update: raw_update -> update_type
   val string_of_update_type: update_type -> string
   val null_callback: resolve_callback
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
+  val extract_init_infos: term -> init_info list
+
   val handler_ritems: Proof.context -> term -> retro_handler -> raw_item list
   val apply_horn_clause: box_id * thm -> resolve_callback -> raw_update list
+  val normalize_ex_conv: conv
+  val normalize_exs_conv: int -> Proof.context -> conv
   val apply_exists: box_id * thm -> Proof.context -> string list ->
                     raw_update list
   val target_of_update: raw_update -> box_id
@@ -447,17 +463,80 @@ end;
 structure Update : UPDATE =
 struct
 
-datatype update_type
-  = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
+datatype update_type = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
+datatype init_info = InitVar of term | InitAssum of term
 datatype raw_update
   = AddItems of {id: box_id, raw_items: raw_item list}
-  | AddBoxes of {id: box_id, vars: term list, assums: term list,
-                 concls: term list, cb: box_id * thm -> raw_update list}
+  | AddBoxes of {id: box_id, inits: init_info list,
+                 cbs: (box_id * thm -> raw_update list) list}
   | ResolveBox of {id: box_id, th: thm}
   | ShadowItem of {id: box_id, item: box_item}
 type resolve_callback = box_id * thm -> raw_update list
 type update = {sc: int, prfstep_name: string, source: box_item list,
                raw_updt: raw_update}
+
+fun dest_init_var init = case init of InitVar t => [t] | _ => []
+fun dest_init_assum init = case init of InitAssum t => [t] | _ => []
+fun build_init_infos (vars, assums) = map InitVar vars @ map InitAssum assums
+fun string_of_init_info ctxt init =
+    case init of
+        InitVar t => ("Var " ^ (t |> pretty_term ctxt |> str))
+      | InitAssum assum => ("Assum " ^ (assum |> pretty_term ctxt |> str))
+
+(* Rewrite !x. x : A --> P x into !x:A. P x. *)
+fun Ball_def_cv ctxt =
+    Conv.top_conv (K (Conv.try_conv (
+                         rewr_obj_eq (obj_sym @{thm Ball_def})))) ctxt
+
+(* Given list of initial variables and assumptions, return the
+   contradiction derived from them. Each initial variable becomes !,
+   the last assumption is negated, and each assumption before the last
+   becomes -->.
+ *)
+fun get_neg_form ctxt inits =
+    if length inits = 0 then @{prop False}
+    else let
+      fun mk_all (nm, T) t = Logic.all_const T $ Term.absfree (nm, T) t
+      val concl = inits |> split_last |> snd |> dest_init_assum |> the_single
+                        |> get_neg'
+                  handle List.Empty =>
+                         raise AUTO2 "get_neg_form: last init should be prop."
+
+      fun fold_init init t =
+          case init of
+              InitVar v => mk_all (dest_Free v) t
+            | InitAssum assum => Logic.mk_implies (assum, t)
+    in
+      concl |> fold fold_init (tl (rev inits)) |> cert ctxt
+            |> to_obj_conv ctxt |> Thm.rhs_of
+            |> Ball_def_cv ctxt |> rhs_of
+    end
+
+(* Given a contradiction th, returns a new theorem with assumptions
+   pulled into the proposition of th. The resulting form of th is the
+   same as that returned by get_neg_form.
+ *)
+fun get_neg_form_thm ctxt inits th =
+    if length inits = 0 then th
+    else let
+      val _ = assert (Thm.prop_of th aconv prop_False)
+                     "get_neg_form_thm: input th should be a contradiction."
+      val tl_assum =
+          inits |> split_last |> snd |> dest_init_assum |> the_single
+          handle List.Empty =>
+                 raise AUTO2 "get_neg_form_thm: last init should be prop."
+
+      fun fold_init init th =
+          case init of
+              InitVar v => Thm.forall_intr (cert ctxt v) th
+            | InitAssum assum => th |> Thm.implies_intr (cert ctxt assum)
+    in
+      th |> Thm.implies_intr (cert ctxt tl_assum)
+         |> rewrite_thm_from_contra_form
+         |> fold fold_init (tl (rev inits))
+         |> apply_to_thm (to_obj_conv ctxt)
+         |> apply_to_thm (Ball_def_cv ctxt)
+    end
 
 fun type_of_update raw_updt =
     case raw_updt of
@@ -512,25 +591,63 @@ fun thm_update (id, th) =
     else
       AddItems {id = id, raw_items = [thm_to_ritem th]}
 
+fun extract_init_infos t =
+    case t of
+        Const ("HOL.All", _) $ Abs (nm, T, b) =>
+        InitVar (Free (nm, T)) ::
+        extract_init_infos (Term.subst_bound (Free (nm, T), b))
+      | Const ("Set.Ball", _) $ S $ Abs (nm, T, b) =>
+        InitVar (Free (nm, T)) ::
+        InitAssum (HOLogic.mk_Trueprop (HOLogic.mk_mem (Free (nm, T), S))) ::
+        extract_init_infos (Term.subst_bound (Free (nm, T), b))
+      | Const ("HOL.implies", _) $ P $ Q =>
+        InitAssum (HOLogic.mk_Trueprop P) :: extract_init_infos Q
+      | _ => [InitAssum (HOLogic.mk_Trueprop (get_neg t))]
+
 fun handler_ritems ctxt t handler =
-    [Handler (t, handler), thm_to_ritem (assume_thm ctxt t)]
+    let
+      val _ = assert (fastype_of t = propT) "handler_ritems: wrong type"
+    in
+      [Handler (t, handler), thm_to_ritem (assume_thm ctxt t)]
+    end
 
 fun apply_horn_clause (id, th) cb =
     case Thm.prop_of th of
         Const ("Pure.imp", _) $ A $ _ =>
         let
           val (vars, body) = strip_obj_all_var (HOLogic.dest_Trueprop A)
-          val (assums, concl) = (strip_obj_imp body)
-                                    |> apfst (map HOLogic.mk_Trueprop)
-                                    |> apsnd HOLogic.mk_Trueprop
+          val (assums, concl) = strip_obj_imp body
+          val inits = map InitVar vars @
+                      map (InitAssum o HOLogic.mk_Trueprop) assums @
+                      [InitAssum (HOLogic.mk_Trueprop (get_neg concl))]
           fun callback (id', th_fst) =
               apply_horn_clause (id', [th_fst] MRS th) cb
         in
-          [AddBoxes {id = id, vars = vars, assums = assums, concls = [concl],
-                     cb = callback}]
+          [AddBoxes {id = id, inits = inits, cbs = [callback]}]
         end
       | _ => if pointer_eq (cb, null_callback) then [thm_update (id, th)]
              else cb (id, th)
+
+(* Given ct of form A1 & A2 ... & Ai & EX x. ..., rewrite as EX x. A1
+   & A2 ... & Ai & ... .
+ *)
+fun normalize_ex_conv ct =
+    case Thm.term_of ct of
+        Const ("HOL.Ex", _) $ Abs _ => Conv.all_conv ct
+      | Const ("Set.Bex", _) $ _ $ _ =>
+        rewr_obj_eq (obj_sym @{thm bex_iff}) ct
+      | Const ("HOL.conj", _) $ _ $ _ =>
+        ((Conv.arg_conv normalize_ex_conv)
+             then_conv (rewr_obj_eq @{thm swap_ex_conj})) ct
+      | _ => raise AUTO2CT ("normalize_ex_conv: wrong input.", [ct])
+
+(* Normalize ct so it begins with EX a1 ... an., with n variables
+   after EX. This is preparation for the apply_exists function.
+ *)
+fun normalize_exs_conv n ctxt ct =
+    if n <= 0 then Conv.all_conv ct
+    else (normalize_ex_conv then_conv (
+             Conv.binder_conv ((normalize_exs_conv (n-1)) o snd) ctxt)) ct
 
 (* nms specify the names of free variables, either internal (use
    obtain_variant_frees to fix) or otherwise (will be put into context
@@ -567,9 +684,12 @@ fun apply_exists (id, ex_th) ctxt nms =
                 (var :: vars, t'')
               end
 
-      val (vars, new_prop) = ex_th |> prop_of' |> dest_all_abs nms
+      val ex_th' = apply_to_thm (
+            HOLogic.Trueprop_conv (normalize_exs_conv (length nms) ctxt)) ex_th
+      val (vars, new_prop) = ex_th' |> prop_of' |> dest_all_abs nms
       val new_prop' = HOLogic.mk_Trueprop new_prop
       val new_th = new_prop' |> cert ctxt |> Thm.trivial
+                             |> send_concrete_to_hyps
 
       fun get_freevars t =
           let
@@ -590,7 +710,7 @@ fun apply_exists (id, ex_th) ctxt nms =
       fun handler (t, th) =
           th |> Thm.implies_intr (cert ctxt t)
              |> fold (ex_elim ctxt) (rev (get_freevars t))
-             |> Thm.elim_implies ex_th
+             |> Thm.elim_implies ex_th'
 
       val ritems = (map var_to_fact vars) @
                    [Handler (new_prop', (ready, handler)),
@@ -626,10 +746,10 @@ Table (
 signature BOX =
 sig
   type box
-  val init_box: term list * term list * term list -> box
+  val init_box: Update.init_info list -> box
+  val get_inits: box -> Update.init_info list
   val get_init_vars: box -> term list
   val get_init_assums: box -> term list
-  val get_init_concls: box -> term list
 
   val add_handler: term * retro_handler -> box -> box
   val get_handlers: box -> (term * retro_handler) list
@@ -646,31 +766,33 @@ sig
   val add_callback: Update.resolve_callback -> box -> box
   val get_callbacks: box -> Update.resolve_callback list
 
+  val set_resolve_th: thm -> box -> box
+  val get_resolve_th: box -> thm
+
   val short_string_of_box: Proof.context -> box -> string
 end;
 
 structure Box : BOX =
 struct
 
-type box = {vars: term list, assums: term list, concls: term list,
+type box = {inits: Update.init_info list,
             handlers: (term * retro_handler) list,
             items: (box_item * box_id list) ItemTab.table,
-            cbs: Update.resolve_callback list}
-fun init_box (vars, assums, concls) =
-    {vars = vars, assums = assums, concls = concls, handlers = [],
-     items = ItemTab.empty, cbs = []}
-fun get_init_assums {assums, ...} = assums
-fun get_init_concls {concls, ...} = concls
-fun get_init_vars {vars, ...} = vars
+            cbs: Update.resolve_callback list, resolve_th: thm option}
+fun init_box inits = {inits = inits, handlers = [], items = ItemTab.empty,
+                      cbs = [], resolve_th = NONE}
+fun get_inits {inits, ...} = inits
+fun get_init_vars {inits, ...} = maps Update.dest_init_var inits
+fun get_init_assums {inits, ...} = maps Update.dest_init_assum inits
 
-fun add_handler (t, handler) {vars, assums, concls, handlers, items, cbs} =
-    {vars = vars, assums = assums, concls = concls,
-     handlers = cons (t, handler) handlers, items = items, cbs = cbs}
+fun add_handler (t, handler) {inits, handlers, items, cbs, resolve_th} =
+    {inits = inits, handlers = cons (t, handler) handlers, items = items,
+     cbs = cbs, resolve_th = resolve_th}
 fun get_handlers {handlers, ...} = handlers
 
-fun map_items f {vars, assums, concls, handlers, items, cbs} =
-    {vars = vars, assums = assums, concls = concls, handlers = handlers,
-     items = f items, cbs = cbs}
+fun map_items f {inits, handlers, items, cbs, resolve_th} =
+    {inits = inits, handlers = handlers, items = f items, cbs = cbs,
+     resolve_th = resolve_th}
 
 fun add_item (item as {ty_str, tname, ...}) =
     map_items (ItemTab.update_new ((ty_str, tname), (item, [])))
@@ -689,19 +811,22 @@ val get_freevars = map get_tname o filter (match_ty_str TY_VAR) o get_items
 fun get_dep_vars box =
     subtract (op aconv) (get_init_vars box) (get_freevars box)
 
-fun add_callback cb {vars, assums, concls, handlers, items, cbs} =
-    {vars = vars, assums = assums, concls = concls, handlers = handlers,
-     items = items, cbs = if pointer_eq (cb, Update.null_callback) then cbs
-                          else cons cb cbs}
+fun add_callback cb {inits, handlers, items, cbs, resolve_th} =
+    {inits = inits, handlers = handlers, items = items, cbs = cons cb cbs,
+     resolve_th = resolve_th}
 fun get_callbacks {cbs, ...} = cbs
 
-fun short_string_of_box ctxt box =
-    let val (assums, concls) = (get_init_assums box, get_init_concls box) in
-      (if length assums > 0 then (assums |> pretty_terms ctxt |> str) ^ " ==> "
-       else "") ^
-      (if length concls > 0 then concls |> pretty_terms ctxt |> str
-       else prop_False |> pretty_term ctxt |> str)
-    end
+fun set_resolve_th th {inits, handlers, items, cbs, ...} =
+    {inits = inits, handlers = handlers, items = items, cbs = cbs,
+     resolve_th = SOME th}
+
+fun get_resolve_th {resolve_th, ...} =
+    case resolve_th of
+        NONE => raise AUTO2 "get_resolve_th: box not resolved."
+      | SOME th => th
+
+fun short_string_of_box ctxt {inits, ...} =
+    Update.get_neg_form ctxt inits |> pretty_term ctxt |> str
 
 end  (* structure Box. *)
 
@@ -725,7 +850,6 @@ sig
   val get_focus: status -> box_id
   val set_focus: box_id -> status -> status
   val get_parent_prim: status -> int -> box_id
-  val get_parent_at_i: status -> box_id -> int -> box_id
   val merge_boxes: status -> box_id * box_id -> box_id
   val is_ancestor: status -> box_id -> box_id -> bool
   val is_descendent: status -> box_id -> box_id -> bool
@@ -746,14 +870,14 @@ sig
   val add_composite_box: box_id -> status -> status
 
   val get_items: status -> box_id -> box_item list
-  val get_init_assums: status -> box_id -> term list
-  val get_init_concls: status -> box_id -> term list
+  val get_inits: status -> box_id -> Update.init_info list
   val get_init_vars: status -> box_id -> term list
+  val get_init_assums: status -> box_id -> term list
   val get_handlers: status -> box_id -> (term * retro_handler) list
   val get_all_items: status -> box_id -> box_item list
-  val get_all_init_assums: status -> box_id -> term list
-  val get_all_init_concls: status -> box_id -> term list
+  val get_all_inits: status -> box_id -> Update.init_info list
   val get_all_init_vars: status -> box_id -> term list
+  val get_all_init_assums: status -> box_id -> term list
   val get_all_handlers: status -> box_id -> (term * retro_handler) list
   val add_item: box_item -> status -> status
   val add_handler: box_id -> (term * retro_handler) -> status -> status
@@ -764,18 +888,17 @@ sig
   val add_shadowed: box_id * box_item -> status -> status
   val query_shadowed: status -> box_id -> box_item -> bool
   val query_removed: status -> box_item -> bool
+  val set_resolve_th: box_id -> thm -> status -> status
+  val get_resolve_th: status -> box_id -> thm
 
   val find_item: status -> box_id -> string * term -> box_item option
   val find_fact: status -> box_id -> term -> (box_item * thm) option
   val find_ritem_exact: status -> box_id -> raw_item -> box_item option
   val is_triv_eq: status -> box_id -> raw_item -> bool
   val invoke_handler: term * retro_handler -> thm -> thm
-  val invoke_handlers: (term * retro_handler) list -> thm -> thm
-  val get_neg_form: Proof.context -> term list * term list * term list -> term
-  val get_neg_form_thm: Proof.context -> term list * term list * term list ->
-                        thm -> thm
+  val invoke_handlers: (bool * (term * retro_handler)) list -> thm -> thm
   val get_on_resolve: status -> box_id -> int -> thm -> raw_item
-  val find_prim_box: status -> box_id -> term list * term list -> box_id option
+  val find_prim_box: status -> box_id -> Update.init_info list -> box_id option
   val map_queue: (Updates_Heap.T -> Updates_Heap.T) -> status -> status
   val add_to_queue: Update.update -> status -> status
   val delmin_from_queue: status -> status
@@ -813,7 +936,6 @@ fun get_incr_type {tbl, ...} id eq_th =
 fun get_lattice {lat, ...} = lat
 val get_focus = BoxID.get_focus o get_lattice
 val get_parent_prim = BoxID.get_parent_prim o get_lattice
-val get_parent_at_i = BoxID.get_parent_at_i o get_lattice
 val merge_boxes = BoxID.merge_boxes o get_lattice
 val is_ancestor = BoxID.is_ancestor o get_lattice
 val is_descendent = BoxID.is_descendent o get_lattice
@@ -874,20 +996,20 @@ fun add_composite_box id (st as {lat, boxes, queue, tbl, ctxt}) =
       raise AUTO2 "Try to add a primitive box as a composite"
     else
       {lat = lat,
-       boxes = Boxidtab.update_new (id, Box.init_box ([], [], [])) boxes,
+       boxes = Boxidtab.update_new (id, Box.init_box []) boxes,
        queue = queue, tbl = tbl, ctxt = ctxt}
 
 fun get_for_box f st id = if exist_box st id then f (get_box st id) else []
 fun get_all_for_box f st id = maps (get_for_box f st) (get_eq_ancestors st id)
 val get_items       = get_for_box Box.get_items
-val get_init_assums = get_for_box Box.get_init_assums
-val get_init_concls = get_for_box Box.get_init_concls
+val get_inits       = get_for_box Box.get_inits
 val get_init_vars   = get_for_box Box.get_init_vars
+val get_init_assums = get_for_box Box.get_init_assums
 val get_handlers    = get_for_box Box.get_handlers
 val get_all_items       = get_all_for_box Box.get_items
-val get_all_init_assums = get_all_for_box Box.get_init_assums
-val get_all_init_concls = get_all_for_box Box.get_init_concls
+val get_all_inits       = get_all_for_box Box.get_inits
 val get_all_init_vars   = get_all_for_box Box.get_init_vars
+val get_all_init_assums = get_all_for_box Box.get_init_assums
 val get_all_handlers    = get_all_for_box Box.get_handlers
 
 fun add_item (item as {id, ...}) = map_box id (Box.add_item item)
@@ -921,6 +1043,9 @@ fun query_shadowed st shadow_id {id, ty_str, tname, ...} =
         exists (is_eq_descendent st shadow_id) shadow_ids
 
 fun query_removed st (item as {id, ...}) = query_shadowed st id item
+
+fun set_resolve_th id th st = st |> map_box id (Box.set_resolve_th th)
+fun get_resolve_th st id = Box.get_resolve_th (get_box st id)
 
 (* Try to find an item with the given ty_str and tname. *)
 fun find_item st id (ty_str, tname) =
@@ -976,85 +1101,58 @@ fun is_triv_eq {tbl, ...} id ritem =
 fun invoke_handler (t, (_, f)) th = f (t, th)
 
 (* Invoke any handler given in the list handlers, whose term appear as
-   a hypothesis of th.
+   a hypothesis of th. Each handler is of the form (req, (t, _)),
+   where req is a boolean specifying whether the handler must be
+   applied.
  *)
 fun invoke_handlers handlers th =
     let
       val all_hyps = Thm.hyps_of th
-      val handlers' = handlers |> filter (member (op aconv) all_hyps o fst)
-      val retro_hyps = map fst handlers'
+      val handlers' = handlers |> filter (
+            fn (_, (t, _)) => member (op aconv) all_hyps t)
     in
-      if retro_hyps = [] then th
-      else
-        let
-          val to_invoke =
-              find_index (fn (t, (ready, _)) => ready (t, retro_hyps)) handlers'
-          val _ = assert (to_invoke <> ~1)
-                         "invoke_handlers: cannot find invokable handler."
-          val th' = invoke_handler (nth handlers' to_invoke) th
-        in
-          invoke_handlers handlers th'
-        end
+      if length handlers' = 0 then th
+      else let
+        val to_invoke =
+            find_index (fn (_, (t, (ready, _))) => ready (t, all_hyps))
+                       handlers'
+      in
+        if to_invoke = ~1 then
+          if forall (fn (req, _) => not req) handlers' then th
+          else raise AUTO2 "invoke_handlers: cannot find invokable handler."
+        else
+          th |> invoke_handler (snd (nth handlers' to_invoke))
+             |> invoke_handlers handlers
+      end
     end
 
-(* Return [trms] ==> False in a more human readable form. *)
-fun get_neg_form ctxt (vars, assums, concls) =
-    let
-      fun mk_all (nm, T) t = Logic.all_const T $ Term.absfree (nm, T) t
-      val facts = assums @ (map get_neg' concls)
-    in
-      if length facts = 0 then prop_False else
-      (* Fold in reverse order, so the facts appear in the right order
-         in imps.
-       *)
-      prop_False |> fold (curry Logic.mk_implies) (rev facts)
-                 |> cert ctxt
-                 |> rewrite_from_contra_form |> rhs_of
-                 |> fold mk_all ((rev o map dest_Free) vars) |> cert ctxt
-                 |> to_obj_conv ctxt |> rhs_of
-    end
-
-(* Given a theorem th with trms in the hypothesis, return a new
-   theorem with trms pulled into the proposition of th, which is
-   rewritten into a more human readable form.
+(* Derive the consequence if box id is resolved, to the parent id
+   formed by getting parent at index i.
  *)
-fun get_neg_form_thm ctxt (vars, assums, concls) th =
+fun get_on_resolve (st as {lat, ctxt, ...}) id i th =
     let
-      val _ = assert (Thm.prop_of th aconv prop_False)
-                     "get_neg_form_thm: input should have prop False."
-      val facts = assums @ (map get_neg' concls)
-    in
-      (* Fold in reverse order, so the facts appear in the right order
-         in imps.
-       *)
-      th |> fold Thm.implies_intr ((rev o map (cert ctxt)) facts)
-         |> rewrite_thm_from_contra_form
-         |> fold Thm.forall_intr ((rev o map (cert ctxt)) vars)
-         |> apply_to_thm (to_obj_conv ctxt)
-    end
+      val parent = BoxID.get_parent_at_i lat id i
+      val prim_id = nth id i
 
-(* Derive the consequence if box full_id is resolved, to the parent id
-   formed by getting parent at prim_id.
- *)
-fun get_on_resolve (st as {ctxt, ...}) full_id prim_id th =
-    let
       (* First get list of handlers to invoke. *)
       val retro_ids = (get_unresolved st)
                           |> filter (is_eq_ancestor st [prim_id])
-                          |> filter (is_eq_descendent st full_id)
-      val handlers = maps (get_handlers st) retro_ids
+                          |> filter (is_eq_descendent st id)
+      val handlers = map (pair true) (maps (get_handlers st) retro_ids) @
+                     map (pair false) (get_handlers st parent)
       val th' = invoke_handlers handlers th
-      val assums = get_init_assums st [prim_id]
-      val concls = get_init_concls st [prim_id]
-      val vars = get_init_vars st [prim_id]
-      val inits = if prim_id = 0 then ([], assums, concls)
-                  else (vars, assums, concls)
-      val th'' = get_neg_form_thm ctxt inits th'
+      val inits = (get_inits st [prim_id])
+                      |> (if prim_id = 0 then
+                            filter (fn init => case init of
+                                                   Update.InitAssum _ => true
+                                                 | _ => false)
+                          else I)
+      val th'' = Update.get_neg_form_thm ctxt inits th'
       val _ = if prim_id = 0 then
                 assert (length (Thm.hyps_of th'') = 0)
                        "get_on_resolve: did not remove all hypothesis at box 0."
               else ()
-      val _ = assert (Thm.prop_of th'' aconv get_neg_form ctxt inits)
+      val _ = assert (Thm.prop_of th'' aconv Update.get_neg_form ctxt inits)
                      "get_on_resolve: wrong value from get_neg_form_thm."
     in
       Update.thm_to_ritem th''
@@ -1064,15 +1162,17 @@ fun get_on_resolve (st as {ctxt, ...}) full_id prim_id th =
    exactly with the given initial facts. Note we cannot yet handle new
    variables.
  *)
-fun find_prim_box (st as {tbl, ...}) id (assums, concls) =
+fun find_prim_box (st as {tbl, ...}) id inits =
     let
+      val vars = maps Update.dest_init_var inits
+      val assums = maps Update.dest_init_assum inits
       fun agree_at_id id' =
           let
             val parent = get_parent_prim st (the_single id')
             val is_equiv = RewriteTable.is_equiv parent tbl
           in
-            eq_set is_equiv (assums, get_init_assums st id') andalso
-            eq_set is_equiv (concls, get_init_concls st id')
+            eq_set is_equiv (vars, get_init_vars st id') andalso
+            eq_set is_equiv (assums, get_init_assums st id')
           end
 
       fun can_test_id id' =
@@ -1080,7 +1180,7 @@ fun find_prim_box (st as {tbl, ...}) id (assums, concls) =
               [prim_id'] => is_eq_ancestor st (get_parent_prim st prim_id') id
             | _ => false
 
-      val ids_to_test = get_unresolved st |> filter can_test_id
+      val ids_to_test = get_all_ids st |> filter can_test_id
     in
       find_first agree_at_id ids_to_test
     end

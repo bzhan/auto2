@@ -1,3 +1,5 @@
+(* Setup for theorems in Imperative_HOL. *)
+
 theory Imp_Thms
 imports "../Auto2" "../Lists_Thms" "~~/src/HOL/Imperative_HOL/Imperative_HOL"
   "~~/src/HOL/Imperative_HOL/ex/Subarray"
@@ -45,7 +47,7 @@ theorem success_to_effect_same_unit:
 
 setup {* add_gen_prfstep ("effect_to_success_goal_intro",
   [WithGoal @{term_pat "effect ?f ?h ?h' ?r"},
-   CreateCase ([], [@{term_pat "success ?f ?h"}])]) *}
+   CreateConcl @{term_pat "success ?f ?h"}]) *}
 
 setup {* add_prfstep_custom ("use_success_to_effect",
   [WithFact @{term_pat "success ?f ?h"},
@@ -112,7 +114,7 @@ theorem effect_raise [resolve]: "\<not>effect (raise x) h h' r" by (meson effect
 (* Bind *)
 setup {* add_gen_prfstep ("success_bind_first",
   [WithGoal @{term_pat "success ((?f::?'a Heap) \<bind> ?g) ?h"},
-   CreateCase ([], [@{term_pat "success (?f::?'a Heap) ?h"}])])
+   CreateConcl @{term_pat "success (?f::?'a Heap) ?h"}])
 *}
 
 setup {* add_backward2_prfstep @{thm success_bind_effectI} *}
@@ -239,9 +241,10 @@ theorem sublist_as_append [backward]:
 theorem sublist'_single' [rewrite]:
   "n < length xs \<Longrightarrow> sublist' n (n + 1) xs = [xs ! n]" using sublist'_single by simp
 setup {* fold add_rewrite_rule [@{thm sublist'_Nil'}, @{thm sublist'_Nil2}] *}
-theorem sorted_triv_list [known_fact]:
+theorem sorted_triv_list:
   "l \<ge> r \<Longrightarrow> sorted (sublist' l (1 + r) xs)"
   by (tactic {* auto2s_tac @{context} (CASE "l \<ge> length xs" THEN CASE "l = r" THEN OBTAIN "l > r") *})
+setup {* add_forward_prfstep_cond @{thm sorted_triv_list} [with_term "sorted (sublist' ?l (1 + ?r) ?xs)"] *}
 
 (* Some results about sets and multisets of sublists. *)
 setup {* add_rewrite_rule @{thm set_sublist'} *}

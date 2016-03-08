@@ -177,7 +177,7 @@ fun prfstep_imp_effect_induction name descs ind_th =
             in
               case var_ctxt of
                   NONE => []
-                | SOME (inits as (_, assums, _)) =>
+                | SOME (inits as (_, assums)) =>
                   if member (op aconv) assums init_prop then
                     apply_induction
                         id inits (map (rpair NONE) ind_vars) ctxt ind_th []
@@ -204,8 +204,8 @@ fun prfstep_imp_success_induction name descs ind_th =
             in
               case var_ctxt of
                   NONE => []
-                | SOME (inits as (_, _, concls)) =>
-                  if member (op aconv) concls (get_neg' init_prop) then
+                | SOME (inits as (_, assums)) =>
+                  if member (op aconv) assums init_prop then
                     apply_induction
                         id inits (map (rpair NONE) ind_vars) ctxt ind_th []
                   else []

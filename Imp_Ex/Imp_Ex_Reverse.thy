@@ -1,3 +1,6 @@
+(* Reversal of an array, following Imperative_Reverse in
+   HOL/Imperative_HOL/ex. *)
+
 theory Imp_Ex_Reverse
 imports Imp_Thms
 begin

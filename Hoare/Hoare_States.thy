@@ -1,3 +1,6 @@
+(* States and commands, following chapter Imp in "Software
+   Foundations". *)
+
 theory Hoare_States
 imports "../Auto2"
 begin
@@ -19,37 +22,10 @@ definition update :: "state \<Rightarrow> id \<Rightarrow> nat \<Rightarrow> sta
 
 theorem state_ext [backward]:
   "\<forall>x. eval s x = eval t x \<Longrightarrow> s = t" apply (cases s) apply (cases t) by auto
-theorem eval_update [rewrite]:
-  "eval (st { x \<rightarrow> n }) x' = (if x = x' then n else eval st x')" by (simp add: update_def)
-theorem eval_empty [rewrite]: "eval ES n = 0" by (simp add: empty_state_def)
+theorem eval_update: "eval (st { x \<rightarrow> n }) x' = (if x = x' then n else eval st x')" by (simp add: update_def)
+theorem eval_empty: "eval ES n = 0" by (simp add: empty_state_def)
 
-(* Evaluation on empty state. *)
-setup {* add_top_eq_th_const_normalizer @{thm eval_empty} *}
-
-(* Evaluation on constant IDs. *)
-ML {*
-fun eval_update_conv ctxt ct =
-  if not (is_const (Thm.term_of ct)) then Conv.no_conv ct else
-  let
-    val inst = pattern_fo_match ctxt (@{term_pat "eval (?st { Id ?x \<rightarrow> ?n }) (Id ?x')"}, Thm.term_of ct)
-               handle Pattern.MATCH => raise CTERM ("no conversion", [])
-    val x1 = lookup_inst inst "x"
-    val x2 = lookup_inst inst "x'"
-  in
-    if is_numc x1 andalso is_numc x2 then
-      let
-        val nx1 = dest_numc x1
-        val nx2 = dest_numc x2
-        val step1_cv = rewr_obj_eq @{thm eval_update} then_conv rewr_obj_eq_top @{thm id.simps(1)} ctxt
-      in
-        if nx1 = nx2 then (step1_cv then_conv rewr_obj_eq @{thm if_eq}) ct
-        else let val neq_th = to_eqF_th (Nat_Arith.nat_neq_th nx1 nx2)
-             in (step1_cv then_conv rewr_obj_eq_top neq_th ctxt then_conv rewr_obj_eq @{thm HOL.if_False}) ct end
-      end
-    else Conv.no_conv ct
-  end
-*}
-setup {* add_top_conv_normalizer ("eval_update", eval_update_conv) *}
+ML_file "hoare_eval.ML"
 
 theorem update_example: "eval (ES {Id 2 \<rightarrow> n}) (Id 3) = 0" by auto2
 theorem update_shadow: "st {x \<rightarrow> m} {x \<rightarrow> n} = st {x \<rightarrow> n}" by auto2
@@ -81,8 +57,7 @@ fun aeval :: "state \<Rightarrow> aexp \<Rightarrow> nat" where
 | "aeval st (APlus m n) = aeval st m + aeval st n"
 | "aeval st (AMinus m n) = aeval st m - aeval st n"
 | "aeval st (AMult m n) = aeval st m * aeval st n"
-setup {* fold add_rewrite_rule @{thms aeval.simps} *}
-setup {* fold add_top_eq_th_const_normalizer @{thms aeval.simps} *}
+setup {* add_eval_fun_prfsteps @{thms aeval.simps} *}
 
 theorem test_aeval1: "aeval (ES {X \<rightarrow> 5})
         (APlus (ANum 3) (AMult (AId X) (ANum 2))) = 13" by auto2
@@ -94,7 +69,7 @@ fun beval :: "state \<Rightarrow> bexp \<Rightarrow> bool" where
 | "beval st (BLe a1 a2) = (aeval st a1 \<le> aeval st a2)"
 | "beval st (BNot b) = (\<not> beval st b)"
 | "beval st (BAnd b1 b2) = (beval st b1 \<and> beval st b2)"
-setup {* fold add_rewrite_rule @{thms beval.simps} *}
+setup {* add_eval_fun_prfsteps' @{thms beval.simps} (@{thms aeval.simps} @ @{thms beval.simps}) *}
 
 theorem test_beval1: "beval (ES {X \<rightarrow> 5})
         (BAnd BTrue (BNot (BLe (AId X) (ANum 4))))" by auto2
@@ -158,17 +133,17 @@ where
 (* Using the introduction rules. *)
 setup {* add_gen_prfstep ("ceval_if_intro",
   [WithFact @{term_pat "ceval (IF ?b THEN ?c1 ELSE ?c2 FI) ?st ?st'"},
-   CreateCase ([@{term_pat "beval ?st ?b"}], [])]) *}
+   CreateCase @{term_pat "beval ?st ?b"}]) *}
 setup {* add_gen_prfstep ("ceval_if_intro'",
   [WithGoal @{term_pat "ceval (IF ?b THEN ?c1 ELSE ?c2 FI) ?st ?st'"},
-   CreateCase ([@{term_pat "beval ?st ?b"}], [])]) *}
+   CreateCase @{term_pat "beval ?st ?b"}]) *}
 setup {* add_gen_prfstep ("ceval_while_intro",
   [WithFact @{term_pat "ceval (WHILE ?b DO ?c OD) ?st ?st''"},
-   CreateCase ([@{term_pat "beval ?st ?b"}], [])]) *}
+   CreateCase @{term_pat "beval ?st ?b"}]) *}
 setup {* add_gen_prfstep ("ceval_while_intro'",
   [WithGoal @{term_pat "ceval (WHILE ?b DO ?c OD) ?st ?st''"},
-   CreateCase ([@{term_pat "beval ?st ?b"}], [])]) *}
-setup {* add_known_fact @{thm ceval.intros(1)} *}
+   CreateCase @{term_pat "beval ?st ?b"}]) *}
+setup {* add_resolve_prfstep @{thm ceval.intros(1)} *}
 setup {* add_backward_prfstep @{thm ceval.intros(2)} *}
 setup {* add_backward1_prfstep @{thm ceval.intros(3)} *}
 setup {* fold add_backward2_prfstep [@{thm ceval.intros(3)}, @{thm ceval.intros(4)}, @{thm ceval.intros(5)}] *}
@@ -177,8 +152,7 @@ theorem ceval_intros7' [forward]: "beval st b \<Longrightarrow> \<not>(ceval (WH
   \<forall>st'. ceval c st st' \<longrightarrow> \<not>(ceval (WHILE b DO c OD) st' st'')" using ceval.intros(7) by blast
 
 (* Automatically step forward an assignment step. *)
-theorem ceval_assign [backward]: "ceval B (st { x \<rightarrow> aeval st a }) st' \<Longrightarrow> ceval (x := a; B) st st'"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "ceval (x := a) st (st { x \<rightarrow> aeval st a })") *})
+theorem ceval_assign [backward]: "ceval B (st { x \<rightarrow> aeval st a }) st' \<Longrightarrow> ceval (x := a; B) st st'" by auto2
 theorem ceval_assign' [backward]: "st' = st { x \<rightarrow> aeval st a } \<Longrightarrow> ceval (x := a) st st'" by auto2
 
 (* Automatically step forward a skip step. *)

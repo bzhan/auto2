@@ -1,3 +1,7 @@
+(* Elementary number theory of primes, up to the proof of infinitude
+   of primes and the unique factorization theorem. Follows theories
+   Primes and UniqueFactorization in HOL/Number_Theory. *)
+
 theory Primes_Ex
 imports Auto2
 begin
@@ -53,7 +57,7 @@ lemma prime_exp: "prime (p ^ n) \<longleftrightarrow> n = 1 \<and> prime p" by a
 
 lemma prime_power_mult: "prime p \<Longrightarrow> x * y = p ^ k \<Longrightarrow> \<exists>i j. x = p ^ i \<and> y = p ^ j"
   by (tactic {* auto2s_tac @{context} (
-    CASE "k = 0" THEN INDUCT ("k", [OnFact "k \<noteq> 0"] @ Arbitraries ["x", "y"])) *})
+    CASE "k = 0" THEN INDUCT ("k", Arbitraries ["x", "y"])) *})
 
 section {* Infinitude of primes *}
 
