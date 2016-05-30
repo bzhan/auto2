@@ -26,6 +26,7 @@ sig
   val is_box_resolved: box_lattice -> box_id -> bool
   val is_box_unresolved: box_lattice -> box_id -> bool
   val is_box_supported: box_lattice -> box_id -> bool
+  val id_is_eq_ancestor: box_lattice -> box_id * 'a -> box_id * 'a -> bool
   val add_prim_id: box_id -> box_lattice -> int * box_lattice
   val add_resolved: box_id -> box_lattice -> box_lattice
 end;
@@ -72,6 +73,8 @@ fun get_ancestors_prim {parents, ...} id =
     in
       helper id id
     end
+    handle Option.Option =>
+           raise AUTO2 "get_ancestors_prim: unexpected prim id."
 
 (* Returns the list of primitive ancestors of id that are not also
    primitive ancestors of focus. Result may not be in order.
@@ -162,6 +165,8 @@ val is_box_unresolved = not oo is_box_resolved
 
 fun is_box_supported lat id =
     forall (fn prim_id => is_box_unresolved lat [prim_id]) id
+
+fun id_is_eq_ancestor lat (id, _) (id', _) = is_eq_ancestor lat id id'
 
 fun add_prim_id parent_id {parents, focus, resolved} =
     let

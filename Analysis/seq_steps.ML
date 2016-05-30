@@ -16,7 +16,7 @@ val convert_eval_Suc_n =
     prfstep_custom
         "convert_eval_Suc_n"
         [WithFact @{term_pat "!(n::nat). ?f n = ?g n"}]
-        [Update.ADD_ITEMS]
+        PRIORITY_ADD
         (fn ((id, _), ths) => fn _ => fn _ =>
             [Update.thm_update (id, (ths MRS @{thm convert_eval_Suc_n}))]
             handle THM _ => [])
@@ -25,7 +25,7 @@ val ex_seq_def =
     prfstep_custom
         "ex_seq_def"
         [WithGoal @{term_pat "EX S. !n. ?P S n"}]
-        [Update.ADD_ITEMS]
+        PRIORITY_ADD
         (fn ((id, _), ths) => fn _ => fn _ =>
             [Update.thm_update (id, (ths MRS (backward_th @{thm ex_seq})))]
             handle THM _ => [])
@@ -35,7 +35,7 @@ val ind_seq_def =
         "ind_seq_def"
         [WithGoal @{term_pat "EX S. eval S 0 = ?I &
                               (!n. eval S (1 + n) = ?E S n)"}]
-        [Update.RESOLVE_BOX]
+        PRIORITY_RESOLVE
         (fn ((id, _), ths) => fn _ => fn _ =>
             [Update.thm_update (
                 id, (ths @ [@{thm ex_ind_seq}]) MRS @{thm contra_triv})]
@@ -48,7 +48,7 @@ val ind_seq_mutual_def =
          @{term_pat "EX S T. eval S 0 = ?I & eval T 0 = ?J &
                              (!n. eval S (1 + n) = ?E1 S T n) &
                              (!n. eval T (1 + n) = ?E2 S T n)"}]
-        [Update.RESOLVE_BOX]
+        PRIORITY_RESOLVE
         (fn ((id, _), ths) => fn _ => fn _ =>
             [Update.thm_update (
                 id, (ths @ [@{thm ex_mutual_ind_seq}]) MRS @{thm contra_triv})]
@@ -72,7 +72,7 @@ val monotone_pred_ex_prfstep =
     prfstep_custom
         "monotone_pred_ex"
         [WithGoal @{term_pat "EX x. ?P x & ?Q x"}]
-        [Update.SHADOW_ITEM, Update.ADD_ITEMS]
+        PRIORITY_SHADOW
         (fn ((id, _), ths) => fn items => fn {ctxt, ...} =>
             let
               val ex_prop = ths |> the_single |> prop_of' |> get_neg

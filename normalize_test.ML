@@ -26,12 +26,15 @@ val test_normalize =
           end
 
       val test_data = [
-        ("A | C | D | B", ["A | B | C | D"]),
         ("P a = True", ["(P a)::bool"]),
         ("P a = False", ["~ (P a)"]),
+        ("P a ~= True", ["~ (P a)"]),
+        ("P a ~= False", ["(P a)::bool"]),
         ("A & B & C", ["A::bool", "B::bool", "C::bool"]),
         ("~ (A | B | C)", ["~ A", "~ B", "~ C"]),
-        ("~ ~ (~ A & (~ ~ B))", ["~ A", "B::bool"])
+        ("~ ~ (~ A & (~ ~ B))", ["~ A", "B::bool"]),
+        ("ALL x. A", ["A::bool"]),
+        ("ALL x y. P x", ["ALL x. P x"])
       ]
     in
       map test test_data

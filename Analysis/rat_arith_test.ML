@@ -103,7 +103,9 @@ val test_combine_terms_gen =
         ("(-r) + r * inverse 2", "-(r * inverse 2)"),
         ("x + -(x * inverse 2)", "x * inverse 2"),
         ("x + (-x)", "0::('a::linordered_field)"),
-        ("x + (-x) + y + (-z)", "(y::('a::linordered_field)) + (-z)")
+        ("x + (-x) + y + (-z)", "(y::('a::linordered_field)) + (-z)"),
+        ("a + a + 0", "a * 2"),
+        ("r * inverse 2 + r * inverse 2", "r")
       ]
     in
       map test test_data
@@ -121,7 +123,8 @@ val test_combine_terms_ineq =
         ("a < a * 2", "0 < a"),
         ("r < r * inverse 2", "r * inverse 2 < 0"),
         ("r * inverse 2 + s * inverse 2 < r", "s * inverse 2 < r * inverse 2"),
-        ("x * inverse 2 <= x", "0 <= x * inverse 2")
+        ("x * inverse 2 <= x", "0 <= x * inverse 2"),
+        ("a + b < a * 2 + c + 0", "b < c + a")
       ]
     in
       map test test_data

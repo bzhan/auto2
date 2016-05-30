@@ -28,8 +28,53 @@ ML {* val nn_cancel_th = @{thm HOL.nnf_simps(6)} *}
 
 (* Quantifiers: swapping out of ALL or EX *)
 theorem swap_ex_conj: "(P \<and> (\<exists>x. Q x)) \<longleftrightarrow> (\<exists>x. P \<and> Q x)" by auto
+theorem swap_all_implies: "(P \<longrightarrow> (\<forall>x. Q x)) \<longleftrightarrow> (\<forall>x. P \<longrightarrow> Q x)" by auto
 
-(* Bounded quantifiers *)
-theorem bex_iff: "(\<exists>x. (x \<in> S \<and> P x)) \<longleftrightarrow> (\<exists>x\<in>S. P x)" by auto
+(* Use these instead of original versions to keep names in abstractions. *)
+theorem Bex_def': "(\<exists>x\<in>S. P x) \<longleftrightarrow> (\<exists>x. x \<in> S \<and> P x)" by auto
+theorem Ball_def': "(\<forall>x\<in>S. P x) \<longleftrightarrow> (\<forall>x. x \<in> S \<longrightarrow> P x)" by auto
+
+(* Discharging assumption *)
+theorem discharge_conj_goal: "\<not>(A \<and> B) \<Longrightarrow> A \<Longrightarrow> ~B" by simp
+
+(* Taking conjunction of assumptions *)
+theorem atomize_conjL2: "(A \<Longrightarrow> B \<Longrightarrow> C \<Longrightarrow> D) \<equiv> (A \<and> B \<Longrightarrow> C \<Longrightarrow> D)" by (rule equal_intr_rule) auto
+
+(* f is associative. *)
+definition is_assoc_fn :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "is_assoc_fn f \<longleftrightarrow> (\<forall>x y z. f (f x y) z = f x (f y z))"
+
+theorem is_assocD: "is_assoc_fn f \<Longrightarrow> f (f x y) z = f x (f y z)" by (simp add: is_assoc_fn_def)
+
+(* f is commutative. *)
+definition is_comm_fn :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "is_comm_fn f \<longleftrightarrow> (\<forall>x y. f x y = f y x)"
+
+theorem is_commD: "is_comm_fn f \<Longrightarrow> f x y = f y x" by (simp add: is_comm_fn_def)
+theorem ac_swap_l: "is_assoc_fn f \<Longrightarrow> is_comm_fn f \<Longrightarrow> f a (f b c) = f b (f a c)"
+  by (simp add: is_assoc_fn_def is_comm_fn_def)
+theorem ac_swap_r: "is_assoc_fn f \<Longrightarrow> is_comm_fn f \<Longrightarrow> f (f a b) c = f (f a c) b"
+  by (simp add: is_assoc_fn_def is_comm_fn_def)  
+
+(* u is the unit of the binary operation f. *)
+definition is_unit_fn :: "'a \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "is_unit_fn u f \<longleftrightarrow> ((\<forall>x. f u x = x) \<and> (\<forall>x. f x u = x))"
+
+theorem is_unitD_l: "is_unit_fn u f \<Longrightarrow> f u x = x" by (simp add: is_unit_fn_def)
+theorem is_unitD_r: "is_unit_fn u f \<Longrightarrow> f x u = x" by (simp add: is_unit_fn_def)
+
+(* i is the unary inverse for the binary operator f, with u being the unit. *)
+definition is_uinv_fn :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> 'a \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "is_uinv_fn f u i \<longleftrightarrow> ((\<forall>x. i (i x) = x) \<and> (\<forall>x y. i (f x y) = f (i x) (i y)) \<and> i u = u)"
+
+theorem is_uinvD_double_inv: "is_uinv_fn f u i \<Longrightarrow> i (i x) = x" by (simp add: is_uinv_fn_def)
+theorem is_uinvD_distrib_inv: "is_uinv_fn f u i \<Longrightarrow> i (f x y) = f (i x) (i y)" by (simp add: is_uinv_fn_def)
+theorem is_uinvD_unit_inv: "is_uinv_fn f u i \<Longrightarrow> i u = u" by (simp add: is_uinv_fn_def)
+
+(* m is the binary inverse for the operator f, with i being the unary inverse. *)
+definition is_inv_fn :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> ('a \<Rightarrow> 'a) \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> bool" where
+  "is_inv_fn f i m \<longleftrightarrow> (\<forall>x y. m x y = f x (i y))"
+
+theorem is_invD: "is_inv_fn f i m \<Longrightarrow> m x y = f x (i y)" by (simp add: is_inv_fn_def)
 
 end

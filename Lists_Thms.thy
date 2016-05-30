@@ -6,7 +6,6 @@ begin
 
 section {* Case checking and induction *}
 
-setup {* add_rew_const @{term "[]"} *}
 setup {* add_resolve_prfstep @{thm list.distinct(2)} *}
 theorem list_constr: "x # xs = y # ys \<Longrightarrow> x = y \<and> xs = ys" by simp
 setup {* add_forward_prfstep_cond (conj_left_th @{thm list_constr}) [with_cond "?x \<noteq> ?y"]
@@ -36,20 +35,22 @@ section {* Other functions *}
 
 subsection {* append *}
 
-lemma append_eq_first [backward]: "b = c \<Longrightarrow> a @ b = a @ c" by simp
-lemma append_eq_second [backward]: "a = b \<Longrightarrow> a @ c = b @ c" by simp
+lemma append_eq_first: "b = c \<Longrightarrow> a @ b = a @ c" by simp
+lemma append_eq_second: "a = b \<Longrightarrow> a @ c = b @ c" by simp
+setup {* add_backward_prfstep_cond @{thm append_eq_first} [with_term "?a"] *}
+setup {* add_backward_prfstep_cond @{thm append_eq_second} [with_term "?c"] *}
 theorem list_append_one [rewrite]: "[a] @ b = a # b" by simp
 setup {* add_rewrite_rule_cond @{thm List.append.simps(2)} [with_cond "?xs \<noteq> []"] *}
 theorem append_eq_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
 
+theorem append_is_assoc: "is_assoc_fn (op @)" by (simp add: is_assoc_fn_def)
+theorem append_has_unit: "is_unit_fn [] (op @)" by (simp add: is_unit_fn_def)
 ML {*
 val add_list_ac_data =
   fold ACUtil.add_ac_data [
-    {fname = @{const_name append}, assoc_r = true,
-     assoc_th = @{thm List.append_assoc}, comm_th = true_th,
-     unit_val = @{term "[]"}, unit_th = @{thm List.append.simps(1)}, unitr_th = @{thm List.append_Nil2},
-     uinv_name = "", inv_name = "", double_inv_th = true_th,
-     distr_inv_th = true_th, binop_inv_th = true_th, unit_inv_th = true_th}]
+    {fname = @{const_name append},
+     assoc_th = @{thm append_is_assoc}, comm_th = true_th,
+     unit_th = @{thm append_has_unit}, uinv_th = true_th, inv_th = true_th}]
 *}
 setup {* add_list_ac_data *}
 

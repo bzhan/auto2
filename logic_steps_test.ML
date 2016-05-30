@@ -4,70 +4,126 @@ local
 
   open Logic_ProofSteps
   val ctxt = @{context}
+  val thy = @{theory}
 
 in
 
 val test_not_ex_forall =
     let
-      val test = test_conv ctxt (not_ex_forall_cv ctxt) "test_not_ex_forall"
+      val ctxt' = ctxt |> Variable.auto_fixes (Free ("n", natT))
+      val test = test_conv ctxt' (not_ex_forall_cv ctxt') "test_not_ex_forall"
 
-      (* Simple EX and ALL *)
-      val _ = test ("~(EX x y. P x y)", "!x y. ~ P x y")
-      val _ = test ("~(!x y. P x y)", "EX x y. ~ P x y")
-      val _ = test ("~(EX x. !y. EX z. P x y z)",
-                    "!x. EX y. !z. ~ P x y z")
-      val _ = test ("~(EX x y. ~ P x y)", "!x y. P x y")
-      val _ = test ("~(EX x. ~ (EX y. P x y))", "!x. EX y. P x y")
+      val test_data = [
+        (* Simple EX and ALL *)
+        ("~(EX x y. P x y)", "ALL x y. ~ P x y"),
+        ("~(ALL x y. P x y)", "EX x y. ~ P x y"),
+        ("~(EX x. ALL y. EX z. P x y z)", "ALL x. EX y. ALL z. ~ P x y z"),
+        ("~(EX x y. ~ P x y)", "ALL x y. P x y"),
+        ("~(EX x. ~ (EX y. P x y))", "ALL x. EX y. P x y"),
 
-      (* EX with &, and ALL with -->, but not inequalities. *)
-      val _ = test ("~(EX x. P x & Q x)", "!x. ~(P x & Q x)")
-      val _ = test ("~(!x. P x --> Q x)", "EX x. ~(P x --> Q x)")
+        (* EX with &, and ALL with -->, but not inequalities. *)
+        ("~(EX x. P x & Q x)", "ALL x. ~(P x & Q x)"),
+        ("~(ALL x. P x --> Q x)", "EX x. ~(P x --> Q x)"),
 
-      (* EX with &, and ALL with -->, with inequalities. *)
-      val _ = test ("~(EX x>k. P x)", "ALL x>k. ~ P x")
-      val _ = test ("~(ALL x>k. P x)", "EX x>k. ~ P x")
-      val _ = test ("~(EX x>k. EX y>k. P x y)", "ALL x>k. ALL y>k. ~ P x y")
-      val _ = test ("~(ALL x>k. ALL y>k. P x y)", "EX x>k. EX y>k. ~ P x y")
-      val _ = test ("~(EX x>k. x<(a::nat))", "ALL x>k. x>=(a::nat)")
-      val _ = test ("~(ALL x>k. x<(a::nat))", "EX x>k. x>=(a::nat)")
-    in () end
+        (* EX with &, and ALL with -->, with inequalities. *)
+        ("~(EX x>k. P x)", "ALL x>k. ~ P x"),
+        ("~(ALL x>k. P x)", "EX x>k. ~ P x"),
+        ("~(EX x>k. EX y>k. P x y)", "ALL x>k. ALL y>k. ~ P x y"),
+        ("~(ALL x>k. ALL y>k. P x y)", "EX x>k. EX y>k. ~ P x y"),
+        ("~(EX x>k. x < n)", "ALL x>k. x >= n"),
+        ("~(ALL x>k. x < n)", "EX x>k. x >= n")
+      ]
+    in
+      map test test_data
+    end
 
 val test_analyze_disj_th =
     let
-      fun test (t_str, (is_active, res_str)) =
+      val ctxt' = ctxt |> fold Variable.auto_fixes [
+            @{term_pat "[A::bool, B, C]"},
+            @{term_pat "[x::nat, y, ?x, ?y]"},
+            @{term_pat "[P::(nat => bool), Q]"},
+            @{term_pat "[R::(nat => nat => bool)]"},
+            @{term_pat "[S::(nat set), T]"}]
+
+      fun test is_active (t_str, sz, res_str) =
           let
-            val (t, res) = (read_term ctxt t_str, read_pat ctxt res_str)
-            val th = assume_thm ctxt (HOLogic.mk_Trueprop t)
-            val (is_active', th') = analyze_disj_th ctxt th
+            val (t, res) = (read_term ctxt' t_str, read_pat ctxt' res_str)
+            val th = assume_thm ctxt' (HOLogic.mk_Trueprop t)
+            val (is_active', sz', th') = analyze_disj_th ctxt' th
           in
-            if is_active <> is_active' then
+            if is_active <> is_active' orelse sz <> sz' then
               let
-                val _ = trace_t_ctxt ctxt "Wrong is_active output. Input: " t
-              in () end
+                val _ = trace_t_ctxt
+                            ctxt' "Wrong is_active or sz output. Input: " t
+                val _ = tracing ("Got is_active = " ^
+                                 (string_of_bool is_active'))
+                val _ = tracing ("Got sz = " ^ (string_of_int sz'))
+              in
+                raise AUTO2 "test_analyze_disj_th"
+              end
             else if not (res aconv (prop_of' th')) then
               let
-                val _ = trace_t_ctxt ctxt "Input:" t
-                val _ = trace_t_ctxt ctxt "Expected:" res
-                val _ = trace_t_ctxt ctxt "Actual:" (prop_of' th')
+                val _ = trace_t_ctxt ctxt' "Input:" t
+                val _ = trace_t_ctxt ctxt' "Expected:" res
+                val _ = trace_t_ctxt ctxt' "Actual:" (prop_of' th')
               in
                 raise AUTO2 "test_analyze_disj_th"
               end
             else ()
           end
 
+      val test_data_active = [
+        ("~ (A & B & ~C)", 3, "~A | ~B | C"),
+        ("~(EX x. P x & Q x)", 2, "~P ?x | ~Q ?x"),
+        ("~(EX x. P x & (EX y. R x y))", 2, "~P ?x | ~R ?x ?y")
+      ]
+
+      val test_data_non_active = [
+        ("ALL x. P x --> Q x", 2, "~ P ?x | Q ?x"),
+        ("ALL x y. R x y --> R y x", 2, "~R ?x ?y | R ?y ?x"),
+        ("ALL x. R x y --> R y x", 2, "~R ?x y | R y ?x"),
+        ("ALL x. P x --> (ALL y. Q y --> R x y)", 3,
+         "~ P ?x | ~ Q ?y | R ?x ?y"),
+        ("A --> (ALL x. P x --> Q x)", 2, "~A | (ALL x. P x --> Q x)"),
+        ("ALL x:S. P x", 2, "~ ?x : S | P ?x"),
+        ("ALL x:S. ALL y:T. R x y", 3, "~ ?x : S | ~ ?y : T | R ?x ?y"),
+        ("A --> B | C", 2, "~A | B | C"),
+        ("A --> ~(B & C)", 2, "~A | ~(B & C)"),
+        ("ALL x. A", 1, "A"),
+        ("ALL x. A --> P x", 2, "~A | P ?x")
+      ]
+    in
+      map (test true) test_data_active @
+      map (test false) test_data_non_active
+    end
+
+val test_normalize_disj_cv =
+    let
+      val ctxt' = ctxt |> fold Variable.auto_fixes [
+            @{term_pat "[A::bool, B, C]"},
+            @{term_pat "[x::nat, y, ?x, ?y]"},
+            @{term_pat "[P::(nat => bool), Q]"},
+            @{term_pat "[R::(nat => nat => bool)]"},
+            @{term_pat "[S::(nat set), T]"}]
+
+      val test =
+          test_conv ctxt' (normalize_disj_cv ctxt') "test_normalize_disj_cv"
+
       val test_data = [
-        ("~ (A & B & ~C)", (true, "C | ~A | ~B")),
-        ("A --> (!(x::nat). B x --> C x)",
-         (false, "~A | (!(x::nat). B x --> C x)")),
-        ("!(x::nat). A x --> B x", (false, "B (?x::nat) | ~ A ?x")),
-        ("!(x::nat) (y::nat). A x y --> B y x",
-         (false, "B (?y::nat) (?x::nat) | ~A ?x ?y")),
-        ("!(x::nat). A x (y::nat) --> B y x",
-         (false, "B (y::nat) (?x::nat) | ~A ?x y")),
-        ("A --> False", (false, "~A")),
-        ("A --> B --> False", (false, "~A | ~B")),
-        ("A --> B | C", (false, "B | C | ~A")),
-        ("A --> ~(B & C)", (false, "~A | ~(B & C)"))]
+        ("ALL x. P x --> Q x", "ALL x. ~P x | Q x"),
+        ("EX x. P x & Q x", "EX x. P x & Q x"),
+        ("~(EX x. P x)", "ALL x. ~P x"),
+        ("~(EX x. P x & Q x)", "ALL x. ~P x | ~Q x"),
+        ("~(EX x. P x & (EX y. R x y))", "ALL x y. ~P x | ~R x y"),
+        ("ALL x:S. P x", "ALL x. ~(x : S) | P x"),
+        ("ALL x:S. ALL y:T. R x y", "ALL x y. ~(x : S) | ~(y : T) | R x y"),
+        ("~(EX x:S. EX y:T. R x y)", "ALL x y. ~(x : S) | ~(y : T) | ~R x y"),
+
+        (* Also works with schematic variables inside. *)
+        ("ALL x. ?P x --> ?Q x", "ALL x. ~?P x | ?Q x"),
+        ("~(EX x. ?P x & Q x)", "ALL x. ~?P x | ~Q x")
+      ]
     in
       map test test_data
     end
@@ -84,14 +140,15 @@ val test_match_update =
       val tbl = RewriteTable.empty ctxt'
       val rtype = RewriteTable.SINGLE tbl
       val tbl2 = tbl |> RewriteTable.add_rewrite []
-                     (@{term "x::nat"}, @{term "y::nat"})
+                     (assume_eq thy (@{term "x::nat"}, @{term "y::nat"}))
       val rtype2 = RewriteTable.SINGLE tbl2
       val st = Status.empty_status ctxt'
 
       fun disj_to_ritem th =
           let
-            val subs = ACUtil.dest_ac disj_ac (prop_of' th)
-            val tname = HOLogic.mk_tuple subs
+            val subs = ACUtil.dest_ac_r disj_ac (prop_of' th)
+            val tname =
+                HOLogic.mk_tuple (@{term False} :: @{term False} :: subs)
           in
             Fact (TY_DISJ, tname, th)
           end

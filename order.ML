@@ -64,15 +64,11 @@ local open Nat_Arith in
 
 (* In expression x + n < y, fold n. *)
 val fold_const_left =
-    apply_to_thm (Conv.arg_conv (Conv.arg1_conv (Conv.arg_conv nat_fold_conv)))
+    apply_to_thm' (Conv.arg1_conv (Conv.arg_conv nat_fold_conv))
 
 (* In expression x < y + n, fold n. *)
 val fold_const_right =
-    apply_to_thm (Conv.arg_conv (Conv.arg_conv (Conv.arg_conv nat_fold_conv)))
-
-(* In expression, x < y + n, fold y + 0 = y if n = 0. *)
-val fold0_right =
-    apply_to_thm (Conv.arg_conv (Conv.arg_conv nat_fold_conv0_right))
+    apply_to_thm' (Conv.arg_conv (Conv.arg_conv nat_fold_conv))
 
 (* Whether the given term is < or <= on natural numbers. *)
 fun is_order t =
@@ -90,17 +86,20 @@ fun is_order t =
 val add_reduce_plus_consts =
     fold add_prfstep_custom [
       ("reduce_le_plus_consts",
-       [WithItem (TY_PROP, @{term_pat "(?x::nat) + ?NUMC1 <= ?y + ?NUMC2"}),
+       [WithProp @{term_pat "(?x::nat) + ?NUMC1 <= ?y + ?NUMC2"},
         Filter (fn _ => fn (_, inst) =>
                    lookup_numc1 inst <> 0 andalso lookup_numc2 inst <> 0)],
-       [Update.ADD_ITEMS],
+       PRIORITY_ADD,
        (fn ((id, inst), ths) => fn _ => fn _ =>
            let
              val (n1, n2) = (lookup_numc1 inst, lookup_numc2 inst)
+             (* Fold x + 0 <= y to x <= y. *)
+             val try_fold0 = Conv.try_conv (Conv.arg1_conv nat_fold_conv0_right)
              val res_th =
                  if n1 >= n2 then
                    ((nat_le_th n2 n1 :: ths)
-                        MRS @{thm reduce_le_plus_consts'}) |> fold_const_left
+                        MRS @{thm reduce_le_plus_consts'})
+                       |> fold_const_left |> apply_to_thm' try_fold0
                  else  (* n1 < n2 *)
                    (ths MRS @{thm reduce_le_plus_consts}) |> fold_const_right
            in
@@ -108,17 +107,20 @@ val add_reduce_plus_consts =
            end)),
 
       ("reduce_less_plus_consts",
-       [WithItem (TY_PROP, @{term_pat "(?x::nat) + ?NUMC1 < ?y + ?NUMC2"}),
+       [WithProp @{term_pat "(?x::nat) + ?NUMC1 < ?y + ?NUMC2"},
         Filter (fn _ => fn (_, inst) =>
                    lookup_numc1 inst <> 0 andalso lookup_numc2 inst <> 0)],
-       [Update.ADD_ITEMS],
+       PRIORITY_ADD,
        (fn ((id, inst), ths) => fn _ => fn _ =>
            let
              val (n1, n2) = (lookup_numc1 inst, lookup_numc2 inst)
+             (* Fold x + 0 < y to x < y. *)
+             val try_fold0 = Conv.try_conv (Conv.arg1_conv nat_fold_conv0_right)
              val res_th =
                  if n1 >= n2 then
                    ((nat_le_th n2 n1 :: ths)
-                        MRS @{thm reduce_less_plus_consts'}) |> fold_const_left
+                        MRS @{thm reduce_less_plus_consts'})
+                       |> fold_const_left |> apply_to_thm' try_fold0
                  else  (* n1 < n2 *)
                    (ths MRS @{thm reduce_less_plus_consts}) |> fold_const_right
            in
@@ -261,12 +263,10 @@ fun rewrite_info_x eq_x (x, y, diff, th) =
       val _ = assert (lhs aconv x) "rewrite_info_x: invalid equality."
       val th' =
           if diff >= 0 then  (* rewrite x in x <= y + n. *)
-            th |> apply_to_thm (
-              Conv.arg_conv (Conv.arg1_conv (Conv.rewr_conv eq_x)))
+            th |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_x))
           else  (* rewrite x in x + n <= y. *)
-            th |> apply_to_thm (
-              Conv.arg_conv (
-                Conv.arg1_conv (Conv.arg1_conv (Conv.rewr_conv eq_x))))
+            th |> apply_to_thm' (Conv.arg1_conv (
+                                    Conv.arg1_conv (Conv.rewr_conv eq_x)))
     in
       (rhs, y, diff, th')
     end
@@ -278,12 +278,10 @@ fun rewrite_info_y eq_y (x, y, diff, th) =
       val _ = assert (lhs aconv y) "rewrite_info_y: invalid equality."
       val th' =
           if diff >= 0 then  (* rewrite y in x <= y + n. *)
-            th |> apply_to_thm (
-              Conv.arg_conv (
-                Conv.arg_conv (Conv.arg1_conv (Conv.rewr_conv eq_y))))
+            th |> apply_to_thm' (Conv.arg_conv (
+                                   Conv.arg1_conv (Conv.rewr_conv eq_y)))
           else  (* rewrite y in x + n <= y. *)
-            th |> apply_to_thm (
-              Conv.arg_conv (Conv.arg_conv (Conv.rewr_conv eq_y)))
+            th |> apply_to_thm' (Conv.arg_conv (Conv.rewr_conv eq_y))
     in
       (x, rhs, diff, th')
     end
@@ -305,7 +303,7 @@ fun to_nat_order_prfstep_templ ctxt (nm, pat_str, order_ty) =
           not (simp_in_plus_form (id, tbl) (lookup_inst inst "y")) andalso
           (order_ty = LESS orelse order_ty = LE orelse lookup_numc0 inst > 0)
 
-      val descs = [WithItem (TY_PROP, pat), Filter filt]
+      val descs = [WithProp pat, Filter filt]
       fun prfstep_fn ((id, inst), ths) _ {tbl, ...} =
           let
             val (x, y) = apply2 (lookup_inst inst) ("x", "y")
@@ -319,7 +317,7 @@ fun to_nat_order_prfstep_templ ctxt (nm, pat_str, order_ty) =
             [Update.AddItems {id = id, raw_items = [get_nat_order_ritem info]}]
           end
     in
-      prfstep_custom nm descs [Update.ADD_ITEMS] prfstep_fn
+      prfstep_custom nm descs PRIORITY_ADD prfstep_fn
     end
 
 val to_nat_order_prfsteps =
@@ -370,7 +368,7 @@ val nat_eq_diff_prfstep =
                 id = id, raw_items = map get_nat_order_ritem [info1, info2]}]
           end
     in
-      prfstep_custom "nat_eq_diff" descs [Update.ADD_ITEMS] prfstep_fn
+      prfstep_custom "nat_eq_diff" descs PRIORITY_ADD prfstep_fn
     end
 
 (* Obtain quadruple x, y, diff, and theorem from item. *)
@@ -383,14 +381,14 @@ fun get_nat_order_info {tname, prop, ...} =
 
 val nat_order_typed_matcher =
     let
-      fun pre_match pat {id, tname, ...} tbl =
-          length (fo_table_match_head id tbl (pat, tname)) > 0
+      fun pre_match pat {tname, ...} tbl =
+          Matcher.pre_match_head tbl (pat, tname)
 
       fun match pat (item as {tname, ...}) tbl (id, inst) =
           let
             val pats = HOLogic.strip_tuple pat
             val ts = HOLogic.strip_tuple tname
-            val insts' = RewriteTable.fo_rewrite_match_list
+            val insts' = Matcher.rewrite_match_list
                              tbl (map (pair false) (pats ~~ ts)) (id, inst)
             fun process_inst (inst, ths) =
                 let
@@ -422,7 +420,7 @@ val convert_const_x_prfstep =
     prfstep_custom
         "nat_order_convert_const_x"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?NUMC, ?y, ?n)"})]
-        [Update.ADD_ITEMS]
+        PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val info = (lookup_inst inst "NUMC", lookup_inst inst "y",
@@ -437,7 +435,7 @@ val convert_const_y_prfstep =
     prfstep_custom
         "nat_order_convert_const_y"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?NUMC, ?n)"})]
-        [Update.ADD_ITEMS]
+        PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val info = (lookup_inst inst "x", lookup_inst inst "NUMC",
@@ -474,7 +472,7 @@ val transitive =
          Filter (neq_filter "x" "y"),
          Filter (neq_filter "y" "z"),
          Filter (neq_filter "x" "z")]
-        [Update.ADD_ITEMS]
+        PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val (x, z) = (lookup_inst inst "x", lookup_inst inst "z")
@@ -502,19 +500,24 @@ val transitive_resolve =
         "nat_order_transitive_resolve"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?y, ?m)"}),
          WithItem (TY_NAT_ORDER, @{term_pat "(?y, ?x, ?n)"})]
-        [Update.ADD_ITEMS, Update.RESOLVE_BOX]
+        PRIORITY_RESOLVE
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val m = dest_numc (lookup_inst inst "m")
               val n = dest_numc (lookup_inst inst "n")
               val (th1, th2) = the_pair ths
+              (* Fold x <= y + 0 to x <= y. *)
+              val fold0 = apply_to_thm' (Conv.arg_conv nat_fold_conv0_right)
+              val try_fold0l = Conv.try_conv nat_fold_conv0_left
               val res_ths =
                   if m + n < 0 then [trans_resolve m n th1 th2]
                   else if m = 0 andalso n = 0 then
-                    [(map fold0_right [th1, th2])
-                         MRS @{thm Orderings.order_antisym}]
+                    [(map fold0 [th1, th2]) MRS @{thm Orderings.order_antisym}]
                   else if m + n = 0 then
-                    [[th1, th2] MRS @{thm Orderings.order_antisym}]
+                    (* Fold 0 at left in case x or y is zero. *)
+                    [([th1, th2] MRS @{thm Orderings.order_antisym})
+                         |> apply_to_thm' (Conv.arg_conv try_fold0l)
+                         |> apply_to_thm' (Conv.arg1_conv try_fold0l)]
                   else []
             in
               map (fn th => Update.thm_update (id, th)) res_ths
@@ -528,7 +531,7 @@ val single_resolve =
     prfstep_custom
         "nat_order_single_resolve"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?x, ?n)"})]
-        [Update.RESOLVE_BOX]
+        PRIORITY_RESOLVE
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val n = dest_numc (lookup_inst inst "n")
@@ -544,7 +547,7 @@ val single_resolve_zero =
     prfstep_custom
         "nat_order_single_resolve_zero"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, 0, ?n)"})]
-        [Update.RESOLVE_BOX]
+        PRIORITY_RESOLVE
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val n = dest_numc (lookup_inst inst "n")
@@ -594,7 +597,7 @@ fun nat_order_match_side pat x tbl (id, inst) =
     if is_some (dest_plus pat) then
       let
         val (p, n) = the (dest_plus pat)
-        val insts = RewriteTable.fo_rewrite_match tbl (p, x) (id, inst)
+        val insts = Matcher.rewrite_match tbl (p, x) (id, inst)
         fun process_inst ((id', inst'), eq_th) =
             (* eq_th: p(env) = x, return p(env) + n = x + n. *)
             ((id', inst'), n, plus_n_eq eq_th n)
@@ -605,7 +608,7 @@ fun nat_order_match_side pat x tbl (id, inst) =
     else if is_some (dest_plus' pat) then
       let
         val (p, n) = the (dest_plus' pat)
-        val insts = RewriteTable.fo_rewrite_match tbl (p, x) (id, inst)
+        val insts = Matcher.rewrite_match tbl (p, x) (id, inst)
         val comm_cv = rewr_obj_eq @{thm add_ac(2)}
         fun process_inst ((id', inst'), eq_th) =
             (* eq_th: p(env) = x, return n + p(env) = x + n. *)
@@ -619,7 +622,8 @@ fun nat_order_match_side pat x tbl (id, inst) =
         val numc_insts =
             if has_vars pat orelse not (x aconv nat0) then [] else
             let
-              val insts = fo_table_match id tbl (@{term_pat "?NUMC::nat"}, pat)
+              val insts = Matcher.rewrite_match
+                              tbl (@{term_pat "?NUMC::nat"}, pat) (id, fo_init)
               fun process_inst ((id', inst'), eq_th) =
                   let
                     (* eq_th: n = pat, return pat = 0 or pat = n + 0. *)
@@ -638,7 +642,7 @@ fun nat_order_match_side pat x tbl (id, inst) =
             if is_none (dest_minus pat) then [] else
             let
               val (p, n) = the (dest_minus pat)
-              val insts = RewriteTable.fo_rewrite_match tbl (p, x) (id, inst)
+              val insts = Matcher.rewrite_match tbl (p, x) (id, inst)
               fun process_inst ((id', inst'), eq_th) =
                   (* eq_th: p(env) = x, return p(env) - n = x - n. *)
                   ((id', inst'), ~n, minus_n_eq eq_th n)
@@ -650,7 +654,7 @@ fun nat_order_match_side pat x tbl (id, inst) =
         val self_insts =
             if x aconv nat0 then [] else
             let
-              val insts = RewriteTable.fo_rewrite_match tbl (pat, x) (id, inst)
+              val insts = Matcher.rewrite_match tbl (pat, x) (id, inst)
               fun process_inst ((id', inst'), eq_th) =
                   (* eq_th: p(env) = x, return the same. *)
                   ((id', inst'), 0, eq_th)
@@ -774,8 +778,7 @@ fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
             val pat_th =
                 contra_th |> Thm.implies_intr (cert ctxt neg_tp')
                           |> rewrite_thm_from_contra_form
-                          |> (if is_neg then I else
-                              apply_to_thm (HOLogic.Trueprop_conv neg_ineq_cv))
+                          |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
           in
             [((id', inst'), pat_th)]
           end
@@ -800,9 +803,9 @@ val nat_order_noteq_matcher =
             val (x, y, n, _) = get_nat_order_info item
           in
             if n >= 0 then ([], [])
-            else (RewriteTable.fo_rewrite_match_list
+            else (Matcher.rewrite_match_list
                       tbl [(false, (A, x)), (false, (B, y))] (id, inst),
-                  RewriteTable.fo_rewrite_match_list
+                  Matcher.rewrite_match_list
                       tbl [(false, (B, x)), (false, (A, y))] (id, inst))
           end
           handle TERM ("dest_not", _) => ([], [])
@@ -810,10 +813,16 @@ val nat_order_noteq_matcher =
 
       fun pre_match pat item tbl =
           let
-            val (instAB, instBA) = get_insts pat item tbl ([], fo_init)
+            val (A, B) = pat |> HOLogic.dest_not |> HOLogic.dest_eq
+            val (x, y, n, _) = get_nat_order_info item
           in
-            length instAB > 0 orelse length instBA > 0
+            n < 0 andalso (
+            (Matcher.pre_match tbl (A, x) andalso Matcher.pre_match tbl (B, y))
+            orelse
+            (Matcher.pre_match tbl (A, y) andalso Matcher.pre_match tbl (A, x)))
           end
+          handle TERM ("dest_not", _) => false
+               | TERM ("dest_eq", _) => false
 
       fun match pat item tbl (id, inst) =
           if has_vars pat then [] else
@@ -856,8 +865,7 @@ fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
       fun contra_to_pat_th assum contra_th =
           contra_th |> Thm.implies_intr (cert ctxt assum)
                     |> rewrite_thm_from_contra_form
-                    |> (if is_neg then I else
-                        apply_to_thm (HOLogic.Trueprop_conv neg_ineq_cv))
+                    |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
 
       val insts_A = nat_order_match' neg_t (A, A) tbl (id, inst)
       val insts_B = nat_order_match' neg_t (B, B) tbl (id, inst)
@@ -935,13 +943,13 @@ val shadow_nat_order_single_zero =
 
 fun string_of_nat_order ctxt (x, y, diff, th) =
     if x aconv nat0 andalso diff < 0 then  (* 0 + n <= y *)
-      th |> apply_to_thm (Conv.arg_conv (Conv.arg1_conv nat_fold_conv0_left))
+      th |> apply_to_thm' (Conv.arg1_conv nat_fold_conv0_left)
          |> Thm.prop_of |> pretty_term ctxt |> str
     else if y aconv nat0 andalso diff >= 0 then  (* x <= 0 + n *)
-      th |> apply_to_thm (Conv.arg_conv (Conv.arg_conv nat_fold_conv0_left))
+      th |> apply_to_thm' (Conv.arg_conv nat_fold_conv0_left)
          |> Thm.prop_of |> pretty_term ctxt |> str
     else if diff = 0 then  (* x <= y + 0 *)
-      th |> apply_to_thm (Conv.arg_conv (Conv.arg_conv nat_fold_conv0_right))
+      th |> apply_to_thm' (Conv.arg_conv nat_fold_conv0_right)
          |> Thm.prop_of |> pretty_term ctxt |> str
     else
       th |> Thm.prop_of |> pretty_term ctxt |> str

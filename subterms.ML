@@ -3,14 +3,11 @@
 signature SUBTERMS =
 sig
   val triv_subterms: term -> term * term list
-  val dest_subterms: theory -> bool -> term -> term * term list
-  val list_subterms: theory -> bool -> term -> term list
-  val get_all_subterms: theory -> bool -> term -> term list
+  val dest_subterms: bool -> term -> term * term list
+  val list_subterms: bool -> term -> term list
+  val get_all_subterms: bool -> term -> term list
   val subst_subterms: term * term list -> term
   val build_equiv: Proof.context -> thm list -> term -> thm
-
-  val get_head_ac_info_with_inv: theory -> term -> ac_inst_info option
-  val normalize_all_ac: Proof.context -> ac_inst_info -> conv
 end;
 
 structure Subterms : SUBTERMS =
@@ -26,7 +23,7 @@ fun get_subvar n t = Var (("SUB", n), fastype_of t)
 fun triv_subterms t = (get_subvar 0 t, [t])
 
 (* Destruct t into head and subterm structure. *)
-fun dest_subterms thy skip_if t =
+fun dest_subterms skip_if t =
     let
       (* t is eligible as a subterm, expand in special cases. The
          prevs list record previous subterms.
@@ -65,7 +62,6 @@ fun dest_subterms thy skip_if t =
               _ $ _ =>
               let
                 val (tf, targs) = Term.strip_comb t
-                val ac_info_opt = ACUtil.get_head_ac_info thy t
               in
                 if skip_if andalso is_if tf then
                   let
@@ -73,19 +69,11 @@ fun dest_subterms thy skip_if t =
                   in
                     (prevs', Term.list_comb (tf, t' :: tl targs))
                   end
-                else if is_none ac_info_opt then
+                else
                   let
                     val (prevs', ts') = dest_list_at_head (prevs, targs)
                   in
                     (prevs', Term.list_comb (tf, ts'))
-                  end
-                else
-                  let
-                    val ac_info = the ac_info_opt
-                    val ac_args = ACUtil.dest_ac ac_info t
-                    val (prevs', ts') = dest_list_at_head (prevs, ac_args)
-                  in
-                    (prevs', ACUtil.list_ac ac_info ts')
                   end
               end
             | Abs _ => dest_at_head (prevs, t)
@@ -96,14 +84,14 @@ fun dest_subterms thy skip_if t =
       (t', rev rev_subs)
     end
 
-fun list_subterms thy skip_if t = snd (dest_subterms thy skip_if t)
+fun list_subterms skip_if t = snd (dest_subterms skip_if t)
 
 (* List all (closed) subterms. Larger ones will be listed first. *)
-fun get_all_subterms thy skip_if t =
+fun get_all_subterms skip_if t =
     let
-      val args = list_subterms thy skip_if t
+      val args = list_subterms skip_if t
       val subs = fold (curry (merge (op aconv)))
-                      (map (get_all_subterms thy skip_if) args) []
+                      (map (get_all_subterms skip_if) args) []
     in
       t :: subs
     end
@@ -144,20 +132,5 @@ fun build_equiv ctxt equivs t =
     in
       build ctxt t
     end
-
-(* Wrapper around functions in ACUtil, adapted to take account of
-   binders.
- *)
-fun get_head_ac_info_with_inv thy t =
-    case t of
-        _ $ Abs (_, _, t') => get_head_ac_info_with_inv thy t'
-      | _ => ACUtil.get_head_ac_info_with_inv thy t
-
-fun normalize_all_ac ctxt ac_info ct =
-    case Thm.term_of ct of
-        _ $ Abs _ =>
-        Conv.arg_conv (
-          Conv.abs_conv (fn _ => normalize_all_ac ctxt ac_info) ctxt) ct
-      | _ => ACUtil.normalize_all_ac ac_info ct
 
 end  (* structure Subterms. *)

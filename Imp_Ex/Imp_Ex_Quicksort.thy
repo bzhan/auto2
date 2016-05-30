@@ -33,7 +33,7 @@ lemma swap_pointwise [rewrite]: "effect (swap a i j) h h' r \<Longrightarrow> Ar
   (if k = i then Array.get h a ! j else if k = j then Array.get h a ! i else Array.get h a ! k)" by auto2
 lemma swap_permutes [rewrite]: "effect (swap a i j) h h' rs \<Longrightarrow> mset (Array.get h' a) = mset (Array.get h a)" by auto2
 lemma swap_length [rewrite]: "effect (swap a i j) h h' r \<Longrightarrow> Array.length h' a = Array.length h a" by auto2
-lemma swap_succeed [backward]: "i < Array.length h a \<and> j < Array.length h a \<Longrightarrow> success (swap a i j) h" by auto2
+lemma swap_succeed [backward]: "i < Array.length h a \<Longrightarrow> j < Array.length h a \<Longrightarrow> success (swap a i j) h" by auto2
 setup {* del_prfstep_thm @{thm swap.simps} *}
 
 (* Induction rule for part1. *)
@@ -58,12 +58,12 @@ lemma part1_outer_remains [forward]:
   "effect (part1 a l r p) h h' rs \<Longrightarrow> outer_remains h h' a l r" by auto2
 
 lemma part1_partitions1 [backward2]:
-  "effect (part1 a l r p) h h' rs \<Longrightarrow> l \<le> i \<and> i < rs \<Longrightarrow> Array.get h' a ! i \<le> p" by auto2
+  "effect (part1 a l r p) h h' rs \<Longrightarrow> l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> Array.get h' a ! i \<le> p" by auto2
 lemma part1_partitions2 [backward2]:
-  "effect (part1 a l r p) h h' rs \<Longrightarrow> rs < i \<and> i \<le> r \<Longrightarrow> Array.get h' a ! i \<ge> p" by auto2
+  "effect (part1 a l r p) h h' rs \<Longrightarrow> rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> Array.get h' a ! i \<ge> p" by auto2
 
 lemma part1_succeed [backward]:
-  "l < Array.length h a \<and> r < Array.length h a \<Longrightarrow> success (part1 a l r p) h" by auto2
+  "l < Array.length h a \<Longrightarrow> r < Array.length h a \<Longrightarrow> success (part1 a l r p) h" by auto2
 
 setup {* fold del_prfstep_thm [@{thm part1.simps}, @{thm part1_induct'}] *}
 
@@ -85,7 +85,7 @@ where
 (* Properties of partition. *)
 setup {* add_rewrite_rule @{thm partition.simps} *}
 lemma partition_succeed [backward]:
-  "l < r \<and> r < Array.length h a \<Longrightarrow> success (partition a l r) h" by auto2
+  "l < r \<Longrightarrow> r < Array.length h a \<Longrightarrow> success (partition a l r) h" by auto2
 
 lemma partition_permutes [rewrite]:
   "effect (partition a l r) h h' rs \<Longrightarrow> mset (Array.get h' a) = mset (Array.get h a)" by auto2
@@ -159,13 +159,13 @@ setup {* fold (add_rewrite_rule o conj_right_th) [@{thm outer_remains_qs1}, @{th
 
 (* Sortedness of lists of form x @ [pivot] @ y. *)
 setup {* add_rewrite_rule @{thm sorted_append} *}
-theorem sorted_pivoted_list: "sorted (sublist' l pivot xs) \<Longrightarrow> sorted (sublist' (pivot + 1) r xs) \<Longrightarrow>
+theorem sorted_pivoted_list [forward]: "sorted (sublist' (pivot + 1) r xs) \<Longrightarrow> sorted (sublist' l pivot xs) \<Longrightarrow>
   \<forall>x\<in>set (sublist' l pivot xs). x \<le> xs ! pivot \<Longrightarrow> \<forall>y\<in>set (sublist' (pivot + 1) r xs). xs ! pivot \<le> y \<Longrightarrow>
   l \<le> pivot \<Longrightarrow> pivot < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' l r xs)"
   by (tactic {* auto2s_tac @{context} (
       OBTAIN "sublist' pivot r xs = xs ! pivot # sublist' (pivot + 1) r xs" THEN
       CASE "pivot = 0" THEN OBTAIN "sublist' l r xs = sublist' l pivot xs @ sublist' pivot r xs") *})
-setup {* del_prfstep_thm @{thm sorted_append} #> add_forward_prfstep (swap_prems_th @{thm sorted_pivoted_list}) *}
+setup {* del_prfstep_thm @{thm sorted_append} *}
 
 theorem sorted_pivoted_list' [forward]: "sorted (sublist' 1 r xs) \<Longrightarrow>
   \<forall>y\<in>set (sublist' 1 r xs). xs ! 0 \<le> y \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' 0 r xs)"

@@ -51,7 +51,7 @@ qed
 
 end
 
-setup {* fold add_rewrite_rule @{thms seq_evals(1-4,6)} *}
+setup {* fold add_rewrite_rule @{thms seq_evals} *}
 
 definition seq_const :: "'a \<Rightarrow> 'a seq" ("{_}\<^sub>S") where
   "{a}\<^sub>S = Seq (\<lambda>n. a)"
@@ -62,18 +62,15 @@ theorem eval_seq_const_zero [rewrite_bidir]: "{0}\<^sub>S = 0" by auto2
 theorem eval_seq_const_one [rewrite_bidir]: "{1}\<^sub>S = 1" by auto2
 theorem add_const_seqs [rewrite_bidir]: "{a}\<^sub>S + {b}\<^sub>S = {a + b}\<^sub>S" by auto2
 theorem uminus_const_seqs [rewrite_bidir]: "-{a}\<^sub>S = {-a}\<^sub>S" by auto2
+theorem minus_const_seqs [rewrite_back]: "{a}\<^sub>S - {b}\<^sub>S = {a - b}\<^sub>S" by auto2
 theorem times_const_seqs [rewrite_bidir]: "{a}\<^sub>S * {b}\<^sub>S = {a * b}\<^sub>S" by auto2
+theorem inverse_const_seqs [rewrite_back]: "{a::'a::linordered_field}\<^sub>S * {inverse b}\<^sub>S = {a / b}\<^sub>S" by auto2
 
 definition seq_inverse :: "('a::inverse) seq \<Rightarrow> 'a seq" where
   "seq_inverse X = Seq (\<lambda>n. inverse (X\<langle>n\<rangle>))"
 theorem eval_seq_inverse [rewrite]: "(seq_inverse (X::(('a::field) seq))) \<langle>n\<rangle> = 1 / X\<langle>n\<rangle>"
   by (simp add: divide_inverse seq_inverse_def)
-theorem inverse_const_seqs [rewrite]: "seq_inverse {a::('a::field)}\<^sub>S = {1 / a}\<^sub>S" by auto2
-
-subsection {* Automatically instantiate less and le foralls. *}
-
-setup {* fold Logic_ProofSteps.add_match_one_sch_prfsteps
-  [("le", @{term_pat "?A \<le> ?B"}), ("less", @{term_pat "?A < ?B"})] *}
+theorem seq_inverse_const_seqs [rewrite]: "seq_inverse {a::('a::field)}\<^sub>S = {1 / a}\<^sub>S" by auto2
 
 subsection {* Upper and lower bounded property *}
 
@@ -89,7 +86,8 @@ theorem lower_bounded_is_neg_upper:
   "lower_bounded (X::('a::linordered_field) seq) \<longleftrightarrow> upper_bounded (-X)"
   by (tactic {* auto2s_tac @{context}
     (CASE "lower_bounded X" WITH (CHOOSE "r, \<forall>n. r \<le> X\<langle>n\<rangle>" THEN OBTAIN "\<forall>n. -r \<ge> (-X)\<langle>n\<rangle>") THEN
-     CASE "upper_bounded (-X)" WITH (CHOOSE "r, \<forall>n. r \<ge> (-X)\<langle>n\<rangle>" THEN OBTAIN "\<forall>n. -r \<le> X\<langle>n\<rangle>")) *})
+     CASE "upper_bounded (-X)" WITH (
+      CHOOSE "r, \<forall>n. r \<ge> (-X)\<langle>n\<rangle>" THEN OBTAIN "\<forall>n. -r \<le> X\<langle>n\<rangle>" WITH OBTAIN "r \<ge> (-X)\<langle>n\<rangle>")) *})
 
 setup {* fold del_prfstep_thm [@{thm upper_bounded_def}, @{thm lower_bounded_def}] *}
 setup {* fold (add_resolve_prfstep o equiv_forward_th)

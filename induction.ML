@@ -108,15 +108,13 @@ fun get_var_context id vars st =
 
 (* Given var_eq as either NONE or SOME (ind_var = trm_n), return a
    function thm -> thm that converts trm_n ~= 0 to ind_var ~= 0. The
-   three arg(1)_conv goes inside Trueprop, Not, and Eq in reverse
-   order.
+   two arg(1)_conv goes inside Not, and Eq in reverse order.
  *)
 fun use_var_eq ctxt var_eq =
     case var_eq of
         NONE => I
       | SOME eq => eq |> assume_thm ctxt |> obj_sym |> rewr_obj_eq
-                      |> Conv.arg1_conv |> Conv.arg_conv |> Conv.arg_conv
-                      |> apply_to_thm
+                      |> Conv.arg1_conv |> Conv.arg_conv |> apply_to_thm'
 
 (* Given var_eq as either NONE or SOME (ind_var = trm_n), return the
    raw items specifying the new variable, equation, and handler.
@@ -134,7 +132,7 @@ fun get_eq_handler ctxt var_eq =
               th |> Thm.implies_intr (cert ctxt t)
                  |> Thm.forall_intr (cert ctxt ind_var)
                  |> apply_to_thm (to_obj_conv ctxt)
-                 |> apply_to_thm (Conv.arg_conv (rewr_obj_eq @{thm use_vardef}))
+                 |> apply_to_thm' (rewr_obj_eq @{thm use_vardef})
         in
           [var_to_fact ind_var] @
           Update.handler_ritems ctxt eq (eq_ready, eq_handler)
@@ -257,7 +255,7 @@ fun apply_induction id var_ctxt var_infos ctxt ind_th prev_ths =
       val (ind_assums, ind_concl) = Logic.strip_horn (Thm.prop_of ind_th)
       val _ = assert (length ind_assums = length prev_ths + 1)
                      "apply_induction: wrong number of prev_ths"
-      val ind_prop = Logic.mk_implies ((snd o split_last) ind_assums, ind_concl)
+      val ind_prop = Logic.mk_implies (List.last ind_assums, ind_concl)
       val (pat_vars, pat_subst) = check_strong_ind_prop ind_prop
 
       val (vars, assums) = var_ctxt
@@ -327,7 +325,7 @@ fun check_ind_th ind_th =
 (* descs is of the form ?FREE = base. *)
 fun prfstep_induction name descs ind_th =
     prfstep_custom
-        name descs [Update.ADD_ITEMS]
+        name descs PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn (st as {ctxt, ...}) =>
             let
               val trm_n = lookup_inst inst "FREE"
@@ -517,7 +515,7 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
 (* Proofstep invoking apply_prop_induction. *)
 fun prfstep_prop_induction name descs ind_th =
     prfstep_custom
-        name descs [Update.ADD_BOXES]
+        name descs PRIORITY_ADD
         (fn ((id, _), ths) => fn _ => fn st =>
             apply_prop_induction (id, the_single ths) ind_th [] st)
 
@@ -580,7 +578,7 @@ fun apply_var_induction (id, var) ind_th extra_vars (st as {ctxt, ...}) =
 (* Proofstep invoking apply_var_induction. *)
 fun prfstep_var_induction name descs ind_th =
     prfstep_custom
-        name descs [Update.ADD_BOXES]
+        name descs PRIORITY_ADD
         (fn ((id, inst), _) => fn _ => fn st =>
             apply_var_induction (id, lookup_inst inst "FREE") ind_th [] st)
 

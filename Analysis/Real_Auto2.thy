@@ -6,6 +6,13 @@ begin
 
 subsection {* Preliminaries *}
 
+setup {* add_gen_prfstep ("shadow_abs_upper_triv",
+  [WithFact @{term_pat "\<bar>?x - ?x\<bar> < (?r::?'a::linordered_idom)"},
+   WithFact @{term_pat "(?r::?'a::linordered_idom) > 0"}, ShadowFirst]) *}
+setup {* add_gen_prfstep ("shadow_abs_upper_sym",
+  [WithFact @{term_pat "\<bar>?x - ?y\<bar> < (?r::?'a::linordered_idom)"},
+   WithFact @{term_pat "\<bar>?y - ?x\<bar> < (?r::?'a::linordered_idom)"}, ShadowSecond]) *}
+
 lemma abs_sum_upper_bound [backward1]:
   "\<bar>(x::('a::linordered_idom))\<bar> < s \<Longrightarrow> \<bar>y\<bar> < t \<Longrightarrow> \<bar>x + y\<bar> < s + t" by arith
 
@@ -27,16 +34,20 @@ lemma abs_prod_upper_bound2 [backward2]:
   "\<bar>(x::('a::linordered_field))\<bar> < s / t \<Longrightarrow> \<bar>y\<bar> < t \<Longrightarrow> \<bar>x * y\<bar> < s"
   by (tactic {* auto2s_tac @{context} (OBTAIN "t > 0" THEN OBTAIN "s = s * t / t") *})
 
+lemma abs_prod_upper_bound2' [backward2]:
+  "\<bar>(x::('a::linordered_field))\<bar> < s / t \<Longrightarrow> \<bar>y\<bar> < t \<Longrightarrow> \<bar>y * x\<bar> < s"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "t > 0" THEN OBTAIN "s = s * t / t") *})
+
 lemma abs_prod_lower_bound [backward1]:
   "s > 0 \<and> t > 0 \<and> \<bar>(x::('a::linordered_idom))\<bar> > s \<Longrightarrow> \<bar>y\<bar> > t \<Longrightarrow> \<bar>x * y\<bar> > s * t"
   by (metis abs_mult abs_of_pos abs_prod_upper_bound)
 
 lemma abs_div_upper_bound [backward2]:
-  "\<bar>x::('a::linordered_field)\<bar> < a \<Longrightarrow> b > 0 \<and> \<bar>y\<bar> > b \<Longrightarrow> \<bar>x\<bar> / \<bar>y\<bar> < a / b"
+  "\<bar>x::('a::linordered_field)\<bar> < a \<Longrightarrow> b > 0 \<Longrightarrow> \<bar>y\<bar> > b \<Longrightarrow> \<bar>x\<bar> / \<bar>y\<bar> < a / b"
   using abs_ge_zero frac_less less_imp_le by blast
 
 lemma abs_div_upper_bound2 [backward2]:
-  "\<bar>(x::('a::linordered_field))\<bar> < s * t \<Longrightarrow> \<bar>y\<bar> > t \<and> t > 0 \<Longrightarrow> \<bar>x\<bar> / \<bar>y\<bar> < s"
+  "\<bar>(x::('a::linordered_field))\<bar> < s * t \<Longrightarrow> \<bar>y\<bar> > t \<Longrightarrow> t > 0 \<Longrightarrow> \<bar>x\<bar> / \<bar>y\<bar> < s"
   using abs_div_upper_bound by fastforce
 
 lemma bound_diff_concl [resolve]:
@@ -46,9 +57,10 @@ subsection {* Boundedness on sequences *}
 
 definition bounded :: "('a::linordered_idom) seq \<Rightarrow> bool" where
   "bounded X = (\<exists>r>0. \<forall>n. \<bar>X\<langle>n\<rangle>\<bar> \<le> r)"
+setup {* add_property_const @{term "bounded"} *}
 
 (* Basic introduction and elimination rules for bounded. *)
-setup {* add_rewrite_rule @{thm bounded_def} *}
+setup {* add_backward_prfstep (equiv_backward_th @{thm bounded_def}) *}
 lemma bounded_intro [forward]: "\<forall>n. \<bar>X\<langle>n\<rangle>\<bar> \<le> r \<Longrightarrow> bounded X"
   by (tactic {* auto2s_tac @{context} (OBTAIN "\<forall>n. \<bar>X\<langle>n\<rangle>\<bar> \<le> max r 1") *})
 setup {* del_prfstep_thm @{thm bounded_def} #> add_resolve_prfstep (equiv_forward_th @{thm bounded_def}) *}
@@ -73,35 +85,43 @@ subsection {* Vanishes condition on sequences *}
 
 definition vanishes :: "('a::linordered_field) seq \<Rightarrow> bool" where
   "vanishes X = (\<forall>r>0. \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle>\<bar> < r)"
+setup {* add_property_const @{term "vanishes"} *}
 setup {* add_backward_prfstep (equiv_backward_th @{thm vanishes_def})*}
 
-theorem vanishes_elim [backward2]:
+theorem vanishes_elim [backward]:
   "vanishes X \<Longrightarrow> r > 0 \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle>\<bar> < r" by (simp add: vanishes_def)
 
-lemma vanishes_const [rewrite]: "vanishes {c}\<^sub>S \<longleftrightarrow> c = 0"
+lemma vanishes_const: "vanishes {c}\<^sub>S \<longleftrightarrow> c = 0"
   by (tactic {* auto2s_tac @{context}
     (CASE "vanishes {c}\<^sub>S" WITH (CHOOSE "k, \<forall>n\<ge>k. \<bar>{c}\<^sub>S\<langle>n\<rangle>\<bar> < \<bar>c\<bar>" THEN OBTAIN "\<bar>{c}\<^sub>S\<langle>k\<rangle>\<bar> < \<bar>c\<bar>") THEN
      CASE "c = 0" WITH (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. \<bar>{c}\<^sub>S\<langle>n\<rangle>\<bar> < r)" THEN OBTAIN "\<forall>n\<ge>0. \<bar>{c}\<^sub>S\<langle>n\<rangle>\<bar> < r")) *})
+setup {* add_forward_prfstep (equiv_forward_th @{thm vanishes_const}) #>
+  add_backward_prfstep (equiv_backward_th @{thm vanishes_const}) *}
 
 lemma vanishes_minus [backward]: "vanishes X \<Longrightarrow> vanishes (-X)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. \<bar>(-X)\<langle>n\<rangle>\<bar> < r)" THEN
      CHOOSE "k, \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle>\<bar> < r" THEN OBTAIN "\<forall>n\<ge>k. \<bar>(-X)\<langle>n\<rangle>\<bar> < r") *})
+setup {* add_resolve_prfstep_cond @{thm vanishes_minus} [with_term "?X"] *}
 
-lemma vanishes_add [backward2]: "vanishes X \<Longrightarrow> vanishes Y \<Longrightarrow> vanishes (X + Y)"
+lemma vanishes_add: "vanishes X \<Longrightarrow> vanishes Y \<Longrightarrow> vanishes (X + Y)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. \<bar>(X + Y)\<langle>n\<rangle>\<bar> < r)" THEN
      CHOOSE "k, (\<forall>n\<ge>k. \<bar>X\<langle>n\<rangle>\<bar> < r/2) \<and> (\<forall>n\<ge>k. \<bar>Y\<langle>n\<rangle>\<bar> < r/2)" THEN
      OBTAIN "\<forall>n\<ge>k. \<bar>(X + Y)\<langle>n\<rangle>\<bar> < r") *})
+setup {* add_backward_prfstep_cond @{thm vanishes_add} [with_term "?X"] *}
 
-lemma vanishes_diff [backward1]: "vanishes X \<Longrightarrow> vanishes Y \<Longrightarrow> vanishes (X - Y)" by auto2
+lemma vanishes_diff: "vanishes X \<Longrightarrow> vanishes Y \<Longrightarrow> vanishes (X - Y)"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "X - Y = X + (-Y)") *}) 
 
-lemma vanishes_diff' [rewrite]: "vanishes (X - Y) \<Longrightarrow> vanishes X \<longleftrightarrow> vanishes Y"
+lemma vanishes_diff': "vanishes (X - Y) \<Longrightarrow> vanishes X \<longleftrightarrow> vanishes Y"
   by (tactic {* auto2s_tac @{context}
     ((CASE "vanishes X" WITH OBTAIN "X - (X - Y) = Y") THEN
      (CASE "vanishes Y" WITH OBTAIN "Y + (X - Y) = X")) *})
+setup {* add_forward_prfstep (equiv_forward_th @{thm vanishes_diff'}) #>
+  add_forward_prfstep (equiv_backward_th @{thm vanishes_diff'}) *}
 
-lemma vanishes_mult_bounded [backward2]: "bounded X \<Longrightarrow> vanishes Y \<Longrightarrow> vanishes (X * Y)"
+lemma vanishes_mult_bounded [backward]: "bounded X \<Longrightarrow> vanishes Y \<Longrightarrow> vanishes (X * Y)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "a > 0, \<forall>n. \<bar>X\<langle>n\<rangle>\<bar> < a" THEN
      CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. \<bar>(X * Y)\<langle>n\<rangle>\<bar> < r)" THEN
@@ -112,23 +132,24 @@ subsection {* Cauchy condition on sequences *}
 
 definition cauchy :: "('a::linordered_field) seq \<Rightarrow> bool" where
   "cauchy X = (\<forall>r>0. \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r)"
+setup {* add_property_const @{term "cauchy"} *}
 setup {* add_resolve_prfstep (equiv_backward_th @{thm cauchy_def}) *}
 
-theorem cauchy_elim [backward2]:
+theorem cauchy_elim [backward]:
   "cauchy X \<Longrightarrow> r > 0 \<Longrightarrow> \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r" by (simp add: cauchy_def)
 
-lemma cauchy_elim2 [backward2]: "cauchy X \<Longrightarrow> r > 0 \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - X\<langle>k\<rangle>\<bar> < r"
+lemma cauchy_elim2 [backward]: "cauchy X \<Longrightarrow> r > 0 \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - X\<langle>k\<rangle>\<bar> < r"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "k, \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r" THEN
      OBTAIN "\<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - X\<langle>k\<rangle>\<bar> < r") *})
 
-lemma cauchy_intro2 [resolve]: "\<forall>r>0. \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - X\<langle>k\<rangle>\<bar> < r \<Longrightarrow> cauchy X"
+lemma cauchy_intro2 [forward]: "\<forall>r>0. \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - X\<langle>k\<rangle>\<bar> < r \<Longrightarrow> cauchy X"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r)" THEN
      CHOOSE "k, \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - X\<langle>k\<rangle>\<bar> < r/2" THEN
      OBTAIN "\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r") *})
 
-lemma cauchy_elim_le [backward2]: "cauchy X \<Longrightarrow> r > 0 \<Longrightarrow> \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> \<le> r"
+lemma cauchy_elim_le [backward]: "cauchy X \<Longrightarrow> r > 0 \<Longrightarrow> \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> \<le> r"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "k, \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r" THEN
      OBTAIN "\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> \<le> r") *})
@@ -139,17 +160,19 @@ lemma cauchy_const: "cauchy {c}\<^sub>S"
      OBTAIN "\<forall>m\<ge>0. \<forall>n\<ge>0. \<bar>{c}\<^sub>S\<langle>m\<rangle> - {c}\<^sub>S\<langle>n\<rangle>\<bar> < r") *})
 setup {* add_forward_prfstep_cond @{thm cauchy_const} [with_term "{?c}\<^sub>S"] *}
 
-lemma cauchy_vanishes [forward]: "vanishes X \<Longrightarrow> cauchy X"
+lemma cauchy_vanishes: "vanishes X \<Longrightarrow> cauchy X"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r)" THEN
      CHOOSE "i, \<forall>n\<ge>i. \<bar>X\<langle>n\<rangle>\<bar> < r/2" THEN
      OBTAIN "\<forall>m\<ge>i. \<forall>n\<ge>i. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r") *})
+setup {* add_property_update @{thm cauchy_vanishes} *}
 
-lemma cauchy_add [backward2]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> cauchy (X + Y)"
+lemma cauchy_add [backward]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> cauchy (X + Y)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>(X + Y)\<langle>m\<rangle> - (X + Y)\<langle>n\<rangle>\<bar> < r)" THEN
      CHOOSE "k, (\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r/2) \<and> (\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>Y\<langle>m\<rangle> - Y\<langle>n\<rangle>\<bar> < r/2)" THEN
      OBTAIN "\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>(X + Y)\<langle>m\<rangle> - (X + Y)\<langle>n\<rangle>\<bar> < r") *})
+setup {* add_forward_prfstep_cond @{thm cauchy_add} [with_term "?X + ?Y"] *}
 
 lemma cauchy_minus [backward]: "cauchy X \<Longrightarrow> cauchy (-X)"
   by (tactic {* auto2s_tac @{context}
@@ -159,13 +182,15 @@ lemma cauchy_minus [backward]: "cauchy X \<Longrightarrow> cauchy (-X)"
 
 theorem cauchy_minus' [forward]: "cauchy (-X) \<Longrightarrow> cauchy X" using cauchy_minus by fastforce
 
-lemma cauchy_diff [backward1]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> cauchy (X - Y)" by auto2
+lemma cauchy_diff [backward]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> cauchy (X - Y)"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "X - Y = X + (-Y)") *})
 
-lemma cauchy_imp_bounded [forward]: "cauchy X \<Longrightarrow> bounded X"
+lemma cauchy_imp_bounded: "cauchy X \<Longrightarrow> bounded X"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "k, \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - X\<langle>k\<rangle>\<bar> < 1" THEN OBTAIN "\<forall>n\<ge>k. \<bar>X\<langle>n\<rangle>\<bar> < \<bar>X\<langle>k\<rangle>\<bar> + 1") *})
+setup {* add_property_update @{thm cauchy_imp_bounded} *}
 
-lemma cauchy_mult [backward2]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> cauchy (X * Y)"
+lemma cauchy_mult [backward]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> cauchy (X * Y)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSES ["r > 0, \<not>(\<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>(X * Y)\<langle>m\<rangle> - (X * Y)\<langle>n\<rangle>\<bar> < r)",
               "a > 0, (\<forall>n. \<bar>X\<langle>n\<rangle>\<bar> < a)",
@@ -174,8 +199,9 @@ lemma cauchy_mult [backward2]: "cauchy X \<Longrightarrow> cauchy Y \<Longrighta
      OBTAIN "\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>(X * Y)\<langle>m\<rangle> - (X * Y)\<langle>n\<rangle>\<bar> < r" WITH
       (OBTAIN "(X * Y)\<langle>m\<rangle> - (X * Y)\<langle>n\<rangle> = X\<langle>m\<rangle> * (Y\<langle>m\<rangle> - Y\<langle>n\<rangle>) + (X\<langle>m\<rangle> - X\<langle>n\<rangle>) * Y\<langle>n\<rangle>" THEN
        OBTAIN "\<bar>X\<langle>m\<rangle> * (Y\<langle>m\<rangle> - Y\<langle>n\<rangle>)\<bar> < r/2")) *})
+setup {* add_forward_prfstep_cond @{thm cauchy_mult} [with_term "?X * ?Y"] *}
 
-lemma cauchy_not_vanishes_cases [backward2]:
+lemma cauchy_not_vanishes_cases [backward]:
   "cauchy X \<Longrightarrow> \<not> vanishes X \<Longrightarrow> \<exists>b>0. \<exists>k. (\<forall>n\<ge>k. b < - X\<langle>n\<rangle>) \<or> (\<forall>n\<ge>k. b < X\<langle>n\<rangle>)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSES ["r > 0, (\<forall>k. \<exists>n\<ge>k. r \<le> \<bar>X\<langle>n\<rangle>\<bar>)",
@@ -185,20 +211,21 @@ lemma cauchy_not_vanishes_cases [backward2]:
      CASE "X\<langle>k\<rangle> \<le> -r" WITH OBTAIN "\<forall>n\<ge>k. r/2 < -X\<langle>n\<rangle>" THEN
      CASE "X\<langle>k\<rangle> \<ge> r" WITH OBTAIN "\<forall>n\<ge>k. r/2 < X\<langle>n\<rangle>") *})
 
-lemma cauchy_not_vanishes [backward2]:
+lemma cauchy_not_vanishes [backward]:
   "cauchy X \<Longrightarrow> \<not> vanishes X \<Longrightarrow> \<exists>b>0. \<exists>k. \<forall>n\<ge>k. b < \<bar>X\<langle>n\<rangle>\<bar>"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "b > 0, k, (\<forall>n\<ge>k. b < - X\<langle>n\<rangle>) \<or> (\<forall>n\<ge>k. b < X\<langle>n\<rangle>)" THEN OBTAIN "\<forall>n\<ge>k. b < \<bar>X\<langle>n\<rangle>\<bar>") *})
 
-lemma cauchy_inverse [backward2]: "cauchy X \<Longrightarrow> \<not> vanishes X \<Longrightarrow> cauchy (seq_inverse X)"
+lemma cauchy_inverse: "cauchy X \<Longrightarrow> \<not> vanishes X \<Longrightarrow> cauchy (seq_inverse X)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>(seq_inverse X) \<langle>m\<rangle> - (seq_inverse X) \<langle>n\<rangle>\<bar> < r)" THEN
      CHOOSE "b > 0, i, \<forall>n\<ge>i. b < \<bar>X\<langle>n\<rangle>\<bar>" THEN
      CHOOSE "j \<ge> i, \<forall>m\<ge>j. \<forall>n\<ge>j. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r*b*b" THEN
      OBTAIN "\<forall>m\<ge>j. \<forall>n\<ge>j. \<bar>(seq_inverse X) \<langle>m\<rangle> - (seq_inverse X) \<langle>n\<rangle>\<bar> < r" WITH
       (OBTAIN "\<bar>1 / X\<langle>m\<rangle> - 1 / X\<langle>n\<rangle>\<bar> = \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> / \<bar>X\<langle>m\<rangle> * X\<langle>n\<rangle>\<bar>")) *})
+setup {* add_forward_prfstep_cond @{thm cauchy_inverse} [with_term "seq_inverse ?X"] *}
 
-lemma vanishes_diff_inverse [backward1]: "cauchy X \<and> \<not> vanishes X \<and> cauchy Y \<and> \<not> vanishes Y \<Longrightarrow>
+lemma vanishes_diff_inverse [backward1]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> \<not> vanishes X \<Longrightarrow> \<not> vanishes Y \<Longrightarrow>
   vanishes (X - Y) \<Longrightarrow> vanishes (seq_inverse X - seq_inverse Y)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. \<bar>(seq_inverse X - seq_inverse Y) \<langle>n\<rangle>\<bar> < r)" THEN
@@ -208,7 +235,7 @@ lemma vanishes_diff_inverse [backward1]: "cauchy X \<and> \<not> vanishes X \<an
      OBTAIN "\<forall>n\<ge>k. \<bar>(seq_inverse X - seq_inverse Y) \<langle>n\<rangle>\<bar> < r" WITH
       (OBTAIN "\<bar>1 / X\<langle>n\<rangle> - 1 / Y\<langle>n\<rangle>\<bar> = \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> / \<bar>X\<langle>n\<rangle> * Y\<langle>n\<rangle>\<bar>")) *})
 
-lemma seq_inverse_is_inverse [backward2]:
+lemma seq_inverse_is_inverse [backward]:
   "cauchy X \<Longrightarrow> \<not> vanishes X \<Longrightarrow> vanishes ((seq_inverse X) * X - 1)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. \<bar>((seq_inverse X) * X - 1) \<langle>n\<rangle>\<bar> < r)" THEN
@@ -221,7 +248,9 @@ definition realrel :: "rat seq \<Rightarrow> rat seq \<Rightarrow> bool" where
   "realrel X Y \<longleftrightarrow> cauchy X \<and> cauchy Y \<and> vanishes (X - Y)"
 setup {* add_rewrite_rule @{thm realrel_def} *}
 
-lemma realrel_refl [rewrite_back]: "cauchy X \<longleftrightarrow> realrel X X" by auto2
+lemma realrel_refl: "cauchy X \<longleftrightarrow> realrel X X" by auto2
+setup {* add_backward_prfstep (equiv_forward_th @{thm realrel_refl}) *}
+setup {* add_forward_prfstep (equiv_backward_th @{thm realrel_refl}) *}
 setup {* del_prfstep_thm @{thm realrel_def} #> add_rewrite_rule_cond @{thm realrel_def} [with_cond "?X \<noteq> ?Y"] *}
 
 lemma symp_realrel [resolve]: "symp realrel" by auto2
@@ -260,7 +289,7 @@ proof -
 qed
 
 lift_definition inverse_real :: "real \<Rightarrow> real" is
-  "\<lambda>X. if vanishes X then {0}\<^sub>S else (seq_inverse X)" by auto2
+  "\<lambda>X. if vanishes X then {0}\<^sub>S else seq_inverse X" by auto2
 
 definition "x - y = (x::real) + (-y)"
 definition "x div y = (x::real) * inverse y"
@@ -305,9 +334,9 @@ setup {* fold add_rewrite_rule_back [@{thm zero_real.abs_eq}, @{thm one_real.abs
 theorem inverse_Real1 [rewrite]: "vanishes X \<Longrightarrow> inverse (Real X) = 0" by auto2
 theorem inverse_Real2 [rewrite_bidir]:
   "cauchy X \<Longrightarrow> \<not> vanishes X \<Longrightarrow> inverse (Real X) = Real (seq_inverse X)" by auto2
-setup {* del_prfstep_thm @{thm inverse_Real}*}
 theorem inverse_Real_const [rewrite_bidir]:
   "b > 0 \<Longrightarrow> Real {inverse b}\<^sub>S = inverse (Real {b}\<^sub>S)" by auto2
+setup {* del_prfstep_thm @{thm inverse_Real}*}
 
 subsection {* Positive reals *}
 
@@ -436,17 +465,17 @@ lemma le_Real [rewrite]:
     (OBTAIN "Real (X - Y) = Real X - Real Y" THEN OBTAIN "cauchy (X - Y)") *})
 setup {* del_prfstep_thm @{thm le_real_def} *}
 
-lemma le_Real_all_n [backward1]: "cauchy X \<and> cauchy Y \<Longrightarrow> \<forall>n. X\<langle>n\<rangle> \<le> Y\<langle>n\<rangle> \<Longrightarrow> Real X \<le> Real Y"
+lemma le_Real_all_n [backward]: "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> \<forall>n. X\<langle>n\<rangle> \<le> Y\<langle>n\<rangle> \<Longrightarrow> Real X \<le> Real Y"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. (X - Y)\<langle>n\<rangle> \<le> r)" THEN
      OBTAIN "\<forall>n\<ge>0. (X - Y)\<langle>n\<rangle> \<le> r") *})
 
-theorem archimedean_Real [backward]: "cauchy X \<Longrightarrow> \<exists>z. Real X \<le> of_int z"
+theorem archimedean_Real [resolve]: "cauchy X \<Longrightarrow> \<exists>z. Real X \<le> of_int z"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "b > 0, \<forall>n. \<bar>X\<langle>n\<rangle>\<bar> \<le> b" THEN
      OBTAIN "rat_of_int \<lceil>b\<rceil> \<ge> b" THEN
      OBTAIN "of_int \<lceil>b\<rceil> = Real {rat_of_int \<lceil>b\<rceil>}\<^sub>S" THEN
-     OBTAIN "\<forall>n. X\<langle>n\<rangle> \<le> {rat_of_int \<lceil>b\<rceil>}\<^sub>S \<langle>n\<rangle>" THEN
+     OBTAIN "\<forall>n. X\<langle>n\<rangle> \<le> {rat_of_int \<lceil>b\<rceil>}\<^sub>S \<langle>n\<rangle>" WITH OBTAIN "\<bar>X\<langle>n\<rangle>\<bar> \<le> b" THEN
      OBTAIN "Real X \<le> Real {rat_of_int \<lceil>b\<rceil>}\<^sub>S") *})
 
 instance real :: archimedean_field
@@ -472,33 +501,34 @@ end
 
 subsection {* Ordering on and distance between real numbers *}
 
+(* Unusual order to check both r > 0 and cauchy X. *)
 theorem le_rat_Real [backward1]:
-  "cauchy X \<and> r > 0 \<Longrightarrow> Real X \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. X\<langle>n\<rangle> \<le> c + r"
+  "r > 0 \<Longrightarrow> cauchy X \<Longrightarrow> Real X \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. X\<langle>n\<rangle> \<le> c + r"
   by (tactic {* auto2s_tac @{context}
     (OBTAIN "of_rat c = Real {c}\<^sub>S" THEN
      CHOOSE "k, \<forall>n\<ge>k. (X - {c}\<^sub>S) \<langle>n\<rangle> \<le> r" THEN
      OBTAIN "\<forall>n\<ge>k. X\<langle>n\<rangle> \<le> c + r") *})
 
 theorem diff_le_rat_Real [backward1]:
-  "cauchy X \<and> cauchy Y \<and> r > 0 \<Longrightarrow> Real X - Real Y \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. (X - Y)\<langle>n\<rangle> \<le> c + r"
+  "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> r > 0 \<Longrightarrow> Real X - Real Y \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. (X - Y)\<langle>n\<rangle> \<le> c + r"
   by (tactic {* auto2s_tac @{context}
     (OBTAIN "Real (X - Y) = Real X - Real Y") *})
 
 theorem diff_le_rat_Real2 [backward1]:
-  "cauchy X \<and> cauchy Y \<and> r > 0 \<Longrightarrow> Real X - Real Y \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. X\<langle>m\<rangle> - Y\<langle>n\<rangle> \<le> c + r"
+  "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> r > 0 \<Longrightarrow> Real X - Real Y \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. X\<langle>m\<rangle> - Y\<langle>n\<rangle> \<le> c + r"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "k, (\<forall>n\<ge>k. (X - Y)\<langle>n\<rangle> \<le> c + r/2) \<and> (\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - X\<langle>n\<rangle>\<bar> < r/2)" THEN
      OBTAIN "\<forall>m\<ge>k. \<forall>n\<ge>k. X\<langle>m\<rangle> - Y\<langle>n\<rangle> \<le> c + r" WITH
-      (OBTAIN "X\<langle>m\<rangle> - Y\<langle>n\<rangle> = X\<langle>m\<rangle> - X\<langle>n\<rangle> + X\<langle>n\<rangle> - Y\<langle>n\<rangle>")) *})
+      (OBTAIN "X\<langle>m\<rangle> - Y\<langle>n\<rangle> = (X\<langle>m\<rangle> - X\<langle>n\<rangle>) + (X\<langle>n\<rangle> - Y\<langle>n\<rangle>)")) *})
 
 theorem abs_diff_le_rat_Real2D [backward1]:
-  "cauchy X \<and> cauchy Y \<and> r > 0 \<Longrightarrow> \<bar>Real X - Real Y\<bar> \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - Y\<langle>n\<rangle>\<bar> \<le> c + r"
+  "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> r > 0 \<Longrightarrow> \<bar>Real X - Real Y\<bar> \<le> of_rat c \<Longrightarrow> \<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - Y\<langle>n\<rangle>\<bar> \<le> c + r"
   by (tactic {* auto2s_tac @{context}
     (OBTAIN "Real X - Real Y \<le> of_rat c" THEN OBTAIN "Real Y - Real X \<le> of_rat c" THEN
      CHOOSE "k, (\<forall>m\<ge>k. \<forall>n\<ge>k. X\<langle>m\<rangle> - Y\<langle>n\<rangle> \<le> c + r) \<and> (\<forall>m\<ge>k. \<forall>n\<ge>k. Y\<langle>m\<rangle> - X\<langle>n\<rangle> \<le> c + r)" THEN
      OBTAIN "\<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>X\<langle>m\<rangle> - Y\<langle>n\<rangle>\<bar> \<le> c + r") *})
 
-theorem le_rat_RealI [backward2]:
+theorem le_rat_RealI [backward]:
   "cauchy X \<Longrightarrow> \<forall>r>0. \<exists>k. \<forall>n\<ge>k. X\<langle>n\<rangle> \<le> c + r \<Longrightarrow> Real X \<le> of_rat c"
   by (tactic {* auto2s_tac @{context}
     (OBTAIN "of_rat c = Real {c}\<^sub>S" THEN
@@ -506,13 +536,13 @@ theorem le_rat_RealI [backward2]:
       (CHOOSE "k, \<forall>n\<ge>k. X\<langle>n\<rangle> \<le> c + r" THEN
        OBTAIN "\<forall>n\<ge>k. (X - {c}\<^sub>S) \<langle>n\<rangle> \<le> r")) *})
 
-theorem diff_le_rat_RealI [backward2]:
-  "cauchy X \<Longrightarrow> cauchy Y \<and> (\<forall>r>0. \<exists>k. \<forall>n\<ge>k. (X - Y)\<langle>n\<rangle> \<le> c + r) \<Longrightarrow> Real X - Real Y \<le> of_rat c"
+theorem diff_le_rat_RealI [backward]:
+  "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> \<forall>r>0. \<exists>k. \<forall>n\<ge>k. (X - Y)\<langle>n\<rangle> \<le> c + r \<Longrightarrow> Real X - Real Y \<le> of_rat c"
   by (tactic {* auto2s_tac @{context}
     (OBTAIN "Real (X - Y) = Real X - Real Y" THEN OBTAIN "cauchy (X - Y)") *})
 
-theorem abs_diff_le_rat_RealI [backward2]:
-  "cauchy X \<Longrightarrow> cauchy Y \<and> (\<forall>r>0. \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> \<le> c + r) \<Longrightarrow> \<bar>Real X - Real Y\<bar> \<le> of_rat c"
+theorem abs_diff_le_rat_RealI [backward]:
+  "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> \<forall>r>0. \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> \<le> c + r \<Longrightarrow> \<bar>Real X - Real Y\<bar> \<le> of_rat c"
   by (tactic {* auto2s_tac @{context}
     (OBTAIN "Real X - Real Y \<le> of_rat c" WITH
       (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. (X - Y)\<langle>n\<rangle> \<le> c + r)" THEN
@@ -523,8 +553,8 @@ theorem abs_diff_le_rat_RealI [backward2]:
        CHOOSE "k, \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> \<le> c + r" THEN
        OBTAIN "\<forall>n\<ge>k. (Y - X)\<langle>n\<rangle> \<le> c + r")) *})
 
-theorem abs_diff_le_rat_RealI' [backward2]:
-  "cauchy X \<Longrightarrow> cauchy Y \<and> (\<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> < c) \<Longrightarrow> \<bar>Real X - Real Y\<bar> \<le> of_rat c"
+theorem abs_diff_le_rat_RealI' [backward]:
+  "cauchy X \<Longrightarrow> cauchy Y \<Longrightarrow> \<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> < c \<Longrightarrow> \<bar>Real X - Real Y\<bar> \<le> of_rat c"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> \<le> c + r)" THEN
      CHOOSE "k, \<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - Y\<langle>n\<rangle>\<bar> < c" THEN
@@ -601,12 +631,13 @@ setup {* del_prfstep_thm @{thm err_def} *}
 
 theorem obtain_pos_sum3 [backward]:
   "(r::('a::linordered_field)) > 0 \<Longrightarrow> \<exists>r1>0. \<exists>r2>0. \<exists>r3>0. r = r1 + r1 + r2 + r3"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "r = r/4 + r/4 + r/4 + r/4") *})
+  by (tactic {* auto2s_tac @{context}
+    (OBTAIN "r = r * inverse 6 + r * inverse 6 + r * inverse 3 + r * inverse 3") *})
 
 theorem real_complete [resolve]: "cauchy (R::real seq) \<Longrightarrow> \<exists>x. converges_to R x"
   by (tactic {* auto2s_tac @{context} (
     CHOOSE "S, \<forall>n. cauchy (S\<langle>n\<rangle>) \<and> R\<langle>n\<rangle> = Real (S\<langle>n\<rangle>)" THEN
-    OBTAIN "\<forall>n. \<exists>k. (\<forall>i\<ge>k. \<bar>S\<langle>n\<rangle>\<langle>i\<rangle> - S\<langle>n\<rangle>\<langle>k\<rangle>\<bar> < err n)" WITH OBTAIN "cauchy (S\<langle>n\<rangle>)" THEN
+    OBTAIN "\<forall>n. \<exists>k. (\<forall>i\<ge>k. \<bar>S\<langle>n\<rangle>\<langle>i\<rangle> - S\<langle>n\<rangle>\<langle>k\<rangle>\<bar> < err n)" THEN
     CHOOSE "S', \<forall>n. \<exists>k. (\<forall>i\<ge>k. \<bar>S\<langle>n\<rangle>\<langle>i\<rangle> - S\<langle>n\<rangle>\<langle>k\<rangle>\<bar> < err n) \<and> S'\<langle>n\<rangle> = S\<langle>n\<rangle>\<langle>k\<rangle>" THEN
     OBTAIN "cauchy S'" WITH
       (CHOOSE "r > 0, \<not>(\<exists>k. \<forall>m\<ge>k. \<forall>n\<ge>k. \<bar>S'\<langle>m\<rangle> - S'\<langle>n\<rangle>\<bar> < r)" THEN
@@ -703,18 +734,18 @@ theorem dedekind_complete [resolve]: "dedekind_cut (U::real set) \<Longrightarro
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "a0, a0 \<in> U" THEN CHOOSE "b0, b0 \<notin> U" THEN OBTAIN "a0 \<le> b0" THEN
      CHOOSE ("A, B, A\<langle>0\<rangle> = a0 \<and> B\<langle>0\<rangle> = b0 \<and>" ^
-                   "(\<forall>n. A\<langle>n+1\<rangle> = (if (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2 \<notin> U then A\<langle>n\<rangle> else (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2)) \<and>" ^
-                   "(\<forall>n. B\<langle>n+1\<rangle> = (if (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2 \<notin> U then (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2 else B\<langle>n\<rangle>))") THEN
+                   "(\<forall>n. A\<langle>1+n\<rangle> = (if (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2 \<notin> U then A\<langle>n\<rangle> else (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2)) \<and>" ^
+                   "(\<forall>n. B\<langle>1+n\<rangle> = (if (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2 \<notin> U then (A\<langle>n\<rangle>+B\<langle>n\<rangle>)/2 else B\<langle>n\<rangle>))") THEN
+     CHOOSE "x, converges_to A x \<and> converges_to B x" WITH
+      (OBTAIN "\<forall>n. A\<langle>n\<rangle> \<le> B\<langle>n\<rangle>" WITH INDUCT ("n", []) THEN
+       OBTAIN "monotone_incr A" THEN OBTAIN "monotone_decr B" THEN
+       OBTAIN "\<forall>n. A\<langle>n\<rangle> \<le> B\<langle>0\<rangle>" THEN OBTAIN "\<forall>n. B\<langle>n\<rangle> \<ge> A\<langle>0\<rangle>" THEN
+       OBTAIN "\<forall>n. \<bar>(B - A)\<langle>1+n\<rangle>\<bar> \<le> \<bar>(B - A)\<langle>n\<rangle>\<bar> / 2" THEN
+       OBTAIN "vanishes (B - A)" THEN CHOOSE "x', converges_to B x'") THEN
      OBTAIN "\<forall>n. A\<langle>n\<rangle> \<in> U" WITH INDUCT ("n", []) THEN
      OBTAIN "\<forall>n. B\<langle>n\<rangle> \<notin> U" WITH INDUCT ("n", []) THEN
-     OBTAIN "\<forall>n. A\<langle>n\<rangle> \<le> B\<langle>n\<rangle>" WITH INDUCT ("n", []) THEN
-     OBTAIN "monotone_incr A" THEN OBTAIN "monotone_decr B" THEN
-     OBTAIN "\<forall>n. A\<langle>n\<rangle> \<le> B\<langle>0\<rangle>" THEN OBTAIN "\<forall>n. B\<langle>n\<rangle> \<ge> A\<langle>0\<rangle>" THEN
-     OBTAIN "\<forall>n. \<bar>(B - A)\<langle>n+1\<rangle>\<bar> \<le> \<bar>(B - A)\<langle>n\<rangle>\<bar> / 2" THEN
-     OBTAIN "vanishes (A - B)" THEN
-     CHOOSE "x, converges_to A x" THEN OBTAIN "converges_to B x" THEN
      OBTAIN "\<forall>y. y < x \<longleftrightarrow> y \<in> U" WITH
-      (CASE "y < x" WITH CHOOSE "n, y < A\<langle>n\<rangle>" THEN
+      (CASE "y < x" WITH CHOOSE "n, y < A\<langle>n\<rangle>" THEN  (* now show \<lbrakk> y \<ge> x, y \<in> U \<rbrakk> \<Longrightarrow> False *)
        OBTAIN "x \<in> U" THEN CHOOSE "x' > x, x' \<in> U" THEN
        CHOOSE "n, x' > B\<langle>n\<rangle>" THEN OBTAIN "B\<langle>n\<rangle> \<notin> U")) *})
 

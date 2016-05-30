@@ -12,7 +12,6 @@ setup {* Sign.add_const_constraint (@{const_name Ref}, SOME @{typ "nat \<Rightar
 datatype 'a node = Empty | Node (val: 'a) (nxt: "'a node ref")
 
 setup {* add_forward_prfstep (equiv_forward_th @{thm node.simps(1)}) *}
-setup {* add_rew_const @{term "Empty"} *}
 setup {* add_resolve_prfstep @{thm node.distinct(2)} *}
 setup {* add_forward_prfstep @{thm node.collapse} *}
 
@@ -51,7 +50,7 @@ theorem list_ofR_Node [forward]:
 
 inductive refs_ofR :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a node ref set \<Rightarrow> bool" where
   "Ref.get h p = Empty \<Longrightarrow> refs_ofR h p {p}"
-| "Ref.get h p = Node b n \<Longrightarrow> refs_ofR h n ps \<and> p \<notin> ps \<Longrightarrow> refs_ofR h p ({p} \<union> ps)"
+| "Ref.get h p = Node b n \<Longrightarrow> refs_ofR h n ps \<Longrightarrow> p \<notin> ps \<Longrightarrow> refs_ofR h p ({p} \<union> ps)"
 setup {* add_resolve_prfstep @{thm refs_ofR.intros(1)} *}
 setup {* add_backward2_prfstep @{thm refs_ofR.intros(2)} *}
 setup {* add_prfstep_prop_induction @{thm refs_ofR.induct} *}
@@ -108,7 +107,7 @@ theorem proper_ref_next1' [forward]:
   "Ref.get h p = Node b n \<Longrightarrow> proper_ref h p \<Longrightarrow> p \<notin> refs_of h n \<and> refs_of h p = {p} \<union> refs_of h n" by auto2
 
 theorem proper_ref_next2 [backward2]:
-  "Ref.get h p = Node b n \<Longrightarrow> Ref.present h p \<and> proper_ref h n \<and> p \<notin> refs_of h n \<Longrightarrow> proper_ref h p"
+  "Ref.get h p = Node b n \<Longrightarrow> Ref.present h p \<Longrightarrow> proper_ref h n \<Longrightarrow> p \<notin> refs_of h n \<Longrightarrow> proper_ref h p"
   by (tactic {* auto2s_tac @{context} (OBTAIN "refs_ofR h p ({p} \<union> refs_of h n)") *})
 
 theorem proper_ref_present [forward]:
@@ -346,8 +345,9 @@ partial_function (heap) merge :: "('a::{heap, ord}) node ref \<Rightarrow> 'a no
      }"
 setup {* add_rewrite_rule_cond @{thm merge.simps} [with_filt (size1_filter "p"), with_filt (size1_filter "q")] *}
 
-theorem set_intersection_list: "(x \<union> xs) \<inter> ys = {} \<Longrightarrow> xs \<inter> ys = {}" by auto
-setup {* add_forward_prfstep_cond @{thm set_intersection_list} [with_term "?xs \<inter> ?ys"] *}
+theorem set_intersection_list: "(x \<union> xs) \<inter> ys = {} \<Longrightarrow> xs \<inter> ys = {} \<and> ys \<inter> xs = {}" by auto
+setup {* add_rewrite_rule (conj_left_th @{thm set_intersection_list}) *}
+setup {* add_rewrite_rule (conj_right_th @{thm set_intersection_list}) *}
 
 theorem unchanged_outer_union_ref [forward]:
   "unchanged_outer h h' (refs_of h p \<union> refs_of h q) \<Longrightarrow> r \<notin> refs_of h p \<Longrightarrow> r \<notin> refs_of h q \<Longrightarrow>

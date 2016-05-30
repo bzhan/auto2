@@ -16,15 +16,7 @@ sig
   val add_normalizer: string * normalizer -> theory -> theory
   val add_th_normalizer:
       string * (Proof.context -> thm -> thm list) -> theory -> theory
-  val add_single_normalizer:
-      string * (Proof.context -> raw_item -> raw_item) -> theory -> theory
-  val add_ctxt_conv_normalizer:
-      string * (Proof.context -> conv) -> theory -> theory
-  val add_conv_normalizer: string * conv -> theory -> theory
-  val add_ctxt_prop_normalizer:
-      string * (Proof.context -> conv) -> theory -> theory
   val add_eq_th_normalizer: thm -> theory -> theory
-  val add_top_eq_th_normalizer: thm -> theory -> theory
   val get_normalizers: theory -> (string * normalizer) list
   val normalize: Proof.context -> raw_item -> raw_item list
 end;
@@ -35,64 +27,33 @@ struct
 fun add_normalizer (nm, norm_fun) =
     NormData.map (Symtab.update_new (nm, norm_fun))
 
-fun add_th_normalizer (nm, norm_th_fun) =
-    add_normalizer (
-      nm, fn ctxt => fn ritem =>
-             case ritem of
-                 Handler _ => [ritem]
-               | Fact (ty_str, _, th) =>
-                 if ty_str = "PROP" then
-                   map Update.thm_to_ritem (norm_th_fun ctxt th)
-                 else [ritem])
+(* Apply norm_fun: thm -> thm list to any PROP item. *)
+fun th_normalizer norm_fun ctxt ritem =
+    case ritem of
+        Handler _ => [ritem]
+      | Fact (ty_str, _, th) =>
+        if ty_str = "PROP" then
+          map Update.thm_to_ritem (norm_fun ctxt th)
+        else [ritem]
 
-fun add_single_normalizer (nm, norm_single_fun) =
-    add_normalizer (nm, fn ctxt => fn ritem => [norm_single_fun ctxt ritem])
+fun add_th_normalizer (nm, norm_fun) =
+    add_normalizer (nm, th_normalizer norm_fun)
 
-(* Apply the conversion ctxt_cv ctxt to the statement (skipping
-   Trueprop) of a PROP item or EQ item.
- *)
-fun add_ctxt_conv_normalizer (nm, ctxt_cv) =
-    add_single_normalizer (
-      nm, fn ctxt => fn ritem =>
-             case ritem of
-                 Handler _ => ritem
-               | Fact (ty_str, _, th) =>
-                 if member (op =) ["PROP", "EQ"] ty_str then
-                   Update.thm_to_ritem
-                       (apply_to_thm (HOLogic.Trueprop_conv (ctxt_cv ctxt)) th)
-                 else ritem)
+fun eq_th_normalizer eq_th ctxt ritem =
+    case ritem of
+        Handler _ => [ritem]
+      | Fact (ty_str, _, th) =>
+        if member (op =) ["PROP", "EQ", "PROPERTY"] ty_str then
+          [Update.thm_to_ritem (apply_to_thm' (rewr_obj_eq_top eq_th ctxt) th)]
+        else [ritem]
 
-(* Apply cv to the statement (skipping Trueprop) of a PROP item. *)
-fun add_conv_normalizer (nm, cv) = add_ctxt_conv_normalizer (nm, K cv)
-
-(* Apply ctxt_cv ctxt to either the statement (skipping Trueprop) of a
-   PROP item, or the right side of an EQ item.
- *)
-fun add_ctxt_prop_normalizer (nm, ctxt_cv) =
-    add_single_normalizer (
-      nm, fn ctxt => fn ritem =>
-             case ritem of
-                 Handler _ => ritem
-               | Fact (ty_str, _, th) =>
-                 let val cv = ctxt_cv ctxt in
-                   if ty_str = "PROP" then
-                     Update.thm_to_ritem (apply_to_thm (Conv.arg_conv cv) th)
-                   else if ty_str = "EQ" then
-                     Update.thm_to_ritem (
-                       apply_to_thm (Conv.arg_conv (Conv.arg_conv cv)) th)
-                   else ritem
-                 end)
-
-(* Apply the rewriting theorem eq_th: A = B on the statement (skipping
-   Trueprop) of a PROP item.
- *)
-fun add_eq_th_normalizer eq_th =
-    add_conv_normalizer (name_of_thm eq_th, Conv.try_conv (rewr_obj_eq eq_th))
-
-(* Add the given eq_th to rewrite on subterms. *)
-fun add_top_eq_th_normalizer eq_th =
-    add_ctxt_prop_normalizer (
-      (name_of_thm eq_th) ^ "@top", rewr_obj_eq_top eq_th)
+fun add_eq_th_normalizer eq_th thy =
+    let
+      val _ = writeln ("Normalizing using equation " ^
+                       (pretty_term_thy thy (Thm.prop_of eq_th) |> str))
+    in
+      add_normalizer (name_of_thm eq_th, eq_th_normalizer eq_th) thy
+    end
 
 fun get_normalizers thy = Symtab.dest (NormData.get thy)
 
@@ -111,8 +72,3 @@ fun normalize ctxt ritem =
 end  (* structure Normalizer. *)
 
 open Normalizer
-
-val _ = Theory.setup (
-      add_ctxt_conv_normalizer (
-        "normalize_all_ac_full",
-        ACUtil.normalize_all_ac_full o Proof_Context.theory_of))

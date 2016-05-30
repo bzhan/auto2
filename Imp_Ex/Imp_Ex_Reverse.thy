@@ -26,7 +26,7 @@ setup {* add_rewrite_rule @{thm swap.simps} *}
 lemma swap_pointwise [rewrite]: "effect (swap a i j) h h' r \<Longrightarrow> Array.get h' a ! k =
   (if k = i then Array.get h a ! j else if k = j then Array.get h a ! i else Array.get h a ! k)" by auto2
 lemma swap_length [rewrite]: "effect (swap a i j) h h' r \<Longrightarrow> Array.length h a = Array.length h' a" by auto2
-lemma swap_succeed [backward]: "i < Array.length h a \<and> j < Array.length h a \<Longrightarrow> success (swap a i j) h" by auto2
+lemma swap_succeed [backward]: "i < Array.length h a \<Longrightarrow> j < Array.length h a \<Longrightarrow> success (swap a i j) h" by auto2
 setup {* del_prfstep_thm @{thm swap.simps} *}
 
 (* Induction rule for rev. *)
@@ -45,7 +45,7 @@ lemma rev_pointwise [rewrite]: "effect (rev a i j) h h' r \<Longrightarrow> Arra
   (if k < i then Array.get h a ! k else if j < k then Array.get h a ! k
    else Array.get h a ! (j - (k - i)))" by auto2
 
-lemma rev_succeed' [backward]: "i < Array.length h a \<and> j < Array.length h a \<Longrightarrow> success (rev a i j) h" by auto2
+lemma rev_succeed' [backward]: "i < Array.length h a \<Longrightarrow> j < Array.length h a \<Longrightarrow> success (rev a i j) h" by auto2
 lemma rev_succeed: "success (rev a 0 (Array.length h a - 1)) h" by auto2
 
 setup {* fold del_prfstep_thm [@{thm rev.simps}, @{thm rev_induct'}] *}
@@ -53,7 +53,7 @@ setup {* fold del_prfstep_thm [@{thm rev.simps}, @{thm rev_induct'}] *}
 lemma rev2_rev': "effect (rev a i j) h h' u \<Longrightarrow> j < Array.length h a \<Longrightarrow>
   subarray i (j + 1) a h' = List.rev (subarray i (j + 1) a h)"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "length (subarray i (1 + j) a h') = length (List.rev (subarray i (1 + j) a h))") *})
+    (OBTAIN "length (subarray i (j + 1) a h') = length (List.rev (subarray i (j + 1) a h))") *})
 
 (* Just a special case of previous proof. *)
 lemma rev2_rev: "effect (rev a 0 (Array.length h a - 1)) h h' u \<Longrightarrow>

@@ -7,90 +7,75 @@ local
   val thy = @{theory}
   val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
   val ctxt' = Proof_Context.init_global thy'
-
-  val a = @{term "a::nat"}
-  val b = @{term "b::nat"}
-  val c = @{term "c::nat"}
-  val A = @{term "A::bool"}
-  val B = @{term "B::bool"}
-  val C = @{term "C::bool"}
-  val D = @{term "D::bool"}
 in
 
 val test_dest_subterms =
     let
-      fun err n = "test_dest_subterms: " ^ (string_of_int n)
-      fun test n (t, t', subs) =
+      val ctxt'' = ctxt' |> fold Variable.auto_fixes [
+            @{term "[a::nat, b, c]"}, @{term "[A::bool, B, C, D]"}]
+
+      fun test (str, str', subs_str) =
           let
-            val (t'', subs') = dest_subterms thy' true t
+            val t = read_term ctxt'' str
+            val t' = read_pat ctxt'' str'
+            val subs = map (read_term ctxt'') subs_str
+            val (t'', subs') = dest_subterms true t
           in
             if t' aconv t'' andalso eq_list (op aconv) (subs, subs') then ()
-            else raise AUTO2CT (err n, map (cert_thy thy') (t'' :: subs'))
+            else
+              raise AUTO2CT ("test_dest_subterms",
+                             map (cert_thy thy') (t'' :: subs'))
           end
-      val _ = test 0 (a, a, [])
-      val _ = test 1 (@{term "(a::nat) dvd b"},
-                      @{term_pat "(?SUB::nat) dvd ?SUB1"}, [a, b])
-      val _ = test 2 (@{term "(a::nat) * b * c"},
-                      @{term_pat "(?SUB::nat) * ?SUB1 * ?SUB2"}, [a, b, c])
-      val _ = test 3 (@{term "(a::nat) * (b * c)"},
-                      @{term_pat "(?SUB::nat) * ?SUB1"},
-                      [a, @{term "(b::nat) * c"}])
-      val _ = test 4 (@{term "((a::nat) + b) * c"},
-                      @{term_pat "(?SUB::nat) * ?SUB1"},
-                      [@{term "(a::nat) + b"}, c])
-      val _ = test 5 (@{term "!(a::nat). b dvd a"},
-                      @{term_pat "!(a::nat). ?SUB dvd a"}, [b])
-      val _ = test 6 (@{term "if (a::nat) = 0 then (b::nat) else c"},
-                      @{term_pat "if ?SUB then (b::nat) else c"},
-                      [@{term "(a::nat) = 0"}])
-      val _ = test 7 (@{term "!A. A & B & C"},
-                      @{term_pat "!A. A & ?SUB & ?SUB1"}, [B, C])
-      val _ = test 8 (@{term "!B. A & B & C"},
-                      @{term_pat "!B. ?SUB & B & ?SUB1"}, [A, C])
-      val _ = test 9 (@{term "!C. A & B & C"},
-                      @{term_pat "!C. ?SUB & ?SUB1 & C"}, [A, B])
-      val _ = test 10 (@{term "!A. (A & B) & C"},
-                       @{term_pat "!A. (A & ?SUB) & ?SUB1"}, [B, C])
-      val _ = test 11 (@{term "!(A::bool). (B & C) & D"},
-                       @{term_pat "!(A::bool). ?SUB"}, [@{term "(B & C) & D"}])
-      val _ =
-          test 12
-               (@{term "if (if A then (B::bool) else C) then (a::nat) else b"},
-                @{term_pat "if ?SUB then (a::nat) else b"},
-                [@{term "if A then (B::bool) else C"}])
-      val _ = test 13 (@{term "!A. C & (!B. A & B & D)"},
-                       @{term_pat "!A. ?SUB & (!B. A & B & ?SUB1)"}, [C, D])
-      val _ =
-          test 14 (@{term "!(a::nat). if a = b then (A::bool) else B"},
-                   @{term_pat "!(a::nat). if a = ?SUB then (A::bool) else B"},
-                   [b])
-      val _ = test 15 (@{term "~ (A | B)"},
-                       @{term_pat "~ ?SUB"}, [@{term "A | B"}])
-      val _ = test 16 (@{term "A | B | C | D"},
-                       @{term_pat "?SUB | ?SUB1 | ?SUB2 | ?SUB3"}, [A, B, C, D])
-    in () end
+
+      val test_data = [
+        ("a", "a", []),
+        ("a dvd b", "(?SUB::nat) dvd ?SUB1", ["a", "b"]),
+        ("a * (b * c)", "(?SUB::nat) * ?SUB1", ["a", "b * c"]),
+        ("(a + b) * c", "(?SUB::nat) * ?SUB1", ["a + b", "c"]),
+        ("ALL a. b dvd a", "ALL (a::nat). ?SUB dvd a", ["b"]),
+        ("if a = 0 then b else c", "if ?SUB then b else c", ["a = 0"]),
+        ("ALL A. A & B & C", "ALL A. A & ?SUB", ["B & C"]),
+        ("ALL B. A & B & C", "ALL B. ?SUB & B & ?SUB1", ["A", "C"]),
+        ("ALL C. A & B & C", "ALL C. ?SUB & ?SUB1 & C", ["A", "B"]),
+        ("ALL A. (A & B) & C", "ALL A. (A & ?SUB) & ?SUB1", ["B", "C"]),
+        ("ALL (A::bool). (B & C) & D", "ALL (A::bool). ?SUB", ["(B & C) & D"]),
+        ("if (if A then B else C) then a else b", "if ?SUB then a else b",
+         ["if A then B else C"]),
+        ("ALL A. C & (ALL B. A & B & D)", "ALL A. ?SUB & (!B. A & B & ?SUB1)",
+         ["C", "D"]),
+        ("ALL a. if a = b then A else B",
+         "ALL (a::nat). if a = ?SUB then A else B", ["b"]),
+        ("~ (A | B)", "~ ?SUB", ["A | B"])
+      ]
+    in
+      map test test_data
+    end
 
 val test_get_all_subterms =
     let
-      fun err n = "test_get_all_subterms: " ^ (string_of_int n)
-      fun test n (t, subs) =
+      val ctxt'' = ctxt' |> Variable.auto_fixes @{term "[a::nat, b, c]"}
+
+      fun test (str, subs_str) =
           let
-            val subs' = get_all_subterms thy' true t
+            val t = read_term ctxt'' str
+            val subs = map (read_term ctxt'') subs_str
+            val subs' = get_all_subterms true t
           in
             if eq_list (op aconv) (subs, subs') then ()
-            else raise AUTO2CT (err n, map (cert_thy thy') subs')
+            else raise AUTO2CT ("test_get_all_subterms",
+                                map (cert_thy thy') subs')
           end
-      val _ = test 0 (@{term "(a::nat) * b * c"},
-                      [@{term "(a::nat) * b * c"}, a, b, c])
-      val _ = test 1 (@{term "(a::nat) * (b * c)"},
-                      [@{term "(a::nat) * (b * c)"}, a, @{term "(b::nat) * c"},
-                       b, c])
-    in () end
+
+      val test_data = [
+        ("a * (b * c)", ["a * (b * c)", "a", "b * c", "b", "c"])
+      ]
+    in
+      map test test_data
+    end
 
 val test_build_equiv =
     let
-      fun err n = "test_build_equiv: " ^ (string_of_int n)
-      fun test n (t, equivs) =
+      fun test_raw (t, equivs) =
           let
             val eq_th = build_equiv ctxt' equivs t
             val lsubs = map lhs_of equivs
@@ -98,46 +83,34 @@ val test_build_equiv =
           in
             if lhs_of eq_th aconv (subst_subterms (t, lsubs)) andalso
                rhs_of eq_th aconv (subst_subterms (t, rsubs)) then ()
-            else raise AUTO2CT (err n, [Thm.cprop_of eq_th])
+            else
+              raise AUTO2CT ("test_build_equiv", [Thm.cprop_of eq_th])
           end
-      val _ = test 0 (@{term_pat "(?SUB::nat) * ?SUB1"},
-                      [Thm.assume @{cterm "(a::nat) == b"},
-                       Thm.assume @{cterm "(c::nat) == d"}])
-      val _ = test 1 (@{term_pat "!a. a + (?SUB::nat) = 0"},
-                      [Thm.assume @{cterm "(b::nat) == c"}])
+
+      val ctxt'' = ctxt' |> Variable.auto_fixes @{term "[a::nat, b, c]"}
+      fun test (str, equivs_str) =
+          let
+            val t = read_pat ctxt'' str
+            val equivs = map (Thm.assume o cert ctxt'' o read_term ctxt'')
+                             equivs_str
+          in
+            test_raw (t, equivs)
+          end
+
+      (* Name conflict in abs. *)
       val dvd = Const ("Rings.dvd_class.dvd", @{typ "nat => nat => bool"})
       val trm = Abs ("x", natT, Abs ("x", natT, dvd $ (Bound 0) $ (Bound 1)))
-      val _ = test 2 (trm, [])
-      (* build_equiv is not a conversion, so don't use conv facilities. *)
-      val _ = test 3 (@{term_pat "!a. a + (?SUB::nat) = 0"},
-                      [Thm.assume @{cterm "(b::nat) == b"}])
-      (* Another possible name conflict. *)
-      val _ = test 4 (@{term_pat "!a. a + (?SUB::nat) = 0"},
-                      [Thm.assume @{cterm "(a::nat) == a"}])
-    in () end
+      val _ = test_raw (trm, [])
 
-val test_normalize_all_ac =
-    let
-      fun err n = "test_normalize_all_ac: " ^ (string_of_int n)
-      fun test n (t, t') =
-          let
-            val ac_info_opt = get_head_ac_info_with_inv thy' t
-            val _ = assert (is_some ac_info_opt) (err n)
-            val ac_info = the ac_info_opt
-            val eq_th = normalize_all_ac ctxt' ac_info (cert ctxt' t)
-            val (l, r) = Logic.dest_equals (Thm.prop_of eq_th)
-          in
-            if l aconv t andalso r aconv t' then ()
-            else raise AUTO2CT (err n, [Thm.cprop_of eq_th])
-          end
-      val _ = test 0 (@{term "C & A & B"}, @{term "A & B & C"})
-      val _ = test 1 (@{term "EX (k::nat). a + b < k & k < n"},
-                      @{term "EX (k::nat). k < n & a + b < k"})
-      val _ = test 2 (@{term "EX (k::nat) l. a + l < k & k < l"},
-                      @{term "EX (k::nat) l. k < l & a + l < k"})
-      val _ = test 3 (@{term "C & A & B & True"}, @{term "A & B & C"})
-      val _ = test 4 (@{term "EX m k. (n::nat) = m * k & 1 < m"},
-                      @{term "EX m k. 1 < m & (n::nat) = m * k"})
-    in () end
+      (* Other tests. *)
+      val test_data = [
+        ("(?SUB::nat) * ?SUB1", ["a == b", "c == d"]),
+        ("ALL a. a + (?SUB::nat) = 0", ["b == c"]),
+        ("ALL a. a + (?SUB::nat) = 0", ["b == b"]),
+        ("ALL a. a + (?SUB::nat) = 0", ["a == a"])
+      ]
+    in
+      map test test_data
+    end
 
 end;  (* local *)

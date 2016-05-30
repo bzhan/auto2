@@ -5,32 +5,37 @@ sig
   (* General logic *)
   val shadow_prop_item: proofstep
   val shadow_term_item: proofstep
+  val eq_elim_prfstep: proofstep
 
   val exists_elim: box_id * thm -> Proof.context -> Update.raw_update list
   val extract_new_vars: Proof.context -> term list -> (string * typ) list
   val form_exists_prop: ((string * typ) * term) list -> term -> term
   val CHOOSE: string -> pre_scripts
   val CHOOSES: string list -> pre_scripts
-  val not_ex_forall_cv: Proof.context -> conv
   val add_logic_proofsteps: theory -> theory
 
-  (* DISJ and DISJ_ACTIVE *)
+  (* DISJ items. *)
   val TY_DISJ: string
-  val TY_DISJ_ACTIVE: string
   val imp_to_disj_cv: conv
-  val to_disj_cv: Proof.context -> conv
+  val to_disj_cv: conv
   val not_ex_cv: Proof.context -> conv
+  val normalize_disj_cv: Proof.context -> conv
   val forall_elim_sch: thm -> thm
-  val analyze_disj_th: Proof.context -> thm -> bool * thm
+  val analyze_disj_th: Proof.context -> thm -> bool * int * thm
   val disj_intro_gen: string * prfstep_descriptor list -> proofstep
   val disj_intro_prfsteps: proofstep list
+  val output_disj_fn: item_output
   val disj_matcher: item_matcher
+  val disj_prop_matcher: item_matcher
 
   val match_update_prfsteps: proofstep list
-  val match_rewrite_prfsteps: proofstep list
-  val add_match_one_sch_prfsteps: string * term -> theory -> theory
+  val match_one_sch_prfstep: proofstep
   val disj_create_case_prfstep: proofstep
-  val disj_shadow_prfsteps: proofstep list
+  val disj_shadow_prfstep: proofstep
+  val not_ex_forall_cv: Proof.context -> conv
+  val disj_rewrite_not_all_prfstep: proofstep
+  val disj_split_conj_prfstep: proofstep
+  val disj_use_vardef_prfstep: proofstep
   val add_disj_proofsteps: theory -> theory
 
   (* TERM_DEF *)
@@ -43,17 +48,25 @@ end;
 structure Logic_ProofSteps : LOGIC_PROOFSTEPS =
 struct
 
-(* Shadowing based on equivalence. *)
-fun shadow_item_fn is_subequiv rtype _ item1 item2 =
+(* Shadowing based on equivalence. For both PROP and TERM items,
+   shadowing is based on subterm equivalence, skipping any Not (~) at
+   head.
+ *)
+fun shadow_item_fn rtype _ item1 item2 =
     let
       val (tbl as {lat, ...}) = RewriteTable.table_of_rtype rtype
       val id = merged_id lat [item1, item2]
       val (tname1, tname2) = (get_tname item1, get_tname item2)
-      val equiv_fun = if is_subequiv then RewriteTable.subequiv_info
-                      else RewriteTable.equiv_info
-      val equiv_ids = (equiv_fun tbl id (tname1, tname2))
-                          |> RewriteTable.replace_id_for_type' rtype |> map fst
-                          |> max_partial (BoxID.is_eq_ancestor lat)
+      val equiv_ids =
+          if fastype_of tname1 = boolT andalso is_neg tname1 andalso
+             fastype_of tname2 = boolT andalso is_neg tname2 then
+            (RewriteTable.subequiv_info tbl id (get_neg tname1, get_neg tname2))
+                |> RewriteTable.replace_id_for_type' rtype |> map fst
+                |> max_partial (BoxID.is_eq_ancestor lat)
+          else
+            (RewriteTable.subequiv_info tbl id (tname1, tname2))
+                |> RewriteTable.replace_id_for_type' rtype |> map fst
+                |> max_partial (BoxID.is_eq_ancestor lat)
       val item_to_shadow =
           if #sc item1 < #sc item2 then item2 else item1
       fun process_id id' =
@@ -66,15 +79,50 @@ val shadow_prop_item =
     {name = "shadow_prop",
      args = [TypedMatch (TY_PROP, @{term_pat "?A::bool"}),
              TypedMatch (TY_PROP, @{term_pat "?B::bool"})],
-     res_types = [Update.SHADOW_ITEM],
-     func = TwoStep (shadow_item_fn false)}
+     priority = PRIORITY_URGENT,
+     func = TwoStep shadow_item_fn}
 
 val shadow_term_item =
     {name = "shadow_term",
-     args = [TypedMatch (TY_TERM, @{term_pat "?A"}),
-             TypedMatch (TY_TERM, @{term_pat "?B"})],
-     res_types = [Update.SHADOW_ITEM],
-     func = TwoStep (shadow_item_fn true)}
+     args = [TypedMatch (TY_TERM, @{term_pat "?A::?'a"}),
+             TypedMatch (TY_TERM, @{term_pat "?B::?'a"})],
+     priority = PRIORITY_URGENT,
+     func = TwoStep shadow_item_fn}
+
+(* Given equality A = B between booleans and proposition A, B, ~A, ~B,
+   derive the other side of the equality (or its negation) and shadow
+   the equality.
+ *)
+fun eq_elim_fn rtype _ (item1 as {id, prop, ...}) item2 =
+    let
+      val (A, B) = HOLogic.dest_eq (prop_of' prop)
+      fun inst_t t = get_insts (PropMatch t) item2 rtype (id, fo_init)
+      val (inst_A, inst_B) = (inst_t A, inst_t B)
+      val (inst_nA, inst_nB) = (inst_t (get_neg A), inst_t (get_neg B))
+
+      (* All the process_inst functions follow the same pattern, up to
+         transform function f for prop.
+       *)
+      fun elim_shadow f ((id', _), th) =
+          [Update.thm_update (
+              id', Thm.equal_elim (make_trueprop_eq (f prop)) th),
+           Update.ShadowItem {id = id', item = item1}]
+
+      val process_inst_A = elim_shadow to_meta_eq
+      val process_inst_B = elim_shadow (meta_sym o to_meta_eq)
+      val process_inst_nA = elim_shadow (make_neg_eq o to_meta_eq)
+      val process_inst_nB = elim_shadow (make_neg_eq o meta_sym o to_meta_eq)
+    in
+      maps process_inst_A inst_A @ maps process_inst_B inst_B @
+      maps process_inst_nA inst_nA @ maps process_inst_nB inst_nB
+    end
+
+val eq_elim_prfstep =
+    {name = "eq_elim",
+     args = [TypedMatch (TY_EQ, @{term_pat "((?A::bool), ?B)"}),
+             PropMatch @{term_pat "?C::bool"}],
+     priority = PRIORITY_SHADOW,
+     func = TwoStep eq_elim_fn}
 
 (* Given an assumption of the form EX x. A, we produce an assumption A
    with x in A replaced by a free variable. To avoid name collisions,
@@ -175,14 +223,574 @@ fun CHOOSES strs =
       | str :: rest => (CHOOSE str) THEN (CHOOSES rest)
       | _ => raise AUTO2 "CHOOSES: empty argument"
 
+val add_logic_proofsteps =
+    fold add_prfstep [
+      shadow_prop_item, shadow_term_item, eq_elim_prfstep
+
+    ] #> fold add_fixed_sc [
+      ("eq_elim", 1)
+
+    ] #> fold add_prfstep_custom [
+      ("exists_elim",
+       [WithFact @{term_pat "EX x. ?A x"}],
+       PRIORITY_ADD,
+       fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
+          exists_elim (id, the_single ths) ctxt),
+
+      ("not_forall_elim",
+       [WithGoal @{term_pat "!x. ?P x"}],
+       PRIORITY_ADD,
+       fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
+          let
+            val th = ths |> the_single
+                         |> apply_to_thm' (rewr_obj_eq @{thm HOL.not_all})
+          in
+            exists_elim (id, th) ctxt
+          end),
+
+      ("bex_elim",
+       [WithFact @{term_pat "Bex ?S ?P"}],
+       PRIORITY_ADD,
+       fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
+          let
+            val th = ths |> the_single
+                         |> apply_to_thm' (rewr_obj_eq @{thm Bex_def'})
+          in
+            exists_elim (id, th) ctxt
+          end),
+
+      ("not_ball_elim",
+       [WithGoal @{term_pat "Ball ?S ?P"}],
+       PRIORITY_ADD,
+       fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
+          let
+            val cv = (Conv.arg_conv (rewr_obj_eq @{thm Ball_def'}))
+                         then_conv (rewr_obj_eq @{thm HOL.not_all})
+            val th = ths |> the_single |> apply_to_thm' cv
+          in
+            exists_elim (id, th) ctxt
+          end)
+
+    ] #> fold add_gen_prfstep [
+      ("shadow_exists",
+       [WithFact @{term_pat "EX x. (?P::(?'a => bool)) x"},
+        WithFact @{term_pat "(?P::(?'a => bool)) ?x"},
+        ShadowFirst]),
+
+      ("shadow_not_forall",
+       [WithGoal @{term_pat "!x. (?P::(?'a => bool)) x"},
+        WithGoal @{term_pat "(?P::(?'a => bool)) ?x"},
+        ShadowFirst])
+    ]
+
+(* Disjunctive mutable states. *)
+val TY_DISJ = "DISJ"
+fun term_of_bool b = (if b then @{term True} else @{term False})
+fun bool_of_term t =
+    case t of
+        Const ("HOL.True", _) => true
+      | Const ("HOL.False", _) => false
+      | _ => raise AUTO2 "bool_of_term: unexpected t."
+
+(* Given a theorem in the form of a disjunction, possibly containing
+   schematic variables, return the corresponding DISJ item. Here sz
+   specifies number of terms in the disjunction.
+ *)
+fun disj_to_update is_active match_prem (id, sz, th) =
+    if Thm.prop_of th aconv prop_False then
+      Update.ResolveBox {id = id, th = th}
+    else if sz = 1 andalso not (has_vars (Thm.prop_of th)) then
+      Update.AddItems {
+        id = id, raw_items = [Fact (TY_PROP, prop_of' th, th)]}
+    else let
+      val subs = ACUtil.dest_ac_r disj_ac (prop_of' th)
+      val _ = assert (length subs >= sz)
+                     "disj_to_update: not enough terms in th."
+      val (prev, last) = chop (sz - 1) subs
+      val subs' = prev @ [ACUtil.list_ac_r disj_ac last]
+      val tname = HOLogic.mk_tuple (
+            map term_of_bool [is_active, match_prem] @ subs')
+    in
+      Update.AddItems {id = id, raw_items = [Fact (TY_DISJ, tname, th)]}
+    end
+
+(* Deconstruct the tname of a DISJ item. *)
+fun dest_tname_of_disj tname =
+    case HOLogic.strip_tuple tname of
+        is_active :: match_prem :: rest =>
+        ((bool_of_term is_active, bool_of_term match_prem), rest)
+      | _ => raise AUTO2
+                   "dest_tname_of_disj: too few terms in tname of DISJ item."
+
+(* Convert term of form A_1 --> ... --> A_n to ~A_1 | ... | ~A_(n-1) |
+   A_n, cancelling any double negations.
+ *)
+fun imp_to_disj_cv ct =
+    case Thm.term_of ct of
+        Const ("HOL.implies", _) $ _ $ _ =>
+        ((rewr_obj_eq @{thm imp_conv_disj})
+             then_conv (Conv.arg1_conv (
+                           Conv.try_conv (rewr_obj_eq nn_cancel_th)))
+             then_conv (Conv.arg_conv imp_to_disj_cv)) ct
+      | _ => Conv.all_conv ct
+
+(* Convert term of form ~(A_1 & ... & A_n) to ~A_1 | ... | ~A_n,
+   cancelling any double negations.
+ *)
+fun not_conj_to_disj_cv ct =
+    case Thm.term_of ct of
+        Const ("HOL.Not", _) $ (Const ("HOL.conj", _) $ _ $ _) =>
+        ((rewr_obj_eq @{thm de_Morgan_conj})
+             then_conv (Conv.arg1_conv (
+                           Conv.try_conv (rewr_obj_eq nn_cancel_th)))
+             then_conv (Conv.arg_conv not_conj_to_disj_cv)) ct
+      | _ => Conv.try_conv (rewr_obj_eq nn_cancel_th) ct
+
+(* Convert A_1 --> ... --> A_n to ~A_1 | ... | ~A_(n-1) | A_n. Convert
+   ~(A_1 & ... & A_n) to ~A_1 | ... | ~A_n. Eliminate any double
+   negations.
+ *)
+fun to_disj_cv ct =
+    case Thm.term_of ct of
+        Const ("HOL.implies", _) $ _ $ _ => imp_to_disj_cv ct
+      | Const ("HOL.Not", _) $ _ =>
+        ((Conv.arg_conv (ACUtil.normalize_assoc_r conj_ac))
+             then_conv not_conj_to_disj_cv) ct
+      | _ => ACUtil.normalize_assoc_r disj_ac ct
+
+(* Convert term of form ~ (EX x y. P x y) to !x y. ~ P x y (arbitrary
+   number of existence quantifiers).
+ *)
+fun not_ex_cv ctxt ct =
+    case Thm.term_of ct of
+        Const ("HOL.Not", _) $ (Const ("HOL.Ex", _) $ Abs _) =>
+        ((rewr_obj_eq @{thm HOL.not_ex})
+             then_conv (Conv.binder_conv (not_ex_cv o snd) ctxt)) ct
+      | _ => Conv.all_conv ct
+
+(* Convert to a (object) forall fact. ct must begin with ~EX or ALL to
+   be transformed.
+ *)
+fun to_forall_cv ctxt ct =
+    case Thm.term_of ct of
+        Const ("HOL.Not", _) $ (Const ("HOL.Ex", _) $ Abs _) =>
+        ((Conv.arg_conv (normalize_exs_conv ~1 ctxt))
+             then_conv (not_ex_cv ctxt)) ct
+      | Const ("HOL.Not", _) $ (Const ("Set.Bex", _) $ _ $ _) =>
+        ((Conv.arg_conv (normalize_exs_conv ~1 ctxt))
+             then_conv (not_ex_cv ctxt)) ct
+      | Const ("HOL.All", _) $ Abs _ => normalize_alls_conv ~1 ctxt ct
+      | Const ("Set.Ball", _) $ _ $ _ => normalize_alls_conv ~1 ctxt ct
+      | _ => Conv.all_conv ct
+
+(* Apply cv on the body of !x y z. ... .*)
+fun forall_body_conv cv ctxt ct =
+    case Thm.term_of ct of
+        Const ("HOL.All", _) $ Abs _ =>
+        Conv.binder_conv (fn (_, ctxt) => forall_body_conv cv ctxt) ctxt ct
+      | _ => cv ct
+
+(* Full conversion into normal form for disjunctions, with forall
+   quantifications outside, and disjunctions in the body. This should
+   work with unambigous output even of there are schematic variables
+   in the body.
+ *)
+fun normalize_disj_cv ctxt =
+    (to_forall_cv ctxt) then_conv (forall_body_conv to_disj_cv ctxt)
+
+(* Convert theorems of form !!x y. P x y into P ?x ?y (arbitrary
+   number of quantifiers).
+ *)
+fun forall_elim_sch th =
+    let
+      val thy = Thm.theory_of_thm th
+    in
+      case Thm.prop_of th of
+          Const ("Pure.all", _) $ Abs (nm, T, _) =>
+          th |> Thm.forall_elim (cert_thy thy (Var ((nm, 0), T)))
+             |> forall_elim_sch
+        | _ => th
+    end
+
+(* Given a theorem th, return equivalent theorem in disjunctive form,
+   with possible schematic variables. Also return whether th is
+   "active", that is, whether it is originally a conjunctive goal or
+   disjunctive fact, as opposed to implications.
+ *)
+fun analyze_disj_th ctxt th =
+    let
+      val th' = th |> apply_to_thm' (to_forall_cv ctxt)
+                   |> apply_to_thm (to_meta_all_conv ctxt)
+                   |> forall_elim_sch
+      val prop = prop_of' th'
+      val th'' = apply_to_thm' to_disj_cv th'
+    in
+      case prop of
+          Const ("HOL.disj", _) $ _ $ _ =>
+          (true, length (ACUtil.dest_ac_total disj_ac prop), th'')
+        | Const ("HOL.Not", _) $ (Const ("HOL.conj", _) $ _ $ _) =>
+          (true, length (ACUtil.dest_ac_total conj_ac (get_neg prop)), th'')
+        | _ =>
+          (false, length (fst (strip_obj_imp prop)) + 1, th'')
+    end
+
+(* Template for proofsteps constructing DISJ items from propositions. *)
+fun disj_intro_gen (name, desc) =
+    prfstep_custom
+        name desc PRIORITY_SHADOW
+        (fn ((id, _), ths) => fn items => fn {ctxt, ...} =>
+            let
+              val (is_active, sz, disj_th) =
+                  analyze_disj_th ctxt (the_single ths)
+            in
+              [disj_to_update is_active true (id, sz, disj_th),
+               Update.ShadowItem {id = id, item = the_single items}]
+            end)
+
+(* Introduction rules for DISJ. *)
+val disj_intro_prfsteps = map disj_intro_gen [
+      ("conj_goal_intro", [WithProp @{term_pat "~(?A & ?B)"}]),
+      ("disj_state_intro", [WithProp @{term_pat "?A | ?B"}]),
+      ("imp_disj_state_intro", [WithProp @{term_pat "?A --> ?B"}]),
+      ("forall_fact_intro", [WithProp @{term_pat "!x. ?P x"}]),
+      ("ball_fact_intro", [WithProp @{term_pat "Ball ?S ?P"}]),
+      ("exists_goal_intro", [WithProp @{term_pat "~ (EX x. ?P x)"}]),
+      ("bex_goal_intro", [WithProp @{term_pat "~ (Bex ?S ?P)"}])]
+
+fun output_disj_fn ctxt (tname, _) =
+    let
+      val ((is_active, match_prem), subs) = dest_tname_of_disj tname
+    in
+      "DISJ " ^ (if is_active then "(active) " else "") ^
+      (if match_prem then "(match prem) " else "") ^
+      (subs |> pretty_terms ctxt |> str)
+    end
+
+(* Pre-matching function for DISJ items. There are only three possible
+   patterns to consider: ?C | ?D, ?C = ?D, and ?C. No rewriting is
+   needed for pre-matching. Matching is not implemented.
+ *)
+val disj_matcher =
+    let
+      val pat_or = @{term_pat "?C | ?D"}
+      val pat_eq = @{term_pat "?C = ?D"}
+      val pat_single = @{term_pat "?C::bool"}
+
+      fun pre_match pat {tname, ...} {ctxt, ...} =
+          let
+            val (_, subs) = dest_tname_of_disj tname
+          in
+            if pat aconv pat_single then true
+            else if pat aconv pat_or then length subs >= 2
+            else if pat aconv pat_eq then
+              length subs = 1 andalso is_eq_term (the_single subs)
+            else if length subs > 1 then false
+            else let val _ = pattern_fo_match ctxt (pat, the_single subs) in
+                   true
+                 end
+                 handle Pattern.MATCH => false
+          end
+
+      fun match _ _ _ _ =
+          raise AUTO2 "disj_matcher: matching not implemented."
+    in
+      {pre_match = pre_match, match = match}
+    end
+
+(* Matching a DISJ item (possibly containing schematic variables) with
+   a forall or not exists statement.
+ *)
+val disj_prop_matcher =
+    let
+      fun pre_match pat {tname, ...} _ =
+          let
+            val ((_, match_prem), _) = dest_tname_of_disj tname
+          in
+            if not match_prem then false else
+            case pat of
+                Const ("HOL.disj", _) $ _ $ _ => not (has_vars tname)
+              | Const ("HOL.implies", _) $ _ $ _ => not (has_vars tname)
+              | Const ("HOL.Not", _) $ (Const ("HOL.conj", _) $ _ $ _) =>
+                not (has_vars tname)
+              | Const ("HOL.All", _) $ Abs _ => has_vars tname
+              | Const ("Set.Ball", _) $ _ $ _ => has_vars tname
+              | Const ("HOL.Not", _) $ (Const ("HOL.Ex", _) $ Abs _) =>
+                has_vars tname
+              | Const ("HOL.Not", _) $ (Const ("Set.Bex", _) $ _ $ _) =>
+                has_vars tname
+              | _ => false
+          end
+
+      (* Given t in forall-disj form, return the list of types in the
+         forall abstractions, followed by the number of terms in the
+         disjunction.
+       *)
+      fun strip_forall_disj t =
+          case t of
+              Const ("HOL.All", _) $ Abs (_, T, body) =>
+              let
+                val (allc, disjc) = strip_forall_disj body
+              in
+                (T :: allc, disjc)
+              end
+            | Const ("HOL.disj", _) $ _ $ B =>
+              let
+                val (allc, disjc) = strip_forall_disj B
+              in
+                (allc, disjc + 1)
+              end
+            | _ => ([], 1)
+
+      (* Returns the body under forall. *)
+      fun strip_forall t =
+          case t of
+              Const ("HOL.All", _) $ Abs (_, _, body) => strip_forall body
+            | _ => t
+
+      (* Given th: t(var) == u(var), form !nm. t(nm) == u(nm). *)
+      fun abstract_forall_rule ctxt ((nm, T), var) th =
+          let
+            val all_const = Const ("HOL.All", (T --> boolT) --> boolT)
+          in
+            th |> Thm.abstract_rule nm (cert ctxt var)
+               |> Thm.combination (Thm.reflexive (cert ctxt all_const))
+          end
+
+      fun match pat {tname, prop = th, ...} (tbl as {ctxt, ...})
+                (id, (tyinst, inst)) =
+          let
+            val ((_, match_prem), subs) = dest_tname_of_disj tname
+            val thy = Proof_Context.theory_of ctxt
+          in
+            if not match_prem then []
+            else let
+              val pat_eq = normalize_disj_cv ctxt (cert ctxt pat)
+              val pat' = rhs_of pat_eq
+              val (allc, disjc) = strip_forall_disj pat'
+              val vars = Term.add_vars tname []
+              val var_tys = map snd vars
+            in
+              if length allc <> length vars orelse disjc <> length subs orelse
+                 not (Type.could_matches (rev allc, var_tys))
+              then [] else
+              let
+                (* First step: match and instantiate types. *)
+                val allc = map (Envir.subst_type tyinst) allc
+                val tyinst' =
+                    fold (Sign.typ_match thy) (rev allc ~~ var_tys) tyinst
+                val pat'' = Envir.subst_term_types tyinst' pat'
+
+                (* Second step: get fresh free variables and
+                   substitute them into both pattern and term.
+                 *)
+                val vars' = map (fn ((nm, _), T) => (nm, T)) vars
+                val bd_vars = map Free (Variable.variant_frees ctxt [] vars')
+                val sch_vars = map Var vars
+                val tname' =
+                    Term.subst_atomic (sch_vars ~~ bd_vars) (prop_of' th)
+                val pat''' = Term.subst_bounds (bd_vars, strip_forall pat'')
+
+                (* Find matches between pattern and term, both with bd_vars. *)
+                val insts' = Matcher.rewrite_match_ac_bd
+                                 disj_ac tbl bd_vars (pat''', tname')
+                                 (id, (tyinst', inst))
+
+                fun process_inst ((id', inst'), eq_th) =
+                    (* eq_th: pat'''(s) == tname'(s), pat_eq: pat == pat'. *)
+                    let
+                      val pat_eq' = subst_thm ctxt inst' pat_eq
+                      (* eq_th': between pat' and forall version of th. *)
+                      val eq_th' = fold (abstract_forall_rule ctxt)
+                                        (vars' ~~ bd_vars) eq_th
+                      val eq_th'' = (transitive_list [pat_eq', eq_th'])
+                                        |> meta_sym |> make_trueprop_eq
+                      val forall_th =
+                          th |> fold Thm.forall_intr (map (cert ctxt) sch_vars)
+                             |> apply_to_thm (to_obj_conv ctxt)
+                    in
+                      ((id', inst'), Thm.equal_elim eq_th'' forall_th)
+                    end
+              in
+                map process_inst insts'
+              end
+              handle Type.TYPE_MATCH => []
+            end
+          end
+    in
+      {pre_match = pre_match, match = match}
+    end
+
+(* Reduce a disjunction p_1 | ... | t | ... | p_n by matching ~t with
+   the second item. If the disjunction contains schematic variables, t
+   must have either zero or the largest number of schematic variables.
+ *)
+fun match_update_fn
+        rtype (st as {ctxt, ...}) (item1 as {tname = tname1, ...}) item2 =
+    let
+      val {id, prop, ...} = item1
+      val thy = Status.theory_of st
+      val ((is_active, _), subs) = dest_tname_of_disj tname1
+      fun count_var t = length (Term.add_vars t [])
+      val max_nvar = fold (curry Int.max) (map count_var subs) 0
+
+      (* Match the negation of subs[i] with th2. For each match,
+         instantiate in prop all schematic variables in t, so that t
+         becomes ~th2. Then remove t from prop in the instantiated
+         version.
+       *)
+      fun get_matches i =
+          if length subs > 1 andalso
+             is_property_prem thy (get_neg (nth subs i)) then []
+          else if not (is_pattern (nth subs i)) then []
+          else let
+            val t = nth subs i
+            val nvar = count_var (nth subs i)
+            fun process_inst ((id', inst), th) =
+                if nvar > 0 andalso nvar < max_nvar andalso
+                   not (i = 0 andalso forall (fn (_, (_, t)) => Term.is_Free t)
+                                             (Vartab.dest (snd inst)))
+                then []
+                else let
+                  val prop' =
+                      prop |> subst_thm_thy thy inst
+                           |> apply_to_thm (rewr_obj_eq_top (to_eqF_th th) ctxt)
+                           |> apply_to_thm' (ACUtil.normalize_unit disj_ac)
+                  val shadow_updt = if count_var (nth subs i) > 0 then [] else
+                                    [Update.ShadowItem {id = id', item = item1}]
+                  val reduce_count =
+                      subs |> map (subst_term_norm inst)
+                           |> filter (fn t => t aconv (get_neg (prop_of' th)))
+                           |> length
+                  val new_len = length subs - reduce_count
+                in
+                  [disj_to_update is_active false (id', new_len, prop')] @
+                  shadow_updt
+                end
+          in
+            if i > 0 andalso nvar > 0 andalso nvar < max_nvar then []
+            else (get_insts (PropMatch (get_neg t)) item2 rtype (id, fo_init))
+                     |> maps process_inst
+          end
+    in
+      maps get_matches (0 upto (length subs - 1))
+    end
+
+val match_update_prfsteps = [
+  {name = "disj_match_update",
+   args = [TypedMatch (TY_DISJ, @{term_pat "?C::bool"}),
+           PropMatch @{term_pat "?A::bool"}],
+   priority = PRIORITY_SHADOW,
+   func = TwoStep match_update_fn}
+]
+
+(* For DISJ items with a single term, of form f p1 ... pn, match t
+   against each of p_i.
+ *)
+fun match_one_sch_fn rtype (st as {tbl, ...}) {id, tname, prop = th1, ...}
+                     item2 =
+    let
+      val thy = Status.theory_of st
+      val (_, subs) = dest_tname_of_disj tname
+    in
+      if length subs > 1 then [] else
+      let
+        val t = the_single subs
+        val (_, args) = Term.strip_comb t
+        fun count_var t = length (Term.add_vars t [])
+        val nvar = count_var t
+
+        fun get_matches i =
+            if count_var (nth args i) < nvar then [] else
+            let
+              val arg = nth args i
+              val insts = get_insts (TypedMatch (TY_TERM, arg)) item2 rtype
+                                    (id, fo_init)
+              fun inst_to_updt ((id', inst), _) =
+                  let
+                    val th1' = subst_thm_thy thy inst th1
+                    val prop' = prop_of' th1'
+                  in
+                    if is_eq_term prop' andalso
+                       RewriteTable.is_equiv id' tbl (HOLogic.dest_eq prop')
+                    then [] else [Update.thm_update (id', th1')]
+                  end
+            in
+              maps inst_to_updt insts
+            end
+      in
+        maps get_matches (0 upto (length args - 1))
+      end
+    end
+
+val match_one_sch_prfstep =
+    {name = "match_one_sch",
+     args = [TypedMatch (TY_DISJ, @{term_pat "?C::bool"}),
+             TypedMatch (TY_TERM, @{term_pat "?A"})],
+     priority = PRIORITY_ADD,
+     func = TwoStep match_one_sch_fn}
+
+(* For active case, create box checking the next case. *)
+fun disj_create_case_fn rtype {ctxt, ...} {id, tname, ...} =
+    if not (RewriteTable.is_single_rtype rtype) then [] else
+    if has_vars tname then [] else
+    let
+      val ((is_active, _), subs) = dest_tname_of_disj tname
+    in
+      if not is_active then []
+      else if length subs = 1 then []
+      else let
+        val stmt = subs |> hd |> get_neg |> cert ctxt
+                        |> normalize_alls_conv ~1 ctxt |> rhs_of
+        val (vars, body) = strip_obj_all_var stmt
+        val (assums, concl) = strip_obj_imp body
+        val inits = map Update.InitVar vars @
+                    map (Update.InitAssum o HOLogic.mk_Trueprop) assums @
+                    [Update.InitAssum (HOLogic.mk_Trueprop (get_neg concl))]
+      in
+        [Update.AddBoxes {id = id, inits = inits, cbs = []}]
+      end
+    end
+
+val disj_create_case_prfstep =
+    {name = "disj_create_case",
+     args = [TypedMatch (TY_DISJ, @{term_pat "?C | ?D"})],
+     priority = PRIORITY_ADD,
+     func = OneStep disj_create_case_fn}
+
+(* item1 dominates item2 if the disjunctive terms in item1 is a subset
+   of that for item2.
+ *)
+fun disj_shadow_fn rtype _ (item1 as {tname = tname1, ...})
+                   (item2 as {tname = tname2, ...}) =
+    if not (RewriteTable.is_single_rtype rtype) then [] else
+    let
+      val {lat, ...} = RewriteTable.table_of_rtype rtype
+      val id = merged_id lat [item1, item2]
+      val ((is_active1, match_prem1), subs1) = dest_tname_of_disj tname1
+      val ((is_active2, match_prem2), subs2) = dest_tname_of_disj tname2
+    in
+      if (not is_active1 andalso is_active2) then []
+      else if (not match_prem1 andalso match_prem2) then []
+      else if subset (op aconv) (subs1, subs2) then
+        [Update.ShadowItem {id = id, item = item2}]
+      else []
+    end
+
+val disj_shadow_prfstep =
+    {name = "disj_shadow",
+     args = [TypedMatch (TY_DISJ, @{term_pat "?C | ?D"}),
+             TypedMatch (TY_DISJ, @{term_pat "?C | ?D"})],
+     priority = PRIORITY_SHADOW,
+     func = TwoStep disj_shadow_fn}
+
 (* Move "not" inside exists and foralls. *)
 fun not_ex_forall_cv ctxt ct =
     case Thm.term_of ct of
-        @{const Not} $ (Const ("HOL.Ex", _) $ _) =>
+        @{const Not} $ (Const ("HOL.Ex", _) $ Abs _) =>
         (* ~ EX x. P x to ALL x. ~ P x. *)
         ((rewr_obj_eq @{thm HOL.not_ex})
              then_conv (Conv.binder_conv (not_ex_forall_cv o snd) ctxt)) ct
-      | @{const Not} $ (Const ("HOL.All", _) $ _) =>
+      | @{const Not} $ (Const ("HOL.All", _) $ Abs _) =>
         (* ~ ALL x. P x to EX x. ~ P x. *)
         ((rewr_obj_eq @{thm HOL.not_all})
              then_conv (Conv.binder_conv (not_ex_forall_cv o snd) ctxt)) ct
@@ -207,397 +815,145 @@ fun not_ex_forall_cv ctxt ct =
         (Conv.try_conv (rewr_obj_eq @{thm not_le})) ct
       | _ => Conv.all_conv ct
 
-val add_logic_proofsteps =
-    fold add_prfstep [
-      shadow_prop_item, shadow_term_item
-
-    ] #> fold add_prfstep_custom [
-      ("exists_elim",
-       [WithFact @{term_pat "EX x. ?A x"}],
-       [Update.ADD_ITEMS],
-       fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
-          exists_elim (id, the_single ths) ctxt),
-
-      ("not_forall_elim",
-       [WithGoal @{term_pat "!x. ?P x"}],
-       [Update.ADD_ITEMS],
-       fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
-          let
-            val cv = Conv.arg_conv (rewr_obj_eq @{thm HOL.not_all})
-            val th = ths |> the_single |> apply_to_thm cv
-          in
-            exists_elim (id, th) ctxt
-          end)
-
-    ] #> fold add_gen_prfstep [
-      ("shadow_exists",
-       [WithFact @{term_pat "EX x. (?P::(?'a => bool)) x"},
-        WithFact @{term_pat "(?P::(?'a => bool)) ?x"},
-        ShadowFirst]),
-
-      ("shadow_not_forall",
-       [WithGoal @{term_pat "!x. (?P::(?'a => bool)) x"},
-        WithGoal @{term_pat "(?P::(?'a => bool)) ?x"},
-        ShadowFirst])
-
-    ] #> fold add_prfstep_pre_conv [
-      ("rewrite_not_ex", [WithTerm @{term_pat "~ (EX x. ?P x)"}],
-       not_ex_forall_cv)
-    ]
-
-(* Disjunctive mutable states. *)
-val dest_disj_prop = ACUtil.dest_ac disj_ac o prop_of'
-fun dest_disj_subterms thy th =
-    if length (dest_disj_prop th) = 1 then Subterms.triv_subterms (prop_of' th)
-    else Subterms.dest_subterms thy false (prop_of' th)
-val TY_DISJ = "DISJ"
-val TY_DISJ_ACTIVE = "DISJ_ACTIVE"
-fun TY_DISJ_of is_active = if is_active then TY_DISJ_ACTIVE else TY_DISJ
-fun get_DISJ_is_active ty_str =
-    case ty_str of "DISJ" => false | "DISJ_ACTIVE" => true
-                   | _ => raise AUTO2 "get_DISJ_is_active: wrong ty_str."
-
-fun disj_to_update is_active (id, th) =
-    if Thm.prop_of th aconv prop_False then
-      Update.ResolveBox {id = id, th = th}
-    else
-      let
-        val subs = dest_disj_prop th
-        val ty_str = if length subs = 1 andalso not (has_vars (Thm.prop_of th))
-                     then TY_PROP else TY_DISJ_of is_active
-        val tname = HOLogic.mk_tuple subs
-      in
-        Update.AddItems {id = id, raw_items = [Fact (ty_str, tname, th)]}
-      end
-
-(* Convert term of form A_1 --> ... --> A_n to ~A_1 | ... | ~A_(n-1) |
-   A_n. Note each A_i remains the same.
- *)
-fun imp_to_disj_cv ct =
-    case Thm.term_of ct of
-        Const ("HOL.implies", _) $ _ $ _ =>
-        (rewr_obj_eq @{thm imp_conv_disj}
-                          then_conv (Conv.arg_conv imp_to_disj_cv)) ct
-      | _ => Conv.all_conv ct
-
-(* Convert proposition of form A_1 --> ... --> A_n to ~A_1 | ... |
-   ~A_(n-1) | A_n. Expand any ~A_i of form ~(A_i1 & ... & A_in) using
-   de Morgan's law. This converts any statements of form A | B, ~(A &
-   B), and A --> B to disjunction form.
- *)
-fun to_disj_cv ctxt ct =
+(* Rewrite part of DISJ item that is ~ALL. *)
+fun disj_rewrite_not_all rtype {ctxt, ...} {id, tname, prop, ...} =
+    if not (RewriteTable.is_single_rtype rtype) then [] else
+    if not (has_vars tname) then [] else
     let
-      val cv_start =
-          case HOLogic.dest_Trueprop (Thm.term_of ct) of
-              Const ("HOL.implies", _) $ _ $ _ => Conv.arg_conv imp_to_disj_cv
-            | _ => rewr_obj_eq_top @{thm de_Morgan_conj} ctxt
-      val cv_nn = rewr_obj_eq_top nn_cancel_th ctxt
-      val cv_assoc = Conv.arg_conv (ACUtil.normalize_assoc disj_ac)
-      val cv_comm = Conv.arg_conv (ACUtil.normalize_cu disj_ac)
+      val ((is_active, match_prem), subs) = dest_tname_of_disj tname
+      fun rewrite_not_all ct =
+          case Thm.term_of ct of
+              @{const Not} $ (Const ("HOL.All", _) $ Abs _) =>
+              not_ex_forall_cv ctxt ct
+            | _ => Conv.all_conv ct
+      val prop' =
+          apply_to_thm' (ACUtil.ac_subterms_conv disj_ac rewrite_not_all) prop
     in
-      (cv_start then_conv cv_nn then_conv cv_assoc then_conv cv_comm) ct
+      if Thm.prop_of prop aconv Thm.prop_of prop' then []
+      else [disj_to_update is_active match_prem (id, length subs, prop')]
     end
 
-(* Convert term of form ~ (EX x y. P x y) to !x y. ~ P x y (arbitrary
-   number of existence quantifiers).
- *)
-fun not_ex_cv ctxt ct =
-    case Thm.term_of ct of
-        Const ("HOL.Not", _) $ (Const ("HOL.Ex", _) $ _) =>
-        ((rewr_obj_eq @{thm HOL.not_ex})
-             then_conv (Conv.binder_conv (not_ex_cv o snd) ctxt))
-            ct
-      | _ => Conv.all_conv ct
+val disj_rewrite_not_all_prfstep =
+    {name = "disj_rewrite_not_all",
+     args = [TypedMatch (TY_DISJ, @{term_pat "?C::bool"})],
+     priority = PRIORITY_ADD,
+     func = OneStep disj_rewrite_not_all}
 
-(* Convert theorems of form !!x y. P x y into P ?x ?y (arbitrary
-   number of quantifiers).
- *)
-fun forall_elim_sch th =
+(* Split conjunction (or not disj) within DISJ. *)
+fun disj_split_conj rtype _ (item as {id, tname, prop, ...}) =
+    if not (RewriteTable.is_single_rtype rtype) then [] else
+    if not (has_vars tname) then [] else
     let
-      val thy = Thm.theory_of_thm th
-    in
-      case Thm.prop_of th of
-          Const ("Pure.all", _) $ Abs (nm, T, _) =>
-          th |> Thm.forall_elim (cert_thy thy (Var ((nm, 0), T)))
-             |> forall_elim_sch
-        | _ => th
-    end
-
-(* Given a theorem th, return equivalent theorem in disjunctive form,
-   with possible schematic variables. Also return whether th is
-   "active", that is, whether it is originally a conjunctive goal or
-   disjunctive fact, as opposed to implications.
- *)
-fun analyze_disj_th ctxt th =
-    let
-      val try_not_bex_cv =
-          Conv.try_conv (Conv.arg_conv (rewr_obj_eq (obj_sym @{thm bex_iff})))
-      val th' = th |> apply_to_thm (HOLogic.Trueprop_conv try_not_bex_cv)
-                   |> apply_to_thm (HOLogic.Trueprop_conv (not_ex_cv ctxt))
-                   |> apply_to_thm (to_meta_all_conv ctxt)
-                   |> forall_elim_sch
-      val is_active =
-          case prop_of' th' of
-              Const ("HOL.Not", _) $ (Const ("HOL.conj", _) $ _ $ _) => true
-            | Const ("HOL.disj", _) $ _ $ _ => true
+      val ((is_active, match_prem), subs) = dest_tname_of_disj tname
+      fun is_conj t =
+          case t of
+              Const ("HOL.conj", _) $ _ $ _ => true
+            | Const ("HOL.Not", _) $ (Const ("HOL.disj", _) $ _ $ _) => true
             | _ => false
-      val disj_th = apply_to_thm (to_disj_cv ctxt) th'
     in
-      (is_active, disj_th)
-    end
-
-(* Template for proofsteps constructing DISJ / DISJ_ACTIVE items from
-   propositions.
- *)
-fun disj_intro_gen (name, desc) =
-    prfstep_custom
-        name desc [Update.ADD_ITEMS]
-        (fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
-            let
-              val (is_active, disj_th) = analyze_disj_th ctxt (the_single ths)
-            in
-              [disj_to_update is_active (id, disj_th)]
-            end)
-
-(* Introduction rules for DISJ / DISJ_ACTIVE. *)
-val disj_intro_prfsteps = map disj_intro_gen [
-      ("conj_goal_intro",
-       [WithGoal @{term_pat "?A & ?B"},
-        Filter (canonical_split_filter @{const_name conj} "A" "B")]),
-      ("disj_state_intro",
-       [WithFact @{term_pat "?A | ?B"},
-        Filter (canonical_split_filter @{const_name disj} "A" "B")]),
-      ("imp_disj_state_intro", [WithFact @{term_pat "?A --> ?B"}]),
-      ("forall_fact_intro", [WithFact @{term_pat "!x. ?P x"}]),
-      ("exists_goal_intro", [WithFact @{term_pat "~ (EX x. ?P x)"}]),
-      ("bex_goal_intro", [WithFact @{term_pat "~ (EX x:?S. ?P x)"}])]
-
-(* Pre-matching function for DISJ / DISJ_ACTIVE items. There are only
-   three possible patterns to consider: ?C | ?D, ?C = ?D, and ?C. No
-   rewriting is needed for pre-matching. Matching is not implemented.
- *)
-val disj_matcher =
-    let
-      val pat_or = @{term_pat "?C | ?D"}
-      val pat_eq = @{term_pat "?C = ?D"}
-      val pat_single = @{term_pat "?C::bool"}
-
-      fun pre_match pat {tname, ...} {ctxt, ...} =
+      case find_first is_conj subs of
+          NONE => []
+        | SOME t =>
           let
-            val subs = HOLogic.strip_tuple tname
+            val len = length subs
+            val cv =
+                if len = 1 then
+                  Conv.try_conv (rewr_obj_eq @{thm de_Morgan_disj})
+                else
+                  Conv.every_conv [
+                    ACUtil.swap_assoc_to_l len disj_ac,
+                    ACUtil.move_outmost disj_ac t,
+                    Conv.arg_conv (
+                      Conv.try_conv (rewr_obj_eq @{thm de_Morgan_disj})),
+                    rewr_obj_eq @{thm disj_conj_distribL},
+                    Conv.binop_conv (ACUtil.swap_assoc_to_r len disj_ac)]
+            val props = prop |> apply_to_thm' cv |> split_conj_th
+            val shadow_updt =
+                if match_prem then []
+                else [Update.ShadowItem {id = id, item = item}]
           in
-            if pat aconv pat_or then length subs >= 2
-            else if pat aconv pat_eq then
-              length subs = 1 andalso is_eq_term tname
-            else if pat aconv pat_single then length subs = 1
-            else if length subs > 1 then false
-            else let val _ = pattern_fo_match ctxt (pat, tname) in true end
-                 handle Pattern.MATCH => false
+            shadow_updt @
+            map (fn th => disj_to_update
+                              is_active match_prem (id, length subs, th)) props
           end
-
-      fun match _ _ _ _ =
-          raise AUTO2 "disj_matcher: matching not implemented."
-    in
-      {pre_match = pre_match, match = match}
     end
 
-(* Reduce a disjunction p_1 | ... | t | ... | p_n by matching ~t with
-   the second item. If the disjunction contains schematic variables, t
-   must have either zero or the largest number of schematic variables.
- *)
-fun match_update_fn rtype (st as {ctxt, ...}) item1 item2 =
-    let
-      val {id, ty_str, tname, prop, ...} = item1
-      val is_active = get_DISJ_is_active ty_str
-      val thy = Status.theory_of st
-      fun count_var t = length (Term.add_vars t [])
-      val subs = HOLogic.strip_tuple tname
-      val max_nvar = fold (curry Int.max) (map count_var subs) 0
+val disj_split_conj_prfstep =
+    {name = "disj_split_conj",
+     args = [TypedMatch (TY_DISJ, @{term_pat "?C::bool"})],
+     priority = PRIORITY_NORM,
+     func = OneStep disj_split_conj}
 
-      (* Match the negation of subs[i] with th2. For each match,
-         instantiate in prop all schematic variables in t, so that t
-         becomes ~th2. Then remove t from prop in the instantiated
-         version.
-       *)
-      fun get_matches i =
-          if count_var (nth subs i) > 0 andalso
-             count_var (nth subs i) < max_nvar then [] else
+fun disj_use_vardef rtype {ctxt, ...} (item as {id, tname, prop, ...}) =
+    if not (RewriteTable.is_single_rtype rtype) then [] else
+    if not (has_vars tname) then [] else
+    let
+      val ((is_active, match_prem), subs) = dest_tname_of_disj tname
+      fun is_vardef t =
+          case t of
+              Const ("HOL.eq", _) $ Var _ $ s => not (has_vars s)
+            | Const ("HOL.eq", _) $ s $ Var _ => not (has_vars s)
+            | _ => false
+    in
+      if length subs = 1 then [] else
+      case find_first (is_vardef o get_neg) subs of
+          NONE => []
+        | SOME t =>
           let
-            val t = nth subs i
-            val insts =
-                get_insts (PropMatch (get_neg t)) item2 rtype (id, fo_init)
-            fun process_inst ((id', inst), th) =
-                let
-                  val teqF = to_meta_eq (to_eqF_th th)
-                  val prop_inst = prop |> subst_thm_thy thy inst
-                  val (prop_inst', subs') = dest_disj_subterms thy prop_inst
-                  val base_equivs = map (Thm.reflexive o cert ctxt) subs'
-                  val equivs = take i base_equivs @ [teqF] @
-                               drop (i+1) base_equivs
-                  val prop_equiv =
-                      (Subterms.build_equiv ctxt equivs prop_inst')
-                          |> apply_to_rhs (ACUtil.normalize_unit disj_ac)
-                          |> make_trueprop_eq
-                  val prop_new = Thm.equal_elim prop_equiv prop_inst
-                  val shadow_updt = if count_var (nth subs i) > 0 then [] else
-                                    [Update.ShadowItem {id = id', item = item1}]
-                in
-                  [disj_to_update is_active (id', prop_new)] @ shadow_updt
-                end
+            val len = length subs
+            val (_, (t1, t2)) = dest_binop (get_neg t)
+            val (is_left, var) =
+                if Term.is_Var t1 then (true, t1) else (false, t2)
+            val cv = Conv.every_conv [
+                  ACUtil.swap_assoc_to_l len disj_ac,
+                  ACUtil.move_outmost disj_ac t,
+                  (if not is_left then
+                     Conv.arg_conv (
+                       Conv.arg_conv (rewr_obj_eq @{thm HOL.eq_commute}))
+                   else Conv.all_conv),
+                  rewr_obj_eq @{thm disj_comms(1)},
+                  rewr_obj_eq @{thm disj_not1}]
+            val prop' =
+                prop |> apply_to_thm' cv
+                     |> Thm.forall_intr (cert ctxt var)
+                     |> apply_to_thm (to_obj_conv ctxt)
+                     |> apply_to_thm' (rewr_obj_eq @{thm use_vardef})
+                     |> apply_to_thm' (ACUtil.swap_assoc_to_r (len-1) disj_ac)
           in
-            maps process_inst insts
+            [Update.ShadowItem {id = id, item = item},
+             disj_to_update is_active match_prem (id, length subs - 1, prop')]
           end
-    in
-      maps get_matches (0 upto (length subs - 1))
     end
 
-fun match_update_templ (is_active, is_resolve) =
-    let
-      val name = "disj_match_update" ^ (if is_active then "@active" else "") ^
-                 (if is_resolve then "@resolve" else "")
-      val arg1_pat = if is_resolve then @{term_pat "?C::bool"}
-                     else @{term_pat "?C | ?D"}
-      val res_types =
-          if is_resolve then [Update.SHADOW_ITEM, Update.RESOLVE_BOX]
-          else [Update.SHADOW_ITEM, Update.ADD_ITEMS]
-    in
-      {name = name,
-       args = [TypedMatch (TY_DISJ_of is_active, arg1_pat),
-               PropMatch @{term_pat "?A::bool"}],
-       res_types = res_types,
-       func = TwoStep match_update_fn}
-    end
-
-val match_update_prfsteps = map match_update_templ [
-      (false, false), (false, true), (true, false), (true, true)]
-
-(* When the disj has one equality term (with schematic variables), use
-   it as a bidirectional rewriting rule.
- *)
-fun match_rewrite_fn rtype st {id, prop = th1, ...} item2 =
-    let
-      val thy = Status.theory_of st
-      val (lhs, rhs) = th1 |> prop_of' |> HOLogic.dest_eq
-
-      val lhs_vars = map Var (Term.add_vars lhs [])
-      val rhs_vars = map Var (Term.add_vars rhs [])
-      val insts =
-          (if subset (op aconv) (rhs_vars, lhs_vars) then
-             get_insts (TypedMatch (TY_TERM, lhs)) item2 rtype (id, fo_init)
-           else []) @
-          (if subset (op aconv) (lhs_vars, rhs_vars) then
-             get_insts (TypedMatch (TY_TERM, rhs)) item2 rtype (id, fo_init)
-           else [])
-
-      fun inst_to_updt ((id', inst), _) =
-          Update.thm_update (id', subst_thm_thy thy inst th1)
-    in
-      map inst_to_updt insts
-    end
-
-fun match_rewrite_templ is_active =
-    {name = "match_rewrite" ^ (if is_active then "@active" else ""),
-     args = [TypedMatch (TY_DISJ_of is_active, @{term_pat "?C = ?D"}),
-             TypedMatch (TY_TERM, @{term_pat "?A"})],
-     res_types = [Update.ADD_ITEMS],
-     func = TwoStep match_rewrite_fn}
-
-val match_rewrite_prfsteps = map match_rewrite_templ [true, false]
-
-(* When the disj has one term containing one schematic variable, match
-   with all variables of the same type.
- *)
-fun match_one_sch_fn rtype {lat, ctxt, ...} {id, prop = th1, ...}
-                     {id = id', tname, ...} =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
-    let
-      val stmt = prop_of' th1
-      val sch_var = Var (the_single (Term.add_vars stmt []))
-    in
-      if fastype_of sch_var <> fastype_of tname then []
-      else let
-        val id'' = BoxID.merge_boxes lat (id, id')
-        val th' = th1 |> Thm.forall_intr (cert ctxt sch_var)
-                      |> Thm.forall_elim (cert ctxt tname)
-      in
-        [Update.thm_update (id'', th')]
-      end
-    end
-
-fun match_one_sch_templ nm pat is_active =
-    {name = "match_one_sch_" ^ nm ^ (if is_active then "@active" else ""),
-     args = [TypedMatch (TY_DISJ_of is_active, pat),
-             TypedMatch (TY_VAR, @{term_pat "?FREE"})],
-     res_types = [Update.ADD_ITEMS],
-     func = TwoStep match_one_sch_fn}
-
-fun add_match_one_sch_prfsteps (nm, pat) =
-    fold add_prfstep (map (match_one_sch_templ nm pat) [true, false])
-
-(* For active case, create box checking the next case. *)
-fun disj_create_case_fn rtype _ {id, tname, ty_str, ...} =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
-    if has_vars tname then [] else
-    let
-      val _ = assert (ty_str = TY_DISJ_ACTIVE) "disj_concl_active: wrong type."
-      val subs = HOLogic.strip_tuple tname
-      val assum = HOLogic.mk_Trueprop (hd subs)
-    in
-      if length subs = 1 then []
-      else [Update.AddBoxes {
-               id = id, inits = [Update.InitAssum assum], cbs = []}]
-    end
-
-val disj_create_case_prfstep =
-    {name = "disj_create_case",
-     args = [TypedMatch (TY_DISJ_ACTIVE, @{term_pat "?C | ?D"})],
-     res_types = [Update.ADD_BOXES],
-     func = OneStep disj_create_case_fn}
-
-(* item1 dominates item2 if the disjunctive terms in item1 is a subset
-   of that for item2.
- *)
-fun disj_shadow_fn rtype _ item1 item2 =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
-    let
-      val {lat, ...} = RewriteTable.table_of_rtype rtype
-      val id = merged_id lat [item1, item2]
-    in
-      if subset (op aconv) (apply2 (HOLogic.strip_tuple o get_tname)
-                                   (item1, item2)) then
-        [Update.ShadowItem {id = id, item = item2}]
-      else []
-    end
-
-fun disj_shadow_templ (suffix, ty_str1, ty_str2) =
-    {name = "disj_shadow" ^ suffix,
-     args = [TypedMatch (ty_str1, @{term_pat "?C | ?D"}),
-             TypedMatch (ty_str2, @{term_pat "?C | ?D"})],
-     res_types = [Update.SHADOW_ITEM],
-     func = TwoStep disj_shadow_fn}
-
-val disj_shadow_prfsteps = map disj_shadow_templ [
-      ("", TY_DISJ, TY_DISJ), ("@active", TY_DISJ_ACTIVE, TY_DISJ_ACTIVE),
-      ("@mixed", TY_DISJ_ACTIVE, TY_DISJ)]
+val disj_use_vardef_prfstep =
+    {name = "disj_use_vardef",
+     args = [TypedMatch (TY_DISJ, @{term_pat "?C | ?D"})],
+     priority = PRIORITY_NORM,
+     func = OneStep disj_use_vardef}
 
 val add_disj_proofsteps =
     fold ItemIO_Data.add_item_type [
-      (TY_DISJ, NONE), (TY_DISJ_ACTIVE, NONE)
+      (TY_DISJ, SOME output_disj_fn)
 
     ] #> fold ItemIO_Data.add_typed_matcher [
-      (TY_DISJ, disj_matcher), (TY_DISJ_ACTIVE, disj_matcher)
+      (TY_DISJ, disj_matcher)
+
+    ] #> fold ItemIO_Data.add_prop_matcher [
+      (TY_DISJ, disj_prop_matcher)
 
     ] #> fold add_prfstep (
       disj_intro_prfsteps @
-      match_update_prfsteps @ match_rewrite_prfsteps @
-      [disj_create_case_prfstep] @
-      disj_shadow_prfsteps
+      match_update_prfsteps @
+      [match_one_sch_prfstep, disj_create_case_prfstep, disj_shadow_prfstep,
+       disj_rewrite_not_all_prfstep, disj_split_conj_prfstep,
+       disj_use_vardef_prfstep]
 
     ) #> fold add_fixed_sc (
       map (rpair 1) [
         "conj_goal_intro", "disj_state_intro", "imp_disj_state_intro",
-        "forall_fact_intro", "exists_goal_intro", "disj_match_update",
-        "disj_match_update@active"
+        "forall_fact_intro", "ball_fact_intro", "exists_goal_intro",
+        "bex_goal_intro", "disj_match_update", "disj_split_conj",
+        "disj_use_vardef"
     ])
 
 (* TERM_DEF *)
@@ -626,7 +982,7 @@ val match_term_def_prfstep =
     {name = "match_term_def",
      args = [TypedMatch (TY_TERM_DEF, @{term_pat "?a"}),
              TypedMatch (TY_TERM, @{term_pat "?t"})],
-     res_types = [Update.ADD_ITEMS],
+     priority = PRIORITY_ADD,
      func = TwoStep match_term_def_fn}
 
 fun CHOOSE_FUN_N n str ctxt =
@@ -644,9 +1000,6 @@ fun CHOOSE_FUN_N n str ctxt =
          result would be [(f ?x, P (f ?x)), (f ?x ?y1), Q (f ?x ?y1)].
        *)
       fun prop_f_to_updt ctxt count id (f, prop_f_th) =
-          let
-            val _ = trace_thm "prop_f_th" prop_f_th
-          in
           case prop_of' prop_f_th of
               Const ("HOL.All", _) $ Abs (nm, T, _) =>
               let
@@ -666,7 +1019,6 @@ fun CHOOSE_FUN_N n str ctxt =
                   prop_f_to_updt ctxt (count + 1) id (pat, next)
               end
             | _ => raise AUTO2 "CHOOSE_FUN_N: wrong form of prop_f_th."
-          end
 
       fun choose_callback ((id, th), {ctxt, ...}) =
           let
@@ -682,7 +1034,7 @@ fun CHOOSE_FUN_N n str ctxt =
 
             (* When choosing function F, this is the theorem !x. P (F i). *)
             val prop_f_th = ritems |> maps extract_prop |> the_single
-                                   |> split_conj_th |> split_last |> snd
+                                   |> split_conj_th |> List.last
                             handle List.Empty => raise AUTO2 err
             val f = Free (the_single new_vars)
           in

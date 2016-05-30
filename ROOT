@@ -65,3 +65,10 @@ session Arrow = AUTO2 +
   *}
   theories
     "Arrow_Ex/Arrow_Order_Ex"
+
+session Algebra = AUTO2 +
+  description {*
+    Abstract algebra.
+  *}
+  theories
+    "Algebra_Ex/Coset"

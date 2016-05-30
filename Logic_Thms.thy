@@ -4,58 +4,41 @@ theory Logic_Thms
 imports Auto2_Base
 begin
 
-(* First add proofstep converting any PROP equality to EQ. Then use EQ to match
-   equality in all proofsteps. *)
-theorem trivial_eq: "A = B \<Longrightarrow> A = B" by simp
-setup {* add_gen_prfstep ("trivial_eq",
-  [WithItem (TY_PROP, @{term_pat "(?A::?'a) = ?B"}),
-   GetFact (@{term_pat "(?A::?'a) = ?B"}, @{thm trivial_eq})]) *}
-
-setup {* fold add_rew_const [@{term "True"}, @{term "False"}] *}
 setup {* fold add_th_normalizer
   [("split_conj", K split_conj_th), ("split_not_disj", K split_not_disj_th)] *}
 
 (* AC-property of conj and disj. *)
-ML {*
-val add_logic_ac_data =
-    fold ACUtil.add_ac_data [
-      {fname = @{const_name disj}, assoc_r = true,
-       assoc_th = @{thm disj_assoc}, comm_th = @{thm disj_commute},
-       unit_val = @{term False}, unit_th = @{thm HOL.simp_thms(32)}, unitr_th = true_th,
-       uinv_name = "", inv_name = "", double_inv_th = true_th,
-       distr_inv_th = true_th, binop_inv_th = true_th, unit_inv_th = true_th},
+theorem disj_is_assoc: "is_assoc_fn (op \<or>)" by (simp add: is_assoc_fn_def)
+theorem disj_is_comm: "is_comm_fn (op \<or>)" using is_comm_fn_def by blast
+theorem disj_has_unit: "is_unit_fn False (op \<or>)" by (simp add: is_unit_fn_def)
+theorem conj_is_assoc: "is_assoc_fn (op \<and>)" by (simp add: is_assoc_fn_def)
+theorem conj_is_comm: "is_comm_fn (op \<and>)" using is_comm_fn_def by blast
+theorem conj_has_unit: "is_unit_fn True (op \<and>)" by (simp add: is_unit_fn_def)
 
-      {fname = @{const_name conj}, assoc_r = true,
-       assoc_th = @{thm conj_assoc}, comm_th = @{thm conj_commute},
-       unit_val = @{term True}, unit_th = @{thm HOL.simp_thms(22)}, unitr_th = true_th,
-       uinv_name = "", inv_name = "", double_inv_th = true_th,
-       distr_inv_th = true_th, binop_inv_th = true_th, unit_inv_th = true_th}]
+ML {*
+val conj_ac_raw =
+  {fname = @{const_name conj},
+   assoc_th = @{thm conj_is_assoc}, comm_th = @{thm conj_is_comm},
+   unit_th = @{thm conj_has_unit}, uinv_th = true_th, inv_th = true_th}
+val disj_ac_raw = 
+  {fname = @{const_name disj},
+   assoc_th = @{thm disj_is_assoc}, comm_th = @{thm disj_is_comm},
+   unit_th = @{thm disj_has_unit}, uinv_th = true_th, inv_th = true_th}
+val add_logic_ac_data = fold ACUtil.add_ac_data [conj_ac_raw, disj_ac_raw]
+val conj_ac = the (ACUtil.inst_ac_info @{theory} boolT conj_ac_raw)
+val disj_ac = the (ACUtil.inst_ac_info @{theory} boolT disj_ac_raw)
 *}
 setup {* add_logic_ac_data *}
-ML {*
-  val conj_ac = the (ACUtil.get_head_ac_info @{theory} @{term "A \<and> B"})
-  val disj_ac = the (ACUtil.get_head_ac_info @{theory} @{term "A \<or> B"})
-*}
 
-(* Rewrites A = True to A, etc. *)
-theorem neq_True: "(A \<noteq> True) = (\<not>A)" by simp
-theorem neq_False: "(A \<noteq> False) = A" by simp
-setup {* fold (fn th => add_eq_th_normalizer th #> add_top_eq_th_normalizer th)
-  [@{thm HOL.eq_True}, @{thm HOL.eq_False}, @{thm neq_True}, @{thm neq_False}] *}
+(* Other conj and disj *)
+theorem conj_same [backward]: "A \<Longrightarrow> A \<and> A" by auto
+
+(* Rewrites P = True to P, etc. *)
+setup {* fold add_eq_th_normalizer [@{thm HOL.eq_True}, @{thm HOL.eq_False}] *}
 
 (* Trivial contradictions. *)
 setup {* add_resolve_prfstep @{thm HOL.refl} *}
 setup {* add_forward_prfstep @{thm contra_triv} *}
-
-(* Conj. Will be expanded by normalizer. *)
-theorem conj_id: "A \<and> B \<Longrightarrow> A \<and> B" by simp
-setup {* add_forward_prfstep_cond @{thm conj_id}
-  [with_filt (canonical_split_filter @{const_name conj} "A" "B")] *}
-
-(* Disj. Will be expanded by normalizer. *)
-theorem disj_id: "A \<or> B \<Longrightarrow> A \<or> B" by simp
-setup {* add_backward_prfstep_cond @{thm disj_id}
-  [with_filt (canonical_split_filter @{const_name disj} "A" "B")] *}
 
 (* Not. *)
 setup {* add_rewrite_rule nn_cancel_th #> add_eq_th_normalizer nn_cancel_th *}
@@ -74,22 +57,9 @@ setup {* add_fixed_sc ("Meson.not_impD", 1) *}
 lemma not_conj_to_imp: "\<not>(A \<and> B) \<longleftrightarrow> A \<longrightarrow> \<not>B" by simp  (* used in not_ex_forall_cv *)
 
 (* Quantifiers: normalization *)
-theorem forall_or [forward]:
-  "(\<forall>x. ((A x \<or> B x) \<longrightarrow> C x)) \<Longrightarrow> ((\<forall>x. A x \<longrightarrow> C x) \<and> (\<forall>x. B x \<longrightarrow> C x))" by blast
-
-theorem contract_not_forall: "\<not>(\<forall>x. P) \<longleftrightarrow> \<not>P" by simp
-ML {*
-val forall_norm_ths = [
-  @{thm all_conj_distrib}, @{thm use_vardef}, @{thm HOL.all_simps(6)},
-  @{thm HOL.simp_thms(35)}, @{thm contract_not_forall}]
-*}
-setup {* fold add_eq_th_normalizer forall_norm_ths *}
-setup {* add_backward_prfstep (equiv_backward_th @{thm ex_disj_distrib}) *}
+setup {* fold add_eq_th_normalizer @{thms HOL.simp_thms(35,36)} *}
 theorem exists_split: "(\<exists>x y. P x \<and> Q y) = ((\<exists>x. P x) \<and> (\<exists>y. Q y))" by simp
 setup {* add_backward_prfstep (equiv_backward_th @{thm exists_split}) *}
-
-(* Bounded quantifiers. *)
-setup {* add_backward_prfstep (equiv_backward_th @{thm bex_iff}) *}
 
 (* Case analysis. *)
 setup {* add_gen_prfstep ("case_intro",
@@ -108,7 +78,7 @@ setup {* add_forward_prfstep_cond @{thm someI_ex} [with_term "SOME x. ?P x"] *}
 (* Axiom of choice *)
 setup {* add_prfstep_custom ("ex_choice",
   [WithGoal @{term_pat "EX f. !x. ?Q f x"}],
-  [Update.ADD_ITEMS],
+  PRIORITY_ADD,
   (fn ((id, _), ths) => fn _ => fn _ =>
     [Update.thm_update (id, (ths MRS (backward_th @{thm choice})))]
     handle THM _ => []))
@@ -128,9 +98,6 @@ setup {* add_rewrite_rule @{thm snd_conv} *}
 
 (* Let. *)
 setup {* add_rewrite_rule (to_obj_eq_th @{thm Let_def}) *}
-
-(* Eta contraction *)
-setup {* add_prfstep_conv ("eta_contract", [WithTerm @{term_pat "?A"}], Thm.eta_conversion) *}
 
 (* Equivalence relation *)
 setup {* add_rewrite_rule @{thm symp_def} *}

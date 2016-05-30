@@ -18,14 +18,14 @@ setup {* del_prfstep_thm @{thm present_on_set_def} #>
   add_backward_prfstep (equiv_backward_th @{thm present_on_set_def}) *}
 
 definition eq_on_set :: "heap \<Rightarrow> heap \<Rightarrow> ('a::heap) ref set \<Rightarrow> bool" where
-  "eq_on_set h h' rs \<longleftrightarrow> (present_on_set h rs \<and> present_on_set h' rs) \<and> (\<forall>ref \<in> rs. Ref.get h ref = Ref.get h' ref)"
+  "eq_on_set h h' rs \<longleftrightarrow> ((\<forall>ref \<in> rs. Ref.get h ref = Ref.get h' ref) \<and> present_on_set h rs \<and> present_on_set h' rs)"
 setup {* add_rewrite_rule @{thm eq_on_set_def} *}
 theorem eq_on_set_single [forward]: "eq_on_set h h' {r} \<Longrightarrow> Ref.get h r = Ref.get h' r" by auto2
 theorem eq_on_set_mp [forward]: "eq_on_set h h' rs \<Longrightarrow> r \<in> rs \<Longrightarrow> Ref.get h r = Ref.get h' r" by auto2
 theorem eq_on_set_mp' [forward]: "eq_on_set h h' rs \<Longrightarrow> Ref.get h r \<noteq> Ref.get h' r \<Longrightarrow> r \<notin> rs" by auto2
 setup {* del_prfstep_thm @{thm eq_on_set_def}
   #> add_backward_prfstep (equiv_backward_th @{thm eq_on_set_def})
-  #> add_forward_prfstep (conj_left_th (equiv_forward_th @{thm eq_on_set_def})) *}
+  #> add_forward_prfstep (conj_right_th (equiv_forward_th @{thm eq_on_set_def})) *}
 
 definition not_present_on_set :: "heap \<Rightarrow> ('a::heap) ref set \<Rightarrow> bool" where
   "not_present_on_set h rs = (\<forall>ref \<in> rs. \<not>Ref.present h ref)"
@@ -52,7 +52,7 @@ setup {* add_gen_prfstep ("effect_to_success_goal_intro",
 setup {* add_prfstep_custom ("use_success_to_effect",
   [WithFact @{term_pat "success ?f ?h"},
    WithGoal @{term_pat "effect ?f ?h ?h' ?r"}],
-  [Update.ADD_ITEMS],
+  PRIORITY_ADD,
   (fn ((id, inst), ths) => fn _ => fn _ => [Update.thm_update (id, (hd ths) RS @{thm success_to_effect})])) *}
 
 (* present extension *)
@@ -231,10 +231,10 @@ theorem nth_rev_sublist'_use [rewrite]:
 
 (* Use lu instead of l so it can be matched to zero. *)
 theorem sublist_as_Cons [backward]:
-  "lu < r \<and> r \<le> length xs \<Longrightarrow> sublist' lu r xs = xs ! lu # sublist' (lu + 1) r xs"
+  "lu < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sublist' lu r xs = xs ! lu # sublist' (lu + 1) r xs"
   by (metis One_nat_def add.right_neutral add_Suc_right order_less_trans sublist'_front le_neq_implies_less)
 theorem sublist_as_append [backward]:
-  "l \<le> m \<and> m \<le> r \<Longrightarrow> sublist' l r xs = sublist' l m xs @ sublist' m r xs"
+  "l \<le> m \<Longrightarrow> m \<le> r \<Longrightarrow> sublist' l r xs = sublist' l m xs @ sublist' m r xs"
   by (simp add: sublist'_append)
 
 (* An result about sortedness of trivial sublists. *)
@@ -250,7 +250,7 @@ setup {* add_forward_prfstep_cond @{thm sorted_triv_list} [with_term "sorted (su
 setup {* add_rewrite_rule @{thm set_sublist'} *}
 
 theorem mset_sublist' [backward1]:
-  "r \<le> List.length xs \<and> (\<forall>i. i < l \<longrightarrow> xs ! i = ys ! i) \<and> (\<forall>i. i \<ge> r \<longrightarrow> xs ! i = ys ! i) \<Longrightarrow>
+  "r \<le> List.length xs \<Longrightarrow> \<forall>i. i < l \<longrightarrow> xs ! i = ys ! i \<Longrightarrow> \<forall>i. i \<ge> r \<longrightarrow> xs ! i = ys ! i \<Longrightarrow>
    mset xs = mset ys \<Longrightarrow> mset (sublist' l r xs) = mset (sublist' l r ys)"
   by (smt le_less_trans mset_eq_length mset_sublist nat_less_le sublist'_eq_samelength_iff)
 

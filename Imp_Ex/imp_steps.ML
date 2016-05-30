@@ -101,7 +101,7 @@ val effect_bind =
     prfstep_custom
         "effect_bind"
         [WithFact @{term_pat "effect (?f >>= ?g) ?h ?h' ?r'"}]
-        [Update.ADD_ITEMS]
+        PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn {ctxt, ...} =>
             let
               val fval = lookup_inst inst "f"
@@ -130,7 +130,7 @@ val success_bind =
         "success_bind"
         [WithFact @{term_pat "success (?f::?'a Heap) ?h"},
          WithGoal @{term_pat "success ((?f::?'a Heap) >>= ?g) ?h"}]
-        [Update.ADD_ITEMS]
+        PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn {ctxt, ...} =>
             let
               val (th_f, _) = the_pair ths
@@ -159,7 +159,7 @@ val _ = Theory.setup (add_prfstep success_bind)
 
 fun prfstep_imp_effect_induction name descs ind_th =
     prfstep_custom
-        name descs [Update.ADD_ITEMS]
+        name descs PRIORITY_ADD
         (fn ((id, _), ths) => fn _ => fn (st as {ctxt, ...}) =>
             let
               val init_th = the_single ths
@@ -186,7 +186,7 @@ fun prfstep_imp_effect_induction name descs ind_th =
 
 fun prfstep_imp_success_induction name descs ind_th =
     prfstep_custom
-        name descs [Update.ADD_ITEMS]
+        name descs PRIORITY_ADD
         (fn ((id, _), ths) => fn _ => fn (st as {ctxt, ...}) =>
             let
               val init_th = the_single ths

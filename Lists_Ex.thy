@@ -109,7 +109,6 @@ datatype 'a tree =
     Tip
   | Node (lsub: "'a tree") (nval: 'a) (rsub: "'a tree")
 
-setup {* add_rew_const @{term "Tip"} *}
 setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
 setup {* add_forward_prfstep (equiv_forward_th (@{thm tree.simps(1)})) *}
 theorem if_not_Tip [rewrite]: "(if Node l v r = Tip then a else b) = b" by simp

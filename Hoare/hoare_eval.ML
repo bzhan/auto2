@@ -22,7 +22,7 @@ fun get_const_ID_eq ctxt t t' =
     in
       if n = n' then raise AUTO2 "get_const_ID_eq"
       else SOME ((Nat_Arith.nat_neq_th n n')
-                     |> apply_to_thm (Conv.arg_conv (Conv.arg_conv id_eq_cv)))
+                     |> apply_to_thm' (Conv.arg_conv id_eq_cv))
     end
 
 (* For eval (st {x -> n}) x', if both x and x' are constants,

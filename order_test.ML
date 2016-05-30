@@ -4,6 +4,7 @@ local
 
   open Nat_Order
   val ctxt = @{context}
+  val thy = @{theory}
 
   (* Set up rewrite table and rtype. *)
   val x = Free ("x", natT)
@@ -16,7 +17,8 @@ local
   val py = Var (("y", 0), natT)
   val ctxt' = ctxt |> fold Variable.declare_term [x, x', y, y', z, w, px, py]
 
-  val tbl = RewriteTable.empty ctxt' |> RewriteTable.add_rewrite [] (x, x')
+  val tbl = (RewriteTable.empty ctxt')
+                |> RewriteTable.add_rewrite [] (assume_eq thy (x, x'))
   val rtype = RewriteTable.SINGLE tbl
   val st = Status.empty_status ctxt'
 

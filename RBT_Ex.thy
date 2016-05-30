@@ -14,7 +14,6 @@ datatype 'a pre_rbt =
 where
   "cl Leaf = B"
 
-setup {* fold add_rew_const [@{term "R"}, @{term "B"}, @{term "Leaf"}] *}
 setup {* add_resolve_prfstep @{thm color.distinct(1)} *}
 setup {* add_resolve_prfstep @{thm pre_rbt.distinct(2)} *}
 setup {* fold add_rewrite_rule @{thms pre_rbt.sel} *}
@@ -74,6 +73,8 @@ definition is_rbt :: "'a pre_rbt \<Rightarrow> bool" where
 setup {* fold add_rewrite_rule (
   @{thms min_depth.simps} @ @{thms max_depth.simps} @ @{thms black_depth.simps} @
   @{thms cl_inv.simps} @ @{thms bd_inv.simps} @ [@{thm is_rbt_def}]) *}
+theorem cl_invI: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (Node l B a r)" by auto
+setup {* add_forward_prfstep_cond @{thm cl_invI} [with_term "cl_inv (Node ?l B ?a ?r)"] *}
 
 subsection {* Properties of bd_inv *}
 
@@ -203,6 +204,8 @@ theorem cl_inv_B [forward, backward2]: "cl t = B \<Longrightarrow> cl_inv' t \<L
 theorem cl_inv_R [forward]: "cl_inv' (Node l R x r) \<Longrightarrow> cl l = B \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (Node l R x r)" by auto2
 theorem cl_inv_imp [forward]: "cl_inv t \<Longrightarrow> cl_inv' t"
   by (tactic {* auto2s_tac @{context} (CASE "cl t = R") *})
+theorem cl_inv'I: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (Node l c a r)" by auto
+setup {* add_forward_prfstep_cond @{thm cl_inv'I} [with_term "cl_inv' (Node ?l ?c ?a ?r)"] *}
 
 subsection {* balance function preserves cl_inv *}
 

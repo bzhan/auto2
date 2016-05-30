@@ -7,6 +7,7 @@ val TY_EQ = "EQ"
 val TY_VAR = "VAR"
 val TY_PROP = "PROP"
 val TY_TERM = "TERM"
+val TY_PROPERTY = "PROPERTY"
 
 signature BOXITEM =
 sig
@@ -215,25 +216,41 @@ Theory_Data (
   val merge = Symtab.join (fn _ => join_infos)
 )
 
-datatype match_arg = PropMatch of term | TypedMatch of string * term
+datatype match_arg = PropMatch of term
+                   | TypedMatch of string * term
+                   | PropertyMatch of term
 
 fun pat_of_match_arg arg =
-    case arg of PropMatch pat => pat | TypedMatch (_, pat) => pat
+    case arg of
+        PropMatch pat => pat
+      | TypedMatch (_, pat) => pat
+      | PropertyMatch pat => pat
 
 fun subst_arg inst arg =
-    case arg of PropMatch pat => PropMatch (subst_term_norm inst pat)
-              | TypedMatch (ty_str, pat) =>
-                TypedMatch (ty_str, subst_term_norm inst pat)
+    case arg of
+        PropMatch pat => PropMatch (subst_term_norm inst pat)
+      | TypedMatch (ty_str, pat) =>
+        TypedMatch (ty_str, subst_term_norm inst pat)
+      | PropertyMatch pat =>
+        PropertyMatch (subst_term_norm inst pat)
 
 fun assert_valid_arg arg =
-    case arg of PropMatch pat =>
-                assert (fastype_of pat = boolT)
-                       "assert_valid_arg: arg for PropMatch should be bool."
-              | TypedMatch _ => ()
+    case arg of
+        PropMatch pat =>
+        assert (fastype_of pat = boolT)
+               "assert_valid_arg: arg for PropMatch should be bool."
+      | TypedMatch _ => ()
+      | PropertyMatch pat =>
+        assert (fastype_of pat = boolT)
+               "assert_valid_arg: arg for PropertyMatch should be bool."
 
 fun check_ty_str ty_str arg =
-    case arg of PropMatch _ => true
-              | TypedMatch (ty_str', _) => ty_str = ty_str'
+    case arg of
+        TypedMatch (ty_str', _) => ty_str = ty_str'
+      | _ => true
+
+fun is_property_match arg =
+    case arg of PropertyMatch _ => true | _ => false
 
 signature ITEM_IO_DATA =
 sig
@@ -247,6 +264,8 @@ sig
   val prop_matcher: item_matcher
   val term_prop_matcher: item_matcher
   val term_typed_matcher: item_matcher
+  val null_property_matcher: item_matcher
+  val term_property_matcher: item_matcher
   val pre_match_arg: rewrite_table -> match_arg -> box_item -> bool
   val match_arg: rewrite_table -> match_arg -> box_item -> id_inst ->
                  id_inst_th list
@@ -282,18 +301,35 @@ val univ_matcher =
 (* Prop-matching with a PROP item. *)
 val prop_matcher =
     let
-      fun pre_match pat {id, tname, ...} tbl =
-          length (fo_table_match id tbl (pat, tname)) > 0
+      fun pre_match pat {tname, ...} tbl =
+          if is_neg pat then
+            is_neg tname andalso
+            Matcher.pre_match_head tbl (get_neg pat, get_neg tname)
+          else  (* not (is_neg pat) *)
+            not (is_neg tname) andalso Matcher.pre_match_head tbl (pat, tname)
 
       fun match pat {tname, prop, ...} tbl (id, inst) =
-          let
-            val insts' =
-                RewriteTable.fo_rewrite_match tbl (pat, tname) (id, inst)
-            fun process_inst (inst, eq_th) =
-                (inst, Thm.equal_elim (make_trueprop_eq (meta_sym eq_th)) prop)
-          in
-            map process_inst insts'
-          end
+          if is_neg pat andalso is_neg tname then
+            let
+              val insts' = Matcher.rewrite_match_head
+                               tbl (get_neg pat, get_neg tname) (id, inst)
+              fun process_inst (inst, eq_th) =
+                  (inst, Thm.equal_elim (
+                     make_trueprop_eq (make_neg_eq (meta_sym eq_th))) prop)
+            in
+              map process_inst insts'
+            end
+          else if not (is_neg pat) andalso not (is_neg tname) then
+            let
+              val insts' = Matcher.rewrite_match_head
+                               tbl (pat, tname) (id, inst)
+              fun process_inst (inst, eq_th) =
+                  (inst, Thm.equal_elim (
+                     make_trueprop_eq (meta_sym eq_th)) prop)
+            in
+              map process_inst insts'
+            end
+          else []
     in
       {pre_match = pre_match, match = match}
     end
@@ -301,19 +337,20 @@ val prop_matcher =
 (* Prop-matching with a TERM item (used to justify equalities). *)
 val term_prop_matcher =
     let
-      fun pre_match pat {id, tname, ...} tbl =
+      fun pre_match pat {tname, ...} tbl =
           case pat of
               Const ("HOL.eq", _) $ lhs $ _ =>
-              length (fo_table_match id tbl (lhs, tname)) > 0
+              Matcher.pre_match tbl (lhs, tname)
             | _ => false
 
       fun match pat {tname = u, ...} tbl (id, inst) =
           if fastype_of pat <> boolT orelse not (is_eq_term pat) then [] else
           let
             val (lhs, rhs) = pat |> HOLogic.dest_eq
-            val insts' =
-                RewriteTable.fo_rewrite_match_list
-                    tbl [(true, (lhs, u)), (false, (rhs, u))] (id, inst)
+            val pairs =
+                if Term.is_Var lhs then [(false, (lhs, u)), (true, (rhs, u))]
+                else [(true, (lhs, u)), (false, (rhs, u))]
+            val insts' = Matcher.rewrite_match_list tbl pairs (id, inst)
             fun process_inst (inst, ths) =
                 let
                   (* th1: lhs(env) == u, th2: rhs(env) == u. *)
@@ -331,16 +368,59 @@ val term_prop_matcher =
 (* Typed matching with a TERM item. *)
 val term_typed_matcher =
     let
-      fun pre_match pat {id, tname, ...} tbl =
-          length (fo_table_match_head id tbl (pat, tname)) > 0
+      fun pre_match pat {tname, ...} tbl =
+          Matcher.pre_match_head tbl (pat, tname)
+
+      (* Return value is (inst, eq), where eq is pat(inst) == tname. *)
+      fun match pat {tname, ...} tbl (id, inst) =
+          Matcher.rewrite_match_head tbl (pat, tname) (id, inst)
+    in
+      {pre_match = pre_match, match = match}
+    end
+
+(* Obtain a proposition from the property table. *)
+val null_property_matcher =
+    let
+      fun pre_match pat _ tbl =
+          is_property_const (RewriteTable.theory_of tbl) pat
+
+      fun match pat _ tbl (id, inst) =
+          if has_vars pat then [] else
+          if not (is_property_const (RewriteTable.theory_of tbl) pat) then []
+          else map (fn (id', th) => ((id', inst), th))
+                   (RewriteTable.get_property tbl (id, pat))
+    in
+      {pre_match = pre_match, match = match}
+    end
+
+(* Obtain a proposition from the property table, matching the argument
+   of the property with the given term.
+ *)
+val term_property_matcher =
+    let
+      fun pre_match pat {tname, ...} tbl =
+          is_property_const (RewriteTable.theory_of tbl) pat andalso
+          Matcher.pre_match_head tbl (get_property_arg pat, tname)
 
       fun match pat {tname, ...} tbl (id, inst) =
-          let
-            val insts' =
-                RewriteTable.fo_rewrite_match_head tbl (pat, tname) (id, inst)
-            fun process_inst (inst, _) = (inst, true_th)
+          if not (has_vars pat) then [] else
+          if not (is_property_const (RewriteTable.theory_of tbl) pat) then []
+          else let
+            val arg = get_property_arg pat
           in
-            map process_inst insts'
+            let
+              val insts' =
+                  Matcher.rewrite_match_head tbl (arg, tname) (id, inst)
+              fun process_inst ((id', inst'), _) =
+                  let
+                    val t = subst_term_norm inst' pat
+                  in
+                    map (fn (id'', th) => ((id'', inst'), th))
+                        (RewriteTable.get_property tbl (id', t))
+                  end
+            in
+              maps process_inst insts'
+            end
           end
     in
       {pre_match = pre_match, match = match}
@@ -365,6 +445,8 @@ fun pre_match_arg tbl arg (item as {ty_str, ...}) =
           exists (fn f => f pat item tbl) (map #pre_match prop_matchers)
         | (TypedMatch _, _) =>
           exists (fn f => f pat item tbl) (map #pre_match typed_matchers)
+        | (PropertyMatch _, _) =>
+          raise AUTO2 "pre_match_arg: should not be called on PropertyMatch."
     end
 
 (* Generic matching function. Returns list of all matches (iterating
@@ -385,6 +467,8 @@ fun match_arg (tbl as {lat, ...}) arg (item as {id, ty_str, ...}) (id', inst) =
                               (map #match prop_matchers)
         | TypedMatch _ => maps (fn f => f pat item tbl (id'', inst))
                                (map #match typed_matchers)
+        | PropertyMatch _ =>
+          raise AUTO2 "match_arg: should not be called on PropertyMatch."
     end
 
 fun output_prop_fn ctxt (_, th) = Thm.prop_of th |> pretty_term ctxt |> str
@@ -402,14 +486,15 @@ fun string_of_item_info ctxt (ty_str, tname, th) =
 val add_basic_item_io =
     fold add_item_type [
       (TY_NULL, NONE), (TY_PROP, SOME output_prop_fn), (TY_TERM, NONE),
-      (TY_EQ, SOME output_prop_fn), (TY_VAR, NONE)
+      (TY_EQ, SOME output_prop_fn), (TY_VAR, NONE), (TY_PROPERTY, NONE)
 
     ] #> fold add_prop_matcher [
-      (TY_PROP, prop_matcher), (TY_TERM, term_prop_matcher)
+      (TY_PROP, prop_matcher), (TY_TERM, term_prop_matcher),
+      (TY_NULL, null_property_matcher), (TY_TERM, term_property_matcher)
 
     ] #> fold add_typed_matcher [
       (TY_PROP, prop_matcher), (TY_TERM, term_typed_matcher),
-      (TY_VAR, term_typed_matcher)
+      (TY_VAR, term_typed_matcher), (TY_EQ, term_typed_matcher)
     ]
 
 end  (* structure ItemIO_Data. *)
@@ -444,6 +529,7 @@ sig
 
   val type_of_update: raw_update -> update_type
   val string_of_update_type: update_type -> string
+  val string_of_raw_update: Proof.context -> raw_update -> string
   val null_callback: resolve_callback
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
@@ -451,8 +537,6 @@ sig
 
   val handler_ritems: Proof.context -> term -> retro_handler -> raw_item list
   val apply_horn_clause: box_id * thm -> resolve_callback -> raw_update list
-  val normalize_ex_conv: conv
-  val normalize_exs_conv: int -> Proof.context -> conv
   val apply_exists: box_id * thm -> Proof.context -> string list ->
                     raw_update list
   val target_of_update: raw_update -> box_id
@@ -483,11 +567,6 @@ fun string_of_init_info ctxt init =
         InitVar t => ("Var " ^ (t |> pretty_term ctxt |> str))
       | InitAssum assum => ("Assum " ^ (assum |> pretty_term ctxt |> str))
 
-(* Rewrite !x. x : A --> P x into !x:A. P x. *)
-fun Ball_def_cv ctxt =
-    Conv.top_conv (K (Conv.try_conv (
-                         rewr_obj_eq (obj_sym @{thm Ball_def})))) ctxt
-
 (* Given list of initial variables and assumptions, return the
    contradiction derived from them. Each initial variable becomes !,
    the last assumption is negated, and each assumption before the last
@@ -497,7 +576,7 @@ fun get_neg_form ctxt inits =
     if length inits = 0 then @{prop False}
     else let
       fun mk_all (nm, T) t = Logic.all_const T $ Term.absfree (nm, T) t
-      val concl = inits |> split_last |> snd |> dest_init_assum |> the_single
+      val concl = inits |> List.last |> dest_init_assum |> the_single
                         |> get_neg'
                   handle List.Empty =>
                          raise AUTO2 "get_neg_form: last init should be prop."
@@ -508,8 +587,7 @@ fun get_neg_form ctxt inits =
             | InitAssum assum => Logic.mk_implies (assum, t)
     in
       concl |> fold fold_init (tl (rev inits)) |> cert ctxt
-            |> to_obj_conv ctxt |> Thm.rhs_of
-            |> Ball_def_cv ctxt |> rhs_of
+            |> to_obj_conv ctxt |> rhs_of
     end
 
 (* Given a contradiction th, returns a new theorem with assumptions
@@ -522,7 +600,7 @@ fun get_neg_form_thm ctxt inits th =
       val _ = assert (Thm.prop_of th aconv prop_False)
                      "get_neg_form_thm: input th should be a contradiction."
       val tl_assum =
-          inits |> split_last |> snd |> dest_init_assum |> the_single
+          inits |> List.last |> dest_init_assum |> the_single
           handle List.Empty =>
                  raise AUTO2 "get_neg_form_thm: last init should be prop."
 
@@ -535,7 +613,6 @@ fun get_neg_form_thm ctxt inits th =
          |> rewrite_thm_from_contra_form
          |> fold fold_init (tl (rev inits))
          |> apply_to_thm (to_obj_conv ctxt)
-         |> apply_to_thm (Ball_def_cv ctxt)
     end
 
 fun type_of_update raw_updt =
@@ -551,6 +628,20 @@ fun string_of_update_type updt_ty =
       | ADD_BOXES => "ADD_BOXES"
       | RESOLVE_BOX => "RESOLVE_BOX"
       | SHADOW_ITEM => "SHADOW_ITEM"
+
+fun string_of_raw_update ctxt raw_updt =
+    case raw_updt of
+        AddItems {id, raw_items} =>
+        "Add items " ^ (string_of_list (string_of_raw_item ctxt) raw_items) ^
+        " to box " ^ (string_of_box_id id)
+      | AddBoxes {id, inits, ...} =>
+        "Add box " ^ (string_of_list (string_of_init_info ctxt) inits) ^
+        " under box " ^ (string_of_box_id id)
+      | ResolveBox {id, ...} =>
+        "Resolve box " ^ (string_of_box_id id)
+      | ShadowItem {id, item} =>
+        "Shadow item " ^ (string_of_item ctxt item) ^
+        " in box " ^ (string_of_box_id id)
 
 val null_callback = K []
 
@@ -578,9 +669,12 @@ fun thm_to_ritem th =
       val _ = assert (not (has_non_internal_var prop))
                      "thm_update: prop has non-internal schematic variables."
       val prop' = HOLogic.dest_Trueprop prop
+      val thy = Thm.theory_of_thm th
     in
-      if is_eq_term' prop then
+      if is_eq_term prop' then
         Fact (TY_EQ, HOLogic.mk_prod (HOLogic.dest_eq prop'), th)
+      else if is_property_const thy prop' then
+        Fact (TY_PROPERTY, prop', th)
       else
         Fact (TY_PROP, prop', th)
     end
@@ -628,27 +722,6 @@ fun apply_horn_clause (id, th) cb =
       | _ => if pointer_eq (cb, null_callback) then [thm_update (id, th)]
              else cb (id, th)
 
-(* Given ct of form A1 & A2 ... & Ai & EX x. ..., rewrite as EX x. A1
-   & A2 ... & Ai & ... .
- *)
-fun normalize_ex_conv ct =
-    case Thm.term_of ct of
-        Const ("HOL.Ex", _) $ Abs _ => Conv.all_conv ct
-      | Const ("Set.Bex", _) $ _ $ _ =>
-        rewr_obj_eq (obj_sym @{thm bex_iff}) ct
-      | Const ("HOL.conj", _) $ _ $ _ =>
-        ((Conv.arg_conv normalize_ex_conv)
-             then_conv (rewr_obj_eq @{thm swap_ex_conj})) ct
-      | _ => raise AUTO2CT ("normalize_ex_conv: wrong input.", [ct])
-
-(* Normalize ct so it begins with EX a1 ... an., with n variables
-   after EX. This is preparation for the apply_exists function.
- *)
-fun normalize_exs_conv n ctxt ct =
-    if n <= 0 then Conv.all_conv ct
-    else (normalize_ex_conv then_conv (
-             Conv.binder_conv ((normalize_exs_conv (n-1)) o snd) ctxt)) ct
-
 (* nms specify the names of free variables, either internal (use
    obtain_variant_frees to fix) or otherwise (will be put into context
    as is).
@@ -684,8 +757,7 @@ fun apply_exists (id, ex_th) ctxt nms =
                 (var :: vars, t'')
               end
 
-      val ex_th' = apply_to_thm (
-            HOLogic.Trueprop_conv (normalize_exs_conv (length nms) ctxt)) ex_th
+      val ex_th' = apply_to_thm' (normalize_exs_conv (length nms) ctxt) ex_th
       val (vars, new_prop) = ex_th' |> prop_of' |> dest_all_abs nms
       val new_prop' = HOLogic.mk_Trueprop new_prop
       val new_th = new_prop' |> cert ctxt |> Thm.trivial
@@ -891,7 +963,6 @@ sig
   val set_resolve_th: box_id -> thm -> status -> status
   val get_resolve_th: status -> box_id -> thm
 
-  val find_item: status -> box_id -> string * term -> box_item option
   val find_fact: status -> box_id -> term -> (box_item * thm) option
   val find_ritem_exact: status -> box_id -> raw_item -> box_item option
   val is_triv_eq: status -> box_id -> raw_item -> bool
@@ -926,12 +997,19 @@ fun get_box {boxes, ...} id =
     the (Boxidtab.lookup boxes id)
     handle Option.Option => raise AUTO2 "get_box: id not found."
 
-(* Obtain rewrite table contained in st, but with (lhs, rhs) added at
-   an additional primitive id.
- *)
 fun get_init_type {tbl, ...} = RewriteTable.SINGLE tbl
-fun get_incr_type {tbl, ...} id eq_th =
-    RewriteTable.LAST (tbl |> RewriteTable.append_rewrite_thm eq_th, id)
+
+(* Obtain incremental rtype. Distinguish between when th is an
+   equality or a property. Add the theorem under an additional
+   primitive id.
+ *)
+fun get_incr_type {tbl, ...} id th =
+    if is_property_const (RewriteTable.theory_of tbl) (prop_of' th) then
+      RewriteTable.LAST (tbl |> RewriteTable.append_property th, id)
+    else if is_eq_term (prop_of' th) then
+      RewriteTable.LAST (tbl |> RewriteTable.append_rewrite th, id)
+    else
+      raise AUTO2 "get_incr_type: wrong form of theorem."
 
 fun get_lattice {lat, ...} = lat
 val get_focus = BoxID.get_focus o get_lattice
@@ -1046,17 +1124,6 @@ fun query_removed st (item as {id, ...}) = query_shadowed st id item
 
 fun set_resolve_th id th st = st |> map_box id (Box.set_resolve_th th)
 fun get_resolve_th st id = Box.get_resolve_th (get_box st id)
-
-(* Try to find an item with the given ty_str and tname. *)
-fun find_item st id (ty_str, tname) =
-    let
-      fun match_item (item as {ty_str = ty_str', tname = tname', ...}) =
-          if ty_str = ty_str' andalso tname aconv tname' then
-            SOME item
-          else NONE
-    in
-      get_first match_item (get_all_items st id)
-    end
 
 (* Try to find a box_item at id or ancestors whose term is equivalent
    to t. Return SOME (item, eq) if found, where item has proposition

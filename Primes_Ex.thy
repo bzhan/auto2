@@ -22,14 +22,12 @@ lemma prime_imp_coprime_nat [backward2]: "prime p \<Longrightarrow> \<not> p dvd
 
 lemma prime_dvd_mult_nat: "prime p \<Longrightarrow> p dvd m * n \<Longrightarrow> p dvd m \<or> p dvd n" by auto2
 setup {* add_forward_prfstep_cond @{thm prime_dvd_mult_nat}
-  (with_filts [canonical_split_filter @{const_name times} "m" "n"] @
-   with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
+  (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
 
 theorem prime_dvd_intro: "prime p \<Longrightarrow> p * q = m * n \<Longrightarrow> p dvd m \<or> p dvd n"
   by (tactic {* auto2s_tac @{context} (OBTAIN "p dvd m * n") *})
 setup {* add_forward_prfstep_cond @{thm prime_dvd_intro}
-  (with_filts [canonical_split_filter @{const_name times} "m" "n"] @
-   with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
+  (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
 
 lemma prime_dvd_mult_eq_nat: "prime p \<Longrightarrow> p dvd m * n = (p dvd m \<or> p dvd n)" by auto2
 
@@ -49,9 +47,9 @@ lemma prime_factor_nat [backward]: "n \<noteq> 1 \<Longrightarrow> \<exists>p. p
 lemma prime_divprod_pow_nat:
   "prime p \<Longrightarrow> coprime a b \<Longrightarrow> p^n dvd a * b \<Longrightarrow> p^n dvd a \<or> p^n dvd b" by auto2
 
-lemma prime_product: "prime (p * q) \<Longrightarrow> p = 1 \<or> q = 1" by auto2
-setup {* add_forward_prfstep_cond @{thm prime_product}
-  [with_filt (canonical_split_filter @{const_name times} "p" "q")] *}
+lemma prime_product: "prime (p * q) \<Longrightarrow> p = 1 \<or> q = 1"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "p dvd p * q") *})
+setup {* add_forward_prfstep @{thm prime_product} *}
 
 lemma prime_exp: "prime (p ^ n) \<longleftrightarrow> n = 1 \<and> prime p" by auto2
 

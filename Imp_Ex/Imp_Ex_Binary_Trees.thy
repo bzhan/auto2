@@ -10,7 +10,6 @@ setup {* Sign.add_const_constraint (@{const_name Ref}, SOME @{typ "nat \<Rightar
 datatype 'a node = Empty | Node (lnxt: "'a node ref") (val: 'a) (rnxt: "'a node ref")
 
 setup {* add_forward_prfstep (equiv_forward_th @{thm node.simps(1)}) *}
-setup {* add_rew_const @{term "Empty"} *}
 setup {* add_resolve_prfstep @{thm node.distinct(2)} *}
 setup {* add_forward_prfstep_cond @{thm node.collapse} [with_cond "?node \<noteq> Node ?lp ?v ?rp"] *}
 setup {* fold add_rewrite_rule @{thms node.case} *}
@@ -34,7 +33,7 @@ subsection {* Definition and properties of the predicates *}
 
 inductive tree_ofR :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a tree \<Rightarrow> bool" where
   "Ref.get h p = Empty \<Longrightarrow> tree_ofR h p Tip"
-| "Ref.get h p = Node lp v rp \<Longrightarrow> tree_ofR h lp lt \<and> tree_ofR h rp rt \<Longrightarrow>
+| "Ref.get h p = Node lp v rp \<Longrightarrow> tree_ofR h lp lt \<Longrightarrow> tree_ofR h rp rt \<Longrightarrow>
    tree_ofR h p (tree.Node lt v rt)"
 setup {* add_forward_prfstep @{thm tree_ofR.intros(1)} *}
 setup {* add_backward2_prfstep @{thm tree_ofR.intros(2)} *}
@@ -53,8 +52,8 @@ theorem tree_ofR_Node' [forward]: "Ref.get h p = Node lp v rp \<Longrightarrow> 
 
 inductive refs_ofR :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a node ref set \<Rightarrow> bool" where
   "Ref.get h p = Empty \<Longrightarrow> refs_ofR h p {p}"
-| "Ref.get h p = Node lp v rp \<Longrightarrow> refs_ofR h lp lps \<and> refs_ofR h rp rps
-  \<and> lps \<inter> rps = {} \<and> p \<notin> lps \<and> p \<notin> rps \<Longrightarrow> refs_ofR h p ({p} \<union> lps \<union> rps)"
+| "Ref.get h p = Node lp v rp \<Longrightarrow> refs_ofR h lp lps \<Longrightarrow> refs_ofR h rp rps \<Longrightarrow>
+   lps \<inter> rps = {} \<Longrightarrow> p \<notin> lps \<Longrightarrow> p \<notin> rps \<Longrightarrow> refs_ofR h p ({p} \<union> lps \<union> rps)"
 setup {* add_resolve_prfstep @{thm refs_ofR.intros(1)} *}
 setup {* add_backward2_prfstep @{thm refs_ofR.intros(2)} *}
 setup {* add_prfstep_prop_induction @{thm refs_ofR.induct} *}
@@ -115,8 +114,8 @@ theorem proper_ref_next1' [forward]:
    p \<notin> refs_of h lp \<and> p \<notin> refs_of h rp \<and> refs_of h p = {p} \<union> refs_of h lp \<union> refs_of h rp" by auto2
 
 theorem proper_ref_next2 [backward2]:
-  "Ref.get h p = Node lp v rp \<Longrightarrow> Ref.present h p \<and> proper_ref h lp \<and> proper_ref h rp \<and> p \<notin> refs_of h lp \<and>
-   p \<notin> refs_of h rp \<and> refs_of h lp \<inter> refs_of h rp = {} \<Longrightarrow> proper_ref h p"
+  "Ref.get h p = Node lp v rp \<Longrightarrow> Ref.present h p \<Longrightarrow> proper_ref h lp \<Longrightarrow> proper_ref h rp \<Longrightarrow>
+   p \<notin> refs_of h lp \<Longrightarrow> p \<notin> refs_of h rp \<Longrightarrow> refs_of h lp \<inter> refs_of h rp = {} \<Longrightarrow> proper_ref h p"
   by (tactic {* auto2s_tac @{context} (OBTAIN "refs_ofR h p ({p} \<union> refs_of h lp \<union> refs_of h rp)") *})
 
 theorem proper_ref_present [forward]:

@@ -20,6 +20,8 @@ sig
   val nat_fold_rec_conv: Proof.context -> conv
   val nat_fold_rec_thm: Proof.context -> thm -> thm
 
+  val plus_ac_on_typ: theory -> typ -> ac_inst_info
+  val times_ac_on_typ: theory -> typ -> ac_inst_info
   val add_arith_ac_data: theory -> theory
   val add_arith_proofsteps: theory -> theory
 end;
@@ -93,34 +95,32 @@ val nat_fold_rec_conv =
                                             then_conv nat_fold_conv0_left)
 fun nat_fold_rec_thm ctxt = apply_to_thm (nat_fold_rec_conv ctxt)
 
+val plus_ac =
+    {fname = @{const_name plus},
+     assoc_th = @{thm add_is_assoc}, comm_th = @{thm add_is_comm},
+     unit_th = @{thm add_has_unit}, uinv_th = @{thm add_has_uinv},
+     inv_th = @{thm add_has_inv}}
+
+val times_ac =
+    {fname = @{const_name times},
+     assoc_th = @{thm mult_is_assoc}, comm_th = @{thm mult_is_comm},
+     unit_th = @{thm mult_has_unit}, uinv_th = @{thm mult_has_uinv},
+     inv_th = @{thm mult_has_inv}}
+
 val add_arith_ac_data =
     fold ACUtil.add_ac_data [
-      {fname = @{const_name plus}, assoc_r = false,
-       assoc_th = @{thm add_ac(1)}, comm_th = @{thm add_ac(2)},
-       unit_val = @{term 0}, unitr_th = true_th,
-       unit_th = @{thm Groups.monoid_add_class.add_0_left},
-       uinv_name = @{const_name uminus}, inv_name = @{const_name minus},
-       double_inv_th = @{thm minus_minus},
-       distr_inv_th = @{thm minus_add_distrib},
-       binop_inv_th = @{thm diff_conv_add_uminus},
-       unit_inv_th = @{thm minus_zero}},
+      plus_ac, times_ac,
+      {fname = @{const_name gcd},
+       assoc_th = @{thm gcd_is_assoc}, comm_th = @{thm gcd_is_comm},
+       unit_th = @{thm gcd_has_unit}, uinv_th = true_th, inv_th = true_th}]
 
-      {fname = @{const_name times}, assoc_r = false,
-       assoc_th = @{thm mult_ac(1)}, comm_th = @{thm mult_ac(2)},
-       unit_val = @{term 1}, unitr_th = true_th,
-       unit_th = @{thm Groups.monoid_mult_class.mult_1_left},
-       uinv_name = @{const_name inverse}, inv_name = @{const_name divide},
-       double_inv_th = @{thm inverse_inverse_eq},
-       distr_inv_th = @{thm inverse_mult_distrib},
-       binop_inv_th = @{thm field_class.field_divide_inverse},
-       unit_inv_th = @{thm inverse_1}},
+fun plus_ac_on_typ thy T =
+    the (ACUtil.inst_ac_info thy T plus_ac)
+    handle Option.Option => raise AUTO2 "plus_ac_on_typ: cannot inst ac_info."
 
-      {fname = @{const_name gcd}, assoc_r = false,
-       assoc_th = @{thm gcd_ac_nat(1)}, comm_th = @{thm gcd_ac_nat(2)},
-       unit_val = @{term "0::nat"}, unitr_th = true_th,
-       unit_th = @{thm GCD.gcd_nat.left_neutral},
-       uinv_name = "", inv_name = "", double_inv_th = true_th,
-       distr_inv_th = true_th, binop_inv_th = true_th, unit_inv_th = true_th}]
+fun times_ac_on_typ thy T =
+    the (ACUtil.inst_ac_info thy T times_ac)
+    handle Option.Option => raise AUTO2 "times_ac_on_typ: cannot inst ac_info."
 
 val add_arith_proofsteps =
     fold add_prfstep_custom [
@@ -129,21 +129,19 @@ val add_arith_proofsteps =
        [WithFact @{term_pat "(?NUMC1::nat) = ?NUMC2"},
         Filter (fn _ => fn (_, inst) =>
                    lookup_numc1 inst <> lookup_numc2 inst)],
-       [Update.RESOLVE_BOX],
+       PRIORITY_RESOLVE,
        fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
           [Update.thm_update (id, contra_by_arith ctxt ths)])
 
     ] #> fold add_prfstep_conv [
       ("eval_plus_consts",
        [WithTerm @{term_pat "(?NUMC1::nat) + ?NUMC2"},
-        Filter (order_filter_n ("NUMC", 1) ("NUMC", 2)),
         Filter (fn _ => fn (_, inst) =>
                    lookup_numc1 inst > 0 andalso lookup_numc2 inst > 0)],
        nat_fold_conv),
 
       ("eval_mult_consts",
        [WithTerm @{term_pat "(?NUMC1::nat) * ?NUMC2"},
-        Filter (order_filter_n ("NUMC", 1) ("NUMC", 2)),
         Filter (fn _ => fn (_, inst) =>
                    lookup_numc1 inst > 1 andalso lookup_numc2 inst > 1)],
        nat_fold_conv),

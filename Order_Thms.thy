@@ -18,10 +18,10 @@ section {* Rewriting of negation, in linorder *}
 
 setup {* fold add_gen_prfstep [
   ("not_less",
-   [WithItem (TY_PROP, @{term_pat "\<not> (?x::(?'a::linorder)) < ?y"}),
+   [WithProp @{term_pat "\<not> (?x::(?'a::linorder)) < ?y"},
     GetFact (@{term_pat "?y \<le> (?x::(?'a::linorder))"}, (equiv_forward_th @{thm linorder_not_less}))]),
   ("not_le",
-   [WithItem (TY_PROP, @{term_pat "\<not> (?x::(?'a::linorder)) \<le> ?y"}),
+   [WithProp @{term_pat "\<not> (?x::(?'a::linorder)) \<le> ?y"},
     GetFact (@{term_pat "?y < (?x::(?'a::linorder))"}, (equiv_forward_th @{thm linorder_not_le}))])]
 *}
 setup {* fold add_fixed_sc [("not_less", 1), ("not_le", 1)] *}

@@ -18,8 +18,7 @@ fun FINSET_INDUCT (var_spec_str, ind_infos) ctxt =
           case var_eq of
               NONE => I
             | SOME eq => eq |> assume_thm ctxt |> obj_sym |> rewr_obj_eq
-                            |> Conv.arg_conv |> Conv.arg_conv
-                            |> apply_to_thm
+                            |> Conv.arg_conv |> apply_to_thm'
 
       fun callback ((id, fin_th), st as {ctxt, ...}) =
           let

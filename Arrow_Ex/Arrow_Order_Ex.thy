@@ -24,20 +24,21 @@ lemma third_alt [backward]: "a \<noteq> b \<Longrightarrow> \<exists>c::alt. dis
 type_synonym pref = "(alt * alt) set"
 
 definition "Lin == {L::pref. strict_linear_order L}"
+setup {* add_property_const @{term "strict_linear_order"} *}
 
 theorem Lin_def' [rewrite]: "L \<in> Lin \<longleftrightarrow> strict_linear_order L"
   by (simp add: Lin_def)
 
-theorem trans_strict_linorder: "strict_linear_order L \<Longrightarrow> (x, y) \<in> L \<Longrightarrow> (y, z) \<in> L \<Longrightarrow> (x, z) \<in> L"
+theorem trans_strict_linorder [forward]:
+  "strict_linear_order L \<Longrightarrow> (x, y) \<in> L \<Longrightarrow> (y, z) \<in> L \<Longrightarrow> (x, z) \<in> L"
   by (meson order_on_defs(4) trans_def)
 
-theorem notin_strict_linorder: "strict_linear_order L \<Longrightarrow> x \<noteq> y \<Longrightarrow> (x, y) \<notin> L \<longleftrightarrow> (y, x) \<in> L"
+theorem notin_strict_linorder [forward]:
+  "strict_linear_order L \<Longrightarrow> x \<noteq> y \<Longrightarrow> (x, y) \<notin> L \<Longrightarrow> (y, x) \<in> L"
   by (meson UNIV_I irrefl_def order_on_defs(4) total_on_def transD)
 
-theorem irrefl_strict_linorder: "strict_linear_order L \<Longrightarrow> (x, x) \<in> L \<Longrightarrow> False"
+theorem irrefl_strict_linorder [resolve]: "strict_linear_order L \<Longrightarrow> (x, x) \<notin> L"
   by (simp add: irrefl_def order_on_defs(4))
-
-ML_file "strict_lin_order.ML"
 
 theorem total_def: "total L \<longleftrightarrow> (\<forall>x y. x \<noteq> y \<longrightarrow> (x, y) \<in> L \<or> (y, x) \<in> L)"
   by (simp add: total_on_def)
@@ -92,12 +93,13 @@ theorem IIA_elim [forward]:
 definition "dictator F i \<longleftrightarrow> (\<forall>P\<in>Prof. F P = P i)"
 setup {* add_rewrite_rule @{thm dictator_def} *}
 
-theorem strict_linorder_eq [backward1]: "L \<in> Lin \<and> L' \<in> Lin \<Longrightarrow> \<forall>a b. (a, b) \<in> L \<longrightarrow> (a, b) \<in> L' \<Longrightarrow> L = L'"
+theorem strict_linorder_eq [backward]: "L \<in> Lin \<Longrightarrow> L' \<in> Lin \<Longrightarrow> \<forall>a b. (a, b) \<in> L \<longrightarrow> (a, b) \<in> L' \<Longrightarrow> L = L'"
   by (tactic {* auto2s_tac @{context} (
     OBTAIN "\<forall>a b. (a, b) \<in> L \<longleftrightarrow> (a, b) \<in> L'" WITH CASE "a = b") *})
 
 lemma dictatorI [backward1]:
   "F \<in> SWF \<Longrightarrow> \<forall>P\<in>Prof. \<forall>a b. (a,b) \<in> P i \<longrightarrow> (a,b) \<in> F P \<Longrightarrow> dictator F i" by auto2
+setup {* del_prfstep_thm @{thm strict_linorder_eq} *}
 setup {* del_prfstep_thm @{thm dictator_def} *}
 
 lemma complete_Lin [backward]: "a \<noteq> b \<Longrightarrow> \<exists>L\<in>Lin. (a, b) \<in> L"
@@ -114,7 +116,7 @@ theorem choice_prof: "\<forall>i. \<exists>L\<in>Lin. A i L \<Longrightarrow> \<
 
 setup {* add_prfstep_custom ("ex_choice_prof",
   [WithGoal @{term_pat "\<exists>P\<in>Prof. \<forall>i. ?A i P"}],
-  [Update.ADD_ITEMS, Update.SHADOW_ITEM],
+  PRIORITY_URGENT,
   (fn ((id, _), ths) => fn items => fn _ =>
     [Update.thm_update (id, (ths MRS (backward_th @{thm choice_prof}))),
      Update.ShadowItem {id = id, item = the_single items}]
@@ -168,7 +170,7 @@ theorem strict_neutrality_trans [forward]:
       OBTAIN "\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a'', b'') \<in> P'' i" THEN
       OBTAIN "\<forall>i. (a'', b'') \<in> P'' i \<longleftrightarrow> (a', b') \<in> P' i")) *})
 
-theorem strict_neutrality [backward2]: "arrow_conds F \<Longrightarrow> a \<noteq> b \<and> a' \<noteq> b' \<Longrightarrow> strict_neutral F a b a' b'"
+theorem strict_neutrality [backward2]: "arrow_conds F \<Longrightarrow> a \<noteq> b \<Longrightarrow> a' \<noteq> b' \<Longrightarrow> strict_neutral F a b a' b'"
   by (tactic {* auto2s_tac @{context} (
     OBTAIN "strict_neutral F a b b a" WITH (
       CHOOSE "c, distinct [a, b, c]" THEN OBTAIN "strict_neutral F a b a c" THEN
