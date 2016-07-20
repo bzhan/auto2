@@ -1,6 +1,6 @@
 (* Utility functions. *)
 
-infix andf2 orf2
+infix andf2 orf2 check_MRS
 
 signature UTIL =
 sig
@@ -29,6 +29,7 @@ sig
   val nth_drop_list: int list -> 'a list -> 'a list
   val the_pair: 'a list -> 'a * 'a
   val the_triple: 'a list -> 'a * 'a * 'a
+  val the_quadruple: 'a list -> 'a * 'a * 'a * 'a
   val list_pair: 'a * 'a -> 'a list
   val filter_split: ('a -> bool) -> 'a list -> 'a list * 'a list
   val filter_first_split: ('a -> bool) -> 'a list -> 'a list * 'a list
@@ -37,6 +38,7 @@ sig
 
   (* Strings. *)
   val is_prefix_str: string -> string -> bool
+  val is_just_internal: string -> bool
 
   (* Managing matching environments. *)
   val fo_init: Type.tyenv * Envir.tenv
@@ -84,6 +86,7 @@ sig
   val trace_tlist: string -> term list -> unit
   val trace_thm: string -> thm -> unit
   val trace_fullthm: string -> thm -> unit
+  val check_MRS: thm list * thm -> thm
 
   (* Certifying terms and types. *)
   val cert: Proof.context -> term -> cterm
@@ -101,6 +104,8 @@ sig
   val is_null_term: term -> bool
   val bool_False: term
   val prop_False: term
+  val term_of_bool: bool -> term
+  val bool_of_term: term -> bool
   val is_Trueprop: term -> bool
   val is_neg: term -> bool
   val get_neg: term -> term
@@ -118,7 +123,7 @@ sig
   val has_vars: term -> bool
   val is_subterm: term -> term -> bool
   val has_subterm: term list -> term -> bool
-  val dest_obj_all_var: term -> int -> term * term
+  val dest_obj_all_var: term -> string list -> term * term
   val strip_obj_all_var: term -> term list * term
   val strip_obj_imp: term -> term list * term
   val lambda_abstract: term -> term -> term
@@ -154,10 +159,11 @@ sig
   val obj_sym: thm -> thm
   val meta_sym: thm -> thm
   val rewr_obj_eq: thm -> conv
-  val rewr_obj_eq_top: thm -> Proof.context -> conv
+  val rewr_obj_eq_top: Proof.context -> thm -> conv
   val apply_to_lhs: conv -> thm -> thm
   val apply_to_rhs: conv -> thm -> thm
-  val concl_conv: int -> conv -> conv
+  val concl_conv_n: int -> conv -> conv
+  val concl_conv: conv -> conv
   val make_neg_eq: thm -> thm
   val rewrite_to_contra_form: conv
   val rewrite_thm_to_contra_form: thm -> thm
@@ -165,7 +171,6 @@ sig
   val rewrite_thm_from_contra_form: thm -> thm
   val send_to_hyps: cterm -> thm -> thm
   val send_all_to_hyps: thm -> thm
-  val send_concrete_to_hyps: thm -> thm
   val transitive_list: thm list -> thm
   val skip_n_conv: int -> conv -> conv
   val to_obj_conv: Proof.context -> conv
@@ -283,6 +288,11 @@ fun the_triple lst =
     case lst of [i1, i2, i3] => (i1, i2, i3)
               | _ => raise AUTO2 "the_triple: list is not of length 3."
 
+(* Convert list to quadruple. *)
+fun the_quadruple lst =
+    case lst of [i1, i2, i3, i4] => (i1, i2, i3, i4)
+              | _ => raise AUTO2 "the_triple: list is not of length 4."
+
 (* Convert pair to list of two elements. *)
 fun list_pair (x, y) = [x, y]
 
@@ -324,6 +334,10 @@ fun all_distinct_pairs l =
 (* Whether pre is a prefix of str. *)
 fun is_prefix_str pre str =
     is_prefix (op =) (String.explode pre) (String.explode str)
+
+(* Test whether nm is followed by exactly one _. *)
+fun is_just_internal nm =
+    Name.is_internal nm andalso not (Name.is_skolem nm)
 
 val fo_init = (Vartab.empty, Vartab.empty)
 
@@ -422,6 +436,16 @@ fun trace_thm s th = trace_thm_ctxt (
 fun trace_fullthm s th = trace_fullthm_ctxt (
       Proof_Context.init_global (Thm.theory_of_thm th)) s th
 
+(* Debugging version of MRS. *)
+fun ths check_MRS th =
+    ths MRS th
+    handle THM _ => let
+      val _ = trace_thm "Applying" th
+      val _ = map (trace_thm "input") ths
+    in
+      raise AUTO2 "check_MRS"
+    end
+
 fun cert ctxt t = Thm.cterm_of ctxt t
 fun tycert ctxt ty = Thm.ctyp_of ctxt ty
 fun cert_thy thy t = Thm.global_cterm_of thy t
@@ -438,6 +462,13 @@ val null_term = Term.dummy
 fun is_null_term t = (t aconv null_term)
 val bool_False = @{term False}
 val prop_False = @{prop False}
+
+fun term_of_bool b = (if b then @{term True} else @{term False})
+fun bool_of_term t =
+    case t of
+        Const ("HOL.True", _) => true
+      | Const ("HOL.False", _) => false
+      | _ => raise AUTO2 "bool_of_term: unexpected t."
 
 (* Returns whether the given term is Trueprop. *)
 fun is_Trueprop t =
@@ -535,36 +566,43 @@ fun is_subterm subt t = exists_subterm (fn t' => t' aconv subt) t
 (* Whether any of subts is a subterm of t. *)
 fun has_subterm subts t = exists_subterm (fn t' => member (op aconv) subts t') t
 
-(* Given t of the form !a. P(a), return pair (?a, P(?a_)). Here idx is
-   the index to assign to the created Var.
+(* Given t of the form !a. P(a), return pair (a_, P(a_)) (new name is
+   formed by appending _ to the name hint of the quantifier, except to
+   avoid repetitions with the list nms).
  *)
-fun dest_obj_all_var t idx =
+fun dest_obj_all_var t nms =
     case t of
         Const ("HOL.All", _) $ Abs (abs as (_, T, _)) =>
         let
           val (nm, body) = Term.dest_abs abs
-          val bd_var = Var ((Name.internal nm, idx), T)
-          val bd_free = Free (nm, T)
-          val body' = Term.subst_atomic [(bd_free, bd_var)] body
+          val nm' = if member (op =) nms nm then
+                      singleton (Name.variant_list nms) nm
+                    else nm
+          val bd_var = Free (Name.internal nm', T)
+          val body' = Term.subst_atomic [(Free (nm, T), bd_var)] body
         in
           (bd_var, body')
         end
       | _ => raise AUTO2 "dest_obj_all_var"
 
-(* Given t of the form !a1, ... an. P(a1, ..., an), return pair
-   ([?a1_, ... ?an_], P(?a1_, ..., ?an_).
+(* Given t of the form !a1, ... an. P(a1, ..., an), return pair ([a1_,
+   ... an_], P(a1_, ..., an_), where the name of each of the new
+   variables are produced using dest_obj_all_var.
  *)
-fun strip_obj_all_var_aux t idx =
+fun strip_obj_all_var_aux t nms =
     case t of
         Const ("HOL.All", _) $ Abs _ =>
         let
-          val (bd_var, body) = dest_obj_all_var t idx
-          val (rest, body') = strip_obj_all_var_aux body (idx + 1)
+          val (bd_var, body) = dest_obj_all_var t nms
+          val (nm, _) = Term.dest_Free bd_var
+          val (rest, body') =
+              strip_obj_all_var_aux body (Name.dest_internal nm :: nms)
         in
           (bd_var :: rest, body')
         end
       | _ => ([], t)
-fun strip_obj_all_var t = strip_obj_all_var_aux t 0
+
+fun strip_obj_all_var t = strip_obj_all_var_aux t []
 
 (* Given t of form A1 --> ... --> An, return ([A1, ..., A(n-1)], An). *)
 fun strip_obj_imp t =
@@ -825,8 +863,8 @@ val meta_sym = apply_to_thm (Conv.rewr_conv @{thm meta_sym})
 fun rewr_obj_eq eq_th = Conv.rewr_conv (to_meta_eq eq_th)
 
 (* Rewrite on subterms, top order. *)
-fun rewr_obj_eq_top eq_th =
-    Conv.top_conv (K (Conv.try_conv (rewr_obj_eq eq_th)))
+fun rewr_obj_eq_top ctxt eq_th =
+    Conv.top_conv (K (Conv.try_conv (rewr_obj_eq eq_th))) ctxt
 
 (* Apply conv to rewrite the left hand side of th. *)
 fun apply_to_lhs cv th =
@@ -839,9 +877,15 @@ fun apply_to_rhs cv th =
     in if Thm.is_reflexive eq then th else Thm.transitive th eq end
 
 (* Using cv, rewrite the part of ct after stripping i premises. *)
-fun concl_conv i cv ct =
+fun concl_conv_n i cv ct =
     if i = 0 then cv ct
-    else (Conv.arg_conv (concl_conv (i-1) cv)) ct
+    else (Conv.arg_conv (concl_conv_n (i-1) cv)) ct
+
+(* Rewrite part of ct after stripping all premises. *)
+fun concl_conv cv ct =
+    case Thm.term_of ct of
+        Const ("Pure.imp", _) $ _ $ _ => Conv.arg_conv (concl_conv cv) ct
+      | _ => cv ct
 
 (* Given an equality A == B, make the equality ~A == ~B. Cancel ~~ on
    both sides if exists.
@@ -857,16 +901,15 @@ fun make_neg_eq th =
  *)
 fun rewrite_to_contra_form ct =
     let
-      val (prems, concl) = Logic.strip_horn (Thm.term_of ct)
-      val num_prems = length prems
+      val (_, concl) = Logic.strip_horn (Thm.term_of ct)
       val concl' = HOLogic.dest_Trueprop concl
     in
       if concl' aconv @{term "False"} then
         Conv.all_conv ct
       else if is_neg concl' then
-        concl_conv num_prems (Conv.rewr_conv @{thm to_contra_form'}) ct
+        concl_conv (Conv.rewr_conv @{thm to_contra_form'}) ct
       else
-        concl_conv num_prems (Conv.rewr_conv @{thm to_contra_form}) ct
+        concl_conv (Conv.rewr_conv @{thm to_contra_form}) ct
     end
 
 val rewrite_thm_to_contra_form = apply_to_thm rewrite_to_contra_form
@@ -884,7 +927,8 @@ fun rewrite_from_contra_form ct =
       val to_contra_form_th = if is_neg last_prem' then @{thm to_contra_form}
                               else @{thm to_contra_form'}
     in
-      concl_conv (num_prems-1) (Conv.rewr_conv (meta_sym to_contra_form_th)) ct
+      concl_conv_n (num_prems-1)
+                   (Conv.rewr_conv (meta_sym to_contra_form_th)) ct
     end
 
 val rewrite_thm_from_contra_form = apply_to_thm rewrite_from_contra_form
@@ -900,12 +944,6 @@ fun send_all_to_hyps th =
     in
       fold send_to_hyps cprems th
     end
-fun send_concrete_to_hyps th =
-    case Thm.prems_of th of
-        [] => th
-      | prem :: _ => if has_vars prem then th
-                     else th |> send_to_hyps (Thm.cprem_of th 1)
-                             |> send_concrete_to_hyps
 
 (* Given a list of theorems A = B, B = C, etc., apply
    Thm.transitive to get equality between start and end.
@@ -1009,7 +1047,9 @@ fun horn_conv cv ct =
              then_conv (Conv.arg_conv (horn_conv cv))
        | _ => HOLogic.Trueprop_conv cv) ct
 
-(* Given th of form A1 & ... & An, return theorems A1, ..., An. *)
+(* Given th of form (P ==>) A1 & ... & An, return theorems (P ==>) A1,
+   ..., (P ==>) An, where there can be zero or more premises in front.
+ *)
 fun split_conj_th th =
     case prop_of' th of
         Const ("HOL.conj", _) $ _ $ _ =>

@@ -28,9 +28,11 @@ fun FINSET_INDUCT (var_spec_str, ind_infos) ctxt =
 
             val fin_th' = fin_th |> use_var_eq ctxt var_eq
             val var_infos = [(var, var_eq)]
+            val ritems =
+                apply_induction (the var_ctxt) var_infos ctxt ind_th [fin_th']
           in
-            [Update.thm_update (id, fin_th)] @
-            apply_induction id (the var_ctxt) var_infos ctxt ind_th [fin_th']
+            [Update.thm_update (id, fin_th),
+             Update.AddItems {id = id, raw_items = ritems}]
           end
     in
       [Script_Task {inits = [Update.InitAssum (get_neg' concl)], subs = [],

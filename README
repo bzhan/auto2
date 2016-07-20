@@ -41,6 +41,10 @@ Description of the examples:
 - Algebra_Ex: basic group theory. Follows theories Group and Coset in
   HOL/Algebra.
 
+- SepLogic: separation logic. Development of the foundation of
+  separation logic, as well as example of linked list, follows "A
+  Separation Logic Framework for Imperative HOL" in Isabelle AFP.
+
 Copyright (C) 2015, 2016 Bohua Zhan
 
 This program is free software; you can redistribute it and/or modify

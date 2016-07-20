@@ -28,13 +28,14 @@ sig
   val dest_handler_raw: raw_item -> term * retro_handler
   (* Misc. functions. *)
   val eq_ritem: raw_item * raw_item -> bool
-  val instantiate: ((indexname * typ) * cterm) list -> raw_item -> raw_item
-  val obtain_variant_frees: Proof.context * raw_item list ->
-                            Proof.context * ((indexname * typ) * cterm) list
+  val subst_th: (cterm * cterm) list -> thm -> thm
+  val instantiate: (cterm * cterm) list -> raw_item -> raw_item
+  val obtain_variant_frees:
+      Proof.context * raw_item list -> Proof.context * (cterm * cterm) list
 
   type box_item
   val null_item: box_item
-  val id_of_item: box_item -> box_id
+  val uid_of_item: box_item -> int
   val score_of_item: box_item -> int
   val get_thm: box_item -> thm
   val get_ty_str: box_item -> string
@@ -43,7 +44,7 @@ sig
   val get_tname: box_item -> term
   (* Misc. functions. *)
   val merged_id: box_lattice -> box_item list -> box_id
-  val mk_box_item: box_id * int * raw_item -> box_item
+  val mk_box_item: int * box_id * int * raw_item -> box_item
 end;
 
 structure BoxItem : BOXITEM =
@@ -88,19 +89,6 @@ fun eq_ritem (ritem1, ritem2) =
        Thm.eq_thm_prop (get_thm_raw ritem1, get_thm_raw ritem2))
     else false
 
-fun instantiate inst ritem =
-    let
-      val subst =
-          map (fn ((idx, T), ct) => (Var (idx, T), Thm.term_of ct)) inst
-      val subst_fun = subst_atomic subst
-    in
-      case ritem of
-          Handler (t, handler) => Handler (subst_fun t, handler)
-        | Fact (ty_str, tname, th) =>
-          Fact (ty_str, subst_fun tname, th |> Thm.instantiate ([], inst)
-                                            |> send_concrete_to_hyps)
-    end
-
 (* Given a context and list of raw items, obtain fresh names of free
    variables for each internal (schematic) variable declared in the
    raw items, and declare the new variables in context. Return the
@@ -112,22 +100,55 @@ fun obtain_variant_frees (ctxt, ritems) =
       (* Original internal variables. *)
       val all_vars =
           ritems |> filter (match_ty_str_raw TY_VAR) |> map get_tname_raw
-                 |> filter is_Var |> map dest_Var
+                 |> filter is_Free |> map dest_Free
+                 |> filter (is_just_internal o fst)
       (* New names for these variables. *)
       val all_vars' =
-          all_vars |> map (fn ((nm,_), T) => (Name.dest_internal nm, T))
+          all_vars |> map (fn (nm, T) => (Name.dest_internal nm, T))
                    |> Variable.variant_frees ctxt []
-          handle Fail "unsuffix" =>
-                 raise AUTO2 "obtain_variant_frees: dest_internal"
-      val subst = all_vars ~~ (map (cert ctxt o Free) all_vars')
+      val subst = map (apply2 (cert ctxt o Free)) (all_vars ~~ all_vars')
     in
       (fold declare_free_term (map Free all_vars') ctxt, subst)
     end
 
-type box_item = {id: box_id, sc: int, ty_str: string, tname: term, prop: thm}
-val null_item = {id = [], sc = 0, ty_str = TY_NULL, tname = HOLogic.unit,
-                 prop = true_th}
-fun id_of_item {id, ...} = id
+(* Replace using subst the internal variables in th. This proceeds in
+   several steps: first, pull any hypotheses of the theorem involving
+   the replaced variables into statement of the theorem, perform the
+   replacement (using forall_intr then forall_elim), finally return
+   the hypotheses to their original place.
+ *)
+fun subst_th subst th =
+    let
+      val old_cts = map fst subst
+      val old_ts = map Thm.term_of old_cts
+      val new_cts = map snd subst
+      val chyps = filter (fn ct => has_subterm old_ts (Thm.term_of ct))
+                         (Thm.chyps_of th)
+    in
+      th |> fold Thm.implies_intr chyps
+         |> fold Thm.forall_intr old_cts
+         |> fold Thm.forall_elim (rev new_cts)
+         |> send_all_to_hyps
+    end
+
+(* Here inst is the return value of obtain_variant_frees. Perform the
+   replacement on the ritems.
+ *)
+fun instantiate subst ritem =
+    let
+      val subst_fun = Term.subst_atomic (map (apply2 Thm.term_of) subst)
+    in
+      case ritem of
+          Handler (t, handler) => Handler (subst_fun t, handler)
+        | Fact (ty_str, tname, th) =>
+          Fact (ty_str, subst_fun tname, subst_th subst th)
+    end
+
+type box_item =
+     {uid: int, id: box_id, sc: int, ty_str: string, tname: term, prop: thm}
+val null_item = {uid = 0, id = [], sc = 0, ty_str = TY_NULL,
+                 tname = HOLogic.unit, prop = true_th}
+fun uid_of_item {uid, ...} = uid
 fun score_of_item {sc, ...} = sc
 fun get_thm {prop, ...} = prop
 fun get_ty_str {ty_str, ...} = ty_str
@@ -145,11 +166,12 @@ fun merged_id lat items =
       merge items
     end
 
-fun mk_box_item (id, sc, ritem) =
+fun mk_box_item (uid, id, sc, ritem) =
     case ritem of
         Handler _ => raise AUTO2 "mk_box_item: ritem must be Fact"
       | Fact (ty_str, tname, prop) =>
-        {id = id, sc = sc, ty_str = ty_str, tname = tname, prop = prop}
+        {uid = uid, id = id, sc = sc, ty_str = ty_str, tname = tname,
+         prop = prop}
 
 end  (* structure BoxItem. *)
 
@@ -537,11 +559,14 @@ sig
 
   val handler_ritems: Proof.context -> term -> retro_handler -> raw_item list
   val apply_horn_clause: box_id * thm -> resolve_callback -> raw_update list
+  val apply_exists_ritems: thm -> Proof.context -> string list ->
+                           raw_item list * thm
   val apply_exists: box_id * thm -> Proof.context -> string list ->
                     raw_update list
+  val get_apply_exists_nms: thm -> string list
   val target_of_update: raw_update -> box_id
   val update_info: Proof.context -> box_id -> raw_item list -> string
-  val source_info: Proof.context -> update -> string
+  val source_info: update -> string
 end;
 
 structure Update : UPDATE =
@@ -645,29 +670,12 @@ fun string_of_raw_update ctxt raw_updt =
 
 val null_callback = K []
 
-(* Whether the given term contains a non-internal schematic q
-   variable.
- *)
-fun has_non_internal_var t =
-    exists (fn ((nm, _), _) => not (Name.is_internal nm))
-           (Term.add_vars t [])
-
-(* Remove any initial assumptions that contain no schematic variables
-   or only internal schematic variables (which will be replaced by
-   free variables).
- *)
-fun strip_internal_var_assums prop =
-    case prop of
-        Const ("Pure.imp", _) $ A $ B =>
-        if has_non_internal_var A then prop else strip_internal_var_assums B
-      | _ => prop
-
 fun thm_to_ritem th =
     let
-      val prop = strip_internal_var_assums (Thm.prop_of th)
+      val prop = Thm.prop_of th
       val _ = assert (is_Trueprop prop) "thm_update: prop is not Trueprop."
-      val _ = assert (not (has_non_internal_var prop))
-                     "thm_update: prop has non-internal schematic variables."
+      val _ = assert (not (has_vars prop))
+                     "thm_update: prop contains schematic variables."
       val prop' = HOLogic.dest_Trueprop prop
       val thy = Thm.theory_of_thm th
     in
@@ -724,9 +732,10 @@ fun apply_horn_clause (id, th) cb =
 
 (* nms specify the names of free variables, either internal (use
    obtain_variant_frees to fix) or otherwise (will be put into context
-   as is).
+   as is). This function returns the list of VAR items and handlers,
+   paired with the theorem produced.
  *)
-fun apply_exists (id, ex_th) ctxt nms =
+fun apply_exists_ritems ex_th ctxt nms =
     let
       fun dest_one_abs nm t =
           case t of
@@ -735,14 +744,7 @@ fun apply_exists (id, ex_th) ctxt nms =
                 val (nm', body') = Term.dest_abs (nm, T, body)
                 val _ = assert (nm = nm') "apply_exists: name clash"
               in
-                if Name.is_internal nm then
-                  let
-                    val var = Var ((nm, 0), T)
-                  in
-                    (var, subst_atomic [(Free (nm, T), var)] body')
-                  end
-                else
-                  (Free (nm, T), body')
+                ((nm, T), body')
               end
             | _ => raise AUTO2 "apply_exists: not exists statement."
 
@@ -760,35 +762,100 @@ fun apply_exists (id, ex_th) ctxt nms =
       val ex_th' = apply_to_thm' (normalize_exs_conv (length nms) ctxt) ex_th
       val (vars, new_prop) = ex_th' |> prop_of' |> dest_all_abs nms
       val new_prop' = HOLogic.mk_Trueprop new_prop
-      val new_th = new_prop' |> cert ctxt |> Thm.trivial
-                             |> send_concrete_to_hyps
+      val new_th = new_prop' |> cert ctxt |> Thm.assume
 
+      (* Given two terms t and u, where t may contain internal
+         variables, find replacements for those internal variables so
+         that t agrees with u. If there is no match, return the empty
+         list.
+       *)
+      fun match_vars_one (t, u) =
+          let
+            val all_internal_vars =
+                (Term.add_frees t [])
+                    |> filter (fn (nm, _) => is_just_internal nm)
+            fun subst_for_var (nm, T) =
+                [(Free (nm, T), Var ((nm, 0), T))]
+            val subst = maps subst_for_var all_internal_vars
+
+            val pat = Term.subst_atomic subst t
+            val inst = pattern_fo_match ctxt (pat, u)
+            fun get_freevar (nm, T) = ((nm, T), lookup_inst inst nm)
+          in
+            map get_freevar all_internal_vars
+          end
+          handle Pattern.MATCH => []
+
+      (* Given two lists of terms, where terms of ts may contain
+         internal variables, find replacements for those internal
+         variables so that those terms match that in us. Note we do
+         not check for contradictory replacements here.
+       *)
+      fun match_vars (ts, us) =
+          (maps match_vars_one (all_pairs (ts, us)))
+              |> distinct (eq_pair (op =) (op aconv))
+
+      (* Find new versions of vars by matching new_prop' and t. *)
       fun get_freevars t =
           let
-            val inst = pattern_fo_match ctxt (new_prop', t)
-            fun get_freevar var =
-                case var of
-                    Free _ => var
-                  | Var ((nm, i), _) => lookup_instn inst (nm, i)
-                  | _ => raise AUTO2 "apply_exists: unexpected var."
+            val subst = match_vars_one (new_prop', t)
+            fun get_freevar (nm, T) =
+                if not (is_just_internal nm) then Free (nm, T) else
+                the (AList.lookup (op =) subst (nm, T))
+                handle Option.Option =>
+                       raise AUTO2 "get_freevars: cannot match new_prop' and t"
           in
             map get_freevar vars
           end
 
       fun ready (t, ts) =
-          forall (fn t' => t' aconv t orelse
-                           not (occurs_frees (get_freevars t) t')) ts
+          let
+            val fvars = get_freevars t
+          in
+            forall (fn t' => t' aconv t orelse not (occurs_frees fvars t')) ts
+          end
 
       fun handler (t, th) =
-          th |> Thm.implies_intr (cert ctxt t)
-             |> fold (ex_elim ctxt) (rev (get_freevars t))
-             |> Thm.elim_implies ex_th'
+          let
+            val subst = (match_vars (Thm.hyps_of ex_th', Thm.hyps_of th))
+                            |> map (fn ((nm, T), t) =>
+                                       (cert ctxt (Free (nm, T)), cert ctxt t))
+            val fvars = get_freevars t
+          in
+            th |> Thm.implies_intr (cert ctxt t)
+               |> fold (ex_elim ctxt) (rev fvars)
+               |> Thm.elim_implies (subst_th subst ex_th')
+          end
 
-      val ritems = (map var_to_fact vars) @
-                   [Handler (new_prop', (ready, handler)),
-                    Fact (TY_PROP, new_prop, new_th)]
+      val ritems = (map (var_to_fact o Free) vars) @
+                   [Handler (new_prop', (ready, handler))]
     in
-      [AddItems {id = id, raw_items = ritems}]
+      (ritems, new_th)
+    end
+
+(* Calls the previous function, and directly produces the update. *)
+fun apply_exists (id, ex_th) ctxt nms =
+    let
+      val (ritems, new_th) = apply_exists_ritems ex_th ctxt nms
+    in
+      [AddItems {id = id, raw_items = ritems @ [thm_to_ritem new_th]}]
+    end
+
+(* Given existence theorem, return list of suggested names of new
+   variables, obtained from name hints of EX quantifiers.
+ *)
+fun get_apply_exists_nms th =
+    let
+      fun helper t =
+          case t of
+              Const ("HOL.Ex", _) $ Abs (abs as (nm, _, _)) =>
+              let val (_, body) = Term.dest_abs abs in
+                nm :: helper body
+              end
+            | _ => []
+    in
+      (Name.variant_list [] (helper (prop_of' th)))
+          |> map Name.internal
     end
 
 fun target_of_update raw_updt =
@@ -802,10 +869,11 @@ fun update_info ctxt id ritems =
     (string_of_list' (string_of_raw_item ctxt)
                      (filter (not o is_handler_raw) ritems)) ^
     " at box " ^ (string_of_box_id id)
-fun source_info ctxt {sc, prfstep_name, source, ...} =
-    (string_of_int sc) ^ ", " ^ prfstep_name ^
-    (if prfstep_name = "DISJ" orelse prfstep_name = "DISJ_ACTIVE" then ""
-     else " on " ^ (string_of_list' (string_of_item ctxt) source))
+
+fun uid_string_of_item {uid, ...} = "(" ^ string_of_int uid ^ ")"
+
+fun source_info {prfstep_name, source, ...} =
+    prfstep_name ^ " on " ^ (string_of_list' (uid_string_of_item) source)
 
 end  (* structure Update. *)
 
@@ -930,6 +998,7 @@ sig
   val is_box_resolved: status -> box_id -> bool
   val is_box_unresolved: status -> box_id -> bool
 
+  val incr_uid_next: status -> status
   val map_box: box_id -> (Box.box -> Box.box) -> status -> status
   val map_context: (Proof.context -> Proof.context) -> status -> status
   val map_rewrites: (rewrite_table -> rewrite_table) -> status -> status
@@ -963,6 +1032,7 @@ sig
   val set_resolve_th: box_id -> thm -> status -> status
   val get_resolve_th: status -> box_id -> thm
 
+  val is_term_present: status -> term -> bool
   val find_fact: status -> box_id -> term -> (box_item * thm) option
   val find_ritem_exact: status -> box_id -> raw_item -> box_item option
   val is_triv_eq: status -> box_id -> raw_item -> bool
@@ -979,6 +1049,7 @@ structure Status : STATUS =
 struct
 
 type status = {
+  uid_next: int,
   lat: BoxID.box_lattice,
   boxes: Box.box Boxidtab.table,
   queue: Updates_Heap.T,
@@ -987,8 +1058,8 @@ type status = {
 }
 
 fun empty_status ctxt =
-    {lat = BoxID.empty, boxes = Boxidtab.empty, queue = Updates_Heap.empty,
-     tbl = RewriteTable.empty ctxt, ctxt = ctxt}
+    {uid_next = 1, lat = BoxID.empty, boxes = Boxidtab.empty,
+     queue = Updates_Heap.empty, tbl = RewriteTable.empty ctxt, ctxt = ctxt}
 
 fun theory_of {ctxt, ...} = Proof_Context.theory_of ctxt
 
@@ -1022,35 +1093,41 @@ val is_eq_descendent = BoxID.is_eq_descendent o get_lattice
 val is_box_resolved = BoxID.is_box_resolved o get_lattice
 val is_box_unresolved = BoxID.is_box_unresolved o get_lattice
 
-fun map_box id f {lat, boxes, queue, tbl, ctxt} =
-    {lat = lat, boxes = Boxidtab.map_entry id f boxes, queue = queue, tbl = tbl,
-     ctxt = ctxt}
+fun incr_uid_next {uid_next, lat, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next + 1, lat = lat, boxes = boxes, queue = queue,
+     tbl = tbl, ctxt = ctxt}
 
-fun map_context f {lat, boxes, queue, tbl, ctxt} =
-    {lat = lat, boxes = boxes, queue = queue,
+fun map_box id f {uid_next, lat, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, lat = lat, boxes = Boxidtab.map_entry id f boxes,
+     queue = queue, tbl = tbl, ctxt = ctxt}
+
+fun map_context f {uid_next, lat, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, lat = lat, boxes = boxes, queue = queue,
      tbl = tbl |> RewriteTable.map_context f, ctxt = f ctxt}
 
-fun map_rewrites f {lat, boxes, queue, tbl, ctxt} =
-    {lat = lat, boxes = boxes, queue = queue, tbl = f tbl, ctxt = ctxt}
+fun map_rewrites f {uid_next, lat, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, lat = lat, boxes = boxes, queue = queue, tbl = f tbl,
+     ctxt = ctxt}
 
-fun add_prim_box parent_id new_box {lat, boxes, queue, tbl, ctxt} =
+fun add_prim_box parent_id new_box {uid_next, lat, boxes, queue, tbl, ctxt} =
     let
       val (id, lat') = BoxID.add_prim_id parent_id lat
     in
-      (id, {lat = lat', boxes = Boxidtab.update_new ([id], new_box) boxes,
-            queue = queue,
+      (id, {uid_next = uid_next, lat = lat',
+            boxes = Boxidtab.update_new ([id], new_box) boxes, queue = queue,
             tbl = RewriteTable.map_lat (K lat') tbl, ctxt = ctxt})
     end
 
-fun set_focus foc {lat, boxes, queue, tbl, ctxt} =
-    {lat = lat |> BoxID.set_focus foc, boxes = boxes, queue = queue,
-     tbl = tbl |> RewriteTable.map_lat (BoxID.set_focus foc), ctxt = ctxt}
+fun set_focus foc {uid_next, lat, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, lat = lat |> BoxID.set_focus foc, boxes = boxes,
+     queue = queue, tbl = tbl |> RewriteTable.map_lat (BoxID.set_focus foc),
+     ctxt = ctxt}
 
-fun add_resolved id {lat, boxes, queue, tbl, ctxt} =
+fun add_resolved id {uid_next, lat, boxes, queue, tbl, ctxt} =
     let
       val lat' = BoxID.add_resolved id lat
     in
-      {lat = lat', boxes = boxes, queue = queue,
+      {uid_next = uid_next, lat = lat', boxes = boxes, queue = queue,
        tbl = RewriteTable.map_lat (K lat') tbl, ctxt = ctxt}
     end
 
@@ -1067,13 +1144,13 @@ fun get_eq_ancestors st id = filter (is_eq_descendent st id) (get_unresolved st)
 (* Add box with the given composite id to status. Assuming this ID is
    not already present in status.
  *)
-fun add_composite_box id (st as {lat, boxes, queue, tbl, ctxt}) =
+fun add_composite_box id (st as {uid_next, lat, boxes, queue, tbl, ctxt}) =
     if exist_box st id then
       raise AUTO2 "Try to add a composite box that already exists"
     else if length id = 1 then
       raise AUTO2 "Try to add a primitive box as a composite"
     else
-      {lat = lat,
+      {uid_next = uid_next, lat = lat,
        boxes = Boxidtab.update_new (id, Box.init_box []) boxes,
        queue = queue, tbl = tbl, ctxt = ctxt}
 
@@ -1124,6 +1201,13 @@ fun query_removed st (item as {id, ...}) = query_shadowed st id item
 
 fun set_resolve_th id th st = st |> map_box id (Box.set_resolve_th th)
 fun get_resolve_th st id = Box.get_resolve_th (get_box st id)
+
+fun is_term_present st t =
+    let
+      val items = maps (get_items st) (get_unresolved st)
+    in
+      exists (is_subterm t) (map #tname items)
+    end
 
 (* Try to find a box_item at id or ancestors whose term is equivalent
    to t. Return SOME (item, eq) if found, where item has proposition
@@ -1252,8 +1336,9 @@ fun find_prim_box (st as {tbl, ...}) id inits =
       find_first agree_at_id ids_to_test
     end
 
-fun map_queue f {lat, boxes, queue, tbl, ctxt} =
-    {lat = lat, boxes = boxes, queue = f queue, tbl = tbl, ctxt = ctxt}
+fun map_queue f {uid_next, lat, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, lat = lat, boxes = boxes, queue = f queue, tbl = tbl,
+     ctxt = ctxt}
 
 fun add_to_queue updt = map_queue (Updates_Heap.insert updt)
 val delmin_from_queue = map_queue Updates_Heap.delete_min

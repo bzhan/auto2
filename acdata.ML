@@ -74,6 +74,8 @@ sig
   val move_outmost2: ac_inst_info -> term * term -> conv
   val normalize_unit: ac_inst_info -> conv
   val normalize_minus: ac_inst_info -> conv
+  val normalize_comm_gen: ac_inst_info -> bool -> (term * term -> bool) -> conv
+  val normalize_comm_l: ac_inst_info -> (term * term -> bool) -> conv
   val ac_subterms_conv: ac_inst_info -> conv -> conv
   val ac_subterms_conv_trav_uinv: ac_inst_info -> conv -> conv
 end;
@@ -511,6 +513,68 @@ fun normalize_uminus (ac_info as {cfhead, uinv_op, inv_op, unit_val, ...}) ct =
 fun normalize_minus ac_info =
     if not (has_inv_th ac_info) then Conv.all_conv
     else (remove_minus ac_info) then_conv (normalize_uminus ac_info)
+
+(* Rearrange subterms of ct according to the given term
+   ordering. Returns theorem ct == ct'.
+ *)
+fun normalize_comm_gen ac_info assoc_r termless ct =
+    if not (has_comm_th ac_info) then
+      raise AUTO2 "normalize_comm: comm_th does not exist."
+    else let
+      (* If there are two terms a.b, swap if a > b. If there are at
+         least three terms, in the left associate case this is
+         (a.b).c, swap b and c if b > c. In the right associate case
+         this is a.(b.c), swap a and b if a > b. If there is a swap,
+         recursively call swap_last until the original outside term is
+         swapped into position.
+       *)
+      fun swap_last ct =
+          if head_agrees ac_info (Thm.term_of ct) then
+            let
+              val (_, (a1, a2)) = dest_binop (Thm.term_of ct)
+            in
+              if assoc_r andalso head_agrees ac_info a2 then
+                (* Structure of t is a1 . a2 = a1 . (b1 . _). *)
+                let
+                  val (_, (b1, _)) = dest_binop a2
+                in
+                  if termless (b1, a1) then
+                    ((swap_l_cv ac_info)
+                         then_conv (Conv.arg_conv swap_last)) ct
+                  else Conv.all_conv ct
+                end
+              else if not assoc_r andalso head_agrees ac_info a1 then
+                (* Structure of t is a1 . a2 = (_ . b2) . a2. *)
+                let
+                  val (_, (_, b2)) = dest_binop a1
+                in
+                  if termless (a2, b2) then
+                    ((swap_r_cv ac_info)
+                         then_conv (Conv.arg1_conv swap_last)) ct
+                  else Conv.all_conv ct
+                end
+              else
+                (* Structure of t is a1 . a2. *)
+                if termless (a2, a1) then comm_cv ac_info ct
+                else Conv.all_conv ct
+            end
+          else
+            Conv.all_conv ct
+
+      (* Full ordering. Recursively perform full ordering on all but
+         the outermost, then swap outermost into position.
+       *)
+      fun normalize ct =
+          if head_agrees ac_info (Thm.term_of ct) then
+            ((if assoc_r then Conv.arg_conv normalize
+              else Conv.arg1_conv normalize) then_conv swap_last) ct
+          else
+            Conv.all_conv ct
+    in
+      normalize ct
+    end
+
+fun normalize_comm_l ac_info = normalize_comm_gen ac_info false
 
 (* Apply cv to "subterms" of ct for an AC fhead. *)
 fun ac_subterms_conv_gen trav_uinv (ac_info as {uinv_op, ...}) cv ct =

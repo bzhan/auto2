@@ -221,13 +221,23 @@ fun mk_uinv {uinv_op, ...} t =
 fun mk_uinv_eq ctxt {uinv_op, ...} eq_th =
     Thm.combination (Thm.reflexive (cert ctxt uinv_op)) eq_th
 
+fun is_multiple_term_head t =
+    if not (Term.is_Var t) then false else
+    let
+      val ((nm, _), _) = Term.dest_Var t
+      val nm_chars = raw_explode nm
+    in
+      length nm_chars >= 2 andalso List.last nm_chars = "l"
+    end
+
 fun is_sch_arg ac_info t =
     Term.is_Var t orelse
+    (Term.is_Var (head_of t) andalso is_multiple_term_head (head_of t)) orelse
     (is_uinv ac_info t andalso Term.is_Var (dest_uinv t))
 
 (* Given ?a or -?a, return -a. *)
 fun dest_sch_arg t =
-    if Term.is_Var t then t else dest_uinv t
+    if Term.is_Var (Term.head_of t) then t else dest_uinv t
 
 fun normalize_minus_assoc_gen assoc_r ac_info =
     (ACUtil.normalize_minus ac_info)
@@ -505,7 +515,7 @@ and match_ac_list assoc_r tbl bd_vars (ac_info as {comm_th, unit_val, ...})
       let
         val t = the_single ts
       in
-        if Term.is_Var t then
+        if Term.is_Var (head_of t) then
           if not (is_unit_allowed_var t) andalso
              exists (fn u => RewriteTable.is_equiv id tbl (unit_val, u)) us
           then [] else

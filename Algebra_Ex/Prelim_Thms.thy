@@ -18,10 +18,6 @@ theorem set_comprehensionD [resolve]: "y \<in> (\<Union>x\<in>A. {f x}) \<Longri
 theorem set_comprehensionI2 [backward2]: "x \<in> A \<Longrightarrow> y \<in> B \<Longrightarrow> f x y \<in> (\<Union>x\<in>A. \<Union>y\<in>B. {f x y})" by auto
 theorem set_comprehensionD2 [resolve]: "z \<in> (\<Union>x\<in>A. \<Union>y\<in>B. {f x y}) \<Longrightarrow> \<exists>x\<in>A. \<exists>y\<in>B. z = f x y" by auto
 
-(* THE and \<exists>! *)
-setup {* add_forward_prfstep_cond @{thm theI'} [with_term "THE x. ?P x"] *}
-setup {* add_backward_prfstep @{thm HOL.ex_ex1I} *}
-
 (* Property of bijection *)
 setup {* add_forward_prfstep @{thm Fun.bij_betw_imp_inj_on} *}
 setup {* add_forward_prfstep @{thm bij_betw_imp_surj_on} *}

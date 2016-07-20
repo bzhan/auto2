@@ -39,6 +39,8 @@ setup {* fold add_eq_th_normalizer [@{thm HOL.eq_True}, @{thm HOL.eq_False}] *}
 (* Trivial contradictions. *)
 setup {* add_resolve_prfstep @{thm HOL.refl} *}
 setup {* add_forward_prfstep @{thm contra_triv} *}
+setup {* add_resolve_prfstep @{thm HOL.TrueI} *}
+theorem FalseD' [resolve]: "\<not>False" by simp
 
 (* Not. *)
 setup {* add_rewrite_rule nn_cancel_th #> add_eq_th_normalizer nn_cancel_th *}
@@ -69,6 +71,13 @@ theorem if_not_P': "P \<Longrightarrow> (if \<not>P then x else y) = y" by simp
 setup {* fold add_rewrite_rule [@{thm HOL.if_P}, @{thm HOL.if_not_P}, @{thm if_not_P'}] *}
 setup {* fold add_fixed_sc [("HOL.if_P", 1), ("HOL.if_not_P", 1), ("Logic_Thms.if_not_P'", 1)] *}
 
+(* THE and \<exists>! *)
+setup {* add_forward_prfstep_cond @{thm theI'} [with_term "THE x. ?P x"] *}
+setup {* add_backward_prfstep @{thm HOL.ex_ex1I} *}
+theorem ex_ex1I' [backward1]: "(\<forall>x y. P x \<longrightarrow> P y \<longrightarrow> x = y) \<Longrightarrow> P x \<Longrightarrow> \<exists>!x. P x" by auto
+theorem the1_equality': "P a \<Longrightarrow> \<exists>!x. P x \<Longrightarrow> (THE x. P x) = a" by (simp add: the1_equality)
+setup {* add_forward_prfstep_cond @{thm the1_equality'} [with_term "THE x. ?P x"] *}
+
 (* Hilbert choice. *)
 setup {* add_gen_prfstep ("SOME_case_intro",
   [WithTerm @{term_pat "SOME k. ?P k"}, CreateConcl @{term_pat "\<exists>k. ?P k"}]) *}
@@ -95,6 +104,11 @@ theorem Least_equality' [backward1]:
 (* Pairs. *)
 setup {* add_rewrite_rule @{thm fst_conv} *}
 setup {* add_rewrite_rule @{thm snd_conv} *}
+setup {* add_rewrite_rule @{thm case_prod_conv} *}
+setup {* add_rewrite_rule_cond @{thm case_prod_beta} [with_cond "?p \<noteq> (?s, ?t)"] *}
+theorem pair_inject': "(a, b) = (a', b') \<Longrightarrow> a = a' \<and> b = b'" by simp
+setup {* add_forward_prfstep_cond (conj_left_th @{thm pair_inject'}) [with_cond "?a \<noteq> ?a'"] *}
+setup {* add_forward_prfstep_cond (conj_right_th @{thm pair_inject'}) [with_cond "?b \<noteq> ?b'"] *}
 
 (* Let. *)
 setup {* add_rewrite_rule (to_obj_eq_th @{thm Let_def}) *}
@@ -102,6 +116,18 @@ setup {* add_rewrite_rule (to_obj_eq_th @{thm Let_def}) *}
 (* Equivalence relation *)
 setup {* add_rewrite_rule @{thm symp_def} *}
 setup {* add_rewrite_rule @{thm transp_def} *}
+
+(* Options *)
+theorem option_not_none [forward]: "x \<noteq> None \<Longrightarrow> \<exists>p. x = Some p" by auto
+setup {* add_resolve_prfstep @{thm option.distinct(1)} *}
+setup {* add_rewrite_rule @{thm Option.option.sel} *}
+theorem option_inject' [forward]: "Some i = Some j \<Longrightarrow> i = j" by simp
+setup {* fold add_rewrite_rule @{thms Option.option.case} *}
+setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2", 1)] *}
+
+(* In HOL, every type is non-empty. This can be invoked with CHOOSE "r::'a, ArbVar r" *)
+definition ArbVar :: "'a \<Rightarrow> bool" where "ArbVar x = True"
+theorem type_nonempty [resolve]: "\<exists>x. ArbVar x" by (simp add: ArbVar_def)
 
 (* Quantifiers and other fundamental proofsteps. *)
 ML_file "logic_steps.ML"

@@ -51,6 +51,10 @@ theorem union_single_eq [rewrite, backward]: "x \<in> p \<Longrightarrow> {x} \<
 setup {* add_prfstep (AC_ProofSteps.ac_equiv_strong (
   "ac_equiv_strong_union", @{term_pat "?A \<union> ?B \<noteq> ?C \<union> ?D"})) *}
 
+subsection {* Intersection *}
+setup {* add_rewrite_rule @{thm Set.Int_empty_left} *}
+setup {* add_rewrite_rule @{thm Set.Int_absorb} *}
+
 subsection {* Disjointness *}
 theorem set_disjoint_mp: "A \<inter> B = {} \<Longrightarrow> p \<in> A \<Longrightarrow> p \<notin> B" by auto
 setup {* add_forward_prfstep_cond @{thm set_disjoint_mp} [with_cond "?A \<noteq> {?y}"] *}
@@ -73,8 +77,12 @@ theorem set_union_minus_distinct [rewrite]: "a \<noteq> c \<Longrightarrow> {a} 
 setup {* add_forward_prfstep_cond @{thm Set.Diff_subset} [with_term "?A - ?B"] *}
 theorem union_subtract_elt [rewrite]: "x \<notin> B \<Longrightarrow> (B \<union> {x}) - {x} = B" by simp
 theorem subset_sub1 [backward]: "x \<in> A \<Longrightarrow> A - {x} \<subset> A" by auto
+theorem member_notin [forward]: "x \<in> S - {y} \<Longrightarrow> x \<noteq> y" by simp
+theorem member_notin_contra: "x \<in> S \<Longrightarrow> x \<noteq> y \<Longrightarrow> x \<in> S - {y}" by simp
+setup {* add_forward_prfstep_cond @{thm member_notin_contra} [with_term "?S - {?y}"] *}
 
 subsection {* Results on finite sets *}
+setup {* add_resolve_prfstep @{thm Set.insert_not_empty} *}
 setup {* add_resolve_prfstep @{thm Finite_Set.finite.emptyI} *}
 theorem set_finite_single [resolve]: "finite {x}" by simp
 setup {* add_rewrite_rule @{thm Finite_Set.finite_Un} *}
@@ -106,9 +114,16 @@ setup {* add_rewrite_rule @{thm msetprod_singleton} *}
 setup {* add_rewrite_rule @{thm msetprod_Un} *}
 
 subsection {* mset *}
+theorem mset_member_empty [resolve]: "\<not>p \<in># {#}" by simp
 theorem mset_single [rewrite]: "mset [x] = {#x#}" by simp
 setup {* add_rewrite_rule @{thm mset.simps(1)} #> add_rewrite_rule_cond @{thm mset.simps(2)} [with_cond "?x \<noteq> []"] *} 
 setup {* add_rewrite_rule @{thm mset_eq_setD} *}
+theorem mset_append_one [rewrite]: "mset (xs @ [x]) = mset xs + {#x#}" by simp
+setup {* add_backward_prfstep @{thm Multiset.nth_mem_mset} *}
+theorem in_mset_append [forward]: "m \<in># mset (xs @ [x]) \<Longrightarrow> m \<in># mset xs \<or> m = x" by auto
+theorem in_multiset_single [forward]: "x \<in># {#y#} \<Longrightarrow> x = y" using not_gr0 by fastforce
+theorem mset_butlast [forward]: "p \<in># mset (butlast xs) \<Longrightarrow> p \<in># mset xs"
+  by (meson in_set_butlastD mem_set_multiset_eq)
 
 subsection {* Case checking *}
 setup {* add_resolve_prfstep @{thm multi_nonempty_split} *}

@@ -106,6 +106,7 @@ sig
   val get_new_terms: rewrite_table * rewrite_table -> (box_id * term) list
   val append_property: thm -> rewrite_table -> rewrite_table
   val get_new_properties: rewrite_type -> (box_id * thm) list
+  val remove_terms: term list -> rewrite_table -> rewrite_table
 end;
 
 structure RewriteTable : REWRITE_TABLE =
@@ -1207,6 +1208,89 @@ fun get_new_properties rtype =
         in
           maps get_for_term (get_all_terms tbl)
         end
+
+(* Remove t from the equiv table. This requires adding edges to repair
+   the graph if t is connected to more than one other node.
+ *)
+fun remove_term_equiv t tbl =
+    let
+      (* Edges to other nodes. *)
+      val neighs_th = (equiv_neighs tbl t)
+                          |> filter_out (fn (_, th) => t aconv rhs_of th)
+      val neighs = map (fn (_, th) => rhs_of th) neighs_th
+
+      (* Remove all equiv edges from t' to t. *)
+      fun remove_equiv t' tbl =
+          tbl |> map_equiv (
+            Termtab.map_entry t (filter_out (fn (_, th) => t' aconv rhs_of th)))
+
+      (* New equiv edges. *)
+      val new_equivs =
+          if length neighs_th < 2 then []
+          else let
+            val head_th = apsnd meta_sym (hd neighs_th)
+          in
+            (map (merge_info tbl head_th) (tl neighs_th))
+                |> filter_out (fn (_, th) => Thm.is_reflexive th)
+          end
+    in
+      tbl |> map_equiv (Termtab.delete_safe t)
+          |> fold remove_equiv neighs
+          |> fold add_equiv new_equivs
+    end
+
+(* Remove all traces of terms ts from the table. This function handles
+   all tables except equiv (assuming equiv is already processed).
+ *)
+fun remove_terms' ts {lat, terms, equiv, all_equiv, head_equiv, contain, simp,
+                      subsimp, reps, property, ctxt} =
+    let
+      (* Remove all entries for ts. *)
+      fun remove1 tb =
+          tb |> fold Termtab.delete_safe ts
+      (* Remove all entries referring to ts. *)
+      fun remove2 tb =
+          tb |> Termtab.dest_list
+             |> filter_out (fn (_, (_, th)) => member (op aconv) ts (rhs_of th))
+             |> Termtab.make_list
+      (* For contain table, do both of these above. *)
+      fun remove_contain tb =
+          tb |> fold Termtab.delete_safe ts
+             |> Termtab.dest_list
+             |> filter_out (fn (_, t') => member (op aconv) ts t')
+             |> Termtab.make_list
+
+      (* Test whether the head_equiv list for t' should be re-computed. *)
+      fun recompute_head_equiv' (_, lst) =
+          exists (fn (_, th) => member (op aconv) ts (rhs_of th)) lst
+
+      fun recompute_head_equiv (t', head_equivs) =
+          if not (member (op aconv) ts t') andalso
+             exists recompute_head_equiv' head_equivs then [t'] else []
+
+      (* Same for all_equiv. *)
+      fun recompute_all_equiv (t', lst) =
+          if not (member (op aconv) ts t') andalso
+             exists (fn (_, th) => member (op aconv) ts (rhs_of th)) lst
+          then [t'] else []
+
+      val all_equiv_to_update =
+          maps recompute_all_equiv (Termtab.dest all_equiv)
+      val head_equiv_to_update =
+          maps recompute_head_equiv (Termtab.dest head_equiv)
+    in
+      {lat = lat, terms = remove1 terms, equiv = equiv,
+       all_equiv = remove1 all_equiv, head_equiv = remove1 head_equiv,
+       contain = remove_contain contain, simp = remove1 simp,
+       subsimp = remove1 subsimp, reps = remove2 reps,
+       property = remove1 property, ctxt = ctxt}
+          |> fold index_all_equiv all_equiv_to_update
+          |> fold index_head_equiv head_equiv_to_update
+    end
+
+fun remove_terms ts tbl =
+    tbl |> fold remove_term_equiv ts
+        |> remove_terms' ts
 
 end  (* structure RewriteTable. *)
 

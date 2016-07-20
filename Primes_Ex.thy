@@ -84,7 +84,7 @@ theorem prime_dvd_multiset [backward1]: "prime p \<Longrightarrow> p dvd (\<Prod
   by (tactic {* auto2s_tac @{context} (
     CASE "M = {#}" THEN
     CHOOSE "M', m, M = M' + {#m#}" THEN
-    STRONG_INDUCT ("M", [])) *})
+    STRONG_INDUCT ("M", [ApplyOn "M'"])) *})
 
 theorem factorization_unique_aux:
   "\<forall>p\<in>set_mset M. prime p \<Longrightarrow> \<forall>p\<in>set_mset N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) dvd (\<Prod>i\<in>#N. i) \<Longrightarrow> M \<subseteq># N"
@@ -96,7 +96,7 @@ theorem factorization_unique_aux:
              "N', N = N' + {#n#}"] THEN
     OBTAIN "m = n" THEN
     OBTAIN "(\<Prod>i\<in>#M'. i) dvd (\<Prod>i\<in>#N'. i)" THEN
-    STRONG_INDUCT ("M", [Arbitrary "N"])) *})
+    STRONG_INDUCT ("M", [Arbitrary "N", ApplyOn "M'"])) *})
 
 setup {* add_forward_prfstep_cond @{thm factorization_unique_aux} [with_cond "?M \<noteq> ?N"] *}
 theorem factorization_unique:

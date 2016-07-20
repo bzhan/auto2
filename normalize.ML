@@ -44,7 +44,7 @@ fun eq_th_normalizer eq_th ctxt ritem =
         Handler _ => [ritem]
       | Fact (ty_str, _, th) =>
         if member (op =) ["PROP", "EQ", "PROPERTY"] ty_str then
-          [Update.thm_to_ritem (apply_to_thm' (rewr_obj_eq_top eq_th ctxt) th)]
+          [Update.thm_to_ritem (apply_to_thm' (rewr_obj_eq_top ctxt eq_th) th)]
         else [ritem]
 
 fun add_eq_th_normalizer eq_th thy =

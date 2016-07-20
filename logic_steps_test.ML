@@ -166,8 +166,8 @@ val test_match_update =
             val disj_th = assume_thm ctxt' (read_prop disj_str)
             val th = assume_thm ctxt' (read_prop t_str)
             val res_ts = map read_prop res_strs
-            val items = [mk_box_item ([], 0, disj_to_ritem disj_th),
-                         mk_box_item ([], 0, Update.thm_to_ritem th)]
+            val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),
+                         mk_box_item (0, [], 0, Update.thm_to_ritem th)]
             val updts = apply_prfstep rtype st items (hd match_update_prfsteps)
             val res_ts' = maps updt_to_thm updts |> map Thm.prop_of
           in

@@ -54,6 +54,41 @@ val add_list_ac_data =
 *}
 setup {* add_list_ac_data *}
 
+subsection {* length *}
+
+theorem length_non_empty [resolve]: "length (x # xs) > 0" by simp
+setup {* add_rewrite_rule @{thm length_replicate} *}
+setup {* add_rewrite_rule @{thm List.list.size(3)} *}
+setup {* add_rewrite_rule @{thm List.length_append} *}
+theorem length_one [rewrite]: "length [x] = 1" by simp
+theorem length_tl' [rewrite]: "l' \<noteq> [] \<Longrightarrow> length (tl l') + 1 = length l'" by simp
+setup {* add_rewrite_rule_back_cond @{thm List.length_list_update} [with_term "list_update ?xs ?i ?x"] *}
+setup {* add_rewrite_rule @{thm length_butlast} *}
+theorem length_butlast': "xs \<noteq> [] \<Longrightarrow> length xs = length (butlast xs) + 1" by simp
+setup {* add_forward_prfstep_cond @{thm length_butlast'} [with_term "length (butlast ?xs)"] *}
+
+theorem list_last_singleton [rewrite]: "length xs = 1 \<Longrightarrow> last xs = hd xs"
+  by (metis diff_is_0_eq hd_conv_nth last_conv_nth le_numeral_extra(4) length_greater_0_conv zero_less_one)
+
+subsection {* nth *}
+
+theorem nth_append1 [rewrite]: "i < length xs \<Longrightarrow> (xs @ ys) ! i = xs ! i" by (simp add: nth_append)
+setup {* add_rewrite_rule_back @{thm hd_conv_nth} *}
+setup {* add_rewrite_rule @{thm List.nth_take} *}
+setup {* add_rewrite_rule @{thm nth_butlast} *}
+setup {* add_rewrite_rule @{thm List.nth_list_update_neq} *}
+setup {* add_rewrite_rule @{thm List.nth_list_update_eq} *}
+setup {* add_rewrite_rule @{thm List.nth_append_length} *}
+setup {* add_rewrite_rule @{thm List.nth_replicate} *}
+
+subsection {* take and drop *}
+
+setup {* add_rewrite_rule @{thm List.take_0} *}
+setup {* add_rewrite_rule @{thm List.drop_0} *}
+setup {* add_rewrite_rule @{thm List.append_take_drop_id} *}
+theorem length_take' [rewrite]: "n \<le> length l \<Longrightarrow> length (take n l) = n" by simp
+setup {* add_rewrite_rule @{thm take_update_swap} *}
+
 subsection {* rev *}
 
 theorem rev_one [rewrite]: "rev [x] = [x]" by simp
@@ -102,5 +137,10 @@ theorem list_split_neq_second [resolve]: "xs \<noteq> as @ x # xs" by simp
 
 section {* Showing two lists are equal *}
 setup {* add_backward2_prfstep @{thm nth_equalityI} *}
+
+section {* Other operations *}
+
+setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
+setup {* fold add_rewrite_rule @{thms listsum_simps} *}
 
 end

@@ -87,9 +87,11 @@ theorem proper_ref_tree_of [resolve]: "proper_ref h p \<Longrightarrow> \<exists
 
 definition tree_of :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a tree" where
   "tree_of h p = (THE t. tree_ofR h p t)"
-theorem tree_ofI [forward]:
-  "tree_ofR h p t \<Longrightarrow> tree_of h p = t" by (metis the1_equality tree_of_def tree_ofR_is_fun)
-theorem tree_ofE: "proper_ref h p \<Longrightarrow> tree_ofR h p (tree_of h p)" using proper_ref_tree_of tree_ofI by blast
+setup {* add_rewrite_rule @{thm tree_of_def} *}
+theorem tree_ofI [forward]: "tree_ofR h p t \<Longrightarrow> tree_of h p = t" by auto2
+theorem tree_ofE: "proper_ref h p \<Longrightarrow> tree_ofR h p (tree_of h p)"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "\<exists>!t. tree_ofR h p t") *})
+setup {* del_prfstep_thm @{thm tree_of_def} *}
 setup {* add_forward_prfstep_cond @{thm tree_ofE} [with_term "tree_of ?h ?p"] *}
 
 theorem tree_of_Empty [rewrite]: "Ref.get h r = Empty \<Longrightarrow> tree_of h r = Tip" by auto2
@@ -100,10 +102,10 @@ theorem tree_of_Node' [forward]: "tree_of h p = tree.Node l v r \<Longrightarrow
 
 definition refs_of :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a node ref set" where
   "refs_of h p = (THE ps. refs_ofR h p ps)"
-theorem refs_ofI [forward]:
-  "refs_ofR h p ps \<Longrightarrow> present_on_set h ps \<Longrightarrow> proper_ref h p \<and> refs_of h p = ps"
-  by (metis proper_ref_def refs_of_def refs_ofR_is_fun the1_equality)
-theorem refs_ofE: "proper_ref h p \<Longrightarrow> refs_ofR h p (refs_of h p)" using proper_ref_def refs_ofI by blast
+setup {* add_rewrite_rule @{thm refs_of_def} *}
+theorem refs_ofI [forward]: "refs_ofR h p ps \<Longrightarrow> present_on_set h ps \<Longrightarrow> proper_ref h p \<and> refs_of h p = ps" by auto2
+theorem refs_ofE: "proper_ref h p \<Longrightarrow> refs_ofR h p (refs_of h p)" by auto2
+setup {* del_prfstep_thm @{thm refs_of_def} *}
 setup {* add_forward_prfstep_cond @{thm refs_ofE} [with_term "refs_of ?h ?p"] *}
 
 theorem refs_of_Empty [forward]:

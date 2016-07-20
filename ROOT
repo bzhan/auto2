@@ -72,3 +72,34 @@ session Algebra = AUTO2 +
   *}
   theories
     "Algebra_Ex/Coset"
+
+session SepLogic_Base = AUTO2 +
+  description {*
+    Base of separation logic.
+  *}
+  theories
+    "SepLogic/Hoare_Triple"
+
+session SepLogic_BasicStr = SepLogic_Base +
+  description {*
+    Separation logic: basic data structures.
+  *}
+  theories
+    "SepLogic/LinkedList"
+    "SepLogic/BinaryTree"
+    "SepLogic/DynamicArray"
+    "SepLogic/ArrayMap"
+
+session SepLogic_RBT = SepLogic_Base +
+  description {*
+    Separation logic: red-black tree.
+  *}
+  theories
+    "SepLogic/RBT"
+
+session SepLogic_PQueue = SepLogic_BasicStr +
+  description {*
+    Separation logic: priority queue (using array heap).
+  *}
+  theories
+    "SepLogic/IndexedPriorityQueue"

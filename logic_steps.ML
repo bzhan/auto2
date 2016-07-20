@@ -16,6 +16,7 @@ sig
 
   (* DISJ items. *)
   val TY_DISJ: string
+  val dest_tname_of_disj: term -> (bool * bool) * term list
   val imp_to_disj_cv: conv
   val to_disj_cv: conv
   val not_ex_cv: Proof.context -> conv
@@ -25,7 +26,7 @@ sig
   val disj_intro_gen: string * prfstep_descriptor list -> proofstep
   val disj_intro_prfsteps: proofstep list
   val output_disj_fn: item_output
-  val disj_matcher: item_matcher
+  val disj_typed_matcher: item_matcher
   val disj_prop_matcher: item_matcher
 
   val match_update_prfsteps: proofstep list
@@ -68,7 +69,7 @@ fun shadow_item_fn rtype _ item1 item2 =
                 |> RewriteTable.replace_id_for_type' rtype |> map fst
                 |> max_partial (BoxID.is_eq_ancestor lat)
       val item_to_shadow =
-          if #sc item1 < #sc item2 then item2 else item1
+          if #uid item1 > #uid item2 then item1 else item2
       fun process_id id' =
           Update.ShadowItem {id = id', item = item_to_shadow}
     in
@@ -129,15 +130,14 @@ val eq_elim_prfstep =
    when the update is produced x is replaced by an "internal" free
    variable, with suffix '_'. When the update is applied, that
    internal free variable is replaced by a fresh variable as
-   determined by the context.
+   determined by the context. We produce at most two variables at a
+   time.
  *)
 fun exists_elim (id, th) ctxt =
     let
-      val nm = case prop_of' th of
-                   Const ("HOL.Ex", _) $ Abs (nm, _, _) => Name.internal nm
-                 | _ => raise AUTO2 "exists_elim: unexpected inst for A"
+      val nms = Update.get_apply_exists_nms th
     in
-      Update.apply_exists (id, th) ctxt [nm]
+      Update.apply_exists (id, th) ctxt (take 2 nms)
     end
 
 (* Given a list of terms, where each term contains exactly one new
@@ -280,17 +280,21 @@ val add_logic_proofsteps =
       ("shadow_not_forall",
        [WithGoal @{term_pat "!x. (?P::(?'a => bool)) x"},
         WithGoal @{term_pat "(?P::(?'a => bool)) ?x"},
+        ShadowFirst]),
+
+      ("shadow_exists2",
+       [WithFact @{term_pat "EX x y. (?P::(?'a => ?'b => bool)) x y"},
+        WithFact @{term_pat "(?P::(?'a => ?'b => bool)) ?x ?y"},
+        ShadowFirst]),
+
+      ("shadow_not_forall2",
+       [WithGoal @{term_pat "!x y. (?P::(?'a => ?'b => bool)) x y"},
+        WithGoal @{term_pat "(?P::(?'a => ?'b => bool)) ?x ?y"},
         ShadowFirst])
     ]
 
 (* Disjunctive mutable states. *)
 val TY_DISJ = "DISJ"
-fun term_of_bool b = (if b then @{term True} else @{term False})
-fun bool_of_term t =
-    case t of
-        Const ("HOL.True", _) => true
-      | Const ("HOL.False", _) => false
-      | _ => raise AUTO2 "bool_of_term: unexpected t."
 
 (* Given a theorem in the form of a disjunction, possibly containing
    schematic variables, return the corresponding DISJ item. Here sz
@@ -470,7 +474,7 @@ fun output_disj_fn ctxt (tname, _) =
    patterns to consider: ?C | ?D, ?C = ?D, and ?C. No rewriting is
    needed for pre-matching. Matching is not implemented.
  *)
-val disj_matcher =
+val disj_typed_matcher =
     let
       val pat_or = @{term_pat "?C | ?D"}
       val pat_eq = @{term_pat "?C = ?D"}
@@ -485,14 +489,13 @@ val disj_matcher =
             else if pat aconv pat_eq then
               length subs = 1 andalso is_eq_term (the_single subs)
             else if length subs > 1 then false
-            else let val _ = pattern_fo_match ctxt (pat, the_single subs) in
-                   true
-                 end
-                 handle Pattern.MATCH => false
+            else
+              let val _ = pattern_fo_match ctxt (pat, the_single subs) in true
+              end handle Pattern.MATCH => false
           end
 
       fun match _ _ _ _ =
-          raise AUTO2 "disj_matcher: matching not implemented."
+          raise AUTO2 "disj_typed_matcher: matching not implemented."
     in
       {pre_match = pre_match, match = match}
     end
@@ -653,7 +656,7 @@ fun match_update_fn
                 else let
                   val prop' =
                       prop |> subst_thm_thy thy inst
-                           |> apply_to_thm (rewr_obj_eq_top (to_eqF_th th) ctxt)
+                           |> apply_to_thm (rewr_obj_eq_top ctxt (to_eqF_th th))
                            |> apply_to_thm' (ACUtil.normalize_unit disj_ac)
                   val shadow_updt = if count_var (nth subs i) > 0 then [] else
                                     [Update.ShadowItem {id = id', item = item1}]
@@ -891,8 +894,8 @@ fun disj_use_vardef rtype {ctxt, ...} (item as {id, tname, prop, ...}) =
       val ((is_active, match_prem), subs) = dest_tname_of_disj tname
       fun is_vardef t =
           case t of
-              Const ("HOL.eq", _) $ Var _ $ s => not (has_vars s)
-            | Const ("HOL.eq", _) $ s $ Var _ => not (has_vars s)
+              Const ("HOL.eq", _) $ Var _ $ _ => true
+            | Const ("HOL.eq", _) $ _ $ Var _ => true
             | _ => false
     in
       if length subs = 1 then [] else
@@ -936,7 +939,7 @@ val add_disj_proofsteps =
       (TY_DISJ, SOME output_disj_fn)
 
     ] #> fold ItemIO_Data.add_typed_matcher [
-      (TY_DISJ, disj_matcher)
+      (TY_DISJ, disj_typed_matcher)
 
     ] #> fold ItemIO_Data.add_prop_matcher [
       (TY_DISJ, disj_prop_matcher)
@@ -1022,23 +1025,16 @@ fun CHOOSE_FUN_N n str ctxt =
 
       fun choose_callback ((id, th), {ctxt, ...}) =
           let
-            val err = "CHOOSE_FUN_N: wrong output from apply_exists."
-            val raw_updts = Update.apply_exists (id, th) ctxt (map fst new_vars)
-            val ritems =
-                case raw_updts of
-                    [Update.AddItems {raw_items, ...}] => raw_items
-                  | _ => raise AUTO2 err
-
-            fun extract_prop ritem =
-                case ritem of Fact ("PROP", _, th) => [th] | _ => []
+            val (ritems, th) =
+                Update.apply_exists_ritems th ctxt (map fst new_vars)
 
             (* When choosing function F, this is the theorem !x. P (F i). *)
-            val prop_f_th = ritems |> maps extract_prop |> the_single
-                                   |> split_conj_th |> List.last
-                            handle List.Empty => raise AUTO2 err
+            val prop_f_th = th |> split_conj_th |> List.last
             val f = Free (the_single new_vars)
           in
-            raw_updts @ prop_f_to_updt ctxt 0 id (f, prop_f_th)
+            Update.AddItems {
+              id = id, raw_items = ritems @ [Update.thm_to_ritem th]} ::
+            prop_f_to_updt ctxt 0 id (f, prop_f_th)
           end
     in
       [Script_Task {inits = [Update.InitAssum (get_neg' ex_prop)], subs = [],
@@ -1059,6 +1055,7 @@ end  (* structure Logic_ProofSteps. *)
 val _ = Theory.setup Logic_ProofSteps.add_logic_proofsteps
 val _ = Theory.setup Logic_ProofSteps.add_disj_proofsteps
 val _ = Theory.setup Logic_ProofSteps.add_term_def_proofsteps
+val TY_DISJ = Logic_ProofSteps.TY_DISJ
 val CHOOSE = Logic_ProofSteps.CHOOSE
 val CHOOSES = Logic_ProofSteps.CHOOSES
 val CHOOSE_FUN_N = Logic_ProofSteps.CHOOSE_FUN_N

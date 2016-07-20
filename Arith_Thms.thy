@@ -88,6 +88,7 @@ definition is_negative :: "'a::{ord,zero} \<Rightarrow> bool" where
 setup {* fold add_property_const [@{term "is_positive"}, @{term "is_negative"}] *}
 
 (* Ordering on Nats. *)
+setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
 theorem lt_one: "(m::nat) < 1 \<Longrightarrow> m = 0" by simp
 setup {* add_forward_prfstep_cond @{thm lt_one} [with_cond "?m \<noteq> 0"] *}
 setup {* add_resolve_prfstep @{thm Nat.le0} *}
@@ -95,6 +96,10 @@ setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_term "?k", wit
 setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_term "?i", with_filt (not_numc_filter "j")] *}
 theorem not_minus_less: "\<not>(i::nat) < (i - j)" by simp
 setup {* add_resolve_prfstep_cond @{thm not_minus_less} [with_filt (not_numc_filter "j")] *}
+theorem nat_le_prod_with_same [backward]: "m \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m * n" by simp
+theorem nat_le_prod_with_le [backward1]: "k \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m \<Longrightarrow> (n::nat) \<le> k * m"
+  using le_trans nat_le_prod_with_same by blast
+theorem nat_plus_le_to_less [backward1]: "b \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> a < c" by simp
 
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Nat.le_diff_conv}) [with_term "?i + ?k", with_filt (not_numc_filter "k")] *}
 setup {* add_rewrite_rule_cond @{thm Nat.le_diff_conv2} [with_term "?i + ?k"] *}
@@ -103,6 +108,7 @@ setup {* add_forward_prfstep_cond @{thm nat_less_diff_conv} [with_filt (not_numc
 theorem Nat_le_diff_conv2_same [forward]: "(i::nat) \<le> i - j \<Longrightarrow> j \<le> i \<Longrightarrow> j = 0" by simp
 theorem Nat_le_diff1_conv [forward]: "(n::nat) \<le> n - 1 \<Longrightarrow> n = 0" by simp
 theorem nat_gt_zero [forward]: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
+theorem n_minus_1_less_n [backward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 < n" by auto2
 setup {* add_rewrite_rule @{thm le_add_diff_inverse} *}
 setup {* add_rewrite_rule @{thm Nat.diff_diff_cancel} *}
 
@@ -111,11 +117,16 @@ definition open_interval :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarro
 definition closed_interval :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" ("_ \<le> _ \<le> _" [50,50,50] 50) where "a \<le> b \<le> c \<longleftrightarrow> a \<le> b \<and> b \<le> c"
 setup {* fold add_rewrite_rule [@{thm open_interval_def}, @{thm closed_interval_def}] *}
 
+(* Set intervals. *)
+theorem interval_empty [rewrite]: "{a::nat. x \<le> a \<and> a < x} = {}" by simp
+theorem interval_single [rewrite]: "{a::nat. x \<le> a \<and> a < x + 1} = {x}" using Collect_cong by auto
+
 (* Addition. *)
 theorem nat_add_eq_self_zero': "(m::nat) = m + n \<Longrightarrow> n = 0" by simp
 setup {* add_forward_prfstep @{thm nat_add_eq_self_zero'} *}
 theorem nat_mult_2: "(a::nat) + a = 2 * a" by simp
 setup {* add_rewrite_rule_cond @{thm nat_mult_2} [with_cond "?a \<noteq> 0"] *}
+theorem plus_one_non_zero [resolve]: "\<not>(n::nat) + 1 = 0" by auto2
 
 (* Diff. *)
 setup {* add_rewrite_rule @{thm Nat.minus_nat.diff_0} *}
@@ -126,6 +137,8 @@ theorem n_minus_1_eq_0 [forward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 =
 theorem diff_distrib: "(i::nat) \<le> k \<Longrightarrow> k \<le> j \<Longrightarrow> j - (k - i) = j - k + i" by simp
 setup {* add_rewrite_rule_cond @{thm diff_distrib} (with_filts [size1_filter "j", size1_filter "k", size1_filter "i"]) *}
 theorem nat_minus_add_1 [rewrite]: "(n::nat) \<noteq> 0 \<Longrightarrow> (n - 1) + 1 = n" by simp
+theorem plus_1_plus_minus_1 [rewrite]: "(b::nat) \<noteq> 0 \<Longrightarrow> (a + 1) + (b - 1) = a + b" by simp
+theorem nat_same_minus_ge [forward]: "(c::nat) - a \<ge> c - b \<Longrightarrow> a \<le> c \<Longrightarrow> a \<le> b" by arith
 
 theorem diff_eq_zero [forward]: "j - k = 0 \<Longrightarrow> (k::nat) \<le> j \<Longrightarrow> j = k" by simp
 theorem diff_eq_zero' [forward]: "j - k + i = j \<Longrightarrow> (k::nat) \<le> j \<Longrightarrow> k = i" by simp
@@ -215,10 +228,17 @@ setup {* add_rewrite_rule @{thm Nat.Suc_eq_plus1} *}
 
 (* Induction. *)
 theorem nat_induct': "P 0 \<Longrightarrow> (\<forall>n. P (n-1) \<longrightarrow> P n) \<Longrightarrow> P (n::nat)"
-by (metis One_nat_def diff_Suc_Suc diff_zero nat_induct)
+  by (metis One_nat_def diff_Suc_Suc diff_zero nat_induct)
+
+theorem nat_upper_strong_induct:
+  "n < M \<Longrightarrow> (\<And>n. \<forall>m. m > n \<longrightarrow> m < M \<longrightarrow> P m \<Longrightarrow> P n) \<Longrightarrow> P (n::nat)"
+  apply (induct "M - n" arbitrary: n rule: nat_less_induct)
+  using diff_less_mono2 by blast
+
 setup {*
   add_prfstep_induction @{thm nat_induct'} #>
-  add_prfstep_strong_induction @{thm nat_less_induct}
+  add_prfstep_strong_induction @{thm nat_less_induct} #>
+  add_prfstep_upper_strong_induction @{thm nat_upper_strong_induct}
 *}
 
 end

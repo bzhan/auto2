@@ -47,6 +47,9 @@ sig
   val unique_free_filter: string -> prfstep_filter
   val ac_atomic_filter: string -> string -> prfstep_filter
 
+  (* Standard descriptors *)
+  val forward_descs: thm -> prfstep_descriptor list
+
   (* First level proofstep writing functions. *)
   val apply_pat_r: Proof.context -> id_inst_ths -> term * thm -> thm
   val retrieve_args: prfstep_descriptor list -> match_arg list
@@ -138,7 +141,7 @@ fun string_of_desc thy desc =
           else "WithFact " ^ (print t)
         | WithItem (ty_str, t) =>
           if ty_str = TY_TERM then "WithTerm " ^ (print t)
-          else "With " ^ ty_str ^ " " ^ (print t)
+          else "WithItem " ^ ty_str ^ " " ^ (print t)
         | WithProperty t => "WithProperty " ^ (print t)
         | GetFact (t, th) =>
           if t aconv @{term False} then
@@ -232,6 +235,17 @@ fun ac_atomic_filter fnm s tbl (_, inst) =
     end
     handle Option.Option => raise AUTO2 "ac_atomic_filter: ac_info not found"
 
+(* Descriptors for applying th in forward direction (can be used in
+   add_gen_prfstep.
+ *)
+fun forward_descs th =
+    let
+      val _ = assert (Thm.nprems_of th <= 2)
+      val (prems, concl) = strip_horn' th
+    in
+      map WithFact prems @ [GetFact (concl, th)]
+    end
+
 (* First level proofstep writing functions. *)
 fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
     let
@@ -253,7 +267,7 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
                              map (cert ctxt) [inst_new, Thm.prop_of th'])
     in
       th' |> apply_to_thm (
-        Conv.every_conv (map (fn eq => rewr_obj_eq_top eq ctxt) obj_eqs))
+        Conv.every_conv (map (fn eq => rewr_obj_eq_top ctxt eq) obj_eqs))
     end
 
 fun retrieve_args descs =
@@ -563,6 +577,7 @@ sig
   val add_prfstep_ctxt: proofstep -> Proof.context -> Proof.context
   val del_prfstep: string -> theory -> theory
   val del_prfstep_thm: thm -> theory -> theory
+  val add_fixed_sc_ctxt: string * int -> Proof.context -> Proof.context
   val add_fixed_sc: string * int -> theory -> theory
   val get_prfstep_by_name: Proof.context -> string -> proofstep
   val get_prfsteps: Proof.context -> proofstep list
@@ -714,8 +729,8 @@ fun del_prfstep_thm th =
       del_prfstep_pred (equal nm orf is_prefix_str (nm ^ "@"))
     end
 
-fun add_fixed_sc (nm, sc) =
-    map_proofstep_data (
+fun add_fixed_sc_ctxt (nm, sc) =
+    map_proofstep_data_ctxt (
       fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc, reserved_names} =>
          case find_first (equal nm) (Symtab.keys prfsteps) of
              NONE => raise AUTO2 ("add_fixed_sc: not found " ^ nm)
@@ -723,6 +738,8 @@ fun add_fixed_sc (nm, sc) =
                    prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
                    fixed_sc = fixed_sc |> Symtab.update_new (nm, sc),
                    reserved_names = reserved_names})
+
+val add_fixed_sc = map_theory_proofsteps o add_fixed_sc_ctxt
 
 fun get_prfstep_by_name ctxt name =
     let

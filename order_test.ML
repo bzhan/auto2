@@ -33,7 +33,7 @@ fun convert_prop_to_nat_order prop =
     let
       val err_str = "convert_prop_to_nat_order: "
       val th = prop |> HOLogic.mk_Trueprop |> assume_thm ctxt'
-      val item = mk_box_item ([], 0, Fact ("PROP", prop, th))
+      val item = mk_box_item (0, [], 0, Fact ("PROP", prop, th))
 
       fun apply_prfsteps item =
           maps (apply_prfstep rtype st [item]) to_nat_order_prfsteps
@@ -41,7 +41,7 @@ fun convert_prop_to_nat_order prop =
       fun process_raw_update updt =
           case updt of
               Update.AddItems {raw_items, ...} =>
-              map (fn ritem => mk_box_item ([], 0, ritem)) raw_items
+              map (fn ritem => mk_box_item (0, [], 0, ritem)) raw_items
             | _ => raise AUTO2 (err_str ^ "unexpected update.")
     in
       maps process_raw_update (apply_prfsteps item)

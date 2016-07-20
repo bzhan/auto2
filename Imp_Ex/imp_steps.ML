@@ -179,8 +179,13 @@ fun prfstep_imp_effect_induction name descs ind_th =
                   NONE => []
                 | SOME (inits as (_, assums)) =>
                   if member (op aconv) assums init_prop then
-                    apply_induction
-                        id inits (map (rpair NONE) ind_vars) ctxt ind_th []
+                    let
+                      val ritems =
+                          apply_induction
+                              inits (map (rpair NONE) ind_vars) ctxt ind_th []
+                    in
+                      [Update.AddItems {id = id, raw_items = ritems}]
+                    end
                   else []
             end)
 
@@ -206,8 +211,13 @@ fun prfstep_imp_success_induction name descs ind_th =
                   NONE => []
                 | SOME (inits as (_, assums)) =>
                   if member (op aconv) assums init_prop then
-                    apply_induction
-                        id inits (map (rpair NONE) ind_vars) ctxt ind_th []
+                    let
+                      val ritems =
+                          apply_induction
+                              inits (map (rpair NONE) ind_vars) ctxt ind_th []
+                    in
+                      [Update.AddItems {id = id, raw_items = ritems}]
+                    end
                   else []
             end)
 

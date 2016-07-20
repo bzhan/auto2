@@ -84,9 +84,11 @@ theorem proper_ref_list_of [resolve]: "proper_ref h p \<Longrightarrow> \<exists
 
 definition list_of :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a list" where
   "list_of h p = (THE xs. list_ofR h p xs)"
-theorem list_ofI [forward]:
-  "list_ofR h p xs \<Longrightarrow> list_of h p = xs" by (metis list_ofR_is_fun list_of_def the1_equality)
-theorem list_ofE: "proper_ref h p \<Longrightarrow> list_ofR h p (list_of h p)" using list_ofI proper_ref_list_of by blast
+setup {* add_rewrite_rule @{thm list_of_def} *}
+theorem list_ofI [forward]: "list_ofR h p xs \<Longrightarrow> list_of h p = xs" by auto2
+theorem list_ofE: "proper_ref h p \<Longrightarrow> list_ofR h p (list_of h p)"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "\<exists>!xs. list_ofR h p xs") *})
+setup {* del_prfstep_thm @{thm list_of_def} *}
 setup {* add_forward_prfstep_cond @{thm list_ofE} [with_term "list_of ?h ?p"] *}
 
 theorem list_of_Empty [rewrite]: "Ref.get h p = Empty \<Longrightarrow> list_of h p = []" by auto2
@@ -96,9 +98,10 @@ theorem list_of_Node' [forward]: "list_of h p = b # xn \<Longrightarrow> Ref.get
 
 definition refs_of :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a node ref set" where
   "refs_of h p = (THE rs. refs_ofR h p rs)"
-theorem refs_ofI [forward]: "refs_ofR h p ps \<Longrightarrow> present_on_set h ps \<Longrightarrow> proper_ref h p \<and> refs_of h p = ps"
-  by (metis proper_ref_def refs_ofR_is_fun refs_of_def the1_equality)
-theorem refs_ofE: "proper_ref h p \<Longrightarrow> refs_ofR h p (refs_of h p)" using proper_ref_def refs_ofI by blast
+setup {* add_rewrite_rule @{thm refs_of_def} *}
+theorem refs_ofI [forward]: "refs_ofR h p ps \<Longrightarrow> present_on_set h ps \<Longrightarrow> proper_ref h p \<and> refs_of h p = ps" by auto2
+theorem refs_ofE: "proper_ref h p \<Longrightarrow> refs_ofR h p (refs_of h p)" by auto2
+setup {* del_prfstep_thm @{thm refs_of_def} *}
 setup {* add_forward_prfstep_cond @{thm refs_ofE} [with_term "refs_of ?h ?p"] *}
 
 theorem refs_of_Empty [forward]: "Ref.present h p \<Longrightarrow> Ref.get h p = Empty \<Longrightarrow> refs_of h p = {p}" by auto2
