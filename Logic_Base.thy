@@ -77,4 +77,7 @@ definition is_inv_fn :: "('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> ('
 
 theorem is_invD: "is_inv_fn f i m \<Longrightarrow> m x y = f x (i y)" by (simp add: is_inv_fn_def)
 
+(* Theorem lists for auto2. *)
+named_theorems property_rewrites "Auto2: rewriting theorems to properties"
+
 end

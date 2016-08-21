@@ -43,12 +43,12 @@ abbreviation models_ascii :: "pheap \<Rightarrow> assn \<Rightarrow> bool" (infi
 ML_file "sep_steps.ML"
 ML_file "sep_steps_test.ML"
 
-attribute_setup heap_presv_thms = {* setup_attrib Sep_Logic.add_heap_preserving_thm *}
-attribute_setup forward_ent = {* setup_attrib Sep_Logic.add_forward_ent_prfstep_ctxt *}
-attribute_setup match_code_pos_emp = {* setup_attrib Sep_Logic.add_match_code_pos_emp_prfstep_ctxt *}
-attribute_setup code_pos_create_case = {* setup_attrib Sep_Logic.add_match_code_pos_create_case_ctxt *}
-attribute_setup next_code_pos = {* setup_attrib Sep_Logic.add_next_code_pos_prfstep_ctxt *}
-attribute_setup next_code_pos_direct = {* setup_attrib Sep_Logic.add_next_code_pos_direct_prfstep_ctxt *}
+attribute_setup heap_presv_thms = {* setup_attrib Sep_Logic.add_heap_preserving_thm_gnrc *}
+attribute_setup forward_ent = {* setup_attrib Sep_Logic.add_forward_ent_prfstep_gnrc *}
+attribute_setup match_code_pos_emp = {* setup_attrib Sep_Logic.add_match_code_pos_emp_prfstep_gnrc *}
+attribute_setup code_pos_create_case = {* setup_attrib Sep_Logic.add_match_code_pos_create_case_gnrc *}
+attribute_setup next_code_pos = {* setup_attrib Sep_Logic.add_next_code_pos_prfstep_gnrc *}
+attribute_setup next_code_pos_direct = {* setup_attrib Sep_Logic.add_next_code_pos_direct_prfstep_gnrc *}
 
 theorem basic_heap_preserving_thms [sep_heap_presv_thms, heap_presv_thms]:
   "heap_preserving (!p)"

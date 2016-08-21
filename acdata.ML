@@ -71,11 +71,14 @@ sig
   val swap_assoc_to_l: int -> ac_inst_info -> conv
   val swap_assoc_to_r: int -> ac_inst_info -> conv
   val move_outmost: ac_inst_info -> term -> conv
-  val move_outmost2: ac_inst_info -> term * term -> conv
   val normalize_unit: ac_inst_info -> conv
   val normalize_minus: ac_inst_info -> conv
   val normalize_comm_gen: ac_inst_info -> bool -> (term * term -> bool) -> conv
   val normalize_comm_l: ac_inst_info -> (term * term -> bool) -> conv
+  val normalize_minus_assoc_gen: bool -> ac_inst_info -> conv
+  val normalize_minus_assoc_l: ac_inst_info -> conv
+  val normalize_minus_assoc_r: ac_inst_info -> conv
+  val normalize_all_ac: ac_inst_info -> conv
   val ac_subterms_conv: ac_inst_info -> conv -> conv
   val ac_subterms_conv_trav_uinv: ac_inst_info -> conv -> conv
 end;
@@ -167,7 +170,7 @@ fun add_ac_data (info as {fname, uinv_th, inv_th, ...}) thy =
     in
       if is_true_th uinv_th orelse is_true_th inv_th then thy'
       else let
-        val inv_args = prop_of' inv_th |> strip_comb |> snd
+        val inv_args = prop_of' inv_th |> dest_args
         val uinv_name =
             case Term.head_of (nth inv_args 1) of
                 Const (nm, _) => nm
@@ -200,7 +203,7 @@ fun inst_ac_info thy T {fname, assoc_th, comm_th, unit_th, uinv_th, inv_th} =
             (* Extract the first argument of th, then the body type of
                that argument.
              *)
-            val arg_type = th |> prop_of' |> strip_comb |> snd |> hd
+            val arg_type = th |> prop_of' |> dest_args |> hd
                               |> Term.type_of |> Term.body_type
             val tenv = typ_match thy (arg_type, T)
           in
@@ -213,14 +216,14 @@ fun inst_ac_info thy T {fname, assoc_th, comm_th, unit_th, uinv_th, inv_th} =
       val comm_th' = inst_th comm_th
       val unit_th' = inst_th unit_th
       val unit_val = if is_true_th unit_th' then null_term
-                     else unit_th' |> prop_of' |> strip_comb |> snd |> hd
+                     else unit_th' |> prop_of' |> dest_args |> hd
       val uinv_th' = inst_th uinv_th
       val inv_th' = inst_th inv_th
       val (uinv_op, inv_op) =
           if is_true_th uinv_th' orelse is_true_th inv_th' then
             (null_term, null_term)
           else let
-            val args = inv_th' |> prop_of' |> strip_comb |> snd
+            val args = inv_th' |> prop_of' |> dest_args
           in
             (nth args 1, nth args 2)
           end
@@ -423,22 +426,6 @@ fun move_outmost ac_info u ct =
         raise AUTO2 "move_outmost: u not found in ct."
     end
 
-(* Move u and v into the outmost position. The result should be (for
-   associating to the left) a * (u * v), where a may contain zero,
-   one, or more terms. u and v may be equal, in which case there must
-   be two such terms in ct.
- *)
-fun move_outmost2 ac_info (u, v) ct =
-    let
-      val length_ct = length (dest_ac_l ac_info (Thm.term_of ct))
-      val assoc_cv = if length_ct > 2 then assoc_cv ac_info
-                     else Conv.all_conv
-    in
-      ((move_outmost ac_info v)
-           then_conv (Conv.arg1_conv (move_outmost ac_info u))
-           then_conv assoc_cv) ct
-    end
-
 (* In a product of a_1, a_2, ..., remove any a_i that is a unit. *)
 fun normalize_unit ac_info ct =
     if not (has_unit_th ac_info) then Conv.all_conv ct
@@ -575,6 +562,20 @@ fun normalize_comm_gen ac_info assoc_r termless ct =
     end
 
 fun normalize_comm_l ac_info = normalize_comm_gen ac_info false
+
+(* Normalize all except comm. *)
+fun normalize_minus_assoc_gen assoc_r ac_info =
+    (normalize_minus ac_info)
+        then_conv (normalize_unit ac_info)
+        then_conv (normalize_assoc_gen assoc_r ac_info)
+
+val normalize_minus_assoc_l = normalize_minus_assoc_gen false
+val normalize_minus_assoc_r = normalize_minus_assoc_gen true
+
+(* Normalize everything. *)
+fun normalize_all_ac ac_info =
+    (normalize_minus_assoc_l ac_info)
+        then_conv (normalize_comm_l ac_info Term_Ord.termless)
 
 (* Apply cv to "subterms" of ct for an AC fhead. *)
 fun ac_subterms_conv_gen trav_uinv (ac_info as {uinv_op, ...}) cv ct =

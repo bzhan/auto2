@@ -18,6 +18,7 @@ sig
   val propT: typ
   val natT: typ
   val intT: typ
+  val ratT: typ
   val boolT: typ
   val get_arg_type: term -> typ
 
@@ -88,6 +89,10 @@ sig
   val trace_fullthm: string -> thm -> unit
   val check_MRS: thm list * thm -> thm
 
+  (* Generic context. *)
+  val theory_of_gnrc: Context.generic -> theory
+  val context_of_gnrc: Context.generic -> Proof.context
+
   (* Certifying terms and types. *)
   val cert: Proof.context -> term -> cterm
   val tycert: Proof.context -> typ -> ctyp
@@ -112,8 +117,12 @@ sig
   val get_neg': term -> term
   val is_implies: term -> bool
   val dest_binop: term -> term * (term * term)
+  val dest_arg: term -> term
+  val dest_arg1: term -> term
+  val dest_args: term -> term list
   val is_numc: term -> bool
   val dest_numc: term -> int
+  val dest_numc_rat: term -> Rat.rat
   val is_eq_term: term -> bool
   val is_eq_term': term -> bool
   val is_meta_eq_term: term -> bool
@@ -233,6 +242,7 @@ fun p orf2 q = fn x => fn y => p x y orelse q x y
 val propT = @{typ prop}
 val natT = HOLogic.natT
 val intT = @{typ int}
+val ratT = @{typ rat}
 val boolT = HOLogic.boolT
 
 (* Given t in inequality form, return the type of the argument. *)
@@ -446,6 +456,9 @@ fun ths check_MRS th =
       raise AUTO2 "check_MRS"
     end
 
+val theory_of_gnrc = Context.cases I Proof_Context.theory_of
+val context_of_gnrc = Context.cases Proof_Context.init_global I
+
 fun cert ctxt t = Thm.cterm_of ctxt t
 fun tycert ctxt ty = Thm.ctyp_of ctxt ty
 fun cert_thy thy t = Thm.global_cterm_of thy t
@@ -509,6 +522,20 @@ fun dest_binop t =
         f $ a $ b => (f, (a, b))
       | _ => raise AUTO2 "dest_binop: invalid input"
 
+(* Return the argument of t. If t is f applied to multiple arguments,
+   return the last argument.
+ *)
+fun dest_arg t =
+    case t of _ $ arg => arg | _ => raise AUTO2 "dest_arg"
+
+(* Return the first of two arguments of t. *)
+fun dest_arg1 t =
+    case t of _ $ arg1 $ _ => arg1 | _ => raise AUTO2 "dest_arg1"
+
+(* Return the list of all arguments of t. *)
+fun dest_args t =
+    t |> Term.strip_comb |> snd
+
 (* Test if a term represents a numerical constant. is_numc_raw just
    uses dest_number from HOLogic. is_numc tests for inverses.
  *)
@@ -528,6 +555,22 @@ fun is_numc t =
 fun dest_numc t = HOLogic.dest_number t |> snd
                   handle TERM ("dest_number", _) =>
                          raise AUTO2 "dest_numc: invalid term."
+
+(* Rational numbers version of dest_numc. *)
+fun dest_numc_rat t =
+    case t of
+        Const (@{const_name inverse}, _) $ t' =>
+        let
+          val r' = dest_numc_rat t'
+        in
+          if r' = Rat.zero then Rat.zero
+          else Rat.inv r'
+        end
+      | Const (@{const_name uminus}, _) $ t' => Rat.neg (dest_numc_rat t')
+      | Const (@{const_name of_rat}, _) $ r => dest_numc_rat r
+      | Const (@{const_name Fract}, _) $ n $ d =>
+        Rat.rat_of_quotient (dest_numc n, dest_numc d)
+      | _ => Rat.rat_of_int (dest_numc t)
 
 (* Test if a given fact is an equality. *)
 fun is_eq_term t =

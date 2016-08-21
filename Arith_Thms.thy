@@ -77,6 +77,19 @@ setup {* add_rewrite_rule_back_cond @{thm ring_distrib}
 theorem ring_distrib_minus: "((a::('a::{ring,one})) - b) * c = a * c - b * c" by (simp add: left_diff_distrib)
 setup {* add_rewrite_rule_back_cond @{thm ring_distrib_minus} [with_cond "?c \<noteq> 1"] *}
 
+theorem of_int_neg_one: "of_int (-1) = -1" by simp
+
+theorem of_rat_inverse_numeral: "of_rat (inverse (numeral x)) = inverse (numeral x)"
+  by (metis of_rat_inverse of_rat_numeral_eq)
+
+theorem power_ge_0 [rewrite]: "m \<noteq> 0 \<Longrightarrow> p ^ m = p * (p ^ (m - 1))" by (simp add: power_eq_if)
+
+(* Functions used in split_polynomial_by_sign. *)
+theorem split_by_sign1: "((a::'a::comm_ring) - b) + c = (a + c) - b" by simp
+theorem split_by_sign2: "((a::'a::comm_ring) - b) + c * (-n) = a - (b + c * n)" by simp
+theorem split_by_sign3: "(a::'a::comm_ring) - 0 = a" by simp
+theorem split_by_sign4: "(c::'a::comm_ring) * (-n) = 0 - c * n" by simp
+
 ML_file "rings.ML"
 ML_file "rings_test.ML"
 
@@ -85,7 +98,11 @@ definition is_positive :: "'a::{ord,zero} \<Rightarrow> bool" where
   "is_positive x \<longleftrightarrow> (x > 0)"
 definition is_negative :: "'a::{ord,zero} \<Rightarrow> bool" where
   "is_negative x \<longleftrightarrow> (x < 0)"
+definition is_non_negative :: "'a::{ord,zero} \<Rightarrow> bool" where
+  "is_non_negative x \<longleftrightarrow> (x \<ge> 0)"
 setup {* fold add_property_const [@{term "is_positive"}, @{term "is_negative"}] *}
+declare is_positive_def [simp]
+declare is_non_negative_def [simp]
 
 (* Ordering on Nats. *)
 setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
@@ -202,7 +219,6 @@ theorem coprime_dvd [forward]:
 setup {* add_rewrite_rule @{thm power_0} *}
 setup {* add_rewrite_rule_cond @{thm power_one} [with_cond "?n \<noteq> 0"] *}
 setup {* add_rewrite_rule_cond @{thm power_one_right} [with_cond "?a \<noteq> 1"] *}
-theorem power_ge_0 [rewrite]: "m \<noteq> 0 \<Longrightarrow> p ^ m = p * (p ^ (m - 1))" by (simp add: power_eq_if)
 setup {* add_gen_prfstep ("power_case_intro",
   [WithTerm @{term_pat "?p ^ (?FREE::nat)"}, CreateCase @{term_pat "(?FREE::nat) = 0"}]) *}
 

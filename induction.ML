@@ -157,8 +157,8 @@ fun process_neq0_th id (abs_vars, init_facts) (st as {ctxt, ...}) neq0_th =
       val handlers = map (pair false) (Status.get_handlers st id)
       val cinit_facts = map (cert ctxt) init_facts
       val cabs_vars = map (cert ctxt) abs_vars
-      val cvar_n = neq0_th |> prop_of' |> Term.dest_comb |> snd
-                           |> Term.strip_comb |> snd |> hd |> cert ctxt
+      val cvar_n = neq0_th |> prop_of' |> dest_arg
+                           |> dest_args |> hd |> cert ctxt
       val neq0 = neq0_th |> Thm.prop_of |> get_neg' |> cert ctxt
       val use_vardef_cv = Conv.arg_conv (rewr_obj_eq @{thm use_vardef})
     in
@@ -463,7 +463,6 @@ fun add_prfstep_double_induction ind_th thy =
       val ty = HOLogic.mk_prodT (ty_var1, ty_var2)
     in
       thy |> add_typed_induct_data "double_induct" (ty, ind_th)
-          |> add_reserved_name name
     end
 
 (* Apply induction rule for an inductively defined proposition. The
@@ -484,7 +483,7 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
       val var_ctxt = get_var_context id all_free_vars st
 
       val (init_assum, _) = Logic.dest_implies (Thm.prop_of ind_th)
-      val (_, pat_vars) = Term.strip_comb (HOLogic.dest_Trueprop init_assum)
+      val pat_vars = dest_args (HOLogic.dest_Trueprop init_assum)
 
       fun get_eq_prop (th_var, pat_var) =
           if Term.is_Free th_var then NONE else
@@ -539,8 +538,7 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
                            |> Update.get_neg_form ctxt |> HOLogic.dest_Trueprop
                            |> fold (curry HOLogic.mk_imp) (rev eq_props_lst)
             val ind_concl = Logic.strip_imp_concl (Thm.prop_of ind_th)
-            val (P, _) = ind_concl |> HOLogic.dest_Trueprop
-                                   |> Term.strip_comb
+            val P = ind_concl |> HOLogic.dest_Trueprop |> Term.head_of
             val p = fold lambda_abstract (rev th_vars') stmt
             val inst = pattern_match ctxt (P, p)
             val ind_th' = (subst_thm ctxt inst ind_th)
@@ -591,7 +589,7 @@ fun apply_var_induction (id, var) ind_th extra_vars (st as {ctxt, ...}) =
     let
       val var_ctxt = get_var_context id (var :: extra_vars) st
       val ind_concl = Logic.strip_imp_concl (Thm.prop_of ind_th)
-      val (_, pat_var) = Term.dest_comb (HOLogic.dest_Trueprop ind_concl)
+      val pat_var = dest_arg (HOLogic.dest_Trueprop ind_concl)
       val _ = assert (Term.is_Var pat_var)
                      "var_induction: concl of ind_th must be ?P ?var"
       val ((nm, idx), _) = Term.dest_Var pat_var
@@ -623,7 +621,7 @@ fun prfstep_var_induction name descs ind_th =
 fun add_prfstep_var_induction ind_th thy =
     let
       val ind_concl = Logic.strip_imp_concl (Thm.prop_of ind_th)
-      val (_, pat_var) = Term.dest_comb (HOLogic.dest_Trueprop ind_concl)
+      val pat_var = dest_arg (HOLogic.dest_Trueprop ind_concl)
       val _ = assert (Term.is_Var pat_var)
                      "var_induction: concl of ind_th must be ?P ?var"
 
@@ -816,7 +814,7 @@ fun UPPER_STRONG_INDUCT (var_spec_str, less_str, ind_infos) ctxt =
          variable equal to it. This will be considered an initial
          assumption in the var_ctxt.
        *)
-      val rhs_req = less_req |> Term.dest_comb |> snd
+      val rhs_req = dest_arg less_req
       val var_eq2 =
           if is_Free rhs_req then NONE
           else let
@@ -866,7 +864,7 @@ fun PROP_INDUCT (str, ind_infos) ctxt =
     let
       val thy = Proof_Context.theory_of ctxt
       val t = read_term ctxt str
-      val (f, _) = Term.strip_comb t
+      val f = Term.head_of t
       val ind_th = the (get_term_ind_th thy "prop_induct" f)
                    handle Option.Option =>
                           raise AUTO2 "PROP_INDUCT: ind_th not found."

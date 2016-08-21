@@ -67,6 +67,9 @@ setup {* add_backward_prfstep (equiv_backward_th @{thm exists_split}) *}
 setup {* add_gen_prfstep ("case_intro",
   [WithTerm @{term_pat "if ?cond then (?yes::?'a) else ?no"},
    CreateCase @{term_pat "?cond::bool"}]) *}
+setup {* add_gen_prfstep ("case_intro_eq_if",
+  [WithItem (TY_EQ_IF, @{term_pat "(?t, if ?cond then ?x else ?y)"}),
+   CreateCase @{term_pat "?cond::bool"}]) *}
 theorem if_not_P': "P \<Longrightarrow> (if \<not>P then x else y) = y" by simp
 setup {* fold add_rewrite_rule [@{thm HOL.if_P}, @{thm HOL.if_not_P}, @{thm if_not_P'}] *}
 setup {* fold add_fixed_sc [("HOL.if_P", 1), ("HOL.if_not_P", 1), ("Logic_Thms.if_not_P'", 1)] *}

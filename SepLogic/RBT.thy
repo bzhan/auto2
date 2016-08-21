@@ -39,9 +39,6 @@ subsection {* Some trivial lemmas *}
 theorem not_R [forward]: "c \<noteq> R \<Longrightarrow> c = B" using color.exhaust by blast
 theorem not_B [forward]: "c \<noteq> B \<Longrightarrow> c = R" using color.exhaust by blast
 theorem red_not_leaf [forward]: "cl t = R \<Longrightarrow> t \<noteq> Leaf" by auto
-theorem if_not_Leaf [rewrite]: "(if Node l c k v r = Leaf then a else b) = b" by simp
-theorem if_R [rewrite]: "(if R = B then a else b) = b" by simp
-theorem if_B [rewrite]: "(if B = R then a else b) = b" by simp
 
 subsection {* Definition of main functions and invariants *}
 
@@ -97,7 +94,7 @@ theorem depth_min: "is_rbt t \<Longrightarrow> black_depth t \<le> min_depth t"
     (CASE "t = Leaf" THEN
      CASE "cl t = R" WITH
         OBTAIN "black_depth t \<le> min (min_depth (lsub t)) (min_depth (rsub t))") *} )
-
+theorem two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 theorem depth_max: "is_rbt t \<Longrightarrow> if cl t = R then max_depth t \<le> 2 * black_depth t + 1
                                  else max_depth t \<le> 2 * black_depth t"
   by (tactic {* auto2s_tac @{context}

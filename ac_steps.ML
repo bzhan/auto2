@@ -73,7 +73,7 @@ fun ac_equiv_fn rtype _ {id, tname, ...} =
                   if RewriteTable.is_equiv id'' tbl (tname, t) then []
                   else let
                     val insts =
-                        (Matcher.rewrite_match_ac
+                        (Matcher.rewrite_match_ac false
                              ac_info tbl (tname, t) (id'', fo_init))
                             |> RewriteTable.replace_id_for_type rtype
                             |> max_partial (Matcher.inst_eq_better tbl [])
@@ -106,7 +106,7 @@ fun get_ac_head_equiv_list (tbl as {lat, ...}) ac_info (id, us) =
 
 fun get_ac_head_expansion (tbl as {ctxt, ...}) ac_info (id, t) =
     let
-      val norm_t = t |> cert ctxt |> Matcher.normalize_minus_assoc_l ac_info
+      val norm_t = t |> cert ctxt |> ACUtil.normalize_minus_assoc_l ac_info
       val ts = ACUtil.dest_ac_l ac_info (rhs_of norm_t)
     in
       (get_ac_head_equiv_list tbl ac_info (id, ts))
@@ -140,7 +140,7 @@ fun ac_equiv_strong_fn pat rtype _ (item as {id, ...}) =
                         val id' = BoxID.merge_boxes lat (id1, id2)
                         val (A', B') = (rhs_of eq_A, rhs_of eq_B)
                         val insts =
-                            (Matcher.rewrite_match_ac
+                            (Matcher.rewrite_match_ac false
                                  ac_info tbl (A', B') (id', fo_init))
                                 |> RewriteTable.replace_id_for_type rtype
                                 |> max_partial (Matcher.inst_eq_better tbl [])

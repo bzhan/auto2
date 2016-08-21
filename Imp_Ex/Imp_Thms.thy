@@ -35,7 +35,7 @@ theorem neq_from_present [forward]: "Ref.present h p \<Longrightarrow> \<not>Ref
 theorem not_in_from_present [forward]: "Ref.present h p \<Longrightarrow> not_present_on_set h qs \<Longrightarrow> p \<notin> qs" by auto2
 theorem not_in_from_present' [forward]: "\<not>Ref.present h p \<Longrightarrow> present_on_set h qs \<Longrightarrow> p \<notin> qs" by auto2
 theorem disjoint_from_present [forward]:
-  "present_on_set h rs \<Longrightarrow> not_present_on_set h rs' \<Longrightarrow> rs \<inter> rs' = {}"
+  "present_on_set h rs \<Longrightarrow> not_present_on_set h rs' \<Longrightarrow> set_disjoint rs rs'"
   by (tactic {* auto2s_tac @{context} (OBTAIN "\<forall>r. r \<in> rs \<longrightarrow> r \<notin> rs'") *})
 
 theorem success_to_effect: "success f h \<Longrightarrow> \<exists>h' r. effect f h h' r" using success_effectE by blast
@@ -77,7 +77,7 @@ setup {* add_rewrite_rule @{thm unchanged_outer_def} *}
 theorem unchanged_outer_ref [forward]:
   "unchanged_outer h h' rs \<Longrightarrow> r \<notin> rs \<Longrightarrow> Ref.present h r \<Longrightarrow> Ref.get h r = Ref.get h' r" by auto2
 theorem unchanged_outer_refs [forward]:
-  "unchanged_outer h h' rs \<Longrightarrow> rs' \<inter> rs = {} \<Longrightarrow> present_on_set h rs' \<Longrightarrow> eq_on_set h h' rs'" by auto2
+  "unchanged_outer h h' rs \<Longrightarrow> set_disjoint rs' rs \<Longrightarrow> present_on_set h rs' \<Longrightarrow> eq_on_set h h' rs'" by auto2
 setup {* del_prfstep_thm @{thm unchanged_outer_def}
   #> add_forward_prfstep (conj_left_th (equiv_forward_th @{thm unchanged_outer_def}))
   #> add_backward_prfstep (equiv_backward_th @{thm unchanged_outer_def}) *}
@@ -90,7 +90,7 @@ setup {* add_rewrite_rule @{thm refs_of_extension_def} *}
 theorem not_in_extension [forward]:
   "refs_of_extension h ps ps' \<Longrightarrow> q \<notin> ps \<Longrightarrow> Ref.present h q \<Longrightarrow> q \<notin> ps'" by auto2
 theorem disjoint_extension [forward]:
-  "refs_of_extension h ps ps' \<Longrightarrow> qs \<inter> ps = {} \<Longrightarrow> present_on_set h qs \<Longrightarrow> qs \<inter> ps' = {}"
+  "refs_of_extension h ps ps' \<Longrightarrow> set_disjoint qs ps \<Longrightarrow> present_on_set h qs \<Longrightarrow> set_disjoint qs ps'"
   by (tactic {* auto2s_tac @{context} (OBTAIN "\<forall>q\<in>qs. q \<notin> ps'") *})
 setup {* del_prfstep_thm @{thm refs_of_extension_def}
   #> add_backward_prfstep (equiv_backward_th @{thm refs_of_extension_def}) *}

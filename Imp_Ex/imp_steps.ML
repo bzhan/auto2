@@ -13,7 +13,7 @@ fun register_heap_preserve th =
     let
       val (cond, concl) = (Logic.dest_implies (Thm.prop_of th))
                               |> apply2 (HOLogic.dest_Trueprop)
-      val (_, args) = Term.strip_comb cond
+      val args = dest_args cond
       val (h, h') = HOLogic.dest_eq concl
     in
       if length args = 4 andalso nth args 1 = h andalso nth args 2 = h' then
@@ -171,7 +171,7 @@ fun prfstep_imp_effect_induction name descs ind_th =
                       (cmd, h, h', r)
                     | _ => raise AUTO2 "imp_effect_induction: wrong input."
               val extra_vars = [h, h', r]
-              val (_, ind_vars) = Term.strip_comb cmd
+              val ind_vars = dest_args cmd
               val gen_vars = ind_vars @ extra_vars
               val var_ctxt = get_var_context id gen_vars st
             in
@@ -203,7 +203,7 @@ fun prfstep_imp_success_induction name descs ind_th =
                         Const ("Heap_Monad.success", _) $ cmd $ h) => (cmd, h)
                     | _ => raise AUTO2 "success_imp_induction: wrong input."
               val extra_vars = [h]
-              val (_, ind_vars) = Term.strip_comb cmd
+              val ind_vars = dest_args cmd
               val gen_vars = ind_vars @ extra_vars
               val var_ctxt = get_var_context id gen_vars st
             in

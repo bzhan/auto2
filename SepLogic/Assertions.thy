@@ -98,7 +98,7 @@ theorem one_assn_rule [rewrite]: "h \<Turnstile> emp \<longleftrightarrow> snd h
 setup {* del_prfstep_thm @{thm one_assn_def} *}
 
 definition set_partition :: "'a set \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "set_partition S T1 T2 = (S = T1 \<union> T2 \<and> T1 \<inter> T2 = {})"
+  "set_partition S T1 T2 = (S = T1 \<union> T2 \<and> set_disjoint T1 T2)"
 setup {* add_rewrite_rule @{thm set_partition_def} *}
 
 instantiation assn :: times begin
@@ -137,11 +137,9 @@ theorem set_partition_comm [forward]: "set_partition S T1 T2 \<Longrightarrow> s
 
 theorem assn_times_comm: "P * Q = Q * (P::assn)" by auto2
 
-theorem disjoint_with_union [rewrite]: "A \<inter> (B \<union> C) = {} \<longleftrightarrow> A \<inter> B = {} \<and> A \<inter> C = {}" by blast
 theorem set_partition_assoc [forward]:
   "set_partition S T1 T2 \<Longrightarrow> set_partition T1 T11 T12 \<Longrightarrow>
    set_partition S T11 (T12 \<union> T2) \<and> set_partition (T12 \<union> T2) T12 T2" by auto2
-setup {* del_prfstep_thm @{thm disjoint_with_union} *}
 
 setup {* del_prfstep_thm @{thm models_def} *}
 theorem assn_times_assoc: "(P * Q) * R = P * (Q * (R::assn))" by auto2

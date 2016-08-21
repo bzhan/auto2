@@ -4,6 +4,7 @@
 
 val TY_NULL = "NULL"
 val TY_EQ = "EQ"
+val TY_EQ_IF = "EQ_IF"
 val TY_VAR = "VAR"
 val TY_PROP = "PROP"
 val TY_TERM = "TERM"
@@ -213,22 +214,27 @@ type item_output = Proof.context -> term * thm -> string
  *)
 type item_io_info = {
   prop_matchers: item_matcher list, typed_matchers: item_matcher list,
-  output_fn: item_output option}
+  term_fn: (term -> term list) option, output_fn: item_output option}
 
-fun add_prop_matcher_to_info mtch {prop_matchers, typed_matchers, output_fn} =
-    {prop_matchers = mtch :: prop_matchers,
-     typed_matchers = typed_matchers, output_fn = output_fn}
+fun add_prop_matcher_to_info
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
+    {prop_matchers = mtch :: prop_matchers, typed_matchers = typed_matchers,
+     term_fn = term_fn, output_fn = output_fn}
 
-fun add_typed_matcher_to_info mtch {prop_matchers, typed_matchers, output_fn} =
-    {prop_matchers = prop_matchers,
-     typed_matchers = mtch :: typed_matchers, output_fn = output_fn}
+fun add_typed_matcher_to_info
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
+    {prop_matchers = prop_matchers, typed_matchers = mtch :: typed_matchers,
+     term_fn = term_fn, output_fn = output_fn}
 
-fun join_infos ({prop_matchers = pm1, typed_matchers = tm1, output_fn = of1},
-                {prop_matchers = pm2, typed_matchers = tm2, output_fn = of2}) =
+fun join_infos (
+  {prop_matchers = pm1, typed_matchers = tm1, term_fn = tf1, output_fn = of1},
+  {prop_matchers = pm2, typed_matchers = tm2, term_fn = tf2, output_fn = of2}) =
     {prop_matchers = merge pointer_eq (pm1, pm2),
      typed_matchers = merge pointer_eq (tm1, tm2),
+     term_fn = (if pointer_eq (tf1, tf2) then tf1
+                else raise AUTO2 "join_infos: term_fn non-equal"),
      output_fn = (if pointer_eq (of1, of2) then of1
-                  else raise AUTO2 "join_infos: output non-equal")}
+                  else raise AUTO2 "join_infos: output_fn non-equal")}
 
 structure ItemIOData =
 Theory_Data (
@@ -276,7 +282,8 @@ fun is_property_match arg =
 
 signature ITEM_IO_DATA =
 sig
-  val add_item_type: string * item_output option -> theory -> theory
+  val add_item_type: string * (term -> term list) option * item_output option ->
+                     theory -> theory
   val add_prop_matcher: string * item_matcher -> theory -> theory
   val add_typed_matcher: string * item_matcher -> theory -> theory
   val get_io_info: theory -> string -> item_io_info
@@ -291,6 +298,8 @@ sig
   val pre_match_arg: rewrite_table -> match_arg -> box_item -> bool
   val match_arg: rewrite_table -> match_arg -> box_item -> id_inst ->
                  id_inst_th list
+  val no_rewr_terms: term -> term list
+  val rewr_terms_of_item: Proof.context -> string * term -> term list
   val output_prop_fn: item_output
   val string_of_item_info: Proof.context -> string * term * thm -> string
   val add_basic_item_io: theory -> theory
@@ -299,9 +308,9 @@ end;
 structure ItemIO_Data : ITEM_IO_DATA =
 struct
 
-fun add_item_type (ty_str, output_fn) = ItemIOData.map (
+fun add_item_type (ty_str, term_fn, output_fn) = ItemIOData.map (
       Symtab.update_new (ty_str, {prop_matchers = [], typed_matchers = [],
-                                  output_fn = output_fn}))
+                                  term_fn = term_fn, output_fn = output_fn}))
 
 fun add_prop_matcher (ty_str, it_match) = ItemIOData.map (
       Symtab.map_entry ty_str (add_prop_matcher_to_info it_match))
@@ -400,6 +409,28 @@ val term_typed_matcher =
       {pre_match = pre_match, match = match}
     end
 
+(* Exact matching on tnames. *)
+val exact_term_typed_matcher =
+    let
+      fun pre_match pat {tname, ...} {ctxt, ...} =
+          let
+            val _ = pattern_fo_match ctxt (pat, tname)
+          in
+            true
+          end
+          handle Pattern.MATCH => false
+
+      fun match pat {tname, ...} tbl (id, inst) =
+          let
+            val thy = RewriteTable.theory_of tbl
+          in
+            [((id, Pattern.first_order_match thy (pat, tname) inst), true_th)]
+          end
+          handle Pattern.MATCH => []
+    in
+      {pre_match = pre_match, match = match}
+    end
+
 (* Obtain a proposition from the property table. *)
 val null_property_matcher =
     let
@@ -493,6 +524,28 @@ fun match_arg (tbl as {lat, ...}) arg (item as {id, ty_str, ...}) (id', inst) =
           raise AUTO2 "match_arg: should not be called on PropertyMatch."
     end
 
+val no_rewr_terms = K []
+
+fun arg_rewr_terms t = dest_args t
+
+fun eq_if_rewr_terms t =
+    let
+      val (lhs, rhs) = t |> HOLogic.strip_tuple |> the_pair
+      val cond = rhs |> dest_args |> hd
+    in
+      [lhs, cond]
+    end
+
+fun rewr_terms_of_item ctxt (ty_str, tname) =
+    let
+      val thy = Proof_Context.theory_of ctxt
+      val {term_fn, ...} = get_io_info thy ty_str
+    in
+      case term_fn of
+          NONE => HOLogic.strip_tuple tname
+        | SOME f => f tname
+    end
+
 fun output_prop_fn ctxt (_, th) = Thm.prop_of th |> pretty_term ctxt |> str
 
 fun string_of_item_info ctxt (ty_str, tname, th) =
@@ -507,8 +560,10 @@ fun string_of_item_info ctxt (ty_str, tname, th) =
 
 val add_basic_item_io =
     fold add_item_type [
-      (TY_NULL, NONE), (TY_PROP, SOME output_prop_fn), (TY_TERM, NONE),
-      (TY_EQ, SOME output_prop_fn), (TY_VAR, NONE), (TY_PROPERTY, NONE)
+      (TY_NULL, NONE, NONE), (TY_PROP, NONE, SOME output_prop_fn),
+      (TY_TERM, SOME no_rewr_terms, NONE), (TY_EQ, NONE, SOME output_prop_fn),
+      (TY_EQ_IF, SOME eq_if_rewr_terms, SOME output_prop_fn),
+      (TY_VAR, NONE, NONE), (TY_PROPERTY, SOME arg_rewr_terms, NONE)
 
     ] #> fold add_prop_matcher [
       (TY_PROP, prop_matcher), (TY_TERM, term_prop_matcher),
@@ -516,7 +571,8 @@ val add_basic_item_io =
 
     ] #> fold add_typed_matcher [
       (TY_PROP, prop_matcher), (TY_TERM, term_typed_matcher),
-      (TY_VAR, term_typed_matcher), (TY_EQ, term_typed_matcher)
+      (TY_VAR, term_typed_matcher), (TY_EQ, exact_term_typed_matcher),
+      (TY_EQ_IF, exact_term_typed_matcher)
     ]
 
 end  (* structure ItemIO_Data. *)
@@ -680,7 +736,13 @@ fun thm_to_ritem th =
       val thy = Thm.theory_of_thm th
     in
       if is_eq_term prop' then
-        Fact (TY_EQ, HOLogic.mk_prod (HOLogic.dest_eq prop'), th)
+        let
+          val (lhs, rhs) = HOLogic.dest_eq prop'
+          val ty_str = case Term.head_of rhs of
+                           Const ("HOL.If", _) => TY_EQ_IF | _ => TY_EQ
+        in
+          Fact (ty_str, HOLogic.mk_prod (lhs, rhs), th)
+        end
       else if is_property_const thy prop' then
         Fact (TY_PROPERTY, prop', th)
       else

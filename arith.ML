@@ -155,5 +155,7 @@ end  (* structure Nat_Arith. *)
 
 val mk_nat = Nat_Arith.mk_nat
 val mk_int = Nat_Arith.mk_int
+val plus_ac_on_typ = Nat_Arith.plus_ac_on_typ
+val times_ac_on_typ = Nat_Arith.times_ac_on_typ
 val _ = Theory.setup Nat_Arith.add_arith_ac_data
 val _ = Theory.setup Nat_Arith.add_arith_proofsteps

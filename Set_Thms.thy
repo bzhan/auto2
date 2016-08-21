@@ -52,14 +52,27 @@ setup {* add_prfstep (AC_ProofSteps.ac_equiv_strong (
   "ac_equiv_strong_union", @{term_pat "?A \<union> ?B \<noteq> ?C \<union> ?D"})) *}
 
 subsection {* Intersection *}
-setup {* add_rewrite_rule @{thm Set.Int_empty_left} *}
 setup {* add_rewrite_rule @{thm Set.Int_absorb} *}
 
 subsection {* Disjointness *}
-theorem set_disjoint_mp: "A \<inter> B = {} \<Longrightarrow> p \<in> A \<Longrightarrow> p \<notin> B" by auto
+definition set_disjoint :: "'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
+  "set_disjoint U V = (U \<inter> V = {})"
+setup {* add_forward_prfstep (equiv_backward_th @{thm set_disjoint_def}) *}
+setup {* add_backward_prfstep (equiv_forward_th @{thm set_disjoint_def}) *}
+
+theorem set_disjoint_comm: "set_disjoint A B = set_disjoint B A" by (simp add: inf_commute set_disjoint_def)
+setup {* add_forward_prfstep (equiv_forward_th @{thm set_disjoint_comm}) *}
+setup {* add_backward_prfstep (equiv_backward_th @{thm set_disjoint_comm}) *}
+
+theorem set_disjoint_empty [resolve]: "set_disjoint {} A" by (simp add: set_disjoint_def)
+theorem set_disjoint_mp: "set_disjoint A B \<Longrightarrow> p \<in> A \<Longrightarrow> p \<notin> B" by (metis IntI empty_iff set_disjoint_def)
 setup {* add_forward_prfstep_cond @{thm set_disjoint_mp} [with_cond "?A \<noteq> {?y}"] *}
-theorem set_disjoint_single [rewrite]: "{x} \<inter> ys = {} \<longleftrightarrow> x \<notin> ys" by simp
-theorem set_disjoint_intro [resolve]: "\<forall>x. x \<in> xs \<longrightarrow> x \<notin> ys \<Longrightarrow> xs \<inter> ys = {}" by auto
+theorem set_disjoint_single [rewrite]: "set_disjoint {x} ys \<longleftrightarrow> x \<notin> ys" by (simp add: set_disjoint_def)
+theorem set_disjoint_intro [resolve]: "\<forall>x. x \<in> xs \<longrightarrow> x \<notin> ys \<Longrightarrow> set_disjoint xs ys" using set_disjoint_def by force
+theorem disjoint_with_union [forward]: "set_disjoint A (B \<union> C) \<Longrightarrow> set_disjoint A B \<and> set_disjoint A C"
+  by (simp add: Int_Un_distrib set_disjoint_def)
+theorem disjoint_with_union' [backward2]: "set_disjoint A B \<Longrightarrow> set_disjoint A C \<Longrightarrow> set_disjoint A (B \<union> C)"
+  by (meson set_disjoint_intro set_disjoint_mp set_in_union_mp)
 
 subsection {* subset *}
 theorem subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in> B" by simp

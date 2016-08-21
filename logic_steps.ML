@@ -223,12 +223,21 @@ fun CHOOSES strs =
       | str :: rest => (CHOOSE str) THEN (CHOOSES rest)
       | _ => raise AUTO2 "CHOOSES: empty argument"
 
+(* Function body for proofsteps if_P, if_not_P, and if_not_P'. *)
+fun apply_if_eq_thm if_eq_th ((id, _), ths) items _ =
+    let
+      val {prop, ...} = hd items
+      val eq = (nth ths 1) RS if_eq_th
+      val th = prop |> to_meta_eq |> apply_to_rhs (rewr_obj_eq eq)
+                    |> to_obj_eq
+    in
+      [Update.thm_update (id, th),
+       Update.ShadowItem {id = id, item = hd items}]
+    end
+
 val add_logic_proofsteps =
     fold add_prfstep [
       shadow_prop_item, shadow_term_item, eq_elim_prfstep
-
-    ] #> fold add_fixed_sc [
-      ("eq_elim", 1)
 
     ] #> fold add_prfstep_custom [
       ("exists_elim",
@@ -269,7 +278,28 @@ val add_logic_proofsteps =
             val th = ths |> the_single |> apply_to_thm' cv
           in
             exists_elim (id, th) ctxt
-          end)
+          end),
+
+      ("if_P",
+       [WithItem (TY_EQ_IF, @{term_pat "(?t, if ?cond then ?x else ?y)"}),
+        WithFact @{term_pat "?cond::bool"}],
+       PRIORITY_SHADOW,
+       apply_if_eq_thm @{thm HOL.if_P}),
+
+      ("if_not_P",
+       [WithItem (TY_EQ_IF, @{term_pat "(?t, if ?cond then ?x else ?y)"}),
+        WithFact @{term_pat "~?cond::bool"}],
+       PRIORITY_SHADOW,
+       apply_if_eq_thm @{thm HOL.if_not_P}),
+
+      ("if_not_P'",
+       [WithItem (TY_EQ_IF, @{term_pat "(?t, if ~?cond then ?x else ?y)"}),
+        WithFact @{term_pat "?cond::bool"}],
+       PRIORITY_SHADOW,
+       apply_if_eq_thm @{thm if_not_P'})
+
+    ] #> fold add_fixed_sc [
+      ("eq_elim", 1), ("if_P", 1), ("if_not_P", 1), ("if_not_P'", 1)
 
     ] #> fold add_gen_prfstep [
       ("shadow_exists",
@@ -509,7 +539,7 @@ val disj_prop_matcher =
           let
             val ((_, match_prem), _) = dest_tname_of_disj tname
           in
-            if not match_prem then false else
+            if has_vars tname andalso not match_prem then false else
             case pat of
                 Const ("HOL.disj", _) $ _ $ _ => not (has_vars tname)
               | Const ("HOL.implies", _) $ _ $ _ => not (has_vars tname)
@@ -564,17 +594,18 @@ val disj_prop_matcher =
           let
             val ((_, match_prem), subs) = dest_tname_of_disj tname
             val thy = Proof_Context.theory_of ctxt
+            val vars = Term.add_vars tname []
           in
-            if not match_prem then []
+            if length vars > 0 andalso not match_prem then []
             else let
               val pat_eq = normalize_disj_cv ctxt (cert ctxt pat)
               val pat' = rhs_of pat_eq
               val (allc, disjc) = strip_forall_disj pat'
-              val vars = Term.add_vars tname []
               val var_tys = map snd vars
             in
-              if length allc <> length vars orelse disjc <> length subs orelse
-                 not (Type.could_matches (rev allc, var_tys))
+              if length allc <> length vars then []
+              else if disjc > length subs then []
+              else if not (Type.could_matches (rev allc, var_tys))
               then [] else
               let
                 (* First step: match and instantiate types. *)
@@ -594,7 +625,7 @@ val disj_prop_matcher =
                 val pat''' = Term.subst_bounds (bd_vars, strip_forall pat'')
 
                 (* Find matches between pattern and term, both with bd_vars. *)
-                val insts' = Matcher.rewrite_match_ac_bd
+                val insts' = Matcher.rewrite_match_ac_bd true
                                  disj_ac tbl bd_vars (pat''', tname')
                                  (id, (tyinst', inst))
 
@@ -698,7 +729,7 @@ fun match_one_sch_fn rtype (st as {tbl, ...}) {id, tname, prop = th1, ...}
       if length subs > 1 then [] else
       let
         val t = the_single subs
-        val (_, args) = Term.strip_comb t
+        val args = dest_args t
         fun count_var t = length (Term.add_vars t [])
         val nvar = count_var t
 
@@ -936,7 +967,8 @@ val disj_use_vardef_prfstep =
 
 val add_disj_proofsteps =
     fold ItemIO_Data.add_item_type [
-      (TY_DISJ, SOME output_disj_fn)
+      (TY_DISJ, SOME (fn t => t |> HOLogic.strip_tuple |> drop 2),
+       SOME output_disj_fn)
 
     ] #> fold ItemIO_Data.add_typed_matcher [
       (TY_DISJ, disj_typed_matcher)
@@ -1043,7 +1075,7 @@ fun CHOOSE_FUN_N n str ctxt =
 
 val add_term_def_proofsteps =
     fold ItemIO_Data.add_item_type [
-      (TY_TERM_DEF, NONE)
+      (TY_TERM_DEF, NONE, NONE)
 
     ] #> fold ItemIO_Data.add_typed_matcher [
       (TY_TERM_DEF, ItemIO_Data.univ_matcher)

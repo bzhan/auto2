@@ -537,7 +537,7 @@ open ProofStep
 datatype proofstep_table
   = ProofStepTable of
     {prfsteps: proofstep Symtab.table, sorted_prfsteps: proofstep list,
-     fixed_sc: int Symtab.table, reserved_names: string list}
+     fixed_sc: int Symtab.table}
 
 fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
     int_ord (priority, priority')
@@ -545,45 +545,39 @@ fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
 structure ProofStepData =
 Generic_Data (
   type T = proofstep_table;
-  val empty = ProofStepTable {prfsteps = Symtab.empty, sorted_prfsteps = [],
-                              fixed_sc = Symtab.empty, reserved_names = []};
+  val empty = ProofStepTable {
+        prfsteps = Symtab.empty, sorted_prfsteps = [], fixed_sc = Symtab.empty};
   val extend = I;
   fun merge (
-    ProofStepTable {prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1,
-                    reserved_names = r1},
-    ProofStepTable {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2,
-                    reserved_names = r2}) =
+    ProofStepTable {prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
+    ProofStepTable {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
       ProofStepTable {
         prfsteps = Symtab.merge (op pointer_eq) (p1, p2),
         sorted_prfsteps = sort prfstep_ord (
           Library.merge (op pointer_eq) (sp1, sp2)),
-        fixed_sc = Symtab.merge (op =) (sc1, sc2),
-        reserved_names = Library.merge (op =) (r1, r2)}
+        fixed_sc = Symtab.merge (op =) (sc1, sc2)}
 )
 
 signature PROOFSTEP_DATA =
 sig
   val proofstep_data_of: Proof.context -> ProofStepData.T
-  val map_theory_proofsteps:
-      (Proof.context -> Proof.context) -> theory -> theory
-  val map_generic_proofsteps:
-      (Proof.context -> Proof.context) -> Context.generic -> Context.generic
-  val map_proofstep_data_ctxt:
-      (ProofStepData.T -> ProofStepData.T) -> Proof.context -> Proof.context
-  val map_proofstep_data:
-      (ProofStepData.T -> ProofStepData.T) -> theory -> theory
+  val local_context_map:
+      (Context.generic -> Context.generic) -> Proof.context -> Proof.context
 
+  val add_prfstep_gnrc: proofstep -> Context.generic -> Context.generic
   val add_prfstep: proofstep -> theory -> theory
   val add_prfstep_ctxt: proofstep -> Proof.context -> Proof.context
+  val del_prfstep_pred_gnrc:
+      (string -> bool) -> Context.generic -> Context.generic
+  val del_prfstep_pred: (string -> bool) -> theory -> theory
   val del_prfstep: string -> theory -> theory
   val del_prfstep_thm: thm -> theory -> theory
-  val add_fixed_sc_ctxt: string * int -> Proof.context -> Proof.context
+  val add_fixed_sc_gnrc: string * int -> Context.generic -> Context.generic
   val add_fixed_sc: string * int -> theory -> theory
   val get_prfstep_by_name: Proof.context -> string -> proofstep
   val get_prfsteps: Proof.context -> proofstep list
   val get_fixed_sc: Proof.context -> string -> int option
-  val add_reserved_name: string -> theory -> theory
-  val is_reserved_name: Proof.context -> string -> bool
+  val is_reserved_name: string -> bool
 
   val add_prfstep_custom:
       (string * prfstep_descriptor list * int *
@@ -591,8 +585,8 @@ sig
       theory -> theory
 
   val add_gen_prfstep: string * prfstep_descriptor list -> theory -> theory
-  val add_gen_prfstep_ctxt:
-      string * prfstep_descriptor list -> Proof.context -> Proof.context
+  val add_gen_prfstep_gnrc:
+      string * prfstep_descriptor list -> Context.generic -> Context.generic
   val add_prfstep_pre_conv: string * prfstep_descriptor list *
                             (Proof.context -> conv) -> theory -> theory
   val add_prfstep_conv:
@@ -609,8 +603,8 @@ sig
   (* Second level proofstep writing functions. *)
   val backward_th: thm -> thm
   val to_contra_th: thm -> thm
-  val add_and_print_prfstep_ctxt:
-      string -> prfstep_descriptor list -> Proof.context -> Proof.context
+  val add_and_print_prfstep_gnrc:
+      string -> prfstep_descriptor list -> Context.generic -> Context.generic
   val add_forward_prfstep_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_backward_prfstep_cond:
@@ -627,31 +621,34 @@ sig
   val add_backward2_prfstep: thm -> theory -> theory
   val add_resolve_prfstep: thm -> theory -> theory
 
-  val add_forward_prfstep_ctxt: thm -> Proof.context -> Proof.context
-  val add_backward_prfstep_ctxt: thm -> Proof.context -> Proof.context
-  val add_backward1_prfstep_ctxt: thm -> Proof.context -> Proof.context
-  val add_backward2_prfstep_ctxt: thm -> Proof.context -> Proof.context
-  val add_resolve_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_forward_prfstep_gnrc: thm -> Context.generic -> Context.generic
+  val add_backward_prfstep_gnrc: thm -> Context.generic -> Context.generic
+  val add_backward1_prfstep_gnrc: thm -> Context.generic -> Context.generic
+  val add_backward2_prfstep_gnrc: thm -> Context.generic -> Context.generic
+  val add_resolve_prfstep_gnrc: thm -> Context.generic -> Context.generic
+
+  val add_rewrite_rule_gnrc: thm -> Context.generic -> Context.generic
+  val add_rewrite_rule_back_gnrc: thm -> Context.generic -> Context.generic
+  val add_rewrite_rule_bidir_gnrc: thm -> Context.generic -> Context.generic
 
   val add_rewrite_rule_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_rewrite_rule_back_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_rewrite_rule: thm -> theory -> theory
-  val add_rewrite_rule_back: thm -> theory -> theory
-  val add_rewrite_rule_bidir: thm -> theory -> theory
   val add_rewrite_rule_bidir_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
 
+  val add_rewrite_rule: thm -> theory -> theory
+  val add_rewrite_rule_back: thm -> theory -> theory
+  val add_rewrite_rule_bidir: thm -> theory -> theory
+
   val add_rewrite_rule_ctxt: thm -> Proof.context -> Proof.context
-  val add_rewrite_rule_back_ctxt: thm -> Proof.context -> Proof.context
-  val add_rewrite_rule_bidir_ctxt: thm -> Proof.context -> Proof.context
 
   val add_eval_fun_prfsteps': thm list -> thm list -> theory -> theory
   val add_eval_fun_prfsteps: thm list -> theory -> theory
 
   val setup_attrib:
-      (thm -> Proof.context -> Proof.context) -> attribute context_parser
+      (thm -> Context.generic -> Context.generic) -> attribute context_parser
 end;
 
 structure ProofStep_Data : PROOFSTEP_DATA =
@@ -659,48 +656,34 @@ struct
 
 fun proofstep_data_of ctxt = ProofStepData.get (Context.Proof ctxt)
 
-fun map_theory_proofsteps f thy =
-    let
-      val ctxt' = f (Proof_Context.init_global thy)
-      val thy' = Proof_Context.theory_of ctxt'
-    in
-      Context.theory_map (ProofStepData.map (K (proofstep_data_of ctxt'))) thy'
-    end
+fun local_context_map f =
+    Local_Theory.map_contexts (fn i => if i = 0 then Context.proof_map f else I)
 
-fun map_generic_proofsteps f =
-    Context.mapping
-        (map_theory_proofsteps (f o Context_Position.not_really)) I
-
-fun map_proofstep_data_ctxt f =
-    Context.proof_map (ProofStepData.map f)
-
-val map_proofstep_data = map_theory_proofsteps o map_proofstep_data_ctxt
-
-fun add_prfstep_ctxt (prfstep as {args, ...}) =
+fun add_prfstep_gnrc (prfstep as {args, ...}) =
     if length (filter_out is_property_match args) >= 1 andalso
        length (filter_out is_property_match args) <= 2 then
-      map_proofstep_data_ctxt (
+      ProofStepData.map (
         fn ProofStepTable {
-            prfsteps, sorted_prfsteps, fixed_sc, reserved_names} =>
-           if member (op =) reserved_names (#name prfstep) then
-             raise AUTO2 ("add_prfstep: name " ^ (#name prfstep) ^
-                          " is reserved.")
+            prfsteps, sorted_prfsteps, fixed_sc} =>
+           if is_prefix_str "$" (#name prfstep) then
+             raise AUTO2 ("add_prfstep: names beginning with $ is reserved.")
            else
              ProofStepTable {
                prfsteps = Symtab.update_new (#name prfstep, prfstep) prfsteps,
                sorted_prfsteps = sort prfstep_ord (sorted_prfsteps @ [prfstep]),
-               fixed_sc = fixed_sc, reserved_names = reserved_names})
+               fixed_sc = fixed_sc})
     else
       raise AUTO2 "add_proofstep: need 1 or 2 patterns."
 
-val add_prfstep = map_theory_proofsteps o add_prfstep_ctxt
+val add_prfstep = Context.theory_map o add_prfstep_gnrc
+val add_prfstep_ctxt = local_context_map o add_prfstep_gnrc
 
 (* Deleting a proofstep. For string inputs, try adding theory
    name. For theorem inputs, try all @-suffixes.
  *)
-fun del_prfstep_pred pred =
-    map_proofstep_data (
-      fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc, reserved_names} =>
+fun del_prfstep_pred_gnrc pred =
+    ProofStepData.map (
+      fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
          let
            val keys = Symtab.keys prfsteps
            val to_delete = filter pred keys
@@ -713,10 +696,11 @@ fun del_prfstep_pred pred =
              ProofStepTable {
                prfsteps = prfsteps |> fold Symtab.delete to_delete,
                sorted_prfsteps = sorted_prfsteps |> subtract eq_name to_delete,
-               fixed_sc = fixed_sc |> fold Symtab.delete_safe to_delete,
-               reserved_names = reserved_names}
+               fixed_sc = fixed_sc |> fold Symtab.delete_safe to_delete}
            end
          end)
+
+val del_prfstep_pred = Context.theory_map o del_prfstep_pred_gnrc
 
 fun del_prfstep nm thy =
     if exists_string (equal ".") nm then del_prfstep_pred (equal nm) thy
@@ -729,17 +713,16 @@ fun del_prfstep_thm th =
       del_prfstep_pred (equal nm orf is_prefix_str (nm ^ "@"))
     end
 
-fun add_fixed_sc_ctxt (nm, sc) =
-    map_proofstep_data_ctxt (
-      fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc, reserved_names} =>
+fun add_fixed_sc_gnrc (nm, sc) =
+    ProofStepData.map (
+      fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
          case find_first (equal nm) (Symtab.keys prfsteps) of
              NONE => raise AUTO2 ("add_fixed_sc: not found " ^ nm)
            | _ => ProofStepTable {
                    prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
-                   fixed_sc = fixed_sc |> Symtab.update_new (nm, sc),
-                   reserved_names = reserved_names})
+                   fixed_sc = fixed_sc |> Symtab.update_new (nm, sc)})
 
-val add_fixed_sc = map_theory_proofsteps o add_fixed_sc_ctxt
+val add_fixed_sc = Context.theory_map o add_fixed_sc_gnrc
 
 fun get_prfstep_by_name ctxt name =
     let
@@ -762,29 +745,13 @@ fun get_fixed_sc ctxt nm =
       Symtab.lookup fixed_sc nm
     end
 
-fun add_reserved_name nm =
-    map_proofstep_data (
-      fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc, reserved_names} =>
-         if member (op =) reserved_names nm orelse
-            Symtab.defined prfsteps nm then
-           raise AUTO2 ("add_reserved_name: " ^ nm ^ " already used")
-         else
-           ProofStepTable {
-             prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
-             fixed_sc = fixed_sc, reserved_names = nm :: reserved_names})
-
-fun is_reserved_name ctxt nm =
-    let
-      val ProofStepTable {reserved_names, ...} = proofstep_data_of ctxt
-    in
-      member (op =) reserved_names nm
-    end
+val is_reserved_name = is_prefix_str "$"
 
 fun add_prfstep_custom (name, descs, priority, updt_fn) =
     add_prfstep (prfstep_custom name descs priority updt_fn)
 fun add_gen_prfstep (name, descs) = add_prfstep (gen_prfstep name descs)
-fun add_gen_prfstep_ctxt (name, descs) =
-    add_prfstep_ctxt (gen_prfstep name descs)
+fun add_gen_prfstep_gnrc (name, descs) =
+    add_prfstep_gnrc (gen_prfstep name descs)
 fun add_prfstep_pre_conv (name, descs, pre_cv) =
     add_prfstep (prfstep_pre_conv name descs pre_cv)
 fun add_prfstep_conv (name, descs, cv) =
@@ -832,12 +799,12 @@ fun with_filts filts = map with_filt filts
 
 (* Second level proofstep writing functions. *)
 
-fun add_and_print_prfstep_ctxt nm descs ctxt =
+fun add_and_print_prfstep_gnrc nm descs gnrc =
     let
-      val thy = Proof_Context.theory_of ctxt
+      val thy = theory_of_gnrc gnrc
       val _ = writeln (nm ^ "\n" ^ (string_of_descs thy descs))
     in
-      add_gen_prfstep_ctxt (nm, descs) ctxt
+      add_gen_prfstep_gnrc (nm, descs) gnrc
     end
 
 (* Obtain the first several premises of th that are properties. *)
@@ -848,9 +815,37 @@ fun get_property_prems th =
       th |> Thm.prems_of |> filter_first_split (is_property_prem' thy) |> fst
     end
 
-fun add_forward_prfstep_cond_ctxt th conds ctxt =
+(* For each assumption in ct, try to rewrite it to a property. Stop
+   when encountering the first assumption that cannot be rewritten to
+   property_prem.
+ *)
+fun rewrite_property_on_assums ctxt ct =
+    case Thm.term_of ct of
+        Const ("Pure.imp", _) $ A $ _ =>
+        if is_property_prem_ctxt' ctxt A then
+          Conv.arg_conv (rewrite_property_on_assums ctxt) ct
+        else let
+          val ths = Named_Theorems.get ctxt @{named_theorems property_rewrites}
+          val cv = Conv.first_conv (map (rewr_obj_eq o obj_sym) ths)
+          val eq = Conv.try_conv (HOLogic.Trueprop_conv cv) (Thm.dest_arg1 ct)
+        in
+          if is_property_prem_ctxt' ctxt (rhs_of eq) then
+            ((Conv.arg1_conv (Conv.rewr_conv eq))
+                 then_conv (Conv.arg_conv (rewrite_property_on_assums ctxt))) ct
+          else
+            Conv.all_conv ct
+        end
+      | _ => Conv.all_conv ct
+
+fun rewrite_property_on_assums_th gnrc th =
+    th |> apply_to_thm (rewrite_property_on_assums (context_of_gnrc gnrc))
+       |> update_name_of_thm th ""
+
+fun add_forward_prfstep_cond_gnrc th conds gnrc =
     let
-      val thy = Proof_Context.theory_of ctxt
+      val thy = theory_of_gnrc gnrc
+      val ctxt = context_of_gnrc gnrc
+      val th = rewrite_property_on_assums_th gnrc th
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
 
       (* Instantiate conds with ctxt, and divide into two classes. *)
@@ -878,10 +873,10 @@ fun add_forward_prfstep_cond_ctxt th conds ctxt =
       (* Convert to obj imp any extraneous meta imps. *)
       val max_fact_conds = 2 - length term_conds
       val th' =
-          th |> apply_to_thm (to_obj_conv_on_horn ctxt)
+          th |> apply_to_thm (to_obj_conv_on_horn ctxt')
              |> (if Thm.nprems_of th - p_count > max_fact_conds then
                    apply_to_thm (
-                     skip_n_conv (p_count + max_fact_conds) (to_obj_conv ctxt))
+                     skip_n_conv (p_count + max_fact_conds) (to_obj_conv ctxt'))
                  else I)
              |> Thm.has_name_hint th ? Thm.put_name_hint (Thm.get_name_hint th)
       val (assums, concl) =
@@ -918,19 +913,16 @@ fun add_forward_prfstep_cond_ctxt th conds ctxt =
           val descs = p_conds @ swap_match_descs @ filt_conds @
                       [GetFact (concl, th'')]
         in
-          add_and_print_prfstep_ctxt (name_of_thm th') descs ctxt
+          add_and_print_prfstep_gnrc (name_of_thm th') descs gnrc
         end
       else
         let
           val descs = p_conds @ match_descs @ filt_conds @
                       [GetFact (concl, th')]
         in
-          add_and_print_prfstep_ctxt (name_of_thm th') descs ctxt
+          add_and_print_prfstep_gnrc (name_of_thm th') descs gnrc
         end
     end
-
-fun add_forward_prfstep_cond th conds =
-    map_theory_proofsteps (add_forward_prfstep_cond_ctxt th conds)
 
 (* Convert theorems of the form A1 ==> ... ==> An ==> C to A1 & ... &
    An ==> C. If keep_last = true, the last assumption is kept in
@@ -1012,17 +1004,42 @@ fun to_contra_th th =
          |> update_name_of_thm th "@res"
     end
 
-fun add_backward_prfstep_cond th conds thy =
-    add_forward_prfstep_cond (backward_th th) conds thy
+fun add_backward_prfstep_cond_gnrc th conds gnrc =
+    add_forward_prfstep_cond_gnrc
+        ((backward_th o rewrite_property_on_assums_th gnrc) th) conds gnrc
 
-fun add_backward1_prfstep_cond th conds thy =
-    add_forward_prfstep_cond (backward1_th th) conds thy
+fun add_backward1_prfstep_cond_gnrc th conds gnrc =
+    add_forward_prfstep_cond_gnrc
+        ((backward1_th o rewrite_property_on_assums_th gnrc) th) conds gnrc
 
-fun add_backward2_prfstep_cond th conds thy =
-    add_forward_prfstep_cond (backward2_th th) conds thy
+fun add_backward2_prfstep_cond_gnrc th conds gnrc =
+    add_forward_prfstep_cond_gnrc
+        ((backward2_th o rewrite_property_on_assums_th gnrc) th) conds gnrc
 
-fun add_resolve_prfstep_cond th conds thy =
-    add_forward_prfstep_cond (to_contra_th th) conds thy
+fun add_resolve_prfstep_cond_gnrc th conds gnrc =
+    add_forward_prfstep_cond_gnrc
+        ((to_contra_th o rewrite_property_on_assums_th gnrc) th) conds gnrc
+
+fun add_forward_prfstep_gnrc th = add_forward_prfstep_cond_gnrc th []
+fun add_backward_prfstep_gnrc th = add_backward_prfstep_cond_gnrc th []
+fun add_backward1_prfstep_gnrc th = add_backward1_prfstep_cond_gnrc th []
+fun add_backward2_prfstep_gnrc th = add_backward2_prfstep_cond_gnrc th []
+fun add_resolve_prfstep_gnrc th = add_resolve_prfstep_cond_gnrc th []
+
+val add_forward_prfstep_cond =
+    Context.theory_map oo add_forward_prfstep_cond_gnrc
+
+val add_backward_prfstep_cond =
+    Context.theory_map oo add_backward_prfstep_cond_gnrc
+
+val add_backward1_prfstep_cond =
+    Context.theory_map oo add_backward1_prfstep_cond_gnrc
+
+val add_backward2_prfstep_cond =
+    Context.theory_map oo add_backward2_prfstep_cond_gnrc
+
+val add_resolve_prfstep_cond =
+    Context.theory_map oo add_resolve_prfstep_cond_gnrc
 
 fun add_forward_prfstep th = add_forward_prfstep_cond th []
 fun add_backward_prfstep th = add_backward_prfstep_cond th []
@@ -1030,17 +1047,7 @@ fun add_backward1_prfstep th = add_backward1_prfstep_cond th []
 fun add_backward2_prfstep th = add_backward2_prfstep_cond th []
 fun add_resolve_prfstep th = add_resolve_prfstep_cond th []
 
-fun add_forward_prfstep_ctxt th = add_forward_prfstep_cond_ctxt th []
-fun add_backward_prfstep_ctxt th =
-    add_forward_prfstep_cond_ctxt (backward_th th) []
-fun add_backward1_prfstep_ctxt th =
-    add_forward_prfstep_cond_ctxt (backward1_th th) []
-fun add_backward2_prfstep_ctxt th =
-    add_forward_prfstep_cond_ctxt (backward2_th th) []
-fun add_resolve_prfstep_ctxt th =
-    add_forward_prfstep_cond_ctxt (to_contra_th th) []
-
-fun add_rewrite_rule_cond_ctxt th conds ctxt =
+fun add_rewrite_rule_cond_gnrc th conds =
     let
       val (lhs, rhs) = th |> strip_horn' |> snd |> HOLogic.dest_eq
       (* If rhs is of form ?n, create filter for ?n not already known
@@ -1050,25 +1057,35 @@ fun add_rewrite_rule_cond_ctxt th conds ctxt =
                          Var ((nm, 0), _) => [with_filt (neqp_filter nm lhs)]
                        | _ => []
     in
-      add_forward_prfstep_cond_ctxt
-          th ([K (WithTerm lhs)] @ neq_filt @ conds) ctxt
+      add_forward_prfstep_cond_gnrc
+          th ([K (WithTerm lhs)] @ neq_filt @ conds)
     end
 
-fun add_rewrite_rule_cond th conds =
-    map_theory_proofsteps (add_rewrite_rule_cond_ctxt th conds)
+fun add_rewrite_rule_back_cond_gnrc th conds =
+    add_rewrite_rule_cond_gnrc (obj_sym_th th) conds
 
-fun add_rewrite_rule_back_cond th = add_rewrite_rule_cond (obj_sym_th th)
+fun add_rewrite_rule_bidir_cond_gnrc th conds =
+    (add_rewrite_rule_cond_gnrc th conds)
+        #> add_rewrite_rule_back_cond_gnrc th conds
+
+fun add_rewrite_rule_gnrc th = add_rewrite_rule_cond_gnrc th []
+fun add_rewrite_rule_back_gnrc th = add_rewrite_rule_back_cond_gnrc th []
+fun add_rewrite_rule_bidir_gnrc th = add_rewrite_rule_bidir_cond_gnrc th []
+
+val add_rewrite_rule_cond =
+    Context.theory_map oo add_rewrite_rule_cond_gnrc
+
+val add_rewrite_rule_back_cond =
+    Context.theory_map oo add_rewrite_rule_back_cond_gnrc
+
+val add_rewrite_rule_bidir_cond =
+    Context.theory_map oo add_rewrite_rule_bidir_cond_gnrc
+
 fun add_rewrite_rule th = add_rewrite_rule_cond th []
 fun add_rewrite_rule_back th = add_rewrite_rule_back_cond th []
 fun add_rewrite_rule_bidir th = add_rewrite_rule th #> add_rewrite_rule_back th
-fun add_rewrite_rule_bidir_cond th conds =
-    add_rewrite_rule_cond th conds #> add_rewrite_rule_back_cond th conds
 
-fun add_rewrite_rule_ctxt th = add_rewrite_rule_cond_ctxt th []
-fun add_rewrite_rule_back_ctxt th =
-    add_rewrite_rule_cond_ctxt (obj_sym_th th) []
-fun add_rewrite_rule_bidir_ctxt th =
-    add_rewrite_rule_ctxt th #> add_rewrite_rule_back_ctxt th
+val add_rewrite_rule_ctxt = local_context_map o add_rewrite_rule_gnrc
 
 fun add_eval_fun_prfsteps' desc_ths ths thy =
     let
@@ -1082,10 +1099,13 @@ fun add_eval_fun_prfsteps' desc_ths ths thy =
 
 fun add_eval_fun_prfsteps ths = add_eval_fun_prfsteps' ths ths
 
-fun setup_attrib f = Attrib.add_del
-  (Thm.declaration_attribute (fn th => map_generic_proofsteps (f th)))
-  (Thm.declaration_attribute (
-      fn _ => fn _ => raise AUTO2 "del_step: not implemented."))
+fun setup_attrib f =
+    Attrib.add_del
+        (Thm.declaration_attribute (
+            fn th => fn gnrc =>
+               case gnrc of Context.Theory _ => f th gnrc | _ => gnrc))
+        (Thm.declaration_attribute (
+            fn _ => fn _ => raise AUTO2 "del_step: not implemented."))
 
 end  (* structure ProofStep_Data. *)
 

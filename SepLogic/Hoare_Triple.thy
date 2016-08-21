@@ -26,7 +26,6 @@ text {* For garbage-collected languages, specifications usually allow for some
 abbreviation hoare_triple' :: "assn \<Rightarrow> 'r Heap \<Rightarrow> ('r \<Rightarrow> assn) \<Rightarrow> bool" ("<_> _ <_>\<^sub>t") where
   "<P> c <Q>\<^sub>t \<equiv> <P> c <\<lambda>r. Q r * true>"
 
-setup {* add_rewrite_rule @{thm disjoint_with_union} *}
 lemma frame_rule [backward]:
   "<P> c <Q> \<Longrightarrow> <P * R> c <\<lambda>x. Q x * R>"
   by (tactic {* auto2s_tac @{context}
@@ -37,7 +36,6 @@ lemma frame_rule [backward]:
        OBTAIN "relH as2 h (the \<sigma>)" THEN
        OBTAIN "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2" WITH
          OBTAIN "\<forall>x. x \<in> as2 \<longrightarrow> x \<notin> {a. lim h \<le> a \<and> a < lim (the \<sigma>)}")) *})
-setup {* del_prfstep_thm @{thm disjoint_with_union} *}
 
 (* This is the last use of the definition of separating conjunction. *)
 setup {* del_prfstep_thm @{thm mod_star_conv} *}

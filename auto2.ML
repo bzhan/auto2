@@ -58,7 +58,6 @@ val print_shadow =
  *)
 signature PROOFSTATUS =
 sig
-  val reserved_prfstep_names: string list
   val check_hyps: box_id -> raw_item -> status -> unit
   val is_rtype_resolved: status -> rewrite_type -> bool
   val discharge_assums: status -> box_id -> thm -> thm
@@ -90,9 +89,6 @@ struct
 
 open Status
 open Script
-
-val reserved_prfstep_names =
-    ["TERM", "RESOLVE", "INIT_BOX", "INIT", "SCRIPT", "CALLBACK"]
 
 fun check_hyps id ritem (st as {ctxt, ...}) =
     let
@@ -256,7 +252,8 @@ fun apply_callback (id, th) sc cbs st =
     let
       fun eval_cb cb = cb (id, th)
       fun form_cb_updts raw_updt =
-          {sc = sc, prfstep_name = "CALLBACK", source = [], raw_updt = raw_updt}
+          {sc = sc, prfstep_name = "$CALLBACK", source = [],
+           raw_updt = raw_updt}
       val cb_updts = map form_cb_updts (maps eval_cb cbs)
     in
       st |> fold apply_update_instant cb_updts
@@ -281,7 +278,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ...}) =
                 val ritem = get_on_resolve st id i th
                 val _ = check_hyps cur_parent ritem st
                 val resolve_updt =
-                    {sc = sc', prfstep_name = "RESOLVE", source = [],
+                    {sc = sc', prfstep_name = "$RESOLVE", source = [],
                      raw_updt = Update.AddItems
                                     {id = cur_parent, raw_items = [ritem]}}
                 (* If id is primitive, invoke any callbacks (with
@@ -472,34 +469,36 @@ fun process_property (item as {id, sc, ...}) (st as {tbl, ctxt, ...}) =
          |> fold (process_prfstep sc rtype items) prfsteps
     end
 
-fun process_add_terms (item as {id, sc, tname, ...}) (st as {tbl, ...}) =
-    if match_ty_str "TERM" item then st else
+fun process_add_terms item (st as {tbl, ctxt, ...}) =
     let
       (* Add terms to the rewrite table. *)
-      val terms = map (pair id) (HOLogic.strip_tuple tname)
-      val tbl' = if has_vars tname then tbl
-                 else tbl |> fold RewriteTable.add_term terms
+      val {id, sc, ty_str, tname, ...} = item
 
-      (* Add new terms as updates. *)
       fun qualify_term t =
           if has_vars t then false
           else case t of Abs _ => false | _ => true
 
-      fun exist_item t =
+      val rewr_terms = ItemIO_Data.rewr_terms_of_item ctxt (ty_str, tname)
+      val terms = rewr_terms |> maps Subterms.get_all_subterms
+                             |> distinct (op aconv)
+                             |> filter qualify_term
+      val tbl' = tbl |> fold RewriteTable.add_term (map (pair id) terms)
+
+      (* Add new terms as updates. *)
+      fun exists_item t =
           length (lookup_item_all st id (TY_TERM, t)) > 0
 
-      val ts = tname |> HOLogic.strip_tuple
-                     |> maps (Subterms.get_all_subterms true)
-                     |> distinct (op aconv)
-                     |> filter qualify_term
-                     |> filter_out exist_item
+      val terms2 = rewr_terms |> maps Subterms.get_all_subterms_skip_if
+                              |> distinct (op aconv)
+                              |> filter qualify_term
+                              |> filter_out exists_item
 
       (* New terms have the same score as the source item. *)
-      val updt = {sc = sc, prfstep_name = "TERM", source = [item],
+      val updt = {sc = sc, prfstep_name = "$TERM", source = [item],
                   raw_updt = Update.AddItems {
-                    id = id, raw_items = map term_to_fact ts}}
+                    id = id, raw_items = map term_to_fact terms2}}
     in
-      st |> add_to_queue updt
+      st |> (if length terms2 > 0 then add_to_queue updt else I)
          |> map_rewrites (K tbl')
     end
 
@@ -517,7 +516,7 @@ fun process_fact_all item st =
     end
 
 fun is_shadowing_prfstep prfstep_name {ctxt, ...} =
-    if is_reserved_name ctxt prfstep_name then false
+    if is_reserved_name prfstep_name then false
     else let
       val {priority, ...} = get_prfstep_by_name ctxt prfstep_name
     in
@@ -542,7 +541,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
 
           val _ = if length dup_items = 0 orelse
                      not (Config.get ctxt print_intended) then () else
-                  if prfstep_name = "TERM" andalso
+                  if prfstep_name = "$TERM" andalso
                      not (Config.get ctxt print_term) then ()
                   else tracing ("Intend to add " ^
                                 Update.update_info ctxt' id dup_items ^
@@ -555,7 +554,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
                    string_of_int (uid_next + uid_incr - 1)
 
           val _ = if length items = 0 then () else
-                  if prfstep_name = "TERM" andalso
+                  if prfstep_name = "$TERM" andalso
                      not (Config.get ctxt print_term) then ()
                   else tracing ("Add " ^ Update.update_info ctxt' id items ^
                                 " (" ^ uid_string ^ ", " ^
@@ -612,11 +611,14 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
           (* Find neg_form and check if already present. *)
           val neg_form = Update.get_neg_form ctxt' inits'
           val neg_form_opt = find_fact st id neg_form
+
+          val prev_prim_box = find_prim_box st id inits'
         in
-          (* Do nothing if there is already a box with the same
-             assumptions and conclusions.
+          (* Do nothing except possibly updating focus if there is
+             already a box with the same assumptions and conclusions.
            *)
-          if is_some (find_prim_box st id inits') then st
+          if is_some prev_prim_box then
+            st |> update_focus ? set_focus (the prev_prim_box)
 
           (* If the conclusion already exists, apply callback. *)
           else if is_some neg_form_opt then
@@ -640,7 +642,7 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
                   (Box.short_string_of_box ctxt' (get_box st' new_id)))
 
             val item_updt = {
-              sc = sc, prfstep_name = "INIT_BOX", source = [],
+              sc = sc, prfstep_name = "$INIT_BOX", source = [],
               raw_updt = Update.AddItems {id = new_id, raw_items = ritems'}}
           in
             st' |> map_context (K ctxt')
@@ -681,7 +683,7 @@ fun init_status ctxt obj_goal =
       val inits = map Update.InitVar vars @
                   map Update.InitAssum (assums @ [get_neg' concl])
       val raw_updt = Update.AddBoxes {id = [], inits = inits, cbs = []}
-      val updt = {sc = 0, prfstep_name = "INIT", source = [],
+      val updt = {sc = 0, prfstep_name = "$INIT", source = [],
                   raw_updt = raw_updt}
     in
       (empty_status ctxt) |> add_composite_box [] |> add_item null_item
@@ -732,7 +734,7 @@ fun run_script (Script_Task {inits, subs, cb, ...})
           case find_fact st id neg_form of
               NONE =>
               let
-                val updt = {sc = sc, prfstep_name = "SCRIPT", source = [],
+                val updt = {sc = sc, prfstep_name = "$SCRIPT", source = [],
                             raw_updt = Update.AddBoxes {
                               id = id, inits = inits,
                               cbs = [Update.null_callback]}}
@@ -764,7 +766,7 @@ fun run_script (Script_Task {inits, subs, cb, ...})
       let
         val raw_updts = cb ((id, th), st')
         val updts = map (fn raw_updt =>
-                            {sc = 0, prfstep_name = "SCRIPT", source = [],
+                            {sc = 0, prfstep_name = "$SCRIPT", source = [],
                              raw_updt = raw_updt}) raw_updts
       in
         (steps', st' |> fold add_to_queue updts)
@@ -813,5 +815,3 @@ fun auto2l_tac ctxt steps = PRIMSEQ (auto2_gen ctxt steps no_script)
 fun auto2s_tac ctxt pre_scrpts = PRIMSEQ (auto2_gen ctxt 2000 pre_scrpts)
 fun auto2ls_tac ctxt steps pre_scrpts =
     PRIMSEQ (auto2_gen ctxt steps pre_scrpts)
-
-val _ = Theory.setup (fold add_reserved_name ProofStatus.reserved_prfstep_names)

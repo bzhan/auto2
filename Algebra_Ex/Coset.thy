@@ -37,7 +37,7 @@ theorem r_coset_eqI [backward1]: fixes G (structure) shows
         (CHOOSE "h \<in> H, x = h \<otimes> b" THEN OBTAIN "x = h \<otimes> b \<otimes> inv a \<otimes> a"))) *})
 
 theorem r_coset_disjoint [backward1]: fixes G (structure) shows
-  "elt a \<Longrightarrow> elt b \<Longrightarrow> is_subgroup H G \<Longrightarrow> H #> a \<noteq> H #> b \<Longrightarrow> (H #> a) \<inter> (H #> b) = {}"
+  "elt a \<Longrightarrow> elt b \<Longrightarrow> is_subgroup H G \<Longrightarrow> H #> a \<noteq> H #> b \<Longrightarrow> set_disjoint (H #> a) (H #> b)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "x, x \<in> (H #> a) \<inter> (H #> b)" THEN
      CHOOSES ["ha\<in>H, x = ha \<otimes> a", "hb\<in>H, x = hb \<otimes> b"] THEN

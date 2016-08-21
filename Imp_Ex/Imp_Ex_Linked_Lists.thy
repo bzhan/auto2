@@ -299,23 +299,24 @@ definition rev :: "('a::heap) node ref \<Rightarrow> 'a node ref Heap" where
   "rev p = do { v \<leftarrow> !p;
     if v = Empty then return p
     else do { q \<leftarrow> ref Empty;
-              comment (\<lambda>h. refs_of h p \<inter> refs_of h q = {});
+              comment (\<lambda>h. set_disjoint (refs_of h p) (refs_of h q));
               v \<leftarrow> rev' q p;
               return v
             } }"
 setup {* add_rewrite_rule @{thm rev_def} *}
 
 theorem set_disjoint_exchange:
-  "({p} \<union> A) \<inter> B = {} \<Longrightarrow> p \<notin> A \<Longrightarrow> ({p} \<union> B) \<inter> A = {}" by (simp add: Int_ac(3))
-setup {* add_forward_prfstep_cond @{thm set_disjoint_exchange} [with_term "({?p} \<union> ?B) \<inter> ?A"] *}
+  "set_disjoint ({p} \<union> A) B \<Longrightarrow> p \<notin> A \<Longrightarrow> set_disjoint ({p} \<union> B) A"
+  by (meson disjoint_with_union disjoint_with_union' set_disjoint_comm set_disjoint_single)
+setup {* add_forward_prfstep_cond @{thm set_disjoint_exchange} [with_term "{?p} \<union> ?B"] *}
 
 lemma rev'_unchanged [forward]:
-  "effect (rev' q p) h h' v' \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
+  "effect (rev' q p) h h' v' \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> set_disjoint (refs_of h p) (refs_of h q) \<Longrightarrow>
    unchanged_outer h h' (refs_of h p)"
    by (tactic {* auto2s_tac @{context} (INDUCT ("ps = list_of h p", Arbitraries ["p", "q", "h"])) *})
 
 lemma rev'_invariant [forward]:
-  "effect (rev' q p) h h' v' \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
+  "effect (rev' q p) h h' v' \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> set_disjoint (refs_of h p) (refs_of h q) \<Longrightarrow>
    proper_ref h' v' \<and> list_of h' v' = (List.rev (list_of h p) @ list_of h q)"
    by (tactic {* auto2s_tac @{context} (INDUCT ("ps = list_of h p", Arbitraries ["p", "q", "h"])) *})
 
@@ -348,10 +349,6 @@ partial_function (heap) merge :: "('a::{heap, ord}) node ref \<Rightarrow> 'a no
      }"
 setup {* add_rewrite_rule_cond @{thm merge.simps} [with_filt (size1_filter "p"), with_filt (size1_filter "q")] *}
 
-theorem set_intersection_list: "(x \<union> xs) \<inter> ys = {} \<Longrightarrow> xs \<inter> ys = {} \<and> ys \<inter> xs = {}" by auto
-setup {* add_rewrite_rule (conj_left_th @{thm set_intersection_list}) *}
-setup {* add_rewrite_rule (conj_right_th @{thm set_intersection_list}) *}
-
 theorem unchanged_outer_union_ref [forward]:
   "unchanged_outer h h' (refs_of h p \<union> refs_of h q) \<Longrightarrow> r \<notin> refs_of h p \<Longrightarrow> r \<notin> refs_of h q \<Longrightarrow>
    Ref.present h r \<Longrightarrow> Ref.get h r = Ref.get h' r" by (simp add: unchanged_outer_ref)
@@ -362,24 +359,24 @@ theorem merge_unchanged [forward]:
     DOUBLE_INDUCT (("pl = list_of h p", "ql = list_of h q"), Arbitraries ["p", "q", "h'", "r"])) *})
 
 theorem merge_local [forward]:
-  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
+  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> set_disjoint (refs_of h p) (refs_of h q) \<Longrightarrow>
    proper_ref h' r \<and> refs_of h' r \<subseteq> refs_of h p \<union> refs_of h q"
   by (tactic {* auto2s_tac @{context} (
     DOUBLE_INDUCT (("pl = list_of h p", "ql = list_of h q"), Arbitraries ["p", "q", "h'", "r"])) *})
 
 theorem merge_correct [forward]:
-  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
+  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> set_disjoint (refs_of h p) (refs_of h q) \<Longrightarrow>
    list_of h' r = merge_list (list_of h p) (list_of h q)"
   by (tactic {* auto2s_tac @{context} (
     DOUBLE_INDUCT (("pl = list_of h p", "ql = list_of h q"), Arbitraries ["p", "q", "h'", "r"])) *})
 setup {* del_prfstep_thm @{thm merge.simps} *}
 
 theorem merge_set_of:
-  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
+  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> set_disjoint (refs_of h p) (refs_of h q) \<Longrightarrow>
    set (list_of h' r) = set (list_of h p) \<union> set (list_of h q)" by auto2
 
 theorem merge_sorted:
-  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> refs_of h p \<inter> refs_of h q = {} \<Longrightarrow>
+  "effect (merge p q) h h' r \<Longrightarrow> proper_ref h p \<Longrightarrow> proper_ref h q \<Longrightarrow> set_disjoint (refs_of h p) (refs_of h q) \<Longrightarrow>
    sorted (list_of h p) \<Longrightarrow> sorted (list_of h q) \<Longrightarrow> sorted (list_of h' r)" by auto2
 
 end

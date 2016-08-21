@@ -673,7 +673,7 @@ fun nat_order_match_side pat x tbl (id, inst) =
 fun nat_order_match' pat (x, y) (tbl as {ctxt, ...}) (id, inst) =
     let
       (* Classify pat into A < B or A <= B. *)
-      val (f, (patA, patB)) = pat |> strip_comb |> apsnd the_pair
+      val (f, (patA, patB)) = dest_binop pat
       val is_strict =
           case f of
               Const (@{const_name less}, _) => true
@@ -860,7 +860,7 @@ fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
       val neg_t = get_neg pat |> cert ctxt |> neg_ineq_cv |> rhs_of
       val neg_tp = neg_t |> HOLogic.mk_Trueprop
       val negt_th = neg_tp |> cert ctxt |> Thm.trivial
-      val (f, (A, B)) = neg_t |> strip_comb |> apsnd the_pair
+      val (f, (A, B)) = dest_binop neg_t
 
       fun contra_to_pat_th assum contra_th =
           contra_th |> Thm.implies_intr (cert ctxt assum)
@@ -964,7 +964,8 @@ fun output_nat_order ctxt (tname, th) =
 
 val add_nat_order_proofsteps =
     ItemIO_Data.add_item_type (
-      TY_NAT_ORDER, SOME output_nat_order
+      TY_NAT_ORDER, SOME (fn t => t |> HOLogic.strip_tuple |> take 2),
+      SOME output_nat_order
 
     ) #> ItemIO_Data.add_typed_matcher (
       TY_NAT_ORDER, nat_order_typed_matcher

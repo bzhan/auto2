@@ -59,6 +59,14 @@ session Real = AUTO2 +
   theories
     "Analysis/Real_Auto2"
 
+session Rat_Ex = AUTO2 +
+  description {*
+    Examples on rational numbers.
+  *}
+  theories
+    "Analysis/Complex_Auto2"
+    "Analysis/Sums"
+
 session Arrow = AUTO2 +
   description {*
     Arrow's impossibility theorem.

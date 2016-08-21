@@ -15,9 +15,6 @@ sig
   val ac_shift_l_to_n_cv: ac_inst_info -> int -> conv
   val ac_group_last_n_cv: ac_inst_info -> int -> conv
   val ac_group_first_n_cv: ac_inst_info -> int -> conv
-  val normalize_minus_assoc_gen: bool -> ac_inst_info -> conv
-  val normalize_minus_assoc_l: ac_inst_info -> conv
-  val normalize_minus_assoc_r: ac_inst_info -> conv
   val get_ac_head_equiv: rewrite_table -> ac_inst_info -> box_id * term ->
                          (box_id * thm) list
   val reduce_unit_t: rewrite_table -> ac_inst_info -> box_id * term ->
@@ -26,9 +23,10 @@ sig
                  (int * id_inst * thm) list
   val ac_subterm_equivs: rewrite_table -> ac_inst_info -> box_id * term ->
                          (box_id * thm) list
-  val match_ac_list: bool -> rewrite_table -> term list -> ac_inst_info ->
-                     term list * term list -> id_inst -> id_inst_th list
-  val match_ac_raw: ac_inst_info -> rewrite_table -> term list ->
+  val match_ac_list:
+      bool -> bool -> rewrite_table -> term list -> ac_inst_info ->
+      term list * term list -> id_inst -> id_inst_th list
+  val match_ac_raw: bool -> ac_inst_info -> rewrite_table -> term list ->
                     term * term -> id_inst -> id_inst_th list
   val match: rewrite_table -> term list -> term * term -> id_inst ->
              id_inst_th list
@@ -41,13 +39,14 @@ sig
   val rewrite_match: rewrite_table -> term * term -> id_inst -> id_inst_th list
   val rewrite_match_head:
       rewrite_table -> term * term -> id_inst -> id_inst_th list
-  val rewrite_match_ac_bd:
-      ac_inst_info -> rewrite_table -> term list -> term * term -> id_inst ->
-      id_inst_th list
-  val rewrite_match_ac:
-      ac_inst_info -> rewrite_table -> term * term -> id_inst -> id_inst_th list
+  val rewrite_match_ac_bd: bool -> ac_inst_info -> rewrite_table -> term list ->
+                           term * term -> id_inst -> id_inst_th list
+  val rewrite_match_ac: bool -> ac_inst_info -> rewrite_table -> term * term ->
+                        id_inst -> id_inst_th list
   val rewrite_match_list: rewrite_table -> (bool * (term * term)) list ->
                           id_inst -> id_inst_ths list
+  val rewrite_match_subset: rewrite_table -> term list * term list -> id_inst ->
+                            id_inst_ths list
   val pre_match_head: rewrite_table -> term * term -> bool
   val pre_match: rewrite_table -> term * term -> bool
 
@@ -212,7 +211,7 @@ fun is_uinv {uinv_op, ...} t =
     Term.head_of t aconv uinv_op
 
 fun dest_uinv t =
-    t |> Term.dest_comb |> snd
+    dest_arg t handle AUTO2 _ => raise AUTO2 "dest_uinv"
 
 fun mk_uinv {uinv_op, ...} t =
     uinv_op $ t
@@ -238,14 +237,6 @@ fun is_sch_arg ac_info t =
 (* Given ?a or -?a, return -a. *)
 fun dest_sch_arg t =
     if Term.is_Var (Term.head_of t) then t else dest_uinv t
-
-fun normalize_minus_assoc_gen assoc_r ac_info =
-    (ACUtil.normalize_minus ac_info)
-        then_conv (ACUtil.normalize_unit ac_info)
-        then_conv (ACUtil.normalize_assoc_gen assoc_r ac_info)
-
-val normalize_minus_assoc_l = normalize_minus_assoc_gen false
-val normalize_minus_assoc_r = normalize_minus_assoc_gen true
 
 (* Obtain list of head equivs of u whose head function belongs to the
    given AC info.
@@ -390,7 +381,7 @@ fun analyze_t (ac_info as {comm_th, ...}) (tbl as {ctxt, ...}) (id, env) t =
     let
       val t' = subst_term_norm env t
       val ct' = cert ctxt t'
-      val eq1 = ct' |> normalize_minus_assoc_l ac_info
+      val eq1 = ct' |> ACUtil.normalize_minus_assoc_l ac_info
       val eqs2 = reduce_unit_t tbl ac_info (id, rhs_of eq1)
       val assoc_only = is_true_th comm_th
       fun process_eq2 (id', eq2) =
@@ -508,8 +499,8 @@ fun match_uinv assoc_r (tbl as {ctxt, ...}) bd_vars ac_info (t, us) (id, env) =
    In both cases, ts is matched starting from head, and the head is
    outermost on the t-side in the returned result.
  *)
-and match_ac_list assoc_r tbl bd_vars (ac_info as {comm_th, unit_val, ...})
-                  (ts, us) (id, env) =
+and match_ac_list is_simple assoc_r tbl bd_vars
+                  (ac_info as {comm_th, unit_val, ...}) (ts, us) (id, env) =
     if length ts = 0 orelse length us = 0 then []
     else if length ts = 1 then
       let
@@ -539,7 +530,7 @@ and match_ac_list assoc_r tbl bd_vars (ac_info as {comm_th, unit_val, ...})
           if not (ACUtil.head_agrees_with_inv ac_info (rhs_of th)) then []
           else let
             val th' = th |> apply_to_rhs (
-                  normalize_minus_assoc_gen assoc_r ac_info)
+                  ACUtil.normalize_minus_assoc_gen assoc_r ac_info)
             val args = ACUtil.dest_ac_gen assoc_r ac_info (rhs_of th')
           in
             if exists (fn t => RewriteTable.is_equiv id tbl (t, unit_val)) args
@@ -559,8 +550,10 @@ and match_ac_list assoc_r tbl bd_vars (ac_info as {comm_th, unit_val, ...})
           if not assoc_r andalso
              exists (fn t => RewriteTable.is_equiv id tbl (t, nth us i))
                     (drop (i+1) us)
-          then [] else
-          let
+          then []
+          else if is_simple then
+            [(i, (id, Thm.reflexive (cert_thy thy (nth us i))))]
+          else let
             val ui = nth us i
             val ui_equivs =
                 if is_open bd_vars ui then [(id, refl tbl ui)]
@@ -613,7 +606,8 @@ and match_ac_list assoc_r tbl bd_vars (ac_info as {comm_th, unit_val, ...})
                       else nth_drop i us @ nth_drop j uis'
 
             val match_remains =
-                match_ac_list assoc_r tbl bd_vars ac_info (ts', us') (id', env')
+                match_ac_list
+                    is_simple assoc_r tbl bd_vars ac_info (ts', us') (id', env')
 
             (* Here eq2 is t[inst'] == uij', and eq' is ts'[inst''] ==
                us'. We need the equation ts[inst''] == us. This is
@@ -675,12 +669,12 @@ and match_ac_list assoc_r tbl bd_vars (ac_info as {comm_th, unit_val, ...})
    instsp, and also normalized with respect to minus and left
    association.
  *)
-and match_ac_raw (ac_info as {comm_th, unit_val, ...}) (tbl as {ctxt, ...})
-                 bd_vars (t, u) (instsp as (id, _)) =
+and match_ac_raw is_simple (ac_info as {comm_th, unit_val, ...})
+                 (tbl as {ctxt, ...}) bd_vars (t, u) (instsp as (id, _)) =
     let
       val assoc_only = is_true_th comm_th
       val targ = ACUtil.dest_ac_l ac_info t
-      val u_eq = normalize_minus_assoc_r ac_info (cert ctxt u)
+      val u_eq = ACUtil.normalize_minus_assoc_r ac_info (cert ctxt u)
       val u' = rhs_of u_eq
       val uarg = ACUtil.dest_ac_r ac_info u'
 
@@ -702,14 +696,15 @@ and match_ac_raw (ac_info as {comm_th, unit_val, ...}) (tbl as {ctxt, ...})
       then []
       else if assoc_only andalso is_sch_arg ac_info (nth targ 0) then
         let
-          val insts = match_ac_list false tbl bd_vars ac_info (rev targ, uarg)
-                                    instsp
+          val insts = match_ac_list is_simple false tbl bd_vars ac_info
+                                    (rev targ, uarg) instsp
         in
           map (process_inst o swap_u_to_r) insts
         end
       else
         let
-          val insts = match_ac_list true tbl bd_vars ac_info (targ, uarg) instsp
+          val insts = match_ac_list is_simple true tbl bd_vars ac_info
+                                    (targ, uarg) instsp
         in
           map (process_inst o swap_t_to_l) insts
         end
@@ -826,7 +821,8 @@ and match_ac_head ac_info tbl bd_vars (t, u) (id, env) =
       fun process_equiv (id', th) =
           let
             val u' = rhs_of th
-            val insts_u' = match_ac_raw ac_info tbl bd_vars (t, u') (id', env)
+            val insts_u' =
+                match_ac_raw false ac_info tbl bd_vars (t, u') (id', env)
           in
             (* th': t(env) == u', and th: u == u'. *)
             map (fn (inst', th') =>
@@ -1048,10 +1044,11 @@ fun rewrite_match_head tbl (t, u) (id, env) =
     match_head tbl [] (t, u) (id, env)
 
 (* Version with bd_vars, used in disj_prop_matcher. *)
-fun rewrite_match_ac_bd ac_info (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
+fun rewrite_match_ac_bd
+        is_simple ac_info (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
     let
       val thy = RewriteTable.theory_of tbl
-      val norm_eq = normalize_minus_assoc_l ac_info (cert ctxt t)
+      val norm_eq = ACUtil.normalize_minus_assoc_l ac_info (cert ctxt t)
       val t' = rhs_of norm_eq
       fun process_inst ((id', env'), eq_th) =
           let
@@ -1059,12 +1056,18 @@ fun rewrite_match_ac_bd ac_info (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
           in
             ((id', env'), transitive_list [norm_eq', eq_th])
           end
+      val insts =
+          if is_simple then
+            match_ac_raw true ac_info tbl bd_vars (t', u) (id, env)
+          else
+            match_ac_head ac_info tbl bd_vars (t', u) (id, env)
     in
-      map process_inst (match_ac_head ac_info tbl bd_vars (t', u) (id, env))
+      map process_inst insts
     end
 
 (* More commonly used external version. *)
-fun rewrite_match_ac ac_info tbl = rewrite_match_ac_bd ac_info tbl []
+fun rewrite_match_ac is_simple ac_info tbl =
+    rewrite_match_ac_bd is_simple ac_info tbl []
 
 (* pairs is a list of (at_head, (t, u)). Match the pairs in sequence,
    and return a list of ((id, inst), ths), where ths is the list of
@@ -1084,6 +1087,30 @@ fun rewrite_match_list tbl pairs instsp =
               end
         in
           maps process_inst_t insts_t
+        end
+
+(* Given two lists of terms (ts, us), match ts with a subset of
+   us. Return a list of ((id, inst), ths), where ths is the list of
+   equalities t_i(env) == u_j.
+ *)
+fun rewrite_match_subset tbl (ts, us) instsp =
+    case ts of
+        [] => [(instsp, [])]
+      | t :: ts' =>
+        let
+          fun match_i i =
+              map (pair i) (rewrite_match tbl (t, nth us i) instsp)
+
+          fun process_match_i (i, (instsp', th)) =
+              let
+                val insts_ts' =
+                    rewrite_match_subset tbl (ts', nth_drop i us) instsp'
+              in
+                map (apsnd (cons th)) insts_ts'
+              end
+        in
+          (0 upto (length us - 1))
+              |> maps match_i |> maps process_match_i
         end
 
 (* Fast function for determining whether there can be a match between
@@ -1202,16 +1229,12 @@ fun pre_match_head tbl (t, u) =
  *)
 fun literal_ac_count thy t inst_vars =
     case ACUtil.get_head_ac_info_with_inv thy t of
-        NONE =>
-        let
-          val (_, args) = Term.strip_comb t
-        in
-          literal_ac_count_list thy args inst_vars
-        end
+        NONE => literal_ac_count_list thy (dest_args t) inst_vars
       | SOME ac_info =>
         let
-          val targs = t |> cert_thy thy |> normalize_minus_assoc_l ac_info
-                        |> rhs_of |> ACUtil.dest_ac_l ac_info
+          val targs =
+              t |> cert_thy thy |> ACUtil.normalize_minus_assoc_l ac_info
+                |> rhs_of |> ACUtil.dest_ac_l ac_info
           val sch_args = targs |> filter (is_sch_arg ac_info)
                                |> map dest_sch_arg
                                |> subtract (op aconv) inst_vars

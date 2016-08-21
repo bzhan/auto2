@@ -29,6 +29,7 @@ sig
   val is_property_const: theory -> term -> bool
   val is_property_prem: theory -> term -> bool
   val is_property_prem': theory -> term -> bool
+  val is_property_prem_ctxt': Proof.context -> term -> bool
   val get_property_name: term -> string
   val get_property_names: term list -> string list
   val get_property_arg: term -> term
@@ -37,7 +38,7 @@ sig
   (* About the PropertyUpdateData table.*)
   val add_property_update: thm -> theory -> theory
   val lookup_property_update: theory -> string -> thm list
-  val instantiate_property_update: Proof.context -> term -> thm -> thm
+  val instantiate_property_update: Proof.context -> term -> thm -> thm option
 end;
 
 structure Property_Data : PROPERTY_DATA =
@@ -70,10 +71,13 @@ fun is_property_const thy t =
    schematic variable.
  *)
 fun is_property_prem thy t =
-    is_property_const thy t andalso Term.is_Var (t |> dest_comb |> snd)
+    is_property_const thy t andalso Term.is_Var (dest_arg t)
 
 fun is_property_prem' thy t =
     is_Trueprop t andalso is_property_prem thy (HOLogic.dest_Trueprop t)
+
+fun is_property_prem_ctxt' ctxt t =
+    is_property_prem' (Proof_Context.theory_of ctxt) t
 
 fun get_property_name t =
     case Term.head_of t of
@@ -84,8 +88,8 @@ fun get_property_names ts =
     ts |> map get_property_name |> distinct (op =)
 
 fun get_property_arg t =
-    t |> dest_comb |> snd
-    handle TERM _ => raise AUTO2 "get_property_arg: th in wrong form."
+    dest_arg t
+    handle AUTO2 _ => raise AUTO2 "get_property_arg: th in wrong form."
 
 fun get_property_args ts =
     ts |> map get_property_arg |> distinct (op aconv)
@@ -146,17 +150,24 @@ fun lookup_property_update thy nm =
     Symtab.lookup_list (PropertyUpdateData.get thy) nm
 
 (* Instantiate th by matching t with the argument of the conclusion of
-   th.
+   th. Return NONE if instantiation is unsuccessful (because type does
+   not match)
  *)
 fun instantiate_property_update ctxt t th =
     let
       val (_, concl) = strip_horn' th
       val concl_arg = get_property_arg concl
-      val inst = pattern_fo_match ctxt (concl_arg, t)
-                 handle Pattern.MATCH =>
-                        raise AUTO2 "inst_property: cannot match with t."
+      val thy = Proof_Context.theory_of ctxt
     in
-      subst_thm ctxt inst th
+      if Sign.typ_instance thy (fastype_of t, fastype_of concl_arg) then
+        let
+          val inst = pattern_fo_match ctxt (concl_arg, t)
+                     handle Pattern.MATCH =>
+                            raise AUTO2 "inst_property: cannot match with t."
+        in
+          SOME (subst_thm ctxt inst th)
+        end
+      else NONE
     end
 
 end  (* structure Property_Data. *)

@@ -53,14 +53,14 @@ theorem tree_ofR_Node' [forward]: "Ref.get h p = Node lp v rp \<Longrightarrow> 
 inductive refs_ofR :: "heap \<Rightarrow> ('a::heap) node ref \<Rightarrow> 'a node ref set \<Rightarrow> bool" where
   "Ref.get h p = Empty \<Longrightarrow> refs_ofR h p {p}"
 | "Ref.get h p = Node lp v rp \<Longrightarrow> refs_ofR h lp lps \<Longrightarrow> refs_ofR h rp rps \<Longrightarrow>
-   lps \<inter> rps = {} \<Longrightarrow> p \<notin> lps \<Longrightarrow> p \<notin> rps \<Longrightarrow> refs_ofR h p ({p} \<union> lps \<union> rps)"
+   set_disjoint lps rps \<Longrightarrow> p \<notin> lps \<Longrightarrow> p \<notin> rps \<Longrightarrow> refs_ofR h p ({p} \<union> lps \<union> rps)"
 setup {* add_resolve_prfstep @{thm refs_ofR.intros(1)} *}
 setup {* add_backward2_prfstep @{thm refs_ofR.intros(2)} *}
 setup {* add_prfstep_prop_induction @{thm refs_ofR.induct} *}
 
 theorem refs_ofR_Empty [forward]: "Ref.get h p = Empty \<Longrightarrow> refs_ofR h p ps \<Longrightarrow> ps = {p}" by auto2
 theorem refs_ofR_Node [forward]: "Ref.get h p = Node lp v rp \<Longrightarrow> refs_ofR h p ps \<Longrightarrow>
-  \<exists>lps rps. refs_ofR h lp lps \<and> refs_ofR h rp rps \<and> lps \<inter> rps = {} \<and> p \<notin> lps \<and> p \<notin> rps \<and> ps = {p} \<union> lps \<union> rps" by auto2
+  \<exists>lps rps. refs_ofR h lp lps \<and> refs_ofR h rp rps \<and> set_disjoint lps rps \<and> p \<notin> lps \<and> p \<notin> rps \<and> ps = {p} \<union> lps \<union> rps" by auto2
 
 theorem exists_tree_of [resolve]: "refs_ofR h p ps \<Longrightarrow> \<exists>t. tree_ofR h p t" by auto2
 
@@ -112,12 +112,12 @@ theorem refs_of_Empty [forward]:
   "Ref.present h p \<Longrightarrow> Ref.get h p = Empty \<Longrightarrow> refs_of h p = {p}" by auto2
 
 theorem proper_ref_next1' [forward]:
-  "Ref.get h p = Node lp v rp \<Longrightarrow> proper_ref h p \<Longrightarrow> refs_of h lp \<inter> refs_of h rp = {} \<and>
+  "Ref.get h p = Node lp v rp \<Longrightarrow> proper_ref h p \<Longrightarrow> set_disjoint (refs_of h lp) (refs_of h rp) \<and>
    p \<notin> refs_of h lp \<and> p \<notin> refs_of h rp \<and> refs_of h p = {p} \<union> refs_of h lp \<union> refs_of h rp" by auto2
 
 theorem proper_ref_next2 [backward2]:
   "Ref.get h p = Node lp v rp \<Longrightarrow> Ref.present h p \<Longrightarrow> proper_ref h lp \<Longrightarrow> proper_ref h rp \<Longrightarrow>
-   p \<notin> refs_of h lp \<Longrightarrow> p \<notin> refs_of h rp \<Longrightarrow> refs_of h lp \<inter> refs_of h rp = {} \<Longrightarrow> proper_ref h p"
+   p \<notin> refs_of h lp \<Longrightarrow> p \<notin> refs_of h rp \<Longrightarrow> set_disjoint (refs_of h lp) (refs_of h rp) \<Longrightarrow> proper_ref h p"
   by (tactic {* auto2s_tac @{context} (OBTAIN "refs_ofR h p ({p} \<union> refs_of h lp \<union> refs_of h rp)") *})
 
 theorem proper_ref_present [forward]:
@@ -139,7 +139,7 @@ lemma tree_of_set_ref [rewrite]:
   by (tactic {* auto2s_tac @{context} (INDUCT ("ts = tree_of h q", [Arbitrary "q"])) *})
 
 lemma refs_of_set_next_ref: "proper_ref h lp \<Longrightarrow> proper_ref h rp \<Longrightarrow>
-  p \<notin> refs_of h lp \<Longrightarrow> p \<notin> refs_of h rp \<Longrightarrow> refs_of h lp \<inter> refs_of h rp = {} \<Longrightarrow>
+  p \<notin> refs_of h lp \<Longrightarrow> p \<notin> refs_of h rp \<Longrightarrow> set_disjoint (refs_of h lp) (refs_of h rp) \<Longrightarrow>
   Ref.present h p \<Longrightarrow> proper_ref (Ref.set p (Node lp v rp) h) p \<and>
   refs_of (Ref.set p (Node lp v rp) h) p = {p} \<union> refs_of h lp \<union> refs_of h rp \<and>
   tree_of (Ref.set p (Node lp v rp) h) p = tree.Node (tree_of h lp) v (tree_of h rp)" by auto2
@@ -175,7 +175,7 @@ lemma effect_update_ref [forward]:
 
 lemma effect_ref_tree [forward]:
   "effect (ref (Node lp v rp)) h h' r \<Longrightarrow> proper_ref h lp \<Longrightarrow> proper_ref h rp \<Longrightarrow>
-  refs_of h lp \<inter> refs_of h rp = {} \<Longrightarrow> proper_ref h' r \<and>
+  set_disjoint (refs_of h lp) (refs_of h rp) \<Longrightarrow> proper_ref h' r \<and>
   tree_of h' r = tree.Node (tree_of h lp) v (tree_of h rp) \<and>
   refs_of h' r = {r} \<union> refs_of h lp \<union> refs_of h rp" by auto2
 

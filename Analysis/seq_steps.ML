@@ -56,7 +56,7 @@ val ind_seq_mutual_def =
 
 fun get_monotone_pred_for_th ctxt p gen_th =
     let
-      val pat = gen_th |> prop_of' |> strip_comb |> snd |> the_single
+      val pat = gen_th |> prop_of' |> dest_arg
       val inst = pattern_match ctxt (pat, p)
     in
       SOME (subst_thm ctxt inst gen_th)

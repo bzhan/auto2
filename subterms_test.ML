@@ -19,7 +19,7 @@ val test_dest_subterms =
             val t = read_term ctxt'' str
             val t' = read_pat ctxt'' str'
             val subs = map (read_term ctxt'') subs_str
-            val (t'', subs') = dest_subterms true t
+            val (t'', subs') = dest_subterms t
           in
             if t' aconv t'' andalso eq_list (op aconv) (subs, subs') then ()
             else
@@ -33,18 +33,13 @@ val test_dest_subterms =
         ("a * (b * c)", "(?SUB::nat) * ?SUB1", ["a", "b * c"]),
         ("(a + b) * c", "(?SUB::nat) * ?SUB1", ["a + b", "c"]),
         ("ALL a. b dvd a", "ALL (a::nat). ?SUB dvd a", ["b"]),
-        ("if a = 0 then b else c", "if ?SUB then b else c", ["a = 0"]),
         ("ALL A. A & B & C", "ALL A. A & ?SUB", ["B & C"]),
         ("ALL B. A & B & C", "ALL B. ?SUB & B & ?SUB1", ["A", "C"]),
         ("ALL C. A & B & C", "ALL C. ?SUB & ?SUB1 & C", ["A", "B"]),
         ("ALL A. (A & B) & C", "ALL A. (A & ?SUB) & ?SUB1", ["B", "C"]),
         ("ALL (A::bool). (B & C) & D", "ALL (A::bool). ?SUB", ["(B & C) & D"]),
-        ("if (if A then B else C) then a else b", "if ?SUB then a else b",
-         ["if A then B else C"]),
         ("ALL A. C & (ALL B. A & B & D)", "ALL A. ?SUB & (!B. A & B & ?SUB1)",
          ["C", "D"]),
-        ("ALL a. if a = b then A else B",
-         "ALL (a::nat). if a = ?SUB then A else B", ["b"]),
         ("~ (A | B)", "~ ?SUB", ["A | B"])
       ]
     in
@@ -59,7 +54,7 @@ val test_get_all_subterms =
           let
             val t = read_term ctxt'' str
             val subs = map (read_term ctxt'') subs_str
-            val subs' = get_all_subterms true t
+            val subs' = get_all_subterms t
           in
             if eq_list (op aconv) (subs, subs') then ()
             else raise AUTO2CT ("test_get_all_subterms",

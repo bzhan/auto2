@@ -96,7 +96,8 @@ fun assert_ac_match ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
       val ac_info =
           the (RewriteTable.get_head_ac_info_with_inv tbl (read_pat ctxt str_t))
     in
-      assert_match_gen (match_ac_raw ac_info) ((str_t, str_u), info_str) tbl
+      assert_match_gen (match_ac_raw false ac_info) ((str_t, str_u), info_str)
+                       tbl
     end
 
 val assert_match = assert_match_gen match

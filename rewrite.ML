@@ -459,7 +459,7 @@ fun merge_simp_infos tbl lsts =
  *)
 fun get_subterm_rewrite_info (tbl as {ctxt, ...}) t =
     let
-      val (t', subs) = Subterms.dest_subterms false t
+      val (t', subs) = Subterms.dest_subterms t
     in
       if length subs = 0 then [([], refl tbl t)] else
       (map (get_rewrite_info tbl) subs)
@@ -593,7 +593,7 @@ fun simplify id tbl t =
 and subterm_simplify id (tbl as {ctxt, ...}) t =
     if in_table_raw tbl t then get_cached_subterm_rewrite id tbl t else
     let
-      val (t', subs) = Subterms.dest_subterms false t
+      val (t', subs) = Subterms.dest_subterms t
       val equivs = map (simplify id tbl) subs
     in
       Subterms.build_equiv ctxt equivs t'
@@ -620,7 +620,7 @@ fun simplify_info tbl t =
 and subterm_simplify_info (tbl as {ctxt, ...}) t =
     if in_table_raw tbl t then get_cached_subterm_rewrite_info tbl t else
     let
-      val (t', subs) = Subterms.dest_subterms false t
+      val (t', subs) = Subterms.dest_subterms t
     in
       if length subs = 0 then [([], refl tbl t)] else
       (map (simplify_info tbl) subs)
@@ -660,7 +660,7 @@ fun reduce_equivs tbl (fhead, infos) =
 
       fun args_of id u =
           case opt_ac of
-              NONE => Term.strip_comb u |> snd |> map (simp_val id tbl)
+              NONE => u |> dest_args |> map (simp_val id tbl)
             | SOME (ac_info as {unit_val, comm_th, ...}) =>
               (ACUtil.dest_ac_total ac_info u)
                   |> map (simp_val id tbl)
@@ -829,7 +829,7 @@ fun subequiv_info tbl id (t1, t2) =
 (* Attempt to retrieve property with the given statement from the table. *)
 fun get_property tbl (id, prop) =
     let
-      val t = prop |> dest_comb |> snd
+      val t = dest_arg prop
       val property_t =
           if in_table_raw_for_id tbl (id, t) then
             get_property_for_term tbl t
@@ -868,20 +868,23 @@ fun get_property tbl (id, prop) =
    variables). All premises and conclusions of th should be
    properties. Apply this rule at id and below to get new property.
  *)
-fun apply_property_update_rule (tbl as {lat, ...}) id th =
-    let
-      val (prems, _) = strip_horn' th
-    in
-      if length prems = 0 then [(id, th)]
-      else let
-        val p_ths = (map (get_property tbl) (map (pair id) prems))
-                        |> BoxID.get_all_merges_info lat
-                        |> max_partial (BoxID.id_is_eq_ancestor lat)
-        fun process_p_th (id', ths) = (id', ths MRS th)
-      in
-        map process_p_th p_ths
-      end
-    end
+fun apply_property_update_rule (tbl as {lat, ...}) id th_opt =
+    case th_opt of
+        NONE => []
+      | SOME th =>
+        let
+          val (prems, _) = strip_horn' th
+        in
+          if length prems = 0 then [(id, th)]
+          else let
+            val p_ths = (map (get_property tbl) (map (pair id) prems))
+                            |> BoxID.get_all_merges_info lat
+                            |> max_partial (BoxID.id_is_eq_ancestor lat)
+            fun process_p_th (id', ths) = (id', ths MRS th)
+          in
+            map process_p_th p_ths
+          end
+        end
 
 (* Find relevant property updates for term t, apply these to get list
    of new properties.
@@ -1084,42 +1087,42 @@ fun add_ac_inst_data_for_typ T tbl =
  *)
 fun add_term' (id, t) tbl =
     if in_table_raw_for_id tbl (id, t) then tbl
-    else
-      let
-        (* First add subterms. *)
-        val imm_subtrms = Subterms.list_subterms true t
-        val id_subs = map (pair id) imm_subtrms
-        val tbl' = tbl |> fold add_term' id_subs |> add_term_raw (id, t)
-      in
-        (* If t is already in table (just not at id), then we are
-           done. Otherwise compute all indexed info for t.
+    else let
+      (* First add subterms. *)
+      val imm_subtrms = Subterms.list_subterms t
+      val id_subs = map (pair id) imm_subtrms
+      val tbl' = tbl |> fold add_term' id_subs |> add_term_raw (id, t)
+    in
+      (* If t is already in table (just not at id), then we are
+         done. Otherwise compute all indexed info for t.
+       *)
+      if in_table_raw tbl t then tbl'
+      else let
+        (* Compute simplification and properties of t. Note we are
+           doing this in box [] (not id), so it does not need to be
+           recomputed if a term is added to a more general box.
          *)
-        if in_table_raw tbl t then tbl'
-        else let
-          (* Compute simplification and properties of t. Note we are
-             doing this in box [] (not id), so it does not need to be
-             recomputed if a term is added to a more general box.
-           *)
-          val simps = get_subterm_rewrite_info tbl' t
-          val imm_properties = apply_property_update_on_term tbl' [] t
+        val simps = get_subterm_rewrite_info tbl' t
+        val imm_properties = apply_property_update_on_term tbl' [] t
 
-          (* If t has a new type, add ac_inst_info. *)
-          val is_new_type =
-              forall (fn t' => t' aconv t orelse fastype_of t' <> fastype_of t)
-                     (get_all_terms tbl')
-        in
-          tbl' |> fold (add_contain t) imm_subtrms
-               |> fold update_simp simps
-               |> fold update_subsimp simps
-               |> is_new_type ? add_ac_inst_data_for_typ (fastype_of t)
-               |> process_update_property imm_properties
-               |> index_all_equiv t
-               |> index_head_equiv t
-        end
+        (* If t has a new type, add ac_inst_info. *)
+        val is_new_type =
+            forall (fn t' => t' aconv t orelse fastype_of t' <> fastype_of t)
+                   (get_all_terms tbl')
+      in
+        tbl' |> fold (add_contain t) imm_subtrms
+             |> fold update_simp simps
+             |> fold update_subsimp simps
+             |> is_new_type ? add_ac_inst_data_for_typ (fastype_of t)
+             |> process_update_property imm_properties
+             |> index_all_equiv t
+             |> index_head_equiv t
       end
+    end
 
-fun add_term (id, t) tbl = tbl |> add_term' (id, t)
-                               |> complete_table_with_edges []
+fun add_term (id, t) tbl =
+    if in_table_raw_for_id tbl (id, t) then tbl
+    else tbl |> add_term' (id, t) |> complete_table_with_edges []
 
 (* First make sure t1 and t2 are in table. Add t1 == t2 to the table,
    and work out any consequences. The result is a consistent rewrite

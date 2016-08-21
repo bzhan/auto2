@@ -13,13 +13,14 @@ sig
   val normalize_assn_cv: Proof.context -> conv
   val normalize_mod_cv: Proof.context -> conv
 
-  val add_forward_ent_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_forward_ent_prfstep_gnrc: thm -> Context.generic -> Context.generic
   val frame_entail: proofstep
 
   val TY_CODE_POS: string
   val TY_CODE_POS_MATCH: string
   val TY_SUCCESS_RUN: string
   val output_code_pos_fn: item_output
+  val code_pos_match_rewr_terms: term -> term list
   val output_code_pos_match_fn: item_output
   val output_success_run_fn: item_output
   val code_pos_typed_matcher: item_matcher
@@ -27,7 +28,7 @@ sig
   val find_proc_def: Proof.context -> term -> thm option
   val heap_preservingI: proofstep
   val heap_preserving_effectD: thm -> proofstep
-  val add_heap_preserving_thm: thm -> Proof.context -> Proof.context
+  val add_heap_preserving_thm_gnrc: thm -> Context.generic -> Context.generic
   val init_code_pos: proofstep
   val find_heap_preserving_th: Proof.context -> term -> thm option
   val next_code_pos_ritems:
@@ -39,17 +40,19 @@ sig
   val use_prec_thms: RewriteTable.rewrite_table -> thm -> thm -> thm
   val match_code_pos_success: proofstep
   val match_pure_assn: proofstep
-  val add_match_code_pos_emp_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_match_code_pos_emp_prfstep_gnrc:
+      thm -> Context.generic -> Context.generic
   val add_match_code_pos_emp_prfstep: thm -> theory -> theory
   val match_code_pos_create_case_gen: string * term -> proofstep
-  val add_match_code_pos_create_case_ctxt: thm -> Proof.context -> Proof.context
+  val add_match_code_pos_create_case_gnrc:
+      thm -> Context.generic -> Context.generic
   val add_match_code_pos_create_case: thm -> theory -> theory
   val match_code_pos_heap: proofstep
   val next_code_pos_prfstep: thm -> proofstep
-  val add_next_code_pos_prfstep_ctxt: thm -> Proof.context -> Proof.context
+  val add_next_code_pos_prfstep_gnrc: thm -> Context.generic -> Context.generic
   val add_next_code_pos_prfstep: thm -> theory -> theory
-  val add_next_code_pos_direct_prfstep_ctxt:
-      thm -> Proof.context -> Proof.context
+  val add_next_code_pos_direct_prfstep_gnrc:
+      thm -> Context.generic -> Context.generic
   val add_next_code_pos_direct_prfstep: thm -> theory -> theory
   val ac_shadow_mod: proofstep
 
@@ -215,8 +218,8 @@ fun forward_ent_prfstep ent_th =
       prfstep_custom name descs PRIORITY_ADD prfstep_fn
     end
 
-fun add_forward_ent_prfstep_ctxt ent_th ctxt =
-    ctxt |> add_prfstep_ctxt (forward_ent_prfstep ent_th)
+fun add_forward_ent_prfstep_gnrc ent_th =
+    add_prfstep_gnrc (forward_ent_prfstep ent_th)
 
 (* Here item1 is a DISJ item of form A ==>_A B, where A and B may
    contain schematic variables. Match pattern h |= A * Ru with item2,
@@ -291,11 +294,18 @@ val TY_SUCCESS_RUN = "SUCCESS_RUN"
 
 fun output_code_pos_fn ctxt (tname, th) =
     let
-      val is_bind = th |> conj_left_th |> prop_of' |> strip_comb |> snd |> hd
+      val is_bind = th |> conj_left_th |> prop_of' |> dest_args |> hd
                        |> is_bind_cmd
     in
       "CODE_POS " ^ (if is_bind then "" else "(last) ") ^
       (tname |> pretty_term ctxt |> str)
+    end
+
+fun code_pos_match_rewr_terms t =
+    let
+      val ts = HOLogic.strip_tuple t
+    in
+      take 3 ts @ drop 4 ts
     end
 
 fun output_code_pos_match_fn ctxt (tname, _) =
@@ -367,7 +377,7 @@ val heap_preservingI =
         (fn ((id, _), ths) => fn items => fn {ctxt, ...} =>
             let
               val th = the_single ths
-              val c = th |> prop_of' |> get_neg |> Term.dest_comb |> snd
+              val c = th |> prop_of' |> get_neg |> dest_arg
               val th' =
                   case find_proc_def ctxt c of
                       NONE => th
@@ -386,7 +396,7 @@ val heap_preservingI =
 fun heap_preserving_effectD presv_th =
     let
       val name = (name_of_thm presv_th) ^ "effectD"
-      val pat_c = presv_th |> prop_of' |> Term.dest_comb |> snd
+      val pat_c = presv_th |> prop_of' |> dest_arg
       val cT = fastype_of pat_c |> dest_Type |> snd |> the_single
       val pat =
           Const (@{const_name effect},
@@ -407,12 +417,8 @@ fun heap_preserving_effectD presv_th =
 (* Add the heap_preserving_effectD proofstep (for proving future
    heap_preserving results).
  *)
-fun add_heap_preserving_thm presv_th ctxt =
-    let
-      val prfstep = heap_preserving_effectD presv_th
-    in
-      ctxt |> add_prfstep_ctxt prfstep
-    end
+fun add_heap_preserving_thm_gnrc presv_th =
+    add_prfstep_gnrc (heap_preserving_effectD presv_th)
 
 (* Given theorem of form ~<P> c <Q>, attempt to expand the definition
    of c, using find_proc_def to lookup definitions.
@@ -483,7 +489,7 @@ fun find_heap_preserving_th ctxt c =
       val ths = Named_Theorems.get ctxt @{named_theorems sep_heap_presv_thms}
       fun process_th th =
           let
-            val pat = th |> prop_of' |> Term.dest_comb |> snd
+            val pat = th |> prop_of' |> dest_arg
             val inst = pattern_fo_match ctxt (pat, c)
           in
             SOME (th |> subst_thm ctxt inst)
@@ -500,7 +506,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
           (conj_left_th code_pos_th, conj_right_th code_pos_th)
 
       (* Find current command, decompose into c1 or c1 ; c2 ... ; cn. *)
-      val cur_cmd = run_th |> prop_of' |> strip_comb |> snd |> hd
+      val cur_cmd = run_th |> prop_of' |> dest_args |> hd
       val is_bind = is_bind_cmd cur_cmd
       val c1 = if is_bind then fst (dest_bind cur_cmd) else cur_cmd
       val heap_preserve_opt = find_heap_preserving_th ctxt c1
@@ -565,7 +571,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val modQ_th = reduce_emp_right modQ_th
 
         (* Extract c2 ; ... ; cn *)
-        val rest_c = run_rest_th |> prop_of' |> strip_comb |> snd |> hd
+        val rest_c = run_rest_th |> prop_of' |> dest_args |> hd
         val next_is_bind = is_bind_cmd rest_c
         val rest_c1 = if next_is_bind then fst (dest_bind rest_c) else rest_c
 
@@ -695,7 +701,7 @@ val dest_bind_code_pos =
             let
               val th = the_single ths
               val (run_th, _) = (conj_left_th th, conj_right_th th)
-              val new_c = run_th |> prop_of' |> strip_comb |> snd |> hd
+              val new_c = run_th |> prop_of' |> dest_args |> hd
               val new_is_bind = is_bind_cmd new_c
               val new_c1 = if new_is_bind then fst (dest_bind new_c) else new_c
               val {tname, ...} = the_single items
@@ -1054,7 +1060,7 @@ fun match_code_pos_emp_fn eq_emp_th rtype {ctxt, ...} item =
       val Ps = ACUtil.dest_ac_l ac_info P
 
       (* Decomposition on the eq_emp_th side. *)
-      val (f_th, _) = Term.strip_comb (eq_emp_th |> dest_eq_thm |> fst)
+      val f_th = Term.head_of (eq_emp_th |> dest_eq_thm |> fst)
 
       val (h_t, as_t, c, is_success) =
           the_quadruple (take 4 (HOLogic.strip_tuple tname))
@@ -1095,7 +1101,7 @@ fun match_code_pos_emp_fn eq_emp_th rtype {ctxt, ...} item =
       maps match_Pi Ps
     end
 
-fun add_match_code_pos_emp_prfstep_ctxt eq_emp_th ctxt =
+fun add_match_code_pos_emp_prfstep_gnrc eq_emp_th gnrc =
     let
       val name = (name_of_thm eq_emp_th) ^ "@match_code_pos_emp"
       val prfstep =
@@ -1104,12 +1110,12 @@ fun add_match_code_pos_emp_prfstep_ctxt eq_emp_th ctxt =
            priority = PRIORITY_SHADOW,
            func = OneStep (match_code_pos_emp_fn eq_emp_th)}
     in
-      ctxt |> add_prfstep_ctxt prfstep
-           |> add_fixed_sc_ctxt (name, 1)
+      gnrc |> add_prfstep_gnrc prfstep
+           |> add_fixed_sc_gnrc (name, 1)
     end
 
-fun add_match_code_pos_emp_prfstep eq_emp_th =
-    map_theory_proofsteps (add_match_code_pos_emp_prfstep_ctxt eq_emp_th)
+val add_match_code_pos_emp_prfstep =
+    Context.theory_map o add_match_code_pos_emp_prfstep_gnrc
 
 fun match_code_pos_create_case_gen (nm, pat) =
     prfstep_custom
@@ -1126,14 +1132,14 @@ fun match_code_pos_create_case_gen (nm, pat) =
             in
               if length ts = 0 then []
               else let
-                val t = ts |> hd |> Term.dest_comb |> snd |> HOLogic.mk_Trueprop
+                val t = ts |> hd |> dest_arg |> HOLogic.mk_Trueprop
               in
                 [Update.AddBoxes {
                     id = id, inits = [Update.InitAssum t], cbs = []}]
               end
             end)
 
-fun add_match_code_pos_create_case_ctxt hoare_th ctxt =
+fun add_match_code_pos_create_case_gnrc hoare_th gnrc =
     let
       val name = (name_of_thm hoare_th) ^ "@case"
       val (_, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
@@ -1142,12 +1148,12 @@ fun add_match_code_pos_create_case_ctxt hoare_th ctxt =
             Var (("s", 0), boolT), Var (("P", 0), assnT)]
       val prfstep = match_code_pos_create_case_gen (name, pat)
     in
-      ctxt |> add_prfstep_ctxt prfstep
-           |> add_fixed_sc_ctxt (name, 1)
+      gnrc |> add_prfstep_gnrc prfstep
+           |> add_fixed_sc_gnrc (name, 1)
     end
 
-fun add_match_code_pos_create_case hoare_th =
-    map_theory_proofsteps (add_match_code_pos_create_case_ctxt hoare_th)
+val add_match_code_pos_create_case =
+    Context.theory_map o add_match_code_pos_create_case_gnrc
 
 (* Given hoare triple theorem <P> c <Q>, match with CODE_POS item (h,
    as, c), to produce CODE_POS_MATCH item with tname (h, as, c, false,
@@ -1184,11 +1190,11 @@ fun next_code_pos_prfstep hoare_th =
    produce proofstep matching with SUCCESS_RUN (?h, ?as, ?c) and (?h,
    ?as) |= ?P * ?ru.
  *)
-fun add_next_code_pos_prfstep_ctxt hoare_th =
-    add_prfstep_ctxt (next_code_pos_prfstep hoare_th)
+val add_next_code_pos_prfstep_gnrc =
+    add_prfstep_gnrc o next_code_pos_prfstep
 
-fun add_next_code_pos_prfstep hoare_th =
-    map_theory_proofsteps (add_next_code_pos_prfstep_ctxt hoare_th)
+val add_next_code_pos_prfstep =
+    Context.theory_map o add_next_code_pos_prfstep_gnrc
 
 (* Proofstep for moving to next code position. Here hoare_th is the
    hoare triple <P> c <Q>, item1 is the CODE_POS item with parameters
@@ -1220,21 +1226,22 @@ fun next_code_pos_direct_prfstep hoare_th =
       (name, descs, prfstep_custom name descs PRIORITY_SHADOW prfstep_fn)
     end
 
-fun add_next_code_pos_direct_prfstep_ctxt hoare_th ctxt =
+fun add_next_code_pos_direct_prfstep_gnrc hoare_th gnrc =
     let
-      val thy = Proof_Context.theory_of ctxt
+      val thy = theory_of_gnrc gnrc
+      val ctxt = context_of_gnrc gnrc
       val (name, descs, prfstep) = next_code_pos_direct_prfstep hoare_th
       val (_, _, Q) = dest_hoare_triple (prop_of' hoare_th)
       val _ = writeln (name ^ "\n" ^ (string_of_descs thy descs) ^
                        "\nConsequence: " ^ (Q |> pretty_term ctxt |> str) ^
                        " (* remainder)")
     in
-      ctxt |> add_prfstep_ctxt prfstep
-           |> add_fixed_sc_ctxt (name, 1)
+      gnrc |> add_prfstep_gnrc prfstep
+           |> add_fixed_sc_gnrc (name, 1)
     end
 
-fun add_next_code_pos_direct_prfstep hoare_th =
-    map_theory_proofsteps (add_next_code_pos_direct_prfstep_ctxt hoare_th)
+val add_next_code_pos_direct_prfstep =
+    Context.theory_map o add_next_code_pos_direct_prfstep_gnrc
 
 val ac_shadow_mod =
     prfstep_custom
@@ -1253,9 +1260,10 @@ val ac_shadow_mod =
 
 val add_sep_logic_proofsteps =
     fold ItemIO_Data.add_item_type [
-      (TY_CODE_POS, SOME output_code_pos_fn),
-      (TY_CODE_POS_MATCH, SOME output_code_pos_match_fn),
-      (TY_SUCCESS_RUN, SOME output_success_run_fn)
+      (TY_CODE_POS, NONE, SOME output_code_pos_fn),
+      (TY_CODE_POS_MATCH, SOME code_pos_match_rewr_terms,
+       SOME output_code_pos_match_fn),
+      (TY_SUCCESS_RUN, NONE, SOME output_success_run_fn)
 
     ] #> fold ItemIO_Data.add_typed_matcher [
       (TY_CODE_POS, code_pos_typed_matcher),

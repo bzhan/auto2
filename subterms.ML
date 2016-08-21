@@ -3,9 +3,10 @@
 signature SUBTERMS =
 sig
   val triv_subterms: term -> term * term list
-  val dest_subterms: bool -> term -> term * term list
-  val list_subterms: bool -> term -> term list
-  val get_all_subterms: bool -> term -> term list
+  val dest_subterms: term -> term * term list
+  val list_subterms: term -> term list
+  val get_all_subterms: term -> term list
+  val get_all_subterms_skip_if: term -> term list
   val subst_subterms: term * term list -> term
   val build_equiv: Proof.context -> thm list -> term -> thm
 end;
@@ -13,17 +14,12 @@ end;
 structure Subterms : SUBTERMS =
 struct
 
-fun is_if f =
-    case f of
-        Const ("HOL.If", _) => true
-      | _ => false
-
 fun get_subvar n t = Var (("SUB", n), fastype_of t)
 
 fun triv_subterms t = (get_subvar 0 t, [t])
 
 (* Destruct t into head and subterm structure. *)
-fun dest_subterms skip_if t =
+fun dest_subterms t =
     let
       (* t is eligible as a subterm, expand in special cases. The
          prevs list record previous subterms.
@@ -62,19 +58,9 @@ fun dest_subterms skip_if t =
               _ $ _ =>
               let
                 val (tf, targs) = Term.strip_comb t
+                val (prevs', ts') = dest_list_at_head (prevs, targs)
               in
-                if skip_if andalso is_if tf then
-                  let
-                    val (prevs', t') = dest_at_head (prevs, hd targs)
-                  in
-                    (prevs', Term.list_comb (tf, t' :: tl targs))
-                  end
-                else
-                  let
-                    val (prevs', ts') = dest_list_at_head (prevs, targs)
-                  in
-                    (prevs', Term.list_comb (tf, ts'))
-                  end
+                (prevs', Term.list_comb (tf, ts'))
               end
             | Abs _ => dest_at_head (prevs, t)
             | _ => (prevs, t)
@@ -84,17 +70,22 @@ fun dest_subterms skip_if t =
       (t', rev rev_subs)
     end
 
-fun list_subterms skip_if t = snd (dest_subterms skip_if t)
+fun list_subterms t = snd (dest_subterms t)
 
 (* List all (closed) subterms. Larger ones will be listed first. *)
-fun get_all_subterms skip_if t =
-    let
-      val args = list_subterms skip_if t
-      val subs = fold (curry (merge (op aconv)))
-                      (map (get_all_subterms skip_if) args) []
-    in
-      t :: subs
-    end
+fun get_all_subterms t =
+    t :: (t |> list_subterms |> maps get_all_subterms |> distinct (op aconv))
+
+(* List all (closed) subterms. For terms of form if cond then yes or
+   no, list only subterms of cond.
+ *)
+fun get_all_subterms_skip_if t =
+    case Term.head_of t of
+        Const ("HOL.If", _) =>
+        t :: get_all_subterms_skip_if (t |> dest_args |> hd)
+      | _ =>
+        t :: (t |> list_subterms |> maps get_all_subterms_skip_if
+                |> distinct (op aconv))
 
 (* Note this also works when t is a subterm of original decomposition
    (so t only contain some of the subs).
