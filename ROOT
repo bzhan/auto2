@@ -19,7 +19,8 @@ session RBT = AUTO2 +
     Examples in lists, trees, and red-black tree.
   *}
   theories
-    RBT_Ex
+    "DataStrs/BST_Func"
+    "DataStrs/RBT_Func"
 
 session Hoare = AUTO2 +
   description {*
@@ -29,28 +30,6 @@ session Hoare = AUTO2 +
     "Hoare/Hoare_Exp"
     "Hoare/Hoare_Equiv"
     "Hoare/Hoare_Rules"
-
-session Imp_Array = AUTO2 +
-  description {*
-    Verification in imperative HOL, arrays.
-  *}
-  theories
-    "Imp_Ex/Imp_Ex_Reverse"
-    "Imp_Ex/Imp_Ex_Quicksort"
-
-session Imp_LinkedList = RBT +
-  description {*
-    Verification in imperative HOL, linked lists.
-  *}
-  theories
-    "Imp_Ex/Imp_Ex_Linked_Lists"
-
-session Imp_BinaryTree = RBT +
-  description {*
-    Verification in imperative HOL, binary trees.
-  *}
-  theories
-    "Imp_Ex/Imp_Ex_Binary_Trees"
 
 session Real = AUTO2 +
   description {*
@@ -97,6 +76,14 @@ session SepLogic_BasicStr = SepLogic_Base +
     "SepLogic/BinaryTree"
     "SepLogic/DynamicArray"
     "SepLogic/ArrayMap"
+
+session SepLogic_Arrays = SepLogic_Base +
+  description {*
+    Separation logic: algorithms on arrays.
+  *}
+  theories
+    "SepLogic/Reverse"
+    "SepLogic/Quicksort"
 
 session SepLogic_RBT = SepLogic_Base +
   description {*

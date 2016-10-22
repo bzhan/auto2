@@ -1,6 +1,14 @@
 theory More_Lists
-imports "../Auto2"
+imports "../Auto2" "~~/src/HOL/Imperative_HOL/ex/Subarray"
 begin
+
+lemma append_eq_first [backward]: "b = c \<Longrightarrow> a @ b = a @ c" by simp
+lemma append_eq_second [backward]: "a = b \<Longrightarrow> a @ c = b @ c" by simp
+
+section {* Higher-order functions *}
+
+setup {* fold add_rewrite_rule @{thms List.filter.simps} *}
+setup {* fold add_rewrite_rule @{thms List.fold_simps} *}
 
 section {* More on take, drop, and update *}
 
@@ -107,5 +115,35 @@ theorem delete_mset_to_set [rewrite]:
 theorem update_mset_to_set [rewrite]:
   "mset xs' = (mset xs - {# x #}) + {# y #} \<Longrightarrow> distinct xs \<Longrightarrow> set xs' = (set xs - {x}) \<union> {y}"
   by (metis insert_mset_to_set mset_remove1 set_remove1_eq)
+
+section {* Subarray and sublists. *}
+
+setup {* add_backward2_prfstep (equiv_backward_th @{thm sublist'_eq_samelength_iff}) *}
+setup {* add_rewrite_rule @{thm length_sublist'} *}
+setup {* add_rewrite_rule @{thm nth_sublist'} *}
+theorem nth_rev_sublist'_use [rewrite]:
+  "k < j - i \<Longrightarrow> j \<le> length xs \<Longrightarrow> sublist' i j xs ! (length (sublist' i j xs) - 1 - k) = xs ! (j - 1 - k)"
+  by (simp add: length_sublist' nth_sublist')
+
+(* Use lu instead of l so it can be matched to zero. *)
+theorem sublist_as_Cons [backward]:
+  "lu < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sublist' lu r xs = xs ! lu # sublist' (lu + 1) r xs"
+  by (metis One_nat_def add.right_neutral add_Suc_right order_less_trans sublist'_front le_neq_implies_less)
+theorem sublist_as_append [backward]:
+  "l \<le> m \<Longrightarrow> m \<le> r \<Longrightarrow> sublist' l r xs = sublist' l m xs @ sublist' m r xs"
+  by (simp add: sublist'_append)
+
+(* An result about sortedness of trivial sublists. *)
+theorem sublist'_single' [rewrite]:
+  "n < length xs \<Longrightarrow> sublist' n (n + 1) xs = [xs ! n]" using sublist'_single by simp
+setup {* fold add_rewrite_rule [@{thm sublist'_Nil'}, @{thm sublist'_Nil2}] *}
+
+(* Some results about sets and multisets of sublists. *)
+setup {* add_rewrite_rule @{thm set_sublist'} *}
+
+theorem mset_sublist' [backward1]:
+  "r \<le> List.length xs \<Longrightarrow> \<forall>i. i < l \<longrightarrow> xs ! i = ys ! i \<Longrightarrow> \<forall>i. i \<ge> r \<longrightarrow> xs ! i = ys ! i \<Longrightarrow>
+   mset xs = mset ys \<Longrightarrow> mset (sublist' l r xs) = mset (sublist' l r ys)"
+  by (smt le_less_trans mset_eq_length mset_sublist nat_less_le sublist'_eq_samelength_iff)
 
 end

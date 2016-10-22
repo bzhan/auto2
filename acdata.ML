@@ -81,6 +81,7 @@ sig
   val normalize_all_ac: ac_inst_info -> conv
   val ac_subterms_conv: ac_inst_info -> conv -> conv
   val ac_subterms_conv_trav_uinv: ac_inst_info -> conv -> conv
+  val ac_last_conv: ac_inst_info -> conv -> conv
 end;
 
 structure ACUtil : ACUTIL =
@@ -595,5 +596,11 @@ fun ac_subterms_conv_gen trav_uinv (ac_info as {uinv_op, ...}) cv ct =
 
 val ac_subterms_conv = ac_subterms_conv_gen false
 val ac_subterms_conv_trav_uinv = ac_subterms_conv_gen true
+
+(* Rewrite the last term in ct using cv. Assume associative to left. *)
+fun ac_last_conv ac_info cv ct =
+    if head_agrees ac_info (Thm.term_of ct) then
+      Conv.arg_conv cv ct
+    else cv ct
 
 end  (* structure ACUtil. *)

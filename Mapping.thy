@@ -1,5 +1,5 @@
 theory Mapping
-imports "../Auto2"
+imports Logic_More
 begin
 
 datatype ('a, 'b) map = Map "'a \<Rightarrow> 'b option"
@@ -24,20 +24,18 @@ definition delete_map :: "'a \<Rightarrow> ('a, 'b) map \<Rightarrow> ('a, 'b) m
   "delete_map k M = Map (\<lambda>x. if x = k then None else M\<langle>x\<rangle>)"
 setup {* add_rewrite_rule @{thm delete_map_def} *}
 
-definition binary_map :: "('a::linorder) \<Rightarrow> 'b \<Rightarrow> ('a, 'b) map \<Rightarrow> ('a, 'b) map \<Rightarrow> ('a, 'b) map" where
-  "binary_map k v M1 M2 = Map (\<lambda>x. if x = k then Some v else if x < k then M1\<langle>x\<rangle> else M2\<langle>x\<rangle>)"
-setup {* add_rewrite_rule @{thm binary_map_def} *}
+section {* map_of_alist *}
 
-lemma binary_map_single [rewrite]:
-  "binary_map k v empty_map empty_map = empty_map {k \<rightarrow> v}" by auto2
+definition map_of_alist :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) map" where
+  "map_of_alist xs = Map (map_of xs)"
+setup {* add_rewrite_rule @{thm map_of_alist_def} *}
 
-lemma binary_map_update [rewrite]:
-  "(binary_map k v' M1 M2) {k \<rightarrow> v} = binary_map k v M1 M2" by auto2
+theorem map_of_alist_simps [rewrite]:
+  "map_of_alist [] = empty_map"
+  "map_of_alist (x # xs) = update_map (map_of_alist xs) (fst x) (snd x)" by auto2+
+setup {* del_prfstep_thm @{thm map_of_alist_def} *}
 
-lemma binary_map_update_left [rewrite]:
-  "a < k \<Longrightarrow> binary_map k v (M1 {a \<rightarrow> b}) M2 = (binary_map k v M1 M2) {a \<rightarrow> b}" by auto2
-
-lemma binary_map_update_right [rewrite]:
-  "a > k \<Longrightarrow> binary_map k v M1 (M2 {a \<rightarrow> b}) = (binary_map k v M1 M2) {a \<rightarrow> b}" by auto2
+theorem map_of_alist_nil [rewrite]:
+  "x \<notin> set (map fst ys) \<Longrightarrow> (map_of_alist ys)\<langle>x\<rangle> = None" by auto2
 
 end

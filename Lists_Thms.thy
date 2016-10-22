@@ -35,10 +35,6 @@ section {* Other functions *}
 
 subsection {* append *}
 
-lemma append_eq_first: "b = c \<Longrightarrow> a @ b = a @ c" by simp
-lemma append_eq_second: "a = b \<Longrightarrow> a @ c = b @ c" by simp
-setup {* add_backward_prfstep_cond @{thm append_eq_first} [with_term "?a"] *}
-setup {* add_backward_prfstep_cond @{thm append_eq_second} [with_term "?c"] *}
 theorem list_append_one [rewrite]: "[a] @ b = a # b" by simp
 setup {* add_rewrite_rule_cond @{thm List.append.simps(2)} [with_cond "?xs \<noteq> []"] *}
 theorem append_eq_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
@@ -53,6 +49,8 @@ val add_list_ac_data =
      unit_th = @{thm append_has_unit}, uinv_th = true_th, inv_th = true_th}]
 *}
 setup {* add_list_ac_data *}
+setup {* add_prfstep (AC_ProofSteps.ac_equiv_strong (
+  "ac_equiv_strong_append", @{term_pat "?A @ ?B \<noteq> ?C @ ?D"})) *}
 
 subsection {* length *}
 
@@ -137,6 +135,13 @@ theorem list_split_neq_second [resolve]: "xs \<noteq> as @ x # xs" by simp
 
 section {* Showing two lists are equal *}
 setup {* add_backward2_prfstep @{thm nth_equalityI} *}
+
+section {* maps *}
+setup {* add_rewrite_rule @{thm map_of.simps(1)} *}
+theorem map_of2 [rewrite]:
+  "map_of (p # ps) x = (if x = fst p then Some (snd p) else map_of ps x)" by simp
+setup {* fold add_rewrite_rule @{thms List.list.map} *}
+setup {* add_rewrite_rule @{thm List.map_append} *}
 
 section {* Other operations *}
 

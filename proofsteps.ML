@@ -853,6 +853,8 @@ fun add_forward_prfstep_cond_gnrc th conds gnrc =
           case cond of
               WithItem ("TERM", _) => true
             | Filter _ => false
+            | ShadowFirst => false
+            | ShadowSecond => false
             | _ => raise AUTO2 "add_forward_prfstep: unexpected cond."
 
       val (term_conds, filt_conds) =

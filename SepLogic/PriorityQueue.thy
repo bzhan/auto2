@@ -127,7 +127,7 @@ partial_function (heap) bubble_down :: "'a::{heap,linorder} dynamic_array \<Righ
      else return ()) }"
 declare bubble_down.simps [sep_proc_defs]
 
-theorem bubble_down_rule [next_code_pos]:
+theorem bubble_down_rule [hoare_triple]:
   "<dyn_array xs a * \<up>(is_heap_partial1 xs k)>
    bubble_down a k
    <\<lambda>_. \<exists>\<^sub>Axs'. dyn_array xs' a * \<up>(is_heap xs') * \<up>(length xs' = length xs) * \<up>(mset xs' = mset xs)>"
@@ -213,7 +213,7 @@ partial_function (heap) bubble_up :: "'a::{heap,linorder} dynamic_array \<Righta
         else return ())})"
 declare bubble_up.simps [sep_proc_defs]
 
-theorem bubble_up_rule [next_code_pos]:
+theorem bubble_up_rule [hoare_triple]:
   "<dyn_array xs a * \<up>(is_heap_partial2 xs k)>
    bubble_up a k
    <\<lambda>_. \<exists>\<^sub>Axs'. dyn_array xs' a * \<up>(is_heap xs') * \<up>(length xs' = length xs) * \<up>(mset xs' = mset xs)>"

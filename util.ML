@@ -120,6 +120,7 @@ sig
   val dest_arg: term -> term
   val dest_arg1: term -> term
   val dest_args: term -> term list
+  val dest_argn: int -> term -> term
   val is_numc: term -> bool
   val dest_numc: term -> int
   val dest_numc_rat: term -> Rat.rat
@@ -145,6 +146,8 @@ sig
   val true_th: thm
   val is_true_th: thm -> bool
   val apply_on: thm list -> thm -> thm
+  val arg_backn_conv: int -> conv -> conv
+  val argn_conv: int -> conv -> conv
   val prop_of': thm -> term
   val comb_equiv: cterm * thm list -> thm
   val name_of_thm: thm -> string
@@ -533,8 +536,10 @@ fun dest_arg1 t =
     case t of _ $ arg1 $ _ => arg1 | _ => raise AUTO2 "dest_arg1"
 
 (* Return the list of all arguments of t. *)
-fun dest_args t =
-    t |> Term.strip_comb |> snd
+fun dest_args t = t |> Term.strip_comb |> snd
+
+(* Return the nth argument of t, counting from left and starting at zero. *)
+fun dest_argn n t = nth (dest_args t) n
 
 (* Test if a term represents a numerical constant. is_numc_raw just
    uses dest_number from HOLogic. is_numc tests for inverses.
@@ -725,6 +730,20 @@ fun print_term_detail ctxt t =
 val true_th = @{thm TrueI}
 fun is_true_th th = pointer_eq (th, true_th)
 fun apply_on ths th = ths MRS th
+
+(* Apply cv to nth argument of t, counting from right and starting at 0. *)
+fun arg_backn_conv n cv ct =
+    if n = 0 then Conv.arg_conv cv ct
+    else Conv.fun_conv (arg_backn_conv (n-1) cv) ct
+
+(* Apply cv to nth argument of t, counting from left and starting at 0. *)
+fun argn_conv n cv ct =
+    let
+      val args_count = ct |> Thm.term_of |> dest_args |> length
+      val _ = assert (n >= 0 andalso n < args_count)
+    in
+      arg_backn_conv (args_count - n - 1) cv ct
+    end
 
 fun prop_of' th = HOLogic.dest_Trueprop (Thm.prop_of th)
 

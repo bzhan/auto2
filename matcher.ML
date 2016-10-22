@@ -114,9 +114,9 @@ fun is_open bd_vars u =
 (* Assign schematic variable with indexname ixn to u. Type of the
    schematic variable is determined by the type of u.
  *)
-fun update_inst tbl bd_vars ixn u (id, (tyinsts, insts)) =
+fun update_inst tbl bd_vars ixn u (id, inst) =
     if is_open bd_vars u then []
-    else [((id, (update_env (ixn, u) (tyinsts, insts))), refl tbl u)]
+    else [((id, update_env (ixn, u) inst), refl tbl u)]
 
 (* Partial comparison using just the ID. *)
 fun id_eq_better {lat, ...} (id, _) (id', _) = BoxID.is_eq_ancestor lat id id'

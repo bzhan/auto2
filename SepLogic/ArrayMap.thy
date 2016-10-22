@@ -1,5 +1,5 @@
 theory ArrayMap
-imports SepAuto Mapping
+imports SepAuto "../Mapping"
 begin
 
 text {* Implementation of a map from nats [0,n) to 'a using a fixed-size array. *}
@@ -39,17 +39,17 @@ definition amap_new :: "nat \<Rightarrow> ('a::heap) array_map Heap" where
    }"
 declare amap_new_def [sep_proc_defs]
 
-theorem amap_new_rule [next_code_pos]:
+theorem amap_new_rule [hoare_triple]:
   "<emp> amap_new k <\<lambda>r. amap empty_map r * \<up>(alen r = k)>" by auto2
 
 definition amap_lookup :: "('a::heap) array_map \<Rightarrow> nat \<Rightarrow> 'a option Heap" where
   "amap_lookup p i = (if i < alen p then Array.nth (aref p) i else return None)"
 declare amap_lookup_def [sep_proc_defs]
 
-theorem amap_lookup_rule [next_code_pos_direct]:
+theorem amap_lookup_rule [hoare_triple_direct]:
   "<amap m p> amap_lookup p k <\<lambda>r. amap m p * \<up>(r = m\<langle>k\<rangle>)>" by auto2
 
-theorem amap_heap_preserving [sep_heap_presv_thms, heap_presv_thms]:
+theorem amap_heap_preserving [heap_presv_thms]:
   "heap_preserving (amap_lookup p i)" by auto2
 
 definition amap_update :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a array_map \<Rightarrow> unit Heap" where
@@ -59,7 +59,7 @@ definition amap_update :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a array_map
     else raise ''amap_update'')"
 declare amap_update_def [sep_proc_defs]
 
-theorem amap_update_rule [next_code_pos, code_pos_create_case]:
+theorem amap_update_rule [hoare_triple, hoare_create_case]:
   "<amap m p * \<up>(i < alen p)> amap_update i x p <\<lambda>_. amap (m {i \<rightarrow> x}) p>" by auto2
 
 definition amap_delete :: "nat \<Rightarrow> 'a::heap array_map \<Rightarrow> unit Heap" where
@@ -69,7 +69,7 @@ definition amap_delete :: "nat \<Rightarrow> 'a::heap array_map \<Rightarrow> un
     else raise ''amap_delete'')"
 declare amap_delete_def [sep_proc_defs]
 
-theorem amap_delete_rule [next_code_pos]:
+theorem amap_delete_rule [hoare_triple]:
   "<amap m p * \<up>(i < alen p)> amap_delete i p <\<lambda>_. amap (delete_map i m) p>" by auto2
 
 setup {* del_prfstep_thm @{thm array_map.collapse} *}

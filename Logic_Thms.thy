@@ -112,6 +112,7 @@ setup {* add_rewrite_rule_cond @{thm case_prod_beta} [with_cond "?p \<noteq> (?s
 theorem pair_inject': "(a, b) = (a', b') \<Longrightarrow> a = a' \<and> b = b'" by simp
 setup {* add_forward_prfstep_cond (conj_left_th @{thm pair_inject'}) [with_cond "?a \<noteq> ?a'"] *}
 setup {* add_forward_prfstep_cond (conj_right_th @{thm pair_inject'}) [with_cond "?b \<noteq> ?b'"] *}
+setup {* add_rewrite_rule_cond @{thm Product_Type.prod.collapse} [with_cond "?prod \<noteq> (fst ?prod, snd ?prod)"] *}
 
 (* Let. *)
 setup {* add_rewrite_rule (to_obj_eq_th @{thm Let_def}) *}
@@ -121,7 +122,7 @@ setup {* add_rewrite_rule @{thm symp_def} *}
 setup {* add_rewrite_rule @{thm transp_def} *}
 
 (* Options *)
-theorem option_not_none [forward]: "x \<noteq> None \<Longrightarrow> \<exists>p. x = Some p" by auto
+theorem option_not_none [forward, backward]: "x \<noteq> None \<Longrightarrow> \<exists>p. x = Some p" by auto
 setup {* add_resolve_prfstep @{thm option.distinct(1)} *}
 setup {* add_rewrite_rule @{thm Option.option.sel} *}
 theorem option_inject' [forward]: "Some i = Some j \<Longrightarrow> i = j" by simp

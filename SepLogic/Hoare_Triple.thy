@@ -44,7 +44,25 @@ setup {* del_prfstep "Hoare_Triple.hoare_triple_def@eqbackward@res" *}
 section {* Hoare triples for atomic commands *}
 
 setup {* add_backward_prfstep (equiv_backward_th @{thm hoare_triple_def}) *}
+
 (* First, those that do not modify the heap. *)
+
+definition comment :: "assn \<Rightarrow> unit Heap" where
+  "comment P = Heap_Monad.Heap (\<lambda>h. Some ((), h))"
+
+theorem execute_comment: "execute (comment P) h = Some ((), h)" by (simp add: comment_def)
+setup {* add_forward_prfstep_cond @{thm execute_comment} [with_term "run (comment ?P) (Some ?h) ?\<sigma>' ?r"] *}
+
+(* Avoid variables P and Q since they are pre- and post-condition. *)
+lemma comment_rule:
+  "<R> comment R <\<lambda>r. R>" by auto2
+
+lemma comment_rule2:
+  "<R x> comment (\<exists>\<^sub>Ax. R x) <\<lambda>r. R x>" by auto2
+
+lemma assert_rule:
+  "<\<up>(R x)> assert R x <\<lambda>r. \<up>(r = x)>" by auto2
+
 lemma return_rule:
   "<emp> return x <\<lambda>r. \<up>(r = x)>" by auto2
 
@@ -111,7 +129,6 @@ setup {* fold del_prfstep_thm [@{thm sngr_assn_rule}, @{thm snga_assn_rule}] *}
 section {* Other properties *}
 
 theorem norm_pre_pure_iff: "<P * \<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <P> c <Q>)" by auto2
-theorem norm_pre_pure_iff_sng: "<\<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <emp> c <Q>)" by auto2
 
 section {* success_run and its properties. *}
 
@@ -122,36 +139,38 @@ theorem new_addrs_bind [rewrite]: "lim h \<le> lim h' \<Longrightarrow> lim h' \
     (OBTAIN "\<forall>x. x \<in> new_addrs h' (new_addrs h as h') h'' \<longleftrightarrow> x \<in> new_addrs h as h''") *})
 setup {* del_prfstep_thm @{thm union_case} *}
 
-definition success_run :: "'a Heap \<Rightarrow> heap \<Rightarrow> nat set \<Rightarrow> heap \<Rightarrow> nat set \<Rightarrow> 'a \<Rightarrow> bool" where
-  "success_run f h as h' as' r \<longleftrightarrow>
+fun success_run :: "'a Heap \<Rightarrow> pheap \<Rightarrow> pheap \<Rightarrow> 'a \<Rightarrow> bool" where
+  "success_run f (h, as) (h', as') r \<longleftrightarrow>
     as' = new_addrs h as h' \<and> run f (Some h) (Some h') r \<and> relH {a. a < lim h \<and> a \<notin> as} h h' \<and> lim h \<le> lim h'"
-setup {* add_rewrite_rule @{thm success_run_def} *}
+setup {* add_rewrite_rule @{thm success_run.simps} *}
 
 theorem success_run_bind:
-  "success_run f h as h' as' r \<Longrightarrow> success_run (g r) h' as' h'' as'' r' \<Longrightarrow>
-   success_run (f \<bind> g) h as h'' as'' r'" by auto2
+  "success_run f h h' r \<Longrightarrow> success_run (g r) h' h'' r' \<Longrightarrow> success_run (f \<bind> g) h h'' r'" by auto2
 
-theorem success_run_next: "success_run f h as h'' as'' r' \<Longrightarrow>
-  \<forall>h' as'. \<sigma> = Some h' \<and> success_run (f \<bind> g) h as h' as' r \<longrightarrow> \<not> (h', as') \<Turnstile> Q \<Longrightarrow>
-  \<forall>h' as'. \<sigma> = Some h' \<and> success_run (g r') h'' as'' h' as' r \<longrightarrow> \<not> (h', as') \<Turnstile> Q" by auto2
+theorem success_run_next: "success_run f h h'' r' \<Longrightarrow>
+  \<forall>h'. \<sigma> = Some (fst h') \<and> success_run (f \<bind> g) h h' r \<longrightarrow> \<not> h' \<Turnstile> Q \<Longrightarrow>
+  \<forall>h'. \<sigma> = Some (fst h') \<and> success_run (g r') h'' h' r \<longrightarrow> \<not> h' \<Turnstile> Q" by auto2
 
-theorem hoare_tripleE': "<P> c <Q> \<Longrightarrow> (h, as) \<Turnstile> P * Ru \<Longrightarrow> run c (Some h) \<sigma> r \<Longrightarrow>
-  \<exists>h' as'. (h', as') \<Turnstile> Q r * Ru \<and> \<sigma> = Some h' \<and> success_run c h as h' as' r"
-  by (tactic {* auto2s_tac @{context}
-    (OBTAIN "<P * Ru> c <\<lambda>r. Q r * Ru>" THEN OBTAIN "\<sigma> \<noteq> None") *})
+theorem hoare_triple_def' [rewrite]:
+  "<P> c <Q> \<longleftrightarrow> (\<forall>h \<sigma> r. h \<Turnstile> P \<longrightarrow> run c (Some (fst h)) \<sigma> r \<longrightarrow>
+    (\<sigma> \<noteq> None \<and> (the \<sigma>, new_addrs (fst h) (snd h) (the \<sigma>)) \<Turnstile> Q r \<and> relH {a . a < lim (fst h) \<and> a \<notin> (snd h)} (fst h) (the \<sigma>) \<and>
+     lim (fst h) \<le> lim (the \<sigma>)))" using hoare_triple_def by fastforce
 
-theorem hoare_tripleI: "\<not><P> c <Q> \<Longrightarrow> \<exists>h as \<sigma> r. (h, as) \<Turnstile> P \<and> run c (Some h) \<sigma> r \<and>
-  (\<forall>h' as'. \<sigma> = Some h' \<and> success_run c h as h' as' r \<longrightarrow> \<not>(h', as') \<Turnstile> Q r)" by auto2
-
-theorem hoare_triple_mp:
-  "<P> c <Q> \<Longrightarrow> (h, as) \<Turnstile> P * Ru \<Longrightarrow> success_run c h as h' as' r \<Longrightarrow> (h', as') \<Turnstile> (Q r) * Ru"
+theorem hoare_tripleE': "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run c (Some (fst h)) \<sigma> r \<Longrightarrow>
+  \<exists>h'. h' \<Turnstile> Q r * Ru \<and> \<sigma> = Some (fst h') \<and> success_run c h h' r"
   by (tactic {* auto2s_tac @{context} (OBTAIN "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
 
-theorem hoare_tripleE'': "<P> c <Q> \<Longrightarrow> (h, as) \<Turnstile> P * Ru \<Longrightarrow> run (c \<bind> g) (Some h) \<sigma> r \<Longrightarrow>
-  \<exists>r' h' as'. run (g r') (Some h') \<sigma> r \<and> (h', as') \<Turnstile> Q r' * Ru \<and> success_run c h as h' as' r'"
+theorem hoare_tripleI: "\<not><P> c <Q> \<Longrightarrow> \<exists>h \<sigma> r. h \<Turnstile> P \<and> run c (Some (fst h)) \<sigma> r \<and>
+  (\<forall>h'. \<sigma> = Some (fst h') \<and> success_run c h h' r \<longrightarrow> \<not>h' \<Turnstile> Q r)" by auto2
+
+theorem hoare_triple_mp: "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> success_run c h h' r \<Longrightarrow> h' \<Turnstile> (Q r) * Ru"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
+
+theorem hoare_tripleE'': "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run (c \<bind> g) (Some (fst h)) \<sigma> r \<Longrightarrow>
+  \<exists>r' h'. run (g r') (Some (fst h')) \<sigma> r \<and> h' \<Turnstile> Q r' * Ru \<and> success_run c h h' r'"
   by (tactic {* auto2s_tac @{context}
     (OBTAIN "<P * Ru> c <\<lambda>r. Q r * Ru>" THEN
-     CHOOSE "\<sigma>', r', run c (Some h) \<sigma>' r'" THEN OBTAIN "\<sigma>' \<noteq> None") *})
+     CHOOSE "\<sigma>', r', run c (Some (fst h)) \<sigma>' r'") *})
 
 definition heap_preserving :: "'a Heap \<Rightarrow> bool" where
   "heap_preserving c = (\<forall>h h' r. effect c h h' r \<longrightarrow> h = h')"
@@ -160,7 +179,7 @@ setup {* add_rewrite_rule @{thm heap_preserving_def} *}
 setup {* add_forward_prfstep @{thm effectI} *}
 
 theorem heap_preservingD [forward]:
-  "heap_preserving c \<Longrightarrow> success_run c h as h' as' r \<Longrightarrow> h = h' \<and> as = as'" by auto2
+  "heap_preserving c \<Longrightarrow> success_run c h h' r \<Longrightarrow> h = h'" by auto2
 
 theorem heap_preserving_effectD:
   "heap_preserving c \<Longrightarrow> effect c h h' r \<Longrightarrow> h = h'" by auto2
@@ -169,15 +188,17 @@ theorem effect_bind [forward]: "effect (f \<bind> g) h h'' r' \<Longrightarrow> 
   by (elim effect_elims) auto
 
 theorem hoare_tripleE'_preserve: "heap_preserving c \<Longrightarrow>
-  \<exists>h' as'. (h', as') \<Turnstile> Q \<and> \<sigma> = Some h' \<and> success_run c h as h' as' r \<Longrightarrow>
-  (h, as) \<Turnstile> Q \<and> \<sigma> = Some h \<and> success_run c h as h as r" by auto2
+  \<exists>h'. h' \<Turnstile> Q \<and> \<sigma> = Some (fst h') \<and> success_run c h h' r \<Longrightarrow>
+  h \<Turnstile> Q \<and> \<sigma> = Some (fst h) \<and> success_run c h h r" by auto2
 
 theorem hoare_tripleE''_preserve: "heap_preserving c \<Longrightarrow>
-  \<exists>r' h' as'. run (g r') (Some h') \<sigma> r \<and> (h', as') \<Turnstile> Q r' * Ru \<and> success_run c h as h' as' r' \<Longrightarrow>
-  \<exists>r'. run (g r') (Some h) \<sigma> r \<and> (h, as) \<Turnstile> Q r' * Ru \<and> success_run c h as h as r'" by auto2
+  \<exists>r' h'. run (g r') (Some (fst h')) \<sigma> r \<and> h' \<Turnstile> Q r' * Ru \<and> success_run c h h' r' \<Longrightarrow>
+  \<exists>r'. run (g r') (Some (fst h)) \<sigma> r \<and> h \<Turnstile> Q r' * Ru \<and> success_run c h h r'" by auto2
 
 setup {* del_prfstep_thm @{thm effectI} *}
 setup {* del_prfstep_thm @{thm hoare_triple_def} *}
+setup {* del_prfstep_thm @{thm hoare_triple_def'} *}
+setup {* del_prfstep_thm @{thm success_run.simps} *}
 setup {* del_prfstep_thm @{thm surjective_pairing} *}
 
 end

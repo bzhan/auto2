@@ -25,11 +25,6 @@ Description of the examples:
   Hoare logic. Follows chapters Imp, Equiv, Hoare, and Hoare2 in
   "Software Foundations".
 
-- Imp_Ex_Reverse, Imp_Ex_Quicksort, Imp_Ex_Linked_Lists,
-  Imp_Ex_Binary_Trees: verification of imperative programs based on
-  Imperative_HOL. The first three examples follow the corresponding
-  example in HOL/Imperative_HOL/ex.
-
 - Analysis: construction of real numbers using Cauchy sequences. Proof
   of completeness of real numbers in several forms. Partly follows
   theory Real in HOL/.
@@ -41,9 +36,10 @@ Description of the examples:
 - Algebra_Ex: basic group theory. Follows theories Group and Coset in
   HOL/Algebra.
 
-- SepLogic: separation logic. Development of the foundation of
-  separation logic, as well as example of linked list, follows "A
-  Separation Logic Framework for Imperative HOL" in Isabelle AFP.
+- SepLogic: separation logic. Foundation of separation logic and part
+  of the linked list example follow "A Separation Logic Framework for
+  Imperative HOL" in Isabelle AFP. Include many other examples in
+  separation logic.
 
 Copyright (C) 2015, 2016 Bohua Zhan
 

@@ -1,31 +1,8 @@
 (* Binary search trees. *)
 
 theory BinaryTree
-imports SepAuto Mapping
+imports SepAuto "../DataStrs/BST_Base"
 begin
-
-section {* Abstract trees *}
-
-datatype ('a, 'b) tree =
-  Tip | Node (lsub: "('a, 'b) tree") (key: 'a) (val: 'b) (rsub: "('a, 'b) tree")
-setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
-setup {* add_forward_prfstep (equiv_forward_th (@{thm tree.simps(1)})) *}
-
-text {* Case checking for trees: first verify the Tip case, then can assume t is
-  in the form Node l k v r. *}
-
-setup {* add_gen_prfstep ("tree_case_intro",
-  [WithTerm @{term_pat "?t::(?'a, ?'b) tree"},
-   Filter (unique_free_filter "t"),
-   CreateCase @{term_pat "(?t::(?'a, ?'b) tree) = Tip"}]) *}
-setup {* add_forward_prfstep_cond @{thm tree.collapse} [with_cond "?tree \<noteq> Node ?l ?k ?v ?r"] *}
-
-text {* Induction on trees: after checking Tip case, can assume P (lsub t)
-  and P (rsub t) holds when trying to prove P t. *}
-
-theorem tree_induct': "P Tip \<Longrightarrow> (\<forall>t. P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
-  apply (induct t) apply blast by (metis tree.sel(1) tree.sel(4))
-setup {* add_prfstep_induction @{thm tree_induct'} *}
 
 section {* Tree nodes *}
 
@@ -42,9 +19,7 @@ instance node :: (heap, heap) heap
   ..
 
 setup {* fold add_rewrite_rule @{thms node.sel} *}
-theorem node_constr:
-  "Node l k v r = Node l' k' v' r' \<Longrightarrow> l = l' \<and> k = k' \<and> v = v' \<and> r = r'" by simp
-setup {* add_forward_prfstep @{thm node_constr} *}
+setup {* add_forward_prfstep (equiv_forward_th @{thm node.simps(1)}) *}
 
 fun btree :: "('a::heap, 'b::heap) tree \<Rightarrow> ('a, 'b) node ref option \<Rightarrow> assn" where
   "btree Tip p = \<up>(p = None)"
@@ -52,22 +27,30 @@ fun btree :: "('a::heap, 'b::heap) tree \<Rightarrow> ('a, 'b) node ref option \
 | "btree (tree.Node lt k v rt) None = false"
 setup {* fold add_rewrite_rule @{thms btree.simps} *}
 
-lemma btree_split_iff1 [rewrite]: "btree t None = \<up>(t = Tip)" by auto2
+lemma btree_Tip: "btree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
+setup {* add_forward_ent_prfstep_cond @{thm btree_Tip} [K ShadowFirst] *}
 
-lemma btree_split_iff2 [forward_ent]:
+lemma btree_split_iff1: "btree t None \<Longrightarrow>\<^sub>A \<up>(t = Tip)" by auto2
+setup {* add_forward_ent_prfstep_cond @{thm btree_split_iff1} [K ShadowFirst] *}
+
+lemma btree_split_iff2:
   "btree (tree.Node lt k v rt) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp)" by auto2
+setup {* add_forward_ent_prfstep_cond @{thm btree_split_iff2} [K ShadowFirst] *}
 
 lemma btree_split_elim:
   "\<exists>lp rp. h \<Turnstile> p \<mapsto>\<^sub>r Node lp k v rp * Ql lp rp \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>r Node lp k v rp * Q \<Longrightarrow>
    h \<Turnstile> p \<mapsto>\<^sub>r Node lp k v rp * Ql lp rp" by auto2
-setup {* add_gen_prfstep ("btree_split_elim", forward_descs @{thm btree_split_elim} @ [ShadowFirst]) *}
+setup {* add_forward_prfstep_cond @{thm btree_split_elim} [K ShadowFirst] *}
 
-lemma btree_is_some: "h \<Turnstile> btree (tree.Node lt k v rt) q * Qu \<Longrightarrow> q \<noteq> None" by auto2
-setup {* add_forward_prfstep_cond @{thm btree_is_some} [with_cond "?q \<noteq> None"] *}
+lemma btree_is_some: "h \<Turnstile> btree (tree.Node lt k v rt) q * Qu \<Longrightarrow> \<exists>qq. q = Some qq" by auto2
+setup {* add_forward_prfstep_cond @{thm btree_is_some} [with_cond "?q \<noteq> Some ?qq"] *}
 
-lemma btree_constr_ent [forward_ent]:
-  "p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp \<Longrightarrow>\<^sub>A btree (tree.Node lt k v rt) (Some p)" by auto2
-setup {* del_prfstep_thm @{thm btree.simps(2)} *}
+lemma btree_none: "emp \<Longrightarrow>\<^sub>A btree tree.Tip None" by auto2
+
+lemma btree_constr_ent:
+  "btree lt lp * btree rt rp * p \<mapsto>\<^sub>r Node lp k v rp \<Longrightarrow>\<^sub>A btree (tree.Node lt k v rt) (Some p)" by auto2
+
+setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
 
 lemma btree_prec [sep_prec_thms]:
   "h \<Turnstile> btree t p * F1 \<Longrightarrow> h \<Turnstile> btree t' p * F2 \<Longrightarrow> t = t'"
@@ -75,7 +58,7 @@ lemma btree_prec [sep_prec_thms]:
     (INDUCT ("t", Arbitraries ["p", "t'", "F1", "F2"]) THEN CASE "t' = Tip") *})
 
 theorem btree_some [resolve]: "\<not>h \<Turnstile> btree Tip (Some p) * Ru" by auto2
-theorem btree_none [match_code_pos_emp]: "btree Tip None = emp" by auto2
+setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
 type_synonym ('a, 'b) btree = "('a, 'b) node ref option"
 
@@ -87,7 +70,7 @@ definition tree_empty :: "('a, 'b) btree Heap" where
   "tree_empty \<equiv> return None"
 declare tree_empty_def [sep_proc_defs]
 
-lemma tree_empty_rule [next_code_pos]:
+lemma tree_empty_rule [hoare_triple]:
   "<emp> tree_empty <btree Tip>" by auto2
 
 definition tree_is_empty :: "('a, 'b) btree \<Rightarrow> bool Heap" where
@@ -101,13 +84,13 @@ definition btree_constr :: "('a::heap, 'b::heap) btree \<Rightarrow> 'a \<Righta
   "btree_constr lp k v rp = do { p \<leftarrow> ref (Node lp k v rp); return (Some p) }"
 declare btree_constr_def [sep_proc_defs]
 
-lemma btree_constr_rule [next_code_pos, resolve]:
+lemma btree_constr_rule [hoare_triple, resolve]:
   "<btree lt lp * btree rt rp> btree_constr lp k v rp <btree (tree.Node lt k v rt)>" by auto2
 
 subsubsection {* Insertion *}
 
 partial_function (heap) btree_insert ::
-  "'a::{heap,ord} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "'a::{heap,linorder} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_insert k v b = (case b of
      None \<Rightarrow> btree_constr None k v None
    | Some p \<Rightarrow> do {
@@ -117,7 +100,7 @@ partial_function (heap) btree_insert ::
          return (Some p) }
        else if k < key t then do {
          q \<leftarrow> btree_insert k v (lsub t);
-         p := Node q (key t) (val t) (rsub t);  
+         p := Node q (key t) (val t) (rsub t);
          return (Some p) }
        else do {
          q \<leftarrow> btree_insert k v (rsub t);
@@ -125,33 +108,146 @@ partial_function (heap) btree_insert ::
          return (Some p)}) })"
 declare btree_insert.simps [sep_proc_defs]
 
-fun tree_set :: "('a, 'b) tree \<Rightarrow> 'a set" where
-  "tree_set Tip = {}"
-| "tree_set (tree.Node lt k v rt) = {k} \<union> tree_set lt \<union> tree_set rt"
-setup {* fold add_rewrite_rule @{thms tree_set.simps} *}
-
-fun tree_sorted :: "('a::linorder, 'b) tree \<Rightarrow> bool" where
-  "tree_sorted Tip = True"
-| "tree_sorted (tree.Node lt k v rt) = ((\<forall>x\<in>tree_set lt. x < k) \<and> (\<forall>x\<in>tree_set rt. k < x)
-                              \<and> tree_sorted lt \<and> tree_sorted rt)"
-setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
-
-fun tree_map :: "('a::linorder, 'b) tree \<Rightarrow> ('a, 'b) map" where
-  "tree_map Tip = Map (\<lambda>x. None)"
-| "tree_map (tree.Node lt k v rt) = binary_map k v (tree_map lt) (tree_map rt)"
-setup {* fold add_rewrite_rule @{thms tree_map.simps} *}
-
-lemma btree_insert_set_rule [next_code_pos]:
-  "<btree t b> btree_insert k v b <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(tree_set t' = {k} \<union> tree_set t)>"
+lemma btree_insert_in_traverse [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_insert k v b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(in_traverse t' = ordered_insert k (in_traverse t))>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
 
-lemma btree_insert_map_rule [next_code_pos]:
-  "<btree t b> btree_insert k v b <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(tree_map t' = (tree_map t) {k \<rightarrow> v})>"
+lemma btree_insert_in_traverse_pairs [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_insert k v b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(in_traverse_pairs t' = ordered_insert_pairs k v (in_traverse_pairs t))>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
 
-lemma btree_insert_sorted_rule [next_code_pos]:
-  "<btree t b * \<up>(tree_sorted t)> btree_insert k v b <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(tree_sorted t')>"
+declare btree_insert.simps [sep_proc_defs del]
+lemma btree_insert_sorted_rule [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_insert k v b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(tree_sorted t')>" by auto2
+
+lemma btree_insert_set_rule [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_insert k v b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(tree_set t' = {k} \<union> tree_set t)>" by auto2
+
+lemma btree_insert_map_rule [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_insert k v b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(tree_map t' = (tree_map t) {k \<rightarrow> v})>" by auto2
+
+partial_function (heap) btree_del_min :: "('a::heap, 'b::heap) btree \<Rightarrow> (('a \<times> 'b) \<times> ('a, 'b) btree) Heap" where
+  "btree_del_min b = (case b of
+     None \<Rightarrow> raise ''del_min: empty tree''
+   | Some p \<Rightarrow> do {
+      t \<leftarrow> !p;
+      (if lsub t = None then
+         return ((key t, val t), rsub t)
+       else do {
+         r \<leftarrow> btree_del_min (lsub t);
+         p := Node (snd r) (key t) (val t) (rsub t);
+         return (fst r, Some p) }) })"
+declare btree_del_min.simps [sep_proc_defs]
+
+lemma btree_del_min_in_traverse [hoare_triple]:
+  "<btree t b * \<up>(b \<noteq> None)>
+   btree_del_min b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' (snd r) * true * \<up>(fst (fst r) # in_traverse t' = in_traverse t)>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+
+lemma btree_del_min_in_traverse_pairs [hoare_triple]:
+  "<btree t b * \<up>(b \<noteq> None)>
+   btree_del_min b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' (snd r) * true * \<up>(fst r # in_traverse_pairs t' = in_traverse_pairs t)>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+
+definition btree_del_elt :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "btree_del_elt b = (case b of
+     None \<Rightarrow> raise ''del_elt: empty tree''
+   | Some p \<Rightarrow> do {
+       t \<leftarrow> !p;
+       (if lsub t = None then return (rsub t)
+        else if rsub t = None then return (lsub t)
+        else do {
+          r \<leftarrow> btree_del_min (rsub t);
+          p := Node (lsub t) (fst (fst r)) (snd (fst r)) (snd r);
+          return (Some p) }) })"
+declare btree_del_elt_def [sep_proc_defs]
+
+lemma btree_del_elt_in_traverse [hoare_triple]:
+  "<btree (tree.Node lt x v rt) b>
+   btree_del_elt b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse t' = in_traverse lt @ in_traverse rt)>" by auto2
+
+lemma btree_del_elt_in_traverse_pairs [hoare_triple]:
+  "<btree (tree.Node lt x v rt) b>
+   btree_del_elt b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse_pairs t' = in_traverse_pairs lt @ in_traverse_pairs rt)>" by auto2
+
+partial_function (heap) btree_delete ::
+  "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "btree_delete x b = (case b of
+     None \<Rightarrow> return None
+   | Some p \<Rightarrow> do {
+      t \<leftarrow> !p;
+      (if x = key t then do {
+         r \<leftarrow> btree_del_elt b;
+         return r }
+       else if x < key t then do {
+         q \<leftarrow> btree_delete x (lsub t);
+         p := Node q (key t) (val t) (rsub t);
+         return (Some p) }
+       else do {
+         q \<leftarrow> btree_delete x (rsub t);
+         p := Node (lsub t) (key t) (val t) q;
+         return (Some p)}) })"
+declare btree_delete.simps [sep_proc_defs]
+
+lemma btree_delete_in_traverse [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_delete x b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse t' = remove_elt_list x (in_traverse t))>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+
+lemma btree_delete_in_traverse_pairs [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_delete x b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse_pairs t' = remove_elt_pairs x (in_traverse_pairs t))>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+
+declare btree_delete.simps [sep_proc_defs del]
+lemma btree_delete_sorted_rule [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_delete x b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(tree_sorted t')>" by auto2
+
+lemma btree_delete_set_rule [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_delete x b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(tree_set t' = tree_set t - {x})>" by auto2
+
+lemma btree_delete_map_rule [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_delete x b
+   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(tree_map t' = delete_map x (tree_map t))>" by auto2
+
+partial_function (heap) btree_search ::
+  "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> 'b option Heap" where
+  "btree_search x b = (case b of
+     None \<Rightarrow> return None
+   | Some p \<Rightarrow> do {
+      t \<leftarrow> !p;
+      (if x = key t then return (Some (val t))
+       else if x < key t then btree_search x (lsub t)
+       else btree_search x (rsub t)) })"
+declare btree_search.simps [sep_proc_defs]
+
+lemma btree_search_correct [hoare_triple]:
+  "<btree t b * \<up>(tree_sorted t)>
+   btree_search x b
+   <\<lambda>r. btree t b * \<up>(r = (tree_map t)\<langle>x\<rangle>)>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+declare btree_search.simps [sep_proc_defs del]
 
 section {* Outer interface *}
 
@@ -171,12 +267,19 @@ lemma btree_empty_rule1:
 lemma btree_empty_rule2:
   "<emp> tree_empty <btree_map empty_map>" by auto2
 
-declare btree_insert.simps [sep_proc_defs del]
-
 lemma btree_insert_rule1:
   "<btree_set S b> btree_insert k v b <btree_set ({k} \<union> S)>" by auto2
 
 lemma btree_insert_rule2:
   "<btree_map M b> btree_insert k v b <btree_map (M {k \<rightarrow> v})>" by auto2
+
+lemma btree_delete_rule1:
+  "<btree_set S b> btree_delete x b <btree_set (S - {x})>\<^sub>t" by auto2
+
+lemma btree_delete_rule2:
+  "<btree_map M b> btree_delete x b <btree_map (delete_map x M)>\<^sub>t" by auto2
+
+lemma btree_search_rule:
+  "<btree_map M b> btree_search x b <\<lambda>r. btree_map M b * \<up>(r = M\<langle>x\<rangle>)>" by auto2
 
 end

@@ -54,7 +54,7 @@ theorem is_commD: "is_comm_fn f \<Longrightarrow> f x y = f y x" by (simp add: i
 theorem ac_swap_l: "is_assoc_fn f \<Longrightarrow> is_comm_fn f \<Longrightarrow> f a (f b c) = f b (f a c)"
   by (simp add: is_assoc_fn_def is_comm_fn_def)
 theorem ac_swap_r: "is_assoc_fn f \<Longrightarrow> is_comm_fn f \<Longrightarrow> f (f a b) c = f (f a c) b"
-  by (simp add: is_assoc_fn_def is_comm_fn_def)  
+  by (simp add: is_assoc_fn_def is_comm_fn_def)
 
 (* u is the unit of the binary operation f. *)
 definition is_unit_fn :: "'a \<Rightarrow> ('a \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> bool" where

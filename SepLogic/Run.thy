@@ -45,6 +45,7 @@ setup {* add_rewrite_rule @{thm Array.get_alloc} *}
 setup {* add_rewrite_rule @{thm Ref.get_alloc} *}
 setup {* add_rewrite_rule_bidir @{thm Array.length_def} *}
 
+setup {* add_forward_prfstep_cond @{thm execute_assert(1)} [with_term "run (assert ?P ?x) (Some ?h) ?\<sigma>' ?r"] *}
 lemma execute_return': "execute (return x) h = Some (x, h)" by (metis comp_eq_dest_lhs execute_return)
 setup {* add_forward_prfstep_cond @{thm execute_return'} [with_term "run (return ?x) (Some ?h) ?\<sigma>' ?r"] *}
 setup {* add_forward_prfstep_cond @{thm execute_len} [with_term "run (Array.len ?a) (Some ?h) ?\<sigma>' ?r"] *}

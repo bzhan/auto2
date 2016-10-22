@@ -1,21 +1,13 @@
-(* Linked lists, based on ListSeg in Separation_Logic_Imperative_HOL/Examples. *)
+(* Examples in linked lists. Definitions and some of the examples are
+   based on List_Seg and Open_List theories in Separation_Logic_Imperative_HOL/Examples. *)
 
 theory LinkedList
-imports SepAuto
+imports SepAuto More_Lists
 begin
 
 subsection {* Nodes *}
-text {*
-  We define a node of a list to contain a data value and a next pointer.
-  As Imperative HOL does not support null-pointers, we make the next-pointer
-  an optional value, @{text "None"} representing a null pointer.
 
-  Unfortunately, Imperative HOL requires some boilerplate code to define 
-  a datatype.
-*}
 datatype 'a node = Node (val: "'a") (nxt: "'a node ref option")
-
-text {* Encoding to natural numbers, as required by Imperative/HOL *}
 
 fun node_encode :: "'a::heap node \<Rightarrow> nat" where
   "node_encode (Node x r) = to_nat (x, r)"
@@ -27,17 +19,10 @@ instance node :: (heap) heap
   ..
 
 setup {* fold add_rewrite_rule @{thms node.sel} *}
-theorem node_constr: "Node a n = Node a' n' \<Longrightarrow> a = a' \<and> n = n'" by simp
-setup {* add_forward_prfstep_cond (conj_left_th @{thm node_constr}) [with_cond "?a \<noteq> ?a'"]
-  #> add_forward_prfstep_cond (conj_right_th @{thm node_constr}) [with_cond "?n \<noteq> ?n'"] *}
+theorem node_constr [forward]: "Node a n = Node a' n' \<Longrightarrow> a = a' \<and> n = n'" by simp
 
 subsection {* List Segment Assertion *}
-text {*
-  Intuitively, @{text "lseg l p s"} describes a list starting at @{text "p"} and
-  ending with a pointer @{text "s"}. The content of the list are @{text "l"}.
-  Note that the pointer @{text "s"} may also occur earlier in the list, in which
-  case it is handled as a usual next-pointer.
-*}
+
 fun lseg :: "'a::heap list \<Rightarrow> 'a node ref option \<Rightarrow> 'a node ref option \<Rightarrow> assn" where
   "lseg [] p s = \<up>(p = s)"
 | "lseg (x # l) (Some p) s = (\<exists>\<^sub>Aq. p \<mapsto>\<^sub>r Node x q * lseg l q s)"
@@ -47,24 +32,20 @@ setup {* fold add_rewrite_rule @{thms lseg.simps} *}
 (* Make use of lseg [] p s = \<up>(p=s) in \<exists> goals. *)
 theorem ex_lseg_empty [backward]:
   "h \<Turnstile> Q y \<Longrightarrow> \<exists>x. h \<Turnstile> lseg [] x y * Q x"
-  "h \<Turnstile> Q x \<Longrightarrow> \<exists>y. h \<Turnstile> lseg [] x y * Q y" by (simp add: mod_pure_star_dist mult.commute)+
+  "h \<Turnstile> Q x \<Longrightarrow> \<exists>y. h \<Turnstile> lseg [] x y * Q y"
+  by (simp add: mod_pure_star_dist mult.commute)+
 
-lemma lseg_split_iff1 [rewrite]: "lseg l None None = \<up>(l = [])" by auto2
-
-theorem lseg_is_some: "h \<Turnstile> lseg (x # l) p s * Qu \<Longrightarrow> p \<noteq> None" by auto2
+(* Folding and expanding the recursive definition of lseg. *)
+lemma lseg_is_some: "h \<Turnstile> lseg (x # l) p s * Qu \<Longrightarrow> \<exists>q. p = Some q" by auto2
 setup {* add_forward_prfstep_cond @{thm lseg_is_some} [with_cond "?p \<noteq> Some ?q"] *}
-
-lemma lseg_split_iff2 [forward_ent]:
-  "lseg (x # xs) (Some p) q \<Longrightarrow>\<^sub>A (\<exists>\<^sub>An. p \<mapsto>\<^sub>r (Node x n) * lseg xs n q)" by auto2
-
-lemma lseg_split_elim:
-  "\<exists>n. h \<Turnstile> p \<mapsto>\<^sub>r Node x n * Ql n \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>r Node x n * Q \<Longrightarrow>
-   h \<Turnstile> p \<mapsto>\<^sub>r Node x n * Ql n" by auto2
-setup {* add_gen_prfstep ("lseg_split_elim", forward_descs @{thm lseg_split_elim} @ [ShadowFirst]) *}
 
 lemma lseg_prepend [forward_ent]:
   "p \<mapsto>\<^sub>r Node x q * lseg l q s \<Longrightarrow>\<^sub>A lseg (x # l) (Some p) s" by auto2
 
+lemma lseg_prepend_rev [forward_ent]:
+  "lseg (x # xs) (Some p) q \<Longrightarrow>\<^sub>A (\<exists>\<^sub>An. p \<mapsto>\<^sub>r (Node x n) * lseg xs n q)" by auto2
+
+(* Several examples for using induction. *)
 lemma lseg_append [forward_ent]:
   "lseg l p (Some s) * s \<mapsto>\<^sub>r Node x q \<Longrightarrow>\<^sub>A lseg (l @ [x]) p q"
   by (tactic {* auto2s_tac @{context} (INDUCT ("l", [Arbitrary "p"])) *})
@@ -78,29 +59,42 @@ lemma lseg_split [resolve]:
   "lseg (l1 @ l2) p r \<Longrightarrow>\<^sub>A \<exists>\<^sub>Aq. lseg l1 p q * lseg l2 q r"
   by (tactic {* auto2s_tac @{context} (INDUCT ("l1", [Arbitrary "p"])) *})
 
-lemma lseg_prec1:
-  "h \<Turnstile> lseg l p (Some q) * q \<mapsto>\<^sub>r x * F1 \<Longrightarrow> h \<Turnstile> lseg l' p (Some q) * q \<mapsto>\<^sub>r x * F2 \<Longrightarrow> l = l'"
-  by (tactic {* auto2s_tac @{context}
-    (INDUCT ("l", Arbitraries ["p", "l'", "F1", "F2"]) THEN CASE "l' = []") *})
-
-lemma lseg_prec2 [sep_prec_thms]:
+lemma lseg_prec [forward]:
   "h \<Turnstile> lseg l p None * F1 \<Longrightarrow> h \<Turnstile> lseg l' p None * F2 \<Longrightarrow> l = l'"
   by (tactic {* auto2s_tac @{context}
     (INDUCT ("l", Arbitraries ["p", "l'", "F1", "F2"]) THEN CASE "l' = []") *})
 
-lemma lseg_prec3:
-  "h \<Turnstile> lseg l p q * F1 \<Longrightarrow> h \<Turnstile> lseg l p q' * F2 \<Longrightarrow> q = q'"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l", Arbitraries ["p", "F1", "F2"])) *})
+subsection {* List assertion *}
 
-(* Linked lists with null at end. *)
 type_synonym 'a os_list = "'a node ref option"
 
-abbreviation os_list :: "'a list \<Rightarrow> ('a::heap) os_list \<Rightarrow> assn" where
-  "os_list l p \<equiv> lseg l p None"
+definition os_list :: "'a list \<Rightarrow> ('a::heap) os_list \<Rightarrow> assn" where
+  "os_list l p = lseg l p None"
+setup {* add_rewrite_rule_bidir @{thm os_list_def} *}
 
-theorem os_list_some [resolve]: "\<not>h \<Turnstile> os_list [] (Some p) * Ru" by auto2
-theorem mod_os_list_eq [backward1]: "l1 = l2 \<Longrightarrow> h \<Turnstile> os_list l1 r \<Longrightarrow> h \<Turnstile> os_list l2 r" by simp
-theorem os_list_none [match_code_pos_emp]: "os_list [] None = emp" by auto2
+theorem os_line_none_rewr [rewrite]:
+  "os_list [] b = \<up>(b = None)" by auto2
+
+theorem mod_os_list_eq [backward1]:
+  "l1 = l2 \<Longrightarrow> h \<Turnstile> os_list l1 r \<Longrightarrow> h \<Turnstile> os_list l2 r" by simp
+
+lemma os_list_prec [sep_prec_thms]:
+  "h \<Turnstile> os_list l p * F1 \<Longrightarrow> h \<Turnstile> os_list l' p * F2 \<Longrightarrow> l = l'" by auto2
+
+lemma os_list_none: "emp \<Longrightarrow>\<^sub>A os_list [] None" by auto2
+
+(* Folding and expanding the recursive definition of os_list. *)
+lemma os_list_is_some: "h \<Turnstile> os_list (x # l) p * Qu \<Longrightarrow> \<exists>q. p = Some q" by auto2
+setup {* add_forward_prfstep_cond @{thm os_list_is_some} [with_cond "?p \<noteq> Some ?q"] *}
+
+lemma os_list_prepend [forward_ent]:
+  "os_list xs q * p \<mapsto>\<^sub>r Node x q \<Longrightarrow>\<^sub>A os_list (x # xs) (Some p)" by auto2
+
+lemma os_list_prepend_rev [forward_ent]:
+  "os_list (x # xs) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>An. p \<mapsto>\<^sub>r (Node x n) * os_list xs n)" by auto2
+
+setup {* fold add_entail_matcher [@{thm os_list_none}, @{thm os_list_prepend}] *}
+ML_file "list_matcher_test.ML"
 
 subsection {* Operations *}
 
@@ -123,7 +117,7 @@ definition os_prepend :: "'a \<Rightarrow> 'a::heap os_list \<Rightarrow> 'a os_
   "os_prepend a n = do { p \<leftarrow> ref (Node a n); return (Some p) }"
 declare os_prepend_def [sep_proc_defs]
 
-lemma os_prepend_rule [next_code_pos]:
+lemma os_prepend_rule [hoare_triple]:
   "<os_list xs n> os_prepend x n <os_list (x # xs)>" by auto2
 
 definition os_pop :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where
@@ -132,10 +126,81 @@ definition os_pop :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) He
     Some p \<Rightarrow> do {m \<leftarrow> !p; return (val m, nxt m)})"
 declare os_pop_def [sep_proc_defs]
 
-lemma os_pop_rule [next_code_pos]:
+lemma os_pop_rule [hoare_triple]:
   "<os_list xs (Some p)>
    os_pop (Some p)
    <\<lambda>(x,r'). os_list (tl xs) r' * p \<mapsto>\<^sub>r (Node x r') * \<up>(x = hd xs)>" by auto2
+
+subsubsection {* Iterator *}
+
+type_synonym 'a os_list_it = "'a os_list"
+
+definition os_is_it :: "('a::heap) list \<Rightarrow> 'a node ref option \<Rightarrow> 'a list \<Rightarrow> 'a node ref option \<Rightarrow> assn" where
+  "os_is_it l p l2 it = (\<exists>\<^sub>Al1. lseg l1 p it * os_list l2 it * \<up>(l = l1 @ l2))"
+setup {* add_rewrite_rule @{thm os_is_it_def} *}
+
+theorem os_is_it_empty [backward]: "h \<Turnstile> os_list l p \<Longrightarrow> h \<Turnstile> os_is_it l p l p"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "h \<Turnstile> lseg [] p p * os_list l p") *})
+
+definition os_it_init :: "'a os_list \<Rightarrow> ('a os_list_it) Heap" where
+  "os_it_init l = return l"
+declare os_it_init_def [sep_proc_defs]
+
+definition os_it_next :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where
+  "os_it_next it = os_pop it"
+declare os_it_next_def [sep_proc_defs]
+
+definition os_it_has_next :: "'a os_list_it \<Rightarrow> bool Heap" where
+  "os_it_has_next it = return (it \<noteq> None)"
+declare os_it_has_next_def [sep_proc_defs]
+
+theorem os_it_init_rule [hoare_triple]:
+  "<os_list l p> os_it_init p <os_is_it l p l>" by auto2
+
+theorem os_is_it_rule [forward_ent]: "os_is_it l p l' it \<Longrightarrow>\<^sub>A os_list l p" by auto2
+
+theorem os_is_has_next_rule [hoare_triple]:
+  "<os_is_it l p l' it> os_it_has_next it <\<lambda>r. os_is_it l p l' it * \<up>(r = (l' \<noteq> []))>"
+  by auto2
+
+theorem os_is_has_next_rule' [forward]:
+  "h \<Turnstile> os_is_it l p (x # xs) it * Ru \<Longrightarrow> it \<noteq> None" by auto2
+
+theorem os_it_next_rule [hoare_triple]:
+  "<os_is_it l p l' (Some q)> os_it_next (Some q) <\<lambda>(a, it'). os_is_it l p (tl l') it' * \<up>(a = hd l')>"
+  by (tactic {* auto2s_tac @{context} (OBTAIN "l' \<noteq> []") *})
+
+setup {* del_prfstep_thm @{thm os_list_def} *}
+setup {* del_prfstep_thm @{thm os_is_it_def} *}
+
+subsubsection {* List-Sum *}
+
+partial_function (heap) os_sum' :: "int os_list_it \<Rightarrow> int \<Rightarrow> int Heap"
+  where [code]:
+  "os_sum' it s = do {
+    b \<leftarrow> os_it_has_next it;
+    if b then do {
+      (x,it') \<leftarrow> os_it_next it;
+      os_sum' it' (s+x)
+    } else return s
+  }"
+declare os_sum'.simps [sep_proc_defs]
+
+lemma os_sum'_rule [hoare_triple]:
+  "<os_is_it l p l' it>
+    os_sum' it s
+  <\<lambda>r. os_list l p * \<up>(r = s + listsum l')>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("l'", Arbitraries ["it", "s"])) *})
+
+definition os_sum :: "int node ref option \<Rightarrow> int Heap" where
+  "os_sum p \<equiv> do {
+    it \<leftarrow> os_it_init p;
+    os_sum' it 0
+  }"
+declare os_sum_def [sep_proc_defs]
+
+lemma os_sum_rule:
+  "<os_list l p> os_sum p <\<lambda>r. os_list l p * \<up>(r = listsum l)>" by auto2
 
 subsubsection {* Reverse *}
 
@@ -149,7 +214,7 @@ partial_function (heap) os_reverse_aux
       os_reverse_aux p (nxt v) })"
 declare os_reverse_aux.simps [sep_proc_defs]
 
-lemma os_reverse_aux_rule [next_code_pos]:
+lemma os_reverse_aux_rule [hoare_triple]:
   "<os_list xs p * os_list ys q> 
     os_reverse_aux q p 
   <os_list ((rev xs) @ ys)>"
@@ -179,79 +244,9 @@ partial_function (heap) os_rem
            return (Some p) }) })"
 declare os_rem.simps [sep_proc_defs]
 
-lemma os_rem_rule [next_code_pos]:
+lemma os_rem_rule [hoare_triple]:
   "<os_list xs b> os_rem x b <\<lambda>r. os_list (removeAll x xs) r>\<^sub>t"
   by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
-
-subsubsection {* Iterator *}
-
-type_synonym 'a os_list_it = "'a os_list"
-
-definition os_is_it :: "('a::heap) list \<Rightarrow> 'a node ref option \<Rightarrow> 'a list \<Rightarrow> 'a node ref option \<Rightarrow> assn" where
-  "os_is_it l p l2 it = (\<exists>\<^sub>Al1. lseg l1 p it * os_list l2 it * \<up>(l = l1 @ l2))"
-setup {* add_rewrite_rule @{thm os_is_it_def} *}
-
-theorem os_is_it_empty [backward]: "h \<Turnstile> os_list l p \<Longrightarrow> h \<Turnstile> os_is_it l p l p"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "h \<Turnstile> lseg [] p p * os_list l p") *})
-
-definition os_it_init :: "'a os_list \<Rightarrow> ('a os_list_it) Heap" where
-  "os_it_init l = return l"
-declare os_it_init_def [sep_proc_defs]
-
-definition os_it_next :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where
-  "os_it_next it = os_pop it"
-declare os_it_next_def [sep_proc_defs]
-
-definition os_it_has_next :: "'a os_list_it \<Rightarrow> bool Heap" where
-  "os_it_has_next it = return (it \<noteq> None)"
-declare os_it_has_next_def [sep_proc_defs]
-
-theorem os_it_init_rule [next_code_pos]:
-  "<os_list l p> os_it_init p <os_is_it l p l>" by auto2
-
-theorem os_is_it_rule [forward_ent]: "os_is_it l p l' it \<Longrightarrow>\<^sub>A os_list l p" by auto2
-
-theorem os_is_has_next_rule [next_code_pos]:
-  "<os_is_it l p l' it> os_it_has_next it <\<lambda>r. os_is_it l p l' it * \<up>(r = (l' \<noteq> []))>"
-  by auto2
-
-theorem os_is_has_next_rule' [forward]:
-  "h \<Turnstile> os_is_it l p (x # xs) it * Ru \<Longrightarrow> it \<noteq> None" by auto2
-
-theorem os_it_next_rule [next_code_pos]:
-  "<os_is_it l p l' (Some q)> os_it_next (Some q) <\<lambda>(a, it'). os_is_it l p (tl l') it' * \<up>(a = hd l')>"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "l' \<noteq> []") *})
-
-setup {* del_prfstep_thm @{thm os_is_it_def} *}
-
-subsubsection {* List-Sum *}
-
-partial_function (heap) os_sum' :: "int os_list_it \<Rightarrow> int \<Rightarrow> int Heap"
-  where [code]:
-  "os_sum' it s = do {
-    b \<leftarrow> os_it_has_next it;
-    if b then do {
-      (x,it') \<leftarrow> os_it_next it;
-      os_sum' it' (s+x)
-    } else return s
-  }"
-declare os_sum'.simps [sep_proc_defs]
-
-lemma os_sum'_rule [next_code_pos]:
-  "<os_is_it l p l' it>
-    os_sum' it s
-  <\<lambda>r. os_list l p * \<up>(r = s + listsum l')>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l'", Arbitraries ["it", "s"])) *})
-
-definition os_sum :: "int node ref option \<Rightarrow> int Heap" where
-  "os_sum p \<equiv> do {
-    it \<leftarrow> os_it_init p;
-    os_sum' it 0
-  }"
-declare os_sum_def [sep_proc_defs]
-
-lemma os_sum_rule:
-  "<os_list l p> os_sum p <\<lambda>r. os_list l p * \<up>(r = listsum l)>" by auto2
 
 subsubsection {* Insert in order *}
 
@@ -261,22 +256,22 @@ partial_function (heap) os_insert
       None \<Rightarrow> os_prepend x None
     | Some p \<Rightarrow> do {
         v \<leftarrow> !p;
-        (if x < val v then os_prepend x b
+        (if x \<le> val v then os_prepend x b
          else do {
            q \<leftarrow> os_insert x (nxt v);
            p := Node (val v) q;
            return (Some p) }) })"
 declare os_insert.simps [sep_proc_defs]
 
-lemma os_insert_mset_rule [next_code_pos]:
+lemma os_insert_mset_rule [hoare_triple]:
   "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = {#x#} + mset xs)>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
 
-lemma os_insert_set_rule [next_code_pos]:
+lemma os_insert_set_rule [hoare_triple]:
   "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(set xs' = {x} \<union> set xs)>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
 
-lemma os_insert_sorted [next_code_pos]:
+lemma os_insert_sorted [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
 
@@ -292,7 +287,7 @@ partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list 
     })"
 declare extract_list.simps [sep_proc_defs]
 
-theorem extract_list_rule [next_code_pos_direct]:
+theorem extract_list_rule [hoare_triple_direct]:
   "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("l", Arbitraries ["p"])) *})
 
@@ -306,11 +301,11 @@ fun os_insert_list :: "'a::{ord,heap} list \<Rightarrow> 'a os_list \<Rightarrow
     })"
 declare os_insert_list.simps [sep_proc_defs]
 
-lemma os_insert_list_sorted [next_code_pos]:
+lemma os_insert_list_sorted [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("ys", Arbitraries ["b", "xs"])) *})
 
-lemma os_insert_list_mset [next_code_pos]:
+lemma os_insert_list_mset [hoare_triple]:
   "<os_list xs b> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = mset ys + mset xs)>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("ys", Arbitraries ["b", "xs"])) *})
 
@@ -326,5 +321,123 @@ setup {* add_backward2_prfstep @{thm properties_for_sort} *}
 lemma insertion_sort_rule:
   "<emp> insertion_sort (xs::'a::{heap,linorder} list) <\<lambda>ys. \<up>(ys = sort xs) * true>"
   by (tactic {* auto2s_tac @{context} (OBTAIN "sorted ([]::'a list)") *})
+
+subsection {* Merging two lists *}
+
+partial_function (heap) merge_os_list ::
+  "('a::{heap, ord}) os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+"merge_os_list p q = (
+  if p = None then return q
+  else if q = None then return p
+  else do {
+    np \<leftarrow> !(the p); nq \<leftarrow> !(the q);
+    if val np \<le> val nq then
+      do { npq \<leftarrow> merge_os_list (nxt np) q;
+           (the p) := Node (val np) npq;
+           return p
+         }
+    else
+      do { pnq \<leftarrow> merge_os_list p (nxt nq);
+           (the q) := Node (val nq) pnq;
+           return q
+         }
+     })"
+declare merge_os_list.simps [sep_proc_defs]
+
+theorem list_double_induct: "\<forall>ys. P [] ys \<Longrightarrow> \<forall>xs. P xs [] \<Longrightarrow> \<forall>xs ys. P (tl xs) ys \<and> P xs (tl ys) \<longrightarrow> P xs ys \<Longrightarrow> P xs ys"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", []) THEN INDUCT ("ys", [Arbitrary "xs"])) *})
+setup {* add_prfstep_double_induction @{thm list_double_induct} *}
+
+lemma merge_list_keys [hoare_triple]:
+  "<os_list xs p * os_list ys q>
+  merge_os_list p q
+  <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(set zs = set xs \<union> set ys)>"
+  by (tactic {* auto2s_tac @{context} (
+    DOUBLE_INDUCT (("xs", "ys"), Arbitraries ["p", "q"])) *})
+
+lemma merge_list_sorted [hoare_triple]:
+  "<os_list xs p * os_list ys q * \<up>(sorted xs) * \<up>(sorted ys)>
+  merge_os_list p q
+  <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(sorted zs)>"
+  by (tactic {* auto2s_tac @{context} (
+    DOUBLE_INDUCT (("xs", "ys"), Arbitraries ["p", "q"])) *})
+
+subsection {* List copy *}
+
+partial_function (heap) copy_os_list :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
+"copy_os_list b = (case b of
+    None \<Rightarrow> return None
+  | Some p \<Rightarrow> do {
+      v \<leftarrow> !p;
+      q \<leftarrow> copy_os_list (nxt v);
+      os_prepend (val v) q })"
+declare copy_os_list.simps [sep_proc_defs]
+
+lemma copy_os_list_rule [hoare_triple]:
+  "<os_list xs b> copy_os_list b <\<lambda>r. os_list xs b * os_list xs r>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+
+subsection {* Higher-order functions *}
+
+partial_function (heap) map_os_list ::
+  "('a::heap \<Rightarrow> 'a) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+"map_os_list f b = (case b of
+    None \<Rightarrow> return None
+  | Some p \<Rightarrow> do {
+      v \<leftarrow> !p;
+      q \<leftarrow> map_os_list f (nxt v);
+      p := Node (f (val v)) q;
+      return (Some p) })"
+declare map_os_list.simps [sep_proc_defs]
+
+lemma map_os_list_rule [hoare_triple]:
+  "<os_list xs b> map_os_list f b <os_list (map f xs)>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+
+partial_function (heap) filter_os_list ::
+  "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+"filter_os_list f b = (case b of
+    None \<Rightarrow> return None
+  | Some p \<Rightarrow> do {
+      v \<leftarrow> !p;
+      q \<leftarrow> filter_os_list f (nxt v);
+      (if (f (val v)) then do {
+         p := Node (val v) q;
+         return (Some p) }
+       else return q) })"
+declare filter_os_list.simps [sep_proc_defs]
+
+lemma filter_os_list_rule [hoare_triple]:
+  "<os_list xs b> filter_os_list f b <\<lambda>r. os_list (filter f xs) r * true>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+
+partial_function (heap) filter_os_list2 ::
+  "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+"filter_os_list2 f b = (case b of
+    None \<Rightarrow> return None
+  | Some p \<Rightarrow> do {
+      v \<leftarrow> !p;
+      q \<leftarrow> filter_os_list2 f (nxt v);
+      (if (f (val v)) then os_prepend (val v) q
+       else return q) })"
+declare filter_os_list2.simps [sep_proc_defs]
+
+lemma filter_os_list2_rule [hoare_triple]:
+  "<os_list xs b> filter_os_list2 f b <\<lambda>r. os_list xs b * os_list (filter f xs) r>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+
+partial_function (heap) fold_os_list ::
+  "('a::heap \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a os_list \<Rightarrow> 'b \<Rightarrow> 'b Heap" where
+"fold_os_list f b x = (case b of
+    None \<Rightarrow> return x
+  | Some p \<Rightarrow> do {
+     v \<leftarrow> !p;
+     r \<leftarrow> fold_os_list f (nxt v) (f (val v) x);
+     return r})"
+declare fold_os_list.simps [sep_proc_defs]
+
+theorem fold_os_list_rule [hoare_triple]:
+  "<os_list xs b> fold_os_list f b x <\<lambda>r. os_list xs b * \<up>(r = fold f xs x)>"
+  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b", "x"])) *})
 
 end

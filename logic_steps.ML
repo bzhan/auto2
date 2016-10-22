@@ -29,6 +29,7 @@ sig
   val disj_typed_matcher: item_matcher
   val disj_prop_matcher: item_matcher
 
+  val add_priority_term: string -> theory -> theory
   val match_update_prfsteps: proofstep list
   val match_one_sch_prfstep: proofstep
   val disj_create_case_prfstep: proofstep
@@ -353,8 +354,7 @@ fun dest_tname_of_disj tname =
     case HOLogic.strip_tuple tname of
         is_active :: match_prem :: rest =>
         ((bool_of_term is_active, bool_of_term match_prem), rest)
-      | _ => raise AUTO2
-                   "dest_tname_of_disj: too few terms in tname of DISJ item."
+      | _ => raise AUTO2 "dest_tname_of_disj: too few terms in tname."
 
 (* Convert term of form A_1 --> ... --> A_n to ~A_1 | ... | ~A_(n-1) |
    A_n, cancelling any double negations.
@@ -589,9 +589,9 @@ val disj_prop_matcher =
                |> Thm.combination (Thm.reflexive (cert ctxt all_const))
           end
 
-      fun match pat {tname, prop = th, ...} (tbl as {ctxt, ...})
-                (id, (tyinst, inst)) =
+      fun match pat item (tbl as {ctxt, ...}) (id, (tyinst, inst)) =
           let
+            val {tname, prop = th, ...} = item
             val ((_, match_prem), subs) = dest_tname_of_disj tname
             val thy = Proof_Context.theory_of ctxt
             val vars = Term.add_vars tname []
@@ -654,18 +654,54 @@ val disj_prop_matcher =
       {pre_match = pre_match, match = match}
     end
 
+structure PriorityTermData =
+Theory_Data (
+  type T = string list
+  val empty = []
+  val extend = I;
+  val merge = Library.merge (op =)
+)
+
+fun is_priority_term thy t =
+    case Term.head_of t of
+        Const (nm, _) => member (op =) (PriorityTermData.get thy) nm
+      | _ => false
+
+fun add_priority_term str thy =
+    let
+      val _ = writeln ("Add priority_term " ^ str)
+    in
+      PriorityTermData.map (cons str) thy
+    end
+
 (* Reduce a disjunction p_1 | ... | t | ... | p_n by matching ~t with
    the second item. If the disjunction contains schematic variables, t
    must have either zero or the largest number of schematic variables.
  *)
-fun match_update_fn
-        rtype (st as {ctxt, ...}) (item1 as {tname = tname1, ...}) item2 =
+fun match_update_fn rtype (st as {ctxt, ...}) item1 item2 =
     let
-      val {id, prop, ...} = item1
+      val {id, prop, tname = tname1, ...} = item1
       val thy = Status.theory_of st
       val ((is_active, _), subs) = dest_tname_of_disj tname1
       fun count_var t = length (Term.add_vars t [])
       val max_nvar = fold (curry Int.max) (map count_var subs) 0
+      val has_priority_term = exists (is_priority_term thy) (map get_neg subs)
+
+      val (NO_MATCH, FREE_ONLY, YES_MATCH) = (0, 1, 2)
+
+      (* Test whether to perform matching on pattern. *)
+      fun test_do_match (i, sub, nvar) =
+          let
+            val nsub = get_neg sub
+          in
+            if not (is_pattern sub) then NO_MATCH
+            else if length subs > 1 andalso
+                    is_property_prem thy nsub then NO_MATCH
+            else if has_priority_term andalso
+                    not (is_priority_term thy nsub) then NO_MATCH
+            else if nvar = 0 orelse nvar = max_nvar then YES_MATCH
+            else if i > 0 then NO_MATCH else FREE_ONLY
+          end
 
       (* Match the negation of subs[i] with th2. For each match,
          instantiate in prop all schematic variables in t, so that t
@@ -673,23 +709,20 @@ fun match_update_fn
          version.
        *)
       fun get_matches i =
-          if length subs > 1 andalso
-             is_property_prem thy (get_neg (nth subs i)) then []
-          else if not (is_pattern (nth subs i)) then []
-          else let
+          let
             val t = nth subs i
-            val nvar = count_var (nth subs i)
+            val nvar = count_var t
+            val do_match = test_do_match (i, t, nvar)
             fun process_inst ((id', inst), th) =
-                if nvar > 0 andalso nvar < max_nvar andalso
-                   not (i = 0 andalso forall (fn (_, (_, t)) => Term.is_Free t)
-                                             (Vartab.dest (snd inst)))
-                then []
+                if do_match = FREE_ONLY andalso
+                   not (forall (fn (_, (_, t)) => Term.is_Free t)
+                               (Vartab.dest (snd inst))) then []
                 else let
                   val prop' =
                       prop |> subst_thm_thy thy inst
                            |> apply_to_thm (rewr_obj_eq_top ctxt (to_eqF_th th))
                            |> apply_to_thm' (ACUtil.normalize_unit disj_ac)
-                  val shadow_updt = if count_var (nth subs i) > 0 then [] else
+                  val shadow_updt = if nvar > 0 then [] else
                                     [Update.ShadowItem {id = id', item = item1}]
                   val reduce_count =
                       subs |> map (subst_term_norm inst)
@@ -701,7 +734,7 @@ fun match_update_fn
                   shadow_updt
                 end
           in
-            if i > 0 andalso nvar > 0 andalso nvar < max_nvar then []
+            if do_match = NO_MATCH then []
             else (get_insts (PropMatch (get_neg t)) item2 rtype (id, fo_init))
                      |> maps process_inst
           end
@@ -720,9 +753,9 @@ val match_update_prfsteps = [
 (* For DISJ items with a single term, of form f p1 ... pn, match t
    against each of p_i.
  *)
-fun match_one_sch_fn rtype (st as {tbl, ...}) {id, tname, prop = th1, ...}
-                     item2 =
+fun match_one_sch_fn rtype (st as {tbl, ...}) item1 item2 =
     let
+      val {id, tname, prop = th1, ...} = item1
       val thy = Status.theory_of st
       val (_, subs) = dest_tname_of_disj tname
     in
