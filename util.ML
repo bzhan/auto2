@@ -16,10 +16,6 @@ sig
 
   (* Types *)
   val propT: typ
-  val natT: typ
-  val intT: typ
-  val ratT: typ
-  val boolT: typ
   val get_arg_type: term -> typ
 
   (* Lists *)
@@ -40,6 +36,7 @@ sig
   (* Strings. *)
   val is_prefix_str: string -> string -> bool
   val is_just_internal: string -> bool
+  val split_commas: string -> string list
 
   (* Managing matching environments. *)
   val fo_init: Type.tyenv * Envir.tenv
@@ -54,8 +51,13 @@ sig
   val pattern_fo_match_thy: theory -> term * term -> Type.tyenv * Envir.tenv
   val pattern_fo_match: Proof.context -> term * term -> Type.tyenv * Envir.tenv
   val pattern_match: Proof.context -> term * term -> Type.tyenv * Envir.tenv
-  val pattern_match_ty: Proof.context -> typ * typ -> Type.tyenv
   val typ_match: theory -> typ * typ -> Type.tyenv
+  val pattern_fo_match_list_thy:
+      theory -> (term * term) list -> Type.tyenv * Envir.tenv ->
+      Type.tyenv * Envir.tenv
+  val pattern_fo_match_list:
+      Proof.context -> (term * term) list -> Type.tyenv * Envir.tenv ->
+      Type.tyenv * Envir.tenv
 
   (* Printing functions, mostly from Isabelle Cookbook. *)
   val pretty_term: Proof.context -> term -> Pretty.T
@@ -107,25 +109,13 @@ sig
   (* Terms. *)
   val null_term: term
   val is_null_term: term -> bool
-  val bool_False: term
-  val prop_False: term
-  val term_of_bool: bool -> term
-  val bool_of_term: term -> bool
-  val is_Trueprop: term -> bool
-  val is_neg: term -> bool
-  val get_neg: term -> term
-  val get_neg': term -> term
+  val is_abs: term -> bool
   val is_implies: term -> bool
   val dest_binop: term -> term * (term * term)
   val dest_arg: term -> term
   val dest_arg1: term -> term
   val dest_args: term -> term list
   val dest_argn: int -> term -> term
-  val is_numc: term -> bool
-  val dest_numc: term -> int
-  val dest_numc_rat: term -> Rat.rat
-  val is_eq_term: term -> bool
-  val is_eq_term': term -> bool
   val is_meta_eq_term: term -> bool
   val is_meta_eq_thm: thm -> bool
   val occurs_frees: term list -> term -> bool
@@ -133,94 +123,43 @@ sig
   val has_vars: term -> bool
   val is_subterm: term -> term -> bool
   val has_subterm: term list -> term -> bool
-  val dest_obj_all_var: term -> string list -> term * term
-  val strip_obj_all_var: term -> term list * term
-  val strip_obj_imp: term -> term list * term
   val lambda_abstract: term -> term -> term
-  val is_order: term -> bool
-  val is_linorder: Proof.context -> term -> bool
+  val is_pattern_list: term list -> bool
   val is_pattern: term -> bool
+  val strip_pure_goal: Proof.context -> term -> (bool * term) list * term
   val print_term_detail: Proof.context -> term -> string
 
   (* Theorems. *)
-  val true_th: thm
-  val is_true_th: thm -> bool
   val apply_on: thm list -> thm -> thm
   val arg_backn_conv: int -> conv -> conv
   val argn_conv: int -> conv -> conv
-  val prop_of': thm -> term
   val comb_equiv: cterm * thm list -> thm
   val name_of_thm: thm -> string
   val update_name_of_thm: thm -> string -> thm -> thm
-  val dest_eq_thm: thm -> term * term
   val lhs_of: thm -> term
   val rhs_of: thm -> term
-  val make_trueprop_eq: thm -> thm
-  val assume_eq: theory -> term * term -> thm
   val assume_meta_eq: theory -> term * term -> thm
   val assume_thm: Proof.context -> term -> thm
   val rename_abs: Type.tyenv * Envir.tenv -> term -> term
   val rename_abs_thm: Type.tyenv * Envir.tenv -> thm -> thm
   val subst_thm_thy: theory -> Type.tyenv * Envir.tenv -> thm -> thm
   val subst_thm: Proof.context -> Type.tyenv * Envir.tenv -> thm -> thm
+  val subst_thm_atomic: (cterm * cterm) list -> thm -> thm
   val subst_term_norm: Type.tyenv * Envir.tenv -> term -> term
   val apply_to_thm: conv -> thm -> thm
-  val apply_to_thm': conv -> thm -> thm
-  val to_meta_eq: thm -> thm
-  val to_obj_eq: thm -> thm
-  val obj_sym: thm -> thm
   val meta_sym: thm -> thm
-  val rewr_obj_eq: thm -> conv
-  val rewr_obj_eq_top: Proof.context -> thm -> conv
   val apply_to_lhs: conv -> thm -> thm
   val apply_to_rhs: conv -> thm -> thm
   val concl_conv_n: int -> conv -> conv
   val concl_conv: conv -> conv
-  val make_neg_eq: thm -> thm
-  val rewrite_to_contra_form: conv
-  val rewrite_thm_to_contra_form: thm -> thm
-  val rewrite_from_contra_form: conv
-  val rewrite_thm_from_contra_form: thm -> thm
   val send_to_hyps: cterm -> thm -> thm
   val send_all_to_hyps: thm -> thm
   val transitive_list: thm list -> thm
   val skip_n_conv: int -> conv -> conv
-  val to_obj_conv: Proof.context -> conv
-  val to_obj_conv_on_horn: Proof.context -> conv
-  val to_obj_conv_on_horn_th: thm -> thm
-  val to_meta_imp_conv: conv
-  val to_meta_imp_conv_n: int -> conv
-  val to_meta_all_conv: Proof.context -> conv
-  val conj_left_th: thm -> thm
-  val conj_right_th: thm -> thm
-  val equiv_forward_th: thm -> thm
-  val equiv_backward_th: thm -> thm
-  val to_obj_eq_th: thm -> thm
-  val obj_sym_th: thm -> thm
-  val horn_conv: conv -> conv
-  val split_conj_th: thm -> thm list
-  val split_not_disj_th: thm -> thm list
-  val strip_horn': thm -> term list * term
-  val ex_elim: Proof.context -> term -> thm -> thm
-  val to_eqF_th: thm -> thm
-  val neg_ineq_cv: conv
-  val neg_ineq_back_cv: conv
-  val normalize_exs_conv: int -> Proof.context -> conv
-  val normalize_alls_conv: int -> Proof.context -> conv
 
   (* Conversions *)
   val reverse_eta_conv: Proof.context -> conv
   val repeat_n_conv: int -> conv -> conv
-
-  (* Wrapper around common tactics. *)
-  val prove_by_tac: (Proof.context -> int -> tactic) -> Proof.context ->
-                    thm list -> term -> thm
-  val contra_by_tac: (Proof.context -> int -> tactic) -> Proof.context ->
-                     thm list -> thm
-  val prove_by_simp: Proof.context -> thm list -> term -> thm
-  val contra_by_simp: Proof.context -> thm list -> thm
-  val prove_by_arith: Proof.context -> thm list -> term -> thm
-  val contra_by_arith: Proof.context -> thm list -> thm
 
   (* Miscellaneous. *)
   val test_conv: Proof.context -> conv -> string -> string * string -> unit
@@ -243,10 +182,6 @@ fun p andf2 q = fn x => fn y => p x y andalso q x y
 fun p orf2 q = fn x => fn y => p x y orelse q x y
 
 val propT = @{typ prop}
-val natT = HOLogic.natT
-val intT = @{typ int}
-val ratT = @{typ rat}
-val boolT = HOLogic.boolT
 
 (* Given t in inequality form, return the type of the argument. *)
 fun get_arg_type t = t |> strip_comb |> snd |> hd |> Term.type_of
@@ -352,6 +287,31 @@ fun is_prefix_str pre str =
 fun is_just_internal nm =
     Name.is_internal nm andalso not (Name.is_skolem nm)
 
+(* Split a string by commas. Do not split on commas that are inside
+   any kind of brackets.
+ *)
+val left_brackets = ["(", "[", "{", "\<langle>"]
+val right_brackets = [")", "]", "}", "\<rangle>"]
+
+fun count_brackets str =
+    if member (op =) left_brackets str then 1
+    else if member (op =) right_brackets str then ~1
+    else 0
+
+fun split_commas str =
+    let
+      val syms = Symbol.explode str
+      fun can_split_id i =
+          nth syms i = "," andalso
+          Integer.sum (map count_brackets (take i syms)) = 0
+    in
+      case find_first can_split_id (0 upto (length syms - 1)) of
+          NONE => [str]
+        | SOME n =>
+          String.concat (take n syms) ::
+          split_commas (String.concat (drop (n+1) syms))
+    end
+
 val fo_init = (Vartab.empty, Vartab.empty)
 
 (* Lookup a Vartab inst with string and integer specifying indexname. *)
@@ -376,9 +336,18 @@ fun pattern_fo_match ctxt (t, u) =
     Pattern.first_order_match (Proof_Context.theory_of ctxt) (t, u) fo_init
 fun pattern_match ctxt (t, u) =
     Pattern.match (Proof_Context.theory_of ctxt) (t, u) fo_init
-fun pattern_match_ty ctxt (ty, ty') =
-    Sign.typ_match (Proof_Context.theory_of ctxt) (ty, ty') Vartab.empty
 fun typ_match thy (T, U) = Sign.typ_match thy (T, U) Vartab.empty
+fun pattern_fo_match_list_thy thy pairs inst =
+    case pairs of
+        [] => inst
+      | (t, u) :: rest =>
+        let
+          val inst' = Pattern.first_order_match thy (t, u) inst
+        in
+          pattern_fo_match_list_thy thy rest inst'
+        end
+fun pattern_fo_match_list ctxt pairs inst =
+    pattern_fo_match_list_thy (Proof_Context.theory_of ctxt) pairs inst
 
 val pretty_term = Syntax.pretty_term
 val pretty_term_thy = Syntax.pretty_term_global
@@ -476,43 +445,9 @@ val read_pat = Proof_Context.read_term_pattern
 
 val null_term = Term.dummy
 fun is_null_term t = (t aconv null_term)
-val bool_False = @{term False}
-val prop_False = @{prop False}
+fun is_abs t = case t of Abs _ => true | _ => false
 
-fun term_of_bool b = (if b then @{term True} else @{term False})
-fun bool_of_term t =
-    case t of
-        Const ("HOL.True", _) => true
-      | Const ("HOL.False", _) => false
-      | _ => raise AUTO2 "bool_of_term: unexpected t."
-
-(* Returns whether the given term is Trueprop. *)
-fun is_Trueprop t =
-    let val _ = assert (fastype_of t = propT) "is_Trueprop: wrong type"
-    in case t of Const (@{const_name Trueprop}, _) $ _ => true
-               | _ => false
-    end
-
-(* Returns whether the given term is in neg form. *)
-fun is_neg t =
-    let val _ = assert (fastype_of t = boolT) "is_neg: wrong type"
-    in case t of Const ("HOL.Not", _) $ _ => true
-               | _ => false
-    end
-
-(* Returns the negation of the given term. Avoids double negatives. *)
-fun get_neg t =
-    let val _ = assert (fastype_of t = boolT) "get_neg: wrong type"
-    in case t of Const ("HOL.Not", _) $ t => t
-               | _ => HOLogic.Not $ t
-    end
-
-(* Version of get_neg for Trueprop terms. *)
-fun get_neg' t =
-    let val _ = assert (is_Trueprop t) "get_neg': input should be a Trueprop."
-    in t |> HOLogic.dest_Trueprop |> get_neg |> HOLogic.mk_Trueprop end
-
-(* Whether a given term is ==>. *)
+(* Whether a given term is of the form A ==> B. *)
 fun is_implies t =
     let val _ = assert (fastype_of t = propT) "is_implies: wrong type"
     in case t of Const ("Pure.imp", _) $ _ $ _ => true
@@ -541,54 +476,6 @@ fun dest_args t = t |> Term.strip_comb |> snd
 (* Return the nth argument of t, counting from left and starting at zero. *)
 fun dest_argn n t = nth (dest_args t) n
 
-(* Test if a term represents a numerical constant. is_numc_raw just
-   uses dest_number from HOLogic. is_numc tests for inverses.
- *)
-fun is_numc_raw t =
-    let val _ = HOLogic.dest_number t in true end
-    handle TERM ("dest_number", _) => false
-
-fun is_numc t =
-    case t of
-        Const (@{const_name inverse}, _) $ t' => is_numc t'
-      | Const (@{const_name uminus}, _) $ t' => is_numc t'
-      | Const (@{const_name of_rat}, _) $ r => is_numc r
-      | Const (@{const_name Fract}, _) $ n $ d => is_numc n andalso is_numc d
-      | _ => is_numc_raw t
-
-(* Deconstruct numerical constant. Discard type. *)
-fun dest_numc t = HOLogic.dest_number t |> snd
-                  handle TERM ("dest_number", _) =>
-                         raise AUTO2 "dest_numc: invalid term."
-
-(* Rational numbers version of dest_numc. *)
-fun dest_numc_rat t =
-    case t of
-        Const (@{const_name inverse}, _) $ t' =>
-        let
-          val r' = dest_numc_rat t'
-        in
-          if r' = Rat.zero then Rat.zero
-          else Rat.inv r'
-        end
-      | Const (@{const_name uminus}, _) $ t' => Rat.neg (dest_numc_rat t')
-      | Const (@{const_name of_rat}, _) $ r => dest_numc_rat r
-      | Const (@{const_name Fract}, _) $ n $ d =>
-        Rat.rat_of_quotient (dest_numc n, dest_numc d)
-      | _ => Rat.rat_of_int (dest_numc t)
-
-(* Test if a given fact is an equality. *)
-fun is_eq_term t =
-    let val _ = assert (fastype_of t = boolT) "is_eq_term: wrong type"
-    in case t of Const ("HOL.eq", _) $ _ $ _ => true
-               | _ => false
-    end
-
-(* Version of is_eq_term' for Trueprop terms. *)
-fun is_eq_term' t =
-    let val _ = assert (fastype_of t = propT) "is_eq_term': wrong type"
-    in is_Trueprop t andalso is_eq_term (HOLogic.dest_Trueprop t) end
-
 (* Whether the term is of the form A == B. *)
 fun is_meta_eq_term t =
     let val _ = assert (fastype_of t = propT) "is_meta_eq_term: wrong type"
@@ -614,73 +501,14 @@ fun is_subterm subt t = exists_subterm (fn t' => t' aconv subt) t
 (* Whether any of subts is a subterm of t. *)
 fun has_subterm subts t = exists_subterm (fn t' => member (op aconv) subts t') t
 
-(* Given t of the form !a. P(a), return pair (a_, P(a_)) (new name is
-   formed by appending _ to the name hint of the quantifier, except to
-   avoid repetitions with the list nms).
- *)
-fun dest_obj_all_var t nms =
-    case t of
-        Const ("HOL.All", _) $ Abs (abs as (_, T, _)) =>
-        let
-          val (nm, body) = Term.dest_abs abs
-          val nm' = if member (op =) nms nm then
-                      singleton (Name.variant_list nms) nm
-                    else nm
-          val bd_var = Free (Name.internal nm', T)
-          val body' = Term.subst_atomic [(Free (nm, T), bd_var)] body
-        in
-          (bd_var, body')
-        end
-      | _ => raise AUTO2 "dest_obj_all_var"
-
-(* Given t of the form !a1, ... an. P(a1, ..., an), return pair ([a1_,
-   ... an_], P(a1_, ..., an_), where the name of each of the new
-   variables are produced using dest_obj_all_var.
- *)
-fun strip_obj_all_var_aux t nms =
-    case t of
-        Const ("HOL.All", _) $ Abs _ =>
-        let
-          val (bd_var, body) = dest_obj_all_var t nms
-          val (nm, _) = Term.dest_Free bd_var
-          val (rest, body') =
-              strip_obj_all_var_aux body (Name.dest_internal nm :: nms)
-        in
-          (bd_var :: rest, body')
-        end
-      | _ => ([], t)
-
-fun strip_obj_all_var t = strip_obj_all_var_aux t []
-
-(* Given t of form A1 --> ... --> An, return ([A1, ..., A(n-1)], An). *)
-fun strip_obj_imp t =
-    case t of
-        Const ("HOL.implies", _) $ A $ B =>
-        let val (As, B') = strip_obj_imp B in (A :: As, B') end
-      | _ => ([], t)
-
 (* If stmt is P(t), return lambda t. P(t). *)
 fun lambda_abstract t stmt = lambda t (Term.abstract_over (t, stmt))
-
-(* Whether the given term is a < b or a <= b. *)
-fun is_order t =
-    let
-      val _ = assert (fastype_of t = boolT) "is_order: wrong type"
-    in
-      case t of Const (@{const_name less}, _) $ _ $ _ => true
-              | Const (@{const_name less_eq}, _) $ _ $ _ => true
-              | _ => false
-    end
-
-fun is_linorder ctxt t =
-    is_order t andalso Sign.of_sort (Proof_Context.theory_of ctxt)
-                                    (get_arg_type t, ["Orderings.linorder"])
 
 (* A more general criterion for patterns. In combinations, any
    argument that is a pattern (in the more general sense) frees up
    checking for any functional schematic variables in that argument.
  *)
-fun is_pattern t =
+fun is_pattern_list ts =
     let
       fun is_funT T = case T of Type ("fun", _) => true | _ => false
       fun get_fun_vars t = (Term.add_vars t [])
@@ -712,8 +540,42 @@ fun is_pattern t =
                        test_list exclude_vars args
                    end
     in
-      test_term [] t
+      test_list [] ts
     end
+
+fun is_pattern t = is_pattern_list [t]
+
+(* Given a term t in pure logic form, strip out !! and ==>, and return
+   the list of variables, assumptions, and conclusion.
+
+   For example:
+
+   !!a b. P ==> Q gives ([(true, a), (true, b), (false, P)], Q)
+
+   P ==> !!a b. Q gives ([(false, P), (true, a), (true, b)], Q)
+ *)
+fun strip_pure_goal_aux ctxt prevs t =
+    case t of
+        Const ("Pure.all", _) $ Abs (abs as (_, T, _)) =>
+        let
+          val (nm, body) = Term.dest_abs abs
+          val (nm', _) = singleton (Variable.variant_frees ctxt prevs) (nm, T)
+          val bd_var = Free (nm', T)
+          val body' = if nm = nm' then body
+                      else Term.subst_atomic [(Free (nm, T), bd_var)] body
+          val (assums, concl) = strip_pure_goal_aux ctxt (bd_var :: prevs) body'
+        in
+          ((true, bd_var) :: assums, concl)
+        end
+      | Const ("Pure.imp", _) $ P $ Q =>
+        let
+          val (assums, concl) = strip_pure_goal_aux ctxt prevs Q
+        in
+          ((false, P) :: assums, concl)
+        end
+      | _ => ([], t)
+
+fun strip_pure_goal ctxt t = strip_pure_goal_aux ctxt [] t
 
 fun print_term_detail ctxt t =
     case t of
@@ -727,8 +589,6 @@ fun print_term_detail ctxt t =
       | u $ v => "(" ^ print_term_detail ctxt u ^ ") $ (" ^
                  print_term_detail ctxt v ^ ")"
 
-val true_th = @{thm TrueI}
-fun is_true_th th = pointer_eq (th, true_th)
 fun apply_on ths th = ths MRS th
 
 (* Apply cv to nth argument of t, counting from right and starting at 0. *)
@@ -744,8 +604,6 @@ fun argn_conv n cv ct =
     in
       arg_backn_conv (args_count - n - 1) cv ct
     end
-
-fun prop_of' th = HOLogic.dest_Trueprop (Thm.prop_of th)
 
 (* Given a head cterm f (function to be applied), and a list of
    equivalence theorems of arguments, produce an equivalent theorem
@@ -764,20 +622,9 @@ fun update_name_of_thm ori_th suffix th =
       th |> Thm.put_name_hint (Thm.get_name_hint ori_th ^ suffix)
     else th
 
-fun dest_eq_thm th = th |> prop_of' |> HOLogic.dest_eq
-
 val lhs_of = Thm.term_of o Thm.lhs_of
 val rhs_of = Thm.term_of o Thm.rhs_of
 
-(* Given an equality between bools, make it an equality between props,
-   by applying the function Trueprop to both sides.
- *)
-fun make_trueprop_eq th =
-    Thm.combination (Thm.reflexive (cert @{context} HOLogic.Trueprop)) th
-
-(* Assumed theorems. *)
-fun assume_eq thy (t1, t2) =
-    Thm.assume (cert_thy thy (HOLogic.mk_Trueprop (HOLogic.mk_eq (t1, t2))))
 fun assume_meta_eq thy (t1, t2) =
     Thm.assume (cert_thy thy (Logic.mk_equals (t1, t2)))
 fun assume_thm ctxt t =
@@ -884,6 +731,25 @@ fun subst_thm_thy thy (tyinsts, insts) th =
 fun subst_thm ctxt (tyinsts, insts) th =
     subst_thm_thy (Proof_Context.theory_of ctxt) (tyinsts, insts) th
 
+(* Replace using subst the internal variables in th. This proceeds in
+   several steps: first, pull any hypotheses of the theorem involving
+   the replaced variables into statement of the theorem, perform the
+   replacement (using forall_intr then forall_elim), finally return
+   the hypotheses to their original place.
+ *)
+fun subst_thm_atomic subst th =
+    let
+      val old_cts = map fst subst
+      val old_ts = map Thm.term_of old_cts
+      val new_cts = map snd subst
+      val chyps = filter (fn ct => has_subterm old_ts (Thm.term_of ct))
+                         (Thm.chyps_of th)
+    in
+      th |> fold Thm.implies_intr chyps
+         |> fold Thm.forall_intr old_cts
+         |> fold Thm.forall_elim (rev new_cts)
+    end
+
 (* Substitution into terms used in AUTO2. Substitute types first and
    instantiate the types in the table of term instantiations. Also
    perform beta_norm at the end.
@@ -909,24 +775,8 @@ fun apply_to_thm cv th =
     let val eq = cv (Thm.cprop_of th)
     in if Thm.is_reflexive eq then th else Thm.equal_elim eq th end
 
-(* Apply cv to the statement of th, skipping Trueprop. *)
-fun apply_to_thm' cv th = apply_to_thm (HOLogic.Trueprop_conv cv) th
-
-(* Given th of form A = B, get th' of form A == B. *)
-val to_meta_eq = apply_to_thm (Conv.rewr_conv @{thm to_meta_eq})
-(* Given th of form A == B, get th' of form A = B. *)
-val to_obj_eq = apply_to_thm (Conv.rewr_conv @{thm to_obj_eq})
-(* Given th of form A = B, get th' of form B = A. *)
-val obj_sym = apply_to_thm (Conv.rewr_conv @{thm obj_sym})
 (* Given th of form A == B, get th' of form B == A. *)
-val meta_sym = apply_to_thm (Conv.rewr_conv @{thm meta_sym})
-
-(* Obtain rewriting conv from obj equality. *)
-fun rewr_obj_eq eq_th = Conv.rewr_conv (to_meta_eq eq_th)
-
-(* Rewrite on subterms, top order. *)
-fun rewr_obj_eq_top ctxt eq_th =
-    Conv.top_conv (K (Conv.try_conv (rewr_obj_eq eq_th))) ctxt
+val meta_sym = Thm.symmetric
 
 (* Apply conv to rewrite the left hand side of th. *)
 fun apply_to_lhs cv th =
@@ -948,52 +798,6 @@ fun concl_conv cv ct =
     case Thm.term_of ct of
         Const ("Pure.imp", _) $ _ $ _ => Conv.arg_conv (concl_conv cv) ct
       | _ => cv ct
-
-(* Given an equality A == B, make the equality ~A == ~B. Cancel ~~ on
-   both sides if exists.
- *)
-fun make_neg_eq th =
-    th |> Thm.combination (Thm.reflexive (cert @{context} HOLogic.Not))
-       |> apply_to_lhs (Conv.try_conv (rewr_obj_eq nn_cancel_th))
-       |> apply_to_rhs (Conv.try_conv (rewr_obj_eq nn_cancel_th))
-
-(* If ct is of the form [...] ==> False, leave it unchanged.
-   Otherwise, change [...] ==> B to [..., ~ B] ==> False and change
-   [...] ==> ~ B to [..., B] ==> False.
- *)
-fun rewrite_to_contra_form ct =
-    let
-      val (_, concl) = Logic.strip_horn (Thm.term_of ct)
-      val concl' = HOLogic.dest_Trueprop concl
-    in
-      if concl' aconv @{term "False"} then
-        Conv.all_conv ct
-      else if is_neg concl' then
-        concl_conv (Conv.rewr_conv @{thm to_contra_form'}) ct
-      else
-        concl_conv (Conv.rewr_conv @{thm to_contra_form}) ct
-    end
-
-val rewrite_thm_to_contra_form = apply_to_thm rewrite_to_contra_form
-
-(* Rewrite ct from [...] ==> A ==> False to [...] ==> ~ A and from
-   [...] ==> ~ A ==> False to [...] ==> A.
- *)
-fun rewrite_from_contra_form ct =
-    let
-      val (prems, concl) = Logic.strip_horn (Thm.term_of ct)
-      val _ = assert (concl aconv @{prop "False"})
-                     "rewrite_from_contra_form: concl should be false."
-      val num_prems = length prems
-      val last_prem' = HOLogic.dest_Trueprop (nth prems (num_prems-1))
-      val to_contra_form_th = if is_neg last_prem' then @{thm to_contra_form}
-                              else @{thm to_contra_form'}
-    in
-      concl_conv_n (num_prems-1)
-                   (Conv.rewr_conv (meta_sym to_contra_form_th)) ct
-    end
-
-val rewrite_thm_from_contra_form = apply_to_thm rewrite_from_contra_form
 
 fun send_to_hyps ct th =
     Thm.implies_elim th (Thm.assume ct)
@@ -1036,192 +840,6 @@ fun transitive_list ths =
 fun skip_n_conv n cv =
     if n <= 0 then cv else Conv.arg_conv (skip_n_conv (n-1) cv)
 
-(* Converts ==> to --> and !! to !. *)
-fun to_obj_conv ctxt ct =
-    (case Thm.term_of ct of
-         @{const Pure.imp} $ _ $ _ =>
-         Conv.binop_conv (to_obj_conv ctxt) then_conv
-                         Conv.rewr_conv @{thm atomize_imp}
-       | Const (@{const_name Pure.all}, _) $ Abs _ =>
-         Conv.binder_conv (to_obj_conv o snd) ctxt then_conv
-                          Conv.rewr_conv @{thm atomize_all}
-       | _ => Conv.all_conv) ct
-
-(* When ct is of form A1 ==> ... ==> An, apply to_obj_conv to each Ai. *)
-fun to_obj_conv_on_horn ctxt ct =
-    (case Thm.term_of ct of
-        @{const Pure.imp} $ _ $ _ =>
-        Conv.combination_conv (Conv.arg_conv (to_obj_conv ctxt))
-                              (to_obj_conv_on_horn ctxt)
-      | _ => Conv.all_conv) ct
-
-fun to_obj_conv_on_horn_th th =
-    let val ctxt = Proof_Context.init_global (Thm.theory_of_thm th) in
-      apply_to_thm (to_obj_conv_on_horn ctxt) th
-    end
-
-(* Converts A1 --> ... --> An to A1 ==> ... ==> An. *)
-fun to_meta_imp_conv ct =
-    (case Thm.term_of ct of
-         @{const HOL.Trueprop} $ (@{const HOL.implies} $ _ $ _) =>
-         Conv.rewr_conv (meta_sym @{thm atomize_imp}) then_conv
-                        Conv.arg_conv to_meta_imp_conv
-       | _ => Conv.all_conv) ct
-
-(* Convert the first n object implies to meta implies. *)
-fun to_meta_imp_conv_n n ct =
-    (case n of
-         0 => Conv.all_conv
-       | _ => Conv.rewr_conv (meta_sym @{thm atomize_imp}) then_conv
-                             Conv.arg_conv (to_meta_imp_conv_n (n-1))) ct
-
-(* Converts ! to !! on the outermost level. *)
-fun to_meta_all_conv ctxt ct =
-    (case Thm.term_of ct of
-         @{const HOL.Trueprop} $ (Const (@{const_name HOL.All}, _) $ Abs _) =>
-         Conv.rewr_conv (meta_sym @{thm atomize_all}) then_conv
-                        Conv.binder_conv (to_meta_all_conv o snd) ctxt
-       | _ => Conv.all_conv) ct
-
-(* Modify th using imp_th, and add postfix to name (if available). *)
-fun thm_RS_mod imp_th suffix th =
-    (th RS imp_th) |> Drule.zero_var_indexes
-                   |> update_name_of_thm th suffix
-
-(* From A & B, obtain A. *)
-val conj_left_th = thm_RS_mod @{thm conjunct1} "@left"
-(* From A & B, obtain B. *)
-val conj_right_th = thm_RS_mod @{thm conjunct2} "@right"
-(* From (A::bool) = B, obtain A ==> B. *)
-val equiv_forward_th = thm_RS_mod @{thm iffD1} "@eqforward"
-(* From (A::bool) = B, obtain B ==> A. *)
-val equiv_backward_th = thm_RS_mod @{thm iffD2} "@eqbackward"
-(* Same as to_obj_eq, except keeping names and indices. *)
-val to_obj_eq_th = thm_RS_mod @{thm meta_eq_to_obj_eq} "@obj_eq"
-(* Same as obj_sym_th, except keeping names and indices. *)
-val obj_sym_th = thm_RS_mod @{thm sym} "@sym"
-
-(* Using cv, rewrite all assumptions and conclusion in ct. *)
-fun horn_conv cv ct =
-    (case Thm.term_of ct of
-         @{const Pure.imp} $ _ $ _ =>
-         (Conv.arg1_conv (HOLogic.Trueprop_conv cv))
-             then_conv (Conv.arg_conv (horn_conv cv))
-       | _ => HOLogic.Trueprop_conv cv) ct
-
-(* Given th of form (P ==>) A1 & ... & An, return theorems (P ==>) A1,
-   ..., (P ==>) An, where there can be zero or more premises in front.
- *)
-fun split_conj_th th =
-    case prop_of' th of
-        Const ("HOL.conj", _) $ _ $ _ =>
-        (conj_left_th th) :: (split_conj_th (conj_right_th th))
-      | _ => [th]
-
-(* Given th of form ~ (A1 | ... | An), return theorems ~ A1, ... ~ An. *)
-fun split_not_disj_th th =
-    case prop_of' th of
-        Const ("HOL.Not", _) $ (Const ("HOL.disj", _) $ _ $ _) =>
-        (th RS @{thm or_intro1}) :: (split_not_disj_th (th RS @{thm or_intro2}))
-      | _ => [th]
-
-(* Similar to Logic.strip_horn, except remove Trueprop. *)
-fun strip_horn' th = (Logic.strip_horn (Thm.prop_of th))
-                         |> apfst (map HOLogic.dest_Trueprop)
-                         |> apsnd HOLogic.dest_Trueprop
-
-(* Given th of form P x ==> False, where x is the given free variable,
-   obtain new theorem of form (EX x. P x) ==> False. The function is
-   written so it can be applied to multiple variables with fold. For
-   example, "fold (ex_elim ctxt) [x, y] (P x y ==> False) will give
-   (EX y x. P x y) ==> False.
- *)
-fun ex_elim ctxt freevar th =
-    let
-      val th' = th |> Thm.forall_intr (cert ctxt freevar)
-      val head_prem = hd (Thm.prems_of @{thm exE'})
-      val inst = pattern_match ctxt (head_prem, Thm.prop_of th')
-      val exE_inst = subst_thm ctxt inst @{thm exE'}
-    in
-      Thm.elim_implies th' exE_inst
-    end
-
-(* Rewrite ~A to A = False, and A to ~A = False. *)
-fun to_eqF_th th =
-    let
-      val eq_False_th = if is_neg (prop_of' th) then @{thm eq_False}
-                        else @{thm eq_False'}
-      val eq_False_cv = Conv.arg_conv (rewr_obj_eq (obj_sym eq_False_th))
-    in
-      apply_to_thm eq_False_cv th
-    end
-
-(* Convert ~ x < y to y <= x, and ~ x <= y to y < x. *)
-val neg_ineq_cv =
-    (Conv.try_conv o Conv.first_conv)
-        (map rewr_obj_eq [@{thm Orderings.linorder_not_less},
-                          @{thm Orderings.linorder_not_le}])
-
-(* Convert x < y to ~ y <= x, and x <= y to ~ y < x. *)
-val neg_ineq_back_cv =
-    (Conv.try_conv o Conv.first_conv)
-        (map (rewr_obj_eq o obj_sym) [@{thm Orderings.linorder_not_less},
-                                      @{thm Orderings.linorder_not_le}])
-
-(* Helper function for normalize_exs_conv. Attempt to rewrite ct into
-   the form Ex x. P x. This includes:
-
-   - Ex x : S. P x to Ex x. x : S & P x.
-
-   - A & Ex x. P x to Ex x. A & P x.
- *)
-fun normalize_ex_conv ct =
-    case Thm.term_of ct of
-        Const ("HOL.Ex", _) $ Abs _ => Conv.all_conv ct
-      | Const ("Set.Bex", _) $ _ $ Abs _ => rewr_obj_eq @{thm Bex_def'} ct
-      | Const ("Set.Bex", _) $ _ $ _ => rewr_obj_eq @{thm Bex_def} ct
-      | Const ("HOL.conj", _) $ _ $ _ =>
-        ((Conv.arg_conv normalize_ex_conv)
-             then_conv (rewr_obj_eq @{thm swap_ex_conj})) ct
-      | _ => Conv.no_conv ct
-
-(* Move existence quantifiers to the left of ct. If the integer
-   argument n is at least 0, move exactly n existence quantifiers to
-   the left (throwing an error if it is not possible). Otherwise, move
-   as many existence quantifiers to the left as possible.
- *)
-fun normalize_exs_conv n ctxt ct =
-    if n = 0 then
-      Conv.all_conv ct
-    else
-      (normalize_ex_conv then_conv (
-          Conv.binder_conv ((normalize_exs_conv (n-1)) o snd) ctxt)) ct
-      handle CTERM _ =>
-             if n > 0 then raise AUTO2CT ("normalize_exs_conv", [ct])
-             else Conv.all_conv ct
-
-(* Similar to normalize_ex_conv, swapping forall and implies. *)
-fun normalize_all_conv ct =
-    case Thm.term_of ct of
-        Const ("HOL.All", _) $ Abs _ => Conv.all_conv ct
-      | Const ("Set.Ball", _) $ _ $ Abs _ => rewr_obj_eq @{thm Ball_def'} ct
-      | Const ("Set.Ball", _) $ _ $ _ => rewr_obj_eq @{thm Ball_def} ct
-      | Const ("HOL.implies", _) $ _ $ _ =>
-        ((Conv.arg_conv normalize_all_conv)
-             then_conv (rewr_obj_eq @{thm swap_all_implies})) ct
-      | _ => Conv.no_conv ct
-
-(* Similar to normalize_exs_conv. Move forall quantifiers to the front. *)
-fun normalize_alls_conv n ctxt ct =
-    if n = 0 then
-      Conv.all_conv ct
-    else
-      (normalize_all_conv then_conv (
-          Conv.binder_conv ((normalize_alls_conv (n-1)) o snd) ctxt)) ct
-      handle CTERM _ =>
-             if n > 0 then raise AUTO2CT ("normalize_alls_conv", [ct])
-             else Conv.all_conv ct
-
 (* Given P of function type, produce P == %x. P x. *)
 fun reverse_eta_conv ctxt ct =
     let
@@ -1238,22 +856,6 @@ fun reverse_eta_conv ctxt ct =
 fun repeat_n_conv n cv t =
     if n = 0 then Conv.all_conv t
     else (cv then_conv (repeat_n_conv (n-1) cv)) t
-
-(* Generic wrapper function. tac can be arith_tac, simp_tac, etc. *)
-fun prove_by_tac tac ctxt ths goal =
-    let
-      val goal' = Logic.list_implies (
-            map Thm.prop_of ths, HOLogic.mk_Trueprop goal)
-    in
-      ths MRS (Goal.prove ctxt [] [] goal' (K (tac ctxt 1)))
-    end
-
-fun contra_by_tac tac ctxt ths = prove_by_tac tac ctxt ths @{term "False"}
-
-val prove_by_simp = prove_by_tac Simplifier.asm_full_simp_tac
-val contra_by_simp = contra_by_tac Simplifier.asm_full_simp_tac
-val prove_by_arith = prove_by_tac Arith_Data.arith_tac
-val contra_by_arith = contra_by_tac Arith_Data.arith_tac
 
 (* Generic function for testing a conv. *)
 fun test_conv ctxt cv err_str (str1, str2) =
@@ -1274,7 +876,7 @@ fun test_conv ctxt cv err_str (str1, str2) =
 (* term_pat and typ_pat, from Isabelle Cookbook. *)
 val term_pat_setup =
     let
-      val parser = Args.context -- Scan.lift Args.name_inner_syntax
+      val parser = Args.context -- Scan.lift Args.embedded_inner_syntax
       fun term_pat (ctxt, str) =
           str |> Proof_Context.read_term_pattern ctxt
               |> ML_Syntax.print_term
@@ -1285,7 +887,7 @@ val term_pat_setup =
 
 val cterm_pat_setup =
     let
-      val parser = Args.context -- Scan.lift Args.name_inner_syntax
+      val parser = Args.context -- Scan.lift Args.embedded_inner_syntax
       fun cterm_pat (ctxt, str) =
           str |> Proof_Context.read_term_pattern ctxt
               |> ML_Syntax.print_term
@@ -1297,7 +899,7 @@ val cterm_pat_setup =
 
 val type_pat_setup =
     let
-      val parser = Args.context -- Scan.lift Args.name_inner_syntax
+      val parser = Args.context -- Scan.lift Args.embedded_inner_syntax
       fun typ_pat (ctxt, str) =
           let
             val ctxt' = Proof_Context.set_mode Proof_Context.mode_schematic ctxt

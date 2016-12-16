@@ -25,15 +25,14 @@ theorem run_execute_succeed [forward]:
 lemma run_complete [resolve]:
   "\<exists>\<sigma>' r. run c \<sigma> \<sigma>' (r::'a)"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "r::'a, ArbVar r" THEN
-     CASE "\<sigma> = None" WITH OBTAIN "run c None None r" THEN
-     CASE "execute c (the \<sigma>) = None" WITH OBTAIN "run c \<sigma> None r") *})
+    (CHOOSE "r::'a, True" THEN
+     CASE "\<sigma> = None" WITH HAVE "run c None None r" THEN
+     CASE "execute c (the \<sigma>) = None" WITH HAVE "run c \<sigma> None r") *})
 
-theorem run_execute_none [forward]: "run c (Some h) None r \<Longrightarrow> execute c h = None"
-  by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("run c (Some h) None r", [])) *})
+theorem run_to_execute [forward]:
+  "run c (Some h) \<sigma>' r \<Longrightarrow> if \<sigma>' = None then execute c h = None else execute c h = Some (r, the \<sigma>')"
+  by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("run c (Some h) \<sigma>' r", [])) *})
 
-theorem run_execute_some [forward]: "run c (Some h) (Some h') r \<Longrightarrow> execute c h = Some (r, h')"
-  by (tactic {* auto2s_tac @{context} (PROP_INDUCT ("run c (Some h) (Some h') r", [])) *})
 setup {* add_backward_prfstep @{thm run.intros(3)} *}
 
 setup {* add_rewrite_rule @{thm execute_bind(1)} *}
@@ -45,15 +44,21 @@ setup {* add_rewrite_rule @{thm Array.get_alloc} *}
 setup {* add_rewrite_rule @{thm Ref.get_alloc} *}
 setup {* add_rewrite_rule_bidir @{thm Array.length_def} *}
 
-setup {* add_forward_prfstep_cond @{thm execute_assert(1)} [with_term "run (assert ?P ?x) (Some ?h) ?\<sigma>' ?r"] *}
+setup {* add_rewrite_rule @{thm execute_assert(1)} *}
 lemma execute_return': "execute (return x) h = Some (x, h)" by (metis comp_eq_dest_lhs execute_return)
-setup {* add_forward_prfstep_cond @{thm execute_return'} [with_term "run (return ?x) (Some ?h) ?\<sigma>' ?r"] *}
-setup {* add_forward_prfstep_cond @{thm execute_len} [with_term "run (Array.len ?a) (Some ?h) ?\<sigma>' ?r"] *}
-setup {* add_forward_prfstep_cond @{thm execute_new} [with_term "run (Array.new ?n ?x) (Some ?h) ?\<sigma>' ?r"] *}
-setup {* add_forward_prfstep_cond @{thm execute_upd(1)} [with_term "run (Array.upd ?i ?x ?a) (Some ?h) ?\<sigma>' ?r"] *}
-setup {* add_forward_prfstep_cond @{thm execute_ref} [with_term "run (ref ?v) (Some ?h) ?\<sigma>' ?r"] *}
-setup {* add_forward_prfstep_cond @{thm execute_lookup} [with_term "run (!?r) (Some ?h) ?\<sigma>' ?r'"] *}
-setup {* add_forward_prfstep_cond @{thm execute_nth(1)} [with_term "run (Array.nth ?a ?i) (Some ?h) ?\<sigma>' ?r"] *}
-setup {* add_forward_prfstep_cond @{thm execute_update} [with_term "run (?r := ?v) (Some ?h) ?\<sigma>' ?r'"] *}
+setup {* add_rewrite_rule @{thm execute_return'} *}
+setup {* add_rewrite_rule @{thm execute_len} *}
+setup {* add_rewrite_rule @{thm execute_new} *}
+setup {* add_rewrite_rule @{thm execute_upd(1)} *}
+setup {* add_rewrite_rule @{thm execute_ref} *}
+setup {* add_rewrite_rule @{thm execute_lookup} *}
+setup {* add_rewrite_rule @{thm execute_nth(1)} *}
+setup {* add_rewrite_rule @{thm execute_update} *}
+
+definition comment :: "assn \<Rightarrow> unit Heap" where
+  "comment P = Heap_Monad.Heap (\<lambda>h. Some ((), h))"
+
+theorem execute_comment [rewrite]:
+  "execute (comment P) h = Some ((), h)" by (simp add: comment_def)
 
 end

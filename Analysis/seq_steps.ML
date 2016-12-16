@@ -94,7 +94,7 @@ val monotone_pred_ex_prfstep =
                                 |> apply_on [the p_th, the q_th]
                                 |> backward_th |> apply_on ths
                 in
-                  [Update.ShadowItem {id = id, item = the_single items},
+                  [ShadowItem {id = id, item = the_single items},
                    Update.thm_update (id, th)]
                 end
               end

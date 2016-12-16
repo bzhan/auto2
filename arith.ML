@@ -58,8 +58,7 @@ fun nat_less_th m n =
 (* Obtain the theorem m ~= n. *)
 fun nat_neq_th m n =
     if m = n orelse m < 0 orelse n < 0 then raise AUTO2 "nat_neq_th: input"
-    else prove_by_arith ctxt [] (HOLogic.mk_not (
-                                    HOLogic.mk_eq (mk_nat m, mk_nat n)))
+    else prove_by_arith ctxt [] (mk_not (mk_eq (mk_nat m, mk_nat n)))
 
 fun nat_fold_reduce t =
     if fastype_of t <> natT then t else
@@ -80,7 +79,7 @@ fun nat_fold_conv ct =
       val t' = nat_fold_reduce t
     in
       if t aconv t' then Conv.all_conv ct
-      else to_meta_eq (prove_by_arith ctxt [] (HOLogic.mk_eq (t, t')))
+      else to_meta_eq (prove_by_arith ctxt [] (mk_eq (t, t')))
     end
 
 end  (* local ctxt = @{context}. *)
@@ -96,23 +95,33 @@ val nat_fold_rec_conv =
 fun nat_fold_rec_thm ctxt = apply_to_thm (nat_fold_rec_conv ctxt)
 
 val plus_ac =
-    {fname = @{const_name plus},
-     assoc_th = @{thm add_is_assoc}, comm_th = @{thm add_is_comm},
-     unit_th = @{thm add_has_unit}, uinv_th = @{thm add_has_uinv},
-     inv_th = @{thm add_has_inv}}
+    {assoc_th = @{thm add_ac(1)}, comm_th = @{thm add_ac(2)},
+     unitl_th = @{thm add_0}, unitr_th = @{thm add_0_right},
+     uinv_uinv_th = @{thm minus_minus},
+     uinv_head_th = @{thm minus_add_distrib},
+     uinv_unit_th = @{thm minus_zero},
+     inv_th = @{thm diff_conv_add_uminus}}
 
 val times_ac =
-    {fname = @{const_name times},
-     assoc_th = @{thm mult_is_assoc}, comm_th = @{thm mult_is_comm},
-     unit_th = @{thm mult_has_unit}, uinv_th = @{thm mult_has_uinv},
-     inv_th = @{thm mult_has_inv}}
+    {assoc_th = @{thm mult_ac(1)}, comm_th = @{thm mult_ac(2)},
+     unitl_th = @{thm mult_1}, unitr_th = @{thm mult_1_right},
+     uinv_uinv_th = @{thm inverse_inverse_eq},
+     uinv_head_th = @{thm inverse_mult_distrib},
+     uinv_unit_th = @{thm inverse_1},
+     inv_th = @{thm divide_inverse}}
+
+val gcd_ac =
+    ACUtil.constr_ac_info_acu {
+      assoc_th = @{thm gcd.assoc},
+      comm_th = @{thm gcd.commute},
+      unitl_th = @{thm gcd_0_left_nat}}
 
 val add_arith_ac_data =
     fold ACUtil.add_ac_data [
-      plus_ac, times_ac,
-      {fname = @{const_name gcd},
-       assoc_th = @{thm gcd_is_assoc}, comm_th = @{thm gcd_is_comm},
-       unit_th = @{thm gcd_has_unit}, uinv_th = true_th, inv_th = true_th}]
+      ("plus", ACUtil.constr_ac_info plus_ac),
+      ("times", ACUtil.constr_ac_info times_ac),
+      ("gcd", gcd_ac)
+    ]
 
 fun plus_ac_on_typ thy T =
     the (ACUtil.inst_ac_info thy T plus_ac)

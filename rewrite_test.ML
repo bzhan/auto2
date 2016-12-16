@@ -3,7 +3,7 @@
 local
 
 val thy = @{theory}
-val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
+val thy' = thy |> Nat_Arith.add_arith_ac_data
 val ctxt' = Proof_Context.init_global thy'
 val init = RewriteTable.empty @{context}
 val tbl = RewriteTable.empty ctxt'
@@ -204,7 +204,7 @@ fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
 
 fun add_property id str (tbl as {ctxt, ...}) =
     let
-      val t = HOLogic.mk_Trueprop (read_term ctxt str)
+      val t = mk_Trueprop (read_term ctxt str)
     in
       tbl |> RewriteTable.add_property (id, assume_thm ctxt t)
     end

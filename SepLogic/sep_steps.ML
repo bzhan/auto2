@@ -5,6 +5,7 @@ sig
   val assnT: typ
   val pheapT: typ
   val emp: term
+  val assn_ac_info: ac_inst_info
   val dest_entail: term -> term * term
   val dest_hoare_triple: term -> term * term * term
   val mk_star: term * term -> term
@@ -13,7 +14,7 @@ sig
   val mk_mod: term * term -> term
   val heap_of_mod_th: thm -> term
   val is_pure_assn: term -> bool
-  val has_pure_assn: theory -> term -> bool
+  val has_pure_assn: term -> bool
   val normalize_assn_cv: Proof.context -> conv
   val normalize_mod_cv: Proof.context -> conv
 
@@ -27,7 +28,7 @@ sig
   val TY_MATCH_POS: string
   val TY_SUCCESS_RUN: string
   val output_code_pos_fn: item_output
-  val code_pos_match_rewr_terms: term -> term list
+  val code_pos_match_rewr_terms: term list -> term list
   val output_code_pos_match_fn: item_output
   val output_success_run_fn: item_output
   val code_pos_typed_matcher: item_matcher
@@ -44,7 +45,7 @@ sig
   val rewrite_pos: proofstep
   val match_hoare_disj: proofstep
   val convert_match_pos: proofstep
-  val use_prec_thms: RewriteTable.rewrite_table -> thm -> thm -> thm
+  val use_prec_thms: rewrite_table -> thm -> thm -> thm
   val match_assn2: proofstep
   val match_assn_pure: proofstep
   val match_hoare_create_case_gen: string * term -> proofstep
@@ -72,6 +73,7 @@ fun rewr_obj_eq_bottom ctxt eq_th =
 val assnT = @{typ assn}
 val pheapT = @{typ pheap}
 val emp = @{term emp}
+val assn_ac_info = Nat_Arith.times_ac_on_typ @{theory} assnT
 
 (* Deconstruct A ==>_A B into (A, B). *)
 fun dest_entail t =
@@ -114,10 +116,9 @@ fun is_pure_assn t =
 (* Given t of form t1 * ... * tn, check whether any of them is of the
    form \<up>(b).
  *)
-fun has_pure_assn thy t =
+fun has_pure_assn t =
     let
-      val ac_info = Nat_Arith.times_ac_on_typ thy assnT
-      val ts = ACUtil.dest_ac_total ac_info t
+      val ts = ACUtil.dest_ac_total assn_ac_info t
     in
       exists is_pure_assn ts
     end
@@ -125,14 +126,10 @@ fun has_pure_assn thy t =
 (* Given t of form t1 * ... * tn, remove those ti that are pure
    assertions and return the product of the remaining terms.
  *)
-fun strip_pure_assn thy t =
-    let
-      val ac_info = Nat_Arith.times_ac_on_typ thy assnT
-    in
-      t |> ACUtil.dest_ac_total ac_info
-        |> filter_out is_pure_assn
-        |> ACUtil.list_ac_l ac_info
-    end
+fun strip_pure_assn t =
+    t |> ACUtil.dest_ac_total assn_ac_info
+      |> filter_out is_pure_assn
+      |> ACUtil.list_ac_l assn_ac_info
 
 (* Normalization function for assertions. This function pulls all EX_A
    to the front, then apply AC-rules to the inside, putting all pure
@@ -140,8 +137,6 @@ fun strip_pure_assn thy t =
  *)
 fun normalize_assn_cv ctxt ct =
     let
-      val thy = Thm.theory_of_cterm ct
-      val ac_info = Nat_Arith.times_ac_on_typ thy assnT
       fun pure_ord (t, s) = not (is_pure_assn t) andalso is_pure_assn s
       val rewr_distrib_ex =
           Conv.every_conv (
@@ -157,9 +152,9 @@ fun normalize_assn_cv ctxt ct =
       Conv.every_conv [
         Conv.top_conv (K rewr_distrib_ex) ctxt,
         rewr_obj_eq_top ctxt @{thm pure_conj},
-        within_ex_assn (ACUtil.normalize_assoc_l ac_info) ctxt,
-        within_ex_assn (ACUtil.normalize_unit ac_info) ctxt,
-        within_ex_assn (ACUtil.normalize_comm_l ac_info pure_ord) ctxt] ct
+        within_ex_assn (ACUtil.normalize_assoc_l assn_ac_info) ctxt,
+        within_ex_assn (ACUtil.normalize_unit assn_ac_info) ctxt,
+        within_ex_assn (ACUtil.normalize_comm_l assn_ac_info pure_ord) ctxt] ct
     end
 
 val mod_cv_thms =
@@ -200,13 +195,12 @@ fun normalize_mod_cv_prfstep nm pat =
 
 val normalize_mod_cv_prfsteps =
     let
-      fun pos_step th = normalize_mod_cv_prfstep
-                            (name_of_thm th ^ "@norm")
-                            (th |> prop_of' |> HOLogic.dest_eq |> fst)
+      fun pos_step th =
+          normalize_mod_cv_prfstep (name_of_thm th ^ "@norm")
+                                   (th |> prop_of' |> dest_eq |> fst)
       fun neg_step th =
-          normalize_mod_cv_prfstep
-              (name_of_thm th ^ "@negnorm")
-              (th |> prop_of' |> HOLogic.dest_eq |> fst |> get_neg)
+          normalize_mod_cv_prfstep (name_of_thm th ^ "@negnorm")
+                                   (th |> prop_of' |> dest_eq |> fst |> get_neg)
     in
       map pos_step mod_cv_thms @ map neg_step mod_cv_thms
     end
@@ -240,8 +234,8 @@ fun add_forward_ent_prfstep_cond_gnrc ent_th conds gnrc =
 
       fun shadow_to_update id items shadow =
           case shadow of
-              ShadowFirst => Update.ShadowItem {id = id, item = hd items}
-            | ShadowSecond => Update.ShadowItem {id = id, item = nth items 1}
+              ShadowFirst => ShadowItem {id = id, item = hd items}
+            | ShadowSecond => ShadowItem {id = id, item = nth items 1}
             | _ => raise AUTO2 "shadow_to_update in forward_ent."
 
       fun prfstep_fn ((id, _), ths) items {ctxt, ...} =
@@ -352,21 +346,16 @@ fun output_code_pos_fn ctxt (tname, th) =
                        |> is_bind_cmd
     in
       "CODE_POS " ^ (if is_bind then "" else "(last) ") ^
-      (tname |> pretty_term ctxt |> str)
+      (tname |> pretty_terms ctxt |> str)
     end
 
-fun code_pos_match_rewr_terms t =
-    let
-      val ts = HOLogic.strip_tuple t
-    in
-      take 2 ts @ drop 3 ts
-    end
+fun code_pos_match_rewr_terms ts = take 2 ts @ drop 3 ts
 
 fun output_code_pos_match_fn ctxt (tname, _) =
-    "MATCH_POS " ^ (tname |> pretty_term ctxt |> str)
+    "MATCH_POS " ^ (tname |> pretty_terms ctxt |> str)
 
 fun output_success_run_fn ctxt (tname, _) =
-    "SUCCESS_RUN " ^ (tname |> pretty_term ctxt |> str)
+    "SUCCESS_RUN " ^ (tname |> pretty_terms ctxt |> str)
 
 (* Common matcher for CODE_POS, MATCH_POS, and SUCCESS_RUN. When
    pattern is a tuple of n terms, match the first n terms of tname.
@@ -377,19 +366,17 @@ val code_pos_typed_matcher =
       fun pre_match pat {tname, ...} tbl =
           let
             val pats = HOLogic.strip_tuple pat
-            val tnames = HOLogic.strip_tuple tname
           in
-            if length pats > length tnames then false
+            if length pats > length tname then false
             else forall (Matcher.pre_match tbl)
-                        (pats ~~ take (length pats) tnames)
+                        (pats ~~ take (length pats) tname)
           end
 
       (* Use equalities to convert prop to prop'. *)
       fun match pat {tname, prop, ty_str, ...} (tbl as {ctxt, ...}) (id, inst) =
           let
             val pats = HOLogic.strip_tuple pat
-            val tnames = take (length pats) (HOLogic.strip_tuple tname)
-            val pairs = map (pair false) (pats ~~ tnames)
+            val pairs = map (pair false) (pats ~~ take (length pats) tname)
 
             val insts = Matcher.rewrite_match_list tbl pairs (id, inst)
             fun process_inst (inst, ths) =
@@ -456,7 +443,7 @@ val heap_preservingI =
                     Conv.arg_conv (rewr_obj_eq @{thm heap_preserving_def}))
             in
               [Update.thm_update (id, th_res),
-               Update.ShadowItem {id = id, item = the_single items}]
+               ShadowItem {id = id, item = the_single items}]
             end)
 
 (* Given heap_preserving c, conclude h = h' from effect c h h' r. *)
@@ -541,14 +528,13 @@ val init_pos =
               val c1 = if is_bind then fst (dest_bind c) else c
 
               val h_t = heap_of_mod_th modP_th
-              val tname = HOLogic.mk_tuple [h_t, c1]
 
               val (ritems_P, modP_th') = mod_fact_ritems ctxt modP_th
               val ritems' = ritems @ ritems_P @
                             [Update.thm_to_ritem modP_th',
-                             Fact (TY_CODE_POS, tname, code_pos_th)]
+                             Fact (TY_CODE_POS, [h_t, c1], code_pos_th)]
             in
-              [Update.AddItems {id = id, raw_items = ritems'}]
+              [AddItems {id = id, raw_items = ritems'}]
             end)
 
 (* Find heap preserving theorem for a command c, return NONE or SOME
@@ -593,7 +579,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
        *)
       fun reduce_emp_right th =
           th |> apply_to_thm (
-            (concl_conv o HOLogic.Trueprop_conv o Conv.try_conv o
+            (concl_conv o Trueprop_conv o Conv.try_conv o
              mod_assn_conv o rewr_obj_eq) @{thm mult_1_right})
 
       fun split_conj_all_th th =
@@ -645,14 +631,13 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val next_all_th = [success_th, all_th] MRS @{thm success_run_next}
 
         (* Form tname and prop of the new CODE_POS item. *)
-        val tname = HOLogic.mk_tuple [next_h_t, rest_c1]
+        val tname = [next_h_t, rest_c1]
         val next_code_pos_th = [run_rest_th, next_all_th] MRS @{thm conjI}
 
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
 
         (* success_run item. *)
-        val tname_run = HOLogic.mk_tuple [h_t, c1]
         val (modQ_th'', modQ_rest) =
             modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
                      |> apfst (the_single)
@@ -661,7 +646,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
                        else modQ_rest
         val prop_run =
             [mod_th', [success_th, modQ_th''] MRS @{thm conjI}] MRS @{thm conjI}
-        val success_run_ritem = Fact (TY_SUCCESS_RUN, tname_run, prop_run)
+        val success_run_ritem = Fact (TY_SUCCESS_RUN, [h_t, c1], prop_run)
         val next_code_pos_ritem = Fact (TY_CODE_POS, tname, next_code_pos_th)
       in
         (modQ_ths, ritems @ ritems_Q @ [success_run_ritem, next_code_pos_ritem])
@@ -702,7 +687,6 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
         (* success_run item. *)
         val success_th = conj_right_th rest_th
-        val tname_run = HOLogic.mk_tuple [h_t, c1]
         val (modQ_th'', modQ_rest) =
             modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
                      |> apfst (the_single)
@@ -711,7 +695,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
                        else modQ_rest
         val prop_run =
             [mod_th', [success_th, modQ_th''] MRS @{thm conjI}] MRS @{thm conjI}
-        val success_run_ritem = Fact (TY_SUCCESS_RUN, tname_run, prop_run)
+        val success_run_ritem = Fact (TY_SUCCESS_RUN, [h_t, c1], prop_run)
       in
         (modQ_ths, ritems @ ritems_Q @
                    [success_run_ritem, Update.thm_to_ritem Q_goal])
@@ -724,13 +708,12 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
  *)
 fun match_assn1_fn rtype {ctxt, ...} item1 item2 =
     let
-      val thy = Proof_Context.theory_of ctxt
       val {id, tname, prop, ...} = item1
-      val h_t = hd (HOLogic.strip_tuple tname)
+      val h_t = hd tname
       val (hoare_th, code_pos_th) = (conj_left_th prop, conj_right_th prop)
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
     in
-      if has_pure_assn thy P then []
+      if has_pure_assn P then []
       else let
         val P_pat = if P aconv emp then Var (("R", 0), assnT)
                     else mk_star (P, Var (("Ru", 0), assnT))
@@ -741,7 +724,7 @@ fun match_assn1_fn rtype {ctxt, ...} item1 item2 =
               val (_, ritems) =
                   next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
             in
-              Update.AddItems {id = id', raw_items = ritems}
+              AddItems {id = id', raw_items = ritems}
             end
       in
         map inst_to_updt insts
@@ -772,13 +755,11 @@ val rewrite_pos =
               val new_is_bind = is_bind_cmd new_c
               val new_c1 = if new_is_bind then fst (dest_bind new_c) else new_c
               val {tname, ...} = the_single items
-              val (h_t, _) = the_pair (HOLogic.strip_tuple tname)
-              val tname' = HOLogic.mk_tuple [h_t, new_c1]
-
-              val ritem = Fact (TY_CODE_POS, tname', th)
+              val (h_t, _) = the_pair tname
+              val ritem = Fact (TY_CODE_POS, [h_t, new_c1], th)
             in
-              [Update.AddItems {id = id, raw_items = [ritem]},
-               Update.ShadowItem {id = id, item = the_single items}]
+              [AddItems {id = id, raw_items = [ritem]},
+               ShadowItem {id = id, item = the_single items}]
             end)
 
 (* Here item1 is a DISJ item of form <P> c <Q>, where P, c, and Q may
@@ -796,7 +777,7 @@ fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
                      "match_hoare_disj_fn: unexpected DISJ."
       val (_, c, _) = dest_hoare_triple (the_single subs)
       val {id = id', tname = tname2, prop = th2, ...} = item2
-      val (h_t, c1) = the_pair (HOLogic.strip_tuple tname2)
+      val (h_t, c1) = the_pair tname2
       val id'' = BoxID.merge_boxes lat (id, id')
       val insts = (Matcher.rewrite_match tbl (c, c1) (id'', fo_init))
                       |> RewriteTable.replace_id_for_type rtype
@@ -807,12 +788,11 @@ fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
                 th1 |> subst_thm_thy thy inst
                     |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
             val (P', _, Q') = dest_hoare_triple (prop_of' th1')
-            val new_tname =
-                HOLogic.mk_tuple [h_t, c1, term_of_bool false, P', Q']
+            val new_tname = [h_t, c1, term_of_bool false, P', Q']
             val new_prop = [th1', th2] MRS @{thm conjI}
             val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
           in
-            [Update.AddItems {id = id''', raw_items = [ritem]}]
+            [AddItems {id = id''', raw_items = [ritem]}]
           end
     in
       maps process_inst insts
@@ -844,11 +824,11 @@ val match_hoare_prop =
               val Q = lookup_inst inst "Q"
               val h_t = lookup_inst inst "h"
               val c = lookup_inst inst "c"
-              val tname = HOLogic.mk_tuple [h_t, c, term_of_bool false, P, Q]
+              val tname = [h_t, c, term_of_bool false, P, Q]
               val prop = ths MRS @{thm conjI}
               val ritem = Fact (TY_MATCH_POS, tname, prop)
             in
-              [Update.AddItems {id = id, raw_items = [ritem]}]
+              [AddItems {id = id, raw_items = [ritem]}]
             end)
 
 (* item1 is MATCH_POS item with tname (h, c, false, P, Q), item2 is
@@ -865,16 +845,16 @@ val convert_match_pos =
         PRIORITY_SHADOW
         (fn ((id, inst), ths) => fn items => fn _ =>
             let
-              val tname = HOLogic.mk_tuple (
-                    (map (lookup_inst inst) ["h", "c"]) @ [term_of_bool true] @
-                    (map (lookup_inst inst) ["P", "Q"]))
+              val tname =
+                  (map (lookup_inst inst) ["h", "c"]) @ [term_of_bool true] @
+                  (map (lookup_inst inst) ["P", "Q"])
               val (th1, th2) = the_pair ths
               val new_prop =
                   [conj_left_th th1, conj_right_th th2] MRS @{thm conjI}
               val ritem = Fact (TY_MATCH_POS, tname, new_prop)
             in
-              [Update.AddItems {id = id, raw_items = [ritem]},
-               Update.ShadowItem {id = id, item = hd items}]
+              [AddItems {id = id, raw_items = [ritem]},
+               ShadowItem {id = id, item = hd items}]
             end)
 
 (* Given ex_th of form EX v1 v2 ... vn. h |= P, instantiate the
@@ -913,7 +893,7 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
               end
 
       val (vars, new_prop) = ex_th |> prop_of' |> dest_all_abs nms
-                                   |> apsnd HOLogic.mk_Trueprop
+                                   |> apsnd mk_Trueprop
       val new_th = new_prop |> cert ctxt |> Thm.assume
       val base_th' = base_th RS @{thm mod_star_trueI}
 
@@ -968,14 +948,12 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
  *)
 fun match_assn2_fn rtype {ctxt, ...} item1 item2 =
     let
-      val thy = Proof_Context.theory_of ctxt
       val tbl = RewriteTable.table_of_rtype rtype
       val {id, tname, prop, ...} = item1
-      val tnames = HOLogic.strip_tuple tname
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (success_th, post_th) =
           (conj_left_th success_ths, conj_right_th success_ths)
-      val h_t = hd tnames
+      val h_t = hd tname
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
 
       (* Get h |= emp * R from h |= R. *)
@@ -983,7 +961,7 @@ fun match_assn2_fn rtype {ctxt, ...} item1 item2 =
           th |> apply_to_thm' ((mod_assn_conv o rewr_obj_eq o obj_sym)
                                @{thm assn_one_left})
     in
-      if has_pure_assn thy P then []
+      if has_pure_assn P then []
       else let
         val P_pat = if P aconv emp then Var (("R", 0), assnT)
                     else mk_star (P, Var (("Ru", 0), assnT))
@@ -1041,13 +1019,12 @@ val match_assn_pure =
                                        |> apply_to_thm to_meta_imp_conv
                                        |> Thm.elim_implies th2
               val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
-              val tname = HOLogic.mk_tuple (
-                    map (lookup_inst inst) ["h", "c", "s"] @ [P', Q'])
+              val tname = map (lookup_inst inst) ["h", "c", "s"] @ [P', Q']
               val new_prop = [hoare_th', success_ths] MRS @{thm conjI}
               val ritem = Fact (TY_MATCH_POS, tname, new_prop)
             in
-              [Update.AddItems {id = id, raw_items = [ritem]},
-               Update.ShadowItem {id = id, item = hd items}]
+              [AddItems {id = id, raw_items = [ritem]},
+               ShadowItem {id = id, item = hd items}]
             end)
 
 (* Given a MATCH_POS item with tname (h, c, is_success, P, Q), where P
@@ -1057,19 +1034,17 @@ val match_assn_pure =
  *)
 fun match_assn_spatial_fn rtype {ctxt, ...} item1 item2 =
     let
-      val thy = Proof_Context.theory_of ctxt
       val {id, tname, prop, ...} = item1
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
     in
       if not (has_vars P) then []
-      else if not (has_pure_assn thy P) then []
+      else if not (has_pure_assn P) then []
       else let
-        val P' = strip_pure_assn thy P
+        val P' = strip_pure_assn P
         val _ = assert (not (P' aconv emp)) "match_assn_spatial_fn"
 
-        val tnames = HOLogic.strip_tuple tname
-        val (h_t, c, is_success) = the_triple (take 3 tnames)
+        val (h_t, c, is_success) = the_triple (take 3 tname)
 
         val P_pat = mk_star (P', Var (("Ru", 0), assnT))
         val mod_pat = mk_mod (h_t, P_pat)
@@ -1078,12 +1053,12 @@ fun match_assn_spatial_fn rtype {ctxt, ...} item1 item2 =
             let
               val hoare_th' = subst_thm ctxt inst hoare_th
               val (P'', _, Q'') = dest_hoare_triple (prop_of' hoare_th')
-              val tname' = HOLogic.mk_tuple [h_t, c, is_success, P'', Q'']
+              val tname' = [h_t, c, is_success, P'', Q'']
               val prop' = [hoare_th', success_ths] MRS @{thm conjI}
               val ritem = Fact (TY_MATCH_POS, tname', prop')
             in
-              [Update.AddItems {id = id'', raw_items = [ritem]},
-               Update.ShadowItem {id = id'', item = item1}]
+              [AddItems {id = id'', raw_items = [ritem]},
+               ShadowItem {id = id'', item = item1}]
             end
       in
         maps process_inst insts
@@ -1102,21 +1077,18 @@ fun match_hoare_create_case_gen (nm, pat) =
     prfstep_custom
         nm [WithItem (TY_MATCH_POS, pat)]
         PRIORITY_ADD
-        (fn ((id, inst), _) => fn _ => fn {ctxt, ...} =>
+        (fn ((id, inst), _) => fn _ => fn _ =>
             if has_vars (lookup_inst inst "P") then [] else
             let
-              val thy = Proof_Context.theory_of ctxt
-              val ac_info = Nat_Arith.times_ac_on_typ thy assnT
               val ts = (lookup_inst inst "P")
-                           |> ACUtil.dest_ac_total ac_info
+                           |> ACUtil.dest_ac_total assn_ac_info
                            |> filter is_pure_assn
             in
               if length ts = 0 then []
               else let
-                val t = ts |> hd |> dest_arg |> get_neg |> HOLogic.mk_Trueprop
+                val t = ts |> hd |> dest_arg |> get_neg |> mk_Trueprop
               in
-                [Update.AddBoxes {
-                    id = id, inits = [Update.InitAssum t], cbs = []}]
+                [AddBoxes {id = id, inits = [InitAssum t], cbs = []}]
               end
             end)
 
@@ -1152,12 +1124,11 @@ fun hoare_triple_prfstep hoare_th =
                 (subst_thm ctxt inst hoare_th)
                     |> apply_to_thm' (argn_conv 0 (normalize_assn_cv ctxt))
             val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
-            val new_tname =
-                HOLogic.mk_tuple [h_t, c, term_of_bool false, P', Q']
+            val new_tname = [h_t, c, term_of_bool false, P', Q']
             val new_prop = [hoare_th', the_single ths] MRS @{thm conjI}
             val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
           in
-            [Update.AddItems {id = id, raw_items = [ritem]}]
+            [AddItems {id = id, raw_items = [ritem]}]
           end
     in
       prfstep_custom name descs PRIORITY_ADD prfstep_fn
@@ -1195,10 +1166,9 @@ fun hoare_triple_direct_prfstep hoare_th =
             val (modQ_th, ritems) =
                 next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
           in
-            [Update.AddItems {
-                id = id,
-                raw_items = ritems @ (map Update.thm_to_ritem modQ_th)},
-             Update.ShadowItem {id = id, item = hd items}]
+            [AddItems {id = id,
+                       raw_items = ritems @ (map Update.thm_to_ritem modQ_th)},
+             ShadowItem {id = id, item = hd items}]
           end
     in
       (name, descs, prfstep_custom name descs PRIORITY_SHADOW prfstep_fn)

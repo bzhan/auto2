@@ -2,16 +2,15 @@
 
 val test_normalize =
     let
-      val thy = @{theory} |> add_logic_ac_data
-      val ctxt = Proof_Context.init_global thy
+      val ctxt = @{context}
       fun test (str, strs) =
           let
             val t = read_term ctxt str
             val ts = map (read_term ctxt) strs
             val ritem =
-                Update.thm_to_ritem (assume_thm ctxt (HOLogic.mk_Trueprop t))
+                Update.thm_to_ritem (assume_thm ctxt (mk_Trueprop t))
             val ritems' = normalize ctxt ritem
-            val ts' = map (HOLogic.dest_Trueprop o Thm.prop_of o get_thm_raw)
+            val ts' = map (dest_Trueprop o Thm.prop_of o BoxItem.get_thm_raw)
                           ritems'
           in
             if length ts = length ts' andalso
@@ -26,15 +25,9 @@ val test_normalize =
           end
 
       val test_data = [
-        ("P a = True", ["(P a)::bool"]),
-        ("P a = False", ["~ (P a)"]),
-        ("P a ~= True", ["~ (P a)"]),
-        ("P a ~= False", ["(P a)::bool"]),
         ("A & B & C", ["A::bool", "B::bool", "C::bool"]),
         ("~ (A | B | C)", ["~ A", "~ B", "~ C"]),
-        ("~ ~ (~ A & (~ ~ B))", ["~ A", "B::bool"]),
-        ("ALL x. A", ["A::bool"]),
-        ("ALL x y. P x", ["ALL x. P x"])
+        ("~ ~ (~ A & (~ ~ B))", ["~ A", "B::bool"])
       ]
     in
       map test test_data

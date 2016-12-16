@@ -1,33 +1,23 @@
 (* Setup of proof steps related to sets. *)
 
 theory Set_Thms
-imports Auto2_Base "~~/src/HOL/Library/Multiset"
+imports Logic_Thms "~~/src/HOL/Library/Multiset"
 begin
 
 section {* Set *}
 
 subsection {* AC property of intersection and union *}
 
-theorem Int_is_assoc: "is_assoc_fn (op \<inter>)" by (simp add: inf.semigroup_axioms is_assoc_fn_def semigroup.assoc)
-theorem Int_is_comm: "is_comm_fn (op \<inter>)" by (simp add: inf_commute is_comm_fn_def)
-theorem Int_has_unit: "is_unit_fn UNIV (op \<inter>)" by (simp add: is_unit_fn_def)
-
-theorem Un_is_assoc: "is_assoc_fn (op \<union>)" by (simp add: is_assoc_fn_def semigroup.assoc sup.semigroup_axioms)
-theorem Un_is_comm: "is_comm_fn (op \<union>)" by (simp add: is_comm_fn_def sup_commute)
-theorem Un_has_unit: "is_unit_fn {} (op \<union>)" by (simp add: is_unit_fn_def)
-
-ML {*
-val add_set_ac_data =
+setup {*
   fold ACUtil.add_ac_data [
-    {fname = @{const_name inf},
-     assoc_th = @{thm Int_is_assoc}, comm_th = @{thm Int_is_comm},
-     unit_th = @{thm Int_has_unit}, uinv_th = true_th, inv_th = true_th},
+    ("inf", ACUtil.constr_ac_info_acu {
+     assoc_th = @{thm inf_assoc}, comm_th = @{thm inf_commute},
+     unitl_th = @{thm inf_top_left}}),
 
-    {fname = @{const_name sup},
-     assoc_th = @{thm Un_is_assoc}, comm_th = @{thm Un_is_comm},
-     unit_th = @{thm Un_has_unit}, uinv_th = true_th, inv_th = true_th}]
+    ("sup", ACUtil.constr_ac_info_acu {
+     assoc_th = @{thm sup_assoc}, comm_th = @{thm sup_commute},
+     unitl_th = @{thm sup_bot_left}})]
 *}
-setup {* add_set_ac_data *}
 
 subsection {* Collection and bounded quantification *}
 setup {* add_rewrite_rule @{thm Set.mem_Collect_eq} *}
@@ -57,12 +47,10 @@ setup {* add_rewrite_rule @{thm Set.Int_absorb} *}
 subsection {* Disjointness *}
 definition set_disjoint :: "'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
   "set_disjoint U V = (U \<inter> V = {})"
-setup {* add_forward_prfstep (equiv_backward_th @{thm set_disjoint_def}) *}
-setup {* add_backward_prfstep (equiv_forward_th @{thm set_disjoint_def}) *}
+setup {* add_rewrite_rule_back @{thm set_disjoint_def} *}
 
-theorem set_disjoint_comm: "set_disjoint A B = set_disjoint B A" by (simp add: inf_commute set_disjoint_def)
-setup {* add_forward_prfstep (equiv_forward_th @{thm set_disjoint_comm}) *}
-setup {* add_backward_prfstep (equiv_backward_th @{thm set_disjoint_comm}) *}
+theorem set_disjoint_comm [rewrite]:
+  "set_disjoint A B = set_disjoint B A" by (simp add: inf_commute set_disjoint_def)
 
 theorem set_disjoint_empty [resolve]: "set_disjoint {} A" by (simp add: set_disjoint_def)
 theorem set_disjoint_mp: "set_disjoint A B \<Longrightarrow> p \<in> A \<Longrightarrow> p \<notin> B" by (metis IntI empty_iff set_disjoint_def)
@@ -122,38 +110,40 @@ setup {* add_rewrite_rule @{thm image_mset_single} *}
 setup {* add_rewrite_rule @{thm image_mset_union} *}
 
 subsection {* mset_prod *}
-setup {* add_rewrite_rule @{thm msetprod_empty} *}
-setup {* add_rewrite_rule @{thm msetprod_singleton} *}
-setup {* add_rewrite_rule @{thm msetprod_Un} *}
+setup {* add_rewrite_rule @{thm prod_mset_empty} *}
+setup {* add_rewrite_rule @{thm prod_mset_singleton} *}
+setup {* add_rewrite_rule @{thm prod_mset_Un} *}
 
 subsection {* mset *}
 theorem mset_member_empty [resolve]: "\<not>p \<in># {#}" by simp
 theorem mset_single [rewrite]: "mset [x] = {#x#}" by simp
-setup {* add_rewrite_rule @{thm mset.simps(1)} #> add_rewrite_rule_cond @{thm mset.simps(2)} [with_cond "?x \<noteq> []"] *} 
+theorem mset_simps_2: "mset (a # x) = mset x + {#a#}" by simp
+setup {* add_rewrite_rule @{thm mset.simps(1)} #>
+  add_rewrite_rule_cond @{thm mset_simps_2} [with_cond "?x \<noteq> []"] *} 
 setup {* add_rewrite_rule @{thm mset_eq_setD} *}
 theorem mset_append_one [rewrite]: "mset (xs @ [x]) = mset xs + {#x#}" by simp
 setup {* add_backward_prfstep @{thm Multiset.nth_mem_mset} *}
 theorem in_mset_append [forward]: "m \<in># mset (xs @ [x]) \<Longrightarrow> m \<in># mset xs \<or> m = x" by auto
 theorem in_multiset_single [forward]: "x \<in># {#y#} \<Longrightarrow> x = y" using not_gr0 by fastforce
 theorem mset_butlast [forward]: "p \<in># mset (butlast xs) \<Longrightarrow> p \<in># mset xs"
-  by (meson in_set_butlastD mem_set_multiset_eq)
+  by (simp add: in_set_butlastD)
 
 subsection {* Case checking *}
-setup {* add_resolve_prfstep @{thm multi_nonempty_split} *}
+theorem multi_nonempty_split' [resolve]: "M \<noteq> {#} \<Longrightarrow> \<exists>M' m. M = M' + {#m#}"
+  using multi_nonempty_split by auto
 
 subsection {* Membership and ordering *}
 theorem multiset_eq_union_same [backward]: "(A::'a multiset) = B \<Longrightarrow> C + A = C + B" by simp
 setup {* add_backward2_prfstep @{thm subset_mset.antisym} *}
 setup {* add_resolve_prfstep @{thm Multiset.empty_le} *}
-setup {* add_forward_prfstep @{thm mset_lessD} *}
-setup {* add_backward_prfstep @{thm Multiset.multi_member_split} *}
-setup {* add_forward_prfstep_cond @{thm multi_psub_of_add_self} [with_term "?A + {#?x#}"] *}
+setup {* add_forward_prfstep @{thm mset_subsetD} *}
+theorem multi_member_split' [backward]: "x \<in># M \<Longrightarrow> \<exists>M'. M = M' + {#x#}" by (metis insert_DiffM2)
+theorem multi_psub_of_add_self': "A \<subset># A + {#x#}" by simp
+setup {* add_forward_prfstep_cond @{thm multi_psub_of_add_self'} [with_term "?A + {#?x#}"] *}
 theorem multi_contain_add_self: "x \<in># A + {#x#}" by simp
 setup {* add_forward_prfstep_cond @{thm multi_contain_add_self} [with_term "?A + {#?x#}"] *}
 theorem multi_add_right [resolve]: "M \<subseteq># N \<Longrightarrow> M + {#x#} \<subseteq># N + {#x#}" by simp
-theorem multi_Ball_mono' [forward]:
-  "M \<subset># N \<Longrightarrow> \<forall>x\<in>set_mset N. P x \<Longrightarrow> \<forall>x\<in>set_mset M. P x" by (meson mem_set_mset_iff mset_lessD)
-setup {* add_forward_prfstep (equiv_forward_th @{thm ball_set_mset_iff}) *}
+theorem multi_Ball_mono' [forward]: "M \<subset># N \<Longrightarrow> \<forall>x\<in>#N. P x \<Longrightarrow> \<forall>x\<in>#M. P x" by (simp add: mset_subsetD)
 
 subsection {* swap *}
 setup {* add_backward2_prfstep @{thm mset_swap} *}

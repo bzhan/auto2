@@ -19,7 +19,7 @@ local
 
   val tbl = (RewriteTable.empty ctxt')
                 |> RewriteTable.add_rewrite [] (assume_eq thy (x, x'))
-  val rtype = RewriteTable.SINGLE tbl
+  val rtype = SINGLE tbl
   val st = Status.empty_status ctxt'
 
   (* Read strings as terms in ctxt'. *)
@@ -32,16 +32,16 @@ in
 fun convert_prop_to_nat_order prop =
     let
       val err_str = "convert_prop_to_nat_order: "
-      val th = prop |> HOLogic.mk_Trueprop |> assume_thm ctxt'
-      val item = mk_box_item (0, [], 0, Fact ("PROP", prop, th))
+      val th = prop |> mk_Trueprop |> assume_thm ctxt'
+      val item = BoxItem.mk_box_item (0, [], 0, Fact ("PROP", [prop], th))
 
       fun apply_prfsteps item =
           maps (apply_prfstep rtype st [item]) to_nat_order_prfsteps
 
       fun process_raw_update updt =
           case updt of
-              Update.AddItems {raw_items, ...} =>
-              map (fn ritem => mk_box_item (0, [], 0, ritem)) raw_items
+              AddItems {raw_items, ...} =>
+              map (fn ritem => BoxItem.mk_box_item (0, [], 0, ritem)) raw_items
             | _ => raise AUTO2 (err_str ^ "unexpected update.")
     in
       maps process_raw_update (apply_prfsteps item)
@@ -154,7 +154,7 @@ val test_nat_order_match =
             val items = convert_prop_to_nat_order prop
             val item = the_single items
                        handle List.Empty => raise AUTO2 "ambiguous input"
-            val res = map (HOLogic.mk_Trueprop o read_as_term) res_strs
+            val res = map (mk_Trueprop o read_as_term) res_strs
             val res' = match_fn pat item tbl ([], fo_init)
             fun check_inst ((_, inst), th) =
                 (subst_term_norm inst pat) aconv (prop_of' th)
@@ -223,7 +223,8 @@ val test_nat_order_single_match =
       fun test ineq_str =
           let
             val ineq = ineq_str |> read_as_term
-            val res = nat_order_single_match ineq null_item tbl ([], fo_init)
+            val res = nat_order_single_match
+                          ineq BoxItem.null_item tbl ([], fo_init)
           in
             if length res = 1 andalso
                res |> the_single |> snd |> prop_of' aconv ineq then ()

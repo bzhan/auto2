@@ -140,7 +140,7 @@ definition os_is_it :: "('a::heap) list \<Rightarrow> 'a node ref option \<Right
 setup {* add_rewrite_rule @{thm os_is_it_def} *}
 
 theorem os_is_it_empty [backward]: "h \<Turnstile> os_list l p \<Longrightarrow> h \<Turnstile> os_is_it l p l p"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "h \<Turnstile> lseg [] p p * os_list l p") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "h \<Turnstile> lseg [] p p * os_list l p") *})
 
 definition os_it_init :: "'a os_list \<Rightarrow> ('a os_list_it) Heap" where
   "os_it_init l = return l"
@@ -168,7 +168,7 @@ theorem os_is_has_next_rule' [forward]:
 
 theorem os_it_next_rule [hoare_triple]:
   "<os_is_it l p l' (Some q)> os_it_next (Some q) <\<lambda>(a, it'). os_is_it l p (tl l') it' * \<up>(a = hd l')>"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "l' \<noteq> []") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "l' \<noteq> []") *})
 
 setup {* del_prfstep_thm @{thm os_list_def} *}
 setup {* del_prfstep_thm @{thm os_is_it_def} *}
@@ -189,7 +189,7 @@ declare os_sum'.simps [sep_proc_defs]
 lemma os_sum'_rule [hoare_triple]:
   "<os_is_it l p l' it>
     os_sum' it s
-  <\<lambda>r. os_list l p * \<up>(r = s + listsum l')>"
+  <\<lambda>r. os_list l p * \<up>(r = s + sum_list l')>"
   by (tactic {* auto2s_tac @{context} (INDUCT ("l'", Arbitraries ["it", "s"])) *})
 
 definition os_sum :: "int node ref option \<Rightarrow> int Heap" where
@@ -200,7 +200,7 @@ definition os_sum :: "int node ref option \<Rightarrow> int Heap" where
 declare os_sum_def [sep_proc_defs]
 
 lemma os_sum_rule:
-  "<os_list l p> os_sum p <\<lambda>r. os_list l p * \<up>(r = listsum l)>" by auto2
+  "<os_list l p> os_sum p <\<lambda>r. os_list l p * \<up>(r = sum_list l)>" by auto2
 
 subsubsection {* Reverse *}
 
@@ -320,7 +320,7 @@ declare insertion_sort_def [sep_proc_defs]
 setup {* add_backward2_prfstep @{thm properties_for_sort} *}
 lemma insertion_sort_rule:
   "<emp> insertion_sort (xs::'a::{heap,linorder} list) <\<lambda>ys. \<up>(ys = sort xs) * true>"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "sorted ([]::'a list)") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "sorted ([]::'a list)") *})
 
 subsection {* Merging two lists *}
 

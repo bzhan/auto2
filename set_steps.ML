@@ -6,7 +6,7 @@ fun FINSET_INDUCT (var_spec_str, ind_infos) ctxt =
           apply_to_thm (to_obj_conv_on_horn ctxt) @{thm finite_less_induct}
 
       val (var, rhs, var_eq) = process_var_spec_str ctxt var_spec_str
-      val concl = HOLogic.mk_Trueprop (
+      val concl = mk_Trueprop (
             Const (@{const_name finite}, type_of var --> boolT) $ rhs)
       val arbitraries = collect_arbitraries ctxt ind_infos
       val search_vars = filter is_Free [rhs] @ arbitraries
@@ -32,9 +32,9 @@ fun FINSET_INDUCT (var_spec_str, ind_infos) ctxt =
                 apply_induction (the var_ctxt) var_infos ctxt ind_th [fin_th']
           in
             [Update.thm_update (id, fin_th),
-             Update.AddItems {id = id, raw_items = ritems}]
+             AddItems {id = id, raw_items = ritems}]
           end
     in
-      [Script_Task {inits = [Update.InitAssum (get_neg' concl)], subs = [],
+      [Script_Task {inits = [InitAssum (get_neg' concl)], subs = [],
                     cb = callback, end_vars = get_new_vars var_eq}]
     end

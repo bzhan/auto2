@@ -14,9 +14,7 @@ record 'a partial_object =
 
 definition struct_elt :: "_ \<Rightarrow> 'a \<Rightarrow> bool"  ("elt\<index> _" [81] 80) where
   "elt\<^bsub>G\<^esub> x \<longleftrightarrow> x \<in> carrier G"
-setup {* add_rewrite_rule @{thm struct_elt_def} *}
-setup {* add_forward_prfstep (equiv_backward_th @{thm struct_elt_def}) *}
-setup {* add_backward_prfstep (equiv_forward_th @{thm struct_elt_def}) *}
+setup {* add_rewrite_rule_bidir @{thm struct_elt_def} *}
 
 definition struct_subset :: "_ \<Rightarrow> 'a set \<Rightarrow> bool"  ("subset\<index> _" [81] 80) where
   "subset\<^bsub>G\<^esub> H \<longleftrightarrow> (\<forall>x\<in>H. elt\<^bsub>G\<^esub> x)"
@@ -58,7 +56,6 @@ theorem mem_imageD [forward]: "y \<in> image\<^bsub>G\<^esub> h \<Longrightarrow
 
 definition struct_is_bij :: "_ \<Rightarrow> _ \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where
   "struct_is_bij G H h \<longleftrightarrow> is_inj\<^bsub>G\<^esub> h \<and> is_surj\<^bsub>G\<^esub> H h"
-setup {* add_forward_prfstep (equiv_forward_th @{thm struct_is_bij_def}) *}
 setup {* add_rewrite_rule @{thm struct_is_bij_def} *}
 
 theorem struct_is_bij_def' [rewrite_bidir]:
@@ -91,10 +88,14 @@ theorem struct_bij_inv_fun [backward]:
   "struct_is_bij G H f \<Longrightarrow> struct_is_bij H G (inv_fun\<^bsub>G\<^esub> f)" by auto2
 
 (* Remove proof steps added for this theory. *)
-setup {* fold del_prfstep ["Fun.inj_on_def", "Feval.feval_def", "Logic_Thms.set_ext@back"] *}
+setup {* del_prfstep_thm_str "@eqforward" @{thm inj_on_def} *}
+setup {* del_prfstep_thm_str "" @{thm feval_def} *}
+setup {* del_prfstep_thm_str "@back" @{thm set_ext} *}
 
 (* Remove part of definition of struct_elt and strict_is_bij. *)
-setup {* fold del_prfstep ["Partial_Object.struct_elt_def", "Partial_Object.struct_is_bij_def"] *}
+setup {* del_prfstep_thm_str "@eqforward" @{thm struct_elt_def} *}
+setup {* fold (del_prfstep_thm_str "@eqbackward@back")
+  [@{thm struct_elt_def}, @{thm struct_is_bij_def}] *}
 
 (* Remove all uses of definition of several other theorems. *)
 setup {* fold del_prfstep_thm [

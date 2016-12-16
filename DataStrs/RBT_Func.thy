@@ -153,7 +153,7 @@ theorem balance_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balance t) = rb
 
 theorem balance_inorder [rewrite]: "rbt_in_traverse (balance t) = rbt_in_traverse t"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t") *})
+    (HAVE "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t") *})
 
 theorem ins_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (ins x v t) = ordered_insert x (rbt_in_traverse t)" by auto2
@@ -164,12 +164,12 @@ theorem ins_inorder_pairs [rewrite]:
 theorem insert_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (rbt_insert x v t) = ordered_insert x (rbt_in_traverse t)"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "rbt_in_traverse (rbt_insert x v t) = rbt_in_traverse (ins x v t)") *})
+    (HAVE "rbt_in_traverse (rbt_insert x v t) = rbt_in_traverse (ins x v t)") *})
 
 theorem insert_inorder_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (rbt_insert x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "rbt_in_traverse_pairs (rbt_insert x v t) = rbt_in_traverse_pairs (ins x v t)") *})
+    (HAVE "rbt_in_traverse_pairs (rbt_insert x v t) = rbt_in_traverse_pairs (ins x v t)") *})
 
 theorem insert_rbt_set: "rbt_sorted t \<Longrightarrow> rbt_set (rbt_insert x v t) = {x} \<union> rbt_set t" by auto2
 

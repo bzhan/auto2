@@ -5,24 +5,28 @@
 val (PRIORITY_NORM, PRIORITY_URGENT,
      PRIORITY_SHADOW, PRIORITY_RESOLVE, PRIORITY_ADD) = (1, 2, 3, 4, 5)
 
+datatype proofstep_fn
+  = OneStep of rewrite_type -> status -> box_item -> raw_update list
+  | TwoStep of rewrite_type -> status -> box_item -> box_item -> raw_update list
+
+type proofstep =
+     {name: string, args: match_arg list, priority: int, func: proofstep_fn}
+
+type prfstep_filter = rewrite_table -> id_inst -> bool
+
+datatype prfstep_descriptor = WithFact of term
+                            | WithItem of string * term
+                            | WithProperty of term
+                            | GetFact of term * thm
+                            | ShadowFirst | ShadowSecond
+                            | CreateCase of term | CreateConcl of term
+                            | Filter of prfstep_filter
+
 signature PROOFSTEP =
 sig
-  datatype proofstep_fn
-    = OneStep of rewrite_type -> status -> box_item -> Update.raw_update list
-    | TwoStep of rewrite_type -> status -> box_item -> box_item ->
-                 Update.raw_update list
-  type proofstep
-  type prfstep_filter
-  datatype prfstep_descriptor = WithFact of term
-                              | WithItem of string * term
-                              | WithProperty of term
-                              | GetFact of term * thm
-                              | ShadowFirst | ShadowSecond
-                              | CreateCase of term | CreateConcl of term
-                              | Filter of prfstep_filter
   val is_relevant_to_properties: theory -> string list -> proofstep -> bool
   val apply_prfstep: rewrite_type -> status -> box_item list -> proofstep ->
-                     Update.raw_update list
+                     raw_update list
   val WithGoal: term -> prfstep_descriptor
   val WithTerm: term -> prfstep_descriptor
   val WithProp: term -> prfstep_descriptor
@@ -45,7 +49,6 @@ sig
   val size1_filter: string -> prfstep_filter
   val not_type_filter: string -> typ -> prfstep_filter
   val unique_free_filter: string -> prfstep_filter
-  val ac_atomic_filter: string -> string -> prfstep_filter
 
   (* Standard descriptors *)
   val forward_descs: thm -> prfstep_descriptor list
@@ -61,8 +64,7 @@ sig
       rewrite_table -> id_inst -> match_arg list -> (box_id * thm list) list
   val prfstep_custom:
       string -> prfstep_descriptor list -> int ->
-      (id_inst_ths -> box_item list -> status -> Update.raw_update list) ->
-      proofstep
+      (id_inst_ths -> box_item list -> status -> raw_update list) -> proofstep
   val gen_prfstep: string -> prfstep_descriptor list -> proofstep
   val prfstep_pre_conv: string -> prfstep_descriptor list ->
                         (Proof.context -> conv) -> proofstep
@@ -72,29 +74,28 @@ sig
   val prfsteps_eval_fun: thm list -> proofstep list
 end;
 
-structure ProofStep : PROOFSTEP =
+functor ProofStep(Base:UTIL_BASE) : PROOFSTEP =
 struct
 
+structure UtilLogic = UtilLogic(Base)
+structure ACUtil = ACUtil(Base)
+structure Property_Data = Property_Data(Base)
+structure RewriteTable = RewriteTable(Base)
+structure Matcher = Matcher(Base)
+structure ItemIO_Data = ItemIO_Data(Base)
+structure Box = Box(Base)
+structure Update = Update(Base)
+structure Status = Status(Base)
+open Base
+open UtilLogic
+open ACUtil
+open Property_Data
+open RewriteTable
+open Matcher
+open ItemIO_Data
 open Box
 open Update
 open Status
-
-datatype proofstep_fn
-  = OneStep of rewrite_type -> status -> box_item -> raw_update list
-  | TwoStep of rewrite_type -> status -> box_item -> box_item -> raw_update list
-
-type proofstep =
-     {name: string, args: match_arg list, priority: int, func: proofstep_fn}
-
-type prfstep_filter = rewrite_table -> id_inst -> bool
-
-datatype prfstep_descriptor = WithFact of term
-                            | WithItem of string * term
-                            | WithProperty of term
-                            | GetFact of term * thm
-                            | ShadowFirst | ShadowSecond
-                            | CreateCase of term | CreateConcl of term
-                            | Filter of prfstep_filter
 
 (* Check if the proof step is relevant to the given properties. *)
 fun is_relevant_to_properties thy property_nms {args, ...} =
@@ -223,18 +224,6 @@ fun unique_free_filter s tbl (_, inst) =
       end
     end
 
-fun ac_atomic_filter fnm s tbl (_, inst) =
-    let
-      val thy = RewriteTable.theory_of tbl
-      val pre_info =
-          the (ACUtil.lookup_ac_data (RewriteTable.theory_of tbl) fnm)
-      val s = lookup_inst inst s
-      val ac_info = the (ACUtil.inst_ac_info thy (fastype_of s) pre_info)
-    in
-      length (ACUtil.dest_ac_l ac_info s) = 1
-    end
-    handle Option.Option => raise AUTO2 "ac_atomic_filter: ac_info not found"
-
 (* Descriptors for applying th in forward direction (can be used in
    add_gen_prfstep.
  *)
@@ -260,7 +249,7 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
                      "apply_pat_r: wrong number of assumptions."
       val obj_eqs = map to_obj_eq eqs
 
-      val inst_new = subst_term_norm inst (HOLogic.mk_Trueprop pat_r)
+      val inst_new = subst_term_norm inst (mk_Trueprop pat_r)
       val th' = th |> subst_thm ctxt inst |> fold Thm.elim_implies ths'
       val _ = if inst_new aconv (Thm.prop_of th') then () else
               raise AUTO2CT ("apply_pat_r: conclusion mismatch",
@@ -296,8 +285,8 @@ fun retrieve_cases descs =
     let
       fun retrieve_case desc =
           case desc of
-              CreateCase assum => [HOLogic.mk_Trueprop assum]
-            | CreateConcl concl => [HOLogic.mk_Trueprop (get_neg concl)]
+              CreateCase assum => [mk_Trueprop assum]
+            | CreateConcl concl => [mk_Trueprop (get_neg concl)]
             | _ => []
     in
       maps retrieve_case descs
@@ -452,7 +441,7 @@ fun gen_prfstep name descs =
 
       val priority =
           if length shadows > 0 then PRIORITY_SHADOW
-          else if exists (fn (t, _) => t aconv bool_False) pats_r
+          else if exists (fn (t, _) => t aconv bFalse) pats_r
           then PRIORITY_RESOLVE else PRIORITY_ADD
 
       fun updt_fn inst_th items {ctxt, ...} =
@@ -521,7 +510,7 @@ fun prfsteps_eval_fun' desc_ths ths =
     let
       fun get_prfstep th =
           prfstep_pre_conv (name_of_eval_thm th)
-                           [WithTerm (th |> prop_of' |> HOLogic.dest_eq |> fst)]
+                           [WithTerm (th |> prop_of' |> dest_eq |> fst)]
                            (eval_fun_conv ths)
     in
       map get_prfstep desc_ths
@@ -530,8 +519,6 @@ fun prfsteps_eval_fun' desc_ths ths =
 fun prfsteps_eval_fun ths = prfsteps_eval_fun' ths ths
 
 end  (* structure ProofStep *)
-
-open ProofStep
 
 (* Table of proofsteps, categorized by type. *)
 datatype proofstep_table
@@ -572,6 +559,7 @@ sig
   val del_prfstep_pred: (string -> bool) -> theory -> theory
   val del_prfstep: string -> theory -> theory
   val del_prfstep_thm: thm -> theory -> theory
+  val del_prfstep_thm_str: string -> thm -> theory -> theory
   val add_fixed_sc_gnrc: string * int -> Context.generic -> Context.generic
   val add_fixed_sc: string * int -> theory -> theory
   val get_prfstep_by_name: Proof.context -> string -> proofstep
@@ -581,7 +569,7 @@ sig
 
   val add_prfstep_custom:
       (string * prfstep_descriptor list * int *
-       (id_inst_ths -> box_item list -> status -> Update.raw_update list)) ->
+       (id_inst_ths -> box_item list -> status -> raw_update list)) ->
       theory -> theory
 
   val add_gen_prfstep: string * prfstep_descriptor list -> theory -> theory
@@ -621,6 +609,8 @@ sig
   val add_backward2_prfstep: thm -> theory -> theory
   val add_resolve_prfstep: thm -> theory -> theory
 
+  val add_forward_prfstep_cond_gnrc:
+      thm -> pre_prfstep_descriptor list -> Context.generic -> Context.generic
   val add_forward_prfstep_gnrc: thm -> Context.generic -> Context.generic
   val add_backward_prfstep_gnrc: thm -> Context.generic -> Context.generic
   val add_backward1_prfstep_gnrc: thm -> Context.generic -> Context.generic
@@ -651,8 +641,19 @@ sig
       (thm -> Context.generic -> Context.generic) -> attribute context_parser
 end;
 
-structure ProofStep_Data : PROOFSTEP_DATA =
+functor ProofStep_Data(Base:UTIL_BASE) : PROOFSTEP_DATA =
 struct
+
+structure UtilLogic = UtilLogic(Base)
+structure Property_Data = Property_Data(Base)
+structure Matcher = Matcher(Base)
+structure ItemIO_Data = ItemIO_Data(Base)
+structure ProofStep = ProofStep(Base)
+open Base
+open UtilLogic
+open Property_Data
+open ItemIO_Data
+open ProofStep
 
 fun proofstep_data_of ctxt = ProofStepData.get (Context.Proof ctxt)
 
@@ -703,15 +704,19 @@ fun del_prfstep_pred_gnrc pred =
 val del_prfstep_pred = Context.theory_map o del_prfstep_pred_gnrc
 
 fun del_prfstep nm thy =
-    if exists_string (equal ".") nm then del_prfstep_pred (equal nm) thy
-    else del_prfstep_pred (equal nm orf equal
-                                 ((Context.theory_name thy) ^ "." ^ nm)) thy
+    del_prfstep_pred (equal nm) thy
 
 (* Delete all proofsteps for a given theorem. *)
 fun del_prfstep_thm th =
-    let val nm = name_of_thm th in
+    let
+      val nm = name_of_thm th
+    in
       del_prfstep_pred (equal nm orf is_prefix_str (nm ^ "@"))
     end
+
+(* Delete proofsteps for a given theorem, with the given postfix. *)
+fun del_prfstep_thm_str str th =
+    del_prfstep_pred (equal (name_of_thm th ^ str))
 
 fun add_fixed_sc_gnrc (nm, sc) =
     ProofStepData.map (
@@ -773,8 +778,8 @@ fun with_term str ctxt =
 fun with_cond str ctxt =
     let
       val cond = read_pat ctxt str
-      val (lhs, rhs) = cond |> HOLogic.dest_not |> HOLogic.dest_eq
-                       handle TERM _ =>
+      val (lhs, rhs) = cond |> dest_not |> dest_eq
+                       handle AUTO2T _ =>
                               raise AUTO2 "with_cond: not an inequality."
       val _ = assert (is_Var lhs) "with_cond: left side should be a variable."
       val ((nm, idx), _) = dest_Var lhs
@@ -827,7 +832,7 @@ fun rewrite_property_on_assums ctxt ct =
         else let
           val ths = Named_Theorems.get ctxt @{named_theorems property_rewrites}
           val cv = Conv.first_conv (map (rewr_obj_eq o obj_sym) ths)
-          val eq = Conv.try_conv (HOLogic.Trueprop_conv cv) (Thm.dest_arg1 ct)
+          val eq = Conv.try_conv (Trueprop_conv cv) (Thm.dest_arg1 ct)
         in
           if is_property_prem_ctxt' ctxt (rhs_of eq) then
             ((Conv.arg1_conv (Conv.rewr_conv eq))
@@ -848,28 +853,25 @@ fun add_forward_prfstep_cond_gnrc th conds gnrc =
       val th = rewrite_property_on_assums_th gnrc th
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
 
-      (* Instantiate conds with ctxt, and divide into two classes. *)
-      fun classify_conds cond =
-          case cond of
-              WithItem ("TERM", _) => true
-            | Filter _ => false
-            | ShadowFirst => false
-            | ShadowSecond => false
-            | _ => raise AUTO2 "add_forward_prfstep: unexpected cond."
+      (* Instantiate each element of conds with ctxt', then separate
+         into term and other (filter and shadow) conds.
+       *)
+      fun is_term_cond cond =
+          case cond of WithItem ("TERM", _) => true | _ => false
 
       val (term_conds, filt_conds) =
           conds |> map (fn cond => cond ctxt')
-                |> filter_split classify_conds
+                |> filter_split is_term_cond
 
-      (* The total number of WithTerm conditions and fact/goal
-         conditions must be at most two.
+      (* The total number of term conditions and fact/goal conditions
+         must be at most two. So at most two term conditions.
        *)
       val _ = assert (length term_conds <= 2)
                      "More than two WithTerm conditions"
 
       (* Get list of assumptions to be obtained from the property table. *)
       val p_assums = get_property_prems th
-      val p_conds = map (WithProperty o HOLogic.dest_Trueprop) p_assums
+      val p_conds = map (WithProperty o dest_Trueprop) p_assums
       val p_count = length p_conds
 
       (* Convert to obj imp any extraneous meta imps. *)
@@ -890,23 +892,33 @@ fun add_forward_prfstep_cond_gnrc th conds gnrc =
        *)
       fun extract_term_cond cond =
           case cond of
-              WithItem ("TERM", t) => t
-            | _ => raise AUTO2 "extract_term_cond"
+              WithItem ("TERM", t) => t | _ => raise AUTO2 "extract_term_cond"
 
       val pats = map extract_term_cond term_conds @ assums
       val match_descs = term_conds @ map WithFact assums
-      val _ = assert (length pats > 0 andalso length pats <= 2)
-                     "add_forward_prfstep"
-      val _ = assert (is_pattern (HOLogic.mk_tuple pats))
+      val _ = assert (is_pattern_list pats)
                      "add_forward_prfstep: invalid patterns."
 
     in
+      (* Check if there is a property that can be matched. *)
+      if length pats = 0 then
+        if can_add_property_update th thy then
+          add_property_update_gnrc th gnrc
+        else if p_count > 0 then
+          let
+            val assum = dest_Trueprop (hd p_assums)
+            val descs = tl p_conds @ [WithFact assum] @ filt_conds @
+                        [GetFact (concl, th')]
+          in
+            add_and_print_prfstep_gnrc (name_of_thm th') descs gnrc
+          end
+        else raise AUTO2 "add_forward_prfstep: no fact / term to match."
       (* Switch two assumptions if necessary. *)
-      if length pats = 2 andalso
-         not (Matcher.get_pattern_order thy (the_pair pats)) then
+      else if length pats = 2 andalso
+              not (Matcher.get_pattern_order thy (the_pair pats)) then
         let
           val _ = writeln ("Switching two patterns.")
-          val swap_prems_cv = Conv.rewr_conv @{thm swap_prems_eq}
+          val swap_prems_cv = Conv.rewr_conv swap_prems_eq_th
           val th'' =
               if length assums = 1 then th'
               else th' |> apply_to_thm (skip_n_conv p_count swap_prems_cv)
@@ -917,13 +929,14 @@ fun add_forward_prfstep_cond_gnrc th conds gnrc =
         in
           add_and_print_prfstep_gnrc (name_of_thm th') descs gnrc
         end
-      else
+      else if length pats <= 2 then
         let
           val descs = p_conds @ match_descs @ filt_conds @
                       [GetFact (concl, th')]
         in
           add_and_print_prfstep_gnrc (name_of_thm th') descs gnrc
         end
+      else raise AUTO2 "add_forward_prfstep: too many patterns."
     end
 
 (* Convert theorems of the form A1 ==> ... ==> An ==> C to A1 & ... &
@@ -936,10 +949,8 @@ fun atomize_conj_cv keep_last ct =
       Conv.all_conv ct
     else
       ((Conv.arg_conv (atomize_conj_cv keep_last))
-           then_conv (if keep_last then Conv.rewr_conv @{thm atomize_conjL2}
-                      else Conv.rewr_conv @{thm HOL.atomize_conjL})) ct
-
-val try_nn_cancel = Conv.try_conv (rewr_obj_eq nn_cancel_th)
+           then_conv (if keep_last then Conv.rewr_conv atomize_conjL2_th
+                      else Conv.rewr_conv atomize_conjL_th)) ct
 
 (* From A ==> B obtain ~B ==> ~A. From A ==> B ==> C obtain ~C ==> ~(A
    & B), etc.
@@ -949,8 +960,8 @@ fun backward_th th =
       val to_skip =
           Int.min (length (get_property_prems th), Thm.nprems_of th - 1)
       val cv = (atomize_conj_cv false)
-                   then_conv (Conv.rewr_conv @{thm backward_conv})
-                   then_conv (horn_conv try_nn_cancel)
+                   then_conv (Conv.rewr_conv backward_conv_th)
+                   then_conv (horn_conv try_nn_cancel_cv)
     in
       th |> to_obj_conv_on_horn_th
          |> apply_to_thm (skip_n_conv to_skip cv)
@@ -965,8 +976,8 @@ fun backward1_th th =
       val to_skip =
           Int.min (length (get_property_prems th), Thm.nprems_of th - 2)
       val cv = (atomize_conj_cv true)
-                   then_conv (Conv.rewr_conv @{thm backward1_conv})
-                   then_conv (horn_conv try_nn_cancel)
+                   then_conv (Conv.rewr_conv backward1_conv_th)
+                   then_conv (horn_conv try_nn_cancel_cv)
     in
       th |> to_obj_conv_on_horn_th
          |> apply_to_thm (skip_n_conv to_skip cv)
@@ -981,8 +992,8 @@ fun backward2_th th =
       val to_skip =
           Int.min (length (get_property_prems th), Thm.nprems_of th - 2)
       val cv = (Conv.arg_conv (atomize_conj_cv false))
-                   then_conv (Conv.rewr_conv @{thm backward2_conv})
-                   then_conv (horn_conv try_nn_cancel)
+                   then_conv (Conv.rewr_conv backward2_conv_th)
+                   then_conv (horn_conv try_nn_cancel_cv)
     in
       th |> to_obj_conv_on_horn_th
          |> apply_to_thm (skip_n_conv to_skip cv)
@@ -994,12 +1005,11 @@ fun to_contra_th th =
       val to_skip = length (get_property_prems th)
       val rewr_th =
           case Thm.nprems_of th - to_skip of
-              0 => if is_neg (HOLogic.dest_Trueprop (Thm.concl_of th)) then
-                     @{thm to_contra_form'}
-                   else @{thm to_contra_form}
-            | 1 => @{thm resolve_conv}
+              0 => if is_neg (concl_of' th) then to_contra_form_th'
+                   else to_contra_form_th
+            | 1 => resolve_conv_th
             | _ => raise AUTO2 "to_contra_th: too many hypothesis in th."
-      val cv = Conv.rewr_conv rewr_th then_conv (horn_conv try_nn_cancel)
+      val cv = Conv.rewr_conv rewr_th then_conv (horn_conv try_nn_cancel_cv)
     in
       th |> to_obj_conv_on_horn_th
          |> apply_to_thm (skip_n_conv to_skip cv)
@@ -1049,18 +1059,51 @@ fun add_backward1_prfstep th = add_backward1_prfstep_cond th []
 fun add_backward2_prfstep th = add_backward2_prfstep_cond th []
 fun add_resolve_prfstep th = add_resolve_prfstep_cond th []
 
-fun add_rewrite_rule_cond_gnrc th conds =
+fun swap_prem_to_front ct =
     let
-      val (lhs, rhs) = th |> strip_horn' |> snd |> HOLogic.dest_eq
-      (* If rhs is of form ?n, create filter for ?n not already known
-         to equal to left side.
-       *)
-      val neq_filt = case rhs of
-                         Var ((nm, 0), _) => [with_filt (neqp_filter nm lhs)]
-                       | _ => []
+      val n = length (Logic.strip_imp_prems (Thm.term_of ct))
     in
-      add_forward_prfstep_cond_gnrc
-          th ([K (WithTerm lhs)] @ neq_filt @ conds)
+      if n < 2 then
+        Conv.all_conv ct
+      else if n = 2 then
+        Conv.rewr_conv (meta_sym swap_prems_eq_th) ct
+      else
+        ((Conv.arg_conv swap_prem_to_front)
+             then_conv (Conv.rewr_conv (meta_sym swap_prems_eq_th))) ct
+    end
+
+fun add_rewrite_rule_cond_gnrc th conds gnrc =
+    let
+      val (lhs, rhs) = th |> strip_horn' |> snd |> dest_eq
+    in
+      if fastype_of lhs = boolT then
+        let
+          (* Number of property premises and ordinary premises in th. *)
+          val to_skip = length (get_property_prems th)
+          val nprems = Thm.nprems_of th - to_skip
+          val forward_th =
+              th |> equiv_forward_th
+                 |> apply_to_thm (skip_n_conv to_skip swap_prem_to_front)
+                 |> Drule.zero_var_indexes
+                 |> update_name_of_thm th "@eqforward"
+          val backward_th = th |> equiv_backward_th
+          val backward_fn = if nprems > 0 then add_backward2_prfstep_cond_gnrc
+                            else add_backward_prfstep_cond_gnrc
+        in
+          gnrc |> add_forward_prfstep_cond_gnrc forward_th conds
+               |> backward_fn backward_th conds
+        end
+      else let
+        (* If rhs is of form ?n, create filter for ?n not already
+           known to equal to left side.
+         *)
+        val neq_filt = case rhs of
+                           Var ((nm, 0), _) => [with_filt (neqp_filter nm lhs)]
+                         | _ => []
+      in
+        gnrc |> add_forward_prfstep_cond_gnrc
+             th ([K (WithTerm lhs)] @ neq_filt @ conds)
+      end
     end
 
 fun add_rewrite_rule_back_cond_gnrc th conds =
@@ -1110,5 +1153,3 @@ fun setup_attrib f =
             fn _ => fn _ => raise AUTO2 "del_step: not implemented."))
 
 end  (* structure ProofStep_Data. *)
-
-open ProofStep_Data

@@ -51,17 +51,18 @@ val test_normalize_mod =
 
 val test_use_prec_thms =
     let
-      val ctxt' = ctxt |> fold Variable.auto_fixes [
+      val ctxt' =
+          ctxt |> fold Variable.auto_fixes [
             Free ("h", pheapT), Free ("p", @{typ "nat ref"}),
             Free ("x", @{typ "nat"}), Free ("y", @{typ "nat"})]
-      val tbl = (RewriteTable.empty ctxt')
-                    |> RewriteTable.add_term ([], Free ("P", assnT))
+               |> ACUtil.add_inst_ac_infos @{term "(P * Q)::assn"}
+      val tbl = RewriteTable.empty ctxt'
 
       fun test (base_str, ex_str) =
           let
             val (t1, t2) = (read_term ctxt' base_str, read_term ctxt' ex_str)
             val (th1, th2) =
-                apply2 (Thm.assume o cert ctxt' o HOLogic.mk_Trueprop) (t1, t2)
+                apply2 (Thm.assume o cert ctxt' o mk_Trueprop) (t1, t2)
             (* Just run it to see that all asserts passed. *)
             val _ = use_prec_thms tbl th1 th2
           in

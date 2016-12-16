@@ -149,13 +149,13 @@ theorem sorted_pivoted_list [forward]: "sorted (sublist' (pivot + 1) r xs) \<Lon
   \<forall>x\<in>set (sublist' l pivot xs). x \<le> xs ! pivot \<Longrightarrow> \<forall>y\<in>set (sublist' (pivot + 1) r xs). xs ! pivot \<le> y \<Longrightarrow>
   l \<le> pivot \<Longrightarrow> pivot < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' l r xs)"
   by (tactic {* auto2s_tac @{context} (
-      OBTAIN "sublist' pivot r xs = xs ! pivot # sublist' (pivot + 1) r xs" THEN
-      CASE "pivot = 0" THEN OBTAIN "sublist' l r xs = sublist' l pivot xs @ sublist' pivot r xs") *})
+      HAVE "sublist' pivot r xs = xs ! pivot # sublist' (pivot + 1) r xs" THEN
+      CASE "pivot = 0" THEN HAVE "sublist' l r xs = sublist' l pivot xs @ sublist' pivot r xs") *})
 setup {* del_prfstep_thm @{thm sorted_append} *}
 
 theorem sorted_pivoted_list' [forward]: "sorted (sublist' 1 r xs) \<Longrightarrow>
   \<forall>y\<in>set (sublist' 1 r xs). xs ! 0 \<le> y \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' 0 r xs)"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "sublist' 0 r xs = xs ! 0 # sublist' 1 r xs") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "sublist' 0 r xs = xs ! 0 # sublist' 1 r xs") *})
 
 declare quicksort.simps [sep_proc_defs]
 
@@ -165,7 +165,7 @@ setup {* add_gen_prfstep ("quicksort_case",
 
 theorem sorted_triv_list:
   "l \<ge> r \<Longrightarrow> sorted (sublist' l (1 + r) xs)"
-  by (tactic {* auto2s_tac @{context} (CASE "l \<ge> length xs" THEN CASE "l = r" THEN OBTAIN "l > r") *})
+  by (tactic {* auto2s_tac @{context} (CASE "l \<ge> length xs" THEN CASE "l = r" THEN HAVE "l > r") *})
 setup {* add_forward_prfstep_cond @{thm sorted_triv_list} [with_term "sublist' ?l (1 + ?r) ?xs"] *}
 
 theorem quicksort_sorts:

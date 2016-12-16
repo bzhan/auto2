@@ -7,7 +7,7 @@ fun prfstep_hoare_triple_induction name descs ind_th =
             let
               val init_th = the_single ths
               val init_prop = Thm.prop_of init_th
-              val init_prop' = HOLogic.dest_Trueprop init_prop
+              val init_prop' = dest_Trueprop init_prop
               val (_, c, _) = Sep_Logic.dest_hoare_triple (get_neg init_prop')
               val ind_vars = dest_args c
               val gen_vars = map Free (Term.add_frees init_prop' [])
@@ -22,7 +22,7 @@ fun prfstep_hoare_triple_induction name descs ind_th =
                           apply_induction
                               inits (map (rpair NONE) ind_vars) ctxt ind_th []
                     in
-                      [Update.AddItems {id = id, raw_items = ritems}]
+                      [AddItems {id = id, raw_items = ritems}]
                     end
                   else []
             end)
@@ -32,9 +32,8 @@ fun add_prfstep_imp_induction cmd_pat ind_th thy =
       val name = name_of_thm ind_th
 
       (* Obtain type 'a Heap. *)
-      val ctxt = Proof_Context.init_global thy
       val ty_aHeap = @{typ_pat "?'a Heap"}
-      val ty_inst = pattern_match_ty ctxt (ty_aHeap, type_of cmd_pat)
+      val ty_inst = typ_match thy (ty_aHeap, type_of cmd_pat)
       val cmd_inst = update_env (("c", 0), cmd_pat) fo_init
 
       val name_ht = name ^ "@htinduct"

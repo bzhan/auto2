@@ -35,7 +35,7 @@ setup {* add_prfstep_custom ("dyn_arrayI",
                  |> apply_to_thm' (Conv.arg_conv (Sep_Logic.normalize_mod_cv ctxt))
     in
       [Update.thm_update (id, th),
-       Update.ShadowItem {id = id, item = hd items}]
+       ShadowItem {id = id, item = hd items}]
     end)) *}
 
 theorem dyn_array_prec [sep_prec_thms]:

@@ -51,7 +51,7 @@ sig
   val shadow_nat_order_single_zero: proofstep
 
   val string_of_nat_order: Proof.context -> order_info -> string
-  val output_nat_order: Proof.context -> term * thm -> string
+  val output_nat_order: Proof.context -> term list * thm -> string
   val add_nat_order_proofsteps: theory -> theory
 end;
 
@@ -194,10 +194,10 @@ fun order_info_to_prop (x, y, diff) =
  *)
 fun get_nat_order_ritem (x, y, diff, th) =
     let
-      val prop = HOLogic.mk_Trueprop (order_info_to_prop (x, y, diff))
+      val prop = mk_Trueprop (order_info_to_prop (x, y, diff))
     in
       if prop aconv Thm.prop_of th then
-        Fact (TY_NAT_ORDER, HOLogic.mk_tuple [x, y, mk_int diff], th)
+        Fact (TY_NAT_ORDER, [x, y, mk_int diff], th)
       else let
         val ctxt = Proof_Context.init_global (Thm.theory_of_thm th)
         val _ = trace_t_ctxt ctxt "Expected:" prop
@@ -314,7 +314,7 @@ fun to_nat_order_prfstep_templ ctxt (nm, pat_str, order_ty) =
                                          |> rewrite_info_y simpy
                                          |> convert_const
           in
-            [Update.AddItems {id = id, raw_items = [get_nat_order_ritem info]}]
+            [AddItems {id = id, raw_items = [get_nat_order_ritem info]}]
           end
     in
       prfstep_custom nm descs PRIORITY_ADD prfstep_fn
@@ -364,7 +364,7 @@ val nat_eq_diff_prfstep =
             val info2 = (y, x, ~diff, th' RS @{thm conjunct2})
                             |> rewrite_info_x simpy |> rewrite_info_y simpx
           in
-            [Update.AddItems {
+            [AddItems {
                 id = id, raw_items = map get_nat_order_ritem [info1, info2]}]
           end
     in
@@ -374,7 +374,7 @@ val nat_eq_diff_prfstep =
 (* Obtain quadruple x, y, diff, and theorem from item. *)
 fun get_nat_order_info {tname, prop, ...} =
     let
-      val (x, y, diff_t) = the_triple (HOLogic.strip_tuple tname)
+      val (x, y, diff_t) = the_triple tname
     in
       (x, y, dest_numc diff_t, prop)
     end
@@ -382,12 +382,11 @@ fun get_nat_order_info {tname, prop, ...} =
 val nat_order_typed_matcher =
     let
       fun pre_match pat {tname, ...} tbl =
-          Matcher.pre_match_head tbl (pat, tname)
+          Matcher.pre_match_head tbl (pat, HOLogic.mk_tuple tname)
 
-      fun match pat (item as {tname, ...}) tbl (id, inst) =
+      fun match pat (item as {tname = ts, ...}) tbl (id, inst) =
           let
             val pats = HOLogic.strip_tuple pat
-            val ts = HOLogic.strip_tuple tname
             val insts' = Matcher.rewrite_match_list
                              tbl (map (pair false) (pats ~~ ts)) (id, inst)
             fun process_inst (inst, ths) =
@@ -427,8 +426,7 @@ val convert_const_x_prfstep =
                           dest_numc (lookup_inst inst "n"), the_single ths)
                              |> convert_const_x
             in
-              [Update.AddItems {
-                  id = id, raw_items = [get_nat_order_ritem info]}]
+              [AddItems {id = id, raw_items = [get_nat_order_ritem info]}]
             end)
 
 val convert_const_y_prfstep =
@@ -442,8 +440,7 @@ val convert_const_y_prfstep =
                           dest_numc (lookup_inst inst "n"), the_single ths)
                              |> convert_const_y
             in
-              [Update.AddItems {
-                  id = id, raw_items = [get_nat_order_ritem info]}]
+              [AddItems {id = id, raw_items = [get_nat_order_ritem info]}]
             end)
 
 (* Helper function for transitive. *)
@@ -482,7 +479,7 @@ val transitive =
               val res = trans m n th1 th2
               val item' = get_nat_order_ritem (x, z, m + n, res)
             in
-              [Update.AddItems {id = id, raw_items = [item']}]
+              [AddItems {id = id, raw_items = [item']}]
             end)
 
 (* Helper function for transitive resolve. *)
@@ -751,7 +748,7 @@ fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
 
       (* Obtain ~pat in non-negated form. *)
       val neg_t = get_neg pat |> cert ctxt |> neg_ineq_cv |> rhs_of
-      val neg_tp = neg_t |> HOLogic.mk_Trueprop
+      val neg_tp = mk_Trueprop neg_t
       val negt_th = neg_tp |> cert ctxt |> Thm.trivial
 
       (* Match ~pat against inequality with (y, x) on the two
@@ -799,7 +796,7 @@ val nat_order_noteq_matcher =
     let
       fun get_insts pat item tbl (id, inst) =
           let
-            val (A, B) = pat |> HOLogic.dest_not |> HOLogic.dest_eq
+            val (A, B) = pat |> dest_not |> dest_eq
             val (x, y, n, _) = get_nat_order_info item
           in
             if n >= 0 then ([], [])
@@ -808,12 +805,12 @@ val nat_order_noteq_matcher =
                   Matcher.rewrite_match_list
                       tbl [(false, (B, x)), (false, (A, y))] (id, inst))
           end
-          handle TERM ("dest_not", _) => ([], [])
-               | TERM ("dest_eq", _) => ([], [])
+          handle AUTO2T ("dest_not", _) => ([], [])
+               | AUTO2T ("dest_eq", _) => ([], [])
 
       fun pre_match pat item tbl =
           let
-            val (A, B) = pat |> HOLogic.dest_not |> HOLogic.dest_eq
+            val (A, B) = pat |> dest_not |> dest_eq
             val (x, y, n, _) = get_nat_order_info item
           in
             n < 0 andalso (
@@ -821,8 +818,8 @@ val nat_order_noteq_matcher =
             orelse
             (Matcher.pre_match tbl (A, y) andalso Matcher.pre_match tbl (A, x)))
           end
-          handle TERM ("dest_not", _) => false
-               | TERM ("dest_eq", _) => false
+          handle AUTO2T ("dest_not", _) => false
+               | AUTO2T ("dest_eq", _) => false
 
       fun match pat item tbl (id, inst) =
           if has_vars pat then [] else
@@ -858,7 +855,7 @@ fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
     let
       val is_neg = is_neg pat
       val neg_t = get_neg pat |> cert ctxt |> neg_ineq_cv |> rhs_of
-      val neg_tp = neg_t |> HOLogic.mk_Trueprop
+      val neg_tp = neg_t |> mk_Trueprop
       val negt_th = neg_tp |> cert ctxt |> Thm.trivial
       val (f, (A, B)) = dest_binop neg_t
 
@@ -956,7 +953,7 @@ fun string_of_nat_order ctxt (x, y, diff, th) =
 
 fun output_nat_order ctxt (tname, th) =
     let
-      val (x, y, diff_t) = the_triple (HOLogic.strip_tuple tname)
+      val (x, y, diff_t) = the_triple tname
       val diff = dest_numc diff_t
     in
       "ORDER " ^ string_of_nat_order ctxt (x, y, diff, th)
@@ -964,8 +961,7 @@ fun output_nat_order ctxt (tname, th) =
 
 val add_nat_order_proofsteps =
     ItemIO_Data.add_item_type (
-      TY_NAT_ORDER, SOME (fn t => t |> HOLogic.strip_tuple |> take 2),
-      SOME output_nat_order
+      TY_NAT_ORDER, SOME (take 2), SOME output_nat_order
 
     ) #> ItemIO_Data.add_typed_matcher (
       TY_NAT_ORDER, nat_order_typed_matcher

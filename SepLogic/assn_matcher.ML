@@ -144,8 +144,8 @@ fun assn_match_all is_full tbl pat t (id, inst) =
                             th |> (is_full1 ? ent_r_cv (
                                       rewr_obj_eq (obj_sym @{thm mult_1})))
                                |> entail_trans_l_th th'
-                               |> (not is_full2
-                                       ? ent_r_cv (ACUtil.swap_r_cv ac_data))
+                               |> (not is_full2 ? ent_r_cv (
+                                      ACUtil.swap_r_cv ac_data))
                       in
                         if is_full andalso not is_full2 then []
                         else [(sp1 orelse sp2, ((id'', inst''), res))]
@@ -172,8 +172,9 @@ fun assn_match_all is_full tbl pat t (id, inst) =
 val assn_matcher =
     let
       fun filt pat tname =
-          is_mod pat andalso is_mod tname andalso
-          (pat |> dest_mod |> fst) aconv (tname |> dest_mod |> fst)
+          is_mod pat andalso is_mod (the_single tname) andalso
+          (pat |> dest_mod |> fst)
+              aconv (tname |> the_single |> dest_mod |> fst)
 
       fun pre_match pat {tname, ...} _ = filt pat tname
 
@@ -181,7 +182,7 @@ val assn_matcher =
           if not (filt pat tname) then []
           else let
             val pat_assn = pat |> dest_mod |> snd
-            val t_assn = tname |> dest_mod |> snd
+            val t_assn = tname |> the_single |> dest_mod |> snd
             val insts = assn_match_all true tbl pat_assn t_assn (id, inst)
 
             (* th is t_assn ==> pat_assn(s). *)
@@ -198,9 +199,7 @@ val assn_matcher =
 fun triv_assn_matcher (tbl as {ctxt, ...}) pat t (id, inst) =
     if pat aconv emp then []  (* leave to emp_assn_matcher *)
     else let
-      val thy = RewriteTable.theory_of tbl
-      val ac_info = Nat_Arith.times_ac_on_typ thy assnT
-      val ts = ACUtil.dest_ac_l ac_info t
+      val ts = ACUtil.dest_ac_l assn_ac_info t
 
       fun match_i i =
           let
@@ -212,9 +211,9 @@ fun triv_assn_matcher (tbl as {ctxt, ...}) pat t (id, inst) =
                 let
                   val th = entail_triv_th ctxt t
                   val cv = Conv.every_conv [
-                        ACUtil.move_outmost ac_info t',
+                        ACUtil.move_outmost assn_ac_info t',
                         ACUtil.ac_last_conv
-                            ac_info (Conv.rewr_conv (meta_sym eq_th))]
+                            assn_ac_info (Conv.rewr_conv (meta_sym eq_th))]
                 in
                   ((id', inst'), th |> ent_r_cv cv)
                 end
@@ -276,8 +275,6 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r t id =
              *)
             fun process_match (_, ((id'', inst''), th)) =
                 let
-                  val thy = RewriteTable.theory_of tbl
-                  val ac_info = Nat_Arith.times_ac_on_typ thy assnT
                   val cv = argn_conv 1 (Conv.rewr_conv eq_th)
                   val is_full = is_full_match inst'' pat th
                   val th' = if is_full then th
@@ -285,7 +282,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r t id =
                 in
                   (id'', th' |> (if is_full then entail_trans_th entail_th'
                                  else entail_trans_r_th entail_th')
-                             |> ent_r_cv (ACUtil.ac_last_conv ac_info cv))
+                             |> ent_r_cv (ACUtil.ac_last_conv assn_ac_info cv))
                 end
           in
             map process_match matches
@@ -314,9 +311,8 @@ fun entail_matcher entail_th tbl pat t (id, inst) =
 
         fun process_res (id', th) =
             let
-              val thy = RewriteTable.theory_of tbl
-              val ac_info = Nat_Arith.times_ac_on_typ thy assnT
-              val xs = th |> prop_of' |> dest_arg |> ACUtil.dest_ac_l ac_info
+              val xs = th |> prop_of' |> dest_arg
+                          |> ACUtil.dest_ac_l assn_ac_info
                           |> List.last |> dest_args |> hd
               val insts = Matcher.rewrite_match tbl (pat_xs, xs) (id', inst)
 
@@ -325,7 +321,7 @@ fun entail_matcher entail_th tbl pat t (id, inst) =
                     val cv = (Conv.arg1_conv o Conv.rewr_conv o meta_sym) eq_th
                   in
                     ((id'', inst'),
-                     th |> ent_r_cv (ACUtil.ac_last_conv ac_info cv))
+                     th |> ent_r_cv (ACUtil.ac_last_conv assn_ac_info cv))
                   end
             in
               map process_inst insts

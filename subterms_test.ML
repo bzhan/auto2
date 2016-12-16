@@ -5,7 +5,7 @@ local
   open Subterms
 
   val thy = @{theory}
-  val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
+  val thy' = thy |> Nat_Arith.add_arith_ac_data
   val ctxt' = Proof_Context.init_global thy'
 in
 

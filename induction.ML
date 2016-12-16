@@ -32,8 +32,6 @@ sig
   val check_ind_th: thm -> term * (term * term)
   val prfstep_induction: string -> prfstep_descriptor list -> thm -> proofstep
   val add_prfstep_induction: thm -> theory -> theory
-  val check_double_ind_th: thm -> (term * term) * (term list * term)
-  val add_prfstep_double_induction: thm -> theory -> theory
   val prfstep_prop_induction:
       string -> prfstep_descriptor list -> thm -> proofstep
   val add_prfstep_prop_induction: thm -> theory -> theory
@@ -47,16 +45,28 @@ sig
   val ApplyOns: string list -> induct_info list
   val collect_apply_ons: Proof.context -> induct_info list -> term list
   val process_var_spec_str: Proof.context -> string -> term * term * term option
+  val get_neq0_th: term * term -> term
   val INDUCT: string * induct_info list -> pre_scripts
-  val DOUBLE_INDUCT: (string * string) * induct_info list -> pre_scripts
   val STRONG_INDUCT: string * induct_info list -> pre_scripts
   val UPPER_STRONG_INDUCT: string * string * induct_info list -> pre_scripts
   val PROP_INDUCT: string * induct_info list -> pre_scripts
   val VAR_INDUCT: string * induct_info list -> pre_scripts
 end;
 
-structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
+functor Induct_ProofSteps(Base:UTIL_BASE) : INDUCT_PROOFSTEPS =
 struct
+
+structure UtilLogic = UtilLogic(Base)
+structure BoxItem = BoxItem(Base)
+structure Status = Status(Base)
+structure Update = Update(Base)
+structure ProofStep = ProofStep(Base)
+structure ProofStep_Data = ProofStep_Data(Base)
+open Base
+open UtilLogic
+open BoxItem
+open ProofStep
+open ProofStep_Data
 
 fun add_induct_data str (t, ind_th) =
     InductData.map (Symtab.map_default (str, []) (cons (t, ind_th)))
@@ -127,7 +137,7 @@ fun get_eq_handler ctxt var_eq =
         NONE => []
       | SOME eq =>
         let
-          val (ind_var, _) = eq |> HOLogic.dest_Trueprop |> HOLogic.dest_eq
+          val (ind_var, _) = eq |> dest_Trueprop |> dest_eq
           fun eq_ready (t, ts) =
               forall (fn t' => t' aconv t orelse
                                not (occurs_free ind_var t')) ts
@@ -135,7 +145,7 @@ fun get_eq_handler ctxt var_eq =
               th |> Thm.implies_intr (cert ctxt t)
                  |> Thm.forall_intr (cert ctxt ind_var)
                  |> apply_to_thm (to_obj_conv ctxt)
-                 |> apply_to_thm' (rewr_obj_eq @{thm use_vardef})
+                 |> apply_to_thm' (rewr_obj_eq use_vardef_th)
         in
           [var_to_fact ind_var] @
           Update.handler_ritems ctxt eq (eq_ready, eq_handler)
@@ -145,7 +155,7 @@ fun get_eq_handler ctxt var_eq =
 fun get_new_vars var_eq =
     case var_eq of
         NONE => []
-      | SOME eq => [eq |> HOLogic.dest_Trueprop |> HOLogic.dest_eq |> fst]
+      | SOME eq => [eq |> dest_Trueprop |> dest_eq |> fst]
 
 (* Given a theorem n ~= 0 (where 0 stands for the base case of
    induction, which is [] for lists, etc), depending on init_facts,
@@ -160,7 +170,7 @@ fun process_neq0_th id (abs_vars, init_facts) (st as {ctxt, ...}) neq0_th =
       val cvar_n = neq0_th |> prop_of' |> dest_arg
                            |> dest_args |> hd |> cert ctxt
       val neq0 = neq0_th |> Thm.prop_of |> get_neg' |> cert ctxt
-      val use_vardef_cv = Conv.arg_conv (rewr_obj_eq @{thm use_vardef})
+      val use_vardef_cv = Conv.arg_conv (rewr_obj_eq use_vardef_th)
     in
       neq0_th |> Status.invoke_handlers handlers
               |> rewrite_thm_to_contra_form  (* n = 0 ==> False *)
@@ -226,7 +236,7 @@ fun check_strong_ind_prop ind_prop =
     let
       fun err str = "check_strong_ind_prop: " ^ str
       val (cond_ind, concl) =
-          ind_prop |> Logic.dest_implies |> apply2 (HOLogic.dest_Trueprop)
+          ind_prop |> Logic.dest_implies |> apply2 dest_Trueprop
 
       (* concl must be of form ?P [?vars]. *)
       val err_concl = err "concl of ind_th must be ?P [?vars]."
@@ -241,10 +251,12 @@ fun check_strong_ind_prop ind_prop =
       val err_ind_hyp = err "cond_ind of ind_th must be !n. P' --> ?P vars."
       fun dest_one_all var body =
           case body of
-              Const ("HOL.All", _) $ Abs (_, _, t) => subst_bound (var, t)
+              Const (c, _) $ Abs (_, _, t) =>
+              if c = All_name then subst_bound (var, t)
+              else raise AUTO2 err_ind_hyp
             | _ => raise AUTO2 err_ind_hyp
       val (pat_subst, P_vars) =
-          cond_ind |> fold dest_one_all pat_vars |> HOLogic.dest_imp
+          cond_ind |> fold dest_one_all pat_vars |> dest_imp
       val _ = assert (P_vars aconv concl) err_ind_hyp
     in
       (pat_vars, pat_subst)
@@ -273,9 +285,9 @@ fun apply_induction var_ctxt var_infos ctxt ind_th prev_ths =
       val (vars, assums) = var_ctxt
       val vars' = subtract (op aconv) ind_vars vars
       val assums' = maps (the_list o snd) var_infos @ assums
-      val stmt = Update.get_neg_form
+      val stmt = Update.get_neg_form_obj
                      ctxt (Update.build_init_infos (vars', assums'))
-      val p = stmt |> HOLogic.dest_Trueprop
+      val p = stmt |> dest_Trueprop
                    |> fold lambda_abstract (rev ind_vars)
       val typ_P = fold (fn pat_var => fn ty => type_of pat_var --> ty)
                        (rev pat_vars) boolT
@@ -292,7 +304,7 @@ fun apply_induction var_ctxt var_infos ctxt ind_th prev_ths =
       val inst' = inst |> fold (Pattern.match thy) (prev_pats ~~ prev_ts)
 
       (* Finally, substitute using the full instantiation. *)
-      val stmt' = HOLogic.mk_Trueprop (subst_term_norm inst' pat_subst)
+      val stmt' = mk_Trueprop (subst_term_norm inst' pat_subst)
       val ind_th' = ind_th |> subst_thm ctxt inst'
                            |> fold Thm.elim_implies prev_ths
       val ind_ritems =
@@ -344,17 +356,18 @@ fun add_prfstep_upper_strong_induction ind_th thy =
  *)
 fun check_ind_th ind_th =
     let
-      val thy = Thm.theory_of_thm ind_th
       fun err str = "check_ind_th: " ^ str
       val (cond_base, ind_th') =
           ind_th |> Thm.prop_of |> Logic.dest_implies
-                 |> apfst (HOLogic.dest_Trueprop)
+                 |> apfst dest_Trueprop
 
       (* cond_base must be of form ?P b, where b is base case for ?n. *)
       val err_base_hyp = err "Base assumption of ind_th must be ?P base."
-      val inst = pattern_fo_match_thy thy (@{term_pat "?P ?b"}, cond_base)
-                 handle Pattern.MATCH => raise AUTO2 err_base_hyp
-      val base = lookup_inst inst "b"
+      val base =
+          case cond_base of
+              P $ b =>
+              if Term.is_Var P then b else raise AUTO2 err_base_hyp
+            | _ => raise AUTO2 err_base_hyp
     in
       (base, check_strong_ind_prop ind_th' |> apfst the_single)
     end
@@ -380,7 +393,7 @@ fun prfstep_induction name descs ind_th =
                 val ritems =
                     apply_induction (the var_ctxt) var_infos ctxt ind_th [p0_th]
               in
-                [Update.AddItems {id = id, raw_items = ritems}]
+                [AddItems {id = id, raw_items = ritems}]
               end
             end)
 
@@ -394,7 +407,7 @@ fun add_prfstep_induction ind_th thy =
          other variables.
        *)
       val var = Var (("FREE", 0), type_of pat_var)
-      val descs = [WithFact (HOLogic.Not $ (HOLogic.mk_eq (var, base))),
+      val descs = [WithFact (Not $ (mk_eq (var, base))),
                    Filter (unique_free_filter "FREE")]
       val prfstep = prfstep_induction name descs ind_th
 
@@ -406,63 +419,6 @@ fun add_prfstep_induction ind_th thy =
     in
       thy |> add_prfstep prfstep
           |> add_typed_induct_data "induct" (ty_var, ind_th)
-    end
-
-(* Check ind_th for a double induction is in the right form. *)
-fun check_double_ind_th ind_th =
-    let
-      val thy = Thm.theory_of_thm ind_th
-      fun err str = "check_double_ind_th: " ^ str
-      val (cond_base1, (cond_base2, ind_th')) =
-          ind_th |> Thm.prop_of |> Logic.dest_implies
-                 |> apfst (HOLogic.dest_Trueprop)
-                 |> apsnd (Logic.dest_implies #> apfst (HOLogic.dest_Trueprop))
-
-      (* cond_base1 must be of form !n. ?P mb n, where mb is the base
-         case for ?m.
-       *)
-      val err_base_hyp1 =
-          err "First base assumption of ind_th must be !n. ?P mb n."
-      val inst1 = pattern_fo_match_thy
-                      thy (@{term_pat "!n. ?P ?mb n"}, cond_base1)
-                  handle Pattern.MATCH => raise AUTO2 err_base_hyp1
-      val mb = lookup_inst inst1 "mb"
-
-      (* cond_base2 must be of form !m. ?P m nb, where nb is the base
-         case for ?n.
-       *)
-      val err_base_hyp2 =
-          err "Second base assumption of ind_th must be !m. ?P m nb."
-      val inst2 = pattern_fo_match_thy
-                      thy (@{term_pat "!m. ?P m ?nb"}, cond_base2)
-                  handle Pattern.MATCH => raise AUTO2 err_base_hyp2
-      val nb = lookup_inst inst2 "nb"
-    in
-      ((mb, nb), check_strong_ind_prop ind_th')
-    end
-
-fun add_prfstep_double_induction ind_th thy =
-    let
-      val ((mb, nb), (pat_vars, pat_subst)) = check_double_ind_th ind_th
-      val ctxt = Proof_Context.init_global thy
-      val name = name_of_thm ind_th
-      val err = "add_prfstep_double_induction: should have two vars."
-      val (pat_var1, pat_var2) =
-          the_pair pat_vars handle AUTO2 _ => raise AUTO2 err
-
-      (* Add user invoked proofstep. *)
-      val (ty_var1, ty_var2) = apply2 type_of (pat_var1, pat_var2)
-      val var1 = Var (("m", 0), ty_var1)
-      val var2 = Var (("n", 0), ty_var2)
-      val descs = [WithFact (HOLogic.Not $ (HOLogic.mk_eq (var1, mb))),
-                   WithFact (HOLogic.Not $ (HOLogic.mk_eq (var2, nb)))]
-      val _ = writeln (
-            name ^ "\n" ^ (string_of_descs thy descs) ^ "\n" ^
-            "Substitution: " ^
-            (pretty_terms ctxt [pat_var1, pat_var2, pat_subst] |> str))
-      val ty = HOLogic.mk_prodT (ty_var1, ty_var2)
-    in
-      thy |> add_typed_induct_data "double_induct" (ty, ind_th)
     end
 
 (* Apply induction rule for an inductively defined proposition. The
@@ -477,13 +433,13 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
     let
       (* init_th is of the form f a_1 ... a_n. *)
       val init_prop = Thm.prop_of init_th
-      val (f, th_vars) = Term.strip_comb (HOLogic.dest_Trueprop init_prop)
+      val (f, th_vars) = Term.strip_comb (dest_Trueprop init_prop)
       val free_th_vars = filter Term.is_Free th_vars
       val all_free_vars = merge (op aconv) (free_th_vars, extra_vars)
       val var_ctxt = get_var_context id all_free_vars st
 
       val (init_assum, _) = Logic.dest_implies (Thm.prop_of ind_th)
-      val pat_vars = dest_args (HOLogic.dest_Trueprop init_assum)
+      val pat_vars = dest_args (dest_Trueprop init_assum)
 
       fun get_eq_prop (th_var, pat_var) =
           if Term.is_Free th_var then NONE else
@@ -491,7 +447,7 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
             val ((nm, _), T) = Term.dest_Var pat_var
             val (nm', _) = the_single (Variable.variant_frees ctxt [] [(nm, T)])
           in
-            SOME (HOLogic.mk_eq (Free (nm', fastype_of th_var), th_var))
+            SOME (mk_eq (Free (nm', fastype_of th_var), th_var))
           end
       val eq_props = map get_eq_prop (th_vars ~~ pat_vars)
       val eq_props_lst = maps the_list eq_props
@@ -499,17 +455,17 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
       fun get_new_th_var (th_var, eq_prop) =
           case eq_prop of
               NONE => th_var
-            | SOME eq => eq |> HOLogic.dest_eq |> fst
+            | SOME eq => eq |> dest_eq |> fst
       val th_vars' = map get_new_th_var (th_vars ~~ eq_props)
-      val init_prop' = HOLogic.mk_Trueprop (Term.list_comb (f, th_vars'))
+      val init_prop' = mk_Trueprop (Term.list_comb (f, th_vars'))
       val init_th' = assume_thm ctxt init_prop'
 
       fun callback (id, th) =
           let
             val num_eqs = length eq_props_lst
-            val eq_cprops = map (cert ctxt o HOLogic.mk_Trueprop) eq_props_lst
+            val eq_cprops = map (cert ctxt o mk_Trueprop) eq_props_lst
             val new_th_vars = subtract (op aconv) th_vars th_vars'
-            val use_vardef_cv = Conv.arg_conv (rewr_obj_eq @{thm use_vardef})
+            val use_vardef_cv = Conv.arg_conv (rewr_obj_eq use_vardef_th)
             fun use_vardef (eq_cprop, new_th_var) th =
                 th |> Thm.implies_intr eq_cprop
                    |> Thm.forall_intr (cert ctxt new_th_var)
@@ -521,7 +477,7 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
                    |> Thm.implies_intr (cert ctxt init_prop')
                    |> fold use_vardef (eq_cprops ~~ new_th_vars)
                    |> apply_to_thm to_meta_imp_conv
-            val th'' = if Thm.concl_of th' aconv @{prop False} then
+            val th'' = if Thm.concl_of th' aconv pFalse then
                          rewrite_thm_from_contra_form th'
                        else th'
           in
@@ -535,10 +491,10 @@ fun apply_prop_induction (id, init_th) ind_th extra_vars (st as {ctxt, ...}) =
           else let
             val assums' = remove (op aconv) init_prop assums
             val stmt = (Update.build_init_infos (extra_vars, assums'))
-                           |> Update.get_neg_form ctxt |> HOLogic.dest_Trueprop
-                           |> fold (curry HOLogic.mk_imp) (rev eq_props_lst)
+                           |> Update.get_neg_form_obj ctxt |> dest_Trueprop
+                           |> fold (curry mk_imp) (rev eq_props_lst)
             val ind_concl = Logic.strip_imp_concl (Thm.prop_of ind_th)
-            val P = ind_concl |> HOLogic.dest_Trueprop |> Term.head_of
+            val P = ind_concl |> dest_Trueprop |> Term.head_of
             val p = fold lambda_abstract (rev th_vars') stmt
             val inst = pattern_match ctxt (P, p)
             val ind_th' = (subst_thm ctxt inst ind_th)
@@ -559,7 +515,7 @@ fun add_prfstep_prop_induction ind_th thy =
     let
       (* Initial assumption is of form f ?a_1 ... ?a_n. *)
       val (init_assum, _) = Logic.dest_implies (Thm.prop_of ind_th)
-      val (f, pat_vars) = Term.strip_comb (HOLogic.dest_Trueprop init_assum)
+      val (f, pat_vars) = Term.strip_comb (dest_Trueprop init_assum)
       val _ = assert (forall Term.is_Var pat_vars)
                      "prop_induction: arguments in ind_th must be variables."
       val idx_vars = (1 upto (length pat_vars)) ~~ pat_vars
@@ -589,7 +545,7 @@ fun apply_var_induction (id, var) ind_th extra_vars (st as {ctxt, ...}) =
     let
       val var_ctxt = get_var_context id (var :: extra_vars) st
       val ind_concl = Logic.strip_imp_concl (Thm.prop_of ind_th)
-      val pat_var = dest_arg (HOLogic.dest_Trueprop ind_concl)
+      val pat_var = dest_arg (dest_Trueprop ind_concl)
       val _ = assert (Term.is_Var pat_var)
                      "var_induction: concl of ind_th must be ?P ?var"
       val ((nm, idx), _) = Term.dest_Var pat_var
@@ -599,9 +555,9 @@ fun apply_var_induction (id, var) ind_th extra_vars (st as {ctxt, ...}) =
         | SOME (vars, assums) =>
           let
             val vars' = remove (op aconv) var vars
-            val stmt = Update.get_neg_form ctxt (
+            val stmt = Update.get_neg_form_obj ctxt (
                   Update.build_init_infos (vars', assums))
-            val p = lambda_abstract var (HOLogic.dest_Trueprop stmt)
+            val p = lambda_abstract var (dest_Trueprop stmt)
             val inst = fo_init |> update_env (("P", 0), p)
                                |> update_env ((nm, idx), var)
             val ind_th' = (subst_thm ctxt inst ind_th)
@@ -621,7 +577,7 @@ fun prfstep_var_induction name descs ind_th =
 fun add_prfstep_var_induction ind_th thy =
     let
       val ind_concl = Logic.strip_imp_concl (Thm.prop_of ind_th)
-      val pat_var = dest_arg (HOLogic.dest_Trueprop ind_concl)
+      val pat_var = dest_arg (dest_Trueprop ind_concl)
       val _ = assert (Term.is_Var pat_var)
                      "var_induction: concl of ind_th must be ?P ?var"
 
@@ -653,11 +609,13 @@ fun process_var_spec_str ctxt var_spec_str =
     let
       val var_spec = read_term ctxt var_spec_str
     in
-      case var_spec of
-          Const ("HOL.eq", _) $ lhs $ rhs =>
-          (lhs, rhs, SOME (HOLogic.mk_Trueprop var_spec))
-        | Free _ => (var_spec, var_spec, NONE)
-        | _ => raise AUTO2 "INDUCT: var_spec is either eqn or variable."
+      if is_Free var_spec then
+        (var_spec, var_spec, NONE)
+      else if is_eq_term var_spec then
+        let val (lhs, rhs) = dest_eq var_spec in
+          (lhs, rhs, SOME (mk_Trueprop var_spec))
+        end
+      else raise AUTO2 "INDUCT: var_spec is either eqn or variable."
     end
 
 fun get_neq0_th (t, base) =
@@ -666,7 +624,7 @@ fun get_neq0_th (t, base) =
                       Const (nm, _) => Const (nm, type_of t)
                     | _ => raise AUTO2 "INDUCT: base is not a constant."
     in
-      HOLogic.mk_eq (t, base')
+      mk_eq (t, base')
     end
 
 fun INDUCT (var_spec_str, ind_infos) ctxt =
@@ -679,7 +637,7 @@ fun INDUCT (var_spec_str, ind_infos) ctxt =
                    handle Option.Option =>
                           raise AUTO2 "INDUCT: ind_th not found."
       val (base, _) = check_ind_th ind_th
-      val neq0 = HOLogic.mk_Trueprop (get_neq0_th (rhs, base))
+      val neq0 = mk_Trueprop (get_neq0_th (rhs, base))
       val arbitraries = collect_arbitraries ctxt ind_infos
       val search_vars = filter is_Free [rhs] @ arbitraries
 
@@ -699,59 +657,11 @@ fun INDUCT (var_spec_str, ind_infos) ctxt =
                 apply_induction (the var_ctxt) var_infos ctxt ind_th [p0_th]
           in
             [Update.thm_update (id, neq0_th),
-             Update.AddItems {id = id, raw_items = ritems}]
+             AddItems {id = id, raw_items = ritems}]
           end
     in
-      [Script_Task {inits = [Update.InitAssum neq0], subs = [], cb = callback,
+      [Script_Task {inits = [InitAssum neq0], subs = [], cb = callback,
                     end_vars = get_new_vars var_eq}]
-    end
-
-fun DOUBLE_INDUCT ((var_spec_str1, var_spec_str2), ind_infos) ctxt =
-    let
-      val thy = Proof_Context.theory_of ctxt
-
-      val (var1, rhs1, eq1) = process_var_spec_str ctxt var_spec_str1
-      val (var2, rhs2, eq2) = process_var_spec_str ctxt var_spec_str2
-      val ty = HOLogic.mk_prodT (type_of var1, type_of var2)
-
-      val ind_th = the (get_typed_ind_th thy "double_induct" ty)
-                   handle Option.Option =>
-                          raise AUTO2 "DOUBLE_INDUCT: ind_th not found."
-      val ((mb, nb), _) = check_double_ind_th ind_th
-      val neq0 = HOLogic.mk_Trueprop (
-            HOLogic.mk_disj (get_neq0_th (rhs1, mb), get_neq0_th (rhs2, nb)))
-      val arbitraries = collect_arbitraries ctxt ind_infos
-      val search_vars = filter is_Free [rhs1, rhs2] @ arbitraries
-
-      fun callback ((id, neq0_th), st as {ctxt, ...}) =
-          let
-            val var_ctxt = get_var_context id search_vars st
-            val _ = assert (is_some var_ctxt)
-                           "DOUBLE_INDUCT: cannot get var context."
-            val (_, assums) = the var_ctxt
-            val assums' = the_list eq1 @ the_list eq2 @ assums
-            val (neq0_th1, neq0_th2) = the_pair (split_not_disj_th neq0_th)
-
-            val p0_th =
-                neq0_th1 |> use_var_eq ctxt eq1
-                         |> process_neq0_th id (arbitraries, assums') st
-                         |> Thm.forall_intr (cert ctxt var2)
-                         |> apply_to_thm (to_obj_conv ctxt)
-            val p1_th =
-                neq0_th2 |> use_var_eq ctxt eq2
-                         |> process_neq0_th id (arbitraries, assums') st
-                         |> Thm.forall_intr (cert ctxt var1)
-                         |> apply_to_thm (to_obj_conv ctxt)
-            val var_infos = [(var1, eq1), (var2, eq2)]
-            val ritems = apply_induction (the var_ctxt) var_infos ctxt ind_th
-                                         [p0_th, p1_th]
-          in
-            [Update.thm_update (id, neq0_th),
-             Update.AddItems {id = id, raw_items = ritems}]
-          end
-    in
-      [Script_Task {inits = [Update.InitAssum neq0], subs = [], cb = callback,
-                    end_vars = maps get_new_vars [eq1, eq2]}]
     end
 
 fun STRONG_INDUCT (var_spec_str, ind_infos) ctxt =
@@ -786,10 +696,12 @@ fun STRONG_INDUCT (var_spec_str, ind_infos) ctxt =
             val ritems' = if length apply_ons = 0 then ritems
                           else map Update.thm_to_ritem ths @ rest
           in
-            [Update.AddItems {id = id, raw_items = ritems'}]
+            [AddItems {id = id, raw_items = ritems'}]
           end
+
+      val not_True = bTrue |> get_neg |> mk_Trueprop
     in
-      [Script_Task {inits = [Update.InitAssum @{prop "~True"}], subs = [],
+      [Script_Task {inits = [InitAssum not_True], subs = [],
                     cb = callback, end_vars = get_new_vars var_eq}]
     end
 
@@ -808,7 +720,7 @@ fun UPPER_STRONG_INDUCT (var_spec_str, less_str, ind_infos) ctxt =
 
       (* The n < M requirement (first assumption of ind_th). *)
       val less_req = read_term ctxt less_str
-      val init_assum = less_req |> get_neg |> HOLogic.mk_Trueprop
+      val init_assum = less_req |> get_neg |> mk_Trueprop
 
       (* If the right side is not a free variable, create a new
          variable equal to it. This will be considered an initial
@@ -820,7 +732,7 @@ fun UPPER_STRONG_INDUCT (var_spec_str, less_str, ind_infos) ctxt =
           else let
             val var = singleton (Variable.variant_frees ctxt []) ("M", ty)
           in
-            SOME (HOLogic.mk_Trueprop (HOLogic.mk_eq (Free var, rhs_req)))
+            SOME (mk_Trueprop (mk_eq (Free var, rhs_req)))
           end
 
       fun callback ((id, th), st as {ctxt, ...}) =
@@ -841,9 +753,10 @@ fun UPPER_STRONG_INDUCT (var_spec_str, less_str, ind_infos) ctxt =
                 apply_induction var_ctxt' var_infos ctxt ind_th [th'] @
                 get_eq_handler ctxt var_eq2
             val (ind_prop, rest) =
-                filter_split (fn ritem =>
-                                 case ritem of Fact ("PROP", _, _) => true
-                                             | _ => false) ritems
+                filter_split (
+                  fn ritem =>
+                     case ritem of Fact ("PROP", [t], _) => not (is_eq_term t)
+                                 | _ => false) ritems
             val _ = assert (length ind_prop = 1)
                            "UPPER_STRONG_INDUCT: should have one ind_prop."
             val all_th = ind_prop |> the_single |> get_thm_raw
@@ -852,12 +765,11 @@ fun UPPER_STRONG_INDUCT (var_spec_str, less_str, ind_infos) ctxt =
             val ritems' = if length apply_ons = 0 then ritems
                           else map Update.thm_to_ritem ths @ rest
           in
-            [Update.AddItems {id = id, raw_items = ritems'}]
+            [AddItems {id = id, raw_items = ritems'}]
           end
     in
-      [Script_Task {
-          inits = [Update.InitAssum init_assum], subs = [],
-          cb = callback, end_vars = maps get_new_vars [var_eq, var_eq2]}]
+      [Script_Task {inits = [InitAssum init_assum], subs = [], cb = callback,
+                    end_vars = maps get_new_vars [var_eq, var_eq2]}]
     end
 
 fun PROP_INDUCT (str, ind_infos) ctxt =
@@ -880,9 +792,8 @@ fun PROP_INDUCT (str, ind_infos) ctxt =
               [Update.thm_update (id, th)] @ ind_updt
           end
     in
-      [Script_Task {inits = [Update.InitAssum (
-                                HOLogic.mk_Trueprop (get_neg t))], subs = [],
-                    cb = callback, end_vars = []}]
+      [Script_Task {inits = [InitAssum (mk_Trueprop (get_neg t))],
+                    subs = [], cb = callback, end_vars = []}]
     end
 
 fun VAR_INDUCT (var_name, ind_infos) ctxt =
@@ -903,11 +814,11 @@ fun VAR_INDUCT (var_name, ind_infos) ctxt =
               raise AUTO2 "VAR_INDUCT: failed"
             else ind_updt
           end
+
+      val not_True = bTrue |> get_neg |> mk_Trueprop
     in
-      [Script_Task {inits = [Update.InitAssum @{prop "~True"}], subs = [],
+      [Script_Task {inits = [InitAssum not_True], subs = [],
                     cb = callback, end_vars = []}]
     end
 
 end  (* structure Induct_ProofSteps. *)
-
-open Induct_ProofSteps

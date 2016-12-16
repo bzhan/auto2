@@ -5,7 +5,7 @@ local
   open ACUtil
 
   val thy = @{theory}
-  val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
+  val thy' = thy |> Nat_Arith.add_arith_ac_data
                  |> add_list_ac_data
   val ctxt = @{context}
 in
@@ -15,7 +15,7 @@ val test_comb_ac_equiv =
       fun err n = "test_comb_ac_equiv: " ^ (string_of_int n)
       fun test n (t1, t2) =
           let
-            val ac_info = the (get_head_ac_info thy' t1)
+            val ac_info = the (get_head_ac_info_all_thy thy' t1)
                           handle Option.Option =>
                                  raise AUTO2 "test_comb_ac_equiv: ac_info"
             val ts1 = dest_ac_l ac_info t1
@@ -29,21 +29,26 @@ val test_comb_ac_equiv =
             else raise AUTO2CT (err n, [Thm.cprop_of th])
           end
       val _ = test 0 (@{term "(a::nat) + b + c"}, @{term "(d::nat) + e + f"})
-      val _ = test 1 (@{term "A | B | C | D"}, @{term "E | F | G | H"})
+      val _ = test 1 (@{term "A @ B @ C @ D"}, @{term "E @ F @ G @ H"})
     in () end
 
 (* Generic function for testing conv with ac_info argument. *)
 fun test_ac_conv_gen with_inv ctxt cv err_str (str1, str2) =
     let
       val t1 = read_pat ctxt str1
-      val ac_info = the (get_head_ac_info_gen with_inv thy' t1)
-                    handle Option.Option => raise AUTO2 "test_ac_conv: ac_info"
     in
-      test_conv ctxt (cv ac_info) err_str (str1, str2)
+      case get_head_ac_info_thy_gen with_inv thy' t1 of
+          NONE =>
+          let
+            val _ = trace_t_ctxt ctxt "t1:" t1
+          in
+            raise AUTO2 "test_ac_conv: ac_info"
+          end
+        | SOME ac_info => test_conv ctxt (cv ac_info) err_str (str1, str2)
     end
 
 val test_ac_conv = test_ac_conv_gen false
-val test_ac_conv_with_inv = test_ac_conv_gen true
+val test_ac_conv_all = test_ac_conv_gen true
 
 val test_swap_assoc_to_l =
     let
@@ -64,7 +69,7 @@ val test_normalize_assoc =
     let
       val test_data = [
         ("(a::nat) + (b + d) + (c + e)", "(a::nat) + b + d + c + e"),
-        ("A & (B & D) & (C & E)", "(((A & B) & D) & C) & E"),
+        ("A @ (B @ D) @ (C @ E)", "(((A @ B) @ D) @ C) @ E"),
         ("((a::nat) + 0) + (b + 0)", "(a::nat) + 0 + b + 0")
       ]
     in
@@ -93,7 +98,7 @@ val test_normalize_minus =
         ("(a - b) - (c - d)", "(a + (-b)) + (-c + d)")
       ]
     in
-      map (test_ac_conv_with_inv ctxt' normalize_minus "test_normalize_minus")
+      map (test_ac_conv_all ctxt' normalize_minus "test_normalize_minus")
           test_data
     end
 
@@ -104,7 +109,7 @@ val test_move_outmost =
           let
             val (t1, u) = (read_pat ctxt str1, read_pat ctxt stru)
             val ac_info =
-                the (get_head_ac_info thy' t1)
+                the (get_head_ac_info_thy thy' t1)
                 handle Option.Option => raise AUTO2 (err_str ^ ": ac_info")
           in
             test_conv ctxt (move_outmost ac_info u) err_str (str1, str2)

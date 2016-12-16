@@ -73,7 +73,7 @@ theorem hoare_if: "{{ (P && b) }} c1 {{ Q }} \<Longrightarrow> {{ P &~ b }} c2 {
 
 theorem hoare_while: "{{ P && b }} c {{ P }} \<Longrightarrow> {{ P }} (WHILE b DO c OD) {{ P &~ b }}"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "\<forall>st st'. ceval (WHILE b DO c OD) st st' \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'"
+    (HAVE "\<forall>st st'. ceval (WHILE b DO c OD) st st' \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'"
       WITH PROP_INDUCT ("ceval (WHILE b DO c OD) st st'", [])) *})
 
 (* Formally decorated programs. *)
@@ -133,6 +133,7 @@ fun vcond :: "assertion \<Rightarrow> dcom \<Rightarrow> bool" where
    vcond Pbody d)"
 | "vcond P ({{ P' }} d) = (P \<longmapsto> P' \<and> vcond P' d)"
 | "vcond P (d \<rightarrow> {{ Q }}) = (vcond P d \<and> post d \<longmapsto> Q)"
+setup {* fold add_rewrite_rule @{thms vcond.simps} *}
 setup {* add_eval_fun_prfsteps' @{thms vcond.simps}
   (@{thms vcond.simps} @ @{thms post.simps} @ @{thms pre.simps}) *}
 

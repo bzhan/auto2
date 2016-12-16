@@ -18,6 +18,7 @@ structure Rat_Arith : RAT_ARITH =
 struct
 
 val ratT = @{typ rat}
+fun rat_eq (r, s) = (Rat.ord (r, s) = EQUAL)
 
 val mk_rat = Ring_Arith.mk_rat
 
@@ -72,10 +73,10 @@ val add_rat_arith_proofsteps =
              val n = dest_numc_rat t
              val T = fastype_of t
            in
-             if Rat.lt Rat.zero n then
+             if Rat.lt rat_zero n then
                let
                  val cv = rewr_obj_eq (obj_sym @{thm is_positive_def})
-                 val th = apply_to_thm' cv  (rat_less_th ctxt T Rat.zero n)
+                 val th = apply_to_thm' cv  (rat_less_th ctxt T rat_zero n)
                in
                  [Update.thm_update (id, th)]
                end
@@ -86,7 +87,7 @@ val add_rat_arith_proofsteps =
       ("compare_rat_consts",
        [WithFact (ring_pat "?NUMC1 = ?NUMC2"),
         Filter (fn _ => fn (_, inst) =>
-                   not (Rat.eq (lookup_numc1 inst, lookup_numc2 inst)))],
+                   not (rat_eq (lookup_numc1 inst, lookup_numc2 inst)))],
        PRIORITY_RESOLVE,
        fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
           [Update.thm_update (id, contra_by_simp ctxt ths)]),
@@ -117,21 +118,22 @@ val _ = Theory.setup Rat_Arith.add_rat_arith_proofsteps
 val neg_order_matcher =
     let
       fun pre_match pat {tname, ...} (tbl as {ctxt, ...}) =
-          if is_neg pat andalso is_linorder ctxt tname andalso
-             get_arg_type tname <> natT then
+          if is_neg pat andalso is_linorder ctxt (the_single tname) andalso
+             get_arg_type (the_single tname) <> natT then
             let
               val neg_pat = pat |> cert ctxt |> neg_ineq_cv |> rhs_of
             in
-              Matcher.pre_match tbl (neg_pat, tname)
+              Matcher.pre_match tbl (neg_pat, the_single tname)
             end
           else false
 
       fun match pat {tname, prop, ...} (tbl as {ctxt, ...}) (id, inst) =
-          if is_neg pat andalso is_linorder ctxt tname andalso
-             get_arg_type tname <> natT then
+          if is_neg pat andalso is_linorder ctxt (the_single tname) andalso
+             get_arg_type (the_single tname) <> natT then
             let
               val neg_pat = pat |> cert ctxt |> neg_ineq_cv |> rhs_of
-              val insts' = Matcher.rewrite_match tbl (neg_pat, tname) (id, inst)
+              val t = the_single tname
+              val insts' = Matcher.rewrite_match tbl (neg_pat, t) (id, inst)
               fun process_inst (inst, eq_th) =
                   (inst,
                    prop |> Thm.equal_elim (make_trueprop_eq (meta_sym eq_th))

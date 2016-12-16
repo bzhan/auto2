@@ -46,8 +46,8 @@ theorem list_update_range_rule:
   "length l' + i \<le> length l \<Longrightarrow> list_update_range l i l' = take i l @ l' @ drop (i + length l') l"
   by (tactic {* auto2s_tac @{context} (
     INDUCT ("l'", Arbitraries ["i", "l"]) THEN
-    OBTAIN "length (tl l') + 1 + i \<le> length l" THEN
-    OBTAIN "i < length l") *})
+    HAVE "length (tl l') + 1 + i \<le> length l" THEN
+    HAVE "i < length l") *})
 
 theorem list_update_range_rule_zero [rewrite]:
   "length l' \<le> length l \<Longrightarrow> list_update_range l 0 l' = l' @ drop (length l') l"
@@ -85,13 +85,13 @@ theorem last_conv_nth' [rewrite_back]: "length xs > 0 \<Longrightarrow> last xs 
 theorem hd_in_set: "length xs > 0 \<Longrightarrow> hd xs \<in> set xs" by simp
 setup {* add_forward_prfstep_cond @{thm hd_in_set} [with_term "hd ?xs", with_term "set ?xs"] *}
 
-theorem hd_in_mset: "length xs > 0 \<Longrightarrow> hd xs \<in># mset xs" by (meson More_Lists.hd_in_set mem_set_multiset_eq)
+theorem hd_in_mset: "length xs > 0 \<Longrightarrow> hd xs \<in># mset xs" by simp
 setup {* add_forward_prfstep_cond @{thm hd_in_mset} [with_term "hd ?xs", with_term "mset ?xs"] *}
 
 theorem last_in_set: "length xs > 0 \<Longrightarrow> last xs \<in> set xs" by simp
 setup {* add_forward_prfstep_cond @{thm last_in_set} [with_term "last ?xs", with_term "set ?xs"] *}
 
-theorem last_in_mset: "length xs > 0 \<Longrightarrow> last xs \<in># mset xs" using mem_set_multiset_eq by fastforce
+theorem last_in_mset: "length xs > 0 \<Longrightarrow> last xs \<in># mset xs" by simp
 setup {* add_forward_prfstep_cond @{thm last_in_mset} [with_term "last ?xs", with_term "mset ?xs"] *}
 
 section {* Relationship between mset and set of lists *}
@@ -103,7 +103,7 @@ theorem in_set_conv_nth' [resolve]: "x \<in> set xs \<Longrightarrow> \<exists>i
   by (metis in_set_conv_nth)
 
 theorem in_mset_conv_nth [resolve]: "x \<in># mset xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
-  by (metis in_set_conv_nth mem_set_multiset_eq)
+  by (simp add: in_set_conv_nth')
 
 theorem insert_mset_to_set [rewrite]: "mset xs' = mset xs + {# x #} \<Longrightarrow> set xs' = set xs \<union> {x}"
   by (metis set_mset_mset set_mset_single set_mset_union)

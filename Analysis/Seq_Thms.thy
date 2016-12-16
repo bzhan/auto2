@@ -85,9 +85,9 @@ setup {* add_rewrite_rule @{thm lower_bounded_def} *}
 theorem lower_bounded_is_neg_upper:
   "lower_bounded (X::('a::linordered_field) seq) \<longleftrightarrow> upper_bounded (-X)"
   by (tactic {* auto2s_tac @{context}
-    (CASE "lower_bounded X" WITH (CHOOSE "r, \<forall>n. r \<le> X\<langle>n\<rangle>" THEN OBTAIN "\<forall>n. -r \<ge> (-X)\<langle>n\<rangle>") THEN
+    (CASE "lower_bounded X" WITH (CHOOSE "r, \<forall>n. r \<le> X\<langle>n\<rangle>" THEN HAVE "\<forall>n. -r \<ge> (-X)\<langle>n\<rangle>") THEN
      CASE "upper_bounded (-X)" WITH (
-      CHOOSE "r, \<forall>n. r \<ge> (-X)\<langle>n\<rangle>" THEN OBTAIN "\<forall>n. -r \<le> X\<langle>n\<rangle>" WITH OBTAIN "r \<ge> (-X)\<langle>n\<rangle>")) *})
+      CHOOSE "r, \<forall>n. r \<ge> (-X)\<langle>n\<rangle>" THEN HAVE "\<forall>n. -r \<le> X\<langle>n\<rangle>" WITH HAVE "r \<ge> (-X)\<langle>n\<rangle>")) *})
 
 setup {* fold del_prfstep_thm [@{thm upper_bounded_def}, @{thm lower_bounded_def}] *}
 setup {* fold (add_resolve_prfstep o equiv_forward_th)
@@ -140,7 +140,7 @@ theorem ex_ind_seq: "\<exists>S. S\<langle>0\<rangle> = I \<and> (\<forall>n. S\
 theorem ex_mutual_ind_seq:
   "\<exists>S T. S\<langle>0\<rangle> = I \<and> T\<langle>0\<rangle> = J \<and> (\<forall>n. S\<langle>1+n\<rangle> = f (S\<langle>n\<rangle>) (T\<langle>n\<rangle>)) \<and> (\<forall>n. T\<langle>1+n\<rangle> = g (S\<langle>n\<rangle>) (T\<langle>n\<rangle>))"
 proof -
-  def H \<equiv> "ind_gen (\<lambda>(x, y). (f x y, g x y)) (I, J)"
+  define H where "H = ind_gen (\<lambda>(x, y). (f x y, g x y)) (I, J)"
   show ?thesis
   apply (rule exI [where x="Seq (\<lambda>n. fst (H n))"])
   apply (rule exI [where x="Seq (\<lambda>n. snd (H n))"])

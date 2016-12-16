@@ -8,34 +8,45 @@ sig
   val add_ac_proofsteps: theory -> theory
 end;
 
-structure AC_ProofSteps : AC_PROOFSTEPS =
+functor AC_ProofSteps(Base:UTIL_BASE) : AC_PROOFSTEPS =
 struct
+
+structure UtilLogic = UtilLogic(Base)
+structure ACUtil = ACUtil(Base)
+structure RewriteTable = RewriteTable(Base)
+structure Matcher = Matcher(Base)
+structure ItemIO_Data = ItemIO_Data(Base)
+structure Update = Update(Base)
+structure ProofStep_Data = ProofStep_Data(Base)
+open Base
+open UtilLogic
 
 (* Reduce terms of the form 1 * n and n * 1. *)
 fun reduce_unit_fn rtype _ {id, tname, ...} =
     let
       val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val t = the_single tname
     in
-      case RewriteTable.get_head_ac_info_with_inv tbl tname of
+      case ACUtil.get_head_ac_info_all ctxt t of
           NONE => []
         | SOME (ac_info as {cfhead, uinv_op, unit_val, ...}) =>
           if not (ACUtil.has_unit_th ac_info) then []
-          else if Term.head_of tname aconv uinv_op then []
+          else if Term.head_of t aconv uinv_op then []
           else let  (* cfhead and inv_op cases. *)
-            val unit_cv = ACUtil.unit_cv ac_info
-            val (f, (A, B)) = dest_binop tname
+            val unit_cv = #unit_cv ac_info
+            val (f, (A, B)) = dest_binop t
             val l_equivs = (RewriteTable.equiv_info tbl id (A, unit_val))
                                |> RewriteTable.replace_id_for_type' rtype
             val r_equivs = (RewriteTable.equiv_info tbl id (B, unit_val))
                                |> RewriteTable.replace_id_for_type' rtype
-            val ct = cert ctxt tname
+            val ct = cert ctxt t
             val l_cv =
                 if f aconv Thm.term_of cfhead then unit_cv
-                else (ACUtil.binop_inv_cv ac_info) then_conv unit_cv
+                else (#inv_cv ac_info) then_conv unit_cv
             val r_cv =
                 if f aconv Thm.term_of cfhead then unit_cv
-                else (ACUtil.binop_inv_cv ac_info)
-                         then_conv (Conv.arg_conv (ACUtil.unit_inv_cv ac_info))
+                else (#inv_cv ac_info)
+                         then_conv (Conv.arg_conv (#uinv_cv ac_info))
                          then_conv unit_cv
             fun process_l_equiv (id', eq_th) =
                 (id', ct |> Conv.arg1_conv (Conv.rewr_conv eq_th)
@@ -58,23 +69,24 @@ val reduce_unit =
 (* Compare term with all other terms by matching AC. *)
 fun ac_equiv_fn rtype _ {id, tname, ...} =
     let
-      val (tbl as {lat, ...}) = RewriteTable.table_of_rtype rtype
+      val (tbl as {lat, ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val t = the_single tname
     in
-      case RewriteTable.get_head_ac_info_with_inv tbl tname of
+      case ACUtil.get_head_ac_info_all ctxt t of
           NONE => []
         | SOME ac_info =>
           let
             val ts = (RewriteTable.get_all_id_terms tbl)
-                         |> filter (ACUtil.head_agrees_with_inv ac_info o snd)
-            fun process_t (id', t) =
+                         |> filter (ACUtil.head_agrees_all ac_info o snd)
+            fun process_t (id', t') =
                 let
                   val id'' = BoxID.merge_boxes lat (id, id')
                 in
-                  if RewriteTable.is_equiv id'' tbl (tname, t) then []
+                  if RewriteTable.is_equiv id'' tbl (t, t') then []
                   else let
                     val insts =
                         (Matcher.rewrite_match_ac false
-                             ac_info tbl (tname, t) (id'', fo_init))
+                             ac_info tbl (t, t') (id'', fo_init))
                             |> RewriteTable.replace_id_for_type rtype
                             |> max_partial (Matcher.inst_eq_better tbl [])
                     fun process_inst ((id''', _), eq_th) =
@@ -122,13 +134,13 @@ val ac_equiv =
 (* Pay more attention when a goal is to prove A = B. *)
 fun ac_equiv_strong_fn pat rtype _ (item as {id, ...}) =
     let
-      val (tbl as {lat, ...}) = RewriteTable.table_of_rtype rtype
+      val (tbl as {lat, ctxt, ...}) = RewriteTable.table_of_rtype rtype
       val insts = ItemIO_Data.match_arg tbl (PropMatch pat) item (id, fo_init)
       fun process_inst ((id, _), prop) =
           let
             val (A, B) = prop_of' prop |> get_neg |> dest_binop |> snd
           in
-            case RewriteTable.get_head_ac_info_with_inv tbl A of
+            case ACUtil.get_head_ac_info_all ctxt A of
                 NONE => []
               | SOME ac_info =>
                 let
@@ -149,7 +161,7 @@ fun ac_equiv_strong_fn pat rtype _ (item as {id, ...}) =
                               val eq = to_obj_eq (
                                     transitive_list [
                                       eq_A, eq_th, meta_sym eq_B])
-                              val contra_eq = [prop, eq] MRS @{thm contra_triv}
+                              val contra_eq = [prop, eq] MRS contra_triv_th
                             in
                               Update.thm_update (id'', contra_eq)
                             end
@@ -171,10 +183,8 @@ fun ac_equiv_strong (nm, pat) =
      func = OneStep (ac_equiv_strong_fn pat)}
 
 val add_ac_proofsteps =
-    fold add_prfstep [
+    fold ProofStep_Data.add_prfstep [
       reduce_unit, ac_equiv
     ]
 
 end  (* structure AC_ProofSteps. *)
-
-val _ = Theory.setup AC_ProofSteps.add_ac_proofsteps

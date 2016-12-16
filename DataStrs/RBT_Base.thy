@@ -99,19 +99,19 @@ theorem depth_min: "is_rbt t \<Longrightarrow> black_depth t \<le> min_depth t"
   by (tactic {* auto2s_tac @{context}
     (CASE "t = Leaf" THEN
      CASE "cl t = R" WITH
-        OBTAIN "black_depth t \<le> min (min_depth (lsub t)) (min_depth (rsub t))") *} )
+        HAVE "black_depth t \<le> min (min_depth (lsub t)) (min_depth (rsub t))") *} )
 theorem two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 theorem depth_max: "is_rbt t \<Longrightarrow> if cl t = R then max_depth t \<le> 2 * black_depth t + 1
                                  else max_depth t \<le> 2 * black_depth t"
   by (tactic {* auto2s_tac @{context}
     (CASE "t = Leaf" THEN CASE "cl t = R" THEN
-     OBTAIN "max_depth (lsub t) \<le> 2 * black_depth (lsub t) + 1" THEN
-     OBTAIN "max_depth (rsub t) \<le> 2 * black_depth (rsub t) + 1") *} )
+     HAVE "max_depth (lsub t) \<le> 2 * black_depth (lsub t) + 1" THEN
+     HAVE "max_depth (rsub t) \<le> 2 * black_depth (rsub t) + 1") *} )
 
 setup {* fold add_forward_prfstep [@{thm depth_min}, @{thm depth_max}] *}
 theorem balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_depth t + 1"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "max_depth t \<le> 2 * black_depth t + 1") *})
+    (HAVE "max_depth t \<le> 2 * black_depth t + 1") *})
 setup {* fold del_prfstep_thm [@{thm depth_min}, @{thm depth_max}] *}
 
 subsection {* Definition and basic properties of cl_inv' *}
@@ -166,6 +166,9 @@ fun rbt_sorted :: "('a::linorder, 'b) pre_rbt \<Rightarrow> bool" where
 | "rbt_sorted (Node l c k v r) = ((\<forall>x\<in>rbt_set l. x < k) \<and> (\<forall>x\<in>rbt_set r. k < x)
                                   \<and> rbt_sorted l \<and> rbt_sorted r)"
 setup {* fold add_rewrite_rule @{thms rbt_sorted.simps} *}
+
+theorem rbt_sorted_lr [forward]:
+  "rbt_sorted (Node l c k v r) \<Longrightarrow> rbt_sorted l \<and> rbt_sorted r" by auto2
 
 theorem rbt_inorder_preserve_set [rewrite_back]:
   "set (rbt_in_traverse t) = rbt_set t" by auto2

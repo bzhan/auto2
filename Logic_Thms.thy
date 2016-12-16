@@ -4,46 +4,15 @@ theory Logic_Thms
 imports Auto2_Base
 begin
 
-setup {* fold add_th_normalizer
-  [("split_conj", K split_conj_th), ("split_not_disj", K split_not_disj_th)] *}
-
-(* AC-property of conj and disj. *)
-theorem disj_is_assoc: "is_assoc_fn (op \<or>)" by (simp add: is_assoc_fn_def)
-theorem disj_is_comm: "is_comm_fn (op \<or>)" using is_comm_fn_def by blast
-theorem disj_has_unit: "is_unit_fn False (op \<or>)" by (simp add: is_unit_fn_def)
-theorem conj_is_assoc: "is_assoc_fn (op \<and>)" by (simp add: is_assoc_fn_def)
-theorem conj_is_comm: "is_comm_fn (op \<and>)" using is_comm_fn_def by blast
-theorem conj_has_unit: "is_unit_fn True (op \<and>)" by (simp add: is_unit_fn_def)
-
-ML {*
-val conj_ac_raw =
-  {fname = @{const_name conj},
-   assoc_th = @{thm conj_is_assoc}, comm_th = @{thm conj_is_comm},
-   unit_th = @{thm conj_has_unit}, uinv_th = true_th, inv_th = true_th}
-val disj_ac_raw = 
-  {fname = @{const_name disj},
-   assoc_th = @{thm disj_is_assoc}, comm_th = @{thm disj_is_comm},
-   unit_th = @{thm disj_has_unit}, uinv_th = true_th, inv_th = true_th}
-val add_logic_ac_data = fold ACUtil.add_ac_data [conj_ac_raw, disj_ac_raw]
-val conj_ac = the (ACUtil.inst_ac_info @{theory} boolT conj_ac_raw)
-val disj_ac = the (ACUtil.inst_ac_info @{theory} boolT disj_ac_raw)
-*}
-setup {* add_logic_ac_data *}
-
-(* Other conj and disj *)
-theorem conj_same [backward]: "A \<Longrightarrow> A \<and> A" by auto
-
-(* Rewrites P = True to P, etc. *)
-setup {* fold add_eq_th_normalizer [@{thm HOL.eq_True}, @{thm HOL.eq_False}] *}
-
 (* Trivial contradictions. *)
 setup {* add_resolve_prfstep @{thm HOL.refl} *}
 setup {* add_forward_prfstep @{thm contra_triv} *}
-setup {* add_resolve_prfstep @{thm HOL.TrueI} *}
-theorem FalseD' [resolve]: "\<not>False" by simp
+setup {* add_resolve_prfstep @{thm TrueI} *}
+setup {* add_forward_prfstep_cond @{thm TrueI} [with_term "True"] *}
+theorem FalseD [resolve]: "\<not>False" by simp
+setup {* add_forward_prfstep_cond @{thm FalseD} [with_term "False"] *}
 
 (* Not. *)
-setup {* add_rewrite_rule nn_cancel_th #> add_eq_th_normalizer nn_cancel_th *}
 setup {* add_forward_prfstep_cond @{thm HOL.not_sym} [with_filt (not_type_filter "s" boolT)] *}
 
 (* Iff. *)
@@ -54,12 +23,9 @@ theorem iff_two_dirs [forward]: "A \<noteq> B \<Longrightarrow> (A \<longrightar
 setup {* add_fixed_sc ("Logic_Thms.iff_two_dirs", 1) *}
 
 (* Implies. *)
-setup {* add_forward_prfstep @{thm Meson.not_impD} *}
-setup {* add_fixed_sc ("Meson.not_impD", 1) *}
 lemma not_conj_to_imp: "\<not>(A \<and> B) \<longleftrightarrow> A \<longrightarrow> \<not>B" by simp  (* used in not_ex_forall_cv *)
 
 (* Quantifiers: normalization *)
-setup {* fold add_eq_th_normalizer @{thms HOL.simp_thms(35,36)} *}
 theorem exists_split: "(\<exists>x y. P x \<and> Q y) = ((\<exists>x. P x) \<and> (\<exists>y. Q y))" by simp
 setup {* add_backward_prfstep (equiv_backward_th @{thm exists_split}) *}
 
@@ -67,11 +33,21 @@ setup {* add_backward_prfstep (equiv_backward_th @{thm exists_split}) *}
 setup {* add_gen_prfstep ("case_intro",
   [WithTerm @{term_pat "if ?cond then (?yes::?'a) else ?no"},
    CreateCase @{term_pat "?cond::bool"}]) *}
-setup {* add_gen_prfstep ("case_intro_eq_if",
-  [WithItem (TY_EQ_IF, @{term_pat "(?t, if ?cond then ?x else ?y)"}),
+setup {* add_gen_prfstep ("case_intro_fact",
+  [WithFact @{term_pat "if ?cond then (?yes::bool) else ?no"},
    CreateCase @{term_pat "?cond::bool"}]) *}
+setup {* add_gen_prfstep ("case_intro_goal",
+  [WithGoal @{term_pat "if ?cond then (?yes::bool) else ?no"},
+   CreateCase @{term_pat "?cond::bool"}]) *}
+setup {* add_gen_prfstep ("case_intro_eq_if",
+  [WithItem (TY_EQ_IF, @{term_pat "?t = (if ?cond then ?x else ?y)"}),
+   CreateCase @{term_pat "?cond::bool"}]) *}
+theorem if_P_bool: "P \<Longrightarrow> (if P then (x::bool) else y) = x" by simp
+theorem if_not_P_bool: "\<not>P \<Longrightarrow> (if P then (x::bool) else y) = y" by simp
 theorem if_not_P': "P \<Longrightarrow> (if \<not>P then x else y) = y" by simp
+theorem if_not_P'_bool: "P \<Longrightarrow> (if \<not>P then (x::bool) else y) = y" by simp
 setup {* fold add_rewrite_rule [@{thm HOL.if_P}, @{thm HOL.if_not_P}, @{thm if_not_P'}] *}
+setup {* fold add_rewrite_rule [@{thm if_P_bool}, @{thm if_not_P_bool}, @{thm if_not_P'_bool}] *}
 setup {* fold add_fixed_sc [("HOL.if_P", 1), ("HOL.if_not_P", 1), ("Logic_Thms.if_not_P'", 1)] *}
 
 (* THE and \<exists>! *)
@@ -129,11 +105,9 @@ theorem option_inject' [forward]: "Some i = Some j \<Longrightarrow> i = j" by s
 setup {* fold add_rewrite_rule @{thms Option.option.case} *}
 setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2", 1)] *}
 
-(* In HOL, every type is non-empty. This can be invoked with CHOOSE "r::'a, ArbVar r" *)
-definition ArbVar :: "'a \<Rightarrow> bool" where "ArbVar x = True"
-theorem type_nonempty [resolve]: "\<exists>x. ArbVar x" by (simp add: ArbVar_def)
-
 (* Quantifiers and other fundamental proofsteps. *)
-ML_file "logic_steps.ML"
+ML_file "double_induct.ML"
+ML_file "util_arith.ML"
+ML_file "logic_more.ML"
 
 end

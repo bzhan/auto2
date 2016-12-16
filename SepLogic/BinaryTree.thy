@@ -37,11 +37,6 @@ lemma btree_split_iff2:
   "btree (tree.Node lt k v rt) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp)" by auto2
 setup {* add_forward_ent_prfstep_cond @{thm btree_split_iff2} [K ShadowFirst] *}
 
-lemma btree_split_elim:
-  "\<exists>lp rp. h \<Turnstile> p \<mapsto>\<^sub>r Node lp k v rp * Ql lp rp \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>r Node lp k v rp * Q \<Longrightarrow>
-   h \<Turnstile> p \<mapsto>\<^sub>r Node lp k v rp * Ql lp rp" by auto2
-setup {* add_forward_prfstep_cond @{thm btree_split_elim} [K ShadowFirst] *}
-
 lemma btree_is_some: "h \<Turnstile> btree (tree.Node lt k v rt) q * Qu \<Longrightarrow> \<exists>qq. q = Some qq" by auto2
 setup {* add_forward_prfstep_cond @{thm btree_is_some} [with_cond "?q \<noteq> Some ?qq"] *}
 

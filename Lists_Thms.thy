@@ -39,14 +39,13 @@ theorem list_append_one [rewrite]: "[a] @ b = a # b" by simp
 setup {* add_rewrite_rule_cond @{thm List.append.simps(2)} [with_cond "?xs \<noteq> []"] *}
 theorem append_eq_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
 
-theorem append_is_assoc: "is_assoc_fn (op @)" by (simp add: is_assoc_fn_def)
-theorem append_has_unit: "is_unit_fn [] (op @)" by (simp add: is_unit_fn_def)
 ML {*
 val add_list_ac_data =
-  fold ACUtil.add_ac_data [
-    {fname = @{const_name append},
-     assoc_th = @{thm append_is_assoc}, comm_th = true_th,
-     unit_th = @{thm append_has_unit}, uinv_th = true_th, inv_th = true_th}]
+  ACUtil.add_ac_data ("list_append",
+    ACUtil.constr_ac_info_au {
+      assoc_th = @{thm List.append_assoc},
+      unitl_th = @{thm List.append.append_Nil},
+      unitr_th = @{thm List.append_Nil2}})
 *}
 setup {* add_list_ac_data *}
 setup {* add_prfstep (AC_ProofSteps.ac_equiv_strong (
@@ -117,8 +116,8 @@ setup {* add_rewrite_rule @{thm List.set_simps(1)} *}
 theorem set_list_single [rewrite]: "set [x] = {x}" by simp
 theorem set_list_simp2: "set (x # xs) = {x} \<union> set xs" by simp
 setup {* add_rewrite_rule_cond @{thm set_list_simp2} [with_cond "?xs \<noteq> []"] *}
-setup {* add_forward_prfstep_cond @{thm List.list.set_intros(1)} [with_term "set (?a1.0 # ?a2.0)"] *}
-setup {* add_forward_prfstep_cond @{thm List.list.set_intros(2)} [with_term "set (?a1.0 # ?a2.0)"] *}
+setup {* add_forward_prfstep_cond @{thm List.list.set_intros(1)} [with_term "set (?x21.0 # ?x22.0)"] *}
+setup {* add_forward_prfstep_cond @{thm List.list.set_intros(2)} [with_term "set (?x21.0 # ?x22.0)"] *}
 setup {* add_backward_prfstep @{thm List.list.set_intros(2)} *}
 setup {* add_rewrite_rule @{thm List.set_append} *}
 
@@ -146,6 +145,6 @@ setup {* add_rewrite_rule @{thm List.map_append} *}
 section {* Other operations *}
 
 setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
-setup {* fold add_rewrite_rule @{thms listsum_simps} *}
+setup {* fold add_rewrite_rule @{thms sum_list_simps} *}
 
 end

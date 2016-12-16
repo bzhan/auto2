@@ -112,4 +112,23 @@ val test_is_pattern =
       map (test true) test_positive @ map (test false) test_negative
     end
 
+val test_split_commas =
+    let
+      fun test (str, splits) =
+          let
+            val splits' = split_commas str
+          in
+            if eq_list (op =) (splits, splits') then ()
+            else raise AUTO2 ("test_split_commas: " ^ str)
+          end
+
+      val test_data = [
+        ("(a,b),\<langle>e,f\<rangle>,{g,h},[i,j]",
+         ["(a,b)", "\<langle>e,f\<rangle>", "{g,h}", "[i,j]"]),
+        ("x, {a:S, b(a)}", ["x", " {a:S, b(a)}"])
+      ]
+    in
+      map test test_data
+    end
+
 end

@@ -6,6 +6,7 @@ session AUTO2 = HOL +
   *}
   theories
     Auto2_Test
+    Pelletier
 
 session Primes = AUTO2 +
   description {*
@@ -98,3 +99,14 @@ session SepLogic_PQueue = SepLogic_BasicStr +
   *}
   theories
     "SepLogic/IndexedPriorityQueue"
+
+session FOL_Ex = FOL +
+  description {*
+    Example in first order logic.
+  *}
+  theories
+    "FOL/Pelletier"
+    "FOL/SetSum"
+    "FOL/FixedPt"
+    "FOL/BigSet"
+    "FOL/WellOrder"

@@ -1,7 +1,7 @@
 (* Setup for proof steps related to arithmetic, mostly on natural numbers. *)
 
 theory Arith_Thms
-imports Auto2_Base Order_Thms Logic_Thms Binomial
+imports Order_Thms Binomial
 begin
 
 (* Reducing inequality on natural numbers. *)
@@ -47,23 +47,6 @@ theorem cv_const6: "(x::nat) \<le> y + n \<Longrightarrow> x \<le> 0 + (y+n)" by
 (* Misc *)
 theorem nat_eq_to_ineqs: "(x::nat) = y + n \<Longrightarrow> x \<le> y + n \<and> x \<ge> y + n" by simp
 theorem nat_ineq_impl_not_eq: "(x::nat) + n \<le> y \<Longrightarrow> n > 0 \<Longrightarrow> x \<noteq> y" by simp
-
-(* AC-property of +, *, gcd. *)
-theorem add_is_assoc: "is_assoc_fn (op +::'a::semigroup_add \<Rightarrow> 'a \<Rightarrow> 'a)" by (simp add: add.semigroup_axioms is_assoc_fn_def semigroup.assoc)
-theorem add_is_comm: "is_comm_fn (op +::'a::ab_semigroup_add \<Rightarrow> 'a \<Rightarrow> 'a)" by (simp add: add.commute is_comm_fn_def)
-theorem add_has_unit: "is_unit_fn (0::'a::monoid_add) (op +)" by (simp add: is_unit_fn_def)
-theorem add_has_uinv: "is_uinv_fn (op +) (0::'a::ab_group_add) uminus" by (simp add: is_uinv_fn_def)
-theorem add_has_inv: "is_inv_fn (op +::'a::group_add \<Rightarrow> 'a \<Rightarrow> 'a) uminus (op -)" by (simp add: is_inv_fn_def)
-
-theorem mult_is_assoc: "is_assoc_fn (op *::'a::semigroup_mult \<Rightarrow> 'a \<Rightarrow> 'a)" by (simp add: mult.semigroup_axioms is_assoc_fn_def semigroup.assoc)
-theorem mult_is_comm: "is_comm_fn (op *::'a::ab_semigroup_mult \<Rightarrow> 'a \<Rightarrow> 'a)" by (simp add: mult.commute is_comm_fn_def)
-theorem mult_has_unit: "is_unit_fn (1::'a::monoid_mult) (op *)" by (simp add: is_unit_fn_def)
-theorem mult_has_uinv: "is_uinv_fn (op *) (1::'a::field) inverse" by (simp add: is_uinv_fn_def)
-theorem mult_has_inv: "is_inv_fn (op *::'a::field \<Rightarrow> 'a \<Rightarrow> 'a) inverse (op /)" by (simp add: field_class.field_divide_inverse is_inv_fn_def)
-
-theorem gcd_is_assoc: "is_assoc_fn (gcd::nat \<Rightarrow> nat \<Rightarrow> nat)" by (simp add: gcd.semigroup_axioms is_assoc_fn_def semigroup.assoc)
-theorem gcd_is_comm: "is_comm_fn (gcd::nat \<Rightarrow> nat \<Rightarrow> nat)" using gcd_commute_nat is_comm_fn_def by blast
-theorem gcd_has_unit: "is_unit_fn (0::nat) gcd" by (simp add: is_unit_fn_def)
 
 ML_file "arith.ML"
 ML_file "order.ML"
@@ -125,7 +108,7 @@ setup {* add_forward_prfstep_cond @{thm nat_less_diff_conv} [with_filt (not_numc
 theorem Nat_le_diff_conv2_same [forward]: "(i::nat) \<le> i - j \<Longrightarrow> j \<le> i \<Longrightarrow> j = 0" by simp
 theorem Nat_le_diff1_conv [forward]: "(n::nat) \<le> n - 1 \<Longrightarrow> n = 0" by simp
 theorem nat_gt_zero [forward]: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
-theorem n_minus_1_less_n [backward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 < n" by auto2
+theorem n_minus_1_less_n [backward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 < n" by simp
 setup {* add_rewrite_rule @{thm le_add_diff_inverse} *}
 setup {* add_rewrite_rule @{thm Nat.diff_diff_cancel} *}
 
@@ -143,7 +126,7 @@ theorem nat_add_eq_self_zero': "(m::nat) = m + n \<Longrightarrow> n = 0" by sim
 setup {* add_forward_prfstep @{thm nat_add_eq_self_zero'} *}
 theorem nat_mult_2: "(a::nat) + a = 2 * a" by simp
 setup {* add_rewrite_rule_cond @{thm nat_mult_2} [with_cond "?a \<noteq> 0"] *}
-theorem plus_one_non_zero [resolve]: "\<not>(n::nat) + 1 = 0" by auto2
+theorem plus_one_non_zero [resolve]: "\<not>(n::nat) + 1 = 0" by simp
 
 (* Diff. *)
 setup {* add_rewrite_rule @{thm Nat.minus_nat.diff_0} *}
@@ -164,9 +147,9 @@ theorem diff_eq_zero' [forward]: "j - k + i = j \<Longrightarrow> (k::nat) \<le>
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm dvd_def}) (with_conds ["?a \<noteq> ?b", "?a \<noteq> ?b * ?k"]) *}
 setup {* add_gen_prfstep ("shadow_exists_triv",
   [WithFact @{term_pat "\<exists>x. (?a::nat) = ?a * x"}, ShadowFirst]) *}
-setup {* add_forward_prfstep_cond @{thm Nat.dvd.order.trans}
+setup {* add_forward_prfstep_cond @{thm dvd_trans}
   (with_conds ["?a \<noteq> ?b", "?b \<noteq> ?c", "?a \<noteq> ?c"]) *}
-setup {* add_forward_prfstep_cond @{thm Nat.dvd.antisym} [with_cond "?x \<noteq> ?y"] *}
+setup {* add_forward_prfstep_cond @{thm Nat.dvd_antisym} [with_cond "?x \<noteq> ?y"] *}
 theorem dvd_cancel [backward1]: "c > 0 \<Longrightarrow> (a::nat) * c dvd b * c \<Longrightarrow> a dvd b" by simp
 setup {* add_forward_prfstep (equiv_forward_th @{thm dvd_add_right_iff}) *}
 
@@ -206,12 +189,12 @@ theorem prod_dvd_intro [backward]: "(k::nat) dvd m \<or> k dvd n \<Longrightarro
   using dvd_mult dvd_mult2 by blast
 
 (* Definition of gcd. *)
-setup {* add_forward_prfstep_cond @{thm gcd_dvd1_nat} [with_term "gcd ?a ?b"] *}
-setup {* add_forward_prfstep_cond @{thm gcd_dvd2_nat} [with_term "gcd ?a ?b"] *}
+setup {* add_forward_prfstep_cond @{thm gcd_dvd1} [with_term "gcd ?a ?b"] *}
+setup {* add_forward_prfstep_cond @{thm gcd_dvd2} [with_term "gcd ?a ?b"] *}
 
 (* Coprimality. *)
-setup {* add_backward_prfstep @{thm coprime_exp_nat} *}
-setup {* add_backward1_prfstep @{thm coprime_dvd_mult_nat} *}
+setup {* add_backward_prfstep @{thm coprime_exp} *}
+setup {* add_backward1_prfstep @{thm coprime_dvd_mult} *}
 theorem coprime_dvd [forward]:
   "coprime (a::nat) b \<Longrightarrow> p dvd a \<Longrightarrow> p > 1 \<Longrightarrow> \<not> p dvd b" by (metis coprime_nat neq_iff)
 

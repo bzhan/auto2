@@ -52,7 +52,7 @@ theorem swap_zero_is_heap_partial1:
   "is_heap xs \<Longrightarrow> length xs > 0 \<Longrightarrow> is_heap_partial1 (butlast (list_swap xs 0 (length xs - 1))) 0"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "xs', xs' = list_swap xs 0 (length xs - 1)" THEN
-     OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs - 1 \<longrightarrow> i \<noteq> 0 \<longrightarrow> j < length xs - 1 \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
+     HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs - 1 \<longrightarrow> i \<noteq> 0 \<longrightarrow> j < length xs - 1 \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
        CASE "j = 0") *})
 setup {* add_forward_prfstep_cond @{thm swap_zero_is_heap_partial1}
   [with_term "butlast (list_swap ?xs 0 (length ?xs - 1))"] *}
@@ -61,7 +61,7 @@ theorem incr_is_heap_partial1:
   "is_heap xs \<Longrightarrow> k < length xs \<Longrightarrow> v \<ge> xs ! k \<Longrightarrow> is_heap_partial1 (list_update xs k v) k"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "xs', xs' = list_update xs k v" THEN
-     OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs' \<longrightarrow> i \<noteq> k \<longrightarrow> j < length xs' \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
+     HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs' \<longrightarrow> i \<noteq> k \<longrightarrow> j < length xs' \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
        CASE "j = k") *})
 setup {* add_forward_prfstep_cond @{thm incr_is_heap_partial1} [with_term "list_update ?xs ?k ?v"] *}
 
@@ -79,7 +79,7 @@ theorem bubble_down1:
    is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "xs', xs' = list_swap xs k (s1 k)" THEN
-     OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> i \<noteq> s1 k \<longrightarrow> j < length xs \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
+     HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> i \<noteq> s1 k \<longrightarrow> j < length xs \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
       (CASE "i = k" WITH CASES_J THEN CASE "j = k" THEN CASE "j = s1 k")) *})+
 setup {* add_forward_prfstep_cond @{thm bubble_down1(1)} [with_term "list_swap ?xs ?k (s1 ?k)"] *}
 setup {* add_forward_prfstep_cond @{thm bubble_down1(2)} [with_term "list_swap ?xs ?k (s1 ?k)"] *}
@@ -89,7 +89,7 @@ theorem bubble_down2: "s2 k < length xs \<Longrightarrow> xs ! (s1 k) > xs ! (s2
   is_heap_partial1 xs k \<Longrightarrow> is_heap_partial1 (list_swap xs k (s2 k)) (s2 k)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "xs', xs' = list_swap xs k (s2 k)" THEN
-     OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> i \<noteq> s2 k \<longrightarrow> j < length xs \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
+     HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> i \<noteq> s2 k \<longrightarrow> j < length xs \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
       (CASE "i = k" WITH CASES_J THEN CASE "j = k" THEN CASE "j = s2 k")) *})
 setup {* add_forward_prfstep_cond @{thm bubble_down2} [with_term "list_swap ?xs ?k (s2 ?k)"] *}
 
@@ -100,7 +100,7 @@ theorem bubble_down3 [forward]:
   "is_heap_partial1 xs k \<Longrightarrow> xs ! k \<le> xs ! (s1 k) \<Longrightarrow> s2 k \<ge> length xs \<Longrightarrow> s1 k < length xs \<Longrightarrow> is_heap xs"
   "is_heap_partial1 xs k \<Longrightarrow> s1 k \<ge> length xs \<Longrightarrow> is_heap xs"
   by (tactic {* auto2s_tac @{context}
-   (OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> j < length xs \<longrightarrow> xs ! i \<le> xs ! j" WITH CASES_J) *})+
+   (HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> j < length xs \<longrightarrow> xs ! i \<le> xs ! j" WITH CASES_J) *})+
 setup {* del_prfstep_thm @{thm is_heap_partial1_def} *}
 
 partial_function (heap) bubble_down :: "'a::{heap,linorder} dynamic_array \<Rightarrow> nat \<Rightarrow> unit Heap" where
@@ -171,14 +171,14 @@ theorem bubble_up1 [forward]:
    is_heap_partial2 (list_swap xs k (par k)) (par k)"
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "xs', xs' = list_swap xs k (par k)" THEN
-     OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> j < length xs \<longrightarrow> j \<noteq> par k \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
+     HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> j < length xs \<longrightarrow> j \<noteq> par k \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
        (CASE "j = k" WITH (CASE "i = k" THEN CASE "i = par k") THEN
         CASE "i = k" THEN CASE "i = par k")) *})
 
 theorem bubble_up2 [forward]:
   "is_heap_partial2 xs k \<Longrightarrow> xs ! k \<ge> xs ! (par k) \<Longrightarrow> k \<noteq> 0 \<Longrightarrow> k < length xs \<Longrightarrow> is_heap xs"
   by (tactic {* auto2s_tac @{context}
-   (OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> j < length xs \<longrightarrow> xs ! i \<le> xs ! j" WITH
+   (HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs \<longrightarrow> j < length xs \<longrightarrow> xs ! i \<le> xs ! j" WITH
     (CASE "j = k" WITH CASE "i = k")) *})
 
 theorem bubble_up3 [forward]: "is_heap_partial2 xs 0 \<Longrightarrow> is_heap xs" by auto2
@@ -192,7 +192,7 @@ theorem desc_is_heap_partial2:
   "is_heap xs \<Longrightarrow> k < length xs \<Longrightarrow> v < xs ! k \<Longrightarrow> is_heap_partial2 (list_update xs k v) k"
   by (tactic {* auto2s_tac @{context}
    (CHOOSE "xs', xs' = list_update xs k v" THEN
-    OBTAIN "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs' \<longrightarrow> j < length xs' \<longrightarrow> j \<noteq> k \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
+    HAVE "\<forall>i j. eq_pred i j \<longrightarrow> i < length xs' \<longrightarrow> j < length xs' \<longrightarrow> j \<noteq> k \<longrightarrow> xs' ! i \<le> xs' ! j" WITH
       CASE "i = k") *})
 setup {* add_forward_prfstep_cond @{thm desc_is_heap_partial2} [with_term "list_update ?xs ?k ?v"] *}
 

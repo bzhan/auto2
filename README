@@ -2,12 +2,12 @@ AUTO2 - a best-first-search theorem prover implemented in Isabelle
 
 Please see doc.pdf for documentation.
 
-Current version of the program works with Isabelle2016.
+Current version of the program works with Isabelle2016-1.
 
 Papers:
 
 AUTO2, a saturation-based heuristic prover for higher-order logic
-(accepted for ITP 2016): http://arxiv.org/abs/1605.07577
+(ITP 2016): http://arxiv.org/abs/1605.07577
 
 Description of the examples:
 
@@ -15,15 +15,14 @@ Description of the examples:
   infinitude of primes and the unique factorization theorem. Follows
   theories Primes and UniqueFactorization in HOL/Number_Theory.
 
-- Lists_Ex, RBT_Ex: lists, trees, and red-black trees. Some standard
-  material on lists and trees follow Chapter 2 (Programming and
-  Proving) of "Concrete Semantics". The material on red-black trees
-  follows Section 8.4 of "Certified Programming with Dependent Types",
-  and some of theory RBT_Impl in HOL/Library.
+- DataStrs: lists, trees, and red-black trees. Some standard material
+  on lists and trees follow Chapter 2 (Programming and Proving) of
+  "Concrete Semantics". The material on red-black trees follows
+  Section 8.4 of "Certified Programming with Dependent Types", and
+  some of theory RBT_Impl in HOL/Library.
 
-- Hoare_Exp, Hoare_States, Hoare_Equiv, Hoare_Rules: development of
-  Hoare logic. Follows chapters Imp, Equiv, Hoare, and Hoare2 in
-  "Software Foundations".
+- Hoare: development of Hoare logic. Follows chapters Imp, Equiv,
+  Hoare, and Hoare2 in "Software Foundations".
 
 - Analysis: construction of real numbers using Cauchy sequences. Proof
   of completeness of real numbers in several forms. Partly follows
@@ -40,6 +39,9 @@ Description of the examples:
   of the linked list example follow "A Separation Logic Framework for
   Imperative HOL" in Isabelle AFP. Include many other examples in
   separation logic.
+
+- FOL: axiomatic set theory based on Isabelle/FOL. Follows Bourbaki's
+  "Theory of Sets", chapter II and part of chapter III.
 
 Copyright (C) 2015, 2016 Bohua Zhan
 

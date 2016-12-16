@@ -199,8 +199,8 @@ val test_cancel_inverse =
             val t = read_term ctxt' str_t
             val a = dest_arg t
             val T = fastype_of t
-            val prop = (HOLogic.mk_eq (a, HOLogic.mk_number T 0))
-                           |> get_neg |> HOLogic.mk_Trueprop
+            val prop = (mk_eq (a, HOLogic.mk_number T 0))
+                           |> get_neg |> mk_Trueprop
             val neq0_th = assume_thm ctxt' prop
           in
             test_conv ctxt' (cancel_inverse_polynomial neq0_th)

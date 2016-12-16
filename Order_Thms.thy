@@ -1,7 +1,7 @@
 (* Setup for proof steps related to ordering. *)
 
 theory Order_Thms
-imports Auto2_Base
+imports Logic_Thms
 begin
 
 section {* Results in class order or preorder *}

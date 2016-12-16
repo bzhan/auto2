@@ -38,7 +38,7 @@ theorem nonzero_multiple: "(c::'a::field) \<noteq> 0 \<Longrightarrow> nonzero a
 (* Positivity property on linordered_field *)
 setup {* add_forward_prfstep (equiv_backward_th @{thm is_positive_def}) *}
 setup {* add_resolve_prfstep (equiv_forward_th @{thm is_positive_def}) *}
-theorem positive_props:
+theorem positive_props [forward]:
   fixes x y :: "'a::linordered_idom"
   fixes r s :: "'b::linordered_field" shows
   "is_positive x \<Longrightarrow> is_positive y \<Longrightarrow> is_positive (x + y)"
@@ -48,7 +48,6 @@ theorem positive_props:
   "is_positive n \<Longrightarrow> is_positive ((of_nat n)::'a)"
   "is_positive a \<Longrightarrow> is_positive ((of_int a)::'a)"
   "is_positive b \<Longrightarrow> is_positive ((of_rat b)::'b)" by simp+
-setup {* fold add_property_update @{thms positive_props} *}
 declare is_positive_def [property_rewrites]
 
 theorem is_positive_on_disj [forward]: "x > 0 \<Longrightarrow> (\<not>x > 0) \<or> P \<Longrightarrow> P" by simp
@@ -130,8 +129,8 @@ theorem rat_cases [resolve]: "\<exists>b a. b > 0 \<and> r = Fract a b" by (indu
 
 subsection {* Archimedean fields *}
 
-setup {* add_resolve_prfstep @{thm ex_le_of_nat} *}
-setup {* add_resolve_prfstep @{thm ex_less_of_nat} *}
+setup {* add_resolve_prfstep @{thm reals_Archimedean2} *}
+setup {* add_resolve_prfstep @{thm real_arch_simple} *}
 setup {* add_resolve_prfstep @{thm ex_inverse_of_nat_less} *}
 setup {* add_resolve_prfstep @{thm ex_less_of_nat_mult} *}
 

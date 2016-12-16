@@ -69,6 +69,7 @@ fun beval :: "state \<Rightarrow> bexp \<Rightarrow> bool" where
 | "beval st (BLe a1 a2) = (aeval st a1 \<le> aeval st a2)"
 | "beval st (BNot b) = (\<not> beval st b)"
 | "beval st (BAnd b1 b2) = (beval st b1 \<and> beval st b2)"
+setup {* fold add_rewrite_rule @{thms beval.simps} *}
 setup {* add_eval_fun_prfsteps' @{thms beval.simps} (@{thms aeval.simps} @ @{thms beval.simps}) *}
 
 theorem test_beval1: "beval (ES {X \<rightarrow> 5})
@@ -157,7 +158,7 @@ theorem ceval_assign' [backward]: "st' = st { x \<rightarrow> aeval st a } \<Lon
 
 (* Automatically step forward a skip step. *)
 theorem ceval_skip_left [backward]: "ceval C st st' \<Longrightarrow> ceval (SKIP; C) st st'"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "ceval SKIP st st") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "ceval SKIP st st") *})
 
 theorem ceval_example1: "ceval (X := ANum 2; IF BLe (AId X) (ANum 1) THEN Y := ANum 3 ELSE Z := ANum 4 FI)
   ES (ES {X \<rightarrow> 2} {Z \<rightarrow> 4})" by auto2
@@ -176,11 +177,11 @@ setup {* add_rewrite_rule @{thm pup_to_n_def} *}
 theorem pup_to_2_ceval: "ceval pup_to_n (ES { X \<rightarrow> 2 })
   (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN
+    (HAVE
       ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
        "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0})" ^
        "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})")
-     THEN OBTAIN
+     THEN HAVE
       ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
        "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})" ^
        "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"))

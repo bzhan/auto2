@@ -38,9 +38,9 @@ setup {* add_resolve_prfstep @{thm Rings.linordered_ring_class.zero_le_square} *
 
 lemma complex_neq0 [backward]: "a \<noteq> 0 \<Longrightarrow> (Re a)\<^sup>2 + (Im a)\<^sup>2 > 0"
   by (tactic {* auto2s_tac @{context} (
-    OBTAIN "a = Complex (Re a) (Im a)" THEN
-    OBTAIN "Re a \<noteq> 0 \<or> Im a \<noteq> 0" THEN
-    CASE "Re a \<noteq> 0" WITH OBTAIN "Re a * Re a > 0") *})
+    HAVE "a = Complex (Re a) (Im a)" THEN
+    HAVE "Re a \<noteq> 0 \<or> Im a \<noteq> 0" THEN
+    CASE "Re a \<noteq> 0" WITH HAVE "Re a * Re a > 0") *})
 
 instantiation complex :: field
 begin
@@ -67,10 +67,10 @@ show "(a + b) * c = a * c + b * c" by auto2
 show "a * b * c = a * (b * c)" by auto2
 show "a div b = a * inverse b" by auto2
 show "(0::complex) \<noteq> 1"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "Re 0 = 0 \<and> Re 1 = 1") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "Re 0 = 0 \<and> Re 1 = 1") *})
 show "inverse (0::complex) = 0" by auto2
 show "a \<noteq> 0 \<Longrightarrow> inverse a * a = 1"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "(Re a)\<^sup>2 + (Im a)\<^sup>2 > 0") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "(Re a)\<^sup>2 + (Im a)\<^sup>2 > 0") *})
 qed
 
 end

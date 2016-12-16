@@ -15,7 +15,7 @@ Theory_Data (
    of the head function f.
  *)
 structure PropertyUpdateData =
-Theory_Data (
+Generic_Data (
   type T = (thm list) Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
@@ -36,13 +36,19 @@ sig
   val get_property_args: term list -> term list
 
   (* About the PropertyUpdateData table.*)
+  val can_add_property_update: thm -> theory -> bool
+  val add_property_update_gnrc: thm -> Context.generic -> Context.generic
   val add_property_update: thm -> theory -> theory
-  val lookup_property_update: theory -> string -> thm list
+  val lookup_property_update: Proof.context -> string -> thm list
   val instantiate_property_update: Proof.context -> term -> thm -> thm option
 end;
 
-structure Property_Data : PROPERTY_DATA =
+functor Property_Data(Base:UTIL_BASE) : PROPERTY_DATA =
 struct
+
+structure UtilLogic = UtilLogic(Base)
+open Base
+open UtilLogic
 
 fun add_property_const t thy =
     case Term.head_of t of
@@ -74,7 +80,7 @@ fun is_property_prem thy t =
     is_property_const thy t andalso Term.is_Var (dest_arg t)
 
 fun is_property_prem' thy t =
-    is_Trueprop t andalso is_property_prem thy (HOLogic.dest_Trueprop t)
+    is_Trueprop t andalso is_property_prem thy (dest_Trueprop t)
 
 fun is_property_prem_ctxt' ctxt t =
     is_property_prem' (Proof_Context.theory_of ctxt) t
@@ -105,8 +111,28 @@ fun get_property_args ts =
      the property in the conclusion must contain all schematic
      variables of the theorem.
  *)
-fun add_property_update th thy =
+fun can_add_property_update th thy =
     let
+      val (prems, concl) = strip_horn' th
+    in
+      if is_property_const thy concl andalso forall (is_property_prem thy) prems
+      then let
+        val concl_arg = get_property_arg concl
+        val all_vars = map Var (Term.add_vars (Thm.prop_of th) [])
+      in
+        if is_Var concl_arg then length all_vars = 1
+        else let
+          val args = dest_args concl_arg
+        in
+          forall is_Var args andalso subset (op aconv) (all_vars, args)
+        end
+      end
+      else false
+    end
+
+fun add_property_update_gnrc th gnrc =
+    let
+      val thy = theory_of_gnrc gnrc
       val (prems, concl) = strip_horn' th
       val _ = assert (is_property_const thy concl)
                      "add_property_update: concl must be a property constant."
@@ -123,7 +149,7 @@ fun add_property_update th thy =
           val names = get_property_names prems
           val _ = writeln ("Add property rule for " ^ (string_of_list I names))
         in
-          thy |> PropertyUpdateData.map (
+          gnrc |> PropertyUpdateData.map (
             fold (Symtab.update_list (op pointer_eq)) (map (rpair th) names))
         end
       else
@@ -140,14 +166,20 @@ fun add_property_update th thy =
                          "add_property_update: extraneous Vars in th."
           val _ = writeln ("Add property rule for function " ^ nm)
         in
-          thy |> PropertyUpdateData.map (
+          gnrc |> PropertyUpdateData.map (
             Symtab.update_list (op pointer_eq) (nm, th))
         end
     end
 
+val add_property_update = Context.theory_map o add_property_update_gnrc
+
 (* Find rules registered under the given name. *)
-fun lookup_property_update thy nm =
-    Symtab.lookup_list (PropertyUpdateData.get thy) nm
+fun lookup_property_update ctxt nm =
+    let
+      val data = PropertyUpdateData.get (Context.Proof ctxt)
+    in
+      Symtab.lookup_list data nm
+    end
 
 (* Instantiate th by matching t with the argument of the conclusion of
    th. Return NONE if instantiation is unsuccessful (because type does
@@ -171,5 +203,3 @@ fun instantiate_property_update ctxt t th =
     end
 
 end  (* structure Property_Data. *)
-
-open Property_Data

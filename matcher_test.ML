@@ -5,10 +5,18 @@ local
 open Matcher
 
 val thy = @{theory}
-val thy' = thy |> add_logic_ac_data |> Nat_Arith.add_arith_ac_data
+val thy' = thy |> Nat_Arith.add_arith_ac_data
                |> add_list_ac_data
 val ctxt = Proof_Context.init_global thy
-val ctxt' = Proof_Context.init_global thy'
+val ac_samples = [@{term "(a::nat) + b"},
+                  @{term "(a::nat) * b"},
+                  @{term "(a::int) + b"},
+                  @{term "(a::int) * b"},
+                  @{term "(a::'a::ring) + b"},
+                  @{term "(a::'a::linordered_field) + b"},
+                  @{term "(a::'a::linordered_field) * b"}]
+val ctxt' = thy' |> Proof_Context.init_global
+                 |> fold ACUtil.add_inst_ac_infos ac_samples
 val init = RewriteTable.empty ctxt
 val tbl = RewriteTable.empty ctxt'
 
@@ -26,9 +34,6 @@ fun print_term_info ctxt (id, t) =
 
 fun print_term_infos ctxt lst =
     commas (map (print_term_info ctxt) lst)
-
-fun add_term str (tbl as {ctxt, ...}) =
-    tbl |> RewriteTable.add_term ([], read_term ctxt str)
 
 (* info is expected, in box_id * term form, info' is returned value,
    in box_id * thm form (to be printed).
@@ -93,11 +98,19 @@ fun assert_match_gen matcher ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
 
 fun assert_ac_match ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
     let
-      val ac_info =
-          the (RewriteTable.get_head_ac_info_with_inv tbl (read_pat ctxt str_t))
+      val ac_info_opt =
+          ACUtil.get_head_ac_info_all_thy thy' (read_pat ctxt str_t)
     in
-      assert_match_gen (match_ac_raw false ac_info) ((str_t, str_u), info_str)
-                       tbl
+      case ac_info_opt of
+          NONE =>
+          let
+            val _ = tracing ("t: " ^ str_t)
+            val _ = tracing ("u: " ^ str_u)
+          in
+            raise AUTO2 "assert_ac_match"
+          end
+        | SOME ac_info => assert_match_gen (match_ac_raw false ac_info)
+                                           ((str_t, str_u), info_str) tbl
     end
 
 val assert_match = assert_match_gen match
@@ -135,19 +148,21 @@ fun done str _ = let val _ = tracing ("Finished " ^ str) in () end
 
 in
 
+val nat_plus_info =
+    the (ACUtil.get_head_ac_info_thy thy' @{term "(a::nat) + b"})
+
 val test_shift_to_n =
     let
       val ctxt'' = ctxt' |> Variable.auto_fixes (Free ("n", natT))
-      val plus_info = the (ACUtil.get_head_ac_info thy' @{term "(a::nat) + b"})
       fun test_to_r (n, t, t') =
-          test_conv ctxt'' (ac_shift_n_to_r_cv plus_info n) "test_shift_n_to_r"
-                    (t, t')
+          test_conv ctxt'' (ac_shift_n_to_r_cv nat_plus_info n)
+                    "test_shift_n_to_r" (t, t')
       fun test_r (n, t, t') =
-          test_conv ctxt'' (ac_shift_r_to_n_cv plus_info n) "test_shift_r_to_n"
-                    (t, t')
+          test_conv ctxt'' (ac_shift_r_to_n_cv nat_plus_info n)
+                    "test_shift_r_to_n" (t, t')
       fun test_l (n, t, t') =
-          test_conv ctxt'' (ac_shift_l_to_n_cv plus_info n) "test_shift_l_to_n"
-                    (t, t')
+          test_conv ctxt'' (ac_shift_l_to_n_cv nat_plus_info n)
+                    "test_shift_l_to_n" (t, t')
 
       val test_data_to_r =[
         (0, "m", "m"),
@@ -186,12 +201,11 @@ val test_shift_to_n =
 val test_ac_group_n =
     let
       val ctxt'' = ctxt' |> Variable.auto_fixes (Free ("n", natT))
-      val plus_info = the (ACUtil.get_head_ac_info thy' @{term "(a::nat) + b"})
       fun test_first_n (n, t, t') =
-          test_conv ctxt'' (ac_group_first_n_cv plus_info n)
+          test_conv ctxt'' (ac_group_first_n_cv nat_plus_info n)
                     "test_group_first_n" (t, t')
       fun test_last_n (n, t, t') =
-          test_conv ctxt'' (ac_group_last_n_cv plus_info n)
+          test_conv ctxt'' (ac_group_last_n_cv nat_plus_info n)
                     "test_group_last_n" (t, t')
 
       val test_data_last = [
@@ -220,7 +234,6 @@ val test_ac_group_n =
 (* No rewriting, no matching. *)
 val test_basic =
     tbl |> declare_term "[m::nat, n, p]"
-        |> fold add_term ["m", "n", "p"]
         |> fold assert_ac_match
         [(("m + n", "m + n"), [([], "m + n")]),
          (("n + m", "m + n"), [([], "n + m")]),
@@ -232,7 +245,6 @@ val test_basic =
 val test_match_subterm =
     tbl |> declare_term "[m::nat, n, p]"
         |> declare_term "f::(nat => nat)"
-        |> fold add_term ["m", "f m", "f n"]
         |> fold assert_ac_match
         [(("m + f ?a", "m + f n"), [([], "m + f n")]),
          (("f ?a + m", "m + f n"), [([], "f n + m")]),
@@ -275,7 +287,6 @@ val test_rewrite_ac =
 (* Pattern contains exactly one pure schematic variable. *)
 val test_pure_schematic =
     tbl |> declare_term "[m::nat, n, p, r, s]"
-        |> fold add_term ["m", "n", "p", "r", "s"]
         |> add_rewrite [] ("m", "r + s")
         |> fold assert_ac_match
         [(("m + ?n", "m + n"), [([], "m + n")]),
@@ -303,7 +314,6 @@ val test_pure_schematic2 =
 (* Matching with minus, one schematic variable. *)
 val test_minus_schematic =
     tbl |> declare_term "[m::int, n, p, q]"
-        |> fold add_term ["m", "-n", "-p", "-q"]
         |> fold assert_ac_match
         [(("m + -?n", "m - n"), [([], "m + -n")]),
          (("m + -?n", "m - n - p"), [([], "m + -(n + p)")]),
@@ -316,7 +326,6 @@ val test_minus_schematic =
 (* Associativity only. Uses append on lists. *)
 val test_assoc_only =
     tbl |> declare_term "[l::('a list), m, n]"
-        |> fold add_term ["l", "m", "n"]
         |> fold assert_ac_match
         [(("l @ m", "l @ m"), [([], "l @ m")]),
          (("(l @ m) @ n", "l @ m @ n"), [([], "(l @ m) @ n")]),
@@ -339,7 +348,6 @@ val test_assoc_only_rewrite =
 (* Associativity only, schematic variable at left. *)
 val test_assoc_only_left =
     tbl |> declare_term "[l::('a list), m, n, p, q]"
-        |> fold add_term ["l", "m", "n", "p", "q"]
         |> fold assert_ac_match
         [(("?n @ m", "l @ m"), [([], "l @ m")]),
          (("?n @ n", "l @ m @ n"), [([], "(l @ m) @ n")]),
@@ -458,7 +466,7 @@ fun check_reduce_unit (str, info_str) (tbl as {ctxt, ...}) =
       val t = read_pat ctxt str
       val info = map (apsnd (read_pat ctxt)) info_str
       val thy = RewriteTable.theory_of tbl
-      val ac_info = the (ACUtil.get_head_ac_info thy t)
+      val ac_info = the (ACUtil.get_head_ac_info_thy thy t)
       val info' = reduce_unit_t tbl ac_info ([], t)
     in
       assert_eq_info (info, info') "check_reduce_unit" tbl
@@ -484,7 +492,7 @@ val test_reduce_unit =
 fun check_analyze_t (str, info_str) (tbl as {ctxt, ...}) =
     let
       val t = read_pat ctxt str
-      val ac_info_opt = RewriteTable.get_head_ac_info_with_inv tbl t
+      val ac_info_opt = ACUtil.get_head_ac_info_all_thy thy' t
       val info = map (apsnd (read_pat ctxt)) info_str
       val info' =
           case ac_info_opt of
@@ -500,7 +508,6 @@ val test_analyze_t =
         |> declare_pat "[?A::nat, ?B, ?Au]"
         |> declare_term "[l::nat list]"
         |> declare_pat "[?l::nat list]"
-        |> fold add_term ["m", "l"]
         |> fold check_analyze_t
         [("m", [([], "m")]),
          ("?A", [([], "?A")]),
@@ -520,7 +527,6 @@ val test_analyze_t =
 (* Working with AC matching. *)
 val test_ac_whole =
     tbl |> declare_term "[m::nat, n, p, q]"
-        |> fold add_term ["m", "n", "p", "q"]
         |> add_rewrite [] ("p", "m + n")
         |> assert_match (("m + n", "m + n"), [([], "m + n")])
         |> assert_match (("m + n", "p"), [([], "m + n")])
@@ -530,7 +536,6 @@ val test_ac_whole =
 
 val test_ac_whole_inverse =
     tbl |> declare_term "[m::('a::linordered_field), n]"
-        |> fold add_term ["m", "n"]
         |> fold assert_match
         [(("m - n", "m - n"), [([], "m - n")]),
          (("m + (-n)", "m - n"), [([], "m + (-n)")]),
@@ -555,7 +560,6 @@ val test_ac_literal =
     tbl |> declare_term "[m::nat, n, p]"
         |> declare_term "f::(nat => nat => nat)"
         |> declare_pat "[?A::nat, ?B, ?C]"
-        |> fold add_term ["m", "n"]
         |> fold assert_match
         [(("?A + ?B", "m + n"), [([], "m + n")]),
          (("?A + ?B + ?C", "m + n + p"), [([], "m + n + p")]),
@@ -571,7 +575,6 @@ val test_ac_literal =
 val test_ac_literal2 =
     tbl |> declare_term "[m::int, n, p]"
         |> declare_pat "[?A::int, ?B]"
-        |> fold add_term ["-m", "n", "-p"]
         |> fold assert_match
         [(("(?A, ?A + ?B)", "(m, n + m)"), [([], "(m, m + n)")]),
          (("(?A, ?A + ?B)", "(m, m + n + p)"), [([], "(m, m + (n + p))")]),
@@ -588,7 +591,6 @@ val test_ac_nat_minus =
         |> declare_term "[a::int, b]"
         |> declare_pat "[?m::nat, ?n]"
         |> declare_pat "[?a::int, ?b]"
-        |> fold add_term ["m", "a"]
         |> fold assert_match
         [(("?m + (?m - ?n)", "m + (m - n)"), [([], "m + (m - n)")]),
          (("?m + (?m - ?n)", "(m - n) + m"), [([], "m + (m - n)")]),
@@ -613,7 +615,7 @@ fun assert_ac_subterm_equivs ((id, str), info_str) (tbl as {ctxt, ...}) =
     let
       val u = read_term ctxt str
       val ac_info =
-          the (ACUtil.get_head_ac_info_with_inv thy' u)
+          the (ACUtil.get_head_ac_info_all_thy thy' u)
           handle Option.Option =>
                  raise AUTO2 "assert_ac_subterm_equivs: ac_info not found."
       val info = map (apsnd (read_term ctxt)) info_str
@@ -640,7 +642,6 @@ val test_ac_subterm_equivs =
 (* Test subterm equivalence during AC matching. *)
 val test_ac_subterm_equivs_match =
     tbl |> declare_term "[m::int, n, p, q, r]"
-        |> fold add_term ["-m", "-n", "-p", "-q", "r"]
         |> add_rewrite [] ("p", "m + n")
         |> fold assert_match
         [(("p + q", "m + n + q"), [([], "p + q")]),
@@ -653,7 +654,6 @@ val test_ac_subterm_equivs_match =
 (* Test special schematic variable ?au. *)
 val test_unit =
     tbl |> declare_term "[k::nat, m]"
-        |> fold add_term ["k", "m"]
         |> fold assert_match
         [(("?a * k", "k"), []),
          (("?au * k", "k"), [([], "1 * k")]),
@@ -669,7 +669,6 @@ val test_unit =
 (* Mix of AC matching and abstraction. *)
 val test_ac_abstraction =
     tbl |> declare_term "[f::(nat => nat), g]"
-        |> add_term "n::nat"
         |> assert_match (("%n. f n + g n", "%n. g n + f n"),
                          [([], "%n. f n + g n")])
         |> done "test_ac_abstraction"
@@ -678,7 +677,6 @@ val test_ac_abstraction =
 val test_ac_higher_order =
     tbl |> declare_term "f::(nat => nat)"
         |> declare_pat "?f::(nat => nat)"
-        |> add_term "1::nat"
         (* TODO: handle the reverse case. *)
         |> assert_match (("%n. ?f n + ?f (n + 1)", "%n. f n + f (n + 1)"),
                          [([], "%n. f n + f (n + 1)")])
@@ -689,7 +687,6 @@ val test_ac_higher_order =
 (* Handling of units on the t side. *)
 val test_ac_match_unit =
     tbl |> declare_term "[m::nat, n, p]"
-        |> fold add_term ["m", "n"]
         |> add_rewrite [] ("1::nat", "n")
         |> add_rewrite [] ("m", "m * n")
         |> fold assert_match
@@ -785,7 +782,6 @@ val test_pre_match_eta_conversion =
 val test_pre_match_ac =
     tbl |> declare_term "[m::int, n]"
         |> declare_pat "[?a::int, ?b]"
-        |> add_term "m"
         |> assert_pre_match ("?a + ?b", "m + n")
         |> assert_pre_match ("?a + ?b", "m - n")
         |> assert_pre_match ("?a + ?b", "-m")
@@ -798,7 +794,6 @@ val test_pre_match_unit =
     tbl |> declare_term "[m::int, n]"
         |> declare_pat "[?au::int, ?b, ?c]"
         |> declare_pat "[?ru::?'a::ring, ?su, ?t]"
-        |> add_term "m"
         |> assert_pre_match ("?au + ?b", "m")
         |> assert_pre_match ("?au + ?b", "m * n")
         |> assert_pre_match ("?au + ?b", "m + n")
@@ -813,7 +808,6 @@ val test_pre_match_head_ac =
         |> declare_term "[r::'a::ring, s]"
         |> declare_pat "[?a::int, ?b]"
         |> declare_pat "[?r::(?'a::ring), ?s]"
-        |> fold add_term ["m", "r"]
         |> assert_pre_match_head ("?a + ?b", "m - n")
         |> assert_pre_match_head ("?r + ?s", "m - n")
         |> assert_not_pre_match_head ("?a + ?b", "r - s")

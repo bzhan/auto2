@@ -14,7 +14,7 @@ theorem inv_into_feval: "f\<langle>x\<rangle> = y \<Longrightarrow> inj_on f A \
 setup {* add_forward_prfstep_cond @{thm inv_into_feval} [with_term "(inv_into ?A ?f)\<langle>?y\<rangle>"] *}
 
 theorem inv_into_mem: "f ` A = B \<Longrightarrow> x \<in> B \<Longrightarrow> (inv_into A f)\<langle>x\<rangle> \<in> A"
-  by (simp add: bij_betw_imageE inv_into_into)
+  by (simp add: inv_into_into)
 setup {* add_forward_prfstep_cond @{thm inv_into_mem} [with_term "(inv_into ?A ?f)\<langle>?x\<rangle>"] *}
 
 (* Set image *)

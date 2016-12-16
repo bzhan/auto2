@@ -22,7 +22,6 @@ theorem set_comprehensionD2 [resolve]: "z \<in> (\<Union>x\<in>A. \<Union>y\<in>
 setup {* add_forward_prfstep @{thm Fun.bij_betw_imp_inj_on} *}
 setup {* add_forward_prfstep @{thm bij_betw_imp_surj_on} *}
 setup {* add_backward2_prfstep @{thm bij_betw_imageI} *}
-setup {* add_backward_prfstep (equiv_backward_th @{thm inj_on_def}) *}
 theorem surj_onI [backward1]: "\<forall>x\<in>A. f x \<in> B \<Longrightarrow> \<forall>y\<in>B. \<exists>x\<in>A. f x = y \<Longrightarrow> f ` A = B" by auto
 
 theorem bij_betw_identity [resolve]: "bij_betw (\<lambda>x. x) X X" by (simp add: bij_betw_def)

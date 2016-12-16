@@ -55,8 +55,14 @@ sig
   val get_pattern_order: theory -> term * term -> bool
 end;
 
-structure Matcher : MATCHER =
+functor Matcher(Base:UTIL_BASE) : MATCHER =
 struct
+
+structure UtilLogic = UtilLogic(Base)
+structure ACUtil = ACUtil(Base)
+structure RewriteTable = RewriteTable(Base)
+open Base
+open UtilLogic
 
 val refl = RewriteTable.refl
 
@@ -182,7 +188,7 @@ fun ac_shift_l_to_n_cv ac_info k ct =
 fun ac_group_last_n_cv ac_info n ct =
     let
       val k = length (ACUtil.dest_ac_l ac_info (Thm.term_of ct))
-      val assoc_cv = ACUtil.assoc_cv ac_info
+      val assoc_cv = #assoc_cv ac_info
       fun helper n ct =
           if n <= 1 then Conv.all_conv ct
           else (Conv.arg1_conv (helper (n-1)) then_conv assoc_cv) ct
@@ -197,7 +203,7 @@ fun ac_group_last_n_cv ac_info n ct =
 fun ac_group_first_n_cv ac_info n ct =
     let
       val k = length (ACUtil.dest_ac_r ac_info (Thm.term_of ct))
-      val assoc_sym_cv = ACUtil.assoc_sym_cv ac_info
+      val assoc_sym_cv = #assoc_sym_cv ac_info
       fun helper n ct =
           if n <= 1 then Conv.all_conv ct
           else
@@ -277,12 +283,12 @@ fun get_ac_head_equiv (tbl as {lat, ctxt, ...}) ac_info (id, u) =
    - (false, NONE): do not use AC (more than one schematic argument,
      or the sole schematic argument appears elsewhere.
  *)
-fun check_use_ac (ac_info as {comm_th, ...}) targ =
+fun check_use_ac ac_info targ =
     if length targ = 1 then
       (* Either of form -a, or not AC at all. *)
       (false, NONE)
     else let
-      val assoc_only = is_true_th comm_th
+      val assoc_only = not (ACUtil.has_comm_th ac_info)
       val sch_is = filter (fn i => is_sch_arg ac_info (nth targ i))
                           (0 upto (length targ - 1))
     in
@@ -308,7 +314,7 @@ fun check_use_ac (ac_info as {comm_th, ...}) targ =
  *)
 fun reduce_unit_t (tbl as {lat, ...})
                   (ac_info as {cfhead, unit_val, ...}) (id, t) =
-    if member (op aconv) [HOLogic.conj, HOLogic.disj]
+    if member (op aconv) [conj, disj]
               (Thm.term_of cfhead) then [(id, refl tbl t)]
     else if not (ACUtil.head_agrees ac_info t) then
       let
@@ -325,7 +331,7 @@ fun reduce_unit_t (tbl as {lat, ...})
         val equivs = BoxID.get_all_merges_info lat [A_equiv, B_equiv]
         fun process_equiv (id, th_pair) =
             (id, (ACUtil.comb_ac_equiv ac_info th_pair)
-                     |> apply_to_rhs (Conv.try_conv (ACUtil.unit_cv ac_info)))
+                     |> apply_to_rhs (Conv.try_conv (#unit_cv ac_info)))
       in
         map process_equiv equivs
       end
@@ -351,9 +357,9 @@ fun analyze_match_unit (ac_info as {unit_val, ...}) ctxt env (id, t) =
               val (ixn, _) = Term.dest_Var var
               val env' = update_env (ixn, unit_val) env
               val eq = t |> subst_term_norm env'
-                         |> cert ctxt |> ACUtil.unit_cv ac_info
+                         |> cert ctxt |> #unit_cv ac_info
             in
-              if ACUtil.head_agrees_with_inv ac_info (rhs_of eq) then
+              if ACUtil.head_agrees_all ac_info (rhs_of eq) then
                 [(AC_YES, (id, env'), eq)]
               else
                 [(AC_UNKNOWN, (id, env'), eq)]
@@ -377,13 +383,13 @@ fun analyze_match_unit (ac_info as {unit_val, ...}) ctxt env (id, t) =
    - TODO: when there are higher order patterns, make sure the
      arguments are in valid order.
  *)
-fun analyze_t (ac_info as {comm_th, ...}) (tbl as {ctxt, ...}) (id, env) t =
+fun analyze_t ac_info (tbl as {ctxt, ...}) (id, env) t =
     let
       val t' = subst_term_norm env t
       val ct' = cert ctxt t'
       val eq1 = ct' |> ACUtil.normalize_minus_assoc_l ac_info
       val eqs2 = reduce_unit_t tbl ac_info (id, rhs_of eq1)
-      val assoc_only = is_true_th comm_th
+      val assoc_only = not (ACUtil.has_comm_th ac_info)
       fun process_eq2 (id', eq2) =
           let
             val ct'' = Thm.rhs_of eq2
@@ -421,11 +427,11 @@ fun ac_subterm_equivs (tbl as {lat, ctxt, ...})
     let
       val (f, args) = Term.strip_comb u
       fun valid_rewrite (_, th) =
-          not (ACUtil.head_agrees_with_inv ac_info (rhs_of th))
+          not (ACUtil.head_agrees_all ac_info (rhs_of th))
 
       (* Return the list of non-AC equivalent terms for t. *)
       fun get_head_non_AC_equivs t =
-          if ACUtil.head_agrees_with_inv ac_info t then
+          if ACUtil.head_agrees_all ac_info t then
             (RewriteTable.get_all_equiv tbl t)
                 |> filter valid_rewrite
                 |> RewriteTable.merge_box_with_info tbl id
@@ -482,7 +488,7 @@ fun match_uinv assoc_r (tbl as {ctxt, ...}) bd_vars ac_info (t, us) (id, env) =
           ((id', env'),
            (transitive_list [eq_th, meta_sym inv_us_norm_eq])
                |> mk_uinv_eq ctxt ac_info
-               |> apply_to_rhs (ACUtil.double_inv_cv ac_info))
+               |> apply_to_rhs (#uinv_cv ac_info))
     in
       map process_inst insts
     end
@@ -500,7 +506,7 @@ fun match_uinv assoc_r (tbl as {ctxt, ...}) bd_vars ac_info (t, us) (id, env) =
    outermost on the t-side in the returned result.
  *)
 and match_ac_list is_simple assoc_r tbl bd_vars
-                  (ac_info as {comm_th, unit_val, ...}) (ts, us) (id, env) =
+                  (ac_info as {unit_val, ...}) (ts, us) (id, env) =
     if length ts = 0 orelse length us = 0 then []
     else if length ts = 1 then
       let
@@ -523,11 +529,11 @@ and match_ac_list is_simple assoc_r tbl bd_vars
       val thy = RewriteTable.theory_of tbl
       val diff_l = length ts - length us
       val (t, ts') = (hd ts, tl ts)
-      val assoc_only = is_true_th comm_th
+      val assoc_only = not (ACUtil.has_comm_th ac_info)
 
       (* Filter and normalize expansion. *)
       fun process_expansion (id, th) =
-          if not (ACUtil.head_agrees_with_inv ac_info (rhs_of th)) then []
+          if not (ACUtil.head_agrees_all ac_info (rhs_of th)) then []
           else let
             val th' = th |> apply_to_rhs (
                   ACUtil.normalize_minus_assoc_gen assoc_r ac_info)
@@ -669,10 +675,10 @@ and match_ac_list is_simple assoc_r tbl bd_vars
    instsp, and also normalized with respect to minus and left
    association.
  *)
-and match_ac_raw is_simple (ac_info as {comm_th, unit_val, ...})
+and match_ac_raw is_simple (ac_info as {unit_val, ...})
                  (tbl as {ctxt, ...}) bd_vars (t, u) (instsp as (id, _)) =
     let
-      val assoc_only = is_true_th comm_th
+      val assoc_only = not (ACUtil.has_comm_th ac_info)
       val targ = ACUtil.dest_ac_l ac_info t
       val u_eq = ACUtil.normalize_minus_assoc_r ac_info (cert ctxt u)
       val u' = rhs_of u_eq
@@ -811,8 +817,8 @@ and match_non_ac_head tbl bd_vars (t, u) (instsp as (_, (_, inst))) =
  *)
 and match_ac_head ac_info tbl bd_vars (t, u) (id, env) =
     if fastype_of t <> fastype_of u then []
-    else if ACUtil.head_agrees_with_inv ac_info t andalso
-            not (ACUtil.head_agrees_with_inv ac_info u) then []
+    else if ACUtil.head_agrees_all ac_info t andalso
+            not (ACUtil.head_agrees_all ac_info u) then []
     else let
       (* List of AC-subterm rewrites of u. *)
       val u_equivs = if is_open bd_vars u then [(id, refl tbl u)]
@@ -881,8 +887,8 @@ and match_ac_all_head_with_t ac_info tbl bd_vars (t, u) (id, env) =
 (* Match t and all head equivalences of u. In this function, consider
    all equivalences of t (through analyze_t).
  *)
-and match_all_head tbl bd_vars (t, u) (id, env) =
-    case RewriteTable.get_head_ac_info_with_inv tbl t of
+and match_all_head (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
+    case ACUtil.get_head_ac_info_all ctxt t of
         NONE => match_non_ac_all_head_with_t tbl bd_vars (t, u) (id, env)
       | SOME ac_info =>
         let
@@ -991,11 +997,11 @@ and match (tbl as {ctxt, ...}) bd_vars (t, u) (instsp as (_, (_, inst))) =
 (* Function for matching at head to export. Consider all equivalences
    of t (but not of u).
  *)
-fun match_head tbl bd_vars (t, u) (id, env) =
+fun match_head (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
     case check_type_term tbl (t, u) (id, env) of
         NONE => []
       | SOME ((id, env), t) =>
-        case RewriteTable.get_head_ac_info_with_inv tbl t of
+        case ACUtil.get_head_ac_info_all ctxt t of
             NONE => match_non_ac_head tbl bd_vars (t, u) (id, env)
           | SOME ac_info =>
             let
@@ -1161,13 +1167,13 @@ and pre_match_unit ac_info tbl (t, u) =
       else false
     end
 
-and pre_match_all_head tbl (t, u) =
+and pre_match_all_head (tbl as {ctxt, ...}) (t, u) =
     let
       val thy = RewriteTable.theory_of tbl
       val tyinst = Sign.typ_match thy (fastype_of t, fastype_of u) Vartab.empty
       val t' = Envir.subst_term_types tyinst t
     in
-      case RewriteTable.get_head_ac_info_with_inv tbl t' of
+      case ACUtil.get_head_ac_info_all ctxt t' of
           NONE =>
           if Term.is_open u then pre_match_non_ac_head tbl (t', u)
           else let
@@ -1178,7 +1184,7 @@ and pre_match_all_head tbl (t, u) =
             exists (fn u' => pre_match_non_ac_head tbl (t', u')) u_equivs
           end
         | SOME ac_info =>
-          if Term.is_open u then ACUtil.head_agrees_with_inv ac_info u
+          if Term.is_open u then ACUtil.head_agrees_all ac_info u
           else let
             val u_ac_equivs = get_ac_head_equiv tbl ac_info ([], u)
           in
@@ -1209,13 +1215,13 @@ and pre_match (tbl as {ctxt, ...}) (t, u) =
       | (Bound i, Bound j) => (i = j)
       | (_, _) => pre_match_all_head tbl (t, u)
 
-fun pre_match_head tbl (t, u) =
+fun pre_match_head (tbl as {ctxt, ...}) (t, u) =
     let
       val thy = RewriteTable.theory_of tbl
       val tyinst = Sign.typ_match thy (fastype_of t, fastype_of u) Vartab.empty
       val t' = Envir.subst_term_types tyinst t
     in
-      case RewriteTable.get_head_ac_info_with_inv tbl t' of
+      case ACUtil.get_head_ac_info_all ctxt t' of
           NONE => pre_match_non_ac_head tbl (t', u)
         | SOME {cfhead, uinv_op, inv_op, ...} =>
           (* head of u agrees with ac_info, up to types. *)
@@ -1228,7 +1234,7 @@ fun pre_match_head tbl (t, u) =
    is the list of schematic variables that are already instantiated.
  *)
 fun literal_ac_count thy t inst_vars =
-    case ACUtil.get_head_ac_info_with_inv thy t of
+    case ACUtil.get_head_ac_info_all_thy thy t of
         NONE => literal_ac_count_list thy (dest_args t) inst_vars
       | SOME ac_info =>
         let
@@ -1274,7 +1280,7 @@ and literal_ac_count_list thy ts inst_vars =
  *)
 fun get_pattern_order thy (t1, t2) =
     let
-      val _ = assert (is_pattern (HOLogic.mk_tuple [t1, t2]))
+      val _ = assert (is_pattern_list [t1, t2])
                      "get_pattern_order: invalid pattern."
     in
       (* First two cases, forced by is_pattern requirement. *)

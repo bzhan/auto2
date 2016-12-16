@@ -11,8 +11,12 @@ sig
   val build_equiv: Proof.context -> thm list -> term -> thm
 end;
 
-structure Subterms : SUBTERMS =
+functor Subterms(Base:UTIL_BASE) : SUBTERMS =
 struct
+
+structure UtilLogic = UtilLogic(Base)
+open Base
+open UtilLogic
 
 fun get_subvar n t = Var (("SUB", n), fastype_of t)
 
@@ -80,12 +84,11 @@ fun get_all_subterms t =
    no, list only subterms of cond.
  *)
 fun get_all_subterms_skip_if t =
-    case Term.head_of t of
-        Const ("HOL.If", _) =>
-        t :: get_all_subterms_skip_if (t |> dest_args |> hd)
-      | _ =>
-        t :: (t |> list_subterms |> maps get_all_subterms_skip_if
-                |> distinct (op aconv))
+    if is_if t then
+      t :: get_all_subterms_skip_if (t |> dest_args |> hd)
+    else
+      t :: (t |> list_subterms |> maps get_all_subterms_skip_if
+              |> distinct (op aconv))
 
 (* Note this also works when t is a subterm of original decomposition
    (so t only contain some of the subs).

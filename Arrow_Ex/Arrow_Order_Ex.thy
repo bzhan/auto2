@@ -95,7 +95,7 @@ setup {* add_rewrite_rule @{thm dictator_def} *}
 
 theorem strict_linorder_eq [backward]: "L \<in> Lin \<Longrightarrow> L' \<in> Lin \<Longrightarrow> \<forall>a b. (a, b) \<in> L \<longrightarrow> (a, b) \<in> L' \<Longrightarrow> L = L'"
   by (tactic {* auto2s_tac @{context} (
-    OBTAIN "\<forall>a b. (a, b) \<in> L \<longleftrightarrow> (a, b) \<in> L'" WITH CASE "a = b") *})
+    HAVE "\<forall>a b. (a, b) \<in> L \<longleftrightarrow> (a, b) \<in> L'" WITH CASE "a = b") *})
 
 lemma dictatorI [backward1]:
   "F \<in> SWF \<Longrightarrow> \<forall>P\<in>Prof. \<forall>a b. (a,b) \<in> P i \<longrightarrow> (a,b) \<in> F P \<Longrightarrow> dictator F i" by auto2
@@ -104,11 +104,11 @@ setup {* del_prfstep_thm @{thm dictator_def} *}
 
 lemma complete_Lin [backward]: "a \<noteq> b \<Longrightarrow> \<exists>L\<in>Lin. (a, b) \<in> L"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "L', L' \<in> Lin" THEN OBTAIN "(a, b) \<in> (mktop L' b)") *})
+    (CHOOSE "L', L' \<in> Lin" THEN HAVE "(a, b) \<in> (mktop L' b)") *})
 
 lemma complete_Lin3 [backward]: "distinct [a, b, c] \<Longrightarrow> \<exists>L\<in>Lin. (a, b) \<in> L \<and> (b, c) \<in> L"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "L' \<in> Lin, (a, b) \<in> L'" THEN OBTAIN "(b, c) \<in> (mktop L' c)") *})
+    (CHOOSE "L' \<in> Lin, (a, b) \<in> L'" THEN HAVE "(b, c) \<in> (mktop L' c)") *})
 
 theorem choice_prof: "\<forall>i. \<exists>L\<in>Lin. A i L \<Longrightarrow> \<exists>P\<in>Prof. \<forall>i. A i (P i)"
   by (tactic {* auto2s_tac @{context} (
@@ -119,7 +119,7 @@ setup {* add_prfstep_custom ("ex_choice_prof",
   PRIORITY_URGENT,
   (fn ((id, _), ths) => fn items => fn _ =>
     [Update.thm_update (id, (ths MRS (backward_th @{thm choice_prof}))),
-     Update.ShadowItem {id = id, item = the_single items}]
+     ShadowItem {id = id, item = the_single items}]
     handle THM _ => []))
 *}
 
@@ -140,47 +140,47 @@ theorem strict_neutral_elim [forward]: "strict_neutral F a b a' b' \<Longrightar
 
 theorem strict_neutrality1: "arrow_conds F \<Longrightarrow> distinct [a, b, b'] \<Longrightarrow> strict_neutral F a b a b'"
   by (tactic {* auto2s_tac @{context} (
-    OBTAIN "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a, b') \<in> P' i) \<longrightarrow> (a, b) \<in> F P \<longleftrightarrow> (a, b') \<in> F P'" WITH (
+    HAVE "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a, b') \<in> P' i) \<longrightarrow> (a, b) \<in> F P \<longleftrightarrow> (a, b') \<in> F P'" WITH (
     CASE "(a, b) \<in> F P" WITH (
     CHOOSE_FUN ("P''\<in>Prof, (\<forall>i. (if (a, b) \<in> P i then ((a, b) \<in> P'' i \<and> (b, b') \<in> P'' i)" ^
                                 "else ((b, b') \<in> P'' i \<and> (b', a) \<in> P'' i)))") THEN
-    OBTAIN "\<forall>i. (b, b') \<in> P'' i" THEN
-    OBTAIN "\<forall>i. ((a, b) \<in> P i \<longleftrightarrow> (a, b) \<in> P'' i) \<and> ((a, b) \<in> P i \<longleftrightarrow> (a, b') \<in> P'' i)" THEN
-    OBTAIN "\<forall>i. (a, b') \<in> P'' i \<longleftrightarrow> (a, b') \<in> P' i") THEN
+    HAVE "\<forall>i. (b, b') \<in> P'' i" THEN
+    HAVE "\<forall>i. ((a, b) \<in> P i \<longleftrightarrow> (a, b) \<in> P'' i) \<and> ((a, b) \<in> P i \<longleftrightarrow> (a, b') \<in> P'' i)" THEN
+    HAVE "\<forall>i. (a, b') \<in> P'' i \<longleftrightarrow> (a, b') \<in> P' i") THEN
     (* Other direction *)
     CHOOSE_FUN ("P''\<in>Prof, (\<forall>i. (if (b, a) \<in> P i then ((b', b) \<in> P'' i \<and> (b, a) \<in> P'' i)" ^
                                 "else ((a, b') \<in> P'' i \<and> (b', b) \<in> P'' i)))") THEN
-    OBTAIN "\<forall>i. (b', b) \<in> P'' i" THEN
-    OBTAIN "\<forall>i. ((b, a) \<in> P i \<longleftrightarrow> (b, a) \<in> P'' i) \<and> ((b, a) \<in> P i \<longleftrightarrow> (b', a) \<in> P'' i)" THEN
-    OBTAIN "\<forall>i. (b', a) \<in> P'' i \<longleftrightarrow> (b', a) \<in> P' i")) *})
+    HAVE "\<forall>i. (b', b) \<in> P'' i" THEN
+    HAVE "\<forall>i. ((b, a) \<in> P i \<longleftrightarrow> (b, a) \<in> P'' i) \<and> ((b, a) \<in> P i \<longleftrightarrow> (b', a) \<in> P'' i)" THEN
+    HAVE "\<forall>i. (b', a) \<in> P'' i \<longleftrightarrow> (b', a) \<in> P' i")) *})
 setup {* add_backward2_prfstep_cond @{thm strict_neutrality1} [with_cond "?b \<noteq> ?b'"] *}
 
 theorem strict_neutrality2: "arrow_conds F \<Longrightarrow> distinct [a, b, b'] \<Longrightarrow> strict_neutral F b a b' a"
   by (tactic {* auto2s_tac @{context} (
-    OBTAIN "strict_neutral F a b a b'" THEN
-    OBTAIN "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (b, a) \<in> P i \<longleftrightarrow> (b', a) \<in> P' i) \<longrightarrow> ((b, a) \<in> F P \<longleftrightarrow> (b', a) \<in> F P')" WITH
-      OBTAIN "\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a, b') \<in> P' i") *})
+    HAVE "strict_neutral F a b a b'" THEN
+    HAVE "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (b, a) \<in> P i \<longleftrightarrow> (b', a) \<in> P' i) \<longrightarrow> ((b, a) \<in> F P \<longleftrightarrow> (b', a) \<in> F P')" WITH
+      HAVE "\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a, b') \<in> P' i") *})
 setup {* add_backward2_prfstep_cond @{thm strict_neutrality2} [with_cond "?b \<noteq> ?b'"] *}
 
 theorem strict_neutrality_trans [forward]:
   "strict_neutral F a b a'' b'' \<Longrightarrow> strict_neutral F a'' b'' a' b' \<Longrightarrow> a'' \<noteq> b'' \<Longrightarrow> strict_neutral F a b a' b'"
   by (tactic {* auto2s_tac @{context} (
-    OBTAIN "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a', b') \<in> P' i) \<longrightarrow> ((a, b) \<in> F P \<longleftrightarrow> (a', b') \<in> F P')" WITH (
+    HAVE "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a', b') \<in> P' i) \<longrightarrow> ((a, b) \<in> F P \<longleftrightarrow> (a', b') \<in> F P')" WITH (
       CHOOSE_FUN "P''\<in>Prof, (\<forall>i. (if (a, b) \<in> P i then (a'', b'') \<in> P'' i else (b'', a'') \<in> P'' i))" THEN
-      OBTAIN "\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a'', b'') \<in> P'' i" THEN
-      OBTAIN "\<forall>i. (a'', b'') \<in> P'' i \<longleftrightarrow> (a', b') \<in> P' i")) *})
+      HAVE "\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a'', b'') \<in> P'' i" THEN
+      HAVE "\<forall>i. (a'', b'') \<in> P'' i \<longleftrightarrow> (a', b') \<in> P' i")) *})
 
 theorem strict_neutrality [backward2]: "arrow_conds F \<Longrightarrow> a \<noteq> b \<Longrightarrow> a' \<noteq> b' \<Longrightarrow> strict_neutral F a b a' b'"
   by (tactic {* auto2s_tac @{context} (
-    OBTAIN "strict_neutral F a b b a" WITH (
-      CHOOSE "c, distinct [a, b, c]" THEN OBTAIN "strict_neutral F a b a c" THEN
-      OBTAIN "strict_neutral F a c b c" THEN OBTAIN "strict_neutral F b c b a") THEN
-    OBTAIN "strict_neutral F a b a b" WITH (
-      OBTAIN "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a, b) \<in> P' i) \<longrightarrow> (a, b) \<in> F P \<longleftrightarrow> (a, b) \<in> F P'") THEN
-    CASE "b' = a" WITH OBTAIN "strict_neutral F b a a' a" THEN
-    CASE "a' = b" WITH OBTAIN "strict_neutral F b a b b'" THEN
+    HAVE "strict_neutral F a b b a" WITH (
+      CHOOSE "c, distinct [a, b, c]" THEN HAVE "strict_neutral F a b a c" THEN
+      HAVE "strict_neutral F a c b c" THEN HAVE "strict_neutral F b c b a") THEN
+    HAVE "strict_neutral F a b a b" WITH (
+      HAVE "\<forall>P\<in>Prof. \<forall>P'\<in>Prof. (\<forall>i. (a, b) \<in> P i \<longleftrightarrow> (a, b) \<in> P' i) \<longrightarrow> (a, b) \<in> F P \<longleftrightarrow> (a, b) \<in> F P'") THEN
+    CASE "b' = a" WITH HAVE "strict_neutral F b a a' a" THEN
+    CASE "a' = b" WITH HAVE "strict_neutral F b a b b'" THEN
     CASE "b' = b" THEN CASE "a' = a" THEN  (* All distinct *)
-    OBTAIN "strict_neutral F a b a b'" THEN OBTAIN "strict_neutral F a b' a' b'") *})
+    HAVE "strict_neutral F a b a b'" THEN HAVE "strict_neutral F a b' a' b'") *})
 
 (* Setup about bijections *)
 setup {* add_backward_prfstep @{thm ex_bij_betw_finite_nat} *}
@@ -200,21 +200,21 @@ theorem ex_nat_split [backward1]: "\<not> P 0 \<Longrightarrow> P (n::nat) \<Lon
 theorem Arrow: "arrow_conds F \<Longrightarrow> \<exists>i. dictator F i"
   by (tactic {* auto2s_tac @{context} (
     CHOOSE "h::(indi \<Rightarrow> nat), bij_betw h I {0..<N}" THEN
-    OBTAIN "\<forall>i. h i < N" THEN
+    HAVE "\<forall>i. h i < N" THEN
     CHOOSE "a, b::alt, a \<noteq> b" THEN
     CHOOSE_FUN2 "P, (\<forall>n. P n \<in> Prof \<and> (\<forall>i. if h i \<ge> n then (a, b) \<in> P n i else (b, a) \<in> P n i))" THEN
-    OBTAIN "(a, b) \<in> F (P 0)" WITH OBTAIN "\<forall>i. (a, b) \<in> P 0 i" THEN
-    OBTAIN "(b, a) \<in> F (P N)" WITH OBTAIN "\<forall>i. (b, a) \<in> P N i" THEN
+    HAVE "(a, b) \<in> F (P 0)" WITH HAVE "\<forall>i. (a, b) \<in> P 0 i" THEN
+    HAVE "(b, a) \<in> F (P N)" WITH HAVE "\<forall>i. (b, a) \<in> P N i" THEN
     CHOOSE "n < N, (b, a) \<notin> F (P n) \<and> (b, a) \<in> F (P (n + 1))" THEN
-    OBTAIN "dictator F (inv h n)" WITH
-      OBTAIN "\<forall>P'\<in>Prof. \<forall>a' b'. (a', b') \<in> P' (inv h n) \<longrightarrow> (a', b') \<in> F P'" WITH (
+    HAVE "dictator F (inv h n)" WITH
+      HAVE "\<forall>P'\<in>Prof. \<forall>a' b'. (a', b') \<in> P' (inv h n) \<longrightarrow> (a', b') \<in> F P'" WITH (
         CHOOSE "c', distinct [a', b', c']" THEN
         CHOOSE_FUN ("P'' \<in> Prof, (\<forall>i. (if h i < n then P'' i = mktop (P' i) c' " ^
                                       "else if h i > n then P'' i = mkbot (P' i) c' " ^
                                       "else ((a', c') \<in> P'' i \<and> (c', b') \<in> P'' i)))") THEN
-        OBTAIN "\<forall>i. (a', b') \<in> P' i \<longleftrightarrow> (a', b') \<in> P'' i" THEN
-        OBTAIN "\<forall>i. (c', b') \<in> P'' i \<longleftrightarrow> (a, b) \<in> P n i" THEN
-        OBTAIN "\<forall>i. (a', c') \<in> P'' i \<longleftrightarrow> (b, a) \<in> P (n + 1) i" THEN
-        OBTAIN "strict_neutral F c' b' a b" THEN OBTAIN "strict_neutral F a' c' b a")) *})
+        HAVE "\<forall>i. (a', b') \<in> P' i \<longleftrightarrow> (a', b') \<in> P'' i" THEN
+        HAVE "\<forall>i. (c', b') \<in> P'' i \<longleftrightarrow> (a, b) \<in> P n i" THEN
+        HAVE "\<forall>i. (a', c') \<in> P'' i \<longleftrightarrow> (b, a) \<in> P (n + 1) i" THEN
+        HAVE "strict_neutral F c' b' a b" THEN HAVE "strict_neutral F a' c' b a")) *})
 
 end

@@ -3,6 +3,7 @@
 local
 
   open Logic_ProofSteps
+  open Logic_More
   val ctxt = @{context}
   val thy = @{theory}
 
@@ -40,25 +41,23 @@ val test_not_ex_forall =
 val test_analyze_disj_th =
     let
       val ctxt' = ctxt |> fold Variable.auto_fixes [
-            @{term_pat "[A::bool, B, C]"},
+            @{term_pat "[A::bool, B, C, D]"},
             @{term_pat "[x::nat, y, ?x, ?y]"},
             @{term_pat "[P::(nat => bool), Q]"},
             @{term_pat "[R::(nat => nat => bool)]"},
             @{term_pat "[S::(nat set), T]"}]
 
-      fun test is_active (t_str, sz, res_str) =
+      fun test disj_head (t_str, sz, res_str) =
           let
             val (t, res) = (read_term ctxt' t_str, read_pat ctxt' res_str)
-            val th = assume_thm ctxt' (HOLogic.mk_Trueprop t)
-            val (is_active', sz', th') = analyze_disj_th ctxt' th
+            val th = assume_thm ctxt' (mk_Trueprop t)
+            val (disj_head', sz', th') = analyze_disj_th ctxt' th
           in
-            if is_active <> is_active' orelse sz <> sz' then
+            if disj_head <> disj_head' orelse sz <> sz' then
               let
-                val _ = trace_t_ctxt
-                            ctxt' "Wrong is_active or sz output. Input: " t
-                val _ = tracing ("Got is_active = " ^
-                                 (string_of_bool is_active'))
-                val _ = tracing ("Got sz = " ^ (string_of_int sz'))
+                val _ = trace_t_ctxt ctxt' "Wrong disj_head or sz. t = " t
+                val _ = trace_t_ctxt ctxt' "Actual disj_head: " disj_head'
+                val _ = tracing ("Actual sz: " ^ (string_of_int sz'))
               in
                 raise AUTO2 "test_analyze_disj_th"
               end
@@ -73,13 +72,18 @@ val test_analyze_disj_th =
             else ()
           end
 
-      val test_data_active = [
+      val test_data_conj = [
         ("~ (A & B & ~C)", 3, "~A | ~B | C"),
         ("~(EX x. P x & Q x)", 2, "~P ?x | ~Q ?x"),
         ("~(EX x. P x & (EX y. R x y))", 2, "~P ?x | ~R ?x ?y")
       ]
 
-      val test_data_non_active = [
+      val test_data_disj = [
+        ("A | B | C", 3, "A | B | C"),
+        ("A | (B & C) | D", 3, "A | (B & C) | D")
+      ]
+
+      val test_data_imp = [
         ("ALL x. P x --> Q x", 2, "~ P ?x | Q ?x"),
         ("ALL x y. R x y --> R y x", 2, "~R ?x ?y | R ?y ?x"),
         ("ALL x. R x y --> R y x", 2, "~R ?x y | R y ?x"),
@@ -90,12 +94,15 @@ val test_analyze_disj_th =
         ("ALL x:S. ALL y:T. R x y", 3, "~ ?x : S | ~ ?y : T | R ?x ?y"),
         ("A --> B | C", 2, "~A | B | C"),
         ("A --> ~(B & C)", 2, "~A | ~(B & C)"),
+        ("~A --> B", 2, "A | B"),
+        ("A --> ~~B", 2, "~A | B"),
         ("ALL x. A", 1, "A"),
         ("ALL x. A --> P x", 2, "~A | P ?x")
       ]
     in
-      map (test true) test_data_active @
-      map (test false) test_data_non_active
+      map (test conj) test_data_conj @
+      map (test disj) test_data_disj @
+      map (test imp) test_data_imp
     end
 
 val test_normalize_disj_cv =
@@ -138,27 +145,25 @@ val test_match_update =
       val ctxt' = ctxt |> fold Variable.declare_term [x, y, A, B, D]
 
       val tbl = RewriteTable.empty ctxt'
-      val rtype = RewriteTable.SINGLE tbl
+      val rtype = SINGLE tbl
       val tbl2 = tbl |> RewriteTable.add_rewrite []
                      (assume_eq thy (@{term "x::nat"}, @{term "y::nat"}))
-      val rtype2 = RewriteTable.SINGLE tbl2
+      val rtype2 = SINGLE tbl2
       val st = Status.empty_status ctxt'
 
       fun disj_to_ritem th =
           let
             val subs = ACUtil.dest_ac_r disj_ac (prop_of' th)
-            val tname =
-                HOLogic.mk_tuple (@{term False} :: @{term False} :: subs)
           in
-            Fact (TY_DISJ, tname, th)
+            Fact (TY_DISJ, bFalse :: subs, th)
           end
 
-      fun read_prop str = str |> read_pat ctxt' |> HOLogic.mk_Trueprop
+      fun read_prop str = str |> read_pat ctxt' |> mk_Trueprop
 
       fun updt_to_thm updt =
           case updt of
-              Update.AddItems {raw_items, ...} => map get_thm_raw raw_items
-            | Update.ResolveBox {th, ...} => [th]
+              AddItems {raw_items, ...} => map BoxItem.get_thm_raw raw_items
+            | ResolveBox {th, ...} => [th]
             | _ => []
 
       fun test_updt rtype (disj_str, t_str, res_strs) =
@@ -166,9 +171,9 @@ val test_match_update =
             val disj_th = assume_thm ctxt' (read_prop disj_str)
             val th = assume_thm ctxt' (read_prop t_str)
             val res_ts = map read_prop res_strs
-            val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),
-                         mk_box_item (0, [], 0, Update.thm_to_ritem th)]
-            val updts = apply_prfstep rtype st items (hd match_update_prfsteps)
+            val items = [BoxItem.mk_box_item (0, [], 0, disj_to_ritem disj_th),
+                         BoxItem.mk_box_item (0, [], 0, Update.thm_to_ritem th)]
+            val updts = apply_prfstep rtype st items match_update_prfstep
             val res_ts' = maps updt_to_thm updts |> map Thm.prop_of
           in
             if eq_set (op aconv) (res_ts, res_ts') then ()

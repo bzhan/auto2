@@ -3,14 +3,14 @@
 signature ALGEBRA =
 sig
   val TY_POLY: string
-  val dest_poly_tname: term -> term * term list
+  val dest_poly_tname: term list -> term * term list
   val output_poly_fn: item_output
   val poly_typed_matcher: item_matcher
   val get_poly_raw_item: thm -> raw_item
-  val get_poly_update: box_id * thm -> Update.raw_update list
+  val get_poly_update: box_id * thm -> raw_update list
   val expand_polys: proofstep list
 
-  val nonzero_poly_update: box_id * thm -> Update.raw_update list
+  val nonzero_poly_update: box_id * thm -> raw_update list
   val ineq_poly_gen: proofstep
   val clear_denom_poly: proofstep
   val less_poly_gen: proofstep
@@ -29,11 +29,7 @@ val TY_POLY = "POLY"
    of the item is P x. Deconstruct into (P x, [subs])
  *)
 fun dest_poly_tname tname =
-    let
-      val ts = HOLogic.strip_tuple tname
-    in
-      (hd ts, tl ts)
-    end
+    (hd tname, tl tname)
 
 (* Output function for item type POLY. *)
 fun output_poly_fn ctxt (_, th) =
@@ -50,7 +46,7 @@ val poly_typed_matcher =
     let
       fun pre_match pat {tname, ...} tbl =
           let
-            val (pat_p, pat_subs) = dest_poly_tname pat
+            val (pat_p, pat_subs) = dest_poly_tname (HOLogic.strip_tuple pat)
             val (px, subs) = dest_poly_tname tname
             fun pre_match_sub s =
                 exists (fn t => Matcher.pre_match_head tbl (s, t)) subs
@@ -64,7 +60,7 @@ val poly_typed_matcher =
        *)
       fun match pat {tname, prop, ...} (tbl as {ctxt, ...}) (id, inst) =
           let
-            val (pat_p, pat_subs) = dest_poly_tname pat
+            val (pat_p, pat_subs) = dest_poly_tname (HOLogic.strip_tuple pat)
             val (_, subs) = dest_poly_tname tname
 
             (* Process each result of matching pat_subs as a subset of
@@ -99,7 +95,7 @@ fun get_poly_raw_item th =
       val arg = th |> prop_of' |> dest_arg
       val ts = Ring_Arith.polynomial_terms arg
     in
-      Fact (TY_POLY, HOLogic.mk_tuple (prop_of' th :: ts), th)
+      Fact (TY_POLY, prop_of' th :: ts, th)
     end
 
 (* Normalize the argument, then get update with POLY item. *)
@@ -107,18 +103,18 @@ fun get_poly_update (id, th) =
     let
       val th' = th |> apply_to_arg Ring_Arith.norm_full
     in
-      [Update.AddItems {id = id, raw_items = [get_poly_raw_item th']}]
+      [AddItems {id = id, raw_items = [get_poly_raw_item th']}]
     end
 
 fun expand_poly_gen (nm, pat) =
     let
-      val pat_lhs = HOLogic.dest_eq pat |> fst
+      val pat_lhs = dest_eq pat |> fst
       val pat_A = HOLogic.mk_tuple [@{term_pat "?P::bool"}, pat_lhs]
       fun prfstep_fn ((id, _), ths) _ {ctxt, ...} =
           let
             (* Here th is P x where x contains A, and eq_th is A = A'. *)
             val (th, eq_th) = the_pair ths
-            val (lhs, rhs) = HOLogic.dest_eq (prop_of' eq_th)
+            val (lhs, rhs) = dest_eq (prop_of' eq_th)
           in
             if is_subterm lhs rhs then []
             else get_poly_update (
@@ -160,11 +156,11 @@ fun nonzero_poly_update (id, th) =
       val arg = th' |> prop_of' |> dest_arg
     in
       if is_numc arg then
-        if dest_numc_rat arg = Rat.zero then
+        if dest_numc_rat arg = rat_zero then
           [Update.thm_update (id, th' RS @{thm nonzero_resolve})]
         else []
       else
-        [Update.AddItems {id = id, raw_items = [get_poly_raw_item th']}]
+        [AddItems {id = id, raw_items = [get_poly_raw_item th']}]
     end
 
 val ineq_poly_gen =
@@ -206,9 +202,9 @@ val ineq_poly_numc =
               val arg = th |> prop_of' |> dest_arg
             in
               if is_numc arg then
-                if dest_numc_rat arg = Rat.zero then
+                if dest_numc_rat arg = rat_zero then
                   [Update.thm_update (id, th RS @{thm nonzero_resolve})]
-                else [Update.ShadowItem {id = id, item = the_single items}]
+                else [ShadowItem {id = id, item = the_single items}]
               else []
             end)
 

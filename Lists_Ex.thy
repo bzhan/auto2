@@ -46,7 +46,7 @@ theorem strict_sorted_append [rewrite]:
   by (tactic {* auto2s_tac @{context} (INDUCT ("xs", [])) *})
 
 theorem strict_sorted_append_one:
-  "strict_sorted (xs @ [y]) = (\<forall>x\<in>set xs. x < y \<and> strict_sorted xs)" by auto2
+  "strict_sorted (xs @ [y]) = ((\<forall>x\<in>set xs. x < y) \<and> strict_sorted xs)" by auto2
 
 theorem strict_sorted_distinct [resolve]: "strict_sorted l \<Longrightarrow> distinct l" by auto2
 
@@ -54,7 +54,7 @@ theorem strict_sorted_min [rewrite]: "strict_sorted (x # xs) \<Longrightarrow> M
 
 theorem strict_sorted_delmin [rewrite]:
   "strict_sorted (x # xs) \<Longrightarrow> set (x # xs) - {x} = set xs"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "distinct (x # xs)") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "distinct (x # xs)") *})
 
 theorem map_of_alist_binary [rewrite]:
   "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> (map_of_alist (xs @ a # ys))\<langle>x\<rangle> =
@@ -84,7 +84,7 @@ theorem ordered_insert_binary [rewrite]:
      else if x > a then xs @ a # ordered_insert x ys
      else xs @ a # ys)"
   by (tactic {* auto2s_tac @{context} (
-    INDUCT ("xs", []) THEN CASE "x < a" THEN OBTAIN "a > hd xs") *})
+    INDUCT ("xs", []) THEN CASE "x < a" THEN HAVE "a > hd xs") *})
 
 section {* Ordered insertion into list of pairs *}
 
@@ -111,7 +111,7 @@ theorem ordered_insert_pairs_binary [rewrite]:
      else if x > fst a then xs @ a # ordered_insert_pairs x v ys
      else xs @ (x, v) # ys)"
   by (tactic {* auto2s_tac @{context} (
-    INDUCT ("xs", []) THEN CASE "x < fst a" THEN OBTAIN "fst a > fst (hd xs)") *})
+    INDUCT ("xs", []) THEN CASE "x < fst a" THEN HAVE "fst a > fst (hd xs)") *})
 
 section {* Deleting an element *}
 
@@ -135,7 +135,7 @@ theorem remove_elt_list_binary [rewrite]:
      else if x > a then xs @ a # remove_elt_list x ys else xs @ ys)"
   by (tactic {* auto2s_tac @{context} (
     INDUCT ("xs", []) WITH (
-      CASE "x < a" WITH OBTAIN "x \<notin> set ys" THEN CASE "x > a" THEN OBTAIN "x \<notin> set ys")) *})
+      CASE "x < a" WITH HAVE "x \<notin> set ys" THEN CASE "x > a" THEN HAVE "x \<notin> set ys")) *})
 
 section {* Deleting from a list of pairs *}
 
@@ -147,7 +147,7 @@ setup {* fold add_rewrite_rule @{thms remove_elt_pairs.simps} *}
 theorem remove_elt_pairs_map [rewrite]:
   "strict_sorted (map fst ys) \<Longrightarrow> map_of_alist (remove_elt_pairs x ys) = delete_map x (map_of_alist ys)"
   by (tactic {* auto2s_tac @{context} (
-    INDUCT ("ys", []) THEN CASE "fst (hd ys) = x" WITH OBTAIN "x \<notin> set (map fst (tl ys))") *})
+    INDUCT ("ys", []) THEN CASE "fst (hd ys) = x" WITH HAVE "x \<notin> set (map fst (tl ys))") *})
 
 theorem remove_elt_pairs_on_set [rewrite]:
   "strict_sorted (map fst ys) \<Longrightarrow> set (map fst (remove_elt_pairs x ys)) = set (map fst ys) - {x}"  by auto2
@@ -163,7 +163,7 @@ theorem remove_elt_pairs_binary [rewrite]:
     (if x < fst a then (remove_elt_pairs x xs) @ a # ys
      else if x > fst a then xs @ a # remove_elt_pairs x ys else xs @ ys)"
   by (tactic {* auto2s_tac @{context} (
-    INDUCT ("xs", []) WITH (CASE "x < fst a" WITH OBTAIN "x \<notin> set (map fst ys)")) *})
+    INDUCT ("xs", []) WITH (CASE "x < fst a" WITH HAVE "x \<notin> set (map fst ys)")) *})
 
 section {* Merge sort *}
 

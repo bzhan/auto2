@@ -70,6 +70,9 @@ fun tree_sorted :: "('a::linorder, 'b) tree \<Rightarrow> bool" where
                               \<and> tree_sorted l \<and> tree_sorted r)"
 setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
 
+theorem tree_sorted_lr [forward]:
+  "tree_sorted (Node l k v r) \<Longrightarrow> tree_sorted l \<and> tree_sorted r" by auto2
+
 theorem inorder_preserve_set [rewrite_back]:
   "set (in_traverse t) = tree_set t" by auto2
 

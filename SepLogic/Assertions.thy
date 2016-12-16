@@ -64,7 +64,7 @@ definition proper :: "assn_raw \<Rightarrow> bool" where
 setup {* add_rewrite_rule @{thm proper_def} *}
 
 typedef assn = "Collect proper"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "Assn in_range \<in> Collect proper") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "Assn in_range \<in> Collect proper") *})
 
 setup {* add_resolve_prfstep (equiv_forward_th @{thm Rep_assn_inject}) *}
 
@@ -125,13 +125,13 @@ theorem aseval_ext [backward]: "\<forall>h. aseval P h = aseval P' h \<Longright
   apply (cases P) apply (cases P') by auto
 
 lemma ent_iffI: "(A \<Longrightarrow>\<^sub>A B) \<and> (B \<Longrightarrow>\<^sub>A A) \<Longrightarrow> A = B"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "Rep_assn A = Rep_assn B") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "Rep_assn A = Rep_assn B") *})
 setup {* add_backward_prfstep_cond @{thm ent_iffI} [with_filt (order_filter "A" "B")] *}
 setup {* del_prfstep_thm @{thm aseval_ext} *}
 
 theorem assn_one_left: "1 * P = (P::assn)"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "\<forall>h. h \<Turnstile> P \<longrightarrow> h \<Turnstile> 1 * P" WITH OBTAIN "set_partition (snd h) {} (snd h)") *})
+    (HAVE "\<forall>h. h \<Turnstile> P \<longrightarrow> h \<Turnstile> 1 * P" WITH HAVE "set_partition (snd h) {} (snd h)") *})
 
 theorem set_partition_comm [forward]: "set_partition S T1 T2 \<Longrightarrow> set_partition S T2 T1" by auto2
 
@@ -163,9 +163,9 @@ setup {* del_prfstep_thm @{thm models_def} *}
 
 lemma ex_distrib_star: "(\<exists>\<^sub>Ax. P x * Q) = (\<exists>\<^sub>Ax. P x) * Q"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "\<forall>h. h \<Turnstile> (\<exists>\<^sub>Ax. P x) * Q \<longrightarrow> h \<Turnstile> (\<exists>\<^sub>Ax. P x * Q)" WITH
+    (HAVE "\<forall>h. h \<Turnstile> (\<exists>\<^sub>Ax. P x) * Q \<longrightarrow> h \<Turnstile> (\<exists>\<^sub>Ax. P x * Q)" WITH
       (CHOOSE "as1, as2, set_partition (snd h) as1 as2 \<and> (fst h, as1) \<Turnstile> (\<exists>\<^sub>Ax. P x) \<and> (fst h, as2) \<Turnstile> Q" THEN
-       CHOOSE "x, (fst h, as1) \<Turnstile> P x" THEN OBTAIN "h \<Turnstile> P x * Q")) *})
+       CHOOSE "x, (fst h, as1) \<Turnstile> P x" THEN HAVE "h \<Turnstile> P x * Q")) *})
 
 subsubsection {* Pointers *}
 
@@ -217,14 +217,14 @@ lemma star_false_left [rewrite]: "false * P = false" by auto2
 
 lemma mod_star_trueI: "h \<Turnstile> P \<Longrightarrow> h \<Turnstile> P * true"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "set_partition (snd h) (snd h) {}") *})
+    (HAVE "set_partition (snd h) (snd h) {}") *})
 
 theorem sngr_same_false [resolve]: "\<not>h \<Turnstile> p \<mapsto>\<^sub>r x * p \<mapsto>\<^sub>r y * Qu" by auto2
 theorem snga_same_false [resolve]: "\<not>h \<Turnstile> p \<mapsto>\<^sub>r x * p \<mapsto>\<^sub>r y * Qu" by auto2
 
 lemma mod_pure_star_dist [rewrite]: "h \<Turnstile> P * \<up>b \<longleftrightarrow> (h \<Turnstile> P \<and> b)"
   by (tactic {* auto2s_tac @{context}
-    (CASE "h \<Turnstile> P \<and> b" WITH OBTAIN "set_partition (snd h) (snd h) {}") *})
+    (CASE "h \<Turnstile> P \<and> b" WITH HAVE "set_partition (snd h) (snd h) {}") *})
 
 lemma mod_pure' [rewrite]: "h \<Turnstile> \<up>b \<longleftrightarrow> (h \<Turnstile> emp \<and> b)" by auto2
 

@@ -29,11 +29,10 @@ fun is_times t =
 
 fun mk_rat T r =
     let
-      val (n, d) = Rat.quotient_of_rat r
+      val (n, d) = Rat.dest r
     in
       if n < 0 then
-        Const (@{const_name uminus}, T --> T)
-              $ mk_rat T (Rat.rat_of_quotient (~n, d))
+        Const (@{const_name uminus}, T --> T) $ mk_rat T (Rat.make (~n, d))
       else if d = 1 then HOLogic.mk_number T n
       else if T = natT orelse T = intT then
         raise AUTO2 "mk_rat"
@@ -47,7 +46,7 @@ fun mk_rat T r =
         Const (@{const_name of_rat}, ratT --> T) $ mk_rat ratT r
     end
 
-fun is_zero t = is_numc t andalso dest_numc_rat t = Rat.zero
+fun is_zero t = is_numc t andalso dest_numc_rat t = rat_zero
 
 local
   val ctxt = @{context}
@@ -96,14 +95,14 @@ fun fold_add_rat ct =
       val thy = Thm.theory_of_cterm ct
     in
       if T = natT orelse T = intT orelse T = ratT then
-        (HOLogic.mk_eq (t, mk_rat T (Rat.add c1 c2)))
+        (mk_eq (t, mk_rat T (Rat.add c1 c2)))
             |> prove_by_simp ctxt' [] |> to_meta_eq
       else if Sign.of_sort thy (T, @{sort field_char_0}) then
         let
           val sum = mk_rat ratT (Rat.add c1 c2)
           val t' = Const (@{const_name plus}, ratT --> ratT --> ratT)
                          $ mk_rat ratT c1 $ mk_rat ratT c2
-          val th = prove_by_simp ctxt' [] (HOLogic.mk_eq (t', sum))
+          val th = prove_by_simp ctxt' [] (mk_eq (t', sum))
         in
           Conv.every_conv [
             Conv.binop_conv rewrite_to_of_rat,
@@ -116,7 +115,7 @@ fun fold_add_rat ct =
           val sum = mk_rat intT (Rat.add c1 c2)
           val t' = Const (@{const_name plus}, intT --> intT --> intT)
                          $ mk_rat intT c1 $ mk_rat intT c2
-          val th = prove_by_simp ctxt' [] (HOLogic.mk_eq (t', sum))
+          val th = prove_by_simp ctxt' [] (mk_eq (t', sum))
         in
           Conv.every_conv [
             Conv.binop_conv rewrite_to_of_int,
@@ -137,14 +136,14 @@ fun fold_mult_rat ct =
       val thy = Thm.theory_of_cterm ct
     in
       if T = natT orelse T = intT orelse T = ratT then
-        (HOLogic.mk_eq (t, mk_rat T (Rat.mult c1 c2)))
+        (mk_eq (t, mk_rat T (Rat.mult c1 c2)))
             |> prove_by_simp ctxt' [] |> to_meta_eq
       else if Sign.of_sort thy (T, @{sort field_char_0}) then
         let
           val prod = mk_rat ratT (Rat.mult c1 c2)
           val t' = Const (@{const_name times}, ratT --> ratT --> ratT)
                          $ mk_rat ratT c1 $ mk_rat ratT c2
-          val th = prove_by_simp ctxt' [] (HOLogic.mk_eq (t', prod))
+          val th = prove_by_simp ctxt' [] (mk_eq (t', prod))
         in
           Conv.every_conv [
             Conv.binop_conv rewrite_to_of_rat,
@@ -157,7 +156,7 @@ fun fold_mult_rat ct =
           val prod = mk_rat intT (Rat.mult c1 c2)
           val t' = Const (@{const_name times}, intT --> intT --> intT)
                          $ mk_rat intT c1 $ mk_rat intT c2
-          val th = prove_by_simp ctxt' [] (HOLogic.mk_eq (t', prod))
+          val th = prove_by_simp ctxt' [] (mk_eq (t', prod))
         in
           Conv.every_conv [
             Conv.binop_conv rewrite_to_of_int,

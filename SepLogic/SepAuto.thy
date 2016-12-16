@@ -14,10 +14,10 @@ theorem pure_conj:  "\<up>(P \<and> Q) = \<up>P * \<up>Q" by auto2
 theorem pure_assn_eq_same [resolve]: "P * \<up>(x = x) = P" by auto2
 theorem mod_false' [resolve]: "\<not> (h \<Turnstile> false * Ru)" by auto2
 theorem mod_star_true [resolve]: "h \<Turnstile> P * Ru \<Longrightarrow> h \<Turnstile> P * true"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "Ru \<Longrightarrow>\<^sub>A true") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "Ru \<Longrightarrow>\<^sub>A true") *})
 theorem mod_star_true' [resolve]: "h \<Turnstile> R \<Longrightarrow> h \<Turnstile> true" by auto2
 theorem mod_star_true2 [backward2]: "h \<Turnstile> P x * R \<Longrightarrow> Q x \<Longrightarrow> \<exists>x. (h \<Turnstile> P x * true) \<and> Q x"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "h \<Turnstile> P x * true") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "h \<Turnstile> P x * true") *})
 
 subsection {* Entailment *}
 
@@ -40,9 +40,8 @@ subsection {* Clear unused proofsteps *}
 
 setup {* fold del_prfstep_thm [
   @{thm ex_assn_def}, @{thm pure_assn_rule}, @{thm top_assn_rule},
-  @{thm star_false_left}, @{thm entailsD'}, @{thm mod_ex_distrib_star}] *}
-setup {* fold del_prfstep [
-  "Assertions.mod_pure_star_dist", "Assertions.mod_pure'"] *}
+  @{thm star_false_left}, @{thm entailsD'}, @{thm mod_ex_distrib_star},
+  @{thm mod_pure_star_dist}, @{thm mod_pure'}] *}
 
 subsection {* Definition of procedures *}
 

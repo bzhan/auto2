@@ -24,7 +24,7 @@ fun aeval :: "aexp \<Rightarrow> nat" where
 | "aeval (APlus m n) = aeval m + aeval n"
 | "aeval (AMinus m n) = aeval m - aeval n"
 | "aeval (AMult m n) = aeval m * aeval n"
-setup {* fold add_rewrite_rule @{thms aeval.simps} *}
+setup {* add_eval_fun_prfsteps @{thms aeval.simps} *}
 
 theorem test_aeval1: "aeval (APlus (ANum 2) (ANum 2)) = 4" by auto2
 
@@ -35,7 +35,7 @@ fun beval :: "bexp \<Rightarrow> bool" where
 | "beval (BLe a1 a2) = (aeval a1 \<le> aeval a2)"
 | "beval (BNot b) = (\<not> beval b)"
 | "beval (BAnd b1 b2) = (beval b1 \<and> beval b2)"
-setup {* fold add_rewrite_rule @{thms beval.simps} *}
+setup {* add_eval_fun_prfsteps' @{thms beval.simps} (@{thms aeval.simps} @ @{thms beval.simps}) *}
 
 theorem test_beval1: "beval (BEq (ANum 2) (ANum 3)) = False" by auto2
 
@@ -68,16 +68,16 @@ setup {* add_prfstep_var_induction @{thm bexp.induct} *}
 (* Equivalence of definitions. *)
 theorem aeval_iff_aevalR [rewrite]: "a \<Down> n \<longleftrightarrow> aeval a = n"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "\<forall>a' n'. a' \<Down> n' \<longrightarrow> aeval a' = n'" WITH PROP_INDUCT ("a' \<Down> n'", []) THEN
-     OBTAIN "\<forall>a' n'. aeval a' = n' \<longrightarrow> a' \<Down> n'" WITH VAR_INDUCT ("a'", [Arbitrary "n'"])) *})
+    (HAVE "\<forall>a' n'. a' \<Down> n' \<longrightarrow> aeval a' = n'" WITH PROP_INDUCT ("a' \<Down> n'", []) THEN
+     HAVE "\<forall>a' n'. aeval a' = n' \<longrightarrow> a' \<Down> n'" WITH VAR_INDUCT ("a'", [Arbitrary "n'"])) *})
 theorem aevalR_triv: "a \<Down> aeval a" by auto2
 setup {* add_forward_prfstep_cond @{thm aevalR_triv} [with_term "aeval ?a"] *}
 theorem test_aevalR1: "(APlus (ANum 2) (ANum 2)) \<Down> 4" by auto2
 
 theorem beval_iff_bevalR [rewrite]: "bevalR b v \<longleftrightarrow> beval b = v"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "\<forall>b' v'. bevalR b' v' \<longrightarrow> beval b' = v'" WITH PROP_INDUCT ("bevalR b' v'", []) THEN
-     OBTAIN "\<forall>b' v'. beval b' = v' \<longrightarrow> bevalR b' v'" WITH VAR_INDUCT ("b'", [Arbitrary "v'"])) *})
+    (HAVE "\<forall>b' v'. bevalR b' v' \<longrightarrow> beval b' = v'" WITH PROP_INDUCT ("bevalR b' v'", []) THEN
+     HAVE "\<forall>b' v'. beval b' = v' \<longrightarrow> bevalR b' v'" WITH VAR_INDUCT ("b'", [Arbitrary "v'"])) *})
 theorem bevalR_triv: "bevalR b (beval b)" by auto2
 theorem test_bevalR1: "bevalR (BEq (ANum 2) (ANum 3)) False" by auto2
 

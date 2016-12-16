@@ -29,29 +29,23 @@ abbreviation hoare_triple' :: "assn \<Rightarrow> 'r Heap \<Rightarrow> ('r \<Ri
 lemma frame_rule [backward]:
   "<P> c <Q> \<Longrightarrow> <P * R> c <\<lambda>x. Q x * R>"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN ("\<forall>h as \<sigma> r. (h, as) \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>" ^
+    (HAVE ("\<forall>h as \<sigma> r. (h, as) \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>" ^
                 "(\<sigma> \<noteq> None \<and> (the \<sigma>, new_addrs h as (the \<sigma>)) \<Turnstile> Q r * R \<and> relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and>" ^
                 "lim h \<le> lim (the \<sigma>))") WITH (
        CHOOSE "as1, as2, set_partition as as1 as2 \<and> (h, as1) \<Turnstile> P \<and> (h, as2) \<Turnstile> R" THEN
-       OBTAIN "relH as2 h (the \<sigma>)" THEN
-       OBTAIN "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2" WITH
-         OBTAIN "\<forall>x. x \<in> as2 \<longrightarrow> x \<notin> {a. lim h \<le> a \<and> a < lim (the \<sigma>)}")) *})
+       HAVE "relH as2 h (the \<sigma>)" THEN
+       HAVE "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2" WITH
+         HAVE "\<forall>x. x \<in> as2 \<longrightarrow> x \<notin> {a. lim h \<le> a \<and> a < lim (the \<sigma>)}")) *})
 
 (* This is the last use of the definition of separating conjunction. *)
 setup {* del_prfstep_thm @{thm mod_star_conv} *}
-setup {* del_prfstep "Hoare_Triple.hoare_triple_def@eqbackward@res" *}
+setup {* del_prfstep_thm_str "@eqbackward@res" @{thm hoare_triple_def} *}
 
 section {* Hoare triples for atomic commands *}
 
 setup {* add_backward_prfstep (equiv_backward_th @{thm hoare_triple_def}) *}
 
 (* First, those that do not modify the heap. *)
-
-definition comment :: "assn \<Rightarrow> unit Heap" where
-  "comment P = Heap_Monad.Heap (\<lambda>h. Some ((), h))"
-
-theorem execute_comment: "execute (comment P) h = Some ((), h)" by (simp add: comment_def)
-setup {* add_forward_prfstep_cond @{thm execute_comment} [with_term "run (comment ?P) (Some ?h) ?\<sigma>' ?r"] *}
 
 (* Avoid variables P and Q since they are pre- and post-condition. *)
 lemma comment_rule:
@@ -136,7 +130,7 @@ theorem union_case [forward]: "x \<in> A \<union> B \<Longrightarrow> x \<in> A 
 theorem new_addrs_bind [rewrite]: "lim h \<le> lim h' \<Longrightarrow> lim h' \<le> lim h'' \<Longrightarrow>
   new_addrs h' (new_addrs h as h') h'' = new_addrs h as h''"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "\<forall>x. x \<in> new_addrs h' (new_addrs h as h') h'' \<longleftrightarrow> x \<in> new_addrs h as h''") *})
+    (HAVE "\<forall>x. x \<in> new_addrs h' (new_addrs h as h') h'' \<longleftrightarrow> x \<in> new_addrs h as h''") *})
 setup {* del_prfstep_thm @{thm union_case} *}
 
 fun success_run :: "'a Heap \<Rightarrow> pheap \<Rightarrow> pheap \<Rightarrow> 'a \<Rightarrow> bool" where
@@ -158,18 +152,18 @@ theorem hoare_triple_def' [rewrite]:
 
 theorem hoare_tripleE': "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run c (Some (fst h)) \<sigma> r \<Longrightarrow>
   \<exists>h'. h' \<Turnstile> Q r * Ru \<and> \<sigma> = Some (fst h') \<and> success_run c h h' r"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
 
 theorem hoare_tripleI: "\<not><P> c <Q> \<Longrightarrow> \<exists>h \<sigma> r. h \<Turnstile> P \<and> run c (Some (fst h)) \<sigma> r \<and>
   (\<forall>h'. \<sigma> = Some (fst h') \<and> success_run c h h' r \<longrightarrow> \<not>h' \<Turnstile> Q r)" by auto2
 
 theorem hoare_triple_mp: "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> success_run c h h' r \<Longrightarrow> h' \<Turnstile> (Q r) * Ru"
-  by (tactic {* auto2s_tac @{context} (OBTAIN "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
+  by (tactic {* auto2s_tac @{context} (HAVE "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
 
 theorem hoare_tripleE'': "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run (c \<bind> g) (Some (fst h)) \<sigma> r \<Longrightarrow>
   \<exists>r' h'. run (g r') (Some (fst h')) \<sigma> r \<and> h' \<Turnstile> Q r' * Ru \<and> success_run c h h' r'"
   by (tactic {* auto2s_tac @{context}
-    (OBTAIN "<P * Ru> c <\<lambda>r. Q r * Ru>" THEN
+    (HAVE "<P * Ru> c <\<lambda>r. Q r * Ru>" THEN
      CHOOSE "\<sigma>', r', run c (Some (fst h)) \<sigma>' r'") *})
 
 definition heap_preserving :: "'a Heap \<Rightarrow> bool" where
