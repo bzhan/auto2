@@ -47,19 +47,19 @@ fun not_ex_forall_cv ctxt ct =
 (* Rewrite part of DISJ item that is ~ALL. *)
 fun disj_rewrite_not_all rtype {ctxt, ...} {id, tname, prop, ...} =
     if not (RewriteTable.is_single_rtype rtype) then [] else
-    if not (exists has_vars tname) then [] else
+    if not (exists has_vars (map Thm.term_of tname)) then [] else
     let
-      val (disj_head, subs) = dest_tname_of_disj tname
+      val (disj_head, csubs) = dest_tname_of_disj tname
       fun rewrite_not_all ct =
           case Thm.term_of ct of
               @{const Not} $ (Const ("HOL.All", _) $ Abs _) =>
               not_ex_forall_cv ctxt ct
             | _ => Conv.all_conv ct
       val prop' =
-          apply_to_thm' (ac_disj_conv (length subs) rewrite_not_all) prop
+          apply_to_thm' (ac_disj_conv (length csubs) rewrite_not_all) prop
     in
       if Thm.prop_of prop aconv Thm.prop_of prop' then []
-      else [disj_to_update disj_head (id, length subs, prop')]
+      else [disj_to_update false disj_head (id, NONE, length csubs, prop')]
     end
 
 val disj_rewrite_not_all_prfstep =
@@ -68,44 +68,10 @@ val disj_rewrite_not_all_prfstep =
      priority = PRIORITY_ADD,
      func = OneStep disj_rewrite_not_all}
 
-(* Function body for proofsteps if_P, if_not_P, and if_not_P'. *)
-fun apply_if_eq_thm if_eq_th ((id, _), ths) items _ =
-    let
-      val {prop, ...} = hd items
-      val eq = (nth ths 1) RS if_eq_th
-      val th = prop |> to_meta_eq |> apply_to_rhs (rewr_obj_eq eq)
-                    |> to_obj_eq
-    in
-      [Update.thm_update (id, th),
-       ShadowItem {id = id, item = hd items}]
-    end
-
 val add_logic_more_prfsteps =
-    fold add_prfstep (
-      [disj_rewrite_not_all_prfstep]
-
-    ) #> fold add_prfstep_custom [
-      ("if_P",
-       [WithItem (TY_EQ_IF, @{term_pat "?t = (if ?cond then ?x else ?y)"}),
-        WithFact @{term_pat "?cond::bool"}],
-       PRIORITY_SHADOW,
-       apply_if_eq_thm @{thm HOL.if_P}),
-
-      ("if_not_P",
-       [WithItem (TY_EQ_IF, @{term_pat "?t = (if ?cond then ?x else ?y)"}),
-        WithFact @{term_pat "~?cond::bool"}],
-       PRIORITY_SHADOW,
-       apply_if_eq_thm @{thm HOL.if_not_P}),
-
-      ("if_not_P'",
-       [WithItem (TY_EQ_IF, @{term_pat "?t = (if ~?cond then ?x else ?y)"}),
-        WithFact @{term_pat "?cond::bool"}],
-       PRIORITY_SHADOW,
-       apply_if_eq_thm @{thm if_not_P'})
-
-    ] #> fold add_fixed_sc (
-      map (rpair 1) ["if_P", "if_not_P", "if_not_P'"]
-    )
+    fold add_prfstep [
+      disj_rewrite_not_all_prfstep
+    ]
 
 end  (* structure Logic_More. *)
 

@@ -1,320 +1,371 @@
 theory OrderRel
-imports EquivRel BigProd
+imports EquivRel Morphism
 begin
 
-section {* Preorder and order relations *}  (* Bourbaki III.1.1 -- III.1.2 *)
-
-(* Definition for meta and object relations *)
-definition refl_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where refl_meta_rel_def [rewrite]:
+section {* Meta order relations *}
+  
+(* Definition for meta order relation *)
+definition refl_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "refl_meta_rel(R) \<longleftrightarrow> (\<forall>x y. R(x,y) \<longrightarrow> R(x,x) \<and> R(y,y))"
 
-definition antisym_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where antisym_meta_rel_def [rewrite]:
+definition antisym_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "antisym_meta_rel(R) \<longleftrightarrow> (\<forall>x y. R(x,y) \<longrightarrow> R(y,x) \<longrightarrow> x = y)"
 
 lemma antisym_meta_relD [forward]:
   "antisym_meta_rel(R) \<Longrightarrow> R(x,y) \<Longrightarrow> R(y,x) \<Longrightarrow> x = y" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm antisym_meta_rel_def} *}
 
-definition preorder_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where preorder_meta_rel_def [rewrite]:
+definition preorder_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "preorder_meta_rel(R) \<longleftrightarrow> (refl_meta_rel(R) \<and> trans_meta_rel(R))"
 
-definition preorder_rel_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where preorder_rel_on_def [rewrite]:
-  "preorder_rel_on(R,E) \<longleftrightarrow> (preorder_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
+definition preorder_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
+  "preorder_on(R,E) \<longleftrightarrow> (preorder_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
 
-definition preorder_rel :: "i \<Rightarrow> o" where preorder_rel_def [rewrite]:
-  "preorder_rel(R) \<longleftrightarrow> (is_relation(R) \<and> source(R) = target(R) \<and>
-                        preorder_rel_on(\<lambda>x y. rel(R,x,y), source(R)))"
-
-definition order_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where order_meta_rel_def [rewrite]:
+definition order_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "order_meta_rel(R) \<longleftrightarrow> (preorder_meta_rel(R) \<and> antisym_meta_rel(R))"
 
-definition order_rel_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where order_rel_on_def [rewrite]:
-  "order_rel_on(R,E) \<longleftrightarrow> (order_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
-
-definition order_rel :: "i \<Rightarrow> o" where order_rel_def [rewrite]:
-  "order_rel(R) \<longleftrightarrow> (is_relation(R) \<and> source(R) = target(R) \<and>
-                     order_rel_on(\<lambda>x y. rel(R,x,y), source(R)))"
-
-(* Self-contained condition for preorder_rel. *)
-lemma preorder_rel_iff [rewrite]:
-  "preorder_rel(R) \<longleftrightarrow> (
-    is_relation(R) \<and> source(R) = target(R) \<and>
-    (\<forall>x\<in>source(R). rel(R,x,x)) \<and>
-    (\<forall>x y z. rel(R,x,y) \<longrightarrow> rel(R,y,z) \<longrightarrow> rel(R,x,z)))" by auto2
-setup {* add_property_const @{term preorder_rel} *}
-setup {* del_prfstep_thm @{thm preorder_rel_def} *}
-
-lemma preorder_relD:
-  "preorder_rel(R) \<Longrightarrow> is_relation(R)"
-  "preorder_rel(R) \<Longrightarrow> source(R) = target(R)"
-  "preorder_rel(R) \<Longrightarrow> rel(R,x,x) \<longleftrightarrow> x\<in>source(R)"
-  "preorder_rel(R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> rel(R,y,z) \<Longrightarrow> rel(R,x,z)" by auto2+
-setup {* fold add_forward_prfstep @{thms preorder_relD(1-2,4)} *}
-setup {* add_rewrite_rule_bidir @{thm preorder_relD(3)} *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm preorder_rel_iff} *}
-
-(* Self-contained condition for order_rel. *)
-lemma order_rel_iff [rewrite]:
-  "order_rel(R) \<longleftrightarrow> (
-     preorder_rel(R) \<and>
-     (\<forall>x y. rel(R,x,y) \<longrightarrow> rel(R,y,x) \<longrightarrow> x = y))" by auto2
-setup {* add_property_const @{term order_rel} *}
-setup {* del_prfstep_thm @{thm order_rel_def} *}
-
-lemma order_relD [forward]:
-  "order_rel(R) \<Longrightarrow> preorder_rel(R)"
-  "order_rel(R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> rel(R,y,x) \<Longrightarrow> x = y" by auto2+
-setup {* add_backward2_prfstep @{thm order_relD(2)} *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm order_rel_iff} *}
+definition order_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
+  "order_on(R,E) \<longleftrightarrow> (order_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
 
 (* Examples *)
 lemma eq_is_order_meta_rel: "order_meta_rel(\<lambda>x y. x = y)" by auto2
 lemma subset_is_order_meta_rel: "order_meta_rel(\<lambda>x y. x \<subseteq> y)" by auto2
-lemma inv_is_meta_order_rel: "order_meta_rel(R) \<Longrightarrow> order_meta_rel(\<lambda>x y. R(y,x))" by auto2
-lemma inv_is_order_rel: "order_rel(R) \<Longrightarrow> order_rel(rel_inverse(R))" by auto2
-lemma induced_pre_order_rel: "preorder_rel_on(R,E) \<Longrightarrow> preorder_rel(Rel(E,R))" by auto2
-lemma induced_order_rel: "order_rel_on(R,E) \<Longrightarrow> order_rel(Rel(E,R))" by auto2
+lemma inv_is_meta_order: "order_meta_rel(R) \<Longrightarrow> order_meta_rel(\<lambda>x y. R(y,x))" by auto2
+
+section {* Preorder and order relations *}  (* Bourbaki III.1.1 -- III.1.2 *)
+
+definition preorder :: "i \<Rightarrow> o" where [rewrite]:
+  "preorder(R) \<longleftrightarrow> (raworder(R) \<and> preorder_on(\<lambda>x y. x \<le>\<^sub>R y, carrier(R)))"
+setup {* add_property_const @{term preorder} *}
+  
+(* Self-contained condition for preorder. *)
+lemma preorder_iff [rewrite]:
+  "preorder(R) \<longleftrightarrow> (
+    raworder(R) \<and>
+    (\<forall>x\<in>.R. x \<le>\<^sub>R x) \<and>
+    (\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z))" by auto2
+setup {* del_prfstep_thm @{thm preorder_def} *}
+  
+lemma preorderD [forward]:
+  "preorder(R) \<Longrightarrow> raworder(R)"
+  "preorder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R z \<Longrightarrow> x \<le>\<^sub>R z" by auto2+
+
+lemma preorderD' [backward]:
+  "preorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> x \<le>\<^sub>R x" by auto2
+setup {* del_prfstep_thm_str "@eqforward" @{thm preorder_iff} *}
+  
+definition order :: "i \<Rightarrow> o" where [rewrite]:
+  "order(R) \<longleftrightarrow> (raworder(R) \<and> order_on(\<lambda>x y. x \<le>\<^sub>R y, carrier(R)))"
+setup {* add_property_const @{term order} *}
+
+(* Self-contained condition for order. *)
+lemma order_iff [rewrite]:
+  "order(R) \<longleftrightarrow> (preorder(R) \<and> (\<forall>x y. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y))" by auto2
+setup {* del_prfstep_thm @{thm order_def} *}
+  
+lemma orderD [forward]:
+  "order(R) \<Longrightarrow> preorder(R)"
+  "order(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R x \<Longrightarrow> x = y" by auto2+
+setup {* del_prfstep_thm_str "@eqforward" @{thm order_iff} *}
+  
+(* Condition in terms of order_on. *)
+lemma induced_pre_order: "preorder_on(R,E) \<Longrightarrow> preorder(Order(E,R))" by auto2
+lemma induced_order: "order_on(R,E) \<Longrightarrow> order(Order(E,R))" by auto2
+
+(* Small exercise: opposite order *)
+definition opp_order :: "i \<Rightarrow> i" where [rewrite]:
+  "opp_order(R) = Order(carrier(R), \<lambda>x y. y \<le>\<^sub>R x)"
+lemma inv_is_order: "order(R) \<Longrightarrow> order(opp_order(R))" by auto2
 
 (* Symmetrization of a relation *)
-definition sym_of_rel :: "i \<Rightarrow> i" where sym_of_rel_def [rewrite]:
-  "sym_of_rel(R) = Rel(source(R), \<lambda>x y. rel(R,x,y) \<and> rel(R,y,x))"
-
-lemma sym_of_rel_is_rel [typing]: "sym_of_rel(R) \<in> rel_space(source(R))" by auto2
-
-lemma sym_of_rel_iff [rewrite]:
-  "is_relation(R) \<Longrightarrow> rel(sym_of_rel(R),x,y) \<longleftrightarrow> rel(R,x,y) \<and> rel(R,y,x)" by auto2
-setup {* del_prfstep_thm @{thm sym_of_rel_def} *}
+definition sym_of_rel :: "i \<Rightarrow> i" where [rewrite]:
+  "sym_of_rel(R) = Equiv(carrier(R), \<lambda>x y. x \<le>\<^sub>R y \<and> y \<le>\<^sub>R x)"
 
 (* Symmetrization of a preorder is an equivalence relation. Moreover,
    the preorder induces an order relation on the quotient. *)
-lemma preorder_sym_is_equiv_rel [forward]:
-  "preorder_rel(R) \<Longrightarrow> equiv_rel(sym_of_rel(R))" by auto2
+lemma preorder_sym_is_equiv_rel [typing]:
+  "preorder(R) \<Longrightarrow> sym_of_rel(R) \<in> equiv_space(carrier(R))" by auto2
 
-definition preorder_quot :: "i \<Rightarrow> i" where preorder_quot_def [rewrite]:
-  "preorder_quot(R) = Rel(source(R)/sym_of_rel(R), \<lambda>x y. rel(R,rep(sym_of_rel(R),x),rep(sym_of_rel(R),y)))"
+lemma sym_of_rel_eval [rewrite]:
+  "preorder(R) \<Longrightarrow> S = sym_of_rel(R) \<Longrightarrow> x \<sim>\<^sub>S y \<longleftrightarrow> (x \<le>\<^sub>R y \<and> y \<le>\<^sub>R x)" by auto2
+
+definition preorder_quot :: "i \<Rightarrow> i" where [rewrite]:
+  "preorder_quot(R) = Order(carrier(R)//sym_of_rel(R), \<lambda>x y. rep(sym_of_rel(R),x) \<le>\<^sub>R rep(sym_of_rel(R),y))"
 
 lemma preorder_quotient_is_order [forward]:
-  "preorder_rel(R) \<Longrightarrow> order_rel(preorder_quot(R))" by auto2
+  "preorder(R) \<Longrightarrow> order(preorder_quot(R))" by auto2
 
 (* Subset ordering. *)
-definition subset_order :: "i \<Rightarrow> i" where subset_order_def [rewrite]:
-  "subset_order(S) = Rel(S, \<lambda>x y. x \<subseteq> y)"
+definition subset_order :: "i \<Rightarrow> i" where [rewrite]:
+  "subset_order(S) = Order(S, \<lambda>x y. x \<subseteq> y)"
 
-lemma subset_order_is_order [forward]: "order_rel(subset_order(S))" by auto2
+lemma subset_order_type [typing]: "subset_order(S) \<in> raworder_space(S)" by auto2
+lemma subset_order_is_order [forward]: "order(subset_order(S))" by auto2
+
+lemma subset_order_eval [rewrite]:
+  "R = subset_order(S) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> x \<subseteq> y" by auto2
+setup {* del_prfstep_thm @{thm subset_order_def} *}
 
 section {* Notations for order relations *}  (* Bourbaki III.1.3 *)
 
-(* Define for object relation only. *)
-definition le :: "[i, i, i] \<Rightarrow> o" ("(_/ \<le>\<^sub>_ _)" [51,51,51] 50) where le_def [rewrite]:
-  "x \<le>\<^sub>R y \<longleftrightarrow> rel(R,x,y)"
-
-definition less :: "[i, i, i] \<Rightarrow> o" ("(_/ <\<^sub>_ _)" [51,51,51] 50) where less_def [rewrite]:
-  "x <\<^sub>R y \<longleftrightarrow> (rel(R,x,y) \<and> x \<noteq> y)"
-
-abbreviation (input) ge :: "[i, i, i] \<Rightarrow> o" ("(_/ \<ge>\<^sub>_ _)" [51,51,51] 50) where
-  "x \<ge>\<^sub>R y \<equiv> y \<le>\<^sub>R x"
+definition less :: "[i, i, i] \<Rightarrow> o" where [rewrite]:
+  "less(R,x,y) \<longleftrightarrow> (x \<le>\<^sub>R y \<and> x \<noteq> y)"
+abbreviation less_notation ("(_/ <\<^sub>_ _)" [51,51,51] 50) where "x <\<^sub>R y \<equiv> less(R,x,y)"
+setup {* register_wellform_data ("x <\<^sub>R y", ["x \<in>. R", "y \<in>. R"]) *}
 
 abbreviation (input) greater :: "[i, i, i] \<Rightarrow> o" ("(_/ >\<^sub>_ _)" [51,51,51] 50) where
   "x >\<^sub>R y \<equiv> y <\<^sub>R x"
 
-(* For order (and preorder) relations only, use both rel and \<le> *)
-lemma le_back [rewrite]: "preorder_rel(R) \<Longrightarrow> rel(R,x,y) \<longleftrightarrow> x \<le>\<^sub>R y" by auto2
+syntax
+  "_Bex_gt" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<exists>_ >\<^sub>_ _./ _)" 10)
+  "_Bex_ge" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<exists>_ \<ge>\<^sub>_ _./ _)" 10)
+  "_Ball_gt" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<forall>_ >\<^sub>_ _./ _)" 10)
+  "_Ball_ge" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<forall>_ \<ge>\<^sub>_ _./ _)" 10)
+translations
+  "\<exists>x >\<^sub>R a. P" => "\<exists>x. x >\<^sub>R a \<and> P"
+  "\<exists>x \<ge>\<^sub>R a. P" => "\<exists>x. x \<ge>\<^sub>R a \<and> P"
+  "\<forall>x >\<^sub>R a. P" => "\<forall>x. x >\<^sub>R a \<longrightarrow> P"
+  "\<forall>x \<ge>\<^sub>R a. P" => "\<forall>x. x \<ge>\<^sub>R a \<longrightarrow> P"
+
+syntax
+  "_Bex_lt" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<exists>_ <\<^sub>_ _./ _)" 10)
+  "_Bex_le" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<exists>_ \<le>\<^sub>_ _./ _)" 10)
+  "_Ball_lt" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<forall>_ <\<^sub>_ _./ _)" 10)
+  "_Ball_le" :: "[pttrn, i, i, o] \<Rightarrow> o"  ("(3\<forall>_ \<le>\<^sub>_ _./ _)" 10)
+translations
+  "\<exists>x <\<^sub>R a. P" => "\<exists>x. x <\<^sub>R a \<and> P"
+  "\<exists>x \<le>\<^sub>R a. P" => "\<exists>x. x \<le>\<^sub>R a \<and> P"
+  "\<forall>x <\<^sub>R a. P" => "\<forall>x. x <\<^sub>R a \<longrightarrow> P"
+  "\<forall>x \<le>\<^sub>R a. P" => "\<forall>x. x \<le>\<^sub>R a \<longrightarrow> P"
 
 (* Other versions of transitivity *)
 lemma order_trans [forward]:
-  "order_rel(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R z \<Longrightarrow> x <\<^sub>R z"
-  "order_rel(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y <\<^sub>R z \<Longrightarrow> x <\<^sub>R z"
-  "order_rel(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> y <\<^sub>R z \<Longrightarrow> x <\<^sub>R z" by auto2+
+  "order(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R z \<Longrightarrow> x <\<^sub>R z"
+  "order(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y <\<^sub>R z \<Longrightarrow> x <\<^sub>R z" by auto2+
 
 lemma preorder_lessI [forward, backward1, backward2]:
-  "preorder_rel(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> x \<noteq> y \<Longrightarrow> x <\<^sub>R y" by auto2
+  "preorder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> x \<noteq> y \<Longrightarrow> x <\<^sub>R y" by auto2
 
-lemma preorder_lessE [forward]:
-  "preorder_rel(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> x \<le>\<^sub>R y \<and> x \<noteq> y" by auto2
+lemma order_lessE [forward]: "raworder(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> x \<le>\<^sub>R y" by auto2
+lemma order_less_to_neg [forward]: "order(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> \<not>y \<le>\<^sub>R x" by auto2
+lemma order_le_to_neg [forward]: "order(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> \<not>y <\<^sub>R x" by auto2
+lemma preorder_less_neq [resolve]: "raworder(R) \<Longrightarrow> \<not>x <\<^sub>R x" by auto2
+
+lemma less_eq_str [rewrite]: "eq_str_order(X,Y) \<Longrightarrow> a <\<^sub>X b \<longleftrightarrow> a <\<^sub>Y b" by auto2
+
 setup {* del_prfstep_thm @{thm less_def} *}
 
-(* Isomorphism of ordered sets. We can in fact define it for arbitrary relations. *)
-definition isomorphism :: "[i, i, i] \<Rightarrow> o" where isomorphism_def [rewrite]:
-  "isomorphism(R,S,f) \<longleftrightarrow> (R \<in> rel_space(source(R)) \<and> S \<in> rel_space(source(S)) \<and>
-                           f \<in> source(R) \<cong> source(S) \<and>
-                           (\<forall>x\<in>source(f). \<forall>y\<in>source(f). rel(R,x,y) \<longleftrightarrow> rel(S,f`x,f`y)))"
+section {* Isomorphism between orders *}
 
-lemma isomorphismD1 [forward]:
-  "isomorphism(R,S,f) \<Longrightarrow> R \<in> rel_space(source(R)) \<and> S \<in> rel_space(source(S)) \<and>
-    f \<in> source(R) \<cong> source(S)" by auto2
-lemma isomorphismD2 [rewrite]:
-  "isomorphism(R,S,f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> y \<in> source(f) \<Longrightarrow> rel(S,f`x,f`y) \<longleftrightarrow> rel(R,x,y)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm isomorphism_def} *}
+definition is_ord_mor :: "i \<Rightarrow> o" where [rewrite]:
+  "is_ord_mor(f) \<longleftrightarrow> is_morphism(f) \<and> preorder(source_str(f)) \<and> preorder(target_str(f))"
+setup {* add_property_const @{term is_ord_mor} *}
 
-(* Isomorphism preserves properties on ordering *)
-lemma preorder_rel_iso [forward]:
-  "preorder_rel(R) \<Longrightarrow> isomorphism(R,S,f) \<Longrightarrow> preorder_rel(S)" by auto2
-lemma order_rel_iso [forward]:
-  "order_rel(R) \<Longrightarrow> isomorphism(R,S,f) \<Longrightarrow> order_rel(S)" by auto2
+definition ord_isomorphism :: "i \<Rightarrow> o" where [rewrite]:
+  "ord_isomorphism(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
+                       is_ord_mor(f) \<and> bijective(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> f`x \<le>\<^sub>S f`y))"
+setup {* add_property_const @{term ord_isomorphism} *}
 
+lemma ord_isomorphismD1 [forward]:
+  "ord_isomorphism(f) \<Longrightarrow> is_ord_mor(f)"
+  "ord_isomorphism(f) \<Longrightarrow> bijective(f)" by auto2+
+
+lemma ord_isomorphismD2 [rewrite]:
+  "ord_isomorphism(f) \<Longrightarrow> R = source_str(f) \<Longrightarrow> S = target_str(f) \<Longrightarrow>
+   x \<in> source(f) \<Longrightarrow> y \<in> source(f) \<Longrightarrow> f`x \<le>\<^sub>S f`y \<longleftrightarrow> x \<le>\<^sub>R y" by auto2
+setup {* del_prfstep_thm_str "@eqforward" @{thm ord_isomorphism_def} *}
+
+definition ord_iso_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<cong>\<^sub>O" 60) where [rewrite]:
+  "ord_iso_space(R,S) = {f \<in> mor_space(R,S). ord_isomorphism(f)}"
+
+lemma ord_iso_spaceD [forward]:
+  "f \<in> R \<cong>\<^sub>O S \<Longrightarrow> f \<in> R \<rightharpoonup> S \<and> ord_isomorphism(f)" by auto2
+
+lemma ord_iso_spaceI [typing, backward]:
+  "mor_form(f) \<Longrightarrow> ord_isomorphism(f) \<Longrightarrow> f \<in> source_str(f) \<cong>\<^sub>O target_str(f)" by auto2
+setup {* del_prfstep_thm @{thm ord_iso_space_def} *}
+
+definition ord_isomorphic :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
+  "ord_isomorphic(R,S) \<longleftrightarrow> (\<exists>f. f \<in> R \<cong>\<^sub>O S)"
+
+lemma ord_isomorphicI [forward]: "f \<in> R \<cong>\<^sub>O S \<Longrightarrow> ord_isomorphic(R,S)" by auto2
+lemma ord_isomorphicD [resolve]: "ord_isomorphic(R,S) \<Longrightarrow> \<exists>f. f \<in> R \<cong>\<^sub>O S" by auto2
+
+lemma preorder_iso [forward]: "preorder(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> preorder(S)" by auto2
+lemma order_iso [forward]: "order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> order(S)" by auto2
+setup {* del_prfstep_thm @{thm ord_isomorphic_def} *}
+  
 section {* Ordering on subsets and products *}  (* Bourbaki III.1.4 *)
 
 (* Define relation on subsets in general *)
-definition subrel :: "[i, i] \<Rightarrow> i" where subrel_def [rewrite]:
-  "subrel(R,A) = Rel(A, \<lambda>x y. rel(R,x,y))"
+definition suborder :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "suborder(R,A) = Order(A, \<lambda>x y. x \<le>\<^sub>R y)"
+setup {* register_wellform_data ("suborder(R,A)", ["A \<subseteq> carrier(R)"]) *}
+setup {* add_prfstep_check_req ("suborder(R,A)", "A \<subseteq> carrier(R)") *}
 
-lemma subrel_is_relation [typing]: "subrel(R,A) \<in> rel_space(A)" by auto2
+lemma suborder_type [typing]: "suborder(R,A) \<in> raworder_space(A)" by auto2
 
-lemma subrel_eval [rewrite]:
-  "x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow> rel(subrel(R,A),x,y) \<longleftrightarrow> rel(R,x,y)" by auto2
-setup {* del_prfstep_thm @{thm subrel_def} *}
+lemma suborder_is_preorder:
+  "preorder(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> preorder(suborder(R,A))" by auto2
+setup {* add_forward_prfstep_cond @{thm suborder_is_preorder} [with_term "suborder(?R,?A)"] *}
 
-setup {* add_gen_prfstep ("subrel_case",
-  [WithTerm @{term_pat "subrel(?R,?A)"}, CreateConcl @{term_pat "?A \<subseteq> source(?R)"}]) *}
+lemma suborder_is_order:
+  "order(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> order(suborder(R,A))" by auto2
+setup {* add_forward_prfstep_cond @{thm suborder_is_order} [with_term "suborder(?R,?A)"] *}
 
-lemma subrel_is_preorder:
-  "preorder_rel(R) \<Longrightarrow> A \<subseteq> source(R) \<Longrightarrow> preorder_rel(subrel(R,A))" by auto2
-setup {* add_forward_prfstep_cond @{thm subrel_is_preorder} [with_term "subrel(?R,?A)"] *}
+lemma suborder_eval [rewrite]:
+  "S = suborder(R,A) \<Longrightarrow> x \<le>\<^sub>S y \<longleftrightarrow> (x \<in>. S \<and> y \<in>. S \<and> x \<le>\<^sub>R y)" by auto2
+    
+lemma suborder_less_eval [rewrite]:
+  "preorder(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> S = suborder(R,A) \<Longrightarrow> x <\<^sub>S y \<longleftrightarrow> (x \<in>. S \<and> y \<in>. S \<and> x <\<^sub>R y)"
+  by (tactic {* auto2s_tac @{context} (CASE "x = y") *})
+setup {* del_prfstep_thm @{thm suborder_def} *}
 
-lemma subrel_is_order:
-  "order_rel(R) \<Longrightarrow> A \<subseteq> source(R) \<Longrightarrow> order_rel(subrel(R,A))" by auto2
-setup {* add_forward_prfstep_cond @{thm subrel_is_order} [with_term "subrel(?R,?A)"] *}
+lemma subset_order_suborder [rewrite]:
+  "F \<subseteq> carrier(subset_order(E)) \<Longrightarrow> suborder(subset_order(E),F) = subset_order(F)" by auto2
+    
+definition mor_restrict_image_ord :: "i \<Rightarrow> i"  where [rewrite]:
+  "mor_restrict_image_ord(f) = Mor(source_str(f),suborder(target_str(f),image(f)),\<lambda>x. f`x)"
 
-lemma subset_order_subrel [rewrite]:
-  "F \<subseteq> E \<Longrightarrow> subrel(subset_order(E),F) = subset_order(F)" by auto2
+lemma mor_restrict_ord_is_morphism [typing]:
+  "is_morphism(f) \<Longrightarrow> mor_restrict_image_ord(f) \<in> source_str(f) \<rightharpoonup> suborder(target_str(f),image(f))" by auto2
+
+lemma mor_restrict_ord_eval [rewrite]:
+  "is_morphism(f) \<Longrightarrow> f' = mor_restrict_image_ord(f) \<Longrightarrow> x \<in> source(f') \<Longrightarrow> f' ` x = f ` x" by auto2
+setup {* del_prfstep_thm @{thm mor_restrict_image_ord_def} *}
 
 (* Define relation on products in general. *)
-definition prod_src :: "[i, i] \<Rightarrow> i" where prod_src_def [rewrite]:
-  "prod_src(I,R) = Pi(I,\<lambda>a. source(proj(R,a)))"
+definition prod_src :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "prod_src(I,R) = Pi(I,\<lambda>a. carrier(R`a))"
 
-definition prod_rel :: "[i, i] \<Rightarrow> i" where prod_rel_def [rewrite]:
-  "prod_rel(I,R) = Rel(prod_src(I,R), \<lambda>x y. \<forall>a\<in>I. rel(proj(R,a),proj(x,a),proj(y,a)))"
+definition prod_rel :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "prod_rel(I,R) = Order(prod_src(I,R), \<lambda>x y. \<forall>a\<in>I. le(R`a,x`a,y`a))"
 
-lemma prod_rel_is_rel [typing]: "prod_rel(I,R) \<in> rel_space(prod_src(I,R))" by auto2
-
-lemma prod_rel_eval [rewrite]:
-  "x \<in> prod_src(I,R) \<Longrightarrow> y \<in> prod_src(I,R) \<Longrightarrow>
-   rel(prod_rel(I,R),x,y) \<longleftrightarrow> (\<forall>a\<in>I. rel(proj(R,a),proj(x,a),proj(y,a)))" by auto2
-setup {* del_prfstep_thm @{thm prod_rel_def} *}
+lemma prod_rel_type [typing]:
+  "prod_rel(I,R) \<in> raworder_space(prod_src(I,R))" by auto2
 
 lemma prod_rel_is_preorder:
-  "\<forall>a\<in>I. preorder_rel(proj(R,a)) \<Longrightarrow> preorder_rel(prod_rel(I,R))" by auto2
+  "\<forall>a\<in>I. preorder(R`a) \<Longrightarrow> preorder(prod_rel(I,R))" by auto2
 setup {* add_forward_prfstep_cond @{thm prod_rel_is_preorder} [with_term "prod_rel(?I,?R)"] *}
 
 lemma prod_rel_is_order:
-  "\<forall>a\<in>I. order_rel(proj(R,a)) \<Longrightarrow> order_rel(prod_rel(I,R))" by auto2
+  "\<forall>a\<in>I. order(R`a) \<Longrightarrow> order(prod_rel(I,R))" by auto2
 setup {* add_forward_prfstep_cond @{thm prod_rel_is_order} [with_term "prod_rel(?I,?R)"] *}
+
+lemma prod_rel_eval [rewrite]:
+  "S = prod_rel(I,R) \<Longrightarrow> x \<in>. S \<Longrightarrow> y \<in>. S \<Longrightarrow> x \<le>\<^sub>S y \<longleftrightarrow> (\<forall>a\<in>I. le(R`a,x`a,y`a))" by auto2
+setup {* del_prfstep_thm @{thm prod_rel_def} *}
 
 section {* Increasing mappings *}  (* Bourbaki III.1.5 *)
 
-definition incr :: "[i, i, i] \<Rightarrow> o" where incr_def [rewrite]:
-  "incr(R,S,f) \<longleftrightarrow> (source(f) = source(R) \<and> target(f) = source(S) \<and>
-                    (\<forall>x\<in>source(f). \<forall>y\<in>source(f). x \<le>\<^sub>R y \<longrightarrow> f`x \<le>\<^sub>S f`y))"
+definition incr :: "i \<Rightarrow> o" where [rewrite]:
+  "incr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
+                is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> f`x \<le>\<^sub>S f`y))"
+setup {* add_property_const @{term incr} *}
 
-definition decr :: "[i, i, i] \<Rightarrow> o" where decr_def [rewrite]:
-  "decr(R,S,f) \<longleftrightarrow> (source(f) = source(R) \<and> target(f) = source(S) \<and>
-                    (\<forall>x\<in>source(f). \<forall>y\<in>source(f). x \<le>\<^sub>R y \<longrightarrow> f`x \<ge>\<^sub>S f`y))"
+definition decr :: "i \<Rightarrow> o" where [rewrite]:
+  "decr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
+                is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> f`x \<ge>\<^sub>S f`y))"
+setup {* add_property_const @{term decr} *}
 
-definition strict_incr :: "[i, i, i] \<Rightarrow> o" where strict_incr_def [rewrite]:
-  "strict_incr(R,S,f) \<longleftrightarrow> (source(f) = source(R) \<and> target(f) = source(S) \<and>
-                     (\<forall>x\<in>source(f). \<forall>y\<in>source(f). x <\<^sub>R y \<longrightarrow> f`x <\<^sub>S f`y))"
+definition strict_incr :: "i \<Rightarrow> o" where [rewrite]:
+  "strict_incr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
+                       is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x <\<^sub>R y \<longrightarrow> f`x <\<^sub>S f`y))"
+setup {* add_property_const @{term strict_incr} *}
 
-definition strict_decr :: "[i, i, i] \<Rightarrow> o" where strict_decr_def [rewrite]:
-  "strict_decr(R,S,f) \<longleftrightarrow> (source(f) = source(R) \<and> target(f) = source(S) \<and>
-                     (\<forall>x\<in>source(f). \<forall>y\<in>source(f). x <\<^sub>R y \<longrightarrow> f`x >\<^sub>S f`y))"
+definition strict_decr :: "i \<Rightarrow> o" where [rewrite]:
+  "strict_decr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
+                       is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x <\<^sub>R y \<longrightarrow> f`x >\<^sub>S f`y))"
+setup {* add_property_const @{term strict_decr} *}
 
 (* Examples *)
 lemma subset_order_less [rewrite]:
-  "less(X,subset_order(E),Y) \<longleftrightarrow> (X \<in> E \<and> Y \<in> E \<and> X \<subset> Y)" by auto2
+  "R = subset_order(E) \<Longrightarrow> X \<in>. R \<Longrightarrow> Y \<in>. R \<Longrightarrow> X <\<^sub>R Y \<longleftrightarrow> X \<subset> Y" by auto2
 
 lemma compl_strict_decr:
-  "strict_decr(subset_order(Pow(E)),subset_order(Pow(E)),\<lambda>X\<in>Pow(E). (E-X)\<in>Pow(E))" by auto2
+  "R = subset_order(Pow(E)) \<Longrightarrow> strict_decr(Mor(R,R,\<lambda>X. E \<midarrow> X))" by auto2
 
 lemma greater_elts_strict_subset [backward]:
-  "order_rel(R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow>
-   {z\<in>source(R). z \<ge>\<^sub>R y} \<subset> {z\<in>source(R). z \<ge>\<^sub>R x}"
-  by (tactic {* auto2s_tac @{context} (HAVE "x\<in>{z\<in>source(R). z \<ge>\<^sub>R x}") *})
+  "order(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> {z\<in>.R. z \<ge>\<^sub>R y} \<subset> {z\<in>.R. z \<ge>\<^sub>R x}"
+  by (tactic {* auto2s_tac @{context} (HAVE "x\<in>{z\<in>.R. z \<ge>\<^sub>R x}") *})
 
 lemma greater_elts_strict_decr:
-  "order_rel(R) \<Longrightarrow> strict_decr(R, subset_order(Pow(source(R))),
-                      \<lambda>x\<in>source(R). {y\<in>source(R). y \<ge>\<^sub>R x}\<in>Pow(source(R)))" by auto2
+  "order(R) \<Longrightarrow> strict_decr(Mor(R,subset_order(Pow(carrier(R))), \<lambda>x. {y\<in>.R. y \<ge>\<^sub>R x}))" by auto2
 
-lemma inj_to_strict_incr:
-  "preorder_rel(R) \<Longrightarrow> preorder_rel(S) \<Longrightarrow> injective(f) \<Longrightarrow> incr(R,S,f) \<Longrightarrow> strict_incr(R,S,f)" by auto2
+lemma inj_to_strict_incr: "incr(f) \<Longrightarrow> injective(f) \<Longrightarrow> strict_incr(f)" by auto2
+lemma inj_to_strict_decr: "decr(f) \<Longrightarrow> injective(f) \<Longrightarrow> strict_decr(f)" by auto2
 
-lemma inj_to_strict_decr:
-  "preorder_rel(R) \<Longrightarrow> preorder_rel(S) \<Longrightarrow> injective(f) \<Longrightarrow> decr(R,S,f) \<Longrightarrow> strict_decr(R,S,f)" by auto2
+lemma bij_to_ord_isomorphism:
+  "bijective(f) \<Longrightarrow> ord_isomorphism(f) \<longleftrightarrow> incr(f) \<and> incr(inverse_mor(f))" by auto2
 
-lemma bij_to_isomorphism:
-  "preorder_rel(R) \<Longrightarrow> preorder_rel(S) \<Longrightarrow> bijective(f) \<Longrightarrow>
-   isomorphism(R,S,f) \<longleftrightarrow> incr(R,S,f) \<and> incr(S,R,inverse(f))" by auto2
-
-lemma restrict_image_incr:
-  "order_rel(R) \<Longrightarrow> order_rel(S) \<Longrightarrow> is_function(f) \<Longrightarrow> incr(R,S,f) \<Longrightarrow>
-   incr(R,subrel(S,f``source(R)),func_restrict_image(f))" by auto2
-setup {* add_forward_prfstep_cond @{thm restrict_image_incr} [with_term "func_restrict_image(?f)"] *}
+lemma restrict_image_incr [forward]:
+  "incr(f) \<Longrightarrow> incr(mor_restrict_image_ord(f))" by auto2
 
 (* Proposition 2 in III.1.5 *)
 lemma two_decr_funs_prop:
-  "preorder_rel(R) \<Longrightarrow> preorder_rel(S) \<Longrightarrow> is_function(u) \<Longrightarrow> is_function(v) \<Longrightarrow>
-   decr(R,S,u) \<Longrightarrow> decr(S,R,v) \<Longrightarrow> \<forall>x\<in>source(R). v`(u`x) = x \<Longrightarrow> \<forall>x\<in>source(S). u`(v`x) = x \<Longrightarrow>
-   u O v O u = u \<and> v O u O v = v" by auto2
+  "decr(u) \<Longrightarrow> decr(v) \<Longrightarrow> mor_form(u) \<Longrightarrow> mor_form(v) \<Longrightarrow> u \<in> R \<rightharpoonup> S \<Longrightarrow> v \<in> S \<rightharpoonup> R \<Longrightarrow>
+   \<forall>x\<in>.R. v`(u`x) = x \<Longrightarrow> \<forall>x\<in>.S. u`(v`x) = x \<Longrightarrow> u \<circ>\<^sub>m v \<circ>\<^sub>m u = u \<and> v \<circ>\<^sub>m u \<circ>\<^sub>m v = v" by auto2
 
 section {* Maximal and minimal elements *}  (* Bourbaki III.1.6 *)
 
-definition maximal :: "[i, i] \<Rightarrow> o" where maximal_def [rewrite]:
-  "maximal(R,x) \<longleftrightarrow> (x \<in> source(R) \<and> (\<forall>a\<in>source(R). a \<ge>\<^sub>R x \<longrightarrow> a = x))"
+definition maximal :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "maximal(R,x) \<longleftrightarrow> (x \<in>. R \<and> (\<forall>a\<in>.R. a \<ge>\<^sub>R x \<longrightarrow> a = x))"
 
-definition minimal :: "[i, i] \<Rightarrow> o" where minimal_def [rewrite]:
-  "minimal(R,x) \<longleftrightarrow> (x \<in> source(R) \<and> (\<forall>a\<in>source(R). a \<le>\<^sub>R x \<longrightarrow> a = x))"
+definition minimal :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "minimal(R,x) \<longleftrightarrow> (x \<in>. R \<and> (\<forall>a\<in>.R. a \<le>\<^sub>R x \<longrightarrow> a = x))"
 
 (* Examples *)
 lemma singleton_minimal:
-  "x \<in> S \<Longrightarrow> minimal(subset_order(Pow(S)-{\<emptyset>}),{x})" by auto2
-
+  "x \<in> S \<Longrightarrow> minimal(subset_order(Pow(S)\<midarrow>{\<emptyset>}),{x})" by auto2
+    
 section {* Greatest and least elements *}  (* Bourbaki III.1.7 *)
 
 (* We define the more general notion of greatest/least element of a subset, to
    prepare for definition of sup and inf later. *)
-definition has_greatest :: "[i, i] \<Rightarrow> o" where has_greatest_def [rewrite]:
+definition has_greatest :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "has_greatest(R,X) \<longleftrightarrow> (\<exists>x\<in>X. \<forall>a\<in>X. a \<le>\<^sub>R x)"
 
-definition greatest :: "[i, i] \<Rightarrow> i" where greatest_def [rewrite]:
+definition greatest :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "greatest(R,X) = (THE x. x \<in> X \<and> (\<forall>a\<in>X. a \<le>\<^sub>R x))"
 
 (* We always prove has_greatest(R,X) and assign greatest(R,X) at the same time.
    Similarly for least, sup, and inf below *)
 lemma greatestI [backward]:
-  "order_rel(R) \<Longrightarrow> x \<in> X \<Longrightarrow> \<forall>a\<in>X. a \<le>\<^sub>R x \<Longrightarrow> has_greatest(R,X) \<and> greatest(R,X) = x" by auto2
+  "order(R) \<Longrightarrow> x \<in> X \<Longrightarrow> \<forall>a\<in>X. a \<le>\<^sub>R x \<Longrightarrow> has_greatest(R,X) \<and> greatest(R,X) = x" by auto2
 
 lemma greatestE:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> greatest(R,X) \<in> X"
-  "order_rel(R) \<Longrightarrow> a \<in> X \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> a \<le>\<^sub>R greatest(R,X)" by auto2+
+  "order(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> greatest(R,X) \<in> X"
+  "order(R) \<Longrightarrow> a \<in> X \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> a \<le>\<^sub>R greatest(R,X)" by auto2+
 setup {* fold (fn th => add_forward_prfstep_cond th [with_term "greatest(?R,?X)"]) @{thms greatestE} *}
 setup {* fold del_prfstep_thm [@{thm has_greatest_def}, @{thm greatest_def}] *}
 
-definition has_least :: "[i, i] \<Rightarrow> o" where has_least_def [rewrite]:
+definition has_least :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "has_least(R,X) \<longleftrightarrow> (\<exists>x\<in>X. \<forall>a\<in>X. x \<le>\<^sub>R a)"
 
-definition least :: "[i, i] \<Rightarrow> i" where least_def [rewrite]:
+definition least :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "least(R,X) = (THE x. x \<in> X \<and> (\<forall>a\<in>X. x \<le>\<^sub>R a))"
 
 lemma leastI [backward]:
-  "order_rel(R) \<Longrightarrow> x \<in> X \<Longrightarrow> \<forall>a\<in>X. a \<ge>\<^sub>R x \<Longrightarrow> has_least(R,X) \<and> least(R,X) = x" by auto2
+  "order(R) \<Longrightarrow> x \<in> X \<Longrightarrow> \<forall>a\<in>X. a \<ge>\<^sub>R x \<Longrightarrow> has_least(R,X) \<and> least(R,X) = x" by auto2
 
 lemma leastE:
-  "order_rel(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> least(R,X) \<in> X"
-  "order_rel(R) \<Longrightarrow> a \<in> X \<Longrightarrow> has_least(R,X) \<Longrightarrow> least(R,X) \<le>\<^sub>R a" by auto2+
+  "order(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> least(R,X) \<in> X"
+  "order(R) \<Longrightarrow> a \<in> X \<Longrightarrow> has_least(R,X) \<Longrightarrow> least(R,X) \<le>\<^sub>R a" by auto2+
 setup {* fold (fn th => add_forward_prfstep_cond th [with_term "least(?R,?X)"]) @{thms leastE} *}
 setup {* fold del_prfstep_thm [@{thm has_least_def}, @{thm least_def}] *}
 
 (* Relation to maximal / minimal *)
 lemma greatest_maximal:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> maximal(subrel(R,X),greatest(R,X))" by auto2
+  "order(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> maximal(suborder(R,X),greatest(R,X))" by auto2
 
 lemma greatest_maximal_unique:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> x \<in> X \<Longrightarrow> maximal(subrel(R,X),x) \<Longrightarrow> x = greatest(R,X)" by auto2
+  "order(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> x \<in> X \<Longrightarrow> maximal(suborder(R,X),x) \<Longrightarrow> greatest(R,X) = x" by auto2
 
 lemma least_minimal:
-  "order_rel(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> minimal(subrel(R,X),least(R,X))" by auto2
+  "order(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> minimal(suborder(R,X),least(R,X))" by auto2
 
 lemma least_minimal_unique:
-  "order_rel(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> x \<in> X \<Longrightarrow> minimal(subrel(R,X),x) \<Longrightarrow> x = least(R,X)" by auto2
+  "order(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> x \<in> X \<Longrightarrow> minimal(suborder(R,X),x) \<Longrightarrow> least(R,X) = x" by auto2
 
 (* Examples *)
 lemma greatest_subset_is_union:
@@ -335,160 +386,137 @@ lemma empty_subset_least:
 lemma full_subset_greatest:
   "greatest(subset_order(Pow(E)),Pow(E)) = E \<and> has_greatest(subset_order(Pow(E)),Pow(E))" by auto2
 
-lemma has_least_subrel [backward2]:
-  "order_rel(R) \<Longrightarrow> has_least(R,A) \<Longrightarrow> X \<subseteq> source(R) \<Longrightarrow> A \<subseteq> X \<Longrightarrow>
-   has_least(subrel(R,X),A) \<and> least(subrel(R,X),A) = least(R,A)" by auto2
-setup {* add_backward2_prfstep (conj_left_th @{thm has_least_subrel}) *}
+lemma has_least_suborder [backward2]:
+  "order(R) \<Longrightarrow> X \<subseteq> carrier(R) \<Longrightarrow> has_least(R,A) \<Longrightarrow> A \<subseteq> X \<Longrightarrow>
+   has_least(suborder(R,X),A) \<and> least(suborder(R,X),A) = least(R,A)" by auto2
+setup {* add_backward2_prfstep (conj_left_th @{thm has_least_suborder}) *}
 
-lemma has_least_subrel_inv [backward2]:
-  "order_rel(R) \<Longrightarrow> has_least(subrel(R,X),A) \<Longrightarrow> X \<subseteq> source(R) \<Longrightarrow> A \<subseteq> X \<Longrightarrow>
-   has_least(R,A) \<and> least(R,A) = least(subrel(R,X),A)" by auto2
-setup {* add_backward2_prfstep (conj_left_th @{thm has_least_subrel_inv}) *}
+lemma has_least_suborder_inv [backward2]:
+  "order(R) \<Longrightarrow> X \<subseteq> carrier(R) \<Longrightarrow> has_least(suborder(R,X),A) \<Longrightarrow> A \<subseteq> X \<Longrightarrow>
+   has_least(R,A) \<and> least(R,A) = least(suborder(R,X),A)" by auto2
+setup {* add_backward2_prfstep (conj_left_th @{thm has_least_suborder_inv}) *}
 
 lemma has_least_singleton [backward2]:
-  "order_rel(R) \<Longrightarrow> a \<in> source(R) \<Longrightarrow> has_least(R,{a}) \<and> least(R,{a}) = a" by auto2
+  "order(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> has_least(R,{a}) \<and> least(R,{a}) = a" by auto2
 setup {* add_backward2_prfstep (conj_left_th @{thm has_least_singleton}) *}
 
 lemma has_least_sub_singleton [backward2]:
-  "order_rel(R) \<Longrightarrow> has_least(R,X-{a}) \<Longrightarrow> \<forall>x\<in>X. x \<le>\<^sub>R a \<Longrightarrow>
-   has_least(R,X) \<and> least(R,X) = least(R,X-{a})"
+  "order(R) \<Longrightarrow> has_least(R,X\<midarrow>{a}) \<Longrightarrow> \<forall>x\<in>X. x \<le>\<^sub>R a \<Longrightarrow>
+   has_least(R,X) \<and> least(R,X) = least(R,X\<midarrow>{a})"
   by (tactic {* auto2s_tac @{context} (
-    CASE "a \<in> X" WITH HAVE "X = (X - {a}) \<union> {a}" THEN
-    CASE "a \<notin> X" WITH HAVE "X = (X - {a})") *})
+    CASE "a \<in> X" WITH HAVE "X = (X \<midarrow> {a}) \<union> {a}") *})
 setup {* add_backward2_prfstep (conj_left_th @{thm has_least_sub_singleton}) *}
 
-(* Forming a new ordering by appending an element *)
-definition adjoin_greatest :: "[i, i] \<Rightarrow> i" where adjoin_greatest_def [rewrite]:
-  "adjoin_greatest(R,a) = Rel(source(R)\<union>{a}, \<lambda>x y. y = a \<or> rel(R,x,y))"
-
-lemma adjoin_greatest_is_rel [typing]: "adjoin_greatest(R,a) \<in> rel_space(source(R)\<union>{a})" by auto2
-
-lemma adjoin_greatest_eval1:
-  "x \<in> source(R)\<union>{a} \<Longrightarrow> rel(adjoin_greatest(R,a),x,a)" by auto2
-setup {* add_forward_prfstep_cond @{thm adjoin_greatest_eval1} [with_term "adjoin_greatest(?R,?a)"] *}
-lemma adjoin_greatest_eval2:
-  "order_rel(R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> a \<notin> source(R) \<Longrightarrow> \<not>rel(adjoin_greatest(R,a),a,x)" by auto2
-setup {* add_forward_prfstep_cond @{thm adjoin_greatest_eval2} [with_term "adjoin_greatest(?R,?a)"] *}
-
-lemma adjoin_greatest_eval' [rewrite]:
-  "x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> a \<notin> source(R) \<Longrightarrow>
-   rel(adjoin_greatest(R,a),x,y) \<longleftrightarrow> rel(R,x,y)" by auto2
-setup {* del_prfstep_thm @{thm adjoin_greatest_def} *}
-
-lemma adjoin_greatest_is_order:
-  "order_rel(R) \<Longrightarrow> a \<notin> source(R) \<Longrightarrow> order_rel(adjoin_greatest(R,a))" by auto2
-setup {* add_forward_prfstep_cond @{thm adjoin_greatest_is_order} [with_term "adjoin_greatest(?R,?a)"] *}
-
-lemma adjoin_greatest_restrict [rewrite]:
-  "order_rel(R) \<Longrightarrow> a \<notin> source(R) \<Longrightarrow> subrel(adjoin_greatest(R,a),source(R)) = R" by auto2
-
-lemma adjoin_greatest_prop:
-  "order_rel(R) \<Longrightarrow> a \<notin> source(R) \<Longrightarrow>
-   has_greatest(adjoin_greatest(R,a),source(R)\<union>{a}) \<and> greatest(adjoin_greatest(R,a),source(R)\<union>{a}) = a" by auto2
-
-lemma adjoin_greatest_unique [backward]:
-  "order_rel(R) \<Longrightarrow> order_rel(S) \<Longrightarrow> a \<notin> source(R) \<Longrightarrow> source(S) = source(R) \<union> {a} \<Longrightarrow>
-   \<forall>x\<in>source(S). x \<le>\<^sub>S a \<Longrightarrow> subrel(S,source(R)) = R \<Longrightarrow> S = adjoin_greatest(R,a)" by auto2
-
 (* Cofinal and coinitial subsets *)
-definition cofinal :: "[i, i] \<Rightarrow> o" where cofinal_def [rewrite]:
-  "cofinal(R,A) \<longleftrightarrow> (A \<subseteq> source(R) \<and> (\<forall>x\<in>source(R). \<exists>y\<in>A. x \<le>\<^sub>R y))"
+definition cofinal :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "cofinal(R,A) \<longleftrightarrow> (A \<subseteq> carrier(R) \<and> (\<forall>x\<in>.R. \<exists>y\<in>A. x \<le>\<^sub>R y))"
 
-lemma cofinalE1 [forward]: "cofinal(R,A) \<Longrightarrow> A \<subseteq> source(R)" by auto2
-lemma cofinalE2 [backward2]: "cofinal(R,A) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> \<exists>y\<in>A. x \<le>\<^sub>R y" by auto2
+lemma cofinalE1 [forward]: "cofinal(R,A) \<Longrightarrow> A \<subseteq> carrier(R)" by auto2
+lemma cofinalE2 [backward2]: "cofinal(R,A) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y\<in>A. x \<le>\<^sub>R y" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm cofinal_def} *}
 
-definition coinitial :: "[i, i] \<Rightarrow> o" where coinitial_def [rewrite]:
-  "coinitial(R,A) \<longleftrightarrow> (A \<subseteq> source(R) \<and> (\<forall>x\<in>source(R). \<exists>y\<in>A. y \<le>\<^sub>R x))"
+definition coinitial :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "coinitial(R,A) \<longleftrightarrow> (A \<subseteq> carrier(R) \<and> (\<forall>x\<in>.R. \<exists>y\<in>A. y \<le>\<^sub>R x))"
 
-lemma coinitialE1 [forward]: "coinitial(R,A) \<Longrightarrow> A \<subseteq> source(R)" by auto2
-lemma coinitialE2 [backward2]: "coinitial(R,A) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> \<exists>y\<in>A. y \<le>\<^sub>R x" by auto2
+lemma coinitialE1 [forward]: "coinitial(R,A) \<Longrightarrow> A \<subseteq> carrier(R)" by auto2
+lemma coinitialE2 [backward2]: "coinitial(R,A) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y\<in>A. y \<le>\<^sub>R x" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm coinitial_def} *}
 
 lemma greatest_is_cofinal:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,source(R)) \<Longrightarrow> cofinal(R,{greatest(R,source(R))})" by auto2
+  "order(R) \<Longrightarrow> has_greatest(R,carrier(R)) \<Longrightarrow> cofinal(R,{greatest(R,carrier(R))})" by auto2
 
 lemma least_is_coinitial:
-  "order_rel(R) \<Longrightarrow> has_least(R,source(R)) \<Longrightarrow> coinitial(R,{least(R,source(R))})" by auto2
+  "order(R) \<Longrightarrow> has_least(R,carrier(R)) \<Longrightarrow> coinitial(R,{least(R,carrier(R))})" by auto2
 
 section {* Upper and lower bounds *}  (* Bourbaki III.1.8 *)
 
-definition upper_bound :: "[i, i] \<Rightarrow> i" where upper_bound_def [rewrite]:
-  "upper_bound(R,X) = {y\<in>source(R). \<forall>x\<in>X. x \<le>\<^sub>R y}"
+definition upper_bound :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "upper_bound(R,X) = {y\<in>.R. \<forall>x\<in>X. x \<le>\<^sub>R y}"
 
-definition lower_bound :: "[i, i] \<Rightarrow> i" where lower_bound_def [rewrite]:
-  "lower_bound(R,X) = {y\<in>source(R). \<forall>x\<in>X. y \<le>\<^sub>R x}"
+lemma upper_boundD1 [forward]: "y \<in> upper_bound(R,X) \<Longrightarrow> y \<in>. R" by auto2
+lemma upper_boundD2 [forward, backward2]:  "y \<in> upper_bound(R,X) \<Longrightarrow> x \<in> X \<Longrightarrow> x \<le>\<^sub>R y" by auto2
+lemma upper_boundI [backward]: "y \<in>. R \<Longrightarrow> \<forall>x\<in>X. x \<le>\<^sub>R y \<Longrightarrow> y \<in> upper_bound(R,X)" by auto2
+lemma upper_bound_eq_str [rewrite]: "eq_str_order(R,S) \<Longrightarrow> upper_bound(R,T) = upper_bound(S,T)" by auto2
+setup {* del_prfstep_thm @{thm upper_bound_def} *}
+
+definition lower_bound :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "lower_bound(R,X) = {y\<in>.R. \<forall>x\<in>X. y \<le>\<^sub>R x}"
+  
+lemma lower_boundD1 [forward]: "y \<in> lower_bound(R,X) \<Longrightarrow> y \<in>. R" by auto2
+lemma lower_boundD2 [forward, backward2]:  "y \<in> lower_bound(R,X) \<Longrightarrow> x \<in> X \<Longrightarrow> x \<ge>\<^sub>R y" by auto2
+lemma lower_boundI [backward]: "y \<in>. R \<Longrightarrow> \<forall>x\<in>X. x \<ge>\<^sub>R y \<Longrightarrow> y \<in> lower_bound(R,X)" by auto2
+setup {* del_prfstep_thm @{thm lower_bound_def} *}
 
 lemma upper_bound_trans [forward]:
-  "order_rel(R) \<Longrightarrow> x \<in> upper_bound(R,X) \<Longrightarrow> y \<ge>\<^sub>R x \<Longrightarrow> y \<in> upper_bound(R,X)" by auto2
+  "order(R) \<Longrightarrow> x \<in> upper_bound(R,X) \<Longrightarrow> y \<ge>\<^sub>R x \<Longrightarrow> y \<in> upper_bound(R,X)" by auto2
 
 lemma upper_bound_trans_subset [backward]:
   "X \<subseteq> Y \<Longrightarrow> upper_bound(R,Y) \<subseteq> upper_bound(R,X)" by auto2
 
 lemma upper_bound_greatest:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,source(R)) \<Longrightarrow> upper_bound(R,source(R)) = {greatest(R,source(R))}" by auto2
+  "order(R) \<Longrightarrow> has_greatest(R,carrier(R)) \<Longrightarrow> upper_bound(R,carrier(R)) = {greatest(R,carrier(R))}" by auto2
 
 lemma upper_bound_greatest':
-  "order_rel(R) \<Longrightarrow> upper_bound(R,source(R)) = {a} \<Longrightarrow> greatest(R,source(R)) = a \<and> has_greatest(R,source(R))" by auto2
+  "order(R) \<Longrightarrow> upper_bound(R,carrier(R)) = {a} \<Longrightarrow> greatest(R,carrier(R)) = a \<and> has_greatest(R,carrier(R))" by auto2
 
 lemma lower_bound_trans [forward]:
-  "order_rel(R) \<Longrightarrow> x \<in> lower_bound(R,X) \<Longrightarrow> y \<le>\<^sub>R x \<Longrightarrow> y \<in> lower_bound(R,X)" by auto2
+  "order(R) \<Longrightarrow> x \<in> lower_bound(R,X) \<Longrightarrow> y \<le>\<^sub>R x \<Longrightarrow> y \<in> lower_bound(R,X)" by auto2
 
 lemma lower_bound_trans_subset [backward]:
   "X \<subseteq> Y \<Longrightarrow> lower_bound(R,Y) \<subseteq> lower_bound(R,X)" by auto2
 
 lemma lower_bound_least:
-  "order_rel(R) \<Longrightarrow> has_least(R,source(R)) \<Longrightarrow> lower_bound(R,source(R)) = {least(R,source(R))}" by auto2
+  "order(R) \<Longrightarrow> has_least(R,carrier(R)) \<Longrightarrow> lower_bound(R,carrier(R)) = {least(R,carrier(R))}" by auto2
 
 lemma lower_bound_least':
-  "order_rel(R) \<Longrightarrow> lower_bound(R,source(R)) = {a} \<Longrightarrow> least(R,source(R)) = a \<and> has_least(R,source(R))" by auto2
+  "order(R) \<Longrightarrow> lower_bound(R,carrier(R)) = {a} \<Longrightarrow> least(R,carrier(R)) = a \<and> has_least(R,carrier(R))" by auto2
 
 section {* Supremum and infimum *}  (* Bourbaki III.1.9 *)
 
 (* Definitions of sup and inf *)
-definition has_sup :: "[i, i] \<Rightarrow> o" where has_sup_def [rewrite]:
+definition has_sup :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "has_sup(R,X) \<longleftrightarrow> has_least(R,upper_bound(R,X))"
 
-definition sup :: "[i, i] \<Rightarrow> i" where sup_def [rewrite]:
+definition sup :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "sup(R,X) = least(R,upper_bound(R,X))"
 
-definition has_inf :: "[i, i] \<Rightarrow> o" where has_inf_def [rewrite]:
+definition has_inf :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "has_inf(R,X) \<longleftrightarrow> has_greatest(R,lower_bound(R,X))"
 
-definition inf :: "[i, i] \<Rightarrow> i" where inf_def [rewrite]:
+definition inf :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "inf(R,X) = greatest(R,lower_bound(R,X))"
 
 lemma supI [backward]:
-  "order_rel(R) \<Longrightarrow> has_least(R,upper_bound(R,X)) \<and> least(R,upper_bound(R,X)) = x \<Longrightarrow>
+  "order(R) \<Longrightarrow> has_least(R,upper_bound(R,X)) \<and> least(R,upper_bound(R,X)) = x \<Longrightarrow>
    has_sup(R,X) \<and> sup(R,X) = x" by auto2
 
 lemma infI [backward]:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,lower_bound(R,X)) \<and> greatest(R,lower_bound(R,X)) = x \<Longrightarrow>
+  "order(R) \<Longrightarrow> has_greatest(R,lower_bound(R,X)) \<and> greatest(R,lower_bound(R,X)) = x \<Longrightarrow>
    has_inf(R,X) \<and> inf(R,X) = x" by auto2
 
 (* Sup and inf for the image of a mapping *)
-definition has_supf :: "[i, i] \<Rightarrow> o" where has_supf_def [rewrite]:
-  "has_supf(R,f) \<longleftrightarrow> has_sup(R,f``source(f))"
+definition has_supf :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "has_supf(R,f) \<longleftrightarrow> has_sup(R,image(f))"
 
-definition supf :: "[i, i] \<Rightarrow> i" where supf_def [rewrite]:
-  "supf(R,f) = sup(R,f``source(f))"
+definition supf :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "supf(R,f) = sup(R,image(f))"
 
 lemma has_supfI [backward]:
-  "order_rel(R) \<Longrightarrow> has_least(R,upper_bound(R,f``source(f))) \<and> least(R,upper_bound(R,f``source(f))) = x \<Longrightarrow>
+  "order(R) \<Longrightarrow> has_least(R,upper_bound(R,image(f))) \<and> least(R,upper_bound(R,image(f))) = x \<Longrightarrow>
    has_supf(R,f) \<and> supf(R,f) = x" by auto2
 
 (* Examples *)
 lemma greatest_elt_is_sup:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> sup(R,X) = greatest(R,X) \<and> has_sup(R,X)" by auto2
+  "order(R) \<Longrightarrow> has_greatest(R,X) \<Longrightarrow> sup(R,X) = greatest(R,X) \<and> has_sup(R,X)" by auto2
 
 lemma least_elt_is_inf:
-  "order_rel(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> inf(R,X) = least(R,X) \<and> has_inf(R,X)" by auto2
+  "order(R) \<Longrightarrow> has_least(R,X) \<Longrightarrow> inf(R,X) = least(R,X) \<and> has_inf(R,X)" by auto2
 
 lemma sup_of_empty:
-  "order_rel(R) \<Longrightarrow> has_least(R,source(R)) \<Longrightarrow> sup(R,\<emptyset>) = least(R,source(R)) \<and> has_sup(R,\<emptyset>)" by auto2
+  "order(R) \<Longrightarrow> has_least(R,carrier(R)) \<Longrightarrow> sup(R,\<emptyset>) = least(R,carrier(R)) \<and> has_sup(R,\<emptyset>)" by auto2
 
 lemma inf_of_empty:
-  "order_rel(R) \<Longrightarrow> has_greatest(R,source(R)) \<Longrightarrow> inf(R,\<emptyset>) = greatest(R,source(R)) \<and> has_inf(R,\<emptyset>)" by auto2
+  "order(R) \<Longrightarrow> has_greatest(R,carrier(R)) \<Longrightarrow> inf(R,\<emptyset>) = greatest(R,carrier(R)) \<and> has_inf(R,\<emptyset>)" by auto2
 
 lemma sup_of_subsets:
   "X \<subseteq> Pow(E) \<Longrightarrow> has_sup(subset_order(Pow(E)),X) \<and> sup(subset_order(Pow(E)),X) = \<Union>X" by auto2
@@ -497,319 +525,354 @@ lemma inf_of_subsets:
   "X \<noteq> \<emptyset> \<Longrightarrow> X \<subseteq> Pow(E) \<Longrightarrow> has_inf(subset_order(Pow(E)),X) \<and> inf(subset_order(Pow(E)),X) = \<Inter>X" by auto2
 
 lemma inf_le_sup:
-  "order_rel(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> has_inf(R,X) \<Longrightarrow> X \<noteq> \<emptyset> \<Longrightarrow> inf(R,X) \<le>\<^sub>R sup(R,X)" by auto2
+  "order(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> has_inf(R,X) \<Longrightarrow> X \<noteq> \<emptyset> \<Longrightarrow> inf(R,X) \<le>\<^sub>R sup(R,X)" by auto2
 
 (* For harder results, we use two lemmas *)
-lemma sup_mem [typing]: "order_rel(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> sup(R,X) \<in> source(R)" by auto2
+lemma sup_mem [typing]: "order(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> sup(R,X) \<in>. R" by auto2
 
 lemma sup_le [backward2]:
-  "order_rel(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> a \<in> source(R) \<Longrightarrow> \<forall>x\<in>X. x \<le>\<^sub>R a \<Longrightarrow> sup(R,X) \<le>\<^sub>R a"
+  "order(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> a \<in>. R \<Longrightarrow> \<forall>x\<in>X. x \<le>\<^sub>R a \<Longrightarrow> sup(R,X) \<le>\<^sub>R a"
   by (tactic {* auto2s_tac @{context} (HAVE "a \<in> upper_bound(R,X)") *})
 
 lemma sup_on_subset_le:
-  "order_rel(R) \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(R,B) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> sup(R,A) \<le>\<^sub>R sup(R,B)" by auto2
+  "order(R) \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(R,B) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> sup(R,A) \<le>\<^sub>R sup(R,B)" by auto2
 
 lemma sup_trans:
-  "order_rel(R) \<Longrightarrow> f \<in> I \<rightarrow> source(R) \<Longrightarrow> g \<in> I \<rightarrow> source(R) \<Longrightarrow> \<forall>a\<in>I. f`a \<le>\<^sub>R g`a \<Longrightarrow>
+  "order(R) \<Longrightarrow> f \<in> I \<rightarrow> carrier(R) \<Longrightarrow> g \<in> I \<rightarrow> carrier(R) \<Longrightarrow> \<forall>a\<in>I. f`a \<le>\<^sub>R g`a \<Longrightarrow>
    has_supf(R,f) \<Longrightarrow> has_supf(R,g) \<Longrightarrow> supf(R,f) \<le>\<^sub>R supf(R,g)" by auto2
 
 lemma sup_cover:
-  "order_rel(R) \<Longrightarrow> f \<in> I \<rightarrow> source(R) \<Longrightarrow> J \<in> L \<rightarrow> Pow(I) \<Longrightarrow> (\<Union>b\<in>L. J`b) = I \<Longrightarrow>
-   \<forall>b\<in>L. has_sup(R,f``(J`b)) \<Longrightarrow> has_supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>source(R)) \<Longrightarrow>
-   has_supf(R,f) \<and> supf(R,f) = supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>source(R))" by auto2
+  "order(R) \<Longrightarrow> f \<in> I \<rightarrow> carrier(R) \<Longrightarrow> J \<in> L \<rightarrow> Pow(I) \<Longrightarrow> (\<Union>b\<in>L. J`b) = I \<Longrightarrow>
+   \<forall>b\<in>L. has_sup(R,f``(J`b)) \<Longrightarrow> has_supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R)) \<Longrightarrow>
+   has_supf(R,f) \<and> supf(R,f) = supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R))" by auto2
 
 lemma sup_cover_inv:
-  "order_rel(R) \<Longrightarrow> f \<in> I \<rightarrow> source(R) \<Longrightarrow> J \<in> L \<rightarrow> Pow(I) \<Longrightarrow> (\<Union>b\<in>L. J`b) = I \<Longrightarrow>
+  "order(R) \<Longrightarrow> f \<in> I \<rightarrow> carrier(R) \<Longrightarrow> J \<in> L \<rightarrow> Pow(I) \<Longrightarrow> (\<Union>b\<in>L. J`b) = I \<Longrightarrow>
    \<forall>b\<in>L. has_sup(R,f``(J`b)) \<Longrightarrow> has_supf(R,f) \<Longrightarrow>
-   has_supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>source(R)) \<and>
-   supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>source(R)) = supf(R,f)" by auto2
+   has_supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R)) \<and>
+   supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R)) = supf(R,f)" by auto2
 
 lemma sup_double_family:
-  "order_rel(R) \<Longrightarrow> f \<in> I\<times>J \<rightarrow> source(R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R,f``({a}\<times>J)) \<Longrightarrow>
-   has_supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>source(R)) \<Longrightarrow>
-   has_supf(R,f) \<and> supf(R,f) = supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>source(R))" by auto2
+  "order(R) \<Longrightarrow> f \<in> I\<times>J \<rightarrow> carrier(R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R,f``({a}\<times>J)) \<Longrightarrow>
+   has_supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R)) \<Longrightarrow>
+   has_supf(R,f) \<and> supf(R,f) = supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R))" by auto2
 
 lemma sup_double_family_inv:
-  "order_rel(R) \<Longrightarrow> f \<in> I\<times>J \<rightarrow> source(R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R,f``({a}\<times>J)) \<Longrightarrow>
+  "order(R) \<Longrightarrow> f \<in> I\<times>J \<rightarrow> carrier(R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R,f``({a}\<times>J)) \<Longrightarrow>
    has_supf(R,f) \<Longrightarrow>
-   has_supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>source(R)) \<and>
-   supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>source(R)) = supf(R,f)" by auto2
+   has_supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R)) \<and>
+   supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R)) = supf(R,f)" by auto2
 
 lemma sup_prod:
-  "\<forall>a\<in>I. order_rel(proj(R,a)) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> \<forall>a\<in>I. has_sup(proj(R,a),projs(A,a)) \<Longrightarrow>
-   has_sup(prod_rel(I,R),A) \<and> sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(proj(R,a),projs(A,a)))" by auto2
+  "\<forall>a\<in>I. order(R`a) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<Longrightarrow>
+   has_sup(prod_rel(I,R),A) \<and> sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))" by auto2
 
 lemma sup_prod_inv:
-  "\<forall>a\<in>I. order_rel(proj(R,a)) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> has_sup(prod_rel(I,R),A) \<Longrightarrow>
-   sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(proj(R,a),projs(A,a)))"
+  "\<forall>a\<in>I. order(R`a) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> has_sup(prod_rel(I,R),A) \<Longrightarrow>
+   sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))"
   by (tactic {* auto2s_tac @{context} (
-    CHOOSE "M, M = sup(prod_rel(I,R),A)" THEN
-    HAVE "\<forall>a\<in>I. \<forall>x\<in>upper_bound(proj(R,a),projs(A,a)). rel(proj(R,a),proj(M,a),x)" WITH (
-      CHOOSE "f, f = Tup(I, \<lambda>b. if b = a then x else proj(M,b))" THEN
+    LET "M = sup(prod_rel(I,R),A)" THEN
+    HAVE "\<forall>a\<in>I. \<forall>x\<in>upper_bound(R`a,projs(A,a)). le(R`a,M`a,x)" WITH (
+      LET "f = Tup(I, \<lambda>b. if b = a then x else M`b)" THEN
       HAVE "f \<in> upper_bound(prod_rel(I,R),A)") THEN
-    HAVE "\<forall>a\<in>I. has_sup(proj(R,a),projs(A,a)) \<and> sup(proj(R,a),projs(A,a)) = proj(M,a)") *})
+    HAVE "\<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<and> sup(R`a,projs(A,a)) = M`a") *})
 
 lemma sup_subset1:
-  "order_rel(R) \<Longrightarrow> F \<subseteq> source(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(subrel(R,F),A) \<Longrightarrow>
-   sup(R,A) \<le>\<^sub>R sup(subrel(R,F),A)" by auto2
+  "order(R) \<Longrightarrow> F \<subseteq> carrier(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(suborder(R,F),A) \<Longrightarrow>
+   sup(R,A) \<le>\<^sub>R sup(suborder(R,F),A)" by auto2
 
 lemma sup_subset2:
-  "order_rel(R) \<Longrightarrow> F \<subseteq> source(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> sup(R,A) \<in> F \<Longrightarrow>
-   has_sup(subrel(R,F),A) \<and> sup(subrel(R,F),A) = sup(R,A)" by auto2
+  "order(R) \<Longrightarrow> F \<subseteq> carrier(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> sup(R,A) \<in> F \<Longrightarrow>
+   has_sup(suborder(R,F),A) \<and> sup(suborder(R,F),A) = sup(R,A)" by auto2
 
 section {* Directed sets *}  (* Bourbaki III.1.10 *)
 
-definition right_directed :: "i \<Rightarrow> o" where right_directed_def [rewrite]:
-  "right_directed(R) \<longleftrightarrow> (\<forall>x\<in>source(R). \<forall>y\<in>source(R). \<exists>z\<in>source(R). z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y)"
+definition right_directed :: "i \<Rightarrow> o" where [rewrite]:
+  "right_directed(R) \<longleftrightarrow> order(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. \<exists>z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y)"
 setup {* add_property_const @{term right_directed} *}
 
-definition join :: "[i, i, i] \<Rightarrow> i" where join_def [rewrite]:
-  "join(R,x,y) = (SOME z\<in>source(R). z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y)"
-
-lemma right_directedE [backward]:
-  "right_directed(R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> \<exists>z\<in>source(R). z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y" by auto2
+lemma right_directedE1 [forward]: "right_directed(R) \<Longrightarrow> order(R)" by auto2
+lemma right_directedE2 [backward]: "right_directed(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<exists>z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm right_directed_def} *}
 
+definition join :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
+  "join(R,x,y) = (SOME z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y)"
+
 lemma right_directed_join:
-  "right_directed(R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow>
-   join(R,x,y) \<in> source(R) \<and> join(R,x,y) \<ge>\<^sub>R x \<and> join(R,x,y) \<ge>\<^sub>R y" by auto2
-setup {* del_prfstep_thm @{thm right_directedE} *}
-setup {* add_forward_prfstep_cond @{thm right_directed_join}
-  [with_cond "?x \<noteq> ?y", with_filt (order_filter "x" "y"),
-   with_cond "?x \<noteq> join(?R,?u,?v)", with_cond "?y \<noteq> join(?R,?u,?v)"] *}
+  "right_directed(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow>
+   join(R,x,y) \<in>. R \<and> join(R,x,y) \<ge>\<^sub>R x \<and> join(R,x,y) \<ge>\<^sub>R y" by auto2
+setup {* add_forward_prfstep_cond @{thm right_directed_join} [with_term "join(?R,?x,?y)"] *}
 
 lemma right_directed_max_is_greatest:
-  "order_rel(R) \<Longrightarrow> right_directed(R) \<Longrightarrow> a \<in> source(R) \<Longrightarrow> maximal(R,a) \<Longrightarrow>
-   has_greatest(R,source(R)) \<and> greatest(R,source(R)) = a" by auto2
+  "right_directed(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> maximal(R,a) \<Longrightarrow> has_greatest(R,carrier(R)) \<and> greatest(R,carrier(R)) = a"
+  by (tactic {* auto2s_tac @{context} (
+    CHOOSE "b \<in> carrier(R), \<not>b \<le>\<^sub>R a" THEN HAVE "join(R,a,b) \<ge>\<^sub>R a") *})
 
 lemma right_directed_prod:
-  "\<forall>a\<in>I. order_rel(proj(R,a)) \<Longrightarrow> \<forall>a\<in>I. right_directed(proj(R,a)) \<Longrightarrow>
-   right_directed(prod_rel(I,R))"
+  "\<forall>a\<in>I. right_directed(R`a) \<Longrightarrow> S = prod_rel(I,R) \<Longrightarrow> right_directed(S)"
   by (tactic {* auto2s_tac @{context} (
-    CHOOSE "E, E = prod_src(I,R)" THEN
-    HAVE "\<forall>x\<in>E. \<forall>y\<in>E. \<exists>z\<in>E. ge(z,prod_rel(I,R),x) \<and> ge(z,prod_rel(I,R),y)" WITH (
-      CHOOSE "z\<in>E, z = Tup(I, \<lambda>a. join(proj(R,a),proj(x,a),proj(y,a)))" THEN
-      HAVE "ge(z,prod_rel(I,R),x)")) *})
+    LET "E = prod_src(I,R)" THEN
+    HAVE "\<forall>x\<in>E. \<forall>y\<in>E. \<exists>z\<in>E. z \<ge>\<^sub>S x \<and> z \<ge>\<^sub>S y" WITH (
+      LET "z = Tup(I, \<lambda>a. join(R`a,x`a,y`a))" THEN
+      HAVE "z \<in> E" THEN HAVE "z \<ge>\<^sub>S x")) *})
 
 lemma right_directed_cofinal:
-  "order_rel(R) \<Longrightarrow> right_directed(R) \<Longrightarrow> cofinal(R,A) \<Longrightarrow> right_directed(subrel(R,A))"
+  "right_directed(R) \<Longrightarrow> cofinal(R,A) \<Longrightarrow> right_directed(suborder(R,A))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>A. \<forall>y\<in>A. \<exists>z\<in>A. ge(z,subrel(R,A),x) \<and> ge(z,subrel(R,A),y)" WITH (
-      CHOOSE "z\<in>A, join(R,x,y) \<le>\<^sub>R z")) *}) 
+    HAVE "\<forall>x\<in>A. \<forall>y\<in>A. \<exists>z\<in>A. ge(z,suborder(R,A),x) \<and> ge(z,suborder(R,A),y)" WITH (
+      CHOOSE "z\<in>A, join(R,x,y) \<le>\<^sub>R z")) *})
 
 section {* Totally ordered sets *}  (* Bourbaki III.1.12 *)
 
-definition linorder_rel :: "i \<Rightarrow> o" where linorder_rel_def [rewrite]:
-  "linorder_rel(R) \<longleftrightarrow> (order_rel(R) \<and> (\<forall>x\<in>source(R). \<forall>y\<in>source(R). x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y))"
-setup {* add_property_const @{term linorder_rel} *}
-
-lemma linorder_relD [forward]:
-  "linorder_rel(R) \<Longrightarrow> order_rel(R)"
-  "linorder_rel(R) \<Longrightarrow> \<not>(x \<le>\<^sub>R y) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> x >\<^sub>R y"
-  "linorder_rel(R) \<Longrightarrow> \<not>(x \<ge>\<^sub>R y) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> x <\<^sub>R y" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm linorder_rel_def} *}
+definition linorder :: "i \<Rightarrow> o" where [rewrite]:
+  "linorder(R) \<longleftrightarrow> (order(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y))"
+setup {* add_property_const @{term linorder} *}
+  
+lemma linorderD [forward]:
+  "linorder(R) \<Longrightarrow> order(R)"
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<not>(x \<le>\<^sub>R y) \<Longrightarrow> x >\<^sub>R y"
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<not>(x <\<^sub>R y) \<Longrightarrow> x \<ge>\<^sub>R y" by auto2+
+setup {* del_prfstep_thm_str "@eqforward" @{thm linorder_def} *}
 
 lemma linorder_iso [forward]:
-  "linorder_rel(R) \<Longrightarrow> isomorphism(R,S,f) \<Longrightarrow> linorder_rel(S)" by auto2
+  "linorder(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> linorder(S)"
+  by (tactic {* auto2s_tac @{context} (CHOOSE "f, f \<in> R \<cong>\<^sub>O S") *})
 
-lemma linorder_subrel:
-  "linorder_rel(R) \<Longrightarrow> A \<subseteq> source(R) \<Longrightarrow> linorder_rel(subrel(R,A))" by auto2
+lemma linorder_suborder:
+  "linorder(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> linorder(suborder(R,A))" by auto2
+setup {* add_forward_prfstep_cond @{thm linorder_suborder} [with_term "suborder(?R,?A)"] *}
 
-lemma linorder_adjoin:
-  "linorder_rel(R) \<Longrightarrow> a \<notin> source(R) \<Longrightarrow> linorder_rel(adjoin_greatest(R,a))" by auto2
-setup {* add_forward_prfstep_cond @{thm linorder_adjoin} [with_term "adjoin_greatest(?R,?a)"] *}
+lemma linorder_eq_str [forward]:
+  "linorder(R) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> linorder(S)" by auto2
 
 lemma strict_monotone_to_inj:
-  "linorder_rel(R) \<Longrightarrow> order_rel(S) \<Longrightarrow> is_function(f) \<Longrightarrow> strict_incr(R,S,f) \<Longrightarrow> injective(f)"
+  "is_morphism(f) \<Longrightarrow> R = source_str(f) \<Longrightarrow> linorder(R) \<Longrightarrow> order(target_str(f)) \<Longrightarrow>
+   strict_incr(f) \<Longrightarrow> injective(f)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(f). \<forall>y\<in>source(f). x \<noteq> y \<longrightarrow> f`x \<noteq> f`y" WITH CASE "x \<ge>\<^sub>R y") *})
+    HAVE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<noteq> y \<longrightarrow> f`x \<noteq> f`y" WITH CASE "x \<ge>\<^sub>R y") *})
 
 lemma incr_to_iso [backward]:
-  "linorder_rel(R) \<Longrightarrow> order_rel(S) \<Longrightarrow> bijective(f) \<Longrightarrow> incr(R,S,f) \<Longrightarrow> isomorphism(R,S,f)" by auto2
+  "is_morphism(f) \<Longrightarrow> R = source_str(f) \<Longrightarrow> S = target_str(f) \<Longrightarrow>
+   linorder(R) \<Longrightarrow> order(S) \<Longrightarrow> bijective(f) \<Longrightarrow> incr(f) \<Longrightarrow> ord_isomorphism(f)" by auto2
 
 lemma supI_alt [backward1]:
-  "linorder_rel(R) \<Longrightarrow> b \<in> upper_bound(R,X) \<Longrightarrow>
-   \<forall>c\<in>source(R). c <\<^sub>R b \<longrightarrow> (\<exists>x\<in>X. c <\<^sub>R x \<and> x \<le>\<^sub>R b) \<Longrightarrow> has_sup(R,X) \<and> sup(R,X) = b" by auto2
+  "linorder(R) \<Longrightarrow> b \<in> upper_bound(R,X) \<Longrightarrow>
+   \<forall>c\<in>.R. c <\<^sub>R b \<longrightarrow> (\<exists>x\<in>X. c <\<^sub>R x \<and> x \<le>\<^sub>R b) \<Longrightarrow> has_sup(R,X) \<and> sup(R,X) = b" by auto2
 
 lemma supD_alt [backward1]:
-  "linorder_rel(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> c \<in> source(R) \<Longrightarrow> c <\<^sub>R sup(R,X) \<Longrightarrow>
+  "linorder(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> c \<in>. R \<Longrightarrow> c <\<^sub>R sup(R,X) \<Longrightarrow>
    \<exists>x\<in>X. c <\<^sub>R x \<and> x \<le>\<^sub>R sup(R,X)" by auto2
 
-section {* Intervals *}  (* Bourbaki III.1.13 *)
+section {* Maximum *}
+  
+definition max :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where max_def [rewrite]:
+  "max(R,x,y) = (if x \<ge>\<^sub>R y then x else y)"
+setup {* register_wellform_data ("max(R,x,y)", ["x \<in>. R", "y \<in>. R"]) *}
 
-definition closed_interval :: "[i, i, i] \<Rightarrow> i" where closed_interval_def [rewrite]:
-  "closed_interval(R,a,b) = {x \<in> source(R). x \<le>\<^sub>R a \<and> a \<le>\<^sub>R b}"
+lemma max_type [typing]: "x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> max(R,x,y) \<in>. R" by auto2
 
-definition open_interval :: "[i, i, i] \<Rightarrow> i" where open_interval_def [rewrite]:
-  "open_interval(R,a,b) = {x \<in> source(R). x <\<^sub>R a \<and> a <\<^sub>R b}"
+lemma max_type_gen [backward1, backward2]: "a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> max(R,a,b) \<in> S" by auto2
 
-definition open_closed_interval :: "[i, i, i] \<Rightarrow> i" where open_closed_interval_def [rewrite]:
-  "open_closed_interval(R,a,b) = {x \<in> source(R). x <\<^sub>R a \<and> a \<le>\<^sub>R b}"
+lemma max_idem [rewrite]: "x \<in>. R \<Longrightarrow> max(R,x,x) = x" by auto2
 
-definition closed_open_interval :: "[i, i, i] \<Rightarrow> i" where closed_open_interval_def [rewrite]:
-  "closed_open_interval(R,a,b) = {x \<in> source(R). x \<le>\<^sub>R a \<and> a <\<^sub>R b}"
+lemma max_geD:
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R max(R,x,y)"
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> y \<le>\<^sub>R max(R,x,y)" by auto2+
+setup {* fold (fn th => add_forward_prfstep_cond th [with_term "max(?R,?x,?y)"]) @{thms max_geD} *}
 
-definition le_interval :: "[i, i] \<Rightarrow> i" where le_interval_def [rewrite]:
-  "le_interval(R,a) = {x \<in> source(R). x \<le>\<^sub>R a}"
+lemma max_geI [backward1, backward2]:
+  "preorder(R) \<Longrightarrow> x \<ge>\<^sub>R y \<Longrightarrow> x \<ge>\<^sub>R z \<Longrightarrow> x \<ge>\<^sub>R max(R,y,z)" by auto2
 
-definition less_interval :: "[i, i] \<Rightarrow> i" where less_interval_def [rewrite]:
-  "less_interval(R,a) = {x \<in> source(R). x <\<^sub>R a}"
+lemma max_greaterI [backward1, backward2]:
+  "preorder(R) \<Longrightarrow> x >\<^sub>R y \<Longrightarrow> x >\<^sub>R z \<Longrightarrow> x >\<^sub>R max(R,y,z)" by auto2
 
-definition ge_interval :: "[i, i] \<Rightarrow> i" where ge_interval_def [rewrite]:
-  "ge_interval(R,a) = {x \<in> source(R). x \<ge>\<^sub>R a}"
+lemma linorder_has_max3:
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> \<exists>w. w \<ge>\<^sub>R x \<and> w \<ge>\<^sub>R y \<and> w \<ge>\<^sub>R z"
+  by (tactic {* auto2s_tac @{context} (LET "w = max(R,max(R,x,y),z)") *})
+setup {* add_backward_prfstep_cond @{thm linorder_has_max3} [
+  with_filt (order_filter "x" "y"), with_filt (order_filter "y" "z")] *}
 
-definition greater_interval :: "[i, i] \<Rightarrow> i" where greater_interval_def [rewrite]:
-  "greater_interval(R,a) = {x \<in> source(R). x >\<^sub>R a}"
+section {* Minimum *}
+  
+definition min :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where min_def [rewrite]:
+  "min(R,x,y) = (if x \<le>\<^sub>R y then x else y)"
+setup {* register_wellform_data ("min(R,x,y)", ["x \<in>. R", "y \<in>. R"]) *}
 
-lemma less_intervalI [typing2]: "preorder_rel(R) \<Longrightarrow> x <\<^sub>R a \<Longrightarrow> x \<in> less_interval(R,a)" by auto2
-lemma less_interval_iff [rewrite]: "preorder_rel(R) \<Longrightarrow> x \<in> less_interval(R,a) \<longleftrightarrow> x <\<^sub>R a" by auto2
-setup {* del_prfstep_thm @{thm less_interval_def} *}
+lemma min_type [typing]: "x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> min(R,x,y) \<in>. R" by auto2
 
-lemma less_interval_subset: "preorder_rel(R) \<Longrightarrow> less_interval(R,a) \<subseteq> source(R)" by auto2
-setup {* add_forward_prfstep_cond @{thm less_interval_subset} [with_term "less_interval(?R,?a)"] *}
+lemma min_type_gen [backward1, backward2]: "a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> min(R,a,b) \<in> S" by auto2
 
-lemma ge_intervalI [typing2]: "preorder_rel(R) \<Longrightarrow> x \<ge>\<^sub>R a \<Longrightarrow> x \<in> ge_interval(R,a)" by auto2
-lemma ge_interval_iff [rewrite]: "preorder_rel(R) \<Longrightarrow> x \<in> ge_interval(R,a) \<longleftrightarrow> x \<ge>\<^sub>R a" by auto2
-setup {* del_prfstep_thm @{thm ge_interval_def} *}
+lemma min_idem [rewrite]: "x \<in>. R \<Longrightarrow> min(R,x,x) = x" by auto2
 
-lemma ge_interval_subset: "preorder_rel(R) \<Longrightarrow> ge_interval(R,a) \<subseteq> source(R)" by auto2
-setup {* add_forward_prfstep_cond @{thm ge_interval_subset} [with_term "ge_interval(?R,?a)"] *}
+lemma min_leD:
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<ge>\<^sub>R min(R,x,y)"
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> y \<ge>\<^sub>R min(R,x,y)" by auto2+
+setup {* fold (fn th => add_forward_prfstep_cond th [with_term "min(?R,?x,?y)"]) @{thms min_leD} *}
 
-(* Complement of intervals with one boundary *)
-lemma ge_compl_is_less [rewrite]:
-  "linorder_rel(R) \<Longrightarrow> a \<in> source(R) \<Longrightarrow> source(R) - ge_interval(R,a) = less_interval(R,a)" by auto2
+lemma min_leI [backward1, backward2]:
+  "preorder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> x \<le>\<^sub>R z \<Longrightarrow> x \<le>\<^sub>R min(R,y,z)" by auto2
 
-lemma ge_compl_is_less' [forward]:
-  "linorder_rel(R) \<Longrightarrow> S \<subseteq> source(R) \<Longrightarrow> source(R) - S = ge_interval(R,a) \<Longrightarrow> a \<in> source(R) \<Longrightarrow> S = less_interval(R,a)"
-  by (tactic {* auto2s_tac @{context} (HAVE "S = source(R) - (source(R) - S)") *})
+lemma min_lessI [backward1, backward2]:
+  "preorder(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> x <\<^sub>R z \<Longrightarrow> x <\<^sub>R min(R,y,z)" by auto2
 
-(* Intervals with one boundary are distinct *)
-lemma less_interval_neq [backward]:
-  "linorder_rel(R) \<Longrightarrow> a \<in> source(R) \<Longrightarrow> b \<in> source(R) \<Longrightarrow> a \<noteq> b \<Longrightarrow> less_interval(R,a) \<noteq> less_interval(R,b)"
-  by (tactic {* auto2s_tac @{context} (CASE "a <\<^sub>R b") *})
+setup {* del_prfstep_thm @{thm min_def} *}
 
-(* Ordering on less_interval. *)
-definition less_interval_rel :: "[i, i] \<Rightarrow> i" where less_interval_rel_def [rewrite]:
-  "less_interval_rel(R,x) = subrel(R,less_interval(R,x))"
-
-lemma less_interval_rel_trans [rewrite]:
-  "linorder_rel(R) \<Longrightarrow> y <\<^sub>R x \<Longrightarrow> less_interval_rel(less_interval_rel(R,x),y) = less_interval_rel(R,y)" by auto2
-
-lemma less_interval_rel_eq_trans [forward]:
-  "linorder_rel(R) \<Longrightarrow> linorder_rel(S) \<Longrightarrow> y \<le>\<^sub>R x \<Longrightarrow>
-   less_interval_rel(R,x) = less_interval_rel(S,x) \<Longrightarrow> x\<in>source(S) \<Longrightarrow>
-   y\<in>source(S) \<and> less_interval_rel(R,y) = less_interval_rel(S,y)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "y \<noteq> x" WITH HAVE "less_interval_rel(less_interval_rel(R,x),y) = less_interval_rel(R,y)") *})
-
-(* Some lemmas about adjoin_greatest. *)
-lemma adjoin_greatest_less_interval [rewrite]:
-  "linorder_rel(M) \<Longrightarrow> a \<notin> source(M) \<Longrightarrow> less_interval(adjoin_greatest(M,a),a) = source(M)" by auto2
-
-lemma adjoin_greatest_less_interval2 [rewrite]:
-  "linorder_rel(M) \<Longrightarrow> a \<notin> source(M) \<Longrightarrow> x \<in> source(M) \<Longrightarrow>
-   less_interval(adjoin_greatest(M,a),x) = less_interval(M,x)" by auto2
+lemma linorder_has_min3:
+  "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> \<exists>w. w \<le>\<^sub>R x \<and> w \<le>\<^sub>R y \<and> w \<le>\<^sub>R z"
+  by (tactic {* auto2s_tac @{context} (LET "w = min(R,min(R,x,y),z)") *})
+setup {* add_backward_prfstep_cond @{thm linorder_has_min3} [
+  with_filt (order_filter "x" "y"), with_filt (order_filter "y" "z")] *}
 
 (* To show equality between a linorder and an order, can also compare <. *)
 lemma eq_linorder_order_less [backward1]:
-  "linorder_rel(R) \<Longrightarrow> order_rel(S) \<Longrightarrow> source(R) = source(S) \<Longrightarrow>
-   \<forall>x\<in>source(R). \<forall>y\<in>source(R). x <\<^sub>R y \<longrightarrow> x <\<^sub>S y \<Longrightarrow> R = S"
+  "ord_form(R) \<Longrightarrow> ord_form(S) \<Longrightarrow> linorder(R) \<Longrightarrow> order(S) \<Longrightarrow> carrier(R) = carrier(S) \<Longrightarrow>
+   \<forall>x\<in>.R. \<forall>y\<in>.R. x <\<^sub>R y \<longrightarrow> x <\<^sub>S y \<Longrightarrow> R = S"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(R). \<forall>y\<in>source(R). x \<le>\<^sub>R y \<longrightarrow> x \<le>\<^sub>S y" WITH CASE "x = y") *})
+    HAVE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> x \<le>\<^sub>S y" WITH CASE "x = y") *})
 
 section {* Directed family of ordering *}
 
 (* This development is used in Bourbaki III.2.1 *)
-definition is_subrel :: "[i, i] \<Rightarrow> o" where is_subrel_def [rewrite]:
-  "is_subrel(R,S) \<longleftrightarrow> (source(R) \<subseteq> source(S) \<and> R = subrel(S,source(R)))"
+definition is_suborder :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "is_suborder(R,S) \<longleftrightarrow> (raworder(R) \<and> carrier(R) \<subseteq> carrier(S) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>S y))"
 
-lemma is_subrelD1 [forward]: "is_subrel(R,S) \<Longrightarrow> source(R) \<subseteq> source(S)" by auto2
-lemma is_subrelD2 [rewrite_bidir]:
-  "is_subrel(R,S) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> rel(R,x,y) \<longleftrightarrow> rel(S,x,y)" by auto2
-lemma is_subrel_rewr [rewrite_back]:
-  "is_subrel(R,S) \<Longrightarrow> R = subrel(S,source(R))" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_subrel_def} *}
+lemma is_suborderD1 [forward]: "is_suborder(R,S) \<Longrightarrow> raworder(R) \<and> carrier(R) \<subseteq> carrier(S)" by auto2
+lemma is_suborderD2 [rewrite]:
+  "x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_suborder(R,S) \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>S y" by auto2
+lemma is_suborder_rewr [rewrite_back]:
+  "ord_form(R) \<Longrightarrow> is_suborder(R,S) \<Longrightarrow> R = suborder(S,carrier(R))" by auto2
+setup {* del_prfstep_thm_str "@eqforward" @{thm is_suborder_def} *}
 
-lemma is_subrel_refl [resolve]: "preorder_rel(R) \<Longrightarrow> is_subrel(R,R)" by auto2
+lemma is_suborder_refl [resolve]: "preorder(R) \<Longrightarrow> is_suborder(R,R)" by auto2
 
-definition directed_rels :: "i \<Rightarrow> o" where directed_rels_def [rewrite]:
-  "directed_rels(X) \<longleftrightarrow> ((\<forall>R\<in>X. order_rel(R)) \<and>
-    (\<forall>R\<in>X. \<forall>S\<in>X. \<exists>T\<in>X. is_subrel(R,T) \<and> is_subrel(S,T)))"
+lemma is_suborder_preorder [forward]: "preorder(R) \<Longrightarrow> is_suborder(A,R) \<Longrightarrow> preorder(A)" by auto2
+lemma is_suborder_order [forward]: "order(R) \<Longrightarrow> is_suborder(A,R) \<Longrightarrow> order(A)" by auto2
+lemma is_suborder_linorder [forward]: "linorder(R) \<Longrightarrow> is_suborder(A,R) \<Longrightarrow> linorder(A)" by auto2
+
+definition directed_rels :: "i \<Rightarrow> o" where [rewrite]:
+  "directed_rels(X) \<longleftrightarrow> ((\<forall>R\<in>X. order(R)) \<and>
+    (\<forall>R\<in>X. \<forall>S\<in>X. \<exists>T\<in>X. is_suborder(R,T) \<and> is_suborder(S,T)))"
 setup {* add_property_const @{term directed_rels} *}
 
 lemma directed_relsD1 [forward]:
-  "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> order_rel(R)" by auto2
+  "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> order(R)" by auto2
 lemma directed_relsD2 [backward]:
-  "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> S \<in> X \<Longrightarrow> \<exists>T\<in>X. is_subrel(R,T) \<and> is_subrel(S,T)" by auto2
+  "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> S \<in> X \<Longrightarrow> \<exists>T\<in>X. is_suborder(R,T) \<and> is_suborder(S,T)" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm directed_rels_def} *}
 
 (* Union of a family of ordering. Has good properties when the family is directed. *)
-definition union_src :: "i \<Rightarrow> i" where union_src_def [rewrite]:
-  "union_src(X) = (\<Union>R\<in>X. source(R))"
+definition union_src :: "i \<Rightarrow> i" where [rewrite]:
+  "union_src(X) = (\<Union>R\<in>X. carrier(R))"
 
-definition union_rel :: "i \<Rightarrow> i" where union_rel_def [rewrite]:
-  "union_rel(X) = Rel(union_src(X), \<lambda>x y. \<exists>R\<in>X. rel(R,x,y))"
+definition union_rel :: "i \<Rightarrow> i" where [rewrite]:
+  "union_rel(X) = Order(union_src(X), \<lambda>x y. \<exists>R\<in>X. x \<le>\<^sub>R y)"
 
-lemma union_rel_is_rel [typing]: "union_rel(X) \<in> rel_space(union_src(X))" by auto2
+lemma union_rel_is_raworder [typing]: "union_rel(X) \<in> raworder_space(union_src(X))" by auto2
 
 lemma union_rel_eval [rewrite]:
-  "x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow> rel(union_rel(X),x,y) \<longleftrightarrow> (\<exists>R\<in>X. rel(R,x,y))" by auto2
+  "U = union_rel(X) \<Longrightarrow> x \<in>. U \<Longrightarrow> y \<in>. U \<Longrightarrow> x \<le>\<^sub>U y \<longleftrightarrow> (\<exists>R\<in>X. x \<le>\<^sub>R y)" by auto2
 setup {* del_prfstep_thm @{thm union_rel_def} *}
 
-lemma directed_elt_in_rel2 [backward]:
+lemma directed_elt_in_rel2:
   "directed_rels(X) \<Longrightarrow> x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow>
-   \<exists>R\<in>X. x \<in> source(R) \<and> y \<in> source(R)"
+   \<exists>R\<in>X. x \<in>. R \<and> y \<in>. R"
   by (tactic {* auto2s_tac @{context} (
-    CHOOSE "R\<in>X, x\<in>source(R)" THEN
-    CHOOSE "S\<in>X, y\<in>source(S)" THEN
-    CHOOSE "T\<in>X, is_subrel(R,T) \<and> is_subrel(S,T)") *})
+    CHOOSE "R\<in>X, x\<in>.R" THEN
+    CHOOSE "S\<in>X, y\<in>.S" THEN
+    CHOOSE "T\<in>X, is_suborder(R,T) \<and> is_suborder(S,T)") *})
+setup {* add_backward_prfstep_cond @{thm directed_elt_in_rel2} [with_filt (order_filter "x" "y")] *}
 
-lemma directed_elt_in_rel3 [backward]:
+lemma directed_elt_in_rel3:
   "directed_rels(X) \<Longrightarrow> x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow> z \<in> union_src(X) \<Longrightarrow>
-   \<exists>R\<in>X. x \<in> source(R) \<and> y \<in> source(R) \<and> z \<in> source(R)"
+   \<exists>R\<in>X. x \<in>. R \<and> y \<in>. R \<and> z \<in>. R"
   by (tactic {* auto2s_tac @{context} (
-    CHOOSE "R\<in>X, x\<in>source(R) \<and> y\<in>source(R)" THEN
-    CHOOSE "S\<in>X, z\<in>source(S)" THEN
-    CHOOSE "T\<in>X, is_subrel(R,T) \<and> is_subrel(S,T)") *})
+    CHOOSE "R\<in>X, x\<in>.R \<and> y\<in>.R" THEN
+    CHOOSE "S\<in>X, z\<in>.S" THEN
+    CHOOSE "T\<in>X, is_suborder(R,T) \<and> is_suborder(S,T)") *})
+setup {* add_backward_prfstep_cond @{thm directed_elt_in_rel3} [
+  with_filt (order_filter "x" "y"), with_filt (order_filter "y" "z")] *}
 
 lemma union_rel_prop:
-  "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> is_subrel(R,union_rel(X))"
+  "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> U = union_rel(X) \<Longrightarrow> is_suborder(R,U)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(R). \<forall>y\<in>source(R). rel(R,x,y) \<longleftrightarrow> rel(union_rel(X),x,y)" WITH (
-      CASE "rel(union_rel(X),x,y)" WITH (
-        CHOOSE "S\<in>X, rel(S,x,y)" THEN
-        CHOOSE "T\<in>X, is_subrel(R,T) \<and> is_subrel(S,T)"))) *})
+    HAVE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>U y" WITH (
+      CASE "x \<le>\<^sub>U y" WITH (
+        CHOOSE "S\<in>X, x \<le>\<^sub>S y" THEN
+        CHOOSE "T\<in>X, is_suborder(R,T) \<and> is_suborder(S,T)"))) *})
 setup {* add_forward_prfstep_cond @{thm union_rel_prop} [with_term "union_rel(?X)"] *}
 
 lemma union_rel_unique_prop:
-  "directed_rels(X) \<Longrightarrow> order_rel(R) \<Longrightarrow> source(R) = union_src(X) \<Longrightarrow>
-   \<forall>S\<in>X. is_subrel(S,R) \<Longrightarrow> R = union_rel(X)"
+  "directed_rels(X) \<Longrightarrow> ord_form(R) \<Longrightarrow> order(R) \<Longrightarrow> carrier(R) = union_src(X) \<Longrightarrow>
+   \<forall>S\<in>X. is_suborder(S,R) \<Longrightarrow> R = union_rel(X)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). rel(R,x,y) \<longleftrightarrow> rel(union_rel(X),x,y)" WITH (
-      CHOOSE "S\<in>X, x\<in>source(S) \<and> y\<in>source(S)")) *})
+    HAVE "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<longleftrightarrow> le(union_rel(X),x,y)" WITH (
+      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S")) *})
 
 lemma union_rel_preorder [forward]:
-  "directed_rels(X) \<Longrightarrow> preorder_rel(union_rel(X))"
+  "directed_rels(X) \<Longrightarrow> R = union_rel(X) \<Longrightarrow> preorder(R)"
   by (tactic {* auto2s_tac @{context} (
-    CHOOSE "E, E = union_src(X)" THEN
-    CHOOSE "R, R = union_rel(X)" THEN
-    HAVE "\<forall>x y z. rel(R,x,y) \<longrightarrow> rel(R,y,z) \<longrightarrow> rel(R,x,z)" WITH (
-      CHOOSE "S\<in>X, x \<in> source(S) \<and> y \<in> source(S) \<and> z \<in> source(S)")) *})
+    HAVE "\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z" WITH (
+      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S \<and> z \<in>. S" THEN
+      HAVE "x \<le>\<^sub>S y" THEN HAVE "y \<le>\<^sub>S z")) *})
 
 lemma union_rel_order [forward]:
-  "directed_rels(X) \<Longrightarrow> order_rel(union_rel(X))"
+  "directed_rels(X) \<Longrightarrow> R = union_rel(X) \<Longrightarrow> order(R)"
   by (tactic {* auto2s_tac @{context} (
-    CHOOSE "E, E = union_src(X)" THEN
-    CHOOSE "R, R = union_rel(X)" THEN
-    HAVE "\<forall>x\<in>E. \<forall>y\<in>E. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y" WITH (
-      CHOOSE "S\<in>X, x \<in> source(S) \<and> y \<in> source(S)")) *})
+    HAVE "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y" WITH (
+      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S")) *})
 
 lemma union_rel_linorder [backward]:
-  "directed_rels(X) \<Longrightarrow> \<forall>R\<in>X. linorder_rel(R) \<Longrightarrow> linorder_rel(union_rel(X))"
+  "directed_rels(X) \<Longrightarrow> \<forall>R\<in>X. linorder(R) \<Longrightarrow> R = union_rel(X) \<Longrightarrow> linorder(R)"
   by (tactic {* auto2s_tac @{context} (
-    CHOOSE "E, E = union_src(X)" THEN
-    CHOOSE "R, R = union_rel(X)" THEN
-    HAVE "\<forall>x\<in>E. \<forall>y\<in>E. x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y" WITH (
-      CHOOSE "S\<in>X, x \<in> source(S) \<and> y \<in> source(S)")) *})
+    HAVE "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y" WITH (
+      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S")) *})
+
+section {* Linear continuum *}
+  
+definition order_unbounded :: "i \<Rightarrow> o" where [rewrite]:
+  "order_unbounded(R) \<longleftrightarrow> (\<forall>x\<in>.R. (\<exists>y. y <\<^sub>R x) \<and> (\<exists>y. y >\<^sub>R x))"
+setup {* add_property_const @{term order_unbounded} *}
+
+lemma order_unboundedD [backward]:
+  "order_unbounded(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y. y <\<^sub>R x"
+  "order_unbounded(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y. y >\<^sub>R x" by auto2+
+setup {* del_prfstep_thm_str "@eqforward" @{thm order_unbounded_def} *}
+
+definition dense_order :: "i \<Rightarrow> o" where [rewrite]:
+  "dense_order(R) \<longleftrightarrow> linorder(R) \<and> (\<forall>x y. x <\<^sub>R y \<longrightarrow> (\<exists>z. x <\<^sub>R z \<and> z <\<^sub>R y))"
+setup {* add_property_const @{term dense_order} *}
+  
+lemma dense_orderI [forward]:
+  "linorder(R) \<Longrightarrow> \<forall>x y. x <\<^sub>R y \<longrightarrow> (\<exists>z. x <\<^sub>R z \<and> z <\<^sub>R y) \<Longrightarrow> dense_order(R)" by auto2
+
+lemma dense_orderE1 [forward]: "dense_order(R) \<Longrightarrow> linorder(R)" by auto2
+lemma dense_orderE2 [backward]: "dense_order(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> \<exists>z. x <\<^sub>R z \<and> z <\<^sub>R y" by auto2
+setup {* del_prfstep_thm @{thm dense_order_def} *}
+
+definition linear_continuum :: "i \<Rightarrow> o" where [rewrite]:
+  "linear_continuum(R) \<longleftrightarrow> dense_order(R) \<and> (\<forall>S. S \<noteq> \<emptyset> \<longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<longrightarrow> has_sup(R,S))"
+setup {* add_property_const @{term linear_continuum} *}
+
+lemma linear_continuumD [forward]: "linear_continuum(R) \<Longrightarrow> dense_order(R)" by auto2+
+    
+lemma linear_continuumD2 [backward]:
+  "linear_continuum(R) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<Longrightarrow> has_sup(R,S)" by auto2+
+    
+lemma linear_continuumI [forward]:
+  "dense_order(R) \<Longrightarrow> \<forall>S. S \<noteq> \<emptyset> \<longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<longrightarrow> has_sup(R,S) \<Longrightarrow> linear_continuum(R)" by auto2
+setup {* del_prfstep_thm @{thm linear_continuum_def} *}
+
+lemma dense_order_eq_str [forward]:
+  "dense_order(R) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> dense_order(S)"
+  by (tactic {* auto2s_tac @{context} (
+    HAVE "\<forall>x y. x <\<^sub>S y \<longrightarrow> (\<exists>z. x <\<^sub>S z \<and> z <\<^sub>S y)" WITH (
+      CHOOSE "z, x <\<^sub>R z \<and> z <\<^sub>R y")) *})
+
+lemma linear_continuum_eq_str_ord [forward]:
+  "linear_continuum(R) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> linear_continuum(S)"
+  by (tactic {* auto2s_tac @{context} (
+    HAVE "\<forall>T. T \<noteq> \<emptyset> \<longrightarrow> upper_bound(S,T) \<noteq> \<emptyset> \<longrightarrow> has_sup(S,T)" WITH (
+      HAVE "has_sup(R,T)" THEN
+      HAVE "has_sup(S,T) \<and> sup(S,T) = sup(R,T)")) *})
 
 end

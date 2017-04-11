@@ -19,7 +19,9 @@ val test_dest_subterms =
             val t = read_term ctxt'' str
             val t' = read_pat ctxt'' str'
             val subs = map (read_term ctxt'') subs_str
-            val (t'', subs') = dest_subterms t
+            val (ct'', subs') = (dest_subterms (cert ctxt'' t))
+                                    |> apsnd (map Thm.term_of)
+            val t'' = Thm.term_of ct''
           in
             if t' aconv t'' andalso eq_list (op aconv) (subs, subs') then ()
             else
@@ -54,7 +56,8 @@ val test_get_all_subterms =
           let
             val t = read_term ctxt'' str
             val subs = map (read_term ctxt'') subs_str
-            val subs' = get_all_subterms t
+            val subs' = (get_all_subterms (cert ctxt'' t))
+                            |> map Thm.term_of
           in
             if eq_list (op aconv) (subs, subs') then ()
             else raise AUTO2CT ("test_get_all_subterms",
@@ -72,7 +75,7 @@ val test_build_equiv =
     let
       fun test_raw (t, equivs) =
           let
-            val eq_th = build_equiv ctxt' equivs t
+            val eq_th = build_equiv equivs (cert ctxt' t)
             val lsubs = map lhs_of equivs
             val rsubs = map rhs_of equivs
           in

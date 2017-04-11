@@ -1,16 +1,10 @@
 (* Sum of two sets *)
 
 theory SetSum
-imports Set
+imports Nat
 begin
 
 section {* Booleans *}
-
-definition succ :: "i \<Rightarrow> i" where succ_def [rewrite]:
-  "succ(i) = cons(i, i)"
-
-definition zero ("0") where "0 = \<emptyset>"
-definition one ("1") where "1 = succ(\<emptyset>)"
 
 definition bool :: "i" where
   "bool = {0,1}"
@@ -34,10 +28,6 @@ definition "xor" :: "i \<Rightarrow> i \<Rightarrow> i" (infixl "xor" 65) where
 setup {* add_rewrite_rule @{thm bool_def} *}
 lemma bool_1I [resolve]: "1 \<in> bool" by auto2
 lemma bool_0I [resolve]: "0 \<in> bool" by auto2
-setup {* add_rewrite_rule @{thm zero_def} *}
-setup {* add_rewrite_rule @{thm one_def} *}
-lemma one_not_0 [resolve]: "1 \<noteq> 0" by auto2
-setup {* del_prfstep_thm @{thm one_def} *}
 
 lemma boolE [forward]: "a \<in> bool \<Longrightarrow> a = 0 \<or> a = 1" by auto2
 setup {* del_prfstep_thm @{thm bool_def} *}
@@ -100,7 +90,7 @@ lemma sum_iff [forward]:
 lemma Inl_inj [forward]: "Inl(a) = Inl(b) \<Longrightarrow> a = b" by auto2
 lemma Inr_inj [forward]: "Inr(a) = Inr(b) \<Longrightarrow> a = b" by auto2
 lemma Inl_Inr_neq [resolve]: "Inl(a) \<noteq> Inr(b)" by auto2
-lemma sum_empty: "0 + 0 = 0" by auto2
+lemma sum_empty: "\<emptyset> + \<emptyset> = \<emptyset>" by auto2
 
 lemma sum_subset_iff [rewrite]: "A + B \<subseteq> C + D \<longleftrightarrow> A \<subseteq> C \<and> B \<subseteq> D"
   by (tactic {* auto2s_tac @{context}

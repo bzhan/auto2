@@ -22,18 +22,35 @@ Generic_Data (
   val merge = Symtab.merge_list (op pointer_eq)
 )
 
-signature PROPERTY_DATA =
+(* Set of fields of a structure whose property can be considered as
+   properties of the structure itself. Relevant when checking
+   is_property_prem.
+ *)
+structure PropertyFieldData =
+Theory_Data (
+  type T = unit Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge pointer_eq
+)
+
+signature PROPERTY =
 sig
   (* About the PropertyData table. *)
   val add_property_const: term -> theory -> theory
   val is_property_const: theory -> term -> bool
+  val add_property_field_const: term -> theory -> theory
+  val is_property_field: theory -> term -> bool
+  val strip_property_field: theory -> term -> term list
   val is_property_prem: theory -> term -> bool
   val is_property_prem': theory -> term -> bool
   val is_property_prem_ctxt': Proof.context -> term -> bool
   val get_property_name: term -> string
   val get_property_names: term list -> string list
   val get_property_arg: term -> term
-  val get_property_args: term list -> term list
+  val get_property_arg_th: thm -> cterm
+  val cstrip_property_field: theory -> cterm -> cterm list
+  val get_property_arg_th_gen: thm -> cterm list
 
   (* About the PropertyUpdateData table.*)
   val can_add_property_update: thm -> theory -> bool
@@ -43,7 +60,7 @@ sig
   val instantiate_property_update: Proof.context -> term -> thm -> thm option
 end;
 
-functor Property_Data(Base:UTIL_BASE) : PROPERTY_DATA =
+functor Property(Base:UTIL_BASE) : PROPERTY =
 struct
 
 structure UtilLogic = UtilLogic(Base)
@@ -55,29 +72,61 @@ fun add_property_const t thy =
         Const (nm, T) =>
         let
           val (pTs, cT) = strip_type T
-          val _ = assert (cT = boolT)
+          val _ = assert (cT = boolT andalso length pTs = 1)
                          "add_property_const: input should be a predicate."
-          val _ = writeln ("Add property " ^ nm ^ ", " ^
-                           (string_of_int (length pTs)) ^ " arguments.")
+          val _ = writeln ("Add predicate " ^ nm ^ " as property.")
         in
           thy |> PropertyData.map (Symtab.update_new (nm, ()))
         end
       | _ => raise AUTO2 "add_property_const: input should be a constant."
 
-(* Whether the term is a fully-applied property predicate. *)
+(* Whether the term is a property predicate applied to a term. *)
 fun is_property_const thy t =
-    if fastype_of t = propT then
-      raise AUTO2 "is_property_const: checked on type prop."
-    else if not (fastype_of t = boolT) then false else
+    let
+      val _ = assert (fastype_of t = boolT) "is_property_const: wrong type"
+    in
+      case Term.head_of t of
+          Const (nm, _) => Symtab.defined (PropertyData.get thy) nm
+        | _ => false
+    end
+
+fun add_property_field_const t thy =
     case Term.head_of t of
-        Const (nm, _) => Symtab.defined (PropertyData.get thy) nm
+        Const (nm, T) =>
+        let
+          val (pTs, _) = strip_type T
+          val _ = assert (length pTs = 1)
+                         "add_property_field_const: input should be a field."
+          val _ = writeln ("Add field " ^ nm ^ " as property field.")
+        in
+          thy |> PropertyFieldData.map (Symtab.update_new (nm, ()))
+        end
+      | _ => raise AUTO2 "add_property_field_const: input should be a constant."
+
+(* Whether the term is zero or more property field constants applied
+   to a Var term.
+ *)
+fun is_property_field thy t =
+    case t of
+        Var _ => true
+      | Const (nm, _) $ t' =>
+        Symtab.defined (PropertyFieldData.get thy) nm andalso
+        is_property_field thy t'
       | _ => false
+
+fun strip_property_field thy t =
+    case t of
+        Const (nm, _) $ t' =>
+        if Symtab.defined (PropertyFieldData.get thy) nm then
+          t :: strip_property_field thy t'
+        else [t]
+      | _ => [t]
 
 (* Stricter condition than is_property_const: the argument must be a
    schematic variable.
  *)
 fun is_property_prem thy t =
-    is_property_const thy t andalso Term.is_Var (dest_arg t)
+    is_property_const thy t andalso is_property_field thy (dest_arg t)
 
 fun is_property_prem' thy t =
     is_Trueprop t andalso is_property_prem thy (dest_Trueprop t)
@@ -95,10 +144,27 @@ fun get_property_names ts =
 
 fun get_property_arg t =
     dest_arg t
-    handle AUTO2 _ => raise AUTO2 "get_property_arg: th in wrong form."
+    handle AUTO2 _ => raise AUTO2 "get_property_arg: t in wrong form."
 
-fun get_property_args ts =
-    ts |> map get_property_arg |> distinct (op aconv)
+fun get_property_arg_th th =
+    Thm.dest_arg (cprop_of' th)
+    handle CTERM _ => raise AUTO2 "get_property_carg"
+
+fun cstrip_property_field thy ct =
+    case Thm.term_of ct of
+        Const (nm, _) $ _ =>
+        if Symtab.defined (PropertyFieldData.get thy) nm then
+          ct :: cstrip_property_field thy (Thm.dest_arg ct)
+        else [ct]
+      | _ => [ct]
+
+fun get_property_arg_th_gen th =
+    let
+      val thy = Thm.theory_of_thm th
+    in
+      cstrip_property_field thy (Thm.dest_arg (cprop_of' th))
+    end
+    handle CTERM _ => raise AUTO2 "get_property_carg_gen"
 
 (* Add the given rule as a property update. The requirements on th is
    as follows:
@@ -202,4 +268,4 @@ fun instantiate_property_update ctxt t th =
       else NONE
     end
 
-end  (* structure Property_Data. *)
+end  (* structure Property. *)

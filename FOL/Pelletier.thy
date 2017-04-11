@@ -65,7 +65,7 @@ theorem p21: "\<exists>x. p \<longrightarrow> F(x) \<Longrightarrow> \<exists>x.
 
 theorem p22: "\<forall>x::'a. p \<longleftrightarrow> F(x) \<Longrightarrow> p \<longleftrightarrow> (\<forall>x. F(x))"
   by (tactic {* auto2s_tac @{context} (
-    CASE "p" THEN CHOOSE "x::'a, True" THEN HAVE "\<not>F(x)") *})
+    CASE "p" THEN CHOOSE "x::'a, True") *})
 
 theorem p23: "(\<forall>x::'a. p \<or> F(x)) \<longleftrightarrow> (p \<or> (\<forall>x. F(x)))" by auto2
 
@@ -94,7 +94,7 @@ theorem p33: "(\<forall>x. p(a) \<and> (p(x) \<longrightarrow> p(b)) \<longright
     HAVE "\<forall>x. (\<not>p(a) \<or> p(x) \<or> p(c)) \<and> (\<not>p(a) \<or> \<not>p(b) \<or> p(c))" WITH (
       HAVE "p(a) \<and> (p(x) \<longrightarrow> p(b)) \<longrightarrow> p(c)") THEN
     HAVE "\<forall>x. p(a) \<and> (p(x) \<longrightarrow> p(b)) \<longrightarrow> p(c)" WITH (
-      HAVE "(\<not>p(a) \<or> p(x) \<or> p(c)) \<and> (\<not>p(a) \<or> \<not>p(b) \<or> p(c))")) *})
+      HAVE "\<not>p(a) \<or> p(x) \<or> p(c)")) *})
 
 theorem p35: "\<exists>(x::'a) (y::'b). P(x,y) \<longrightarrow> (\<forall>x y. P(x,y))" by auto2
 
@@ -150,7 +150,7 @@ theorem p48: "a = b \<or> c = d \<Longrightarrow> a = c \<or> b = d \<Longrighta
 theorem p49: "\<exists>x y. \<forall>(z::'a). z = x \<or> z = y \<Longrightarrow> P(a) \<and> P(b) \<Longrightarrow> (a::'a) \<noteq> b \<Longrightarrow> \<forall>x. P(x)"
   by (tactic {* auto2s_tac @{context} (
     CHOOSE "x, y, \<forall>(z::'a). z = x \<or> z = y" THEN
-    HAVE "x = a \<or> x = b" THEN
+    HAVE "b \<noteq> a" THEN HAVE "a = x \<or> b = x" THEN
     HAVE "\<forall>c. P(c)" WITH HAVE "c = a \<or> c = b") *})
 
 theorem p50: "\<forall>x. F(a,x) \<or> (\<forall>y. F(x,y)) \<Longrightarrow> \<exists>x. \<forall>y. F(x,y)"

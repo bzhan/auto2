@@ -7,6 +7,7 @@ sig
   val rat_zero: Rat.rat
 
   (* Terms. *)
+  val is_numc: term -> bool
   val dest_numc: term -> int
   val dest_numc_rat: term -> Rat.rat
   val is_order: term -> bool
@@ -28,6 +29,18 @@ val natT = HOLogic.natT
 val intT = @{typ int}
 val ratT = @{typ rat}
 val rat_zero = Rat.of_int 0
+
+(* Test if a term represents a numerical constant. In addition to use
+   dest_number from HOLogic, test for inverse, uminus, of_rat, etc.
+ *)
+fun is_numc t =
+    case t of
+        Const (@{const_name inverse}, _) $ t' => is_numc t'
+      | Const (@{const_name uminus}, _) $ t' => is_numc t'
+      | Const (@{const_name of_rat}, _) $ r => is_numc r
+      | Const (@{const_name Fract}, _) $ n $ d => is_numc n andalso is_numc d
+      | _ => let val _ = HOLogic.dest_number t in true end
+             handle TERM ("dest_number", _) => false
 
 (* Deconstruct numerical constant. Discard type. *)
 fun dest_numc t = HOLogic.dest_number t |> snd

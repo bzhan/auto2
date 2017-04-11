@@ -46,6 +46,7 @@ sig
   val lookup_tyinst: Type.tyenv * Envir.tenv -> string -> typ
   val update_env: indexname * term -> Type.tyenv * Envir.tenv ->
                   Type.tyenv * Envir.tenv
+  val eq_env: (Type.tyenv * Envir.tenv) * (Type.tyenv * Envir.tenv) -> bool
 
   (* Wrapper around matching functions in pattern. *)
   val pattern_fo_match_thy: theory -> term * term -> Type.tyenv * Envir.tenv
@@ -94,6 +95,8 @@ sig
   (* Generic context. *)
   val theory_of_gnrc: Context.generic -> theory
   val context_of_gnrc: Context.generic -> Proof.context
+  val local_context_map:
+      (Context.generic -> Context.generic) -> Proof.context -> Proof.context
 
   (* Certifying terms and types. *)
   val cert: Proof.context -> term -> cterm
@@ -112,22 +115,28 @@ sig
   val is_abs: term -> bool
   val is_implies: term -> bool
   val dest_binop: term -> term * (term * term)
+  val dest_binop_head: term -> term
+  val dest_binop_args: term -> term * term
   val dest_arg: term -> term
   val dest_arg1: term -> term
   val dest_args: term -> term list
   val dest_argn: int -> term -> term
-  val is_meta_eq_term: term -> bool
-  val is_meta_eq_thm: thm -> bool
+  val is_meta_eq: term -> bool
   val occurs_frees: term list -> term -> bool
   val occurs_free: term -> term -> bool
   val has_vars: term -> bool
   val is_subterm: term -> term -> bool
   val has_subterm: term list -> term -> bool
+  val is_head: term -> term -> bool
   val lambda_abstract: term -> term -> term
   val is_pattern_list: term list -> bool
   val is_pattern: term -> bool
   val strip_pure_goal: Proof.context -> term -> (bool * term) list * term
   val print_term_detail: Proof.context -> term -> string
+
+  (* cterms. *)
+  val dest_cargs: cterm -> cterm list
+  val dest_binop_cargs: cterm -> cterm * cterm
 
   (* Theorems. *)
   val apply_on: thm list -> thm -> thm
@@ -140,11 +149,11 @@ sig
   val rhs_of: thm -> term
   val assume_meta_eq: theory -> term * term -> thm
   val assume_thm: Proof.context -> term -> thm
-  val rename_abs: Type.tyenv * Envir.tenv -> term -> term
-  val rename_abs_thm: Type.tyenv * Envir.tenv -> thm -> thm
   val subst_thm_thy: theory -> Type.tyenv * Envir.tenv -> thm -> thm
   val subst_thm: Proof.context -> Type.tyenv * Envir.tenv -> thm -> thm
   val subst_thm_atomic: (cterm * cterm) list -> thm -> thm
+  val meta_use_vardef: thm -> thm
+  val meta_use_vardefs: thm -> thm
   val subst_term_norm: Type.tyenv * Envir.tenv -> term -> term
   val apply_to_thm: conv -> thm -> thm
   val meta_sym: thm -> thm
@@ -156,6 +165,8 @@ sig
   val send_all_to_hyps: thm -> thm
   val transitive_list: thm list -> thm
   val skip_n_conv: int -> conv -> conv
+  val pattern_rewr_conv: term -> (term * thm) list -> conv
+  val eq_cong_th: int -> term -> term -> Proof.context -> thm
 
   (* Conversions *)
   val reverse_eta_conv: Proof.context -> conv
@@ -330,6 +341,17 @@ fun lookup_tyinst (tyinst, _) str =
 fun update_env (idx, t) (tyenv, tenv) =
     (tyenv, tenv |> Vartab.update_new (idx, (type_of t, t)))
 
+(* A rough comparison, simply compare the corresponding terms. *)
+fun eq_env ((_, inst1), (_, inst2)) =
+    let
+      val data1 = Vartab.dest inst1
+      val data2 = Vartab.dest inst2
+      fun compare_data (((nm, i), (ty, t)), ((nm', i'), (ty', t'))) =
+          nm = nm' andalso i = i' andalso ty = ty' andalso t aconv t'
+    in
+      eq_set compare_data (data1, data2)
+    end
+
 fun pattern_fo_match_thy thy (t, u) =
     Pattern.first_order_match thy (t, u) fo_init
 fun pattern_fo_match ctxt (t, u) =
@@ -430,6 +452,8 @@ fun ths check_MRS th =
 
 val theory_of_gnrc = Context.cases I Proof_Context.theory_of
 val context_of_gnrc = Context.cases Proof_Context.init_global I
+fun local_context_map f =
+    Local_Theory.map_contexts (fn i => if i = 0 then Context.proof_map f else I)
 
 fun cert ctxt t = Thm.cterm_of ctxt t
 fun tycert ctxt ty = Thm.ctyp_of ctxt ty
@@ -460,6 +484,9 @@ fun dest_binop t =
         f $ a $ b => (f, (a, b))
       | _ => raise AUTO2 "dest_binop: invalid input"
 
+fun dest_binop_head t = fst (dest_binop t)
+fun dest_binop_args t = snd (dest_binop t)
+
 (* Return the argument of t. If t is f applied to multiple arguments,
    return the last argument.
  *)
@@ -477,13 +504,11 @@ fun dest_args t = t |> Term.strip_comb |> snd
 fun dest_argn n t = nth (dest_args t) n
 
 (* Whether the term is of the form A == B. *)
-fun is_meta_eq_term t =
+fun is_meta_eq t =
     let val _ = assert (fastype_of t = propT) "is_meta_eq_term: wrong type"
     in case t of Const ("Pure.eq", _) $ _ $ _ => true
                | _ => false
     end
-
-val is_meta_eq_thm = is_meta_eq_term o Thm.prop_of
 
 (* Given free variable freevar (or a list of free variables freevars),
    determine whether any of the inputs appears in t.
@@ -500,6 +525,15 @@ fun is_subterm subt t = exists_subterm (fn t' => t' aconv subt) t
 
 (* Whether any of subts is a subterm of t. *)
 fun has_subterm subts t = exists_subterm (fn t' => member (op aconv) subts t') t
+
+(* Whether s is a head term of t. *)
+fun is_head s t =
+    let
+      val (sf, sargs) = Term.strip_comb s
+      val (tf, targs) = Term.strip_comb t
+    in
+      sf aconv tf andalso is_prefix (op aconv) sargs targs
+    end
 
 (* If stmt is P(t), return lambda t. P(t). *)
 fun lambda_abstract t stmt = lambda t (Term.abstract_over (t, stmt))
@@ -589,6 +623,10 @@ fun print_term_detail ctxt t =
       | u $ v => "(" ^ print_term_detail ctxt u ^ ") $ (" ^
                  print_term_detail ctxt v ^ ")"
 
+(* Version for ct. *)
+fun dest_cargs ct = ct |> Drule.strip_comb |> snd
+fun dest_binop_cargs ct = (Thm.dest_arg1 ct, Thm.dest_arg ct)
+
 fun apply_on ths th = ths MRS th
 
 (* Apply cv to nth argument of t, counting from right and starting at 0. *)
@@ -632,89 +670,6 @@ fun assume_thm ctxt t =
       raise AUTO2CT ("assume_thm: t is not of type prop", [cert ctxt t])
     else Thm.assume (cert ctxt t)
 
-(* Given a term with schematic variables, and instantiation for those
-   schematic variables, adjust names of abstractions in the term using
-   names of abstractions in the instantiations.
-
-   For example, if t is !x. P x, and P is instantiated to %m. Q m,
-   then the new term should be !m. P m.
- *)
-fun rename_abs inst t =
-    let
-      fun obtain_abs_nms instP =
-          case instP of
-              Abs (nm, _, body) => nm :: (obtain_abs_nms body)
-            | _ => []
-
-      fun obtain_hint (nm, arg) hints =
-          case arg of
-              Bound i => hints |> Inttab.update (i, nm)
-            | _ => hints
-
-      (* Given t as a possibly open subterm of the proposition of th,
-         obtain name hints from t (as a Inttab mapping de-Bruijn
-         indices to names) and rename using hint for de-Bruijn zero if
-         t is an abstraction.
-       *)
-      fun helper t =
-          case t of
-              (Abs (nm, T, body)) =>
-              let
-                val (body', hints) = helper body
-                val nm' = case Inttab.lookup hints 0 of
-                              NONE => nm | SOME hint => hint
-                fun shift_id (i, str) =
-                    if i = 0 then [] else [(i-1, str)]
-                val hints' = hints |> Inttab.dest |> maps shift_id
-                                   |> Inttab.make
-              in
-                (Abs (nm', T, body'), hints')
-              end
-            | _ $ _ =>
-              let
-                val (f, args) = Term.strip_comb t
-              in
-                case f of
-                    Var ((P, n), _) =>
-                    if not (defined_instn inst (P, n))
-                    then (t, Inttab.empty) else
-                    let
-                      val instP = lookup_instn inst (P, n)
-                      val P_nms = obtain_abs_nms instP
-                    in
-                      if length P_nms = length args then
-                        (t, fold obtain_hint (P_nms ~~ args) Inttab.empty)
-                      else  (* This case is unclear *)
-                        (t, Inttab.empty)
-                    end
-                  | _ =>
-                    let
-                      (* Apply to args to get new arguments args'. For
-                         hints, take the last non-empty hint.
-                       *)
-                      val res = map helper args
-                      val args' = map fst res
-                      val hints = filter_out Inttab.is_empty (map snd res)
-                      val hints_last = if length hints > 0 then List.last hints
-                                       else Inttab.empty
-                    in
-                      (Term.list_comb (f, args'), hints_last)
-                    end
-              end
-            | _ => (t, Inttab.empty)
-      val t' = helper t |> fst
-      val _ = assert (t aconv t') "rename_abs: not aconv"
-    in
-      t'
-    end
-
-fun rename_abs_thm inst th =
-    let
-      val prop' = rename_abs inst (Thm.prop_of th)
-    in
-      Thm.renamed_prop prop' th
-    end
-
 (* Similar to Envir.subst_term. Apply an instantiation to a theorem. *)
 fun subst_thm_thy thy (tyinsts, insts) th =
     let
@@ -725,9 +680,9 @@ fun subst_thm_thy thy (tyinsts, insts) th =
           ((v, Envir.subst_type tyinsts T), cert_thy thy u)
       val ts = map process_tenv (Vartab.dest insts)
     in
-      th |> rename_abs_thm (tyinsts, insts)
-         |> Drule.instantiate_normalize (tys, ts)
+      th |> Drule.instantiate_normalize (tys, ts)
     end
+
 fun subst_thm ctxt (tyinsts, insts) th =
     subst_thm_thy (Proof_Context.theory_of ctxt) (tyinsts, insts) th
 
@@ -750,6 +705,27 @@ fun subst_thm_atomic subst th =
          |> fold Thm.forall_elim (rev new_cts)
     end
 
+(* Given th where the first premise is in the form ?A == t, replace ?A
+   by t in the rest of th, and remove the first premise.
+ *)
+fun meta_use_vardef th =
+    let
+      val thy = Thm.theory_of_thm th
+      val ((ix, T), ct) =
+          th |> Thm.prems_of |> hd |> Logic.dest_equals
+             |> apfst Term.dest_Var |> apsnd (cert_thy thy)
+    in
+      (Thm.reflexive ct) RS (Thm.instantiate ([], [((ix, T), ct)]) th)
+    end
+
+fun meta_use_vardefs th =
+    case Thm.prop_of th of
+        Const ("Pure.imp", _) $ A $ _ =>
+        if is_meta_eq A andalso Term.is_Var (fst (Logic.dest_equals A)) then
+          th |> meta_use_vardef |> meta_use_vardefs
+        else th
+      | _ => th
+
 (* Substitution into terms used in AUTO2. Substitute types first and
    instantiate the types in the table of term instantiations. Also
    perform beta_norm at the end.
@@ -762,8 +738,7 @@ fun subst_term_norm (tyinsts, insts) t =
                           (ixn, (Envir.subst_type tyinsts T, v)))
                |> Vartab.make
     in
-      t |> rename_abs (tyinsts, insts)
-        |> Envir.subst_term_types tyinsts
+      t |> Envir.subst_term_types tyinsts
         |> Envir.subst_term (tyinsts, inst_tenv insts)
         |> Envir.beta_norm
     end
@@ -839,6 +814,61 @@ fun transitive_list ths =
  *)
 fun skip_n_conv n cv =
     if n <= 0 then cv else Conv.arg_conv (skip_n_conv (n-1) cv)
+
+(* Given a term t, and pairs (a_i, eq_i), where a_i's are atomic
+   subterms of t. Suppose the input is obtained by replacing each a_i
+   by the left side of eq_i in t, obtain equality from t to the term
+   obtained by replacing each a_i by the right side of eq_i in t.
+ *)
+fun pattern_rewr_conv t eq_ths ct =
+    case t of
+        Bound _ => raise AUTO2 "pattern_rewr_conv: bound variable."
+      | Abs _ => raise AUTO2 "pattern_rewr_conv: abs not supported."
+      | _ $ _ =>
+        let
+          val (f, arg) = Term.strip_comb t
+          val (f', arg') = Drule.strip_comb ct
+          val _ = assert (f aconv Thm.term_of f')
+                         "pattern_rewr_conv: input does not match pattern."
+          val ths = map (fn (t, ct) => pattern_rewr_conv t eq_ths ct)
+                        (arg ~~ arg')
+        in
+          comb_equiv (f', ths)
+        end
+      | Const _ =>
+        let
+          val _ = assert (t aconv Thm.term_of ct)
+                         "pattern_rewr_conv: input does not match pattern."
+        in
+          Conv.all_conv ct
+        end
+      | _ =>  (* Free and Var cases *)
+        (case AList.lookup (op aconv) eq_ths t of
+             NONE => Conv.all_conv ct
+           | SOME eq_th =>
+             let
+               val _ = assert (lhs_of eq_th aconv (Thm.term_of ct))
+                              "pattern_rewr_conv: wrong substitution."
+             in
+               eq_th
+             end)
+
+(* Given integer i, term b_i, and a term A = f(a_1, ..., a_n), produce
+   the theorem a_i = b_i ==> A = f(a_1, ..., b_i, ..., a_n).
+ *)
+fun eq_cong_th i bi A ctxt =
+    let
+      val thy = Proof_Context.theory_of ctxt
+      val (cf, cargs) = Drule.strip_comb (cert ctxt A)
+      val _ = assert (i < length cargs) "eq_cong_th: i out of bounds."
+      val ai = Thm.term_of (nth cargs i)
+      val eq_i = assume_meta_eq thy (ai, bi)
+      val eqs = map Thm.reflexive (take i cargs) @ [eq_i] @
+                map Thm.reflexive (drop (i + 1) cargs)
+      val eq_A = comb_equiv (cf, eqs)
+    in
+      Thm.implies_intr (Thm.cprop_of eq_i) eq_A
+    end
 
 (* Given P of function type, produce P == %x. P x. *)
 fun reverse_eta_conv ctxt ct =

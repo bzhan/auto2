@@ -18,7 +18,7 @@ local
   val ctxt' = ctxt |> fold Variable.declare_term [x, x', y, y', z, w, px, py]
 
   val tbl = (RewriteTable.empty ctxt')
-                |> RewriteTable.add_rewrite [] (assume_eq thy (x, x'))
+                |> RewriteTable.add_rewrite ([], assume_eq thy (x, x'))
   val rtype = SINGLE tbl
   val st = Status.empty_status ctxt'
 
@@ -33,7 +33,8 @@ fun convert_prop_to_nat_order prop =
     let
       val err_str = "convert_prop_to_nat_order: "
       val th = prop |> mk_Trueprop |> assume_thm ctxt'
-      val item = BoxItem.mk_box_item (0, [], 0, Fact ("PROP", [prop], th))
+      val mk_box_item = BoxItem.mk_box_item ctxt'
+      val item = mk_box_item (0, [], 0, Fact (TY_PROP, [prop], th))
 
       fun apply_prfsteps item =
           maps (apply_prfstep rtype st [item]) to_nat_order_prfsteps
@@ -41,7 +42,7 @@ fun convert_prop_to_nat_order prop =
       fun process_raw_update updt =
           case updt of
               AddItems {raw_items, ...} =>
-              map (fn ritem => BoxItem.mk_box_item (0, [], 0, ritem)) raw_items
+              map (fn ritem => mk_box_item (0, [], 0, ritem)) raw_items
             | _ => raise AUTO2 (err_str ^ "unexpected update.")
     in
       maps process_raw_update (apply_prfsteps item)
@@ -53,7 +54,11 @@ val test_parse_prop =
           "(" ^ ([x, y, mk_nat diff] |> pretty_terms ctxt' |> str) ^ ")"
 
       fun item_to_spec item =
-          let val (x, y, n, _) = get_nat_order_info item in (x, y, n) end
+          let
+            val (cx, cy, n, _) = get_nat_order_info item
+          in
+            (Thm.term_of cx, Thm.term_of cy, n)
+          end
 
       fun eq_specs ((x1, y1, diff1), (x2, y2, diff2)) =
           x1 aconv x2 andalso y1 aconv y2 andalso diff1 = diff2
@@ -109,9 +114,9 @@ val test_nat_order_match_side =
       fun test (pat_str, x_str, res_strs) =
           let
             val pat = read_as_term pat_str
-            val x = read_as_term x_str
+            val cx = cert ctxt' (read_as_term x_str)
             val res = map read_as_term res_strs
-            val res' = nat_order_match_side pat x tbl ([], fo_init)
+            val res' = nat_order_match_side tbl (pat, cx) ([], fo_init)
             fun check_inst ((_, inst), _, eq_th) =
                 (subst_term_norm inst pat) aconv (lhs_of eq_th)
             fun eq_th_of (_, _, eq_th) = eq_th

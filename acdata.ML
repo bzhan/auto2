@@ -3,8 +3,8 @@
 (* Instantiated version of AC info. *)
 type ac_inst_info = {
   cfhead: cterm, assoc_cv: conv, assoc_sym_cv: conv,
-  comm_cv: conv, unit_val: term, unit_cv: conv,
-  uinv_op: term, uinv_cv: conv, inv_op: term, inv_cv: conv}
+  comm_cv: conv, unit_val: cterm, unit_cv: conv,
+  uinv_op: cterm, uinv_cv: conv, inv_op: cterm, inv_cv: conv}
 
 (* Register of instantiated infos. Each ac_info_info is registered
    under its head, uinv, and inv operators (if applicable).
@@ -78,10 +78,16 @@ sig
   val dest_ac_l: ac_inst_info -> term -> term list
   val dest_ac_r: ac_inst_info -> term -> term list
   val dest_ac_gen: bool -> ac_inst_info -> term -> term list
+  val cdest_ac_l: ac_inst_info -> cterm -> cterm list
+  val cdest_ac_r: ac_inst_info -> cterm -> cterm list
+  val cdest_ac_gen: bool -> ac_inst_info -> cterm -> cterm list
   val dest_ac_total: ac_inst_info -> term -> term list
   val list_ac_l: ac_inst_info -> term list -> term
   val list_ac_r: ac_inst_info -> term list -> term
   val list_ac_gen: bool -> ac_inst_info -> term list -> term
+  val clist_ac_l: ac_inst_info -> cterm list -> cterm
+  val clist_ac_r: ac_inst_info -> cterm list -> cterm
+  val clist_ac_gen: bool -> ac_inst_info -> cterm list -> cterm
   val comb_ac_equiv: ac_inst_info -> thm list -> thm
   val normalize_assoc_l: ac_inst_info -> conv
   val normalize_assoc_r: ac_inst_info -> conv
@@ -161,7 +167,7 @@ fun inst_ac_info thy T {assoc_th, comm_th, unitl_th, unitr_th,
                    else rewr_obj_eq inv_th'
 
       val fhead = if is_true_th assoc_th' then null_term
-                  else assoc_th' |> prop_of' |> dest_arg |> dest_binop |> fst
+                  else assoc_th' |> prop_of' |> dest_arg |> dest_binop_head
       val cfhead = cert_thy thy fhead
 
       val unit_val = if is_true_th unitl_th' then null_term
@@ -170,13 +176,14 @@ fun inst_ac_info thy T {assoc_th, comm_th, unitl_th, unitr_th,
                     else uinv_uinv_th' |> prop_of' |> dest_arg1
                                        |> Term.dest_comb |> fst
       val inv_op = if is_true_th inv_th' then null_term
-                   else inv_th' |> prop_of' |> dest_arg1 |> dest_binop |> fst
+                   else inv_th' |> prop_of' |> dest_arg1 |> dest_binop_head
     in
       if is_true_th assoc_th' then NONE else
       SOME {cfhead = cfhead, assoc_cv = assoc_cv, assoc_sym_cv = assoc_sym_cv,
-            comm_cv = comm_cv, unit_val = unit_val, unit_cv = unit_cv,
-            uinv_op = uinv_op, uinv_cv = uinv_cv,
-            inv_op = inv_op, inv_cv = inv_cv}
+            comm_cv = comm_cv,
+            unit_val = cert_thy thy unit_val, unit_cv = unit_cv,
+            uinv_op = cert_thy thy uinv_op, uinv_cv = uinv_cv,
+            inv_op = cert_thy thy inv_op, inv_cv = inv_cv}
     end
 
 fun is_binop t =
@@ -188,18 +195,10 @@ val (AC_NONE, AC_FHEAD, AC_UINV, AC_INV) = (0, 1, 2, 3)
 
 (* Match (unary or binary) head of t with cfhead, uinv_op, or inv_op. *)
 fun ac_analyze_head {cfhead, uinv_op, inv_op, ...} t =
-    case t of
-        f $ _ =>
-        if f aconv uinv_op then AC_UINV
-        else if not (is_binop t) then AC_NONE
-        else let
-          val (f, _) = dest_binop t
-        in
-          if f aconv Thm.term_of cfhead then AC_FHEAD
-          else if f aconv inv_op then AC_INV
-          else AC_NONE
-        end
-      | _ => AC_NONE
+    if is_head (Thm.term_of uinv_op) t then AC_UINV
+    else if is_head (Thm.term_of inv_op) t then AC_INV
+    else if is_head (Thm.term_of cfhead) t then AC_FHEAD
+    else AC_NONE
 
 fun head_agrees ac_info t = (ac_analyze_head ac_info t = AC_FHEAD)
 fun head_agrees_uinv ac_info t = (ac_analyze_head ac_info t = AC_UINV)
@@ -208,7 +207,7 @@ fun head_agrees_all ac_info t = (ac_analyze_head ac_info t <> AC_NONE)
 fun get_head_ac_info ctxt t =
     if not (is_binop t) then NONE
     else let
-      val (f, _) = dest_binop t
+      val f = dest_binop_head t
       val info_table = ACInstData.get ctxt
     in
       case Termtab.lookup info_table f of
@@ -226,11 +225,7 @@ fun get_head_ac_info_all ctxt t =
         in
           if is_some uinv_info then uinv_info
           else if not (is_binop t) then NONE
-          else let
-            val (f2, _) = dest_binop t
-          in
-            Termtab.lookup info_table f2
-          end
+          else Termtab.lookup info_table (dest_binop_head t)
         end
       | _ => NONE
 
@@ -285,7 +280,7 @@ fun add_ac_inst_info ac_data ctxt =
     let
       val {cfhead, uinv_op, inv_op, ...} = ac_data
       val fs = filter_out (fn t => t aconv null_term)
-                          [Thm.term_of cfhead, uinv_op, inv_op]
+                          (map Thm.term_of [cfhead, uinv_op, inv_op])
       val updts = map (rpair ac_data) fs
     in
       ACInstData.map (fold Termtab.update updts) ctxt
@@ -328,7 +323,7 @@ fun dest_ac_l ac_info t =
     let
       fun dest t =
           if head_agrees ac_info t then
-            let val (_, (a1, a2)) = dest_binop t in a2 :: dest a1 end
+            let val (a1, a2) = dest_binop_args t in a2 :: dest a1 end
           else [t]
     in
       rev (dest t)
@@ -339,7 +334,7 @@ fun dest_ac_r ac_info t =
     let
       fun dest t =
           if head_agrees ac_info t then
-            let val (_, (a1, a2)) = dest_binop t in a1 :: dest a2 end
+            let val (a1, a2) = dest_binop_args t in a1 :: dest a2 end
           else [t]
     in
       dest t
@@ -349,12 +344,35 @@ fun dest_ac_r ac_info t =
 fun dest_ac_gen assoc_r ac_info t =
     if assoc_r then dest_ac_r ac_info t else dest_ac_l ac_info t
 
+fun cdest_ac_l ac_info ct =
+    let
+      fun dest ct =
+          if head_agrees ac_info (Thm.term_of ct) then
+            let val (a1, a2) = dest_binop_cargs ct in a2 :: dest a1 end
+          else [ct]
+    in
+      rev (dest ct)
+    end
+
+fun cdest_ac_r ac_info ct =
+    let
+      fun dest ct =
+          if head_agrees ac_info (Thm.term_of ct) then
+            let val (a1, a2) = dest_binop_cargs ct in a1 :: dest a2 end
+          else [ct]
+    in
+      dest ct
+    end
+
+fun cdest_ac_gen assoc_r ac_info ct =
+    if assoc_r then cdest_ac_r ac_info ct else cdest_ac_l ac_info ct
+
 (* Deconstruct for the given AC on both sides. *)
 fun dest_ac_total ac_info t =
     let
       fun dest t =
           if head_agrees ac_info t then
-            let val (_, (a1, a2)) = dest_binop t in dest a1 @ dest a2 end
+            let val (a1, a2) = dest_binop_args t in dest a1 @ dest a2 end
           else [t]
     in
       dest t
@@ -362,7 +380,7 @@ fun dest_ac_total ac_info t =
 
 (* Construct f applied to ts, associated to the left. *)
 fun list_ac_l {cfhead, unit_val, ...} ts =
-    if ts = [] then unit_val
+    if length ts = 0 then Thm.term_of unit_val
     else let
       fun append ts t =
           case ts of
@@ -374,7 +392,7 @@ fun list_ac_l {cfhead, unit_val, ...} ts =
 
 (* Construct f applied to ts, associated to the right. *)
 fun list_ac_r {cfhead, unit_val, ...} ts =
-    if ts = [] then unit_val
+    if length ts = 0 then Thm.term_of unit_val
     else let
       fun append ts t =
           case ts of
@@ -388,6 +406,32 @@ fun list_ac_r {cfhead, unit_val, ...} ts =
 (* Constructor for the given AC. *)
 fun list_ac_gen assoc_r ac_info ts =
     if assoc_r then list_ac_r ac_info ts else list_ac_l ac_info ts
+
+fun clist_ac_l {cfhead, unit_val, ...} cts =
+    if length cts = 0 then unit_val
+    else let
+      fun append cts ct =
+          case cts of
+              [] => ct
+            | ct' :: cts' => append cts' (Drule.list_comb (cfhead, [ct, ct']))
+    in
+      append (tl cts) (hd cts)
+    end
+
+fun clist_ac_r {cfhead, unit_val, ...} cts =
+    if length cts = 0 then unit_val
+    else let
+      fun append cts ct =
+          case cts of
+              [] => ct
+            | ct' :: cts' => append cts' (Drule.list_comb (cfhead, [ct', ct]))
+      val rev_cts = rev cts
+    in
+      append (tl rev_cts) (hd rev_cts)
+    end
+
+fun clist_ac_gen assoc_r ac_info cts =
+    if assoc_r then clist_ac_r ac_info cts else clist_ac_l ac_info cts
 
 (* Given ths: [A1 == B1, ..., An == Bn], get theorem A1...An ==
    B1...Bn. Associate to the left only.
@@ -457,7 +501,7 @@ fun move_outmost ac_info u ct =
     if not (head_agrees ac_info (Thm.term_of ct)) then
       raise AUTO2 "move_outmost: u not found in ct."
     else let
-      val (_, (a, b)) = dest_binop (Thm.term_of ct)
+      val (a, b) = dest_binop_args (Thm.term_of ct)
     in
       if u aconv b then Conv.all_conv ct
       else if head_agrees ac_info a then
@@ -547,12 +591,12 @@ fun normalize_comm_gen ac_info assoc_r termless ct =
       fun swap_last ct =
           if head_agrees ac_info (Thm.term_of ct) then
             let
-              val (_, (a1, a2)) = dest_binop (Thm.term_of ct)
+              val (a1, a2) = dest_binop_args (Thm.term_of ct)
             in
               if assoc_r andalso head_agrees ac_info a2 then
                 (* Structure of t is a1 . a2 = a1 . (b1 . _). *)
                 let
-                  val (_, (b1, _)) = dest_binop a2
+                  val (b1, _) = dest_binop_args a2
                 in
                   if termless (b1, a1) then
                     ((swap_l_cv ac_info)
@@ -562,7 +606,7 @@ fun normalize_comm_gen ac_info assoc_r termless ct =
               else if not assoc_r andalso head_agrees ac_info a1 then
                 (* Structure of t is a1 . a2 = (_ . b2) . a2. *)
                 let
-                  val (_, (_, b2)) = dest_binop a1
+                  val (_, b2) = dest_binop_args a1
                 in
                   if termless (a2, b2) then
                     ((swap_r_cv ac_info)

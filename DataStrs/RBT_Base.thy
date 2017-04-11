@@ -65,18 +65,21 @@ fun cl_inv :: "('a, 'b) pre_rbt \<Rightarrow> bool" where
   "cl_inv Leaf = True"
 | "cl_inv (Node l R k v r) = (cl_inv l \<and> cl_inv r \<and> cl l = B \<and> cl r = B)"
 | "cl_inv (Node l B k v r) = (cl_inv l \<and> cl_inv r)"
+setup {* add_property_const @{term cl_inv} *}
 
 fun bd_inv :: "('a, 'b) pre_rbt \<Rightarrow> bool" where
   "bd_inv Leaf = True"
 | "bd_inv (Node l c k v r) = (bd_inv l \<and> bd_inv r \<and> black_depth l = black_depth r)"
+setup {* add_property_const @{term bd_inv} *}
 
 definition is_rbt :: "('a, 'b) pre_rbt \<Rightarrow> bool" where
   "is_rbt t = (cl_inv t \<and> bd_inv t)"
+setup {* add_property_const @{term is_rbt} *}
 
 setup {* fold add_rewrite_rule (
   @{thms min_depth.simps} @ @{thms max_depth.simps} @ @{thms black_depth.simps} @
   @{thms cl_inv.simps} @ @{thms bd_inv.simps} @ [@{thm is_rbt_def}]) *}
-theorem cl_invI: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (Node l B k v r)" by auto
+theorem cl_invI: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (Node l B k v r)" by auto2
 setup {* add_forward_prfstep_cond @{thm cl_invI} [with_term "cl_inv (Node ?l B ?k ?v ?r)"] *}
 
 subsection {* Properties of bd_inv *}
@@ -85,7 +88,7 @@ theorem bd_inv_elimR [rewrite]:
   "bd_inv (Node l R k v r) \<Longrightarrow> black_depth (Node l R k v r) = black_depth l" by auto2
 theorem bd_inv_elimB [rewrite]:
   "bd_inv (Node l B k v r) \<Longrightarrow> black_depth (Node l B k v r) = black_depth l + 1" by auto2
-theorem bd_inv_intro: "black_depth l = black_depth r \<Longrightarrow> bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> bd_inv (Node l c k v r)" by auto2
+theorem bd_inv_intro: "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (Node l c k v r)" by auto2
 setup {* add_forward_prfstep_cond @{thm bd_inv_intro} [with_term "Node ?l ?c ?k ?v ?r"] *}
 
 subsection {* is_rbt is recursive *}
@@ -120,8 +123,9 @@ fun cl_inv' :: "('a, 'b) pre_rbt \<Rightarrow> bool" where
   "cl_inv' Leaf = True"
 | "cl_inv' (Node l c k v r) = (cl_inv l \<and> cl_inv r)"
 setup {* fold add_rewrite_rule @{thms cl_inv'.simps} *}
+setup {* add_property_const @{term cl_inv'} *}
 
-theorem cl_inv_B [forward, backward2]: "cl t = B \<Longrightarrow> cl_inv' t \<Longrightarrow> cl_inv t" by auto2
+theorem cl_inv_B [forward, backward1]: "cl_inv' t \<Longrightarrow> cl t = B \<Longrightarrow> cl_inv t" by auto2
 theorem cl_inv_R [forward]: "cl_inv' (Node l R k v r) \<Longrightarrow> cl l = B \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (Node l R k v r)" by auto2
 theorem cl_inv_imp [forward]: "cl_inv t \<Longrightarrow> cl_inv' t"
   by (tactic {* auto2s_tac @{context} (CASE "cl t = R") *})

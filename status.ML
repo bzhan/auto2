@@ -4,7 +4,6 @@
 
 val TY_NULL = "NULL"
 val TY_EQ = "EQ"
-val TY_EQ_IF = "EQ_IF"
 val TY_VAR = "VAR"
 val TY_PROP = "PROP"
 val TY_TERM = "TERM"
@@ -14,7 +13,7 @@ type retro_handler = (term * term list -> bool) * (term * thm -> thm)
 datatype raw_item = Handler of term * retro_handler
                   | Fact of string * term list * thm
 type box_item = {uid: int, id: box_id, sc: int, ty_str: string,
-                 tname: term list, prop: thm}
+                 tname: cterm list, prop: thm}
 
 signature BOXITEM =
 sig
@@ -38,10 +37,9 @@ sig
   val null_item: box_item
   val match_ty_str: string -> box_item -> bool
   val match_ty_strs: string list -> box_item -> bool
-  val get_tname: box_item -> term list
   (* Misc. functions. *)
   val merged_id: box_lattice -> box_item list -> box_id
-  val mk_box_item: int * box_id * int * raw_item -> box_item
+  val mk_box_item: Proof.context -> int * box_id * int * raw_item -> box_item
 end;
 
 functor BoxItem(Base:UTIL_BASE) : BOXITEM =
@@ -125,19 +123,18 @@ val null_item = {uid = 0, id = [], sc = 0, ty_str = TY_NULL,
                  tname = [], prop = true_th}
 fun match_ty_str s {ty_str, ...} = (s = "" orelse s = ty_str)
 fun match_ty_strs slist {ty_str, ...} = member (op =) slist ty_str
-fun get_tname {tname, ...} = tname
 
 fun merged_id lat items =
     case items of
         [] => []
       | {id, ...} :: items' => BoxID.merge_boxes lat (id, merged_id lat items')
 
-fun mk_box_item (uid, id, sc, ritem) =
+fun mk_box_item ctxt (uid, id, sc, ritem) =
     case ritem of
         Handler _ => raise AUTO2 "mk_box_item: ritem must be Fact"
-      | Fact (ty_str, tname, prop) =>
-        {uid = uid, id = id, sc = sc, ty_str = ty_str, tname = tname,
-         prop = prop}
+      | Fact (ty_str, ts, prop) =>
+        {uid = uid, id = id, sc = sc, ty_str = ty_str,
+         tname = map (cert ctxt) ts, prop = prop}
 
 end  (* structure BoxItem. *)
 
@@ -210,14 +207,16 @@ Theory_Data (
 datatype match_arg = PropMatch of term
                    | TypedMatch of string * term
                    | PropertyMatch of term
+                   | WellFormMatch of term * term
 
-signature ITEM_IO_DATA =
+signature ITEM_IO =
 sig
   val pat_of_match_arg: match_arg -> term
   val subst_arg: Type.tyenv * Envir.tenv -> match_arg -> match_arg
   val assert_valid_arg: match_arg -> unit
   val check_ty_str: string -> match_arg -> bool
-  val is_property_match: match_arg -> bool
+  val is_ordinary_match: match_arg -> bool
+  val is_side_match: match_arg -> bool
 
   val add_item_type: string * (term list -> term list) option *
                      item_output option -> theory -> theory
@@ -229,7 +228,9 @@ sig
   val univ_matcher: item_matcher
   val prop_matcher: item_matcher
   val term_prop_matcher: item_matcher
+  val null_eq_matcher: item_matcher
   val term_typed_matcher: item_matcher
+  val eq_tname_typed_matcher: item_matcher
   val null_property_matcher: item_matcher
   val term_property_matcher: item_matcher
   val pre_match_arg: rewrite_table -> match_arg -> box_item -> bool
@@ -242,24 +243,28 @@ sig
   val add_basic_item_io: theory -> theory
   val string_of_raw_item: Proof.context -> raw_item -> string
   val string_of_item: Proof.context -> box_item -> string
+  val trace_ritem: Proof.context -> string -> raw_item -> unit
+  val trace_item: Proof.context -> string -> box_item -> unit
+  val trace_ritems: Proof.context -> string -> raw_item list -> unit
+  val trace_items: Proof.context -> string -> box_item list -> unit
 end;
 
-functor ItemIO_Data(Base:UTIL_BASE) : ITEM_IO_DATA =
+functor ItemIO(Base:UTIL_BASE) : ITEM_IO =
 struct
 
 structure UtilLogic = UtilLogic(Base)
-structure Property_Data = Property_Data(Base)
+structure Property = Property(Base)
 structure RewriteTable = RewriteTable(Base)
 structure Matcher = Matcher(Base)
 open Base
 open UtilLogic
-open Property_Data
 
 fun pat_of_match_arg arg =
     case arg of
         PropMatch pat => pat
       | TypedMatch (_, pat) => pat
       | PropertyMatch pat => pat
+      | WellFormMatch (_, req) => req
 
 fun subst_arg inst arg =
     case arg of
@@ -268,6 +273,8 @@ fun subst_arg inst arg =
         TypedMatch (ty_str, subst_term_norm inst pat)
       | PropertyMatch pat =>
         PropertyMatch (subst_term_norm inst pat)
+      | WellFormMatch (t, req) =>
+        WellFormMatch (subst_term_norm inst t, subst_term_norm inst req)
 
 fun assert_valid_arg arg =
     case arg of
@@ -278,14 +285,24 @@ fun assert_valid_arg arg =
       | PropertyMatch pat =>
         assert (fastype_of pat = boolT)
                "assert_valid_arg: arg for PropertyMatch should be bool."
+      | WellFormMatch (_, req) =>
+        assert (fastype_of req = boolT)
+               "assert_valid_arg: arg for WellFormMatch should be bool."
 
 fun check_ty_str ty_str arg =
     case arg of
         TypedMatch (ty_str', _) => ty_str = ty_str'
       | _ => true
 
-fun is_property_match arg =
-    case arg of PropertyMatch _ => true | _ => false
+fun is_ordinary_match arg =
+    case arg of PropMatch _ => true
+              | TypedMatch _ => true
+              | _ => false
+
+fun is_side_match arg =
+    case arg of PropertyMatch _ => true
+              | WellFormMatch _ => true
+              | _ => false
 
 fun add_item_type (ty_str, term_fn, output_fn) = ItemIOData.map (
       Symtab.update_new (ty_str, {prop_matchers = [], typed_matchers = [],
@@ -312,45 +329,52 @@ val univ_matcher =
 val prop_matcher =
     let
       fun pre_match pat {tname, ...} tbl =
-          if is_neg pat then
-            is_neg (the_single tname) andalso
-            Matcher.pre_match_head tbl (get_neg pat, get_neg (the_single tname))
-          else  (* not (is_neg pat) *)
-            Term.is_Var pat orelse
-            (not (is_neg (the_single tname)) andalso
-             Matcher.pre_match_head tbl (pat, the_single tname))
+          let
+            val ct = the_single tname
+            val t = Thm.term_of ct
+          in
+            if is_neg pat then
+              is_neg t andalso
+              Matcher.pre_match_head tbl (get_neg pat, get_cneg ct)
+            else
+              Term.is_Var pat orelse
+              (not (is_neg t) andalso Matcher.pre_match_head tbl (pat, ct))
+          end
 
       fun match pat {tname, prop, ...} tbl (id, inst) =
-          if is_neg pat andalso is_neg (the_single tname) then
-            let
-              val t = the_single tname
-              val insts' = Matcher.rewrite_match_head
-                               tbl (get_neg pat, get_neg t) (id, inst)
-              fun process_inst (inst, eq_th) =
-                  let
-                    (* This version certainly will not cancel ~~ on
+          let
+            val ct = the_single tname
+            val t = Thm.term_of ct
+          in
+            if is_neg pat andalso is_neg t then
+              let
+                val insts' = Matcher.rewrite_match_head
+                                 tbl (get_neg pat, get_cneg ct) (id, inst)
+                fun process_inst (inst, eq_th) =
+                    let
+                      (* This version certainly will not cancel ~~ on
                        two sides.
-                     *)
-                    val make_neg_eq' = Thm.combination (Thm.reflexive cNot)
-                  in
+                       *)
+                      val make_neg_eq' = Thm.combination (Thm.reflexive cNot)
+                    in
+                      (inst, Thm.equal_elim (
+                         make_trueprop_eq (make_neg_eq' (meta_sym eq_th))) prop)
+                    end
+              in
+                map process_inst insts'
+              end
+            else if not (is_neg pat) andalso
+                    (Term.is_Var pat orelse not (is_neg t)) then
+              let
+                val insts' = Matcher.rewrite_match_head tbl (pat, ct) (id, inst)
+                fun process_inst (inst, eq_th) =
                     (inst, Thm.equal_elim (
-                       make_trueprop_eq (make_neg_eq' (meta_sym eq_th))) prop)
-                  end
-            in
-              map process_inst insts'
-            end
-          else if not (is_neg pat) andalso
-                  (Term.is_Var pat orelse not (is_neg (the_single tname))) then
-            let
-              val insts' = Matcher.rewrite_match_head
-                               tbl (pat, the_single tname) (id, inst)
-              fun process_inst (inst, eq_th) =
-                  (inst, Thm.equal_elim (
-                     make_trueprop_eq (meta_sym eq_th)) prop)
-            in
-              map process_inst insts'
-            end
-          else []
+                       make_trueprop_eq (meta_sym eq_th)) prop)
+              in
+                map process_inst insts'
+              end
+            else []
+          end
     in
       {pre_match = pre_match, match = match}
     end
@@ -359,18 +383,20 @@ val prop_matcher =
 val term_prop_matcher =
     let
       fun pre_match pat {tname, ...} tbl =
-          if is_eq_term pat then
+          if not (has_vars pat) then false
+          else if is_eq_term pat then
             Matcher.pre_match tbl (fst (dest_eq pat), the_single tname)
           else false
 
       fun match pat {tname, ...} tbl (id, inst) =
-          if fastype_of pat <> boolT orelse not (is_eq_term pat) then [] else
+          if not (is_eq_term pat) then [] else
+          if not (has_vars pat) then [] else
           let
             val (lhs, rhs) = dest_eq pat
-            val u = the_single tname
-            val pairs =
-                if Term.is_Var lhs then [(false, (lhs, u)), (true, (rhs, u))]
-                else [(true, (lhs, u)), (false, (rhs, u))]
+            val cu = the_single tname
+            val pairs = if Term.is_Var lhs then
+                          [(false, (lhs, cu)), (true, (rhs, cu))]
+                        else [(true, (lhs, cu)), (false, (rhs, cu))]
             val insts' = Matcher.rewrite_match_list tbl pairs (id, inst)
             fun process_inst (inst, ths) =
                 let
@@ -381,6 +407,25 @@ val term_prop_matcher =
                 end
           in
             map process_inst insts'
+          end
+    in
+      {pre_match = pre_match, match = match}
+    end
+
+val null_eq_matcher =
+    let
+      fun pre_match pat _ _ = is_eq_term pat
+
+      fun match pat _ tbl (id, inst) =
+          if not (is_eq_term pat) then [] else
+          if has_vars pat then [] else
+          let
+            val (lhs, rhs) = dest_eq pat
+            val infos = RewriteTable.equiv_info_t tbl id (lhs, rhs)
+            fun process_info (id', th) =
+                ((id', inst), to_obj_eq th)
+          in
+            map process_info infos
           end
     in
       {pre_match = pre_match, match = match}
@@ -407,7 +452,8 @@ val eq_tname_typed_matcher =
     let
       fun pre_match pat {tname, ...} {ctxt, ...} =
           let
-            val _ = pattern_fo_match ctxt (pat, mk_eq (the_pair tname))
+            val (lhs, rhs) = the_pair (map Thm.term_of tname)
+            val _ = pattern_fo_match ctxt (pat, mk_eq (lhs, rhs))
           in
             true
           end
@@ -416,8 +462,9 @@ val eq_tname_typed_matcher =
       fun match pat {tname, ...} tbl (id, inst) =
           let
             val thy = RewriteTable.theory_of tbl
+            val (lhs, rhs) = the_pair (map Thm.term_of tname)
             val inst' =
-                Pattern.first_order_match thy (pat, mk_eq (the_pair tname)) inst
+                Pattern.first_order_match thy (pat, mk_eq (lhs, rhs)) inst
           in
             [((id, inst'), true_th)]
           end
@@ -430,13 +477,18 @@ val eq_tname_typed_matcher =
 val null_property_matcher =
     let
       fun pre_match pat _ tbl =
-          is_property_const (RewriteTable.theory_of tbl) pat
+          Property.is_property_const (RewriteTable.theory_of tbl) pat
 
       fun match pat _ tbl (id, inst) =
-          if has_vars pat then [] else
-          if not (is_property_const (RewriteTable.theory_of tbl) pat) then []
-          else map (fn (id', th) => ((id', inst), th))
-                   (RewriteTable.get_property tbl (id, pat))
+          let
+            val thy = RewriteTable.theory_of tbl
+          in
+            if has_vars pat then []
+            else if not (Property.is_property_const thy pat) then []
+            else
+              map (fn (id', th) => ((id', inst), th))
+                  (RewriteTable.get_property_t tbl (id, pat))
+          end
     in
       {pre_match = pre_match, match = match}
     end
@@ -447,14 +499,20 @@ val null_property_matcher =
 val term_property_matcher =
     let
       fun pre_match pat {tname, ...} tbl =
-          is_property_const (RewriteTable.theory_of tbl) pat andalso
-          Matcher.pre_match_head tbl (get_property_arg pat, the_single tname)
+          let
+            val thy = RewriteTable.theory_of tbl
+          in
+            Property.is_property_const thy pat andalso
+            Matcher.pre_match_head tbl (
+              Property.get_property_arg pat, the_single tname)
+          end
 
       fun match pat {tname, ...} tbl (id, inst) =
           if not (has_vars pat) then [] else
-          if not (is_property_const (RewriteTable.theory_of tbl) pat) then []
+          if not (Property.is_property_const
+                      (RewriteTable.theory_of tbl) pat) then []
           else let
-            val arg = get_property_arg pat
+            val arg = Property.get_property_arg pat
           in
             let
               val insts' = Matcher.rewrite_match_head
@@ -464,7 +522,7 @@ val term_property_matcher =
                     val t = subst_term_norm inst' pat
                   in
                     map (fn (id'', th) => ((id'', inst'), th))
-                        (RewriteTable.get_property tbl (id', t))
+                        (RewriteTable.get_property_t tbl (id', t))
                   end
             in
               maps process_inst insts'
@@ -496,6 +554,8 @@ fun pre_match_arg tbl arg (item as {ty_str, ...}) =
           exists (fn f => f pat item tbl) (map #pre_match typed_matchers)
         | (PropertyMatch _, _) =>
           raise AUTO2 "pre_match_arg: should not be called on PropertyMatch."
+        | (WellFormMatch _, _) =>
+          raise AUTO2 "pre_match_arg: should not be called on WellFormMatch."
     end
 
 (* Generic matching function. Returns list of all matches (iterating
@@ -518,6 +578,8 @@ fun match_arg (tbl as {lat, ...}) arg (item as {id, ty_str, ...}) (id', inst) =
                                (map #match typed_matchers)
         | PropertyMatch _ =>
           raise AUTO2 "match_arg: should not be called on PropertyMatch."
+        | WellFormMatch _ =>
+          raise AUTO2 "match_arg: should not be called on WellFormMatch."
     end
 
 val no_rewr_terms = K []
@@ -532,14 +594,6 @@ fun prop_rewr_terms ts =
       else t |> dest_args
     end
 
-fun eq_if_rewr_terms ts =
-    let
-      val (lhs, rhs) = the_pair ts
-      val cond = rhs |> dest_args |> hd
-    in
-      [lhs, cond]
-    end
-
 fun rewr_terms_of_item ctxt (ty_str, tname) =
     let
       val thy = Proof_Context.theory_of ctxt
@@ -552,14 +606,14 @@ fun rewr_terms_of_item ctxt (ty_str, tname) =
 
 fun output_prop_fn ctxt (_, th) = Thm.prop_of th |> pretty_term ctxt |> str
 
-fun string_of_item_info ctxt (ty_str, tname, th) =
+fun string_of_item_info ctxt (ty_str, ts, th) =
     let
       val thy = Proof_Context.theory_of ctxt
       val {output_fn, ...} = get_io_info thy ty_str
     in
       case output_fn of
-          NONE => ty_str ^ " " ^ (tname |> pretty_terms ctxt |> str)
-        | SOME f => f ctxt (tname, th)
+          NONE => ty_str ^ " " ^ (ts |> pretty_terms ctxt |> str)
+        | SOME f => f ctxt (ts, th)
     end
 
 fun string_of_raw_item ctxt ritem =
@@ -568,39 +622,57 @@ fun string_of_raw_item ctxt ritem =
       | Fact info => string_of_item_info ctxt info
 
 fun string_of_item ctxt {ty_str, tname, prop, ...} =
-    string_of_item_info ctxt (ty_str, tname, prop)
+    string_of_item_info ctxt (ty_str, map Thm.term_of tname, prop)
+
+fun trace_ritem ctxt s ritem =
+    tracing (s ^ " " ^ (string_of_raw_item ctxt ritem))
+
+fun trace_ritems ctxt s ritems =
+    tracing (s ^ "\n" ^ (cat_lines (map (string_of_raw_item ctxt) ritems)))
+
+fun trace_item ctxt s item =
+    tracing (s ^ " " ^ (string_of_item ctxt item))
+
+fun trace_items ctxt s items =
+    tracing (s ^ "\n" ^ (cat_lines (map (string_of_item ctxt) items)))
 
 val add_basic_item_io =
     fold add_item_type [
       (TY_NULL, NONE, NONE),
       (TY_PROP, SOME prop_rewr_terms, SOME output_prop_fn),
       (TY_TERM, SOME no_rewr_terms, NONE), (TY_EQ, NONE, SOME output_prop_fn),
-      (TY_EQ_IF, SOME eq_if_rewr_terms, SOME output_prop_fn),
       (TY_VAR, NONE, NONE), (TY_PROPERTY, SOME arg_rewr_terms, NONE)
 
     ] #> fold add_prop_matcher [
       (TY_PROP, prop_matcher), (TY_TERM, term_prop_matcher),
-      (TY_NULL, null_property_matcher), (TY_TERM, term_property_matcher)
+      (TY_NULL, null_eq_matcher), (TY_NULL, null_property_matcher),
+      (TY_TERM, term_property_matcher)
 
     ] #> fold add_typed_matcher [
       (TY_PROP, prop_matcher), (TY_TERM, term_typed_matcher),
-      (TY_VAR, term_typed_matcher), (TY_EQ, eq_tname_typed_matcher),
-      (TY_EQ_IF, eq_tname_typed_matcher)
+      (TY_VAR, term_typed_matcher), (TY_EQ, eq_tname_typed_matcher)
     ]
 
-end  (* structure ItemIO_Data. *)
+end  (* structure ItemIO. *)
 
 datatype update_type = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
 datatype init_info = InitVar of term | InitAssum of term
 datatype raw_update
-  = AddItems of {id: box_id, raw_items: raw_item list}
-  | AddBoxes of {id: box_id, inits: init_info list,
+  = AddItems of {id: box_id, sc: int option, raw_items: raw_item list}
+  | AddBoxes of {id: box_id, sc: int option, inits: init_info list,
                  cbs: (box_id * thm -> raw_update list) list}
   | ResolveBox of {id: box_id, th: thm}
   | ShadowItem of {id: box_id, item: box_item}
 type resolve_callback = box_id * thm -> raw_update list
 type update = {sc: int, prfstep_name: string, source: box_item list,
                raw_updt: raw_update}
+
+fun target_of_update raw_updt =
+    case raw_updt of
+        AddItems {id, ...} => id
+      | AddBoxes {id, ...} => id
+      | ResolveBox {id, ...} => id
+      | ShadowItem {id, ...} => id
 
 signature UPDATE =
 sig
@@ -627,7 +699,6 @@ sig
   val apply_exists: box_id * thm -> Proof.context -> string list ->
                     raw_update list
   val get_apply_exists_nms: thm -> string list
-  val target_of_update: raw_update -> box_id
   val update_info: Proof.context -> box_id -> raw_item list -> string
   val source_info: update -> string
 end;
@@ -637,12 +708,9 @@ struct
 
 structure UtilLogic = UtilLogic(Base)
 structure BoxItem = BoxItem(Base)
-structure Property_Data = Property_Data(Base)
-structure ItemIO_Data = ItemIO_Data(Base)
+structure ItemIO = ItemIO(Base)
 open Base
 open UtilLogic
-open Property_Data
-open ItemIO_Data
 
 fun dest_init_var init = case init of InitVar t => [t] | _ => []
 fun dest_init_assum init = case init of InitAssum t => [t] | _ => []
@@ -719,8 +787,9 @@ fun string_of_update_type updt_ty =
 
 fun string_of_raw_update ctxt raw_updt =
     case raw_updt of
-        AddItems {id, raw_items} =>
-        "Add items " ^ (string_of_list (string_of_raw_item ctxt) raw_items) ^
+        AddItems {id, raw_items, ...} =>
+        "Add items " ^ (string_of_list (
+                           ItemIO.string_of_raw_item ctxt) raw_items) ^
         " to box " ^ (string_of_box_id id)
       | AddBoxes {id, inits, ...} =>
         "Add box " ^ (string_of_list (string_of_init_info ctxt) inits) ^
@@ -728,7 +797,7 @@ fun string_of_raw_update ctxt raw_updt =
       | ResolveBox {id, ...} =>
         "Resolve box " ^ (string_of_box_id id)
       | ShadowItem {id, item} =>
-        "Shadow item " ^ (string_of_item ctxt item) ^
+        "Shadow item " ^ (ItemIO.string_of_item ctxt item) ^
         " in box " ^ (string_of_box_id id)
 
 val null_callback = K []
@@ -747,7 +816,7 @@ fun thm_update (id, th) =
     if Thm.prop_of th aconv pFalse then
       ResolveBox {id = id, th = th}
     else
-      AddItems {id = id, raw_items = [thm_to_ritem th]}
+      AddItems {id = id, sc = NONE, raw_items = [thm_to_ritem th]}
 
 fun handler_ritems ctxt t handler =
     let
@@ -760,15 +829,14 @@ fun apply_horn_clause (id, th) cb =
     case Thm.prop_of th of
         Const ("Pure.imp", _) $ A $ _ =>
         let
-          val (vars, body) = strip_obj_all_var (dest_Trueprop A)
-          val (assums, concl) = strip_obj_imp body
-          val inits = map InitVar vars @
-                      map (InitAssum o mk_Trueprop) assums @
-                      [InitAssum (mk_Trueprop (get_neg concl))]
+          val inits =
+              map (fn (is_var, t) => if is_var then InitVar t
+                                     else InitAssum (mk_Trueprop t))
+                  (extract_init_infos true (dest_Trueprop A))
           fun callback (id', th_fst) =
               apply_horn_clause (id', [th_fst] MRS th) cb
         in
-          [AddBoxes {id = id, inits = inits, cbs = [callback]}]
+          [AddBoxes {id = id, sc = NONE, inits = inits, cbs = [callback]}]
         end
       | _ => if pointer_eq (cb, null_callback) then [thm_update (id, th)]
              else cb (id, th)
@@ -884,7 +952,8 @@ fun apply_exists (id, ex_th) ctxt nms =
     let
       val (ritems, new_th) = apply_exists_ritems ex_th ctxt nms
     in
-      [AddItems {id = id, raw_items = ritems @ [thm_to_ritem new_th]}]
+      [AddItems {id = id, sc = NONE,
+                 raw_items = ritems @ [thm_to_ritem new_th]}]
     end
 
 (* Given existence theorem, return list of suggested names of new
@@ -906,15 +975,8 @@ fun get_apply_exists_nms th =
           |> map Name.internal
     end
 
-fun target_of_update raw_updt =
-    case raw_updt of
-        AddItems {id, ...} => id
-      | AddBoxes {id, ...} => id
-      | ResolveBox {id, ...} => id
-      | ShadowItem {id, ...} => id
-
 fun update_info ctxt id ritems =
-    (string_of_list' (string_of_raw_item ctxt)
+    (string_of_list' (ItemIO.string_of_raw_item ctxt)
                      (filter (not o BoxItem.is_handler_raw) ritems)) ^
     " at box " ^ (string_of_box_id id)
 
@@ -946,8 +1008,6 @@ sig
   val is_item_removed: box_item * box_id list -> bool
   val get_items: bool -> box -> box_item list
   val lookup_item: box -> int -> (box_item * box_id list) option
-  val get_freevars: box -> term list
-  val get_dep_vars: box -> term list
 
   val add_callback: resolve_callback -> box -> box
   val get_callbacks: box -> resolve_callback list
@@ -994,12 +1054,6 @@ fun get_items incl_removed {items, ...} =
 fun lookup_item {items, ...} uid =
     Inttab.lookup items uid
 
-fun get_freevars box =
-    box |> get_items false |> filter (BoxItem.match_ty_str TY_VAR)
-        |> maps BoxItem.get_tname
-fun get_dep_vars box =
-    subtract (op aconv) (get_init_vars box) (get_freevars box)
-
 fun add_callback cb {inits, handlers, items, cbs, resolve_th} =
     {inits = inits, handlers = handlers, items = items, cbs = cons cb cbs,
      resolve_th = resolve_th}
@@ -1022,7 +1076,9 @@ end  (* structure Box. *)
 structure Updates_Heap =
 Heap (
   type elem = update
-  fun ord ({sc = sc1, ...}, {sc = sc2, ...}) = int_ord (sc1, sc2)
+  fun ord ({sc = sc1, raw_updt = ru1, ...}, {sc = sc2, raw_updt = ru2, ...}) =
+      prod_ord int_ord (list_ord int_ord)
+               ((sc1, target_of_update ru1), (sc2, target_of_update ru2))
 )
 
 type status = {
@@ -1040,8 +1096,6 @@ sig
   val theory_of: status -> theory
   val exist_box: status -> box_id -> bool
   val get_box: status -> box_id -> box
-  val get_init_type: status -> rewrite_type
-  val get_incr_type: status -> box_id -> thm -> rewrite_type
 
   val get_lattice: status -> BoxID.box_lattice
   val get_focus: status -> box_id
@@ -1055,7 +1109,7 @@ sig
   val is_box_resolved: status -> box_id -> bool
   val is_box_unresolved: status -> box_id -> bool
 
-  val incr_uid_next: status -> status
+  val incr_uid: int -> status -> status
   val map_box: box_id -> (box -> box) -> status -> status
   val map_context: (Proof.context -> Proof.context) -> status -> status
   val map_rewrites: (rewrite_table -> rewrite_table) -> status -> status
@@ -1089,7 +1143,6 @@ sig
 
   val find_fact: status -> box_id -> term -> thm option
   val find_neg_form: status -> box_id -> init_info list -> thm option
-  val is_triv_eq: status -> box_id -> raw_item -> bool
   val find_ritem_exact: status -> box_id -> raw_item -> bool
   val find_ritems_exact:
       status -> box_id -> raw_item list -> raw_item list * raw_item list
@@ -1106,14 +1159,12 @@ functor Status(Base:UTIL_BASE) : STATUS =
 struct
 
 structure UtilLogic = UtilLogic(Base)
-structure Property_Data = Property_Data(Base)
 structure RewriteTable = RewriteTable(Base)
 structure BoxItem = BoxItem(Base)
 structure Box = Box(Base)
 structure Update = Update(Base)
 open Base
 open UtilLogic
-open Property_Data
 
 fun empty_status ctxt =
     {uid_next = 1, lat = BoxID.empty, boxes = Boxidtab.empty,
@@ -1126,20 +1177,6 @@ fun get_box {boxes, ...} id =
     the (Boxidtab.lookup boxes id)
     handle Option.Option => raise AUTO2 "get_box: id not found."
 
-fun get_init_type {tbl, ...} = SINGLE tbl
-
-(* Obtain incremental rtype. Distinguish between when th is an
-   equality or a property. Add the theorem under an additional
-   primitive id.
- *)
-fun get_incr_type {tbl, ...} id th =
-    if is_property_const (RewriteTable.theory_of tbl) (prop_of' th) then
-      LAST (tbl |> RewriteTable.append_property th, id)
-    else if is_eq_term (prop_of' th) then
-      LAST (tbl |> RewriteTable.append_rewrite th, id)
-    else
-      raise AUTO2 "get_incr_type: wrong form of theorem."
-
 fun get_lattice {lat, ...} = lat
 val get_focus = BoxID.get_focus o get_lattice
 val get_parent_prim = BoxID.get_parent_prim o get_lattice
@@ -1151,8 +1188,8 @@ val is_eq_descendent = BoxID.is_eq_descendent o get_lattice
 val is_box_resolved = BoxID.is_box_resolved o get_lattice
 val is_box_unresolved = BoxID.is_box_unresolved o get_lattice
 
-fun incr_uid_next {uid_next, lat, boxes, queue, tbl, ctxt} =
-    {uid_next = uid_next + 1, lat = lat, boxes = boxes, queue = queue,
+fun incr_uid n {uid_next, lat, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next + n, lat = lat, boxes = boxes, queue = queue,
      tbl = tbl, ctxt = ctxt}
 
 fun map_box id f {uid_next, lat, boxes, queue, tbl, ctxt} =
@@ -1163,9 +1200,13 @@ fun map_context f {uid_next, lat, boxes, queue, tbl, ctxt} =
     {uid_next = uid_next, lat = lat, boxes = boxes, queue = queue,
      tbl = tbl |> RewriteTable.map_context f, ctxt = f ctxt}
 
-fun map_rewrites f {uid_next, lat, boxes, queue, tbl, ctxt} =
-    {uid_next = uid_next, lat = lat, boxes = boxes, queue = queue, tbl = f tbl,
-     ctxt = ctxt}
+fun map_rewrites f {uid_next, lat, boxes, queue, tbl, ctxt = _} =
+    let
+      val (tbl' as {ctxt = ctxt', ...}) = f tbl
+    in
+      {uid_next = uid_next, lat = lat, boxes = boxes, queue = queue, tbl = tbl',
+       ctxt = ctxt'}
+    end
 
 fun add_prim_box parent_id new_box {uid_next, lat, boxes, queue, tbl, ctxt} =
     let
@@ -1258,68 +1299,65 @@ fun query_removed st (item as {id, ...}) = query_shadowed st id item
 fun set_resolve_th id th st = st |> map_box id (Box.set_resolve_th th)
 fun get_resolve_th st id = Box.get_resolve_th (get_box st id)
 
-(* Try to find a box_item at id or ancestors whose proposition is
-   equivalent to t. Return SOME th if found (where th is a theorem
-   with statement t).
+(* Try to find fact at id or above with the proposition t. Return SOME
+   th if found.
  *)
-fun find_fact (st as {tbl, ...}) id t =
+fun find_fact (st as {tbl, ctxt, ...}) id t =
     let
-      fun match_item {prop, ...} =
-          let
-            val t' = Thm.prop_of prop
-            val eq_info = (RewriteTable.equiv_info tbl id (t', t))
-                              |> filter (fn (id', _) => id = id')
-          in
-            case eq_info of
-                [] => NONE
-              | (_, eq_th) :: _ => SOME (Thm.equal_elim eq_th prop)
-          end
-
-      fun match_eq _ =
-          let
-            val (lhs, rhs) = t |> dest_Trueprop |> dest_eq
-            val eq_info = (RewriteTable.equiv_info tbl id (lhs, rhs))
-                              |> filter (fn (id', _) => id = id')
-          in
-            case eq_info of
-                [] => NONE
-              | (_, eq_th) :: _ => SOME (to_obj_eq eq_th)
-          end
+      val infos = (get_all_items false st id)
+                      |> map (fn {id, prop, ...} => (id, prop))
+      val res = (RewriteTable.rewrite_find_fact tbl infos (id, cert ctxt t))
+                    |> filter (fn (id', _) => id' = id)
     in
-      if is_eq_term' t then match_eq ()
-      else get_first match_item (get_all_items false st id)
+      case res of
+          [] => NONE
+        | (_, th) :: _ => SOME th
     end
 
 fun find_neg_form st id inits =
     if length inits = 1 andalso Update.is_init_assum (the_single inits) then
       let
-        val t = inits |> maps Update.dest_init_assum |> the_single |> get_neg'
+        val t = inits |> maps Update.dest_init_assum |> the_single
+                      |> dest_Trueprop |> get_neg
       in
         find_fact st id t
       end
     else NONE
 
-(* Whether item (which may be in another id) is a trivial equality
-   when considered in the given id.
- *)
-fun is_triv_eq {tbl, ...} id ritem =
-    if BoxItem.match_ty_str_raw "EQ" ritem then
-      RewriteTable.is_equiv id tbl (the_pair (BoxItem.get_tname_raw ritem))
-    else false
-
 (* Find item with the exact ty_str and tname, whose id is an
    eq-ancestor of the given id.
+
+   There are two special cases: if the ritem in question is of type EQ
+   and PROPERTY, in which case we try to find it in the rewrite table.
  *)
-fun find_ritem_exact st id ritem =
+fun find_ritem_exact (st as {tbl, ...}) id ritem =
     case ritem of
         Handler _ => false
       | Fact (ty_str, tname, _) =>
-        let
-          fun find_item {ty_str = ty2, tname = ts2, ...} =
-              ty_str = ty2 andalso eq_list (op aconv) (tname, ts2)
-        in
-          exists find_item (get_all_items true st id)
-        end
+        if ty_str = TY_EQ then
+          let
+            val (lhs, rhs) = the_pair (BoxItem.get_tname_raw ritem)
+          in
+            RewriteTable.is_equiv_t id tbl (lhs, rhs)
+          end
+        else if ty_str = TY_PROPERTY then
+          let
+            val {lat, ...} = tbl
+            val prop = the_single tname
+            val infos =
+                (RewriteTable.get_property_t tbl (id, prop))
+                    |> filter (fn (id', _) => BoxID.is_eq_ancestor lat id' id)
+          in
+            length infos > 0
+          end
+        else
+          let
+            fun eq_item {ty_str = ty2, tname = ts2, ...} =
+                ty_str = ty2 andalso
+                eq_list (op aconv) (tname, map Thm.term_of ts2)
+          in
+            exists eq_item (get_all_items true st id)
+          end
 
 (* Attempt to find the given ritems at id or its ancestors.
 
@@ -1338,38 +1376,40 @@ fun find_ritems_exact st id ritems =
       val (var_ritems, ritems') =
           ritems |> filter_split (BoxItem.match_ty_str_raw TY_VAR)
     in
-      if length var_ritems > 0 then
-        let
-          val vars = maps BoxItem.get_tname_raw var_ritems
-          val sch_vars = vars |> map dest_Free
-                              |> map (fn (nm, T) => Var ((nm, 0), T))
-          val subst = vars ~~ sch_vars
-          val items = get_all_items true st id
+      if length var_ritems = 0 then
+        filter_split (find_ritem_exact st id) ritems
+      else let
+        val vars = maps BoxItem.get_tname_raw var_ritems
+        val sch_vars = vars |> map dest_Free
+                            |> map (fn (nm, T) => Var ((nm, 0), T))
+        val subst = vars ~~ sch_vars
+        val items = get_all_items true st id
 
-          fun find_ritem ritem insts =
-              case ritem of
-                  Handler _ => insts
-                | Fact (ty_str, tname, _) =>
-                  if exists has_vars tname then [] else
-                  let
-                    val tname' = map (Term.subst_atomic subst) tname
-                    fun match_item {ty_str = ty2, tname = ts2, ...} =
-                        if ty_str <> ty2 then []
-                        else if length tname' <> length ts2 then []
-                        else maps (fn inst => [pattern_fo_match_list
-                                                   ctxt (tname' ~~ ts2) inst]
-                                              handle Pattern.MATCH => [])
-                                  insts
-                  in
-                    maps match_item items
-                  end
+        fun find_ritem ritem insts =
+            case ritem of
+                Handler _ => insts
+              | Fact (ty_str, tname, _) =>
+                if exists has_vars tname then [] else
+                let
+                  val tname' = map (Term.subst_atomic subst) tname
 
-          val inst = fold find_ritem ritems' [fo_init]
-        in
-          if length inst = 0 then ([], ritems) else (ritems, [])
-        end
-      else
-        filter_split ((is_triv_eq st id) orf (find_ritem_exact st id)) ritems
+                  fun process_inst cts inst =
+                      [pattern_fo_match_list
+                           ctxt (tname' ~~ map Thm.term_of cts) inst]
+                      handle Pattern.MATCH => []
+
+                  fun match_item {ty_str = ty2, tname = ts2, ...} =
+                      if ty_str <> ty2 then []
+                      else if length tname' <> length ts2 then []
+                      else maps (process_inst ts2) insts
+                in
+                  maps match_item items
+                end
+
+        val inst = fold find_ritem ritems' [fo_init]
+      in
+        if length inst = 0 then ([], ritems) else (ritems, [])
+      end
     end
 
 (* Invoke a single handler (_, f) on a term t. *)
@@ -1439,10 +1479,10 @@ fun find_prim_box (st as {tbl, ...}) id inits =
       fun agree_at_id id' =
           let
             val parent = get_parent_prim st (the_single id')
-            val is_equiv = RewriteTable.is_equiv parent tbl
+            val is_equiv_t = RewriteTable.is_equiv_t parent tbl
           in
-            eq_set is_equiv (vars, get_init_vars st id') andalso
-            eq_set is_equiv (assums, get_init_assums st id')
+            eq_set is_equiv_t (vars, get_init_vars st id') andalso
+            eq_set is_equiv_t (assums, get_init_assums st id')
           end
 
       fun can_test_id id' =

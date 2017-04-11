@@ -13,10 +13,6 @@ setup {* add_forward_prfstep_cond @{thm TrueI} [with_term "True"] *}
 theorem FalseD [resolve]: "\<not>False" by simp
 setup {* add_forward_prfstep_cond @{thm FalseD} [with_term "False"] *}
 
-section \<open>Negation\<close>
-
-setup {* add_forward_prfstep_cond @{thm not_sym} [with_filt (not_type_filter "a" boolT)] *}
-
 section \<open>If and only iff\<close>
 
 setup {* add_gen_prfstep ("iff_intro1",
@@ -27,7 +23,7 @@ setup {* add_fixed_sc ("Logic_FOL.iff_two_dirs", 1) *}
 
 section \<open>Unique existence\<close>
 
-setup {* add_rewrite_rule (to_obj_eq_th @{thm ex1_def}) *}
+setup {* add_rewrite_rule @{thm ex1_def} *}
 
 (* To show \<exists>!x. P(x), first show \<exists>x. P(x), then name a variable x satisfying P.
    Finally show \<forall>y. P(y) \<longrightarrow> x = y. *)
@@ -40,5 +36,23 @@ theorem ex_ex1D [forward]:
   "\<exists>!x. P(x) \<Longrightarrow> \<exists>x. P(x)"
   "\<exists>!x. P(x) \<Longrightarrow> P(x) \<Longrightarrow> \<forall>y. P(y) \<longrightarrow> y = x" by auto
 setup {* del_prfstep_thm @{thm ex1_def} *}
+
+section \<open>Let\<close>
+
+setup {* Normalizer.add_rewr_normalizer ("rewr_let", @{thm Let_def}) *}
+
+section \<open>Signature of meta-functions\<close>
+
+definition unary_fun :: "i \<Rightarrow> [i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
+  "unary_fun(S,f) \<longleftrightarrow> (\<forall>x\<in>S. f(x) \<in> S)"
+
+lemma unary_funD [typing]: "unary_fun(S,f) \<Longrightarrow> x \<in> S \<Longrightarrow> f(x) \<in> S" by auto2
+setup {* del_prfstep_thm_str "@eqforward" @{thm unary_fun_def} *}
+
+definition binary_fun :: "i \<Rightarrow> [i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
+  "binary_fun(S,f) \<longleftrightarrow> (\<forall>x\<in>S. \<forall>y\<in>S. f(x,y) \<in> S)"
+
+lemma binary_funD [typing]: "binary_fun(S,f) \<Longrightarrow> x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> f(x,y) \<in> S" by auto2
+setup {* del_prfstep_thm_str "@eqforward" @{thm binary_fun_def} *}
 
 end

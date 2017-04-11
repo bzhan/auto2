@@ -42,7 +42,9 @@ lemma prime_dvd_power_nat_iff: "prime p \<Longrightarrow> n > 0 \<Longrightarrow
 lemma prime_nat_code: "prime p = (1 < p \<and> (\<forall>x. 1 < x \<and> x < p \<longrightarrow> \<not> x dvd p))" by auto2
 
 lemma prime_factor_nat [backward]: "n \<noteq> 1 \<Longrightarrow> \<exists>p. p dvd n \<and> prime p"
-  by (tactic {* auto2s_tac @{context} (STRONG_INDUCT ("n", [])) *})
+  by (tactic {* auto2s_tac @{context} (
+    CASE "prime n" THEN CHOOSE "k, k \<noteq> 1 \<and> k \<noteq> n \<and> k dvd n" THEN
+    STRONG_INDUCT ("n", [ApplyOn "k"])) *})
 
 lemma prime_divprod_pow_nat:
   "prime p \<Longrightarrow> coprime a b \<Longrightarrow> p^n dvd a * b \<Longrightarrow> p^n dvd a \<or> p^n dvd b" by auto2

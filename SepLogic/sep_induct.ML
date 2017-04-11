@@ -22,7 +22,7 @@ fun prfstep_hoare_triple_induction name descs ind_th =
                           apply_induction
                               inits (map (rpair NONE) ind_vars) ctxt ind_th []
                     in
-                      [AddItems {id = id, raw_items = ritems}]
+                      [AddItems {id = id, sc = NONE, raw_items = ritems}]
                     end
                   else []
             end)

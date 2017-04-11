@@ -2,479 +2,554 @@ theory EquivRel
 imports Coverings
 begin
 
-section {* Definition of equivalence relation *}  (* Bourbaki II.6.1 *)
+section {* Equivalence structures *}
 
-definition sym_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where sym_meta_rel_def [rewrite]:
+setup {* add_rewrite_rule @{thm carrier_def} *}
+
+definition equiv_graph :: "i \<Rightarrow> i" where [rewrite]:
+  "equiv_graph(R) = fst(snd(snd(R)))"
+
+definition rawequiv :: "i \<Rightarrow> o" where [rewrite]:
+  "rawequiv(R) \<longleftrightarrow> (\<exists>S G. R = \<langle>S,\<emptyset>,G,\<emptyset>\<rangle> \<and> G\<in>Pow(S\<times>S))"
+setup {* add_property_const @{term rawequiv} *}
+
+lemma rawequiv_graph_is_graph [forward]:
+  "rawequiv(R) \<Longrightarrow> is_graph(equiv_graph(R))" by auto2
+
+(* Space of all rawequiv on S *)
+definition rawequiv_space :: "i \<Rightarrow> i" where [rewrite]:
+  "rawequiv_space(S) = {\<langle>S,\<emptyset>,G,\<emptyset>\<rangle>. G\<in>Pow(S\<times>S)}"
+  
+lemma rawequiv_space_iff [rewrite]:
+  "R \<in> rawequiv_space(S) \<longleftrightarrow> (rawequiv(R) \<and> carrier(R) = S)" by auto2
+
+(* Constructor for equivalence *)
+definition Equiv :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:
+  "Equiv(S,R) = \<langle>S, \<emptyset>, {p\<in>S\<times>S. R(fst(p),snd(p))}, \<emptyset>\<rangle>"
+
+lemma Equiv_is_rawequiv [typing]: "Equiv(S,R) \<in> rawequiv_space(S)" by auto2
+
+(* Evaluation of equiv *)
+definition eq_sim :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where eq_sim_def [rewrite_bidir]:
+  "eq_sim(R,x,y) \<longleftrightarrow> \<langle>x,y\<rangle> \<in> equiv_graph(R)"
+abbreviation eq_sim_notation ("(_/ \<sim>\<^sub>_ _)" [51,51,51] 50) where "x \<sim>\<^sub>R y \<equiv> eq_sim(R,x,y)"
+setup {* register_wellform_data ("x \<sim>\<^sub>R y", ["x \<in>. R", "y \<in>. R"]) *}
+
+lemma Equiv_eval [rewrite]:
+  "R = Equiv(S,f) \<Longrightarrow> x \<sim>\<^sub>R y \<longleftrightarrow> (x \<in> S \<and> y \<in> S \<and> f(x,y))" by auto2
+
+lemma rawequivD [forward]:
+  "rawequiv(R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> x \<in>. R \<and> y \<in>. R" by auto2
+
+(* Equality on equivalences *)
+lemma equiv_eq [backward]:
+  "rawequiv(R) \<Longrightarrow> rawequiv(S) \<Longrightarrow> carrier(R) = carrier(S) \<Longrightarrow>
+   \<forall>x y. x \<sim>\<^sub>R y \<longleftrightarrow> x \<sim>\<^sub>S y \<Longrightarrow> R = S"
+  by (tactic {* auto2s_tac @{context} (HAVE "equiv_graph(R) = equiv_graph(S)") *})
+
+setup {* fold del_prfstep_thm [
+  @{thm rawequiv_def}, @{thm rawequiv_space_def}, @{thm Equiv_def}, @{thm eq_sim_def}] *}
+
+setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm equiv_graph_def}] *}
+
+section {* Meta equivalence relations *}
+
+(* Definition of meta equivalence relation *)
+definition sym_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "sym_meta_rel(R) \<longleftrightarrow> (\<forall>x y. R(x,y) \<longrightarrow> R(y,x))"
 
-definition trans_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where trans_meta_rel_def [rewrite]:
+definition trans_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "trans_meta_rel(R) \<longleftrightarrow> (\<forall>x y z. R(x,y) \<longrightarrow> R(y,z) \<longrightarrow> R(x,z))"
 
 lemma trans_meta_relD [forward]:
   "trans_meta_rel(R) \<Longrightarrow> R(x,y) \<Longrightarrow> \<forall>z. R(y,z) \<longrightarrow> R(x,z)" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm trans_meta_rel_def} *}
 
-definition equiv_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where equiv_meta_rel_def [rewrite]:
+definition equiv_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "equiv_meta_rel(R) \<longleftrightarrow> (sym_meta_rel(R) \<and> trans_meta_rel(R))"
 
-definition equiv_rel_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where equiv_rel_on_def [rewrite]:
-  "equiv_rel_on(R,E) \<longleftrightarrow> (equiv_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
-
-definition equiv_rel :: "i \<Rightarrow> o" where equiv_rel_def [rewrite]:
-  "equiv_rel(R) \<longleftrightarrow> (is_relation(R) \<and> source(R) = target(R) \<and>
-                     equiv_rel_on(\<lambda>x y. rel(R,x,y), source(R)))"
+definition equiv_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
+  "equiv_on(R,E) \<longleftrightarrow> (equiv_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
 
 (* Examples *)
 lemma eq_is_equiv_meta_rel: "equiv_meta_rel(\<lambda>x y. x = y)" by auto2
-lemma eq_on_E_is_equiv_rel: "equiv_rel_on(\<lambda>x y. x = y \<and> x \<in> E, E)" by auto2
-lemma all_rel_is_equiv_rel: "equiv_rel_on(\<lambda>x y. x \<in> E \<and> y \<in> E, E)" by auto2
-lemma subset_is_equiv_rel:
-  "A \<subseteq> E \<Longrightarrow> equiv_rel_on(\<lambda>x y. x \<in> E \<and> y \<in> E \<and> (x = y \<or> (x \<in> A \<and> y \<in> A)), E)" by auto2
+lemma eq_on_E_is_equiv: "equiv_on(\<lambda>x y. x = y \<and> x \<in> E, E)" by auto2
+lemma all_rel_is_equiv: "equiv_on(\<lambda>x y. x \<in> E \<and> y \<in> E, E)" by auto2
+lemma subset_is_equiv:
+  "A \<subseteq> E \<Longrightarrow> equiv_on(\<lambda>x y. x \<in> E \<and> y \<in> E \<and> (x = y \<or> (x \<in> A \<and> y \<in> A)), E)" by auto2
 
-(* Important example: exists bijection between two sets. *)
-definition equipotent :: "i \<Rightarrow> i \<Rightarrow> o" where equipotent_def [rewrite]:
-  "equipotent(S,T) \<longleftrightarrow> (\<exists>f. f \<in> S \<cong> T)"
+section {* Equivalence relation *}  (* Bourbaki II.6.1 *)
 
-lemma equipotent_sym [resolve]: "equipotent(S,T) \<Longrightarrow> equipotent(T,S)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "f, f \<in> S \<cong> T" THEN HAVE "bijective(inverse(f))") *})
+definition equiv :: "i \<Rightarrow> o" where [rewrite]:
+  "equiv(R) \<longleftrightarrow> (rawequiv(R) \<and> equiv_on(\<lambda>x y. x \<sim>\<^sub>R y, carrier(R)))"
+setup {* add_property_const @{term equiv} *}
 
-lemma equipotent_trans [backward2]: "equipotent(S,T) \<Longrightarrow> equipotent(T,U) \<Longrightarrow> equipotent(S,U)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "f, f \<in> S \<cong> T" THEN CHOOSE "g, g \<in> T \<cong> U" THEN
-    HAVE "g O f \<in> S \<cong> U") *})
+(* Self-contained condition for equiv. *)
+lemma equiv_iff [rewrite]:
+  "equiv(R) \<longleftrightarrow> (
+    rawequiv(R) \<and>
+    (\<forall>x\<in>.R. x \<sim>\<^sub>R x) \<and>
+    (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x)) \<and>
+    (\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z)" by auto2
+setup {* del_prfstep_thm @{thm equiv_def} *}
 
-lemma bij_is_equiv_meta_real: "equiv_meta_rel(equipotent)" by auto2
+(* Condition in terms of equiv_on. *)
+lemma induced_equiv_is_equiv:
+  "equiv_on(R,E) \<Longrightarrow> equiv(Equiv(E,R))" by auto2
 
-(* Self-contained condition for equiv_rel. *)
-lemma equiv_rel_iff [rewrite]:
-  "equiv_rel(R) \<longleftrightarrow> (
-    is_relation(R) \<and> source(R) = target(R) \<and>
-    (\<forall>x\<in>source(R). rel(R,x,x)) \<and>
-    (\<forall>x y. rel(R,x,y) \<longleftrightarrow> rel(R,y,x))) \<and>
-    (\<forall>x y z. rel(R,x,y) \<longrightarrow> rel(R,y,z) \<longrightarrow> rel(R,x,z))" by auto2
-setup {* add_property_const @{term equiv_rel} *}
-setup {* del_prfstep_thm @{thm equiv_rel_def} *}
+lemma equivD:
+  "equiv(R) \<Longrightarrow> rawequiv(R)"
+  "equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> x \<sim>\<^sub>R x"
+  "equiv(R) \<Longrightarrow> x \<sim>\<^sub>R y \<longleftrightarrow> y \<sim>\<^sub>R x"
+  "equiv(R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> y \<sim>\<^sub>R z \<Longrightarrow> x \<sim>\<^sub>R z" by auto2+
+setup {* add_forward_prfstep @{thm equivD(1)} *}
+setup {* add_backward_prfstep @{thm equivD(2)} *}
+setup {* add_rewrite_rule @{thm equivD(3)} *}
+setup {* add_forward_prfstep_cond @{thm equivD(4)} [with_cond "?x \<noteq> ?z"] *}
+setup {* del_prfstep_thm_str "@eqforward" @{thm equiv_iff} *}
 
-lemma equiv_relD:
-  "equiv_rel(R) \<Longrightarrow> is_relation(R)"
-  "equiv_rel(R) \<Longrightarrow> source(R) = target(R)"
-  "equiv_rel(R) \<Longrightarrow> rel(R,x,x) \<longleftrightarrow> x\<in>source(R)"
-  "equiv_rel(R) \<Longrightarrow> rel(R,x,y) \<longleftrightarrow> rel(R,y,x)"
-  "equiv_rel(R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> rel(R,y,z) \<Longrightarrow> rel(R,x,z)" by auto2+
-setup {* fold add_forward_prfstep @{thms equiv_relD(1-2,5)} *}
-setup {* add_rewrite_rule_bidir @{thm equiv_relD(3)} *}
-setup {* add_rewrite_rule @{thm equiv_relD(4)} *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm equiv_rel_iff} *}
+definition equiv_space :: "i \<Rightarrow> i" where [rewrite]:
+  "equiv_space(S) = {R\<in>rawequiv_space(S). equiv(R)}"
 
-(* Condition in terms of composition and inverse of relations. *)
-lemma equiv_rel_graph_iff:
-  "equiv_rel(R) \<longleftrightarrow> (is_relation(R) \<and> target(R) = rel_image(R,source(R)) \<and> R = rel_inverse(R) \<and> R O\<^sub>r R = R)" by auto2
-
-lemma induced_equiv_rel_is_equiv_rel [backward]:
-  "equiv_rel_on(R,E) \<Longrightarrow> equiv_rel(Rel(E,R))" by auto2
+lemma equiv_space_iff [rewrite]:
+  "R \<in> equiv_space(S) \<longleftrightarrow> (equiv(R) \<and> carrier(R) = S)" by auto2
+setup {* del_prfstep_thm @{thm equiv_space_def} *}
 
 section {* Quotient construction *}  (* Bourbaki II.6.2 *)
 
 (* Equivalence relation induced by a function *)
-definition fun_equiv_rel :: "i \<Rightarrow> i" where fun_equiv_rel_def [rewrite]:
-  "fun_equiv_rel(f) = Rel(source(f), \<lambda>x y. f`x = f`y)"
+definition fun_equiv :: "i \<Rightarrow> i" where [rewrite]:
+  "fun_equiv(f) = Equiv(source(f), \<lambda>x y. f`x = f`y)"
 
-lemma fun_equiv_rel_is_rel [typing]:
-  "fun_equiv_rel(f) \<in> rel_space(source(f))" by auto2
+lemma fun_equiv_is_equiv [typing]:
+  "fun_equiv(f) \<in> equiv_space(source(f))" by auto2
 
-lemma fun_equiv_rel_eval [rewrite]:
-  "rel(fun_equiv_rel(f),x,y) \<longleftrightarrow> (x\<in>source(f) \<and> y\<in>source(f) \<and> f`x = f`y)" by auto2
-setup {* del_prfstep_thm @{thm fun_equiv_rel_def} *}
-
-lemma fun_equiv_rel_is_equiv_rel [forward]:
-  "equiv_rel(fun_equiv_rel(f))" by auto2
+lemma fun_equiv_eval [rewrite]:
+  "R = fun_equiv(f) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<sim>\<^sub>R y \<longleftrightarrow> f`x = f`y" by auto2
+setup {* del_prfstep_thm @{thm fun_equiv_def} *}
 
 (* Definition of quotient set as set of equivalence classes. *)
-definition equiv_class :: "[i, i] \<Rightarrow> i" where equiv_class_def [rewrite]:
-  "equiv_class(R,x) = rel_image(R,{x})"
+definition equiv_class :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "equiv_class(R,x) = {y\<in>.R. x \<sim>\<^sub>R y}"
+setup {* register_wellform_data ("equiv_class(R,x)", ["x \<in>. R"]) *}
 
 lemma equiv_class_iff [rewrite]:
-  "equiv_rel(R) \<Longrightarrow> y \<in> equiv_class(R,x) \<longleftrightarrow> (y \<in> source(R) \<and> rel(R,x,y))" by auto2
+  "equiv(R) \<Longrightarrow> y \<in> equiv_class(R,x) \<longleftrightarrow> (y \<in>. R \<and> x \<sim>\<^sub>R y)" by auto2
 setup {* del_prfstep_thm @{thm equiv_class_def} *}
 
-lemma equiv_class_mem [typing2]: "equiv_rel(R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> y \<in> equiv_class(R,x)" by auto2
+lemma equiv_class_mem [typing2]: "equiv(R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> y \<in> equiv_class(R,x)" by auto2
 
 lemma equiv_class_eq [rewrite]:
-  "equiv_rel(R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow>
-   equiv_class(R,x) = equiv_class(R,y) \<longleftrightarrow> rel(R,x,y)" by auto2
+  "equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> equiv_class(R,x) = equiv_class(R,y) \<longleftrightarrow> x \<sim>\<^sub>R y"
+  by (tactic {* auto2s_tac @{context} (HAVE "x \<sim>\<^sub>R x") *})
 
-(* Assume E = source(R) *)
-definition quotient_set :: "[i, i] \<Rightarrow> i"  (infixl "'/" 90) where quotient_set_def [rewrite]:
-  "E / R = {equiv_class(R,x). x\<in>E}"
+(* Usually E = carrier(R) *)
+definition quotient_set :: "[i, i] \<Rightarrow> i"  (infixl "'/'/" 90) where [rewrite]:
+  "E // R = {equiv_class(R,x). x\<in>E}"
 
-lemma quotient_setI [backward]:
-  "equiv_rel(R) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> S \<subseteq> source(R) \<Longrightarrow>
-   \<forall>x\<in>S. \<forall>y\<in>source(R). y \<in> S \<longleftrightarrow> rel(R,x,y) \<Longrightarrow> S \<in> source(R) / R" by auto2
+(* Characterization of elements of quotient sets. Not used later. *)
+lemma quotient_setI':
+  "equiv(R) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> S \<subseteq> carrier(R) \<Longrightarrow>
+   \<forall>x\<in>S. \<forall>y\<in>.R. y \<in> S \<longleftrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> S \<in> carrier(R) // R" by auto2
 
-lemma quotient_setD:  (* Second part not needed so far *)
-  "equiv_rel(R) \<Longrightarrow> S \<in> source(R) / R \<Longrightarrow>
-   (S \<subseteq> source(R) \<and> S \<noteq> \<emptyset>) \<and> (\<forall>x\<in>S. \<forall>y\<in>source(R). y \<in> S \<longleftrightarrow> rel(R,x,y))" by auto2
-setup {* add_forward_prfstep (conj_left_th @{thm quotient_setD}) *}
+lemma quotient_setD:
+  "equiv(R) \<Longrightarrow> S \<in> carrier(R) // R \<Longrightarrow>
+   (S \<subseteq> carrier(R) \<and> S \<noteq> \<emptyset>) \<and> (\<forall>x\<in>S. \<forall>y\<in>.R. y \<in> S \<longleftrightarrow> x \<sim>\<^sub>R y)" by auto2
+
+lemma quotient_setI [typing, backward]:
+  "y \<in>. R \<Longrightarrow> equiv_class(R,y) \<in> carrier(R)//R" by auto2
+
+lemma quotient_set_union [rewrite]:
+  "equiv(R) \<Longrightarrow> \<Union>(carrier(R)//R) = carrier(R)" by auto2
+  
+(* Choose a representative for x, under the equivalence relation R. *)
+definition rep :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "rep(R,x) = Choice(x)"
+setup {* register_wellform_data ("rep(R,x)", ["x \<in> carrier(R)//R"]) *}
+
+lemma rep_in_set [typing]: "equiv(R) \<Longrightarrow> x \<in> carrier(R)//R \<Longrightarrow> rep(R,x) \<in>. R" by auto2
+
+lemma equiv_class_of_rep: "equiv(R) \<Longrightarrow> x \<in> carrier(R)//R \<Longrightarrow> equiv_class(R,rep(R,x)) = x" by auto2
+setup {* add_forward_prfstep_cond @{thm equiv_class_of_rep} [with_term "rep(?R,?x)"] *}
+
+lemma rep_in_equiv_class: "equiv(R) \<Longrightarrow> y \<in>. R \<Longrightarrow> rep(R,equiv_class(R,y)) \<sim>\<^sub>R y" by auto2
+setup {* add_forward_prfstep_cond @{thm rep_in_equiv_class} [with_term "rep(?R,equiv_class(?R,?y))"] *} 
+
+setup {* fold del_prfstep_thm [@{thm rep_def}, @{thm quotient_set_def}] *}
 
 (* Definition of canonical surjection *)
-definition qsurj :: "i \<Rightarrow> i" where qsurj_def [rewrite]:
-  "qsurj(R) = (\<lambda>x\<in>source(R). equiv_class(R,x)\<in>(source(R)/R))"
+definition qsurj :: "i \<Rightarrow> i" where [rewrite]:
+  "qsurj(R) = (\<lambda>x\<in>carrier(R). equiv_class(R,x)\<in>(carrier(R)//R))"
 
-lemma qsurj_is_fun [typing]: "qsurj(R) \<in> source(R) \<rightarrow> source(R)/R" by auto2
+lemma qsurj_is_fun [typing]: "qsurj(R) \<in> carrier(R) \<rightarrow> carrier(R)//R" by auto2
 
-lemma qsurj_is_surj [forward]: "surjective(qsurj(R))" by auto2
+lemma qsurj_is_surj [forward]: "equiv(R) \<Longrightarrow> surjective(qsurj(R))"
+  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x\<in>carrier(R)//R. qsurj(R)`rep(R,x) = x") *})
 
 lemma qsurj_eval [rewrite]:
-  "x \<in> source(R) \<Longrightarrow> qsurj(R)`x = equiv_class(R,x)" by auto2
+  "x \<in> source(qsurj(R)) \<Longrightarrow> qsurj(R)`x = equiv_class(R,x)" by auto2
 setup {* del_prfstep_thm @{thm qsurj_def} *}
 
 lemma qsurj_eq_iff1:
-  "equiv_rel(R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> qsurj(R)`x = qsurj(R)`y" by auto2
+  "equiv(R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> qsurj(R)`x = qsurj(R)`y" by auto2
 setup {* add_rewrite_rule_cond @{thm qsurj_eq_iff1} [with_cond "?x \<noteq> ?y"] *}
 
 lemma qsurj_eq_iff2:
-  "equiv_rel(R) \<Longrightarrow> qsurj(R)`x = qsurj(R)`y \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> rel(R,x,y)" by auto2
+  "equiv(R) \<Longrightarrow> x \<in> source(qsurj(R)) \<Longrightarrow> y \<in> source(qsurj(R)) \<Longrightarrow>
+   qsurj(R)`x = qsurj(R)`y \<Longrightarrow> x \<sim>\<^sub>R y" by auto2
 setup {* add_forward_prfstep_cond @{thm qsurj_eq_iff2} [with_cond "?x \<noteq> ?y", with_filt (order_filter "x" "y")] *}
 
 (* We show that every equivalence relation is induced by some function. *)
-lemma qsurj_equiv_rel: "equiv_rel(R) \<Longrightarrow> R = fun_equiv_rel(qsurj(R))" by auto2
+lemma qsurj_equiv: "equiv(R) \<Longrightarrow> R = fun_equiv(qsurj(R))" by auto2
 
 (* Examples *)
-definition eq_equiv_rel :: "i \<Rightarrow> i" where eq_equiv_rel_def [rewrite]:
-  "eq_equiv_rel(E) = Rel(E, \<lambda>x y. x = y)"
+definition eq_equiv :: "i \<Rightarrow> i" where [rewrite]:
+  "eq_equiv(E) = Equiv(E, \<lambda>x y. x = y)"
 
-lemma eq_equiv_rel_is_equiv_rel [forward]: "equiv_rel(eq_equiv_rel(E))" by auto2
+lemma eq_equiv_is_equiv [typing]: "eq_equiv(E) \<in> equiv_space(E)" by auto2
 
-lemma qsurj_triv_bij: "qsurj(eq_equiv_rel(E)) \<in> E \<cong> E/eq_equiv_rel(E)" by auto2
+lemma qsurj_triv_bij: "qsurj(eq_equiv(E)) \<in> E \<cong> E//eq_equiv(E)" by auto2
 
-definition eq_fst_rel :: "i \<Rightarrow> i \<Rightarrow> i" where eq_fst_rel_def [rewrite]:
-  "eq_fst_rel(E,F) = Rel(E\<times>F, \<lambda>u v. fst(u) = fst(v))"
+definition eq_fst_rel :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
+  "eq_fst_rel(E,F) = Equiv(E\<times>F, \<lambda>u v. fst(u) = fst(v))"
 
-lemma eq_fst_rel_is_equiv [forward]: "equiv_rel(eq_fst_rel(E,F))" by auto2
+lemma eq_fst_rel_is_equiv [typing]: "eq_fst_rel(E,F) \<in> equiv_space(E\<times>F)" by auto2
 
-lemma qsurj_proj_is_inj: "F \<noteq> \<emptyset> \<Longrightarrow> bijective(\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)/eq_fst_rel(E,F)))"
+lemma eq_fst_rel_eval [rewrite]:
+  "R = eq_fst_rel(E,F) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<sim>\<^sub>R y \<longleftrightarrow> fst(x) = fst(y)" by auto2
+setup {* del_prfstep_thm @{thm eq_fst_rel_def} *}
+
+lemma qsurj_proj_is_inj:
+  "F \<noteq> \<emptyset> \<Longrightarrow> R = eq_fst_rel(E,F) \<Longrightarrow> f = (\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)//R)) \<Longrightarrow> bijective(f)"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "f, f = (\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)/eq_fst_rel(E,F)))" THEN
-     HAVE "f \<in> E \<rightarrow> (E\<times>F) / eq_fst_rel(E,F)" THEN
+    (HAVE "f \<in> E \<rightarrow> (E\<times>F) // R" WITH (
+       CHOOSE "a, a \<in> F" THEN HAVE "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)") THEN
      HAVE "injective(f)" WITH (
       HAVE "\<forall>x\<in>E. \<forall>y\<in>E. {x}\<times>F = {y}\<times>F \<longrightarrow> x = y" WITH HAVE "{x} \<noteq> \<emptyset>") THEN
     (HAVE "surjective(f)" WITH (
-      HAVE "\<forall>S\<in>(E\<times>F)/eq_fst_rel(E,F). \<exists>x\<in>E. f ` x = S" WITH CHOOSE "p, p \<in> S"))) *})
+      HAVE "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" WITH HAVE "f`rep(R,S) = S"))) *})
 
 (* Elements of quotient form a partition. Conversely, every partition is a quotient set. *)
-lemma equiv_class_disjoint [backward2]:
-  "equiv_rel(R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> y \<in> source(R) \<Longrightarrow> \<not>rel(R,x,y) \<Longrightarrow>
-   set_disjoint(equiv_class(R,x), equiv_class(R,y))" by auto2
+lemma equiv_class_disjoint [backward]:
+  "equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<not>x \<sim>\<^sub>R y \<Longrightarrow>
+   equiv_class(R,x) \<inter> equiv_class(R,y) = \<emptyset>" by auto2
 
 lemma equiv_classes_is_partition:
-  "equiv_rel(R) \<Longrightarrow> is_partition_sets(source(R),source(R)/R)" by auto2
+  "equiv(R) \<Longrightarrow> is_partition_sets(carrier(R),carrier(R)//R)"
+  by (tactic {* auto2s_tac @{context} (
+    HAVE "\<forall>x\<in>carrier(R)//R. x = equiv_class(R,rep(R,x))") *})
 
-lemma partition_mem_unique [backward2]:
+lemma partition_mem_unique [backward]:
   "mutually_disjoint_sets(X) \<Longrightarrow> a \<in> \<Union>X \<Longrightarrow> \<exists>!x. x \<in> X \<and> a \<in> x" by auto2
 
-definition partition_mem :: "i \<Rightarrow> i \<Rightarrow> i" where partition_mem_def [rewrite]:
+definition partition_mem :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "partition_mem(X,u) = (THE x. x \<in> X \<and> u \<in> x)"
 
-definition partition_equiv_rel :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where partition_equiv_rel_def [rewrite]:
-  "partition_equiv_rel(X,u,v) \<longleftrightarrow> (u \<in> \<Union>X \<and> v \<in> \<Union>X \<and> (partition_mem(X,u) = partition_mem(X,u)))"
+definition partition_equiv :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
+  "partition_equiv(X,u,v) \<longleftrightarrow> (u \<in> \<Union>X \<and> v \<in> \<Union>X \<and> (partition_mem(X,u) = partition_mem(X,u)))"
 
-lemma partition_equiv_rel_is_equiv_rel:
-  "is_partition_sets(E,X) \<Longrightarrow> equiv_rel_on(partition_equiv_rel(X),E)" by auto2
+lemma partition_equiv_is_equiv:
+  "is_partition_sets(E,X) \<Longrightarrow> equiv_on(partition_equiv(X),E)" by auto2
 
 section {* Predicate compatible with an equivalence relation *}  (* Bourbaki II.6.3 *)
 
-definition compat_pred :: "[i \<Rightarrow> o, i] \<Rightarrow> o" where compat_pred_def [rewrite]:
-  "compat_pred(P,R) \<longleftrightarrow> (\<forall>x y. P(x) \<longrightarrow> rel(R,x,y) \<longrightarrow> P(y))"
+definition compat_pred :: "[i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
+  "compat_pred(P,R) \<longleftrightarrow> (\<forall>x y. P(x) \<longrightarrow> x \<sim>\<^sub>R y \<longrightarrow> P(y))"
 
 lemma compat_relD [forward]:
-  "compat_pred(P,R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> P(x) \<longrightarrow> P(y)" by auto2
+  "compat_pred(P,R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> P(x) \<longrightarrow> P(y)" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm compat_pred_def} *}
 
 (* Example *)
-lemma compat_pred_eq_equiv: "compat_pred(P, eq_equiv_rel(E))" by auto2
+lemma compat_pred_eq_equiv: "compat_pred(P, eq_equiv(E))" by auto2
 
-(* Given a equivalence relation R on E, can induce a predicate on E/R *)
-definition induced_pred :: "[i \<Rightarrow> o, i, i] \<Rightarrow> o" where induced_pred_def [rewrite]:
-  "induced_pred(P,R,t) \<longleftrightarrow> (t \<in> source(R)/R \<and> (\<exists>x\<in>t. P(x)))"
+(* Given a equivalence relation R on E, can induce a predicate on E//R *)
+definition induced_pred :: "[i \<Rightarrow> o, i, i] \<Rightarrow> o" where [rewrite]:
+  "induced_pred(P,R,t) \<longleftrightarrow> (t \<in> carrier(R)//R \<and> (\<exists>x\<in>t. P(x)))"
 
 lemma induced_pred_iff:
-  "equiv_rel(R) \<Longrightarrow> compat_pred(P,R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow>
+  "equiv(R) \<Longrightarrow> x \<in> source(qsurj(R)) \<Longrightarrow> compat_pred(P,R) \<Longrightarrow>
    induced_pred(P,R,qsurj(R)`x) \<longleftrightarrow> P(x)" by auto2
 
 section {* Saturated subsets *}  (* Bourbaki II.6.4 *)
 
-definition saturated_subset :: "[i, i] \<Rightarrow> o" where saturated_subset_def [rewrite]:
-  "saturated_subset(R,A) \<longleftrightarrow> (A \<subseteq> source(R) \<and> compat_pred(\<lambda>x. x\<in>A, R))"
+definition saturated_subset :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "saturated_subset(R,A) \<longleftrightarrow> (A \<subseteq> carrier(R) \<and> compat_pred(\<lambda>x. x\<in>A, R))"
 
 lemma saturated_subset_iff:
-  "equiv_rel(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> (A \<subseteq> source(R) \<and> (\<forall>x\<in>A. equiv_class(R,x) \<subseteq> A))" by auto2
+  "equiv(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> (A \<subseteq> carrier(R) \<and> (\<forall>x\<in>A. equiv_class(R,x) \<subseteq> A))" by auto2
 
 lemma saturated_subset_iff2:
-  "equiv_rel(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> (A \<subseteq> source(R) \<and> A = (\<Union>x\<in>A. equiv_class(R,x)))" by auto2
+  "equiv(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> (A \<subseteq> carrier(R) \<and> A = (\<Union>x\<in>A. equiv_class(R,x)))" by auto2
 
 lemma equiv_class_alt:
-  "equiv_rel(R) \<Longrightarrow> x \<in> source(R) \<Longrightarrow> equiv_class(R,x) = qsurj(R) -`` {qsurj(R) ` x}" by auto2
+  "equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> equiv_class(R,x) = qsurj(R) -`` {qsurj(R) ` x}" by auto2
 
-lemma saturated_subset_alt [backward]:
-  "equiv_rel(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> A = qsurj(R) -`` (qsurj(R) `` A)" by auto2
+lemma saturated_subset_alt [resolve]:
+  "equiv(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> A = qsurj(R) -`` (qsurj(R) `` A)" by auto2
 
 (* Put above lemma into a form that is good for rewriting. *)
 lemma saturated_subset_alt' [rewrite]:
-  "saturated_subset(R,A) \<Longrightarrow> equiv_rel(R) \<Longrightarrow> qsurj(R) -`` (qsurj(R) `` A) = A" by auto2
+  "equiv(R) \<Longrightarrow> saturated_subset(R,A) \<Longrightarrow> qsurj(R) -`` (qsurj(R) `` A) = A" by auto2
 
 lemma saturated_subset_alt2:
-  "equiv_rel(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> (\<exists>B. B \<subseteq> source(R)/R \<and> A = qsurj(R) -`` B)"
+  "equiv(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> (\<exists>B. B \<subseteq> carrier(R)//R \<and> A = qsurj(R) -`` B)"
   by (tactic {* auto2s_tac @{context} (
     HAVE "saturated_subset(R,A) \<longleftrightarrow> A = qsurj(R) -`` (qsurj(R) `` A)") *})
 
-lemma saturated_subset_union [backward2]:
-  "equiv_rel(R) \<Longrightarrow> \<forall>a\<in>I. saturated_subset(R,X(a)) \<Longrightarrow> saturated_subset(R,\<Union>a\<in>I. X(a))" by auto2
+lemma saturated_subset_union [backward]:
+  "equiv(R) \<Longrightarrow> \<forall>a\<in>I. saturated_subset(R,X(a)) \<Longrightarrow> saturated_subset(R,\<Union>a\<in>I. X(a))" by auto2
 
-lemma saturated_subset_inter [backward2]:
-  "equiv_rel(R) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> \<forall>a\<in>I. saturated_subset(R,X(a)) \<Longrightarrow> saturated_subset(R,\<Inter>a\<in>I. X(a))" by auto2
+lemma saturated_subset_inter [backward]:
+  "equiv(R) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> \<forall>a\<in>I. saturated_subset(R,X(a)) \<Longrightarrow> saturated_subset(R,\<Inter>a\<in>I. X(a))" by auto2
 
 lemma saturated_subset_comp [backward]:
-  "equiv_rel(R) \<Longrightarrow> saturated_subset(R,A) \<Longrightarrow> saturated_subset(R,source(R)-A)" by auto2
+  "equiv(R) \<Longrightarrow> saturated_subset(R,A) \<Longrightarrow> saturated_subset(R,carrier(R) \<midarrow> A)" by auto2
 
-definition saturation_subset :: "[i, i] \<Rightarrow> i" where saturation_subset_def [rewrite]:
+definition saturation_subset :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "saturation_subset(R,A) = (qsurj(R) -`` (qsurj(R) `` A))"
 
 lemma saturation_subset_prop1:
-  "equiv_rel(R) \<Longrightarrow> A \<subseteq> source(R) \<Longrightarrow> A \<subseteq> saturation_subset(R,A)" by auto2
+  "equiv(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> A \<subseteq> saturation_subset(R,A)" by auto2
 
 lemma saturation_subset_prop2:
-  "equiv_rel(R) \<Longrightarrow> saturated_subset(R,A') \<Longrightarrow> A \<subseteq> A' \<Longrightarrow> saturation_subset(R,A) \<subseteq> A'" by auto2
+  "equiv(R) \<Longrightarrow> saturated_subset(R,A') \<Longrightarrow> A \<subseteq> A' \<Longrightarrow> saturation_subset(R,A) \<subseteq> A'" by auto2
 
 (* Alternative definition *)
-lemma saturation_subset_alt [backward]:
-  "equiv_rel(R) \<Longrightarrow> A \<subseteq> source(R) \<Longrightarrow> saturation_subset(R,A) = (\<Union>x\<in>A. equiv_class(R,x))" by auto2
+lemma saturation_subset_alt [resolve]:
+  "equiv(R) \<Longrightarrow> saturation_subset(R,A) = (\<Union>x\<in>A. equiv_class(R,x))" by auto2
 
 lemma saturation_subset_union:
-  "equiv_rel(R) \<Longrightarrow> \<forall>a\<in>I. X(a) \<subseteq> source(R) \<Longrightarrow>
-   saturation_subset(R,\<Union>a\<in>I. X(a)) = (\<Union>a\<in>I. saturation_subset(R,X(a)))" by auto2
+  "equiv(R) \<Longrightarrow> saturation_subset(R,\<Union>a\<in>I. X(a)) = (\<Union>a\<in>I. saturation_subset(R,X(a)))" by auto2
 
 section {* Mappings compatible with an equivalence relation *}  (* Bourbaki II.6.5 *)
 
-definition compat_fun :: "[i, i] \<Rightarrow> o" where compat_fun_def [rewrite]:
-  "compat_fun(f,R) \<longleftrightarrow> (source(f) = source(R) \<and> (\<forall>x\<in>source(f). \<forall>y\<in>source(f). rel(R,x,y) \<longrightarrow> f`x = f`y))"
+definition compat_fun :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "compat_fun(f,R) \<longleftrightarrow> (source(f) = carrier(R) \<and> (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> f`x = f`y))"
+
+lemma compat_funD [forward]:
+  "compat_fun(f,R) \<Longrightarrow> source(f) = carrier(R)"
+  "compat_fun(f,R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> f`x = f`y" by auto2+
+setup {* del_prfstep_thm_str "@eqforward" @{thm compat_fun_def} *}
 
 (* Alternative definition *)
 lemma compat_fun_alt:
-  "is_function(f) \<Longrightarrow> equiv_rel(R) \<Longrightarrow>
-   compat_fun(f,R) \<longleftrightarrow> (source(f) = source(R) \<and> (\<forall>x\<in>source(f). \<forall>y\<in>equiv_class(R,x). f`x = f`y))" by auto2
+  "is_function(f) \<Longrightarrow> equiv(R) \<Longrightarrow>
+   compat_fun(f,R) \<longleftrightarrow> (source(f) = carrier(R) \<and> (\<forall>x\<in>source(f). \<forall>y\<in>equiv_class(R,x). f`x = f`y))" by auto2
 
 (* Compatible functions pass to the quotient. *)
 lemma exists_induced_fun [backward]:
-  "f \<in> E \<rightarrow> F \<Longrightarrow> equiv_rel(R) \<Longrightarrow> compat_fun(f,R) \<Longrightarrow> \<exists>!h. h\<in>(E/R)\<rightarrow>F \<and> f = h O qsurj(R)"
+  "equiv(R) \<Longrightarrow> f \<in> E \<rightarrow> F \<Longrightarrow> compat_fun(f,R) \<Longrightarrow> \<exists>!h. h\<in>(E//R)\<rightarrow>F \<and> f = h \<circ> qsurj(R)"
   by (tactic {* auto2s_tac @{context}
     (HAVE "\<forall>x\<in>E. \<forall>y\<in>E. qsurj(R)`x = qsurj(R)`y \<longrightarrow> f`x = f`y") *})
 
-definition induced_fun :: "[i, i] \<Rightarrow> i" where induced_fun_def [rewrite]:
-  "induced_fun(f,R) = (THE h. h \<in> (source(f)/R)\<rightarrow>target(f) \<and> f = h O qsurj(R))"
+definition induced_fun :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "induced_fun(f,R) = (THE h. h \<in> (source(f)//R)\<rightarrow>target(f) \<and> f = h \<circ> qsurj(R))"
+setup {* register_wellform_data ("induced_fun(f,R)", ["compat_fun(f,R)"]) *}
+setup {* add_prfstep_check_req ("induced_fun(f,R)", "compat_fun(f,R)") *}
 
 lemma induced_fun_prop:
-  "is_function(f) \<Longrightarrow> equiv_rel(R) \<Longrightarrow> compat_fun(f,R) \<Longrightarrow>
-   induced_fun(f,R) \<in> (source(f)/R)\<rightarrow>target(f) \<and> f = induced_fun(f,R) O qsurj(R)" by auto2
+  "func_form(f) \<Longrightarrow> equiv(R) \<Longrightarrow> compat_fun(f,R) \<Longrightarrow>
+   induced_fun(f,R) \<in> (source(f)//R)\<rightarrow>target(f) \<and> f = induced_fun(f,R) \<circ> qsurj(R)" by auto2
 setup {* add_forward_prfstep_cond @{thm induced_fun_prop} [with_term "induced_fun(?f,?R)"] *}
 
 lemma induced_fun_eval [rewrite]:
-  "is_function(f) \<Longrightarrow> equiv_rel(R) \<Longrightarrow> compat_fun(f,R) \<Longrightarrow>
-   x \<in> source(f) \<Longrightarrow> induced_fun(f,R) ` equiv_class(R,x) = f ` x" by auto2
+  "func_form(f) \<Longrightarrow> equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> compat_fun(f,R) \<Longrightarrow>
+   induced_fun(f,R) ` equiv_class(R,x) = f ` x" by auto2
 setup {* del_prfstep_thm @{thm induced_fun_def} *}
-
-setup {* add_gen_prfstep ("induced_fun_case",
-  [WithTerm @{term_pat "induced_fun(?f,?R)"}, CreateConcl @{term_pat "compat_fun(?f,?R)"}]) *}
 
 (* Conversely, any function that passes to the quotient must be compatible. *)
 lemma induced_fun_means_compat:
-  "equiv_rel(R) \<Longrightarrow> h \<in> (source(R)/R)\<rightarrow>F \<Longrightarrow> compat_fun(h O qsurj(R), R)" by auto2
+  "equiv(R) \<Longrightarrow> h \<in> (carrier(R)//R)\<rightarrow>F \<Longrightarrow> compat_fun(h \<circ> qsurj(R), R)" by auto2
 
 (* f is compatible with its own induced equivalence relation. *)
-lemma fun_equiv_rel_compat: "compat_fun(f,fun_equiv_rel(f))" by auto2
-setup {* add_forward_prfstep_cond @{thm fun_equiv_rel_compat} [with_term "fun_equiv_rel(?f)"] *}
+lemma fun_equiv_compat: "compat_fun(f,fun_equiv(f))" by auto2
+setup {* add_forward_prfstep_cond @{thm fun_equiv_compat} [with_term "fun_equiv(?f)"] *}
 
 (* Canonical decomposition. *)
 lemma injective_induced_fun:
-  "is_function(f) \<Longrightarrow> injective(induced_fun(f,fun_equiv_rel(f)))" by auto2
-setup {* add_forward_prfstep_cond @{thm injective_induced_fun} [with_term "induced_fun(?f,fun_equiv_rel(?f))"] *}
-
-lemma induced_fun_image [rewrite]:
-  "is_function(f) \<Longrightarrow> induced_fun(f,fun_equiv_rel(f)) `` (source(f)/fun_equiv_rel(f)) = f `` source(f)" by auto2
-
-(* Any function can be restricted to its image. *)
-definition func_restrict_image :: "i \<Rightarrow> i" where func_restrict_image_def [rewrite]:
-  "func_restrict_image(f) = (\<lambda>x\<in>source(f). (f`x)\<in>(f``source(f)))"
-
-lemma func_restrict_image_is_fun [typing]:
-  "is_function(f) \<Longrightarrow> func_restrict_image(f) \<in> source(f) \<rightarrow> f``source(f)" by auto2
-
-lemma func_restrict_image_eval [rewrite]:
-  "is_function(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> func_restrict_image(f)`x = f`x" by auto2
-setup {* del_prfstep_thm @{thm func_restrict_image_def} *}
-
-lemma func_factorize [rewrite_back]:
-  "is_function(f) \<Longrightarrow> f = inj_fun(f``source(f),target(f)) O func_restrict_image(f)"
-  by (tactic {* auto2s_tac @{context} (HAVE "f `` source(f) \<subseteq> target(f)") *})
-
-lemma inj_restrict_image_bij [typing]:
-  "injective(f) \<Longrightarrow> func_restrict_image(f) \<in> source(f) \<cong> f``source(f)" by auto2
+  "func_form(f) \<Longrightarrow> injective(induced_fun(f,fun_equiv(f)))" by auto2
+setup {* add_forward_prfstep_cond @{thm injective_induced_fun} [with_term "induced_fun(?f,fun_equiv(?f))"] *}
 
 (* Putting everything together, statement of canonical decomposition. *)
 lemma canonical_decomposition:
-  "f \<in> E \<rightarrow> F \<Longrightarrow> R = fun_equiv_rel(f) \<Longrightarrow>
-   f = (inj_fun(induced_fun(f,R)``(E/R),F) O func_restrict_image(induced_fun(f,R))) O qsurj(R)" by auto2
+  "f \<in> E \<rightarrow> F \<Longrightarrow> R = fun_equiv(f) \<Longrightarrow> f' = induced_fun(f,R) \<Longrightarrow>
+   f = (inj_fun(f'``(E//R),F) \<circ> func_restrict_image(f')) \<circ> qsurj(R)" by auto2
 
 lemma first_isomorphism_theorem [typing]:
-  "is_function(f) \<Longrightarrow> func_restrict_image(induced_fun(f,fun_equiv_rel(f))) \<in> source(f)/fun_equiv_rel(f) \<cong> f``source(f)" by auto2
+  "func_form(f) \<Longrightarrow> A = source(f) \<Longrightarrow> R = fun_equiv(f) \<Longrightarrow>
+   func_restrict_image(induced_fun(f,R)) \<in> A//R \<cong> f``A" by auto2
 
 lemma first_isomorphism_theorem_surj [typing]:
-  "surjective(f) \<Longrightarrow> induced_fun(f,fun_equiv_rel(f)) \<in> source(f)/fun_equiv_rel(f) \<cong> target(f)" by auto2
+  "func_form(f) \<Longrightarrow> surjective(f) \<Longrightarrow> A = source(f) \<Longrightarrow> R = fun_equiv(f) \<Longrightarrow>
+   induced_fun(f,R) \<in> A//R \<cong> target(f)" by auto2
 
-definition compat_fun_double :: "[i, i, i] \<Rightarrow> o" where compat_fun_double_def [rewrite]:
-  "compat_fun_double(f,R,S) \<longleftrightarrow> (source(f) = source(R) \<and> target(f) = source(S) \<and>
-    (\<forall>x\<in>source(f). \<forall>y\<in>source(f). rel(R,x,y) \<longrightarrow> rel(S,f`x,f`y)))"
+definition compat_fun_double :: "[i, i, i] \<Rightarrow> o" where [rewrite]:
+  "compat_fun_double(f,R,S) \<longleftrightarrow> (source(f) = carrier(R) \<and> target(f) = carrier(S) \<and>
+    (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> f`x \<sim>\<^sub>S f`y))"
 
-definition induced_fun_double :: "[i, i, i] \<Rightarrow> i" where induced_fun_double_def [rewrite]:
-  "induced_fun_double(f,R,S) = induced_fun(qsurj(S) O f, R)"
+definition induced_fun_double :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
+  "induced_fun_double(f,R,S) = induced_fun(qsurj(S) \<circ> f, R)"
 
 lemma induced_fun_double_prop:
-  "is_function(f) \<Longrightarrow> equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> compat_fun_double(f,R,S) \<Longrightarrow>
-   induced_fun_double(f,R,S) \<in> source(f)/R \<rightarrow> target(f)/S \<and>
-   qsurj(S) O f = induced_fun_double(f,R,S) O qsurj(R)" by auto2
+  "is_function(f) \<Longrightarrow> equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> compat_fun_double(f,R,S) \<Longrightarrow>
+   induced_fun_double(f,R,S) \<in> source(f)//R \<rightarrow> target(f)//S \<and>
+   qsurj(S) \<circ> f = induced_fun_double(f,R,S) \<circ> qsurj(R)" by auto2
 
 section {* Inverse image of an equivalence relation *}  (* Bourbaki II.6.6 *)
 
-definition vImage_equiv_rel :: "[i, i] \<Rightarrow> i" where vImage_equiv_rel_def [rewrite]:
-  "vImage_equiv_rel(f,S) = fun_equiv_rel(qsurj(S) O f)"
+definition vImage_equiv :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "vImage_equiv(f,S) = fun_equiv(qsurj(S) \<circ> f)"
+setup {* register_wellform_data ("vImage_equiv(f,S)", ["target(f) = carrier(S)"]) *}
 
-lemma vImage_equiv_rel_is_equiv_rel:
-  "is_function(f) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> target(f) = source(S) \<Longrightarrow>
-   equiv_rel(vImage_equiv_rel(f,S))" by auto2
-setup {* add_forward_prfstep_cond @{thm vImage_equiv_rel_is_equiv_rel} [with_term "vImage_equiv_rel(?f,?S)"] *}
+lemma vImage_equiv_is_equiv:
+  "is_function(f) \<Longrightarrow> equiv(S) \<Longrightarrow> target(f) = carrier(S) \<Longrightarrow>
+   equiv(vImage_equiv(f,S)) \<and> carrier(vImage_equiv(f,S)) = source(f)" by auto2
+setup {* add_forward_prfstep_cond @{thm vImage_equiv_is_equiv} [with_term "vImage_equiv(?f,?S)"] *}
 
-lemma vImage_equiv_rel_iff [rewrite]:
-  "is_function(f) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> target(f) = source(S) \<Longrightarrow>
-   x \<in> source(f) \<Longrightarrow> y \<in> source(f) \<Longrightarrow> rel(vImage_equiv_rel(f,S),x,y) \<longleftrightarrow> rel(S,f`x,f`y)" by auto2
+lemma vImage_equiv_iff [rewrite]:
+  "is_function(f) \<Longrightarrow> equiv(S) \<Longrightarrow> target(f) = carrier(S) \<Longrightarrow>
+   R = vImage_equiv(f,S) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> y \<in> source(f) \<Longrightarrow> x \<sim>\<^sub>R y \<longleftrightarrow> f`x \<sim>\<^sub>S f`y" by auto2
 
-lemma vImage_equiv_rel_classes:
-  "is_function(f) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> target(f) = source(S) \<Longrightarrow>
-   x \<in> source(f) \<Longrightarrow> equiv_class(vImage_equiv_rel(f,S),x) = f -`` equiv_class(S,f`x)" by auto2
+lemma vImage_equiv_classes:
+  "is_function(f) \<Longrightarrow> equiv(S) \<Longrightarrow> target(f) = carrier(S) \<Longrightarrow>
+   x \<in> source(f) \<Longrightarrow> equiv_class(vImage_equiv(f,S),x) = f -`` equiv_class(S,f`x)" by auto2
 
 (* Given subset A of E, pullback an equivalence relation R on E to an equivalence
    relation on A. *)
-definition subset_equiv_rel :: "[i, i] \<Rightarrow> i" where subset_equiv_rel_def [rewrite]:
-  "subset_equiv_rel(R,A) = vImage_equiv_rel(inj_fun(A,source(R)),R)"
+definition subset_equiv :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "subset_equiv(R,A) = vImage_equiv(inj_fun(A,carrier(R)),R)"
 
 lemma inj_compat_double:
-  "equiv_rel(R) \<Longrightarrow> E = source(R) \<Longrightarrow> A \<subseteq> E \<Longrightarrow>
-   compat_fun_double(inj_fun(A,E),subset_equiv_rel(R,A),R)" by auto2
+  "equiv(R) \<Longrightarrow> E = carrier(R) \<Longrightarrow> A \<subseteq> E \<Longrightarrow>
+   compat_fun_double(inj_fun(A,E),subset_equiv(R,A),R)" by auto2
 
 lemma second_isomorphism_theorem:
-  "E = source(R) \<Longrightarrow> A \<subseteq> E \<Longrightarrow>
-   func_restrict_image(induced_fun_double(inj_fun(A,E),subset_equiv_rel(R,A),R)) \<in>
-     A/subset_equiv_rel(R,A) \<cong> qsurj(R) `` A"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "R_A, R_A = subset_equiv_rel(R,A)" THEN
-    HAVE "induced_fun_double(inj_fun(A,E), R_A, R) `` (A/R_A) = qsurj(R) `` A") *})
+  "E = carrier(R) \<Longrightarrow> A \<subseteq> E \<Longrightarrow> R_A = subset_equiv(R,A) \<Longrightarrow>
+   func_restrict_image(induced_fun_double(inj_fun(A,E),R_A,R)) \<in> A//R_A \<cong> qsurj(R) `` A" by auto2
 
 section {* Quotients of equivalence relations *}  (* Bourbaki II.6.7 *)
 
 (* Finer condition can be defined on all relations *)
-definition finer_rel :: "[i, i] \<Rightarrow> o" where finer_rel_def [rewrite]:
-  "finer_rel(R,S) \<longleftrightarrow> (source(R) = source(S) \<and> target(R) = target(S) \<and> (\<forall>x y. rel(R,x,y) \<longrightarrow> rel(S,x,y)))"
+definition finer_rel :: "[i, i] \<Rightarrow> o" where [rewrite]:
+  "finer_rel(R,S) \<longleftrightarrow> (carrier(R) = carrier(S) \<and> (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> x \<sim>\<^sub>S y))"
 
 (* Exercises *)
-lemma finer_equiv_rel1:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> finer_rel(R,S) \<longleftrightarrow>
-   (source(R) = source(S) \<and> (\<forall>x\<in>source(R). equiv_class(R,x) \<subseteq> equiv_class(S,x)))" by auto2
+lemma finer_equiv1:
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> finer_rel(R,S) \<longleftrightarrow>
+   (carrier(R) = carrier(S) \<and> (\<forall>x\<in>.R. equiv_class(R,x) \<subseteq> equiv_class(S,x)))" by auto2
 
-lemma finer_equiv_rel2:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> finer_rel(R,S) \<longleftrightarrow>
-   (source(R) = source(S) \<and> (\<forall>x\<in>source(R). saturated_subset(R,equiv_class(S,x))))" by auto2
+lemma finer_equiv2:
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> finer_rel(R,S) \<longleftrightarrow>
+   (carrier(R) = carrier(S) \<and> (\<forall>x\<in>.R. saturated_subset(R,equiv_class(S,x))))" by auto2
 
 lemma finer_equiv_top:
-  "equiv_rel(R) \<Longrightarrow> finer_rel(eq_equiv_rel(source(R)), R)" by auto2
+  "equiv(R) \<Longrightarrow> finer_rel(eq_equiv(carrier(R)), R)" by auto2
 
 lemma finer_equiv_bottom:
-  "equiv_rel(R) \<Longrightarrow> finer_rel(R, Rel(source(R), \<lambda>x y. True))" by auto2
+  "equiv(R) \<Longrightarrow> finer_rel(R, Equiv(carrier(R), \<lambda>x y. True))" by auto2
 
 (* Now the serious business of this section *)
 
 (* Assume R and S are equivalence relations on the same set, and S is finer than R. *)
-definition quotient_rel :: "[i, i] \<Rightarrow> i" where quotient_rel_def [rewrite]:
-  "quotient_rel(R,S) = fun_equiv_rel(induced_fun(qsurj(R),S))"
+definition quotient_rel :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "quotient_rel(R,S) = fun_equiv(induced_fun(qsurj(R),S))"
 
-lemma compat_finer_equiv_rel:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
-   compat_fun(qsurj(R),S) \<and> induced_fun(qsurj(R),S) \<in> source(R)/S \<rightarrow> source(R)/R \<and>
+lemma compat_finer_equiv:
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
+   compat_fun(qsurj(R),S) \<and> induced_fun(qsurj(R),S) \<in> carrier(R)//S \<rightarrow> carrier(R)//R \<and>
    surjective(induced_fun(qsurj(R),S))" by auto2
-setup {* add_forward_prfstep_cond @{thm compat_finer_equiv_rel} [with_term "induced_fun(qsurj(?R),?S)"] *}
+setup {* add_forward_prfstep_cond @{thm compat_finer_equiv} [with_term "induced_fun(qsurj(?R),?S)"] *}
 
 lemma finer_induced_fun_eval [rewrite]:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
-   x \<in> source(R) \<Longrightarrow> induced_fun(qsurj(R),S) ` equiv_class(S,x) = equiv_class(R,x)" by auto2
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> x \<in>. S \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
+   induced_fun(qsurj(R),S) ` equiv_class(S,x) = equiv_class(R,x)" by auto2
 
 lemma quotient_rel_iff [rewrite_back]:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
-   x\<in>source(R) \<Longrightarrow> y\<in>source(R) \<Longrightarrow> rel(R,x,y) \<longleftrightarrow> rel(quotient_rel(R,S),qsurj(S)`x,qsurj(S)`y)" by auto2
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> x\<in>source(qsurj(S)) \<Longrightarrow> y\<in>source(qsurj(S)) \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
+   Q = quotient_rel(R,S) \<Longrightarrow> x \<sim>\<^sub>R y \<longleftrightarrow> qsurj(S)`x \<sim>\<^sub>Q qsurj(S)`y" by auto2
 
-definition third_isomorphism :: "[i, i] \<Rightarrow> i" where third_isomorphism_def [rewrite]:
+definition third_isomorphism :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "third_isomorphism(R,S) = induced_fun(induced_fun(qsurj(R),S),quotient_rel(R,S))"
 
 lemma third_isomorphism_theorem:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
-   third_isomorphism(R,S) \<in> (source(R)/S)/(quotient_rel(R,S)) \<cong> source(R)/R" by auto2
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> finer_rel(S,R) \<Longrightarrow>
+   third_isomorphism(R,S) \<in> (carrier(R)//S)//(quotient_rel(R,S)) \<cong> carrier(R)//R" by auto2
 
-(* Given an equivalence relation S on E, and an equivalence relation T on E/S,
-   the pullback of T on the surjection E \<rightarrow> E/S is an equivalence relation on E coarser than S. *)
-lemma vImage_finer [backward]:
-  "equiv_rel(S) \<Longrightarrow> equiv_rel(T) \<Longrightarrow> source(T) = source(S)/S \<Longrightarrow> finer_rel(S,vImage_equiv_rel(qsurj(S),T))" by auto2
+(* Given an equivalence relation S on E, and an equivalence relation T on E//S,
+   the pullback of T on the surjection E \<rightarrow> E//S is an equivalence relation on E coarser than S. *)
+lemma vImage_finer [resolve]:
+  "equiv(S) \<Longrightarrow> equiv(T) \<Longrightarrow> target(qsurj(S)) = carrier(T) \<Longrightarrow>
+   finer_rel(S,vImage_equiv(qsurj(S),T))" by auto2
 
-(* Any equivalence relation T on E/S is the quotient between a coarser equivalence relation R and S. *)
-lemma equiv_rel_is_quotient_rel:
-  "equiv_rel(S) \<Longrightarrow> equiv_rel(T) \<Longrightarrow> source(T) = source(S)/S \<Longrightarrow> T = quotient_rel(vImage_equiv_rel(qsurj(S),T),S)"
+(* Any equivalence relation T on E//S is the quotient between a coarser equivalence relation R and S. *)
+lemma equiv_is_quotient_rel:
+  "equiv(S) \<Longrightarrow> equiv(T) \<Longrightarrow> carrier(T) = carrier(S)//S \<Longrightarrow> T = quotient_rel(vImage_equiv(qsurj(S),T),S)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "finer_rel(S,vImage_equiv_rel(qsurj(S),T))") *})
+    HAVE "finer_rel(S,vImage_equiv(qsurj(S),T))") *})
 
 section {* Product of two equivalence relations *}  (* Bourbaki II.6.8 *)
 
-definition prod_equiv_rel :: "[i, i] \<Rightarrow> i" where prod_equiv_rel_def [rewrite]:
-  "prod_equiv_rel(R,S) = Rel(source(R)\<times>source(S), \<lambda>p q. rel(R,fst(p),fst(q)) \<and> rel(S,snd(p),snd(q)))"
+definition prod_equiv :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "prod_equiv(R,S) = Equiv(carrier(R)\<times>carrier(S), \<lambda>p q. fst(p) \<sim>\<^sub>R fst(q) \<and> snd(p) \<sim>\<^sub>S snd(q))"
 
-lemma prod_equiv_relD [typing]: "prod_equiv_rel(R,S) \<in> rel_space(source(R)\<times>source(S))" by auto2
+lemma prod_equivD [typing]:
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> prod_equiv(R,S) \<in> equiv_space(carrier(R)\<times>carrier(S))" by auto2
 
-lemma prod_equiv_rel_eval [rewrite]:
-  "x \<in> source(R)\<times>source(S) \<Longrightarrow> y \<in> source(R)\<times>source(S) \<Longrightarrow>
-   rel(prod_equiv_rel(R,S),x,y) \<longleftrightarrow> rel(R,fst(x),fst(y)) \<and> rel(S,snd(x),snd(y))" by auto2
-setup {* del_prfstep_thm @{thm prod_equiv_rel_def} *}
+lemma prod_equiv_eval [rewrite]:
+  "T = prod_equiv(R,S) \<Longrightarrow> x \<in>. T \<Longrightarrow> y \<in>. T \<Longrightarrow> x \<sim>\<^sub>T y \<longleftrightarrow> (fst(x) \<sim>\<^sub>R fst(y) \<and> snd(x) \<sim>\<^sub>S snd(y))" by auto2
+setup {* del_prfstep_thm @{thm prod_equiv_def} *}
 
-lemma prod_equiv_rel_is_equiv_rel [forward]:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> equiv_rel(prod_equiv_rel(R,S))" by auto2
+lemma prod_fun_equiv [rewrite]:
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> fun_equiv(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv(R,S)" by auto2
 
-lemma prod_fun_equiv_rel [rewrite]:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow> fun_equiv_rel(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv_rel(R,S)" by auto2
-
-definition prod_quotient_isomorphism :: "[i, i] \<Rightarrow> i" where prod_quotient_isomorphism_def [rewrite]:
-  "prod_quotient_isomorphism(R,S) = induced_fun(qsurj(R) \<times>\<^sub>f qsurj(S), prod_equiv_rel(R,S))"
+definition prod_quotient_isomorphism :: "[i, i] \<Rightarrow> i" where [rewrite]:
+  "prod_quotient_isomorphism(R,S) = induced_fun(qsurj(R) \<times>\<^sub>f qsurj(S), prod_equiv(R,S))"
 
 lemma prod_quotient_isomorphism:
-  "equiv_rel(R) \<Longrightarrow> equiv_rel(S) \<Longrightarrow>
-   prod_quotient_isomorphism(R,S) \<in> (source(R)\<times>source(S))/prod_equiv_rel(R,S) \<cong> (source(R)/R) \<times> (source(S)/S)"
+  "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> A = carrier(R) \<Longrightarrow> B = carrier(S) \<Longrightarrow>
+   prod_quotient_isomorphism(R,S) \<in> (A\<times>B)//prod_equiv(R,S) \<cong> (A//R) \<times> (B//S)"
   by (tactic {* auto2s_tac @{context} (
     HAVE "surjective(qsurj(R) \<times>\<^sub>f qsurj(S))" THEN
-    HAVE "fun_equiv_rel(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv_rel(R,S)") *})
+    HAVE "fun_equiv(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv(R,S)") *})
 
-section {* Representatives *}
+section {* Compatible binary operators *}
 
-(* In preparation for future developments, we define terminology for "choosing"
-   a representative for x, under the equivalence relation R. *)
-definition rep :: "i \<Rightarrow> i \<Rightarrow> i" where rep_def [rewrite]:
-  "rep(R,x) = Choice(x)"
+(* A (meta) binary operator is compatible with a (object) equivalence relation. *)
+definition compat_meta_bin :: "[i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
+  "compat_meta_bin(R,f) \<longleftrightarrow> (\<forall>x1 x2 y1 y2. x1 \<sim>\<^sub>R x2 \<longrightarrow> y1 \<sim>\<^sub>R y2 \<longrightarrow> f(x1,y1) \<sim>\<^sub>R f(x2,y2))"
 
-lemma rep_in_set [typing]: "equiv_rel(R) \<Longrightarrow> x \<in> source(R)/R \<Longrightarrow> rep(R,x) \<in> source(R)" by auto2
-lemma qsurj_of_rep: "equiv_rel(R) \<Longrightarrow> x \<in> source(R)/R \<Longrightarrow> qsurj(R) ` rep(R,x) = x" by auto2
-setup {* add_forward_prfstep_cond @{thm qsurj_of_rep} [with_term "rep(?R,?x)"] *}
-setup {* del_prfstep_thm @{thm rep_def} *}
+(* Compatibility can be shown one argument at a time. *)
+definition compat_meta_bin1 :: "[i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
+  "compat_meta_bin1(R,f) \<longleftrightarrow> (\<forall>y\<in>.R. \<forall>x1 x2. x1 \<sim>\<^sub>R x2 \<longrightarrow> f(x1,y) \<sim>\<^sub>R f(x2,y))"
+
+lemma compat_meta_bin1D [backward2]:
+  "compat_meta_bin1(R,f) \<Longrightarrow> y \<in>. R \<Longrightarrow> x1 \<sim>\<^sub>R x2 \<Longrightarrow> f(x1,y) \<sim>\<^sub>R f(x2,y)" by auto2
+setup {* del_prfstep_thm_str "@eqforward" @{thm compat_meta_bin1_def} *}
+
+definition compat_meta_bin2 :: "[i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
+  "compat_meta_bin2(R,f) \<longleftrightarrow> (\<forall>x\<in>.R. \<forall>y1 y2. y1 \<sim>\<^sub>R y2 \<longrightarrow> f(x,y1) \<sim>\<^sub>R f(x,y2))"
+
+lemma compat_meta_bin2D [backward2]:
+  "compat_meta_bin2(R,f) \<Longrightarrow> x \<in>. R \<Longrightarrow> y1 \<sim>\<^sub>R y2 \<Longrightarrow> f(x,y1) \<sim>\<^sub>R f(x,y2)" by auto2
+setup {* del_prfstep_thm_str "@eqforward" @{thm compat_meta_bin2_def} *}
+
+lemma compat_meta_binI [backward]:
+  "equiv(R) \<Longrightarrow> compat_meta_bin1(R,f) \<Longrightarrow> compat_meta_bin2(R,f) \<Longrightarrow> compat_meta_bin(R,f)"
+  by (tactic {* auto2s_tac @{context} (
+    HAVE "\<forall>x1 x2 y1 y2. x1 \<sim>\<^sub>R x2 \<longrightarrow> y1 \<sim>\<^sub>R y2 \<longrightarrow> f(x1,y1) \<sim>\<^sub>R f(x2,y2)" WITH (
+      HAVE "f(x1,y1) \<sim>\<^sub>R f(x2,y1)" THEN HAVE "f(x2,y1) \<sim>\<^sub>R f(x2,y2)")) *})
+
+lemma compat_meta_binD [backward2]:
+  "compat_meta_bin(R,f) \<Longrightarrow> x1 \<sim>\<^sub>R x2 \<Longrightarrow> y1 \<sim>\<^sub>R y2 \<Longrightarrow> f(x1,y1) \<sim>\<^sub>R f(x2,y2)" by auto2
+setup {* del_prfstep_thm @{thm compat_meta_bin_def} *}
+
+(* If the (meta) binary operator f is compatible with R, then f induces a binary
+   operator on the quotient of R. *)
+lemma induced_meta_bin [rewrite]:
+  "equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> compat_meta_bin(R,f) \<Longrightarrow>
+   equiv_class(R,f(rep(R,equiv_class(R,x)),rep(R,equiv_class(R,y)))) = equiv_class(R,f(x,y))"
+  by (tactic {* auto2s_tac @{context} (
+    HAVE "f(rep(R, equiv_class(R, x)), rep(R, equiv_class(R, y))) \<sim>\<^sub>R f(x,y)") *})
 
 end

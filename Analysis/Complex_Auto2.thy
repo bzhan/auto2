@@ -25,7 +25,7 @@ theorem complex_evals1 [rewrite]:
   "Re (-x) = -(Re x)" "Im (-x) = -(Im x)" "Re (x - y) = Re x - Re y" "Im (x - y) = Im x - Im y"
 by (simp add: zero_complex_def plus_complex_def uminus_complex_def minus_complex_def)+
 
-local_setup {* fold add_rewrite_rule_ctxt @{thms complex_evals1} *}
+local_setup {* fold (local_context_map o add_rewrite_rule_gnrc) @{thms complex_evals1} *}
 
 instance by intro_classes auto2+
 
@@ -57,7 +57,8 @@ theorem complex_evals2 [rewrite]:
   "Re (inverse x) = Re x / ((Re x)\<^sup>2 + (Im x)\<^sup>2)" "Im (inverse x) = - Im x / ((Re x)\<^sup>2 + (Im x)\<^sup>2)"
 by (simp add: one_complex_def times_complex_def inverse_complex_def divide_complex_def)+
 
-local_setup {* fold add_rewrite_rule_ctxt (@{thms complex_evals2} @ [@{thm divide_complex_def}]) *}
+local_setup {* fold (local_context_map o add_rewrite_rule_gnrc)
+  (@{thms complex_evals2} @ [@{thm divide_complex_def}]) *}
 
 instance proof
 fix a b c :: complex

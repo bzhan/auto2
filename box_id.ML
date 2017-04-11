@@ -41,30 +41,33 @@ fun string_of_box_id id =
 structure Boxidtab = Table (type key = box_id val ord = list_ord int_ord)
 
 type box_lattice = {
-  parents: box_id Inttab.table,
+  parents: box_id vector,
   focus: box_id,
   resolved: box_id list
 }
 
-val empty = {parents = Inttab.empty, focus = [], resolved = []}
+val empty = {parents = Vector.fromList [], focus = [], resolved = []}
 
 fun get_focus {focus, ...} = focus
 fun set_focus foc {parents, focus = _, resolved} =
     {parents = parents, focus = foc, resolved = resolved}
 
-fun num_prim_id {parents, ...} = length (Inttab.keys parents)
+fun num_prim_id {parents, ...} = Vector.length parents
 
-fun get_parent_prim {parents, ...} prim_id = the (Inttab.lookup parents prim_id)
+fun get_parent_prim {parents, ...} prim_id =
+    Vector.sub (parents, prim_id)
+    handle Subscript =>
+           raise AUTO2 "get_parent_prim: prim_id out of bounds."
 
 (* Returns the list of primitive ancestors of id. Result may not be in
    order.
  *)
-fun get_ancestors_prim {parents, ...} id =
+fun get_ancestors_prim lat id =
     let
       fun helper all_ids cur_ids =
           let
             val new_ids =
-                (maps (fn id => the (Inttab.lookup parents id)) cur_ids)
+                (maps (get_parent_prim lat) cur_ids)
                     |> distinct (op =) |> subtract (op =) all_ids
           in
             if length new_ids = 0 then all_ids
@@ -170,8 +173,8 @@ fun id_is_eq_ancestor lat (id, _) (id', _) = is_eq_ancestor lat id id'
 
 fun add_prim_id parent_id {parents, focus, resolved} =
     let
-      val prim_id = length (Inttab.keys parents)
-      val parents' = Inttab.update_new (prim_id, parent_id) parents
+      val prim_id = Vector.length parents
+      val parents' = Vector.concat [parents, Vector.fromList [parent_id]]
     in
       (prim_id, {parents = parents', focus = focus, resolved = resolved})
     end

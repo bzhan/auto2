@@ -1,6 +1,14 @@
 chapter AUTO2
 
-session AUTO2 = HOL +
+session HOL_Base = HOL +
+  description {*
+    Theories in HOL needed by AUTO2.
+  *}
+  theories
+    "../src/HOL/Library/Multiset"
+    "../src/HOL/Imperative_HOL/Imperative_HOL"
+
+session AUTO2 = HOL_Base +
   description {*
     AUTO2 definitions.
   *}
@@ -100,13 +108,38 @@ session SepLogic_PQueue = SepLogic_BasicStr +
   theories
     "SepLogic/IndexedPriorityQueue"
 
-session FOL_Ex = FOL +
+session Auto2_FOL = FOL +
   description {*
     Example in first order logic.
   *}
   theories
     "FOL/Pelletier"
-    "FOL/SetSum"
-    "FOL/FixedPt"
-    "FOL/BigSet"
+    "FOL/BigProd"
     "FOL/WellOrder"
+    "FOL/SetSum"
+    "FOL/Coset"
+    "FOL/Abs"
+    "FOL/Finite"
+    "FOL/Rat"
+
+session FOL_Real = Auto2_FOL +
+  description {*
+    Real numbers in first order logic.
+  *}
+  theories
+    "FOL/Real"
+
+session FOL_Topology = FOL_Real +
+  description {*
+    Topology in first order logic.
+  *}
+  theories
+    "FOL/Closure"
+    "FOL/RealTopology"
+
+session FOL_Homotopy = FOL_Topology +
+  description {*
+    Homotopy theory.
+  *}
+  theories
+    "FOL/FundamentalGroup"

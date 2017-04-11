@@ -26,11 +26,11 @@ local
         val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
         val th = assume_eq (RewriteTable.theory_of tbl) (t1, t2)
       in
-        tbl |> RewriteTable.add_rewrite id th
+        tbl |> RewriteTable.add_rewrite (id, th)
       end
 
   val tbl = (RewriteTable.empty ctxt')
-                |> RewriteTable.add_term ([], Free ("P", assnT))
+                |> RewriteTable.add_term ([], cert ctxt' (Free ("P", assnT)))
                 |> add_rewrite [] ("n1", "None::nat node ref option")
                 |> add_rewrite [] ("s1", "Some pp")
                 |> add_rewrite [] ("s2", "Some pp'")

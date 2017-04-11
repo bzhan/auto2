@@ -4,7 +4,7 @@ begin
 
 section {* Big union *}
 
-lemma Union_mem_D [forward]: "x \<in> A \<Longrightarrow> A \<in> S \<Longrightarrow> x \<in> \<Union>(S)" by auto2
+lemma Union_mem_D: "x \<in> A \<Longrightarrow> A \<in> S \<Longrightarrow> x \<in> \<Union>(S)" by auto2
 
 lemma Union_subset_iff: "\<Union>(A) \<subseteq> C \<longleftrightarrow> (\<forall>x\<in>A. x \<subseteq> C)" by auto2
 
@@ -35,7 +35,7 @@ lemma UN_image_subset [resolve]:
 lemma INT_image_subset [backward2]:
   "\<forall>x\<in>I. X(x) \<subseteq> Y(x) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> (\<Inter>x\<in>I. X(x)) \<subseteq> (\<Inter>x\<in>I. Y(x))" by auto2
 
-lemma UN_source_subset [resolve]:
+lemma UN_source_subset [backward]:
   "J \<subseteq> I \<Longrightarrow> (\<Union>x\<in>J. X(x)) \<subseteq> (\<Union>x\<in>I. X(x))" by auto2
 
 lemma INT_source_subset [backward2]:
@@ -51,10 +51,10 @@ lemma INT_double_eq [rewrite_back]:
   "\<forall>x\<in>L. J(x) \<noteq> \<emptyset> \<Longrightarrow> L \<noteq> \<emptyset> \<Longrightarrow> (\<Inter>a\<in>(\<Union>x\<in>L. J(x)). X(a)) = (\<Inter>x\<in>L. \<Inter>a\<in>J(x). X(a))" by auto2
 
 lemma UN_image [rewrite]:
-  "is_relation(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, \<Union>a\<in>I. X(a)) = (\<Union>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
+  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, \<Union>a\<in>I. X(a)) = (\<Union>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
 
 lemma INT_image [backward]:
-  "is_relation(\<Gamma>) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> rel_image(\<Gamma>, \<Inter>a\<in>I. X(a)) \<subseteq> (\<Inter>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
+  "is_rel2(\<Gamma>) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> rel_image(\<Gamma>, \<Inter>a\<in>I. X(a)) \<subseteq> (\<Inter>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
 
 lemma INT_image_eq [rewrite]:
   "injective(f) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> f `` (\<Inter>a\<in>I. X(a)) = (\<Inter>a\<in>I. f `` X(a))" by auto2
@@ -63,10 +63,10 @@ lemma INT_vImage [backward]:
   "is_function(\<Gamma>) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> \<Gamma> -`` (\<Inter>a\<in>I. X(a)) = (\<Inter>a\<in>I. \<Gamma> -`` X(a))" by auto2
 
 lemma UN_complement:
-  "I \<noteq> \<emptyset> \<Longrightarrow> E - (\<Union>a\<in>I. X(a)) = (\<Inter>a\<in>I. E - X(a))" by auto2
+  "I \<noteq> \<emptyset> \<Longrightarrow> E \<midarrow> (\<Union>a\<in>I. X(a)) = (\<Inter>a\<in>I. E \<midarrow> X(a))" by auto2
 
-lemma INT_complement:
-  "I \<noteq> \<emptyset> \<Longrightarrow> E - (\<Inter>a\<in>I. X(a)) = (\<Union>a\<in>I. E - X(a))" by auto2
+lemma INT_complement [rewrite]:
+  "I \<noteq> \<emptyset> \<Longrightarrow> E \<midarrow> (\<Inter>a\<in>I. X(a)) = (\<Union>a\<in>I. E \<midarrow> X(a))" by auto2
 
 section {* Union and intersection of two sets *}  (* Bourbaki II.4.5 *)
 
@@ -82,31 +82,36 @@ lemma Un_distrib [resolve]:
 lemma Int_distrib [resolve]:
   "A \<inter> (B \<union> C) = (A \<inter> B) \<union> (A \<inter> C)" by auto2
 
-lemma Un_complement [resolve]:
-  "E - (A \<union> B) = (E - A) \<inter> (E - B)" by auto2
+lemma Un_complement [rewrite]:
+  "E \<midarrow> (A \<union> B) = (E \<midarrow> A) \<inter> (E \<midarrow> B)" by auto2
 
-lemma Int_complement [resolve]:
-  "E - (A \<inter> B) = (E - A) \<union> (E - B)" by auto2
+lemma Int_complement [rewrite]:
+  "E \<midarrow> (A \<inter> B) = (E \<midarrow> A) \<union> (E \<midarrow> B)" by auto2
 
 lemma Un_with_complement [rewrite]:
-  "A \<subseteq> E \<Longrightarrow> A \<union> (E - A) = E" by auto2
+  "A \<subseteq> E \<Longrightarrow> A \<union> (E \<midarrow> A) = E" by auto2
 
 lemma Int_with_complement [rewrite]:
-  "A \<inter> (E - A) = \<emptyset>" by auto2
+  "A \<inter> (E \<midarrow> A) = \<emptyset>" by auto2
 
 lemma Un_image [rewrite]:
-  "is_relation(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<union> B) = rel_image(\<Gamma>, A) \<union> rel_image(\<Gamma>, B)" by auto2
+  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<union> B) = rel_image(\<Gamma>, A) \<union> rel_image(\<Gamma>, B)" by auto2
 
 lemma Int_image [resolve]:
-  "is_relation(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<inter> B) \<subseteq> rel_image(\<Gamma>, A) \<inter> rel_image(\<Gamma>, B)" by auto2
+  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<inter> B) \<subseteq> rel_image(\<Gamma>, A) \<inter> rel_image(\<Gamma>, B)" by auto2
 
 lemma Int_vImage [rewrite]:
   "is_function(f) \<Longrightarrow> f -`` (A \<inter> B) = (f -`` A) \<inter> (f -`` B)" by auto2
 
 lemma Diff_vImage [rewrite]:
-  "is_function(f) \<Longrightarrow> X \<subseteq> E \<Longrightarrow> f -`` (E - X) = (f -`` E) - (f -`` X)" by auto2
+  "is_function(f) \<Longrightarrow> X \<subseteq> E \<Longrightarrow> f -`` (E \<midarrow> X) = (f -`` E) \<midarrow> (f -`` X)" by auto2
 
 lemma Int_image_eq [rewrite]:
-  "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f `` (source(f) - X) = f `` source(f) - f `` X" by auto2
+  "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f `` (source(f) \<midarrow> X) = image(f) \<midarrow> f `` X" by auto2
+
+section {* Finite roducts *}
+  
+lemma prod_inter [rewrite]:
+  "(A \<times> B) \<inter> (C \<times> D) = (A \<inter> C) \<times> (B \<inter> D)" by auto2
 
 end

@@ -231,7 +231,7 @@ val try_reduce_add0 =
  *)
 fun norm_mult_atom ct =
     let
-      val (arg1, arg2) = ct |> Thm.term_of |> dest_binop |> snd
+      val (arg1, arg2) = ct |> Thm.term_of |> dest_binop_args
     in
       if is_zero arg1 then  (* 0 * x *)
         rewr_obj_eq @{thm mult_zero_left} ct
@@ -318,7 +318,7 @@ fun join_monomial ct =
  *)
 fun norm_add_monomial ct =
     let
-      val (arg1, arg2) = ct |> Thm.term_of |> dest_binop |> snd
+      val (arg1, arg2) = ct |> Thm.term_of |> dest_binop_args
     in
       if is_zero arg1 then  (* 0 + x *)
         Conv.every_conv [
@@ -436,7 +436,7 @@ fun polynomial_terms t =
 (* This function fails if inverse a is not found in the monomial t. *)
 fun cancel_inverse_monomial' th ct =
     let
-      val (m, a) = ct |> Thm.term_of |> dest_binop |> snd
+      val (m, a) = ct |> Thm.term_of |> dest_binop_args
       val T = fastype_of a
       val inv_a = Const (@{const_name inverse}, T --> T) $ a
     in

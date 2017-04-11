@@ -154,7 +154,7 @@ theorem index_of_pqueue_swap [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> i < length xs \<Longrightarrow> j < length xs \<Longrightarrow>
    index_of_pqueue (list_swap xs i j) (m {key (xs ! i) \<rightarrow> j} {key (xs ! j) \<rightarrow> i})"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "m', m' = m {key (xs ! i) \<rightarrow> j} {key (xs ! j) \<rightarrow> i}" THEN
+    (LET "m' = m {key (xs ! i) \<rightarrow> j} {key (xs ! j) \<rightarrow> i}" THEN
      HAVE "\<forall>k<length xs. m'\<langle>key (list_swap xs i j ! k)\<rangle> = Some k" WITH
       (CASE "k = i" THEN CASE "k = j")) *})
 
@@ -182,8 +182,8 @@ theorem not_has_key [forward, backward2]:
 theorem index_of_pqueue_push [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> \<not>has_key xs k \<Longrightarrow> index_of_pqueue (xs @ [KVPair k v]) (m{k \<rightarrow> length xs})"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "xs', xs' = xs @ [KVPair k v]" THEN
-     CHOOSE "m', m' = m{k \<rightarrow> length xs}" THEN
+    (LET "xs' = xs @ [KVPair k v]" THEN
+     LET "m' = m{k \<rightarrow> length xs}" THEN
      HAVE "\<forall>j<length xs'. m'\<langle>key (xs' ! j)\<rangle> = Some j" WITH CASE "j = length xs") *})
 
 theorem idx_pqueue_push_rule [hoare_triple]:
@@ -207,14 +207,14 @@ theorem idx_pqueue_pop_rule [hoare_triple]:
 theorem index_of_pqueue_update:
   "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> index_of_pqueue (list_update xs i (KVPair k v)) m"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "xs', xs' = list_update xs i (KVPair k v)" THEN
+    (LET "xs' = list_update xs i (KVPair k v)" THEN
      HAVE "\<forall>j<length xs'. m\<langle>key (xs' ! j)\<rangle> = Some j" WITH CASE "j = i") *})
 setup {* add_forward_prfstep_cond @{thm index_of_pqueue_update} [with_term "list_update ?xs ?i (KVPair ?k ?v)"] *}
 
 theorem key_within_range_update [backward2]:
   "key_within_range xs n \<Longrightarrow> i < length xs \<Longrightarrow> k < n \<Longrightarrow> key_within_range (list_update xs i (KVPair k v)) n"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "xs', xs' = list_update xs i (KVPair k v)" THEN
+    (LET "xs' = list_update xs i (KVPair k v)" THEN
      HAVE "\<forall>p. p \<in># mset xs' \<longrightarrow> key p < n" WITH
       (CHOOSE "j, j < length xs' \<and> p = xs' ! j" THEN CASE "j = i")) *})
 
@@ -250,13 +250,13 @@ setup {* add_forward_prfstep_cond @{thm member_union_single} [with_term "?A \<un
 theorem map_of_kv_set_insert [rewrite]:
   "unique_keys_set T \<Longrightarrow> \<forall>v. KVPair k v \<notin> T \<Longrightarrow> map_of_kv_set (T \<union> { KVPair k v }) = (map_of_kv_set T) {k \<rightarrow> v}"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "S, S = T \<union> { KVPair k v }" THEN
+    (LET "S = T \<union> { KVPair k v }" THEN
      HAVE "T \<subseteq> S" THEN HAVE "unique_keys_set S") *})
 
 theorem map_of_kv_set_delete [rewrite]:
   "unique_keys_set T \<Longrightarrow> KVPair k v \<in> T \<Longrightarrow> map_of_kv_set (T - { KVPair k v }) = delete_map k (map_of_kv_set T)"
   by (tactic {* auto2s_tac @{context}
-     (CHOOSE "S, S = T - { KVPair k v }" THEN
+     (LET "S = T - { KVPair k v }" THEN
       HAVE "S \<subseteq> T" THEN HAVE "unique_keys_set S") *})
 
 theorem map_of_kv_set_update [rewrite]:

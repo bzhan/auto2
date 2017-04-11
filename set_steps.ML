@@ -32,7 +32,7 @@ fun FINSET_INDUCT (var_spec_str, ind_infos) ctxt =
                 apply_induction (the var_ctxt) var_infos ctxt ind_th [fin_th']
           in
             [Update.thm_update (id, fin_th),
-             AddItems {id = id, raw_items = ritems}]
+             AddItems {id = id, sc = NONE, raw_items = ritems}]
           end
     in
       [Script_Task {inits = [InitAssum (get_neg' concl)], subs = [],

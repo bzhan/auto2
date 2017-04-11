@@ -146,8 +146,7 @@ val test_match_update =
 
       val tbl = RewriteTable.empty ctxt'
       val rtype = SINGLE tbl
-      val tbl2 = tbl |> RewriteTable.add_rewrite []
-                     (assume_eq thy (@{term "x::nat"}, @{term "y::nat"}))
+      val tbl2 = tbl |> RewriteTable.add_rewrite ([], assume_eq thy (x, y))
       val rtype2 = SINGLE tbl2
       val st = Status.empty_status ctxt'
 
@@ -155,7 +154,7 @@ val test_match_update =
           let
             val subs = ACUtil.dest_ac_r disj_ac (prop_of' th)
           in
-            Fact (TY_DISJ, bFalse :: subs, th)
+            Fact (TY_DISJ, bFalse :: disj :: subs, th)
           end
 
       fun read_prop str = str |> read_pat ctxt' |> mk_Trueprop
@@ -171,8 +170,9 @@ val test_match_update =
             val disj_th = assume_thm ctxt' (read_prop disj_str)
             val th = assume_thm ctxt' (read_prop t_str)
             val res_ts = map read_prop res_strs
-            val items = [BoxItem.mk_box_item (0, [], 0, disj_to_ritem disj_th),
-                         BoxItem.mk_box_item (0, [], 0, Update.thm_to_ritem th)]
+            val mk_box_item = BoxItem.mk_box_item ctxt'
+            val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),
+                         mk_box_item (0, [], 0, Update.thm_to_ritem th)]
             val updts = apply_prfstep rtype st items match_update_prfstep
             val res_ts' = maps updt_to_thm updts |> map Thm.prop_of
           in

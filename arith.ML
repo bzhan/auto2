@@ -9,6 +9,7 @@ sig
   val mk_nat: int -> term
   val mk_int: int -> term
   val nat0: term
+  val cnat0: cterm
   val nat_le_th: int -> int -> thm
   val nat_less_th: int -> int -> thm
   val nat_neq_th: int -> int -> thm
@@ -40,6 +41,8 @@ val nat0 = mk_nat 0
 local
   val ctxt = @{context}
 in
+
+val cnat0 = cert ctxt nat0
 
 (* Obtain the theorem m <= n. *)
 fun nat_le_th m n =

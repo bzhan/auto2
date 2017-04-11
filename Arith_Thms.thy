@@ -52,7 +52,7 @@ ML_file "arith.ML"
 ML_file "order.ML"
 
 (* General rings. *)
-theorem double_neg [rewrite]: "(a::('a::ring)) = -b \<Longrightarrow> -a = b" by simp
+theorem double_neg [rewrite]: "-b = (a::('a::ring)) \<Longrightarrow> -a = b" by auto
 theorem divide_cancel [rewrite]: "(a::('a::field)) \<noteq> 0 \<Longrightarrow> a * inverse a * bu = bu" by simp
 theorem ring_distrib: "((a::('a::{semiring,one})) + b) * c = a * c + b * c" by (simp add: ring_distribs)
 setup {* add_rewrite_rule_back_cond @{thm ring_distrib}
@@ -93,9 +93,9 @@ theorem lt_one: "(m::nat) < 1 \<Longrightarrow> m = 0" by simp
 setup {* add_forward_prfstep_cond @{thm lt_one} [with_cond "?m \<noteq> 0"] *}
 setup {* add_resolve_prfstep @{thm Nat.le0} *}
 setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_term "?k", with_cond "?k \<noteq> 1"] *}
-setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_term "?i", with_filt (not_numc_filter "j")] *}
+setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_term "?i"] *}
 theorem not_minus_less: "\<not>(i::nat) < (i - j)" by simp
-setup {* add_resolve_prfstep_cond @{thm not_minus_less} [with_filt (not_numc_filter "j")] *}
+setup {* add_resolve_prfstep @{thm not_minus_less} *}
 theorem nat_le_prod_with_same [backward]: "m \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m * n" by simp
 theorem nat_le_prod_with_le [backward1]: "k \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m \<Longrightarrow> (n::nat) \<le> k * m"
   using le_trans nat_le_prod_with_same by blast
@@ -165,9 +165,7 @@ setup {* add_forward_prfstep_cond @{thm n_dvd_one} [with_cond "?n \<noteq> 1"] *
 
 (* Products. *)
 setup {* add_rewrite_rule @{thm mult_zero_left} *}
-theorem prod_ineqs: "(n::nat) = m * k \<Longrightarrow> n > 0 \<Longrightarrow> 1 \<le> m \<and> m \<le> n \<and> 1 \<le> k \<and> k \<le> n" by simp
-setup {* add_forward_prfstep_cond @{thm prod_ineqs}
-  (with_filt (size1_filter "n") :: with_conds ["?m \<noteq> 1", "?k \<noteq> 1", "?n \<noteq> ?m", "?n \<noteq> ?k"]) *}
+theorem prod_ineqs [forward]: "m * k > (0::nat) \<Longrightarrow> 1 \<le> m \<and> m \<le> m * k \<and> 1 \<le> k \<and> k \<le> m * k" by simp
 setup {* add_prfstep_custom
   ("prod_ineqs'",
    [WithFact @{term_pat "(?NUMC::nat) = ?m * ?k"},
@@ -175,7 +173,12 @@ setup {* add_prfstep_custom
     Filter (not_numc_filter "m")],
    PRIORITY_ADD,
    (fn ((id, inst), ths) => fn _ => fn _ =>
-       [Update.thm_update (id, [the_single ths, Nat_Arith.nat_less_th 0 (Nat_Arith.lookup_numc0 inst)] MRS @{thm prod_ineqs})])) *}
+      let
+        val less_th = (Nat_Arith.nat_less_th 0 (Nat_Arith.lookup_numc0 inst))
+                        |> apply_to_thm' (Conv.arg_conv (rewr_obj_eq (the_single ths)))
+      in
+        [Update.thm_update (id, [less_th] MRS @{thm prod_ineqs})]
+      end)) *}
 
 theorem prod_cancel: "(a::nat) * b = a * c \<Longrightarrow> a > 0 \<Longrightarrow> b = c" by auto
 setup {* add_forward_prfstep_cond @{thm prod_cancel} [with_cond "?b \<noteq> ?c"] *}

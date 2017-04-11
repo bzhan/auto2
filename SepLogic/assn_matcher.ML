@@ -176,13 +176,13 @@ val assn_matcher =
           (pat |> dest_mod |> fst)
               aconv (tname |> the_single |> dest_mod |> fst)
 
-      fun pre_match pat {tname, ...} _ = filt pat tname
+      fun pre_match pat {tname, ...} _ = filt pat (map Thm.term_of tname)
 
       fun match pat {tname, prop, ...} tbl (id, inst) =
-          if not (filt pat tname) then []
+          if not (filt pat (map Thm.term_of tname)) then []
           else let
             val pat_assn = pat |> dest_mod |> snd
-            val t_assn = tname |> the_single |> dest_mod |> snd
+            val t_assn = tname |> the_single |> Thm.term_of |> dest_mod |> snd
             val insts = assn_match_all true tbl pat_assn t_assn (id, inst)
 
             (* th is t_assn ==> pat_assn(s). *)
@@ -204,7 +204,7 @@ fun triv_assn_matcher (tbl as {ctxt, ...}) pat t (id, inst) =
       fun match_i i =
           let
             val t' = nth ts i
-            val insts = Matcher.rewrite_match tbl (pat, t') (id, inst)
+            val insts = Matcher.rewrite_match tbl (pat, cert ctxt t') (id, inst)
 
             (* eq_th is of form pat(inst') == t'. *)
             fun process_inst ((id', inst'), eq_th) =
@@ -238,7 +238,7 @@ fun emp_assn_matcher {ctxt, ...} pat t (id, inst) =
     end
 
 val add_assn_matcher_proofsteps =
-    fold ItemIO_Data.add_prop_matcher [
+    fold ItemIO.add_prop_matcher [
       (TY_PROP, assn_matcher)
 
     ] #> fold add_assn_matcher [
@@ -257,7 +257,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r t id =
     let
       (* Match pat_r with r. *)
       val pat_r = entail_th |> dest_ent_r |> dest_arg
-      val inst_r = Matcher.rewrite_match tbl (pat_r, r) (id, fo_init)
+      val inst_r = Matcher.rewrite_match tbl (pat_r, cert ctxt r) (id, fo_init)
 
       (* For each match, recursively match the instantiated version of
          A (named pat here) with t.
@@ -298,7 +298,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r t id =
    variables, but r cannot. First, find f xs r using entail_matcher',
    then match pat_xs with xs.
  *)
-fun entail_matcher entail_th tbl pat t (id, inst) =
+fun entail_matcher entail_th (tbl as {ctxt, ...}) pat t (id, inst) =
     let
       val (f, args) = Term.strip_comb pat
       val pat_f = entail_th |> dest_ent_r |> Term.head_of
@@ -314,7 +314,8 @@ fun entail_matcher entail_th tbl pat t (id, inst) =
               val xs = th |> prop_of' |> dest_arg
                           |> ACUtil.dest_ac_l assn_ac_info
                           |> List.last |> dest_args |> hd
-              val insts = Matcher.rewrite_match tbl (pat_xs, xs) (id', inst)
+              val insts = Matcher.rewrite_match
+                              tbl (pat_xs, cert ctxt xs) (id', inst)
 
               fun process_inst ((id'', inst'), eq_th) =
                   let

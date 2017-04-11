@@ -154,7 +154,7 @@ theorem ceval_intros7' [forward]: "beval st b \<Longrightarrow> \<not>(ceval (WH
 
 (* Automatically step forward an assignment step. *)
 theorem ceval_assign [backward]: "ceval B (st { x \<rightarrow> aeval st a }) st' \<Longrightarrow> ceval (x := a; B) st st'" by auto2
-theorem ceval_assign' [backward]: "st' = st { x \<rightarrow> aeval st a } \<Longrightarrow> ceval (x := a) st st'" by auto2
+theorem ceval_assign' [backward]: "st { x \<rightarrow> aeval st a } = st' \<Longrightarrow> ceval (x := a) st st'" by auto2
 
 (* Automatically step forward a skip step. *)
 theorem ceval_skip_left [backward]: "ceval C st st' \<Longrightarrow> ceval (SKIP; C) st st'"

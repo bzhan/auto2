@@ -7,49 +7,92 @@ sig
   val check_type_term:
       rewrite_table -> term * term -> id_inst -> (id_inst * term) option
   val check_type: rewrite_table -> typ * typ -> id_inst -> id_inst option
+  val update_inst: term list -> indexname -> cterm -> id_inst -> id_inst_th list
   val id_eq_better: rewrite_table -> box_id * 'a -> box_id * 'a -> bool
   val inst_eq_better: rewrite_table -> (string * int) list -> id_inst_th ->
                       id_inst_th -> bool
+
   val ac_shift_n_to_r_cv: ac_inst_info -> int -> conv
+  val ac_shift_inside_r: ac_inst_info -> int -> conv
   val ac_shift_r_to_n_cv: ac_inst_info -> int -> conv
   val ac_shift_l_to_n_cv: ac_inst_info -> int -> conv
   val ac_group_last_n_cv: ac_inst_info -> int -> conv
   val ac_group_first_n_cv: ac_inst_info -> int -> conv
-  val get_ac_head_equiv: rewrite_table -> ac_inst_info -> box_id * term ->
+  val is_uinv: ac_inst_info -> term -> bool
+  val dest_uinv: term -> term
+  val cdest_uinv: cterm -> cterm
+  val mk_uinv_eq: ac_inst_info -> thm -> thm
+  val is_multiple_term_head: term -> bool
+  val is_sch_arg: ac_inst_info -> term -> bool
+  val dest_sch_arg: term -> term
+
+  val get_ac_head_equiv': rewrite_table -> ac_inst_info -> box_id * cterm ->
+                          (box_id * thm) list
+  val get_ac_head_equiv: rewrite_table -> ac_inst_info -> box_id * cterm ->
                          (box_id * thm) list
+  val check_use_ac: ac_inst_info -> term list -> bool * int option
   val reduce_unit_t: rewrite_table -> ac_inst_info -> box_id * term ->
                      (box_id * thm) list
+  val is_match_unit: ac_inst_info -> term -> bool
+  val analyze_match_unit:
+      ac_inst_info -> Proof.context -> Type.tyenv * Envir.tenv ->
+      box_id * term -> (int * id_inst * thm) list
   val analyze_t: ac_inst_info -> rewrite_table -> id_inst -> term ->
                  (int * id_inst * thm) list
-  val ac_subterm_equivs: rewrite_table -> ac_inst_info -> box_id * term ->
+  val ac_subterm_equivs: rewrite_table -> ac_inst_info -> box_id * cterm ->
                          (box_id * thm) list
+
+  (* THe actual matching function. These are defined together. *)
+  val match_uinv: bool -> rewrite_table -> term list -> ac_inst_info ->
+                  term * cterm list -> id_inst -> id_inst_th list
   val match_ac_list:
       bool -> bool -> rewrite_table -> term list -> ac_inst_info ->
-      term list * term list -> id_inst -> id_inst_th list
+      term list * cterm list -> id_inst -> id_inst_th list
   val match_ac_raw: bool -> ac_inst_info -> rewrite_table -> term list ->
-                    term * term -> id_inst -> id_inst_th list
-  val match: rewrite_table -> term list -> term * term -> id_inst ->
-             id_inst_th list
-  val match_ac_head: ac_inst_info -> rewrite_table -> term list ->
-                     term * term -> id_inst -> id_inst_th list
-  val match_head: rewrite_table -> term list -> term * term -> id_inst ->
+                    term * cterm -> id_inst -> id_inst_th list
+  val match_list: rewrite_table -> term list -> term list * cterm list ->
+                  id_inst -> id_inst_ths list
+  val match_comb: rewrite_table -> term list -> term * cterm -> id_inst ->
                   id_inst_th list
+  val match_non_ac_head: rewrite_table -> term list -> term * cterm ->
+                         id_inst -> id_inst_th list
+  val match_ac_head: ac_inst_info -> rewrite_table -> term list ->
+                     term * cterm -> id_inst -> id_inst_th list
+  val match_non_ac_all_head_with_t:
+      rewrite_table -> term list -> term * cterm -> id_inst -> id_inst_th list
+  val match_ac_all_head_with_t:
+      ac_inst_info -> rewrite_table -> term list -> term * cterm -> id_inst ->
+      id_inst_th list
+  val match_all_head: rewrite_table -> term list -> term * cterm -> id_inst ->
+                      id_inst_th list
+  val match: rewrite_table -> term list -> term * cterm -> id_inst ->
+             id_inst_th list
 
-  (* Export *)
-  val rewrite_match: rewrite_table -> term * term -> id_inst -> id_inst_th list
+  (* Defined in terms of match. *)
+  val match_head: rewrite_table -> term list -> term * cterm -> id_inst ->
+                  id_inst_th list
+  val rewrite_match: rewrite_table -> term * cterm -> id_inst -> id_inst_th list
   val rewrite_match_head:
-      rewrite_table -> term * term -> id_inst -> id_inst_th list
+      rewrite_table -> term * cterm -> id_inst -> id_inst_th list
   val rewrite_match_ac_bd: bool -> ac_inst_info -> rewrite_table -> term list ->
-                           term * term -> id_inst -> id_inst_th list
-  val rewrite_match_ac: bool -> ac_inst_info -> rewrite_table -> term * term ->
+                           term * cterm -> id_inst -> id_inst_th list
+  val rewrite_match_ac: bool -> ac_inst_info -> rewrite_table -> term * cterm ->
                         id_inst -> id_inst_th list
-  val rewrite_match_list: rewrite_table -> (bool * (term * term)) list ->
+  val rewrite_match_list: rewrite_table -> (bool * (term * cterm)) list ->
                           id_inst -> id_inst_ths list
-  val rewrite_match_subset: rewrite_table -> term list * term list -> id_inst ->
-                            id_inst_ths list
-  val pre_match_head: rewrite_table -> term * term -> bool
-  val pre_match: rewrite_table -> term * term -> bool
+  val rewrite_match_subset:
+      rewrite_table -> term list * cterm list -> id_inst -> id_inst_ths list
 
+  (* Prematching. *)
+  val pre_match_type: rewrite_table -> typ * typ -> bool
+  val pre_match_comb: rewrite_table -> term * cterm -> bool
+  val pre_match_non_ac_head: rewrite_table -> term * cterm -> bool
+  val pre_match_unit: ac_inst_info -> rewrite_table -> term * cterm -> bool
+  val pre_match_all_head: rewrite_table -> term * cterm -> bool
+  val pre_match: rewrite_table -> term * cterm -> bool
+  val pre_match_head: rewrite_table -> term * cterm -> bool
+
+  (* Heuristics for determine order of matching patterns. *)
   val literal_ac_count: theory -> term -> term list -> int
   val literal_ac_count_list: theory -> term list -> term list -> int
   val get_pattern_order: theory -> term * term -> bool
@@ -60,11 +103,13 @@ struct
 
 structure UtilLogic = UtilLogic(Base)
 structure ACUtil = ACUtil(Base)
+structure Consts = Consts(Base)
 structure RewriteTable = RewriteTable(Base)
 open Base
 open UtilLogic
 
-val refl = RewriteTable.refl
+fun compare_inst (((id1, inst1), _), ((id2, inst2), _)) =
+    eq_list (op =) (id1, id2) andalso eq_env (inst1, inst2)
 
 (* Schematic variable allows matching with units if its name contains
    at least two characters, with the last character equal to u.
@@ -120,9 +165,13 @@ fun is_open bd_vars u =
 (* Assign schematic variable with indexname ixn to u. Type of the
    schematic variable is determined by the type of u.
  *)
-fun update_inst tbl bd_vars ixn u (id, inst) =
-    if is_open bd_vars u then []
-    else [((id, update_env (ixn, u) inst), refl tbl u)]
+fun update_inst bd_vars ixn cu (id, inst) =
+    let
+      val u = Thm.term_of cu
+    in
+      if is_open bd_vars u then []
+      else [((id, update_env (ixn, u) inst), Thm.reflexive cu)]
+    end
 
 (* Partial comparison using just the ID. *)
 fun id_eq_better {lat, ...} (id, _) (id', _) = BoxID.is_eq_ancestor lat id id'
@@ -214,17 +263,17 @@ fun ac_group_first_n_cv ac_info n ct =
     end
 
 fun is_uinv {uinv_op, ...} t =
-    Term.head_of t aconv uinv_op
+    Term.head_of t aconv (Thm.term_of uinv_op)
 
 fun dest_uinv t =
     dest_arg t handle AUTO2 _ => raise AUTO2 "dest_uinv"
 
-fun mk_uinv {uinv_op, ...} t =
-    uinv_op $ t
+fun cdest_uinv ct =
+    Thm.dest_arg ct handle CTERM _ => raise AUTO2 "cdest_uinv"
 
 (* From a == b, make -a == -b. *)
-fun mk_uinv_eq ctxt {uinv_op, ...} eq_th =
-    Thm.combination (Thm.reflexive (cert ctxt uinv_op)) eq_th
+fun mk_uinv_eq {uinv_op, ...} eq_th =
+    Thm.combination (Thm.reflexive uinv_op) eq_th
 
 fun is_multiple_term_head t =
     if not (Term.is_Var t) then false else
@@ -247,22 +296,22 @@ fun dest_sch_arg t =
 (* Obtain list of head equivs of u whose head function belongs to the
    given AC info.
  *)
-fun get_ac_head_equiv' tbl {cfhead, uinv_op, inv_op, ...} (id, u) =
-    maps (RewriteTable.get_head_equiv_with_t tbl (id, u))
-         [Thm.term_of cfhead, uinv_op, inv_op]
+fun get_ac_head_equiv' tbl {cfhead, uinv_op, inv_op, ...} (id, cu) =
+    maps (RewriteTable.get_head_equiv_with_t tbl (id, cu))
+         (map Thm.term_of [cfhead, uinv_op, inv_op])
 
-fun get_ac_head_equiv (tbl as {lat, ctxt, ...}) ac_info (id, u) =
+fun get_ac_head_equiv (tbl as {lat, ...}) ac_info (id, cu) =
     let
       fun equiv_eq_better (id1, th1) (id2, th2) =
           BoxID.is_eq_ancestor lat id1 id2 andalso rhs_of th1 aconv rhs_of th2
 
       val inv_equivs =
-          if is_uinv ac_info u then
-            map (apsnd (mk_uinv_eq ctxt ac_info))
-                (get_ac_head_equiv tbl ac_info (id, dest_uinv u))
+          if is_uinv ac_info (Thm.term_of cu) then
+            map (apsnd (mk_uinv_eq ac_info))
+                (get_ac_head_equiv tbl ac_info (id, cdest_uinv cu))
           else []
     in
-      (inv_equivs @ get_ac_head_equiv' tbl ac_info (id, u))
+      (inv_equivs @ get_ac_head_equiv' tbl ac_info (id, cu))
           |> max_partial equiv_eq_better
     end
 
@@ -312,20 +361,20 @@ fun check_use_ac ac_info targ =
    this function, we assume that t is normalized at least with respect
    to inverses.
  *)
-fun reduce_unit_t (tbl as {lat, ...})
+fun reduce_unit_t (tbl as {lat, ctxt, ...})
                   (ac_info as {cfhead, unit_val, ...}) (id, t) =
     if member (op aconv) [conj, disj]
-              (Thm.term_of cfhead) then [(id, refl tbl t)]
+              (Thm.term_of cfhead) then [(id, Thm.reflexive (cert ctxt t))]
     else if not (ACUtil.head_agrees ac_info t) then
       let
-        val equivs = RewriteTable.equiv_info tbl id (t, unit_val)
+        val equivs = RewriteTable.equiv_info tbl id (cert ctxt t, unit_val)
       in
         if exists (fn (id', _) => id' = id) equivs then equivs
-        else (id, refl tbl t) :: equivs
+        else (id, Thm.reflexive (cert ctxt t)) :: equivs
       end
     else
       let
-        val (_, (A, B)) = dest_binop t
+        val (A, B) = dest_binop_args t
         val A_equiv = reduce_unit_t tbl ac_info (id, A)
         val B_equiv = reduce_unit_t tbl ac_info (id, B)
         val equivs = BoxID.get_all_merges_info lat [A_equiv, B_equiv]
@@ -339,10 +388,10 @@ fun reduce_unit_t (tbl as {lat, ...})
 fun is_match_unit (ac_info as {unit_val, ...}) t =
     if not (ACUtil.head_agrees ac_info t) then false
     else let
-      val (_, (A, B)) = dest_binop t
+      val (A, B) = dest_binop_args t
     in
       is_unit_allowed_var A orelse is_unit_allowed_var B orelse
-      A aconv unit_val orelse B aconv unit_val
+      A aconv (Thm.term_of unit_val) orelse B aconv (Thm.term_of unit_val)
     end
 
 val (AC_YES, AC_NO, AC_UNKNOWN) = (0, 1, 2)
@@ -350,12 +399,12 @@ val (AC_YES, AC_NO, AC_UNKNOWN) = (0, 1, 2)
 fun analyze_match_unit (ac_info as {unit_val, ...}) ctxt env (id, t) =
     if not (ACUtil.head_agrees ac_info t) then []
     else let
-      val (_, (A, B)) = dest_binop t
+      val (A, B) = dest_binop_args t
       fun process_var var =
           if is_unit_allowed_var var then
             let
               val (ixn, _) = Term.dest_Var var
-              val env' = update_env (ixn, unit_val) env
+              val env' = update_env (ixn, Thm.term_of unit_val) env
               val eq = t |> subst_term_norm env'
                          |> cert ctxt |> #unit_cv ac_info
             in
@@ -422,10 +471,13 @@ fun analyze_t ac_info (tbl as {ctxt, ...}) (id, env) t =
 (* Return the list of equivs of u by taking equivs of subterms. This
    always includes (id, u == u).
  *)
-fun ac_subterm_equivs (tbl as {lat, ctxt, ...})
-                      (ac_info as {cfhead, uinv_op, inv_op, ...}) (id, u) =
+fun ac_subterm_equivs tbl ac_info (id, cu) =
     let
-      val (f, args) = Term.strip_comb u
+      val {lat, ...} = tbl
+      val {cfhead, uinv_op, inv_op, ...} = ac_info
+      val (cf, cargs) = Drule.strip_comb cu
+      val f = Thm.term_of cf
+
       fun valid_rewrite (_, th) =
           not (ACUtil.head_agrees_all ac_info (rhs_of th))
 
@@ -440,45 +492,47 @@ fun ac_subterm_equivs (tbl as {lat, ctxt, ...})
           else []
 
       (* Return the complete list of rewrites for t. *)
-      fun get_equivs t =
-          get_head_non_AC_equivs t @ ac_subterm_equivs tbl ac_info (id, t)
+      fun get_equivs ct =
+          get_head_non_AC_equivs (Thm.term_of ct) @
+          ac_subterm_equivs tbl ac_info (id, ct)
     in
-      if f aconv (Thm.term_of cfhead) orelse f aconv inv_op then
+      if f aconv (Thm.term_of cfhead) orelse f aconv (Thm.term_of inv_op) then
         let
-          val equiv_pairs = all_pairs (apply2 get_equivs (the_pair args))
-          val cf = cert ctxt f
+          val equiv_pairs = all_pairs (apply2 get_equivs (the_pair cargs))
           fun get_equiv ((id1, th1), (id2, th2)) =
               (BoxID.merge_boxes lat (id1, id2),
                Thm.combination (Thm.combination (Thm.reflexive cf) th1) th2)
         in
           map get_equiv equiv_pairs
         end
-      else if f aconv uinv_op then
+      else if f aconv (Thm.term_of uinv_op) then
         let
-          val equivs = get_equivs (the_single args)
+          val equivs = get_equivs (the_single cargs)
           fun get_equiv (id1, th1) =
-              (id1, Thm.combination (Thm.reflexive (cert ctxt uinv_op)) th1)
+              (id1, Thm.combination (Thm.reflexive uinv_op) th1)
         in
           map get_equiv equivs
         end
       else
-        [(id, refl tbl u)]
+        [(id, Thm.reflexive cu)]
     end
 
 (* t is of the form -?A. Assign ?A to normalized form of -us. In the
    returned equality -?A(inst) == f(us). The order of associativity in
    f(us) is specified by assoc_r.
  *)
-fun match_uinv assoc_r (tbl as {ctxt, ...}) bd_vars ac_info (t, us) (id, env) =
+fun match_uinv assoc_r tbl bd_vars ac_info (t, cus) (id, env) =
     let
       (* Here t is -?A, inv_us = -f(us), inv_us' is the simplified
          version which will be assigned to ?A. inv_us_norm_eq is
          inv_us == inv_us'.
        *)
-      val inv_us = mk_uinv ac_info (ACUtil.list_ac_gen assoc_r ac_info us)
-      val inv_us_norm_eq = ACUtil.normalize_minus ac_info (cert ctxt inv_us)
-      val inv_us' = rhs_of inv_us_norm_eq
-      val insts = match tbl bd_vars (dest_uinv t, inv_us') (id, env)
+      val {uinv_op, ...} = ac_info
+      val inv_cus = Drule.list_comb (
+            uinv_op, [ACUtil.clist_ac_gen assoc_r ac_info cus])
+      val inv_us_norm_eq = ACUtil.normalize_minus ac_info inv_cus
+      val inv_cus' = Thm.rhs_of inv_us_norm_eq
+      val insts = match tbl bd_vars (dest_uinv t, inv_cus') (id, env)
 
       (* eq_th: ?A == inv_us'. Need -?A == f(us). Use the chain
 
@@ -487,7 +541,7 @@ fun match_uinv assoc_r (tbl as {ctxt, ...}) bd_vars ac_info (t, us) (id, env) =
       fun process_inst ((id', env'), eq_th) =
           ((id', env'),
            (transitive_list [eq_th, meta_sym inv_us_norm_eq])
-               |> mk_uinv_eq ctxt ac_info
+               |> mk_uinv_eq ac_info
                |> apply_to_rhs (#uinv_cv ac_info))
     in
       map process_inst insts
@@ -506,28 +560,28 @@ fun match_uinv assoc_r (tbl as {ctxt, ...}) bd_vars ac_info (t, us) (id, env) =
    outermost on the t-side in the returned result.
  *)
 and match_ac_list is_simple assoc_r tbl bd_vars
-                  (ac_info as {unit_val, ...}) (ts, us) (id, env) =
-    if length ts = 0 orelse length us = 0 then []
+                  (ac_info as {unit_val, ...}) (ts, cus) (id, env) =
+    if length ts = 0 orelse length cus = 0 then []
     else if length ts = 1 then
       let
         val t = the_single ts
       in
         if Term.is_Var (head_of t) then
           if not (is_unit_allowed_var t) andalso
-             exists (fn u => RewriteTable.is_equiv id tbl (unit_val, u)) us
-          then [] else
-          match tbl bd_vars (t, ACUtil.list_ac_gen assoc_r ac_info us) (id, env)
+             exists (fn cu => RewriteTable.is_equiv id tbl (unit_val, cu)) cus
+          then []
+          else match tbl bd_vars
+                     (t, ACUtil.clist_ac_gen assoc_r ac_info cus) (id, env)
         else if is_uinv ac_info t andalso Term.is_Var (dest_uinv t) then
-          match_uinv assoc_r tbl bd_vars ac_info (t, us) (id, env)
-        else if length us = 1 then
-          match tbl bd_vars (t, the_single us) (id, env)
+          match_uinv assoc_r tbl bd_vars ac_info (t, cus) (id, env)
+        else if length cus = 1 then
+          match tbl bd_vars (t, the_single cus) (id, env)
         else []
       end
     else if not (is_sch_arg ac_info (List.last ts)) andalso
-            length ts < length us then []
+            length ts < length cus then []
     else let
-      val thy = RewriteTable.theory_of tbl
-      val diff_l = length ts - length us
+      val diff_l = length ts - length cus
       val (t, ts') = (hd ts, tl ts)
       val assoc_only = not (ACUtil.has_comm_th ac_info)
 
@@ -537,9 +591,10 @@ and match_ac_list is_simple assoc_r tbl bd_vars
           else let
             val th' = th |> apply_to_rhs (
                   ACUtil.normalize_minus_assoc_gen assoc_r ac_info)
-            val args = ACUtil.dest_ac_gen assoc_r ac_info (rhs_of th')
+            val args = ACUtil.cdest_ac_gen assoc_r ac_info (Thm.rhs_of th')
           in
-            if exists (fn t => RewriteTable.is_equiv id tbl (t, unit_val)) args
+            if exists (fn ct =>
+                          RewriteTable.is_equiv id tbl (ct, unit_val)) args
             then [] else [(id, th')]
           end
 
@@ -550,24 +605,24 @@ and match_ac_list is_simple assoc_r tbl bd_vars
        *)
       fun expand_i i =
           if assoc_r andalso
-             exists (fn t => RewriteTable.is_equiv id tbl (t, nth us i))
-                    (take i us)
+             exists (fn ct => RewriteTable.is_equiv id tbl (ct, nth cus i))
+                    (take i cus)
           then [] else
           if not assoc_r andalso
-             exists (fn t => RewriteTable.is_equiv id tbl (t, nth us i))
-                    (drop (i+1) us)
+             exists (fn ct => RewriteTable.is_equiv id tbl (ct, nth cus i))
+                    (drop (i+1) cus)
           then []
           else if is_simple then
-            [(i, (id, Thm.reflexive (cert_thy thy (nth us i))))]
+            [(i, (id, Thm.reflexive (nth cus i)))]
           else let
-            val ui = nth us i
-            val ui_equivs =
-                if is_open bd_vars ui then [(id, refl tbl ui)]
-                else (id, ui) |> get_ac_head_equiv tbl ac_info
-                              |> maps process_expansion
+            val cui = nth cus i
+            val cui_equivs =
+                if is_open bd_vars (Thm.term_of cui) then
+                  [(id, Thm.reflexive cui)]
+                else (id, cui) |> get_ac_head_equiv tbl ac_info
+                               |> maps process_expansion
           in
-            (i, (id, Thm.reflexive (cert_thy thy ui))) ::
-            map (pair i) ui_equivs
+            (i, (id, Thm.reflexive cui)) :: map (pair i) cui_equivs
           end
 
       (* Given (i, (id', eq1)), where eq1 is us[i] == v1 ... vk, find
@@ -577,14 +632,14 @@ and match_ac_list is_simple assoc_r tbl bd_vars
        *)
       fun match_expansion (i, (id', eq1)) =
           let
-            val ui' = rhs_of eq1
-            val uis' = ACUtil.dest_ac_gen assoc_r ac_info ui'
+            val cui' = Thm.rhs_of eq1
+            val cuis' = ACUtil.cdest_ac_gen assoc_r ac_info cui'
 
             (* Match t with j'th term in uis'. *)
             fun match_j j =
                 let
-                  val uij' = nth uis' j
-                  val insts = match tbl bd_vars (t, uij') (id', env)
+                  val cuij' = nth cuis' j
+                  val insts = match tbl bd_vars (t, cuij') (id', env)
                   fun process_inst ((id'', env'), eq2) =
                       (i, eq1, j, (id'', env'), eq2)
                 in
@@ -592,11 +647,11 @@ and match_ac_list is_simple assoc_r tbl bd_vars
                 end
           in
             if not (is_sch_arg ac_info (List.last ts)) andalso
-               length uis' - 1 > diff_l then []
+               length cuis' - 1 > diff_l then []
             else if assoc_only then
-              if assoc_r then match_j 0 else match_j (length uis' - 1)
+              if assoc_r then match_j 0 else match_j (length cuis' - 1)
             else
-              maps match_j (0 upto (length uis' - 1))
+              maps match_j (0 upto (length cuis' - 1))
           end
 
       (* Given (i, eq1, j, inst', eq2), recursively call
@@ -605,15 +660,15 @@ and match_ac_list is_simple assoc_r tbl bd_vars
        *)
       fun process_match (i, eq1, j, (id', env'), eq2) =
           let
-            val uis' = ACUtil.dest_ac_gen assoc_r ac_info (rhs_of eq1)
+            val cuis' = ACUtil.cdest_ac_gen assoc_r ac_info (Thm.rhs_of eq1)
 
             (* The remaining terms in us. *)
-            val us' = if assoc_r then nth_drop j uis' @ nth_drop i us
-                      else nth_drop i us @ nth_drop j uis'
+            val cus' = if assoc_r then nth_drop j cuis' @ nth_drop i cus
+                      else nth_drop i cus @ nth_drop j cuis'
 
             val match_remains =
-                match_ac_list
-                    is_simple assoc_r tbl bd_vars ac_info (ts', us') (id', env')
+                match_ac_list is_simple assoc_r tbl bd_vars ac_info
+                              (ts', cus') (id', env')
 
             (* Here eq2 is t[inst'] == uij', and eq' is ts'[inst''] ==
                us'. We need the equation ts[inst''] == us. This is
@@ -632,8 +687,8 @@ and match_ac_list is_simple assoc_r tbl bd_vars
                   val cv_to_u = (ac_shift_l_to_n_cv ac_info j)
                                     then_conv (Conv.rewr_conv (meta_sym eq1))
                   val rhs_cv =
-                      (ac_group_first_n_cv ac_info (length uis'))
-                          then_conv (if length us = 1 then cv_to_u
+                      (ac_group_first_n_cv ac_info (length cuis'))
+                          then_conv (if length cus = 1 then cv_to_u
                                      else Conv.arg1_conv cv_to_u)
                           then_conv (ac_shift_l_to_n_cv ac_info i)
                 in
@@ -648,8 +703,8 @@ and match_ac_list is_simple assoc_r tbl bd_vars
                   val cv_to_u = (ac_shift_r_to_n_cv ac_info j)
                                     then_conv (Conv.rewr_conv (meta_sym eq1))
                   val rhs_cv =
-                      (ac_group_last_n_cv ac_info (length uis'))
-                          then_conv (if length us = 1 then cv_to_u
+                      (ac_group_last_n_cv ac_info (length cuis'))
+                          then_conv (if length cus = 1 then cv_to_u
                                      else Conv.arg_conv cv_to_u)
                           then_conv (ac_shift_r_to_n_cv ac_info i)
                 in
@@ -660,10 +715,10 @@ and match_ac_list is_simple assoc_r tbl bd_vars
             else map process_inst_l match_remains
           end
 
-      val range_i = if length us = 0 then []
+      val range_i = if length cus = 0 then []
                     else if assoc_only then
-                      if assoc_r then [0] else [length us - 1]
-                    else 0 upto (length us - 1)
+                      if assoc_r then [0] else [length cus - 1]
+                    else 0 upto (length cus - 1)
     in
       range_i |> maps expand_i
               |> maps match_expansion
@@ -675,14 +730,14 @@ and match_ac_list is_simple assoc_r tbl bd_vars
    instsp, and also normalized with respect to minus and left
    association.
  *)
-and match_ac_raw is_simple (ac_info as {unit_val, ...})
-                 (tbl as {ctxt, ...}) bd_vars (t, u) (instsp as (id, _)) =
+and match_ac_raw is_simple ac_info tbl bd_vars (t, cu) (instsp as (id, _)) =
     let
+      val {unit_val, ...} = ac_info
       val assoc_only = not (ACUtil.has_comm_th ac_info)
       val targ = ACUtil.dest_ac_l ac_info t
-      val u_eq = ACUtil.normalize_minus_assoc_r ac_info (cert ctxt u)
-      val u' = rhs_of u_eq
-      val uarg = ACUtil.dest_ac_r ac_info u'
+      val u_eq = ACUtil.normalize_minus_assoc_r ac_info cu
+      val cu' = Thm.rhs_of u_eq
+      val cuarg = ACUtil.cdest_ac_r ac_info cu'
 
       (* u_eq: u == u', eq_th: t'(inst) == u'. *)
       fun process_inst ((id, env), eq_th) =
@@ -691,45 +746,45 @@ and match_ac_raw is_simple (ac_info as {unit_val, ...})
       (* Swap order of associativity on the pattern side to left. *)
       fun swap_t_to_l ((id, env), eq_th) =
           ((id, env),
-           eq_th |> apply_to_lhs (ACUtil.swap_assoc_to_l (length targ) ac_info))
+           apply_to_lhs (ACUtil.swap_assoc_to_l (length targ) ac_info) eq_th)
 
       (* Swap order of associativity on the term side to right. *)
       fun swap_u_to_r ((id, env), eq_th) =
           ((id, env),
-           eq_th |> apply_to_rhs (ACUtil.swap_assoc_to_r (length uarg) ac_info))
+           apply_to_rhs (ACUtil.swap_assoc_to_r (length cuarg) ac_info) eq_th)
     in
-      if exists (fn arg => RewriteTable.is_equiv id tbl (arg, unit_val)) uarg
+      if exists (fn carg => RewriteTable.is_equiv id tbl (carg, unit_val)) cuarg
       then []
       else if assoc_only andalso is_sch_arg ac_info (nth targ 0) then
         let
           val insts = match_ac_list is_simple false tbl bd_vars ac_info
-                                    (rev targ, uarg) instsp
+                                    (rev targ, cuarg) instsp
         in
           map (process_inst o swap_u_to_r) insts
         end
       else
         let
           val insts = match_ac_list is_simple true tbl bd_vars ac_info
-                                    (targ, uarg) instsp
+                                    (targ, cuarg) instsp
         in
           map (process_inst o swap_t_to_l) insts
         end
     end
 
 (* Matching an order list of patterns against terms. *)
-and match_list tbl bd_vars (ts, us) instsp =
-    if ts = [] andalso us = [] then [(instsp, [])]
-    else if ts = [] orelse us = [] then []
+and match_list tbl bd_vars (ts, cus) instsp =
+    if length ts = 0 andalso length cus = 0 then [(instsp, [])]
+    else if length ts = 0 orelse length cus = 0 then []
     else let
       (* Two choices, one of which should always work (encounter no
          illegal higher-order patterns.
        *)
       fun hd_first () =
           let
-            val insts_t = match tbl bd_vars (hd ts, hd us) instsp
+            val insts_t = match tbl bd_vars (hd ts, hd cus) instsp
             fun process_inst_t (instsp', th) =
                 let
-                  val insts_ts' = match_list tbl bd_vars (tl ts, tl us) instsp'
+                  val insts_ts' = match_list tbl bd_vars (tl ts, tl cus) instsp'
                 in
                   map (apsnd (cons th)) insts_ts'
                 end
@@ -738,10 +793,10 @@ and match_list tbl bd_vars (ts, us) instsp =
           end
       fun tl_first () =
           let
-            val insts_ts' = match_list tbl bd_vars (tl ts, tl us) instsp
+            val insts_ts' = match_list tbl bd_vars (tl ts, tl cus) instsp
             fun process_inst_ts' (instsp', ths) =
                 let
-                  val insts_t = match tbl bd_vars (hd ts, hd us) instsp'
+                  val insts_t = match tbl bd_vars (hd ts, hd cus) instsp'
                 in
                   map (apsnd (fn th => th :: ths)) insts_t
                 end
@@ -753,17 +808,18 @@ and match_list tbl bd_vars (ts, us) instsp =
     end
 
 (* Match a non-AC function. *)
-and match_comb (tbl as {ctxt, ...}) bd_vars (t, u)
-               (instsp as (_, (_, inst))) =
+and match_comb tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
     let
+      val {ctxt, ...} = tbl
       val (tf, targs) = Term.strip_comb t
-      val (uf, uargs) = Term.strip_comb u
+      val (cuf, cuargs) = Drule.strip_comb cu
+      val uf = Thm.term_of cuf
     in
       if Term.aconv_untyped (tf, uf) then
         let
-          val instsps' = match_list tbl bd_vars (targs, uargs) instsp
+          val instsps' = match_list tbl bd_vars (targs, cuargs) instsp
           fun process_inst (instsp', ths) =
-              (instsp', comb_equiv (cert ctxt uf, ths))
+              (instsp', comb_equiv (cuf, ths))
         in
           map process_inst instsps'
         end
@@ -776,10 +832,12 @@ and match_comb (tbl as {ctxt, ...}) bd_vars (t, u)
               if subset (op aconv) (targs, bd_vars) andalso
                  not (has_duplicates (op aconv) targs) then
                 let
-                  val u' = u |> fold lambda_abstract (rev targs)
+                  val cu' = cu |> Thm.term_of
+                               |> fold lambda_abstract (rev targs)
+                               |> cert ctxt
                 in
-                  map (fn (instsp', _) => (instsp', refl tbl u))
-                      (update_inst tbl bd_vars ixn u' instsp)
+                  map (fn (instsp', _) => (instsp', Thm.reflexive cu))
+                      (update_inst bd_vars ixn cu' instsp)
                 end
               else
                 raise AUTO2 "invalid pattern"
@@ -787,72 +845,82 @@ and match_comb (tbl as {ctxt, ...}) bd_vars (t, u)
               let
                 val t' = Term.list_comb (tf', targs) |> Envir.beta_norm
               in
-                match tbl bd_vars (t', u) instsp
+                match tbl bd_vars (t', cu) instsp
               end
         end
       else []
     end
 
 (* Match t and u at head, non-AC case. *)
-and match_non_ac_head tbl bd_vars (t, u) (instsp as (_, (_, inst))) =
-    if fastype_of t <> fastype_of u then [] else
-    case (t, u) of
-        (Var ((nm, i), _), _) =>
-        (case Vartab.lookup inst (nm, i) of
-             NONE => if (nm = "NUMC" orelse nm = "NUMCu") andalso
-                        not (is_numc u) then []
-                     else if nm = "FREE" andalso not (Term.is_Free u) then []
-                     else update_inst tbl bd_vars (nm, i) u instsp
-           | SOME (_, u') => match_non_ac_head tbl bd_vars (u', u) instsp)
-      | (Free (a, _), Free (b, _)) =>
-        if a = b then [(instsp, refl tbl u)] else []
-      | (Const (a, _), Const (b, _)) =>
-        if a = b then [(instsp, refl tbl u)] else []
-      | (_ $ _, _) => match_comb tbl bd_vars (t, u) instsp
-      | _ => []
+and match_non_ac_head tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
+    let
+      val {ctxt, ...} = tbl
+      val u = Thm.term_of cu
+    in
+      if fastype_of t <> fastype_of u then [] else
+      case (t, u) of
+          (Var ((nm, i), _), _) =>
+          (case Vartab.lookup inst (nm, i) of
+               NONE => if (nm = "NUMC" orelse nm = "NUMCu") andalso
+                          not (Consts.is_const_ctxt ctxt u) then []
+                       else if nm = "FREE" andalso not (Term.is_Free u) then []
+                       else update_inst bd_vars (nm, i) cu instsp
+             | SOME (_, u') => match_non_ac_head tbl bd_vars (u', cu) instsp)
+        | (Free (a, _), Free (b, _)) =>
+          if a = b then [(instsp, Thm.reflexive cu)] else []
+        | (Const (a, _), Const (b, _)) =>
+          if a = b then [(instsp, Thm.reflexive cu)] else []
+        | (_ $ _, _) => match_comb tbl bd_vars (t, cu) instsp
+        | _ => []
+    end
 
 (* Here we assume that t is instantiated according to instsp, and
    satisfies the condition imposed by check_use_ac. We also assume
    that it is normalized with respect to minus and left association.
  *)
-and match_ac_head ac_info tbl bd_vars (t, u) (id, env) =
-    if fastype_of t <> fastype_of u then []
-    else if ACUtil.head_agrees_all ac_info t andalso
-            not (ACUtil.head_agrees_all ac_info u) then []
-    else let
-      (* List of AC-subterm rewrites of u. *)
-      val u_equivs = if is_open bd_vars u then [(id, refl tbl u)]
-                     else ac_subterm_equivs tbl ac_info (id, u)
-
-      fun process_equiv (id', th) =
-          let
-            val u' = rhs_of th
-            val insts_u' =
-                match_ac_raw false ac_info tbl bd_vars (t, u') (id', env)
-          in
-            (* th': t(env) == u', and th: u == u'. *)
-            map (fn (inst', th') =>
-                    (inst', transitive_list [th', meta_sym th])) insts_u'
-          end
-
-      (* Compare instantiations at the following indexnames. *)
-      val vars = map fst (Term.add_vars t [])
+and match_ac_head ac_info tbl bd_vars (t, cu) (id, env) =
+    let
+      val u = Thm.term_of cu
     in
-      (maps process_equiv u_equivs)
-          |> max_partial (inst_eq_better tbl vars)
+      if fastype_of t <> fastype_of u then []
+      else if ACUtil.head_agrees_all ac_info t andalso
+              not (ACUtil.head_agrees_all ac_info u) then []
+      else let
+        (* List of AC-subterm rewrites of u. *)
+        val u_equivs = if is_open bd_vars u then [(id, Thm.reflexive cu)]
+                       else ac_subterm_equivs tbl ac_info (id, cu)
+
+        fun process_equiv (id', th) =
+            let
+              val cu' = Thm.rhs_of th
+              val insts_u' =
+                  match_ac_raw false ac_info tbl bd_vars (t, cu') (id', env)
+            in
+              (* th': t(env) == u', and th: u == u'. *)
+              map (fn (inst', th') =>
+                      (inst', transitive_list [th', meta_sym th])) insts_u'
+            end
+
+        (* Compare instantiations at the following indexnames. *)
+        val vars = map fst (Term.add_vars t [])
+      in
+        (maps process_equiv u_equivs)
+            |> max_partial (inst_eq_better tbl vars)
+      end
     end
 
 (* With fixed t, match non-AC with all equivalences of u. *)
-and match_non_ac_all_head_with_t tbl bd_vars (t, u) (id, env) =
+and match_non_ac_all_head_with_t tbl bd_vars (t, cu) (id, env) =
     let
+      val u = Thm.term_of cu
       val u_equivs =
-          if is_open bd_vars u then [(id, refl tbl u)]
-          else RewriteTable.get_head_equiv_with_t tbl (id, u) t
+          if is_open bd_vars u then [(id, Thm.reflexive cu)]
+          else RewriteTable.get_head_equiv_with_t tbl (id, cu) t
 
       fun process_equiv (id', eq_u) =
           let
-            val u' = rhs_of eq_u
-            val insts_u' = match_non_ac_head tbl bd_vars (t, u') (id', env)
+            val cu' = Thm.rhs_of eq_u
+            val insts_u' = match_non_ac_head tbl bd_vars (t, cu') (id', env)
             fun process_inst ((id', env'), eq_th) =
                 (* eq_th: t(env') == u', eq_u: u == u'. *)
                 ((id', env'), transitive_list [eq_th, meta_sym eq_u])
@@ -864,16 +932,17 @@ and match_non_ac_all_head_with_t tbl bd_vars (t, u) (id, env) =
     end
 
 (* With fixed t, match AC with all equivalences of u. *)
-and match_ac_all_head_with_t ac_info tbl bd_vars (t, u) (id, env) =
+and match_ac_all_head_with_t ac_info tbl bd_vars (t, cu) (id, env) =
     let
+      val u = Thm.term_of cu
       val u_equivs =
-          if is_open bd_vars u then [(id, refl tbl u)]
-          else get_ac_head_equiv tbl ac_info (id, u)
+          if is_open bd_vars u then [(id, Thm.reflexive cu)]
+          else get_ac_head_equiv tbl ac_info (id, cu)
 
       fun process_equiv (id', eq_u) =
           let
-            val u' = rhs_of eq_u
-            val insts_u' = match_ac_head ac_info tbl bd_vars (t, u') (id', env)
+            val cu' = Thm.rhs_of eq_u
+            val insts_u' = match_ac_head ac_info tbl bd_vars (t, cu') (id', env)
             fun process_inst ((id'', env'), eq_th) =
                 (* eq_th: t(env') == u', eq_u: u == u'. *)
                 ((id'', env'), transitive_list [eq_th, meta_sym eq_u])
@@ -933,40 +1002,38 @@ and match_all_head (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
         end
 
 (* Match t and u, possibly by rewriting u at head. *)
-and match (tbl as {ctxt, ...}) bd_vars (t, u) (instsp as (_, (_, inst))) =
-    case check_type_term tbl (t, u) instsp of
+and match (tbl as {ctxt, ...}) bd_vars (t, cu) (instsp as (_, (_, inst))) =
+    case check_type_term tbl (t, Thm.term_of cu) instsp of
         NONE => []
-      | SOME (instsp' as (id', env'), t') =>
-        case (t', u) of
+      | SOME (instsp', t') =>
+        case (t', Thm.term_of cu) of
             (Var ((nm, i), _), _) =>
             (case Vartab.lookup inst (nm, i) of
                  NONE => if member (op =) ["NUMC", "NUMCu", "FREE"] nm then
-                           match_all_head tbl bd_vars (t', u) instsp'
+                           match_all_head tbl bd_vars (t', cu) instsp'
                          else
-                           update_inst tbl bd_vars (nm, i) u instsp'
-               | SOME (_, u') => match tbl bd_vars (u', u) instsp')
-          | (Abs (_, T, t'), Abs (nm, U, u')) => (
+                           update_inst bd_vars (nm, i) cu instsp'
+               | SOME (_, u') => match tbl bd_vars (u', cu) instsp')
+          | (Abs (_, T, t'), Abs (nm, U, _)) => (
             case check_type tbl (T, U) instsp' of
                 NONE => []
               | SOME (instsp'' as (_, (tyinst', _))) =>
                 let
-                  val bd_var = (Variable.variant_frees ctxt bd_vars [(nm, U)])
-                                   |> the_single |> Free
+                  val (cv, cu') = Thm.dest_abs (SOME Name.uu) cu
+                  val v = Thm.term_of cv
                   val t'' = Envir.subst_term_types tyinst' t'
-                  val t_free = subst_bound (bd_var, t'')
-                  val u_free = subst_bound (bd_var, u')
-                  val insts' = match tbl (bd_var :: bd_vars)
-                                     (t_free, u_free) instsp''
+                  val t_free = Term.subst_bound (v, t'')
+                  val insts' = match tbl (v :: bd_vars) (t_free, cu') instsp''
                   fun process_inst (inst', th') =
-                      (inst', Thm.abstract_rule nm (cert ctxt bd_var) th')
+                      (inst', Thm.abstract_rule nm cv th')
                 in
                   map process_inst insts'
                 end)
           | (Abs _, _) => (
             let
-              val u_eq = reverse_eta_conv ctxt (cert ctxt u)
-              val u' = rhs_of u_eq
-              val insts' = match tbl bd_vars (t', u') instsp'
+              val u_eq = reverse_eta_conv ctxt cu
+              val cu' = Thm.rhs_of u_eq
+              val insts' = match tbl bd_vars (t', cu') instsp'
               fun process_inst (inst', th') =
                   (inst', transitive_list [th', meta_sym u_eq])
             in
@@ -975,34 +1042,31 @@ and match (tbl as {ctxt, ...}) bd_vars (t, u) (instsp as (_, (_, inst))) =
             handle CTERM _ => [])
           | (_, Abs _) => (
             let
-              val u_eq = Thm.eta_conversion (cert ctxt u)
-              val u' = rhs_of u_eq
+              val u_eq = Thm.eta_conversion cu
+              val cu' = Thm.rhs_of u_eq
             in
-              if u aconv u' then []
+              if cu aconvc cu' then []
               else let
-                val insts' = match tbl bd_vars (t', u') instsp'
+                val insts' = match tbl bd_vars (t', cu') instsp'
                 fun process_inst (inst', th') =
                     (inst', transitive_list [th', meta_sym u_eq])
               in
                 map process_inst insts'
               end
             end)
-          | (Free _, _) => map (fn (id'', th) => ((id'', env'), th))
-                               (RewriteTable.equiv_info tbl id' (t', u))
-          | (Const _, _) => map (fn (id'', th) => ((id'', env'), th))
-                                (RewriteTable.equiv_info tbl id' (t', u))
           | _ => (* Free, Const, and comb case *)
-            match_all_head tbl bd_vars (t', u) instsp'
+            (match_all_head tbl bd_vars (t', cu) instsp')
+                |> distinct compare_inst
 
 (* Function for matching at head to export. Consider all equivalences
    of t (but not of u).
  *)
-fun match_head (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
-    case check_type_term tbl (t, u) (id, env) of
+fun match_head (tbl as {ctxt, ...}) bd_vars (t, cu) (id, env) =
+    case check_type_term tbl (t, Thm.term_of cu) (id, env) of
         NONE => []
       | SOME ((id, env), t) =>
         case ACUtil.get_head_ac_info_all ctxt t of
-            NONE => match_non_ac_head tbl bd_vars (t, u) (id, env)
+            NONE => match_non_ac_head tbl bd_vars (t, cu) (id, env)
           | SOME ac_info =>
             let
               val thy = RewriteTable.theory_of tbl
@@ -1012,13 +1076,13 @@ fun match_head (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
                     val t' = rhs_of eq_t
                     val insts =
                         if use_ac = AC_YES then
-                          match_ac_head ac_info tbl bd_vars (t', u) (id', env')
+                          match_ac_head ac_info tbl bd_vars (t', cu) (id', env')
                         else if use_ac = AC_NO then
-                          match_non_ac_head tbl bd_vars (t', u) (id', env')
+                          match_non_ac_head tbl bd_vars (t', cu) (id', env')
                         else let  (* use_ac = AC_UNKNOWN *)
                           val _ = assert (not (t' aconv t)) "match_head"
                         in
-                          match_head tbl bd_vars (t', u) (id', env')
+                          match_head tbl bd_vars (t', cu) (id', env')
                         end
 
                     fun process_inst ((id', env'), eq_th) =
@@ -1037,21 +1101,21 @@ fun match_head (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
             end
 
 (* Functions for export. *)
-fun rewrite_match_gen at_head tbl bd_vars (t, u) (id, env) =
+fun rewrite_match_gen at_head tbl bd_vars (t, cu) (id, env) =
     if at_head then
-      match_head tbl bd_vars (t, u) (id, env)
+      match_head tbl bd_vars (t, cu) (id, env)
     else
-      match tbl bd_vars (t, u) (id, env)
+      match tbl bd_vars (t, cu) (id, env)
 
-fun rewrite_match tbl (t, u) (id, env) =
-    match tbl [] (t, u) (id, env)
+fun rewrite_match tbl (t, cu) (id, env) =
+    match tbl [] (t, cu) (id, env)
 
-fun rewrite_match_head tbl (t, u) (id, env) =
-    match_head tbl [] (t, u) (id, env)
+fun rewrite_match_head tbl (t, cu) (id, env) =
+    match_head tbl [] (t, cu) (id, env)
 
 (* Version with bd_vars, used in disj_prop_matcher. *)
 fun rewrite_match_ac_bd
-        is_simple ac_info (tbl as {ctxt, ...}) bd_vars (t, u) (id, env) =
+        is_simple ac_info (tbl as {ctxt, ...}) bd_vars (t, cu) (id, env) =
     let
       val thy = RewriteTable.theory_of tbl
       val norm_eq = ACUtil.normalize_minus_assoc_l ac_info (cert ctxt t)
@@ -1064,9 +1128,9 @@ fun rewrite_match_ac_bd
           end
       val insts =
           if is_simple then
-            match_ac_raw true ac_info tbl bd_vars (t', u) (id, env)
+            match_ac_raw true ac_info tbl bd_vars (t', cu) (id, env)
           else
-            match_ac_head ac_info tbl bd_vars (t', u) (id, env)
+            match_ac_head ac_info tbl bd_vars (t', cu) (id, env)
     in
       map process_inst insts
     end
@@ -1082,9 +1146,9 @@ fun rewrite_match_ac is_simple ac_info tbl =
 fun rewrite_match_list tbl pairs instsp =
     case pairs of
         [] => [(instsp, [])]
-      | (at_head, (t, u)) :: pairs' =>
+      | (at_head, (t, cu)) :: pairs' =>
         let
-          val insts_t = rewrite_match_gen at_head tbl [] (t, u) instsp
+          val insts_t = rewrite_match_gen at_head tbl [] (t, cu) instsp
           fun process_inst_t (instsp', th) =
               let
                 val insts_ts' = rewrite_match_list tbl pairs' instsp'
@@ -1099,30 +1163,29 @@ fun rewrite_match_list tbl pairs instsp =
    us. Return a list of ((id, inst), ths), where ths is the list of
    equalities t_i(env) == u_j.
  *)
-fun rewrite_match_subset tbl (ts, us) instsp =
+fun rewrite_match_subset tbl (ts, cus) instsp =
     case ts of
         [] => [(instsp, [])]
       | t :: ts' =>
         let
           fun match_i i =
-              map (pair i) (rewrite_match tbl (t, nth us i) instsp)
+              map (pair i) (rewrite_match tbl (t, nth cus i) instsp)
 
           fun process_match_i (i, (instsp', th)) =
               let
                 val insts_ts' =
-                    rewrite_match_subset tbl (ts', nth_drop i us) instsp'
+                    rewrite_match_subset tbl (ts', nth_drop i cus) instsp'
               in
                 map (apsnd (cons th)) insts_ts'
               end
         in
-          (0 upto (length us - 1))
+          (0 upto (length cus - 1))
               |> maps match_i |> maps process_match_i
         end
 
 (* Fast function for determining whether there can be a match between
    t and u.
  *)
-
 fun pre_match_type tbl (T, U) =
     let
       val thy = RewriteTable.theory_of tbl
@@ -1132,100 +1195,117 @@ fun pre_match_type tbl (T, U) =
     end
     handle Type.TYPE_MATCH => false
 
-fun pre_match_comb tbl (t, u) =
+fun pre_match_comb tbl (t, cu) =
     let
       val (tf, targs) = Term.strip_comb t
-      val (uf, uargs) = Term.strip_comb u
+      val (cuf, cuargs) = Drule.strip_comb cu
+      val uf = Thm.term_of cuf
     in
       is_Var tf orelse (Term.aconv_untyped (tf, uf) andalso
-                        length targs = length uargs andalso
-                        forall (pre_match tbl) (targs ~~ uargs))
+                        length targs = length cuargs andalso
+                        forall (pre_match tbl) (targs ~~ cuargs))
     end
 
-and pre_match_non_ac_head tbl (t, u) =
-    case (t, u) of
-        (Var ((nm, _), T), _) =>
-        if Term.is_open u then false
-        else if not (pre_match_type tbl (T, fastype_of u)) then false
-        else if nm = "NUMC" orelse nm = "NUMCu" then is_numc u
-        else if nm = "FREE" then Term.is_Free u
-        else true
-      | (Free (a, T), Free (b, U)) =>
-        (a = b andalso pre_match_type tbl (T, U))
-      | (Const (a, T), Const (b, U)) =>
-        (a = b andalso pre_match_type tbl (T, U))
-      | (_ $ _, _) => pre_match_comb tbl (t, u)
-      | _ => false
+and pre_match_non_ac_head (tbl as {ctxt, ...}) (t, cu) =
+    let
+      val u = Thm.term_of cu
+    in
+      case (t, u) of
+          (Var ((nm, _), T), _) =>
+          if Term.is_open u then false
+          else if not (pre_match_type tbl (T, fastype_of u)) then false
+          else if nm = "NUMC" orelse nm = "NUMCu" then
+            Consts.is_const_ctxt ctxt u
+          else if nm = "FREE" then Term.is_Free u
+          else true
+        | (Free (a, T), Free (b, U)) =>
+          (a = b andalso pre_match_type tbl (T, U))
+        | (Const (a, T), Const (b, U)) =>
+          (a = b andalso pre_match_type tbl (T, U))
+        | (_ $ _, _) => pre_match_comb tbl (t, cu)
+        | _ => false
+    end
 
-and pre_match_unit ac_info tbl (t, u) =
+and pre_match_unit ac_info tbl (t, cu) =
     if not (ACUtil.head_agrees ac_info t) then false
     else let
-      val (_, (A, B)) = dest_binop t
+      val (A, B) = dest_binop_args t
     in
-      if is_unit_allowed_var A then pre_match tbl (B, u)
-      else if is_unit_allowed_var B then pre_match tbl (A, u)
+      if is_unit_allowed_var A then pre_match tbl (B, cu)
+      else if is_unit_allowed_var B then pre_match tbl (A, cu)
       else false
     end
 
-and pre_match_all_head (tbl as {ctxt, ...}) (t, u) =
+and pre_match_all_head (tbl as {ctxt, ...}) (t, cu) =
     let
       val thy = RewriteTable.theory_of tbl
+      val u = Thm.term_of cu
       val tyinst = Sign.typ_match thy (fastype_of t, fastype_of u) Vartab.empty
       val t' = Envir.subst_term_types tyinst t
     in
       case ACUtil.get_head_ac_info_all ctxt t' of
           NONE =>
-          if Term.is_open u then pre_match_non_ac_head tbl (t', u)
+          if Term.is_open u then pre_match_non_ac_head tbl (t', cu)
           else let
             val u_equivs =
-                (RewriteTable.get_head_equiv_with_t tbl ([], u) t')
-                    |> map snd |> map rhs_of
+                (RewriteTable.get_head_equiv_with_t tbl ([], cu) t')
+                    |> map snd |> map Thm.rhs_of
           in
-            exists (fn u' => pre_match_non_ac_head tbl (t', u')) u_equivs
+            exists (fn cu' => pre_match_non_ac_head tbl (t', cu')) u_equivs
           end
         | SOME ac_info =>
           if Term.is_open u then ACUtil.head_agrees_all ac_info u
           else let
-            val u_ac_equivs = get_ac_head_equiv tbl ac_info ([], u)
+            val u_ac_equivs = get_ac_head_equiv tbl ac_info ([], cu)
           in
-            pre_match_unit ac_info tbl (t', u) orelse length u_ac_equivs > 0
+            pre_match_unit ac_info tbl (t', cu) orelse length u_ac_equivs > 0
           end
     end
     handle Type.TYPE_MATCH => false
 
-and pre_match (tbl as {ctxt, ...}) (t, u) =
-    case (t, u) of
-        (Var ((nm, _), T), _) =>
-        if Term.is_open u then false
-        else if not (pre_match_type tbl (T, fastype_of u)) then false
-        else if member (op =) ["NUMC", "NUMCu", "FREE"] nm then
-          pre_match_all_head tbl (t, u)
-        else true
-      | (Abs (_, T, t'), Abs (nm, U, u')) =>
-        if not (pre_match_type tbl (T, U)) then false
-        else pre_match tbl (subst_bound (Free (nm, T), t'),
-                            subst_bound (Free (nm, U), u'))
-      | (Abs _, _) => (
-        pre_match tbl (t, rhs_of (reverse_eta_conv ctxt (cert ctxt u)))
-        handle CTERM _ => false)
-      | (_, Abs _) => (
-        let val u' = rhs_of (Thm.eta_conversion (cert ctxt u)) in
-          if u aconv u' then false else pre_match tbl (t, u')
-        end)
-      | (Bound i, Bound j) => (i = j)
-      | (_, _) => pre_match_all_head tbl (t, u)
+and pre_match (tbl as {ctxt, ...}) (t, cu) =
+    let
+      val u = Thm.term_of cu
+    in
+      case (t, u) of
+          (Var ((nm, _), T), _) =>
+          if Term.is_open u then false
+          else if not (pre_match_type tbl (T, fastype_of u)) then false
+          else if member (op =) ["NUMC", "NUMCu", "FREE"] nm then
+            pre_match_all_head tbl (t, cu)
+          else true
+        | (Abs (_, T, t'), Abs (_, U, _)) =>
+          if not (pre_match_type tbl (T, U)) then false
+          else let
+            val (cv, cu') = Thm.dest_abs (SOME Name.uu) cu
+            val t'' = subst_bound (Thm.term_of cv, t')
+          in
+            pre_match tbl (t'', cu')
+          end
+        | (Abs _, _) => (
+          pre_match tbl (t, Thm.rhs_of (reverse_eta_conv ctxt cu))
+          handle CTERM _ => false)
+        | (_, Abs _) => (
+          let val cu' = Thm.rhs_of (Thm.eta_conversion cu) in
+            if u aconv Thm.term_of cu' then false
+            else pre_match tbl (t, cu')
+          end)
+        | (Bound i, Bound j) => (i = j)
+        | (_, _) => pre_match_all_head tbl (t, cu)
+    end
 
-fun pre_match_head (tbl as {ctxt, ...}) (t, u) =
+fun pre_match_head (tbl as {ctxt, ...}) (t, cu) =
     let
       val thy = RewriteTable.theory_of tbl
+      val u = Thm.term_of cu
       val tyinst = Sign.typ_match thy (fastype_of t, fastype_of u) Vartab.empty
       val t' = Envir.subst_term_types tyinst t
     in
       case ACUtil.get_head_ac_info_all ctxt t' of
-          NONE => pre_match_non_ac_head tbl (t', u)
+          NONE => pre_match_non_ac_head tbl (t', cu)
         | SOME {cfhead, uinv_op, inv_op, ...} =>
           (* head of u agrees with ac_info, up to types. *)
-          member Term.aconv_untyped [Thm.term_of cfhead, uinv_op, inv_op]
+          member Term.aconv_untyped (map Thm.term_of [cfhead, uinv_op, inv_op])
                  (Term.head_of u)
     end
     handle Type.TYPE_MATCH => false

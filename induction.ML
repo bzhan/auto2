@@ -64,7 +64,6 @@ structure ProofStep = ProofStep(Base)
 structure ProofStep_Data = ProofStep_Data(Base)
 open Base
 open UtilLogic
-open BoxItem
 open ProofStep
 open ProofStep_Data
 
@@ -147,7 +146,7 @@ fun get_eq_handler ctxt var_eq =
                  |> apply_to_thm (to_obj_conv ctxt)
                  |> apply_to_thm' (rewr_obj_eq use_vardef_th)
         in
-          [var_to_fact ind_var] @
+          [BoxItem.var_to_fact ind_var] @
           Update.handler_ritems ctxt eq (eq_ready, eq_handler)
         end
 
@@ -393,7 +392,7 @@ fun prfstep_induction name descs ind_th =
                 val ritems =
                     apply_induction (the var_ctxt) var_infos ctxt ind_th [p0_th]
               in
-                [AddItems {id = id, raw_items = ritems}]
+                [AddItems {id = id, sc = NONE, raw_items = ritems}]
               end
             end)
 
@@ -657,7 +656,7 @@ fun INDUCT (var_spec_str, ind_infos) ctxt =
                 apply_induction (the var_ctxt) var_infos ctxt ind_th [p0_th]
           in
             [Update.thm_update (id, neq0_th),
-             AddItems {id = id, raw_items = ritems}]
+             AddItems {id = id, sc = NONE, raw_items = ritems}]
           end
     in
       [Script_Task {inits = [InitAssum neq0], subs = [], cb = callback,
@@ -685,18 +684,16 @@ fun STRONG_INDUCT (var_spec_str, ind_infos) ctxt =
             val var_infos = [(var, var_eq)]
             val ritems = apply_induction (the var_ctxt) var_infos ctxt ind_th []
             val (ind_prop, rest) =
-                filter_split (fn ritem =>
-                                 case ritem of Fact ("PROP", _, _) => true
-                                             | _ => false) ritems
+                filter_split (BoxItem.match_ty_str_raw TY_PROP) ritems
             val _ = assert (length ind_prop = 1)
                            "STRONG_INDUCT: should have one ind_prop."
-            val all_th = ind_prop |> the_single |> get_thm_raw
+            val all_th = ind_prop |> the_single |> BoxItem.get_thm_raw
                                   |> apply_to_thm (to_meta_all_conv ctxt)
             val ths = map (fn ct => Thm.forall_elim ct all_th) apply_ons
             val ritems' = if length apply_ons = 0 then ritems
                           else map Update.thm_to_ritem ths @ rest
           in
-            [AddItems {id = id, raw_items = ritems'}]
+            [AddItems {id = id, sc = NONE, raw_items = ritems'}]
           end
 
       val not_True = bTrue |> get_neg |> mk_Trueprop
@@ -759,13 +756,13 @@ fun UPPER_STRONG_INDUCT (var_spec_str, less_str, ind_infos) ctxt =
                                  | _ => false) ritems
             val _ = assert (length ind_prop = 1)
                            "UPPER_STRONG_INDUCT: should have one ind_prop."
-            val all_th = ind_prop |> the_single |> get_thm_raw
+            val all_th = ind_prop |> the_single |> BoxItem.get_thm_raw
                                   |> apply_to_thm (to_meta_all_conv ctxt)
             val ths = map (fn ct => Thm.forall_elim ct all_th) apply_ons
             val ritems' = if length apply_ons = 0 then ritems
                           else map Update.thm_to_ritem ths @ rest
           in
-            [AddItems {id = id, raw_items = ritems'}]
+            [AddItems {id = id, sc = NONE, raw_items = ritems'}]
           end
     in
       [Script_Task {inits = [InitAssum init_assum], subs = [], cb = callback,

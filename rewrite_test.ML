@@ -48,26 +48,29 @@ fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
 fun assert_rew_info str info_str (tbl as {ctxt, ...}) =
     let
       val t = read_term ctxt str
+      val ct = cert ctxt t
       val info = map (apsnd (read_term ctxt)) info_str
     in
-      assert_eq_info (info, RewriteTable.get_rewrite_info tbl t)
+      assert_eq_info (info, RewriteTable.get_rewrite_info tbl ct)
                      "assert_rew_info" tbl
     end
 
 fun assert_srew_info str info_str (tbl as {ctxt, ...}) =
     let
       val t = read_term ctxt str
+      val ct = cert ctxt t
       val info = map (apsnd (read_term ctxt)) info_str
     in
-      assert_eq_info (info, RewriteTable.get_subterm_rewrite_info tbl t)
+      assert_eq_info (info, RewriteTable.get_subterm_rewrite_info tbl ct)
                      "assert_srew_info" tbl
     end
 
 fun assert_head_rep (id, str) info_str (tbl as {ctxt, ...}) =
     let
       val t = read_term ctxt str
+      val ct = cert ctxt t
       val info = map (apsnd (read_term ctxt)) info_str
-      val th = RewriteTable.refl tbl t
+      val th = Thm.reflexive ct
     in
       assert_eq_info (info, RewriteTable.get_head_rep_with_id_th tbl (id, th))
                      "assert_head_rep" tbl
@@ -77,7 +80,7 @@ fun assert_equiv_gen exp_equiv id (str1, str2) (tbl as {ctxt, ...}) =
     let
       val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
     in
-      if exp_equiv = RewriteTable.is_equiv id tbl (t1, t2) then tbl
+      if exp_equiv = RewriteTable.is_equiv_t id tbl (t1, t2) then tbl
       else let
         val _ = tracing ("id: " ^ (string_of_box_id id))
         val _ = trace_tlist_ctxt ctxt "Input:" [t1, t2]
@@ -92,16 +95,18 @@ val assert_not_equiv = assert_equiv_gen false
 fun assert_simpl_info str info_str (tbl as {ctxt, ...}) =
     let
       val t = read_term ctxt str
+      val ct = cert ctxt t
       val info = map (apsnd (read_term ctxt)) info_str
     in
-      assert_eq_info (info, RewriteTable.simplify_info tbl t)
+      assert_eq_info (info, RewriteTable.simplify_info tbl ct)
                      "assert_simpl_info" tbl
     end
 
 fun assert_simpl id (str, str') (tbl as {ctxt, ...}) =
     let
       val (t, t') = (read_term ctxt str, read_term ctxt str')
-      val res = rhs_of (RewriteTable.simplify id tbl t)
+      val ct = cert ctxt t
+      val res = rhs_of (RewriteTable.simplify id tbl ct)
     in
       if res aconv t' then tbl
       else let
@@ -119,9 +124,9 @@ fun assert_simpl id (str, str') (tbl as {ctxt, ...}) =
  *)
 fun assert_head_equivs (id, str) info_str (tbl as {ctxt, ...}) =
     let
-      val u = read_term ctxt str
+      val cu = cert ctxt (read_term ctxt str)
       val info = map (apsnd (read_term ctxt)) info_str
-      val res = (RewriteTable.get_head_equiv tbl u)
+      val res = (RewriteTable.get_head_equiv tbl cu)
                     |> maps snd
                     |> RewriteTable.merge_box_with_info tbl id
     in
@@ -152,7 +157,7 @@ fun add_equiv id (str1, str2) (tbl as {ctxt, ...}) =
     end
 
 fun add_term str (tbl as {ctxt, ...}) =
-    tbl |> RewriteTable.add_term ([], read_term ctxt str)
+    tbl |> RewriteTable.add_term ([], cert ctxt (read_term ctxt str))
 
 fun assert_eq_edges (str1, str2) ids (tbl as {ctxt, ...}) =
     let
@@ -182,7 +187,7 @@ fun update_simp id (str1, str2) (tbl as {ctxt, ...}) =
 fun assert_rewrite id (str, str') (tbl as {ctxt, ...}) =
     let
       val (t, t') = (read_term ctxt str, read_term ctxt str')
-      val res = rhs_of (RewriteTable.get_rewrite id tbl t)
+      val res = rhs_of (RewriteTable.get_rewrite id tbl (cert ctxt t))
     in
       if res aconv t' then tbl
       else let
@@ -199,7 +204,7 @@ fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
       val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
       val th = assume_eq (RewriteTable.theory_of tbl) (t1, t2)
     in
-      tbl |> RewriteTable.add_rewrite id th
+      tbl |> RewriteTable.add_rewrite (id, th)
     end
 
 fun add_property id str (tbl as {ctxt, ...}) =

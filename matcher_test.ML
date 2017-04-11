@@ -2,8 +2,6 @@
 
 local
 
-open Matcher
-
 val thy = @{theory}
 val thy' = thy |> Nat_Arith.add_arith_ac_data
                |> add_list_ac_data
@@ -66,7 +64,7 @@ fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
       val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
       val th = assume_eq (RewriteTable.theory_of tbl) (t1, t2)
     in
-      tbl |> RewriteTable.add_rewrite id th
+      tbl |> RewriteTable.add_rewrite (id, th)
     end
 
 (* Check th is actually t(env) == u. *)
@@ -89,7 +87,7 @@ fun assert_match_gen matcher ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
       val (t, u) = (read_pat ctxt str_t, read_term ctxt str_u)
       val _ = trace_tlist_ctxt ctxt "Matching" [t, u]
       val info = map (apsnd (read_term ctxt)) info_str
-      val info' = matcher tbl [] (t, u) ([], fo_init)
+      val info' = matcher tbl [] (t, cert ctxt u) ([], fo_init)
       val _ = map (check_info (t, u) "assert_match" tbl) info'
       val info'' = map (fn ((id, _), th) => (id, meta_sym th)) info'
     in
@@ -109,25 +107,27 @@ fun assert_ac_match ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
           in
             raise AUTO2 "assert_ac_match"
           end
-        | SOME ac_info => assert_match_gen (match_ac_raw false ac_info)
+        | SOME ac_info => assert_match_gen (Matcher.match_ac_raw false ac_info)
                                            ((str_t, str_u), info_str) tbl
     end
 
-val assert_match = assert_match_gen match
-val assert_head_match = assert_match_gen match_head
+val assert_match = assert_match_gen Matcher.match
+val assert_head_match = assert_match_gen Matcher.match_head
 
 fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
     let
       val pairs =
           map (fn (is_head, (str_t, str_u)) =>
-                  (is_head, (read_pat ctxt str_t, read_term ctxt str_u)))
+                  (is_head, (read_pat ctxt str_t,
+                             cert ctxt (read_term ctxt str_u))))
               pairs_str
       val info = map (apsnd (map (read_term ctxt))) info_str
-      val info' = rewrite_match_list tbl pairs ([], fo_init)
+      val info' = Matcher.rewrite_match_list tbl pairs ([], fo_init)
       fun check_info_list (instsp, ths) =
           let
-            fun check_pair ((t, u), th) =
-                check_info (t, u) "assert_match_list" tbl (instsp, th)
+            fun check_pair ((t, cu), th) =
+                check_info (t, Thm.term_of cu)
+                           "assert_match_list" tbl (instsp, th)
           in
             map check_pair (map snd pairs ~~ ths)
           end
@@ -155,13 +155,13 @@ val test_shift_to_n =
     let
       val ctxt'' = ctxt' |> Variable.auto_fixes (Free ("n", natT))
       fun test_to_r (n, t, t') =
-          test_conv ctxt'' (ac_shift_n_to_r_cv nat_plus_info n)
+          test_conv ctxt'' (Matcher.ac_shift_n_to_r_cv nat_plus_info n)
                     "test_shift_n_to_r" (t, t')
       fun test_r (n, t, t') =
-          test_conv ctxt'' (ac_shift_r_to_n_cv nat_plus_info n)
+          test_conv ctxt'' (Matcher.ac_shift_r_to_n_cv nat_plus_info n)
                     "test_shift_r_to_n" (t, t')
       fun test_l (n, t, t') =
-          test_conv ctxt'' (ac_shift_l_to_n_cv nat_plus_info n)
+          test_conv ctxt'' (Matcher.ac_shift_l_to_n_cv nat_plus_info n)
                     "test_shift_l_to_n" (t, t')
 
       val test_data_to_r =[
@@ -202,10 +202,10 @@ val test_ac_group_n =
     let
       val ctxt'' = ctxt' |> Variable.auto_fixes (Free ("n", natT))
       fun test_first_n (n, t, t') =
-          test_conv ctxt'' (ac_group_first_n_cv nat_plus_info n)
+          test_conv ctxt'' (Matcher.ac_group_first_n_cv nat_plus_info n)
                     "test_group_first_n" (t, t')
       fun test_last_n (n, t, t') =
-          test_conv ctxt'' (ac_group_last_n_cv nat_plus_info n)
+          test_conv ctxt'' (Matcher.ac_group_last_n_cv nat_plus_info n)
                     "test_group_last_n" (t, t')
 
       val test_data_last = [
@@ -467,7 +467,7 @@ fun check_reduce_unit (str, info_str) (tbl as {ctxt, ...}) =
       val info = map (apsnd (read_pat ctxt)) info_str
       val thy = RewriteTable.theory_of tbl
       val ac_info = the (ACUtil.get_head_ac_info_thy thy t)
-      val info' = reduce_unit_t tbl ac_info ([], t)
+      val info' = Matcher.reduce_unit_t tbl ac_info ([], t)
     in
       assert_eq_info (info, info') "check_reduce_unit" tbl
     end
@@ -496,9 +496,10 @@ fun check_analyze_t (str, info_str) (tbl as {ctxt, ...}) =
       val info = map (apsnd (read_pat ctxt)) info_str
       val info' =
           case ac_info_opt of
-              NONE => [([], RewriteTable.refl tbl t)]
-            | SOME ac_info => map (fn (_, (id, _), th) => (id, th))
-                                  (analyze_t ac_info tbl ([], fo_init) t)
+              NONE => [([], Thm.reflexive (cert ctxt t))]
+            | SOME ac_info =>
+              map (fn (_, (id, _), th) => (id, th))
+                  (Matcher.analyze_t ac_info tbl ([], fo_init) t)
     in
       assert_eq_info (info, info') "check_analyze_t" tbl
     end
@@ -619,7 +620,7 @@ fun assert_ac_subterm_equivs ((id, str), info_str) (tbl as {ctxt, ...}) =
           handle Option.Option =>
                  raise AUTO2 "assert_ac_subterm_equivs: ac_info not found."
       val info = map (apsnd (read_term ctxt)) info_str
-      val res = ac_subterm_equivs tbl ac_info (id, u)
+      val res = Matcher.ac_subterm_equivs tbl ac_info (id, cert ctxt u)
     in
       assert_eq_info (info, res) "assert_ac_subterm_equivs" tbl
     end
@@ -731,12 +732,13 @@ val test_match_list =
 (* Test of pre-matcher. *)
 fun assert_pre_match_gen res at_head (str_t, str_u) (tbl as {ctxt, ...}) =
     let
-      val (t, u) = (read_pat ctxt str_t, read_term ctxt str_u)
-      val pre_match_fn = if at_head then Matcher.pre_match_head else pre_match
+      val (t, cu) = (read_pat ctxt str_t, cert ctxt (read_term ctxt str_u))
+      val pre_match_fn = if at_head then Matcher.pre_match_head
+                         else Matcher.pre_match
     in
-      if pre_match_fn tbl (t, u) = res then tbl
+      if pre_match_fn tbl (t, cu) = res then tbl
       else let
-        val _ = trace_tlist_ctxt ctxt "Pattern, term: " [t, u]
+        val _ = trace_tlist_ctxt ctxt "Pattern, term: " [t, Thm.term_of cu]
       in
         raise AUTO2 ("assert_pre_match (expected " ^ (string_of_bool res) ^ ")")
       end
@@ -823,7 +825,7 @@ val test_literal_ac_count =
       fun test (str_t, n) =
           let
             val t = read_pat ctxt' str_t
-            val n' = literal_ac_count thy' t []
+            val n' = Matcher.literal_ac_count thy' t []
           in
             if n = n' then ()
             else let
@@ -855,7 +857,7 @@ val test_get_pattern_order =
       fun test (str_t1, str_t2, res) =
           let
             val (t1, t2) = apply2 (read_pat ctxt') (str_t1, str_t2)
-            val res' = get_pattern_order thy' (t1, t2)
+            val res' = Matcher.get_pattern_order thy' (t1, t2)
           in
             if res = res' then ()
             else let

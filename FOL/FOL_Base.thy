@@ -40,22 +40,23 @@ theorem to_contra_form': "Trueprop (\<not>A) \<equiv> (A \<Longrightarrow> False
 theorem contra_triv: "\<not>A \<Longrightarrow> A \<Longrightarrow> False" by simp
 theorem or_intro1: "\<not> (P \<or> Q) \<Longrightarrow> \<not> P" by simp
 theorem or_intro2: "\<not> (P \<or> Q) \<Longrightarrow> \<not> Q" by simp
-theorem not_conjI1: "\<not>P \<Longrightarrow> \<not>(P \<and> Q)" by simp
-theorem not_conjI2: "\<not>Q \<Longrightarrow> \<not>(P \<and> Q)" by simp
 theorem not_imp: "\<not>(P \<longrightarrow> Q) \<longleftrightarrow> P \<and> \<not>Q" by auto
 theorem exE': "(\<And>x. P(x) \<Longrightarrow> Q) \<Longrightarrow> \<exists>x. P(x) \<Longrightarrow> Q" by auto
-theorem eq_True: "(A \<longleftrightarrow> True) \<longleftrightarrow> A" by simp
-theorem eq_False: "(A \<longleftrightarrow> False) \<longleftrightarrow> (\<not>A)" by simp
-theorem eq_False': "((\<not>A) \<longleftrightarrow> False) \<longleftrightarrow> A" by simp
+theorem eq_True: "A \<Longrightarrow> A \<longleftrightarrow> True" by simp
+theorem eq_True_inv: "A \<longleftrightarrow> True \<Longrightarrow> A" by simp
+theorem eq_False: "\<not>A \<Longrightarrow> A \<longleftrightarrow> False" by simp
+theorem eq_False': "A \<Longrightarrow> \<not>A \<longleftrightarrow> False" by simp
 theorem disj_True1: "(True \<or> A) \<longleftrightarrow> True" by simp
 theorem disj_True2: "(A \<or> True) \<longleftrightarrow> True" by simp
 theorem use_vardef: "(\<forall>x. x = t \<longrightarrow> P(x)) \<longleftrightarrow> P(t)" by simp
+theorem ex_vardef: "\<exists>x. x = a" by simp
 
 theorem obj_sym: "Trueprop (t = s) \<equiv> Trueprop (s = t)" by (rule equal_intr_rule) auto
 theorem obj_sym_iff: "Trueprop (t \<longleftrightarrow> s) \<equiv> Trueprop (s \<longleftrightarrow> t)" by (rule equal_intr_rule) auto
 theorem to_meta_eq: "Trueprop (t = s) \<equiv> (t \<equiv> s)" by (rule equal_intr_rule) auto
 theorem to_meta_eq_iff: "Trueprop (t \<longleftrightarrow> s) \<equiv> (t \<equiv> s)" by (rule equal_intr_rule) auto
 
+theorem inv_backward: "P \<longleftrightarrow> Q \<Longrightarrow> \<not>P \<Longrightarrow> \<not>Q" by simp
 theorem backward_conv: "(A \<Longrightarrow> B) \<equiv> (\<not>B \<Longrightarrow> \<not>A)" by (rule equal_intr_rule) auto
 theorem backward1_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\<not>C \<Longrightarrow> B \<Longrightarrow> \<not>A)" by (rule equal_intr_rule) auto
 theorem backward2_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\<not>C \<Longrightarrow> A \<Longrightarrow> \<not>B)" by (rule equal_intr_rule) auto

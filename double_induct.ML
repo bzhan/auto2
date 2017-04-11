@@ -110,7 +110,7 @@ fun DOUBLE_INDUCT ((var_spec_str1, var_spec_str2), ind_infos) ctxt =
                                          [p0_th, p1_th]
           in
             [Update.thm_update (id, neq0_th),
-             AddItems {id = id, raw_items = ritems}]
+             AddItems {id = id, sc = NONE, raw_items = ritems}]
           end
     in
       [Script_Task {inits = [InitAssum neq0], subs = [], cb = callback,

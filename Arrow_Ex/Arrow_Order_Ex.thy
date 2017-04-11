@@ -21,34 +21,44 @@ lemma second_alt [resolve]: "\<exists>a b::alt. a \<noteq> b"
 lemma third_alt [backward]: "a \<noteq> b \<Longrightarrow> \<exists>c::alt. distinct[a,b,c]"
   using alt3 by simp metis
 
-type_synonym pref = "(alt * alt) set"
+type_synonym pref = "(alt \<times> alt) set"
 
-definition "Lin == {L::pref. strict_linear_order L}"
-setup {* add_property_const @{term "strict_linear_order"} *}
+(* Define own version of strict_linear_order to be a pure predicate. *)
+definition strict_linorder :: "('a \<times> 'a) set \<Rightarrow> bool" where strict_linorder_def [simp]:
+  "strict_linorder \<equiv> strict_linear_order_on top"
+setup {* add_property_const @{term "strict_linorder"} *}
 
-theorem Lin_def' [rewrite]: "L \<in> Lin \<longleftrightarrow> strict_linear_order L"
-  by (simp add: Lin_def)
+definition Lin :: "(alt \<times> alt) set set" where Lin_def [simp]:
+  "Lin = {L::pref. strict_linorder L}"
+
+theorem Lin_def' [rewrite]: "L \<in> Lin \<longleftrightarrow> strict_linorder L" by simp
+
+theorem strict_linorderI [backward]:
+  "trans r \<Longrightarrow> irrefl r \<Longrightarrow> total_on top r \<Longrightarrow> strict_linorder r"
+  by (simp add: strict_linear_order_on_def)
 
 theorem trans_strict_linorder [forward]:
-  "strict_linear_order L \<Longrightarrow> (x, y) \<in> L \<Longrightarrow> (y, z) \<in> L \<Longrightarrow> (x, z) \<in> L"
-  by (meson order_on_defs(4) trans_def)
+  "strict_linorder L \<Longrightarrow> (x, y) \<in> L \<Longrightarrow> (y, z) \<in> L \<Longrightarrow> (x, z) \<in> L"
+  apply (unfold strict_linorder_def)
+  by (meson order_on_defs(4) transD)
 
 theorem notin_strict_linorder [forward]:
-  "strict_linear_order L \<Longrightarrow> x \<noteq> y \<Longrightarrow> (x, y) \<notin> L \<Longrightarrow> (y, x) \<in> L"
+  "strict_linorder L \<Longrightarrow> x \<noteq> y \<Longrightarrow> (x, y) \<notin> L \<Longrightarrow> (y, x) \<in> L"
+  apply (unfold strict_linorder_def)
   by (meson UNIV_I irrefl_def order_on_defs(4) total_on_def transD)
 
-theorem irrefl_strict_linorder [resolve]: "strict_linear_order L \<Longrightarrow> (x, x) \<notin> L"
+theorem irrefl_strict_linorder [resolve]: "strict_linorder L \<Longrightarrow> (x, x) \<notin> L"
   by (simp add: irrefl_def order_on_defs(4))
 
 theorem total_def: "total L \<longleftrightarrow> (\<forall>x y. x \<noteq> y \<longrightarrow> (x, y) \<in> L \<or> (y, x) \<in> L)"
   by (simp add: total_on_def)
 
-setup {* fold (add_backward_prfstep o equiv_backward_th) [
-  @{thm trans_def}, @{thm irrefl_def}, @{thm total_def}, to_obj_eq_th @{thm strict_linear_order_on_def}] *}
+setup {* fold (add_backward_prfstep o equiv_backward_th)
+  [@{thm trans_def}, @{thm irrefl_def}, @{thm total_def}] *}
 
 lemma linear_alt [resolve]: "\<exists>L::pref. L \<in> Lin"
   using well_order_on[where 'a = "alt", of UNIV]
-  apply (auto simp:well_order_on_def Lin_def)
+  apply (auto simp:well_order_on_def)
   by (metis strict_linear_order_on_diff_Id)
 
 abbreviation rem :: "pref \<Rightarrow> alt \<Rightarrow> pref" where

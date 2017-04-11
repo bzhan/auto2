@@ -391,8 +391,8 @@ definition "x < y \<longleftrightarrow> positive (y - x)"
 definition "x \<le> (y::real) \<longleftrightarrow> x < y \<or> x = y"
 definition "abs (a::real) = (if a < 0 then - a else a)"
 definition "sgn (a::real) = (if a = 0 then 0 else if 0 < a then 1 else - 1)"
-local_setup {* fold add_rewrite_rule_ctxt [@{thm less_real_def}, @{thm less_eq_real_def},
-  @{thm abs_real_def}, @{thm sgn_real_def}] *}
+local_setup {* fold (local_context_map o add_rewrite_rule_gnrc)
+  [@{thm less_real_def}, @{thm less_eq_real_def}, @{thm abs_real_def}, @{thm sgn_real_def}] *}
 
 instance proof
   fix a b c :: real
@@ -594,7 +594,7 @@ theorem limit_equal [forward]: "vanishes (X - Y) \<Longrightarrow> converges_to 
 
 theorem limit_unique [forward]: "converges_to X x \<Longrightarrow> converges_to X y \<Longrightarrow> x = y"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "r, r = \<bar>x - y\<bar>" THEN HAVE "r > 0" THEN
+    (LET "r = \<bar>x - y\<bar>" THEN HAVE "r > 0" THEN
      CHOOSE "k, (\<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - x\<bar> < r/2) \<and> (\<forall>n\<ge>k. \<bar>X\<langle>n\<rangle> - y\<bar> < r/2)" THEN
      HAVE "\<bar>X\<langle>k\<rangle> - x\<bar> < r/2 \<and> \<bar>X\<langle>k\<rangle> - y\<bar> < r/2" THEN
      HAVE "\<bar>x - y\<bar> < r") *})
@@ -750,7 +750,7 @@ setup {* add_rewrite_rule @{thm upper_bound_def} *}
 theorem complete_real [backward1]: "(S::real set) \<noteq> {} \<Longrightarrow> upper_bound S z \<Longrightarrow>
   \<exists>y. upper_bound S y \<and> (\<forall>z. upper_bound S z \<longrightarrow> y \<le> z)"
   by (tactic {* auto2s_tac @{context}
-    (CHOOSE "U, U = {x. \<not> upper_bound S x}" THEN
+    (LET "U = {x. \<not> upper_bound S x}" THEN
      HAVE "dedekind_cut U" WITH
       (HAVE "U \<noteq> {}" WITH (CHOOSE "x, x \<in> S" THEN CHOOSE "y, y < x" THEN HAVE "y \<in> U") THEN
        HAVE "U \<noteq> UNIV" WITH HAVE "z \<notin> U" THEN
@@ -773,7 +773,8 @@ begin
 
 definition "Sup X = (LEAST z::real. upper_bound X z)"
 definition "Inf (X::real set) = - Sup (uminus ` X)"
-local_setup {* fold add_rewrite_rule_ctxt [@{thm Sup_real_def}, @{thm Inf_real_def}] *}
+local_setup {* fold (local_context_map o add_rewrite_rule_gnrc)
+  [@{thm Sup_real_def}, @{thm Inf_real_def}] *}
 
 instance proof
   { fix x :: real and X :: "real set"

@@ -118,32 +118,41 @@ val _ = Theory.setup Rat_Arith.add_rat_arith_proofsteps
 val neg_order_matcher =
     let
       fun pre_match pat {tname, ...} (tbl as {ctxt, ...}) =
-          if is_neg pat andalso is_linorder ctxt (the_single tname) andalso
-             get_arg_type (the_single tname) <> natT then
-            let
-              val neg_pat = pat |> cert ctxt |> neg_ineq_cv |> rhs_of
-            in
-              Matcher.pre_match tbl (neg_pat, the_single tname)
-            end
-          else false
+          let
+            val ct = the_single tname
+            val t = Thm.term_of ct
+          in
+            if is_neg pat andalso is_linorder ctxt t andalso
+               get_arg_type t <> natT then
+              let
+                val neg_pat = pat |> cert ctxt |> neg_ineq_cv |> rhs_of
+              in
+                Matcher.pre_match tbl (neg_pat, ct)
+              end
+            else false
+          end
 
       fun match pat {tname, prop, ...} (tbl as {ctxt, ...}) (id, inst) =
-          if is_neg pat andalso is_linorder ctxt (the_single tname) andalso
-             get_arg_type (the_single tname) <> natT then
-            let
-              val neg_pat = pat |> cert ctxt |> neg_ineq_cv |> rhs_of
-              val t = the_single tname
-              val insts' = Matcher.rewrite_match tbl (neg_pat, t) (id, inst)
-              fun process_inst (inst, eq_th) =
-                  (inst,
-                   prop |> Thm.equal_elim (make_trueprop_eq (meta_sym eq_th))
-                        |> apply_to_thm' neg_ineq_back_cv)
-            in
-              map process_inst insts'
-            end
-          else []
+          let
+            val ct = the_single tname
+            val t = Thm.term_of ct
+          in
+            if is_neg pat andalso is_linorder ctxt t andalso
+               get_arg_type t <> natT then
+              let
+                val neg_pat = pat |> cert ctxt |> neg_ineq_cv |> rhs_of
+                val insts' = Matcher.rewrite_match tbl (neg_pat, ct) (id, inst)
+                fun process_inst (inst, eq_th) =
+                    (inst,
+                     prop |> Thm.equal_elim (make_trueprop_eq (meta_sym eq_th))
+                          |> apply_to_thm' neg_ineq_back_cv)
+              in
+                map process_inst insts'
+              end
+            else []
+          end
     in
       {pre_match = pre_match, match = match}
     end
 
-val _ = Theory.setup (ItemIO_Data.add_prop_matcher (TY_PROP, neg_order_matcher))
+val _ = Theory.setup (ItemIO.add_prop_matcher (TY_PROP, neg_order_matcher))

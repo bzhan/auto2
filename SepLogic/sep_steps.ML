@@ -267,7 +267,8 @@ fun add_forward_ent_prfstep ent_th = add_forward_ent_prfstep_cond ent_th []
  *)
 fun frame_entail_fn rtype {ctxt, ...} {id, tname, prop = th1, ...} item2 =
     let
-      val (_, subs) = Logic_ProofSteps.dest_tname_of_disj tname
+      val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
+      val subs = map Thm.term_of csubs
     in
       if length subs > 1 then [] else
       let
@@ -376,7 +377,8 @@ val code_pos_typed_matcher =
       fun match pat {tname, prop, ty_str, ...} (tbl as {ctxt, ...}) (id, inst) =
           let
             val pats = HOLogic.strip_tuple pat
-            val pairs = map (pair false) (pats ~~ take (length pats) tname)
+            val pairs = map (pair false)
+                            (pats ~~ (take (length pats) tname))
 
             val insts = Matcher.rewrite_match_list tbl pairs (id, inst)
             fun process_inst (inst, ths) =
@@ -413,7 +415,7 @@ val code_pos_typed_matcher =
 fun find_proc_def ctxt c =
     let
       val ths = Named_Theorems.get ctxt @{named_theorems sep_proc_defs}
-      fun rewr_cv th = if is_meta_eq_thm th then Conv.rewr_conv th
+      fun rewr_cv th = if is_meta_eq (Thm.prop_of th) then Conv.rewr_conv th
                        else rewr_obj_eq th
     in
       SOME (Conv.first_conv (map rewr_cv ths) (cert ctxt c))
@@ -534,7 +536,7 @@ val init_pos =
                             [Update.thm_to_ritem modP_th',
                              Fact (TY_CODE_POS, [h_t, c1], code_pos_th)]
             in
-              [AddItems {id = id, raw_items = ritems'}]
+              [AddItems {id = id, sc = SOME 1, raw_items = ritems'}]
             end)
 
 (* Find heap preserving theorem for a command c, return NONE or SOME
@@ -632,7 +634,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
         (* Form tname and prop of the new CODE_POS item. *)
         val tname = [next_h_t, rest_c1]
-        val next_code_pos_th = [run_rest_th, next_all_th] MRS @{thm conjI}
+        val next_code_pos_th = mk_conjs_th [run_rest_th, next_all_th]
 
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
@@ -644,8 +646,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
             handle List.Empty => raise AUTO2 "next_code_pos: modQ_th''"
         val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
                        else modQ_rest
-        val prop_run =
-            [mod_th', [success_th, modQ_th''] MRS @{thm conjI}] MRS @{thm conjI}
+        val prop_run = mk_conjs_th [mod_th', success_th, modQ_th'']
         val success_run_ritem = Fact (TY_SUCCESS_RUN, [h_t, c1], prop_run)
         val next_code_pos_ritem = Fact (TY_CODE_POS, tname, next_code_pos_th)
       in
@@ -693,8 +694,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
             handle List.Empty => raise AUTO2 "next_code_pos: modQ_th''"
         val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
                        else modQ_rest
-        val prop_run =
-            [mod_th', [success_th, modQ_th''] MRS @{thm conjI}] MRS @{thm conjI}
+        val prop_run = mk_conjs_th [mod_th', success_th, modQ_th'']
         val success_run_ritem = Fact (TY_SUCCESS_RUN, [h_t, c1], prop_run)
       in
         (modQ_ths, ritems @ ritems_Q @
@@ -709,7 +709,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 fun match_assn1_fn rtype {ctxt, ...} item1 item2 =
     let
       val {id, tname, prop, ...} = item1
-      val h_t = hd tname
+      val h_t = Thm.term_of (hd tname)
       val (hoare_th, code_pos_th) = (conj_left_th prop, conj_right_th prop)
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
     in
@@ -724,7 +724,7 @@ fun match_assn1_fn rtype {ctxt, ...} item1 item2 =
               val (_, ritems) =
                   next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
             in
-              AddItems {id = id', raw_items = ritems}
+              AddItems {id = id', sc = SOME 1, raw_items = ritems}
             end
       in
         map inst_to_updt insts
@@ -755,10 +755,10 @@ val rewrite_pos =
               val new_is_bind = is_bind_cmd new_c
               val new_c1 = if new_is_bind then fst (dest_bind new_c) else new_c
               val {tname, ...} = the_single items
-              val (h_t, _) = the_pair tname
+              val h_t = Thm.term_of (hd tname)
               val ritem = Fact (TY_CODE_POS, [h_t, new_c1], th)
             in
-              [AddItems {id = id, raw_items = [ritem]},
+              [AddItems {id = id, sc = SOME 1, raw_items = [ritem]},
                ShadowItem {id = id, item = the_single items}]
             end)
 
@@ -770,16 +770,17 @@ val rewrite_pos =
  *)
 fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
     let
-      val (_, subs) = Logic_ProofSteps.dest_tname_of_disj tname
-      val (tbl as {lat, ...}) = RewriteTable.table_of_rtype rtype
+      val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
+      val subs = map Thm.term_of csubs
+      val (tbl as {lat, ctxt, ...}) = RewriteTable.table_of_rtype rtype
       val thy = RewriteTable.theory_of tbl
       val _ = assert (length subs = 1)
                      "match_hoare_disj_fn: unexpected DISJ."
       val (_, c, _) = dest_hoare_triple (the_single subs)
       val {id = id', tname = tname2, prop = th2, ...} = item2
-      val (h_t, c1) = the_pair tname2
+      val (h_t, c1) = the_pair (map Thm.term_of tname2)
       val id'' = BoxID.merge_boxes lat (id, id')
-      val insts = (Matcher.rewrite_match tbl (c, c1) (id'', fo_init))
+      val insts = (Matcher.rewrite_match tbl (c, cert ctxt c1) (id'', fo_init))
                       |> RewriteTable.replace_id_for_type rtype
       fun process_inst ((id''', inst), eq_th) =
           let
@@ -789,10 +790,10 @@ fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
                     |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
             val (P', _, Q') = dest_hoare_triple (prop_of' th1')
             val new_tname = [h_t, c1, term_of_bool false, P', Q']
-            val new_prop = [th1', th2] MRS @{thm conjI}
+            val new_prop = mk_conjs_th [th1', th2]
             val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
           in
-            [AddItems {id = id''', raw_items = [ritem]}]
+            [AddItems {id = id''', sc = NONE, raw_items = [ritem]}]
           end
     in
       maps process_inst insts
@@ -825,10 +826,10 @@ val match_hoare_prop =
               val h_t = lookup_inst inst "h"
               val c = lookup_inst inst "c"
               val tname = [h_t, c, term_of_bool false, P, Q]
-              val prop = ths MRS @{thm conjI}
+              val prop = mk_conjs_th ths
               val ritem = Fact (TY_MATCH_POS, tname, prop)
             in
-              [AddItems {id = id, raw_items = [ritem]}]
+              [AddItems {id = id, sc = NONE, raw_items = [ritem]}]
             end)
 
 (* item1 is MATCH_POS item with tname (h, c, false, P, Q), item2 is
@@ -849,11 +850,10 @@ val convert_match_pos =
                   (map (lookup_inst inst) ["h", "c"]) @ [term_of_bool true] @
                   (map (lookup_inst inst) ["P", "Q"])
               val (th1, th2) = the_pair ths
-              val new_prop =
-                  [conj_left_th th1, conj_right_th th2] MRS @{thm conjI}
+              val new_prop = mk_conjs_th [conj_left_th th1, conj_right_th th2]
               val ritem = Fact (TY_MATCH_POS, tname, new_prop)
             in
-              [AddItems {id = id, raw_items = [ritem]},
+              [AddItems {id = id, sc = SOME 1, raw_items = [ritem]},
                ShadowItem {id = id, item = hd items}]
             end)
 
@@ -905,8 +905,8 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
       fun apply_prec_thm prec_th new_th =
           let
             val (prem1, prem2) = prec_th |> Thm.prems_of |> the_pair
-            val pairs = [(true, (prem1, Thm.prop_of base_th')),
-                         (true, (prem2, Thm.prop_of new_th))]
+            val pairs = [(true, (prem1, Thm.cprop_of base_th')),
+                         (true, (prem2, Thm.cprop_of new_th))]
             val insts = Matcher.rewrite_match_list tbl pairs ([], fo_init)
 
             (* eq_ths: prem1(inst) == base_th', prem2(inst) == new_th. *)
@@ -953,7 +953,7 @@ fun match_assn2_fn rtype {ctxt, ...} item1 item2 =
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (success_th, post_th) =
           (conj_left_th success_ths, conj_right_th success_ths)
-      val h_t = hd tname
+      val h_t = Thm.term_of (hd tname)
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
 
       (* Get h |= emp * R from h |= R. *)
@@ -1020,10 +1020,10 @@ val match_assn_pure =
                                        |> Thm.elim_implies th2
               val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
               val tname = map (lookup_inst inst) ["h", "c", "s"] @ [P', Q']
-              val new_prop = [hoare_th', success_ths] MRS @{thm conjI}
+              val new_prop = mk_conjs_th [hoare_th', success_ths]
               val ritem = Fact (TY_MATCH_POS, tname, new_prop)
             in
-              [AddItems {id = id, raw_items = [ritem]},
+              [AddItems {id = id, sc = SOME 1, raw_items = [ritem]},
                ShadowItem {id = id, item = hd items}]
             end)
 
@@ -1044,7 +1044,7 @@ fun match_assn_spatial_fn rtype {ctxt, ...} item1 item2 =
         val P' = strip_pure_assn P
         val _ = assert (not (P' aconv emp)) "match_assn_spatial_fn"
 
-        val (h_t, c, is_success) = the_triple (take 3 tname)
+        val (h_t, c, is_success) = the_triple (take 3 (map Thm.term_of tname))
 
         val P_pat = mk_star (P', Var (("Ru", 0), assnT))
         val mod_pat = mk_mod (h_t, P_pat)
@@ -1054,10 +1054,10 @@ fun match_assn_spatial_fn rtype {ctxt, ...} item1 item2 =
               val hoare_th' = subst_thm ctxt inst hoare_th
               val (P'', _, Q'') = dest_hoare_triple (prop_of' hoare_th')
               val tname' = [h_t, c, is_success, P'', Q'']
-              val prop' = [hoare_th', success_ths] MRS @{thm conjI}
+              val prop' = mk_conjs_th [hoare_th', success_ths]
               val ritem = Fact (TY_MATCH_POS, tname', prop')
             in
-              [AddItems {id = id'', raw_items = [ritem]},
+              [AddItems {id = id'', sc = SOME 1, raw_items = [ritem]},
                ShadowItem {id = id'', item = item1}]
             end
       in
@@ -1088,7 +1088,8 @@ fun match_hoare_create_case_gen (nm, pat) =
               else let
                 val t = ts |> hd |> dest_arg |> get_neg |> mk_Trueprop
               in
-                [AddBoxes {id = id, inits = [InitAssum t], cbs = []}]
+                [AddBoxes {id = id, sc = SOME 1,
+                           inits = [InitAssum t], cbs = []}]
               end
             end)
 
@@ -1101,7 +1102,6 @@ fun add_match_hoare_create_case_gnrc hoare_th gnrc =
       val prfstep = match_hoare_create_case_gen (name, pat)
     in
       gnrc |> add_prfstep_gnrc prfstep
-           |> add_fixed_sc_gnrc (name, 1)
     end
 
 val add_match_hoare_create_case =
@@ -1125,10 +1125,10 @@ fun hoare_triple_prfstep hoare_th =
                     |> apply_to_thm' (argn_conv 0 (normalize_assn_cv ctxt))
             val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
             val new_tname = [h_t, c, term_of_bool false, P', Q']
-            val new_prop = [hoare_th', the_single ths] MRS @{thm conjI}
+            val new_prop = mk_conjs_th [hoare_th', the_single ths]
             val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
           in
-            [AddItems {id = id, raw_items = [ritem]}]
+            [AddItems {id = id, sc = NONE, raw_items = [ritem]}]
           end
     in
       prfstep_custom name descs PRIORITY_ADD prfstep_fn
@@ -1166,7 +1166,7 @@ fun hoare_triple_direct_prfstep hoare_th =
             val (modQ_th, ritems) =
                 next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
           in
-            [AddItems {id = id,
+            [AddItems {id = id, sc = SOME 1,
                        raw_items = ritems @ (map Update.thm_to_ritem modQ_th)},
              ShadowItem {id = id, item = hd items}]
           end
@@ -1185,20 +1185,19 @@ fun add_hoare_triple_direct_prfstep_gnrc hoare_th gnrc =
                        " (* remainder)")
     in
       gnrc |> add_prfstep_gnrc prfstep
-           |> add_fixed_sc_gnrc (name, 1)
     end
 
 val add_hoare_triple_direct_prfstep =
     Context.theory_map o add_hoare_triple_direct_prfstep_gnrc
 
 val add_sep_logic_proofsteps =
-    fold ItemIO_Data.add_item_type [
+    fold ItemIO.add_item_type [
       (TY_CODE_POS, NONE, SOME output_code_pos_fn),
       (TY_MATCH_POS, SOME code_pos_match_rewr_terms,
        SOME output_code_pos_match_fn),
       (TY_SUCCESS_RUN, NONE, SOME output_success_run_fn)
 
-    ] #> fold ItemIO_Data.add_typed_matcher [
+    ] #> fold ItemIO.add_typed_matcher [
       (TY_CODE_POS, code_pos_typed_matcher),
       (TY_MATCH_POS, code_pos_typed_matcher),
       (TY_SUCCESS_RUN, code_pos_typed_matcher)
@@ -1209,12 +1208,6 @@ val add_sep_logic_proofsteps =
       init_pos, match_assn1, rewrite_pos,
       match_hoare_disj, match_hoare_prop, convert_match_pos,
       match_assn2, match_assn_pure, match_assn_spatial
-
-    ]) #> fold add_fixed_sc (
-      map (rpair 1) [
-        "sep.init_pos", "sep.match_assn1", "sep.rewrite_pos",
-        "sep.convert_match_pos", "sep.match_assn_pure",
-        "sep.match_assn_spatial"
     ])
 
 end

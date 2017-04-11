@@ -39,9 +39,6 @@ setup {* add_gen_prfstep ("case_intro_fact",
 setup {* add_gen_prfstep ("case_intro_goal",
   [WithGoal @{term_pat "if ?cond then (?yes::bool) else ?no"},
    CreateCase @{term_pat "?cond::bool"}]) *}
-setup {* add_gen_prfstep ("case_intro_eq_if",
-  [WithItem (TY_EQ_IF, @{term_pat "?t = (if ?cond then ?x else ?y)"}),
-   CreateCase @{term_pat "?cond::bool"}]) *}
 theorem if_P_bool: "P \<Longrightarrow> (if P then (x::bool) else y) = x" by simp
 theorem if_not_P_bool: "\<not>P \<Longrightarrow> (if P then (x::bool) else y) = y" by simp
 theorem if_not_P': "P \<Longrightarrow> (if \<not>P then x else y) = y" by simp
@@ -85,9 +82,7 @@ setup {* add_rewrite_rule @{thm fst_conv} *}
 setup {* add_rewrite_rule @{thm snd_conv} *}
 setup {* add_rewrite_rule @{thm case_prod_conv} *}
 setup {* add_rewrite_rule_cond @{thm case_prod_beta} [with_cond "?p \<noteq> (?s, ?t)"] *}
-theorem pair_inject': "(a, b) = (a', b') \<Longrightarrow> a = a' \<and> b = b'" by simp
-setup {* add_forward_prfstep_cond (conj_left_th @{thm pair_inject'}) [with_cond "?a \<noteq> ?a'"] *}
-setup {* add_forward_prfstep_cond (conj_right_th @{thm pair_inject'}) [with_cond "?b \<noteq> ?b'"] *}
+theorem pair_inject [forward]: "(a, b) = (a', b') \<Longrightarrow> a = a' \<and> b = b'" by simp
 setup {* add_rewrite_rule_cond @{thm Product_Type.prod.collapse} [with_cond "?prod \<noteq> (fst ?prod, snd ?prod)"] *}
 
 (* Let. *)
@@ -109,5 +104,6 @@ setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2"
 ML_file "double_induct.ML"
 ML_file "util_arith.ML"
 ML_file "logic_more.ML"
+setup {* Consts.add_const_data ("NUMC", is_numc) *}
 
 end

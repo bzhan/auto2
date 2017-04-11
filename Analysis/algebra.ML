@@ -47,11 +47,11 @@ val poly_typed_matcher =
       fun pre_match pat {tname, ...} tbl =
           let
             val (pat_p, pat_subs) = dest_poly_tname (HOLogic.strip_tuple pat)
-            val (px, subs) = dest_poly_tname tname
+            val (cpx, csubs) = dest_poly_tname tname
             fun pre_match_sub s =
-                exists (fn t => Matcher.pre_match_head tbl (s, t)) subs
+                exists (fn ct => Matcher.pre_match_head tbl (s, ct)) csubs
           in
-            Matcher.pre_match_head tbl (pat_p, px) andalso
+            Matcher.pre_match_head tbl (pat_p, cpx) andalso
             forall pre_match_sub pat_subs
           end
 
@@ -61,7 +61,7 @@ val poly_typed_matcher =
       fun match pat {tname, prop, ...} (tbl as {ctxt, ...}) (id, inst) =
           let
             val (pat_p, pat_subs) = dest_poly_tname (HOLogic.strip_tuple pat)
-            val (_, subs) = dest_poly_tname tname
+            val (_, csubs) = dest_poly_tname tname
 
             (* Process each result of matching pat_subs as a subset of
                subs. Each th in the returned value is in the form
@@ -81,7 +81,7 @@ val poly_typed_matcher =
                 handle Pattern.MATCH => []
           in
             maps process_inst
-                 (Matcher.rewrite_match_subset tbl (pat_subs, subs) (id, inst))
+                 (Matcher.rewrite_match_subset tbl (pat_subs, csubs) (id, inst))
           end
     in
       {pre_match = pre_match, match = match}
@@ -103,7 +103,7 @@ fun get_poly_update (id, th) =
     let
       val th' = th |> apply_to_arg Ring_Arith.norm_full
     in
-      [AddItems {id = id, raw_items = [get_poly_raw_item th']}]
+      [AddItems {id = id, sc = NONE, raw_items = [get_poly_raw_item th']}]
     end
 
 fun expand_poly_gen (nm, pat) =
@@ -160,7 +160,7 @@ fun nonzero_poly_update (id, th) =
           [Update.thm_update (id, th' RS @{thm nonzero_resolve})]
         else []
       else
-        [AddItems {id = id, raw_items = [get_poly_raw_item th']}]
+        [AddItems {id = id, sc = NONE, raw_items = [get_poly_raw_item th']}]
     end
 
 val ineq_poly_gen =
@@ -265,10 +265,10 @@ val le_poly_reduce =
             end)
 
 val add_algebra_proofsteps =
-    fold ItemIO_Data.add_item_type [
+    fold ItemIO.add_item_type [
       (TY_POLY, SOME (fn t => t |> dest_poly_tname |> snd), SOME output_poly_fn)
 
-    ] #> fold ItemIO_Data.add_typed_matcher [
+    ] #> fold ItemIO.add_typed_matcher [
       (TY_POLY, poly_typed_matcher)
 
     ] #> fold add_prfstep [

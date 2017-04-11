@@ -6,24 +6,6 @@ local
 
 in
 
-val test_rename_abs =
-    let
-      val inst =
-          fo_init |> update_env (("P", 0), @{term "%x::nat. x + x = 0"})
-                  |> update_env (("Q", 0), @{term "%x y::nat. x + y = 0"})
-
-      fun test (t, res) =
-          if rename_abs inst t = res then () else
-          raise AUTO2T ("test_rename_abs", [rename_abs inst t, res])
-
-      val data = [(@{term_pat "%m::nat. ?P m"}, @{term_pat "%x::nat. ?P x"}),
-                  (@{term_pat "!m::nat. ?P m"}, @{term_pat "!x::nat. ?P x"}),
-                  (@{term_pat "!m::nat. !n::nat. ?Q m n"},
-                   @{term_pat "!x::nat. !y::nat. ?Q x y"})]
-    in
-      map test data
-    end
-
 fun assert_eq_prop t txt th =
     let val _ = assert (t aconv (Thm.prop_of th)) txt in th end
 
