@@ -10,7 +10,7 @@ sig
   val norm_mult_poly_monomial: semiring_info -> wfconv
   val norm_mult_polynomials: semiring_info -> wfconv
   val norm_full: semiring_info -> wfconv
-  val semiring_alg_data: thm -> (term list * wfconv) option
+  val semiring_alg_data: thm -> semiring_info
 
   val compare_monomial: term -> term list * term list -> order
   val mult_polynomial_term:
@@ -200,10 +200,11 @@ fun norm_full info wft =
     end
 
 fun semiring_alg_data s_ring_th =
-    if not (is_Trueprop (Thm.prop_of s_ring_th)) then NONE
-    else if not (Term.head_of (prop_of' s_ring_th) aconv @{term is_semiring})
-    then NONE
-    else let
+    let
+      val _ =
+          assert (is_Trueprop (Thm.prop_of s_ring_th) andalso
+                  Term.head_of (prop_of' s_ring_th) aconv @{term is_semiring})
+                 "semiring_alg_data"
       val G = dest_arg (prop_of' s_ring_th)
       val fheads = [plus_t $ G, uminus_t $ G, times_t $ G]
       fun rewr th = WfTerm.rewr_obj_eq fheads th
@@ -217,21 +218,18 @@ fun semiring_alg_data s_ring_th =
       val plus_assoc_th = ab_monoid_th RS @{thm is_ab_monoidD(4)}
       val times_unit_th = monoid_th RS @{thm is_monoidD(1)}
       val times_assoc_th = monoid_th RS @{thm is_monoidD(2)}
-      val info = {
-        G = G,
-        plus_assoc_l  = rewr (plus_assoc_th  RS @{thm plus_assoc_left}),
-        plus_assoc_r  = rewr (plus_assoc_th  RS @{thm plus_assoc_right}),
-        plus_comm     = rewr (plus_comm_th   RS @{thm plus_commD}),
-        zero_l        = rewr (add_id_th      RS @{thm is_add_idD}),
-        times_assoc_l = rewr (times_assoc_th RS @{thm times_assoc_left}),
-        times_assoc_r = rewr (times_assoc_th RS @{thm times_assoc_right}),
-        times_comm    = rewr (times_comm_th  RS @{thm times_commD}),
-        unit_l        = rewr (times_unit_th  RS @{thm is_mult_id_left}),
-        distrib_l     = rewr (distrib_l_th   RS @{thm left_distribD}),
-        mult_zero_l   = rewr (mult0_l_th     RS @{thm is_zero_multD(1)})
-      }
     in
-      SOME (fheads, norm_full info)
+      {G = G,
+       plus_assoc_l  = rewr (plus_assoc_th  RS @{thm plus_assoc_left}),
+       plus_assoc_r  = rewr (plus_assoc_th  RS @{thm plus_assoc_right}),
+       plus_comm     = rewr (plus_comm_th   RS @{thm plus_commD}),
+       zero_l        = rewr (add_id_th      RS @{thm is_add_idD}),
+       times_assoc_l = rewr (times_assoc_th RS @{thm times_assoc_left}),
+       times_assoc_r = rewr (times_assoc_th RS @{thm times_assoc_right}),
+       times_comm    = rewr (times_comm_th  RS @{thm times_commD}),
+       unit_l        = rewr (times_unit_th  RS @{thm is_mult_id_left}),
+       distrib_l     = rewr (distrib_l_th   RS @{thm left_distribD}),
+       mult_zero_l   = rewr (mult0_l_th     RS @{thm is_zero_multD(1)})}
     end
 
 (* Term simplification on semirings: represent as a list of lists,
@@ -270,19 +268,15 @@ fun norm_term G t =
       list_plus G (map (list_times G) ls)
     end
 
+val semiring_norm_info = {
+  op_heads = [plus_t, times_t], pred_t = @{term is_semiring},
+  norm_t = norm_term, excl_norm_t = [AlgMonoid.norm_term],
+  norm_wfcv = norm_full o semiring_alg_data}
+
 val add_semiring_proofsteps =
-    fold WfACUtil.add_alg_data [
-      ("semiring", semiring_alg_data)
-
-    ] #> fold WfACUtil.add_alg_shadow_data [
-      (@{term is_semiring}, @{term is_monoid})
-
-    ] #> fold add_prfstep [
-      FOLAlgUtil.alg_norm1_prfstep (
-        [plus_t, times_t], norm_term, @{term is_semiring}),
-
-      FOLAlgUtil.alg_norm2_prfstep (
-        [plus_t, times_t], norm_term, @{term is_semiring})
+    fold add_prfstep [
+      FOLAlgUtil.alg_norm1_prfstep semiring_norm_info,
+      FOLAlgUtil.alg_norm2_prfstep semiring_norm_info
     ]
 
 end  (* structure AlgSemiring *)

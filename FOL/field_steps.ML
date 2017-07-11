@@ -42,7 +42,7 @@ fun ord_field_alg_info ord_field_th =
     in
       {G = G,
        cG = cG,
-       ord_ring_info = OrdRingSteps.ord_ring_alg_info ord_ring_th,
+       ord_ring_info = OrdRingSteps.ord_ring_alg_data ord_ring_th,
        of_nat_unit  = ord_field_th RS @{thm ord_field_char_zero},
        nat_ge_zero  = ord_ring_th RS @{thm ord_ring_of_nat_ge_zero'},
        nat_gt_zero  = ord_ring_th RS @{thm ord_ring_of_nat_greater_zero'},

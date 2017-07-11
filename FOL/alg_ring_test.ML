@@ -28,7 +28,7 @@ val G = @{term "G::i"}
 val fheads = rat_fheads G
 val ring_th = Thm.assume @{cprop "is_comm_ring(G)"}
 val rat_info = comm_ring_rat_info ring_th
-val info = AlgCommRing.comm_ring_alg_info ring_th
+val info = AlgCommRing.comm_ring_alg_data ring_th
 val wfterm_of = term_to_wfterm_assum thy fheads
 
 in

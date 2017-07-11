@@ -2,6 +2,7 @@ signature UTIL_BASE =
 sig
   (* Types *)
   val boolT: typ
+  val unique_bool: bool
   val mk_setT: typ -> typ
 
   (* Equality *)
@@ -43,6 +44,7 @@ sig
 
   (* Theorems *)
   val true_th: thm
+  val nn_create_th: thm
   val nn_cancel_th: thm
   val to_contra_form_th: thm
   val to_contra_form_th': thm
@@ -60,8 +62,6 @@ sig
   val exE_th': thm
   val eq_True_th: thm
   val eq_True_inv_th: thm
-  val eq_False_th: thm
-  val eq_False_th': thm
   val disj_True1_th: thm
   val disj_True2_th: thm
   val use_vardef_th: thm
@@ -72,6 +72,10 @@ sig
   val not_ex_th: thm
   val not_all_th: thm
   val not_imp_th: thm
+  val or_cancel1_th: thm
+  val or_cancel2_th: thm
+  val swap_all_disj_th: thm
+  val all_trivial_th: thm
 
   (* Theorems for proofstep module *)
   val atomize_conjL_th: thm
@@ -87,10 +91,8 @@ sig
   (* AC for conj and disj *)
   val conj_assoc_th: thm
   val conj_commute_th: thm
-  val conj_unitL_th: thm
   val disj_assoc_th: thm
   val disj_commute_th: thm
-  val disj_unitL_th: thm
 
   (* Member, Ball and Bex *)
   val Mem_name: string
@@ -99,11 +101,9 @@ sig
   val Bex_def_th: thm
   val Ball_def_th: thm
   val swap_ex_conj_th: thm
-  val swap_all_implies_th: thm
 
   (* In logics such as TLA, deal with boolify. *)
   val reduce_boolify: Proof.context -> conv
-  val boolify_disj_conv: int -> conv
 end
 
 signature UTIL_LOGIC =
@@ -190,17 +190,13 @@ sig
   val strip_horn': thm -> term list * term
   val mk_conjs_th: thm list -> thm
   val ex_elim: Proof.context -> term -> thm -> thm
-  val to_eqF_th: thm -> thm
   val normalize_exs_conv: int -> Proof.context -> conv
-  val normalize_alls_conv: int -> Proof.context -> conv
 
   (* Wrapper around common tactics. *)
   val prove_by_tac: (Proof.context -> int -> tactic) -> Proof.context ->
                     thm list -> term -> thm
   val contra_by_tac: (Proof.context -> int -> tactic) -> Proof.context ->
                      thm list -> thm
-  val prove_by_simp: Proof.context -> thm list -> term -> thm
-  val contra_by_simp: Proof.context -> thm list -> thm
 end;
 
 functor UtilLogic(Base:UTIL_BASE) : UTIL_LOGIC =
@@ -679,10 +675,6 @@ fun ex_elim ctxt freevar th =
       Thm.elim_implies th' exE_inst
     end
 
-(* Convert ~A to A = False, and A to ~A = False. *)
-fun to_eqF_th th =
-    th RS (if is_neg (prop_of' th) then eq_False_th else eq_False_th')
-
 (* Normalize a single existence quantifier. Attempt to rewrite ct into
    the form Ex x. P x. This includes:
 
@@ -712,22 +704,6 @@ fun normalize_ex_conv ctxt ct =
         Conv.no_conv ct
     end
 
-(* Similar to normalize_ex_conv, swapping forall and implies. *)
-fun normalize_all_conv ct =
-    let
-      val t = Thm.term_of ct
-    in
-      if is_all t then
-        Conv.all_conv ct
-      else if is_ball t then
-        rewr_obj_eq Ball_def_th ct
-      else if is_imp t then
-        ((Conv.arg_conv normalize_all_conv)
-             then_conv (rewr_obj_eq swap_all_implies_th)) ct
-      else
-        Conv.no_conv ct
-    end
-
 (* Move existence quantifiers to the left of ct. If the integer
    argument n is at least 0, move exactly n existence quantifiers to
    the left (throwing an error if it is not possible). Otherwise, move
@@ -743,17 +719,6 @@ fun normalize_exs_conv n ctxt ct =
              if n > 0 then raise CTERM ("normalize_exs_conv", [ct])
              else Conv.all_conv ct
 
-(* Similar to normalize_exs_conv. Move forall quantifiers to the front. *)
-fun normalize_alls_conv n ctxt ct =
-    if n = 0 then
-      Conv.all_conv ct
-    else
-      (normalize_all_conv then_conv (
-          Conv.binder_conv ((normalize_alls_conv (n-1)) o snd) ctxt)) ct
-      handle CTERM _ =>
-             if n > 0 then raise CTERM ("normalize_alls_conv", [ct])
-             else Conv.all_conv ct
-
 (* Generic wrapper function. tac can be arith_tac, simp_tac, etc. *)
 fun prove_by_tac tac ctxt ths goal =
     let
@@ -763,8 +728,5 @@ fun prove_by_tac tac ctxt ths goal =
     end
 
 fun contra_by_tac tac ctxt ths = prove_by_tac tac ctxt ths bFalse
-
-val prove_by_simp = prove_by_tac Simplifier.asm_full_simp_tac
-val contra_by_simp = contra_by_tac Simplifier.asm_full_simp_tac
 
 end  (* structure UtilLogic *)

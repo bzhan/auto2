@@ -238,7 +238,7 @@ translations
 lemma doubleton_eq1 [forward]: "{a,b} = {c,d} \<Longrightarrow> a \<noteq> c \<Longrightarrow> a = d \<and> b = c" by auto2
 lemma doubleton_eq2 [forward]: "{a,b} = {c,d} \<Longrightarrow> a = c \<Longrightarrow> b = d" by auto2
 setup {* add_gen_prfstep ("doubleton_eq_case",
-  [WithFact @{term_pat "{?a,?b} = {?c,?d}"}, Filter (neq_filter "a" "c"),
+  [WithFact @{term_pat "{?a,?b} = {?c,?d}"}, Filter (neq_filter @{term_pat "(?a::i) \<noteq> ?c"}),
    Filter (order_filter "a" "c"), CreateCase @{term_pat "?a = (?c::i)"}]) *}
 
 lemma pair_eqD [forward]: "\<langle>a, b\<rangle> = \<langle>c, d\<rangle> \<Longrightarrow> a = c \<and> b = d" by auto2
@@ -265,10 +265,30 @@ definition If :: "[o, i, i] \<Rightarrow> i"  ("(if (_)/ then (_)/ else (_))" [1
 lemma if_P [rewrite]: "P \<Longrightarrow> (if P then a else b) = a" by auto2
 lemma if_not_P [rewrite]: "\<not>P \<Longrightarrow> (if P then a else b) = b" by auto2
 lemma if_not_P' [rewrite]: "P \<Longrightarrow> (if \<not>P then a else b) = b" by auto2
+setup {* fold add_fixed_sc (map (rpair 1) ["Set.if_P", "Set.if_not_P", "Set.if_not_P'"]) *}
 setup {* del_prfstep_thm @{thm If_def} *}
 
 setup {* add_gen_prfstep ("case_intro",
   [WithTerm @{term_pat "if ?cond then ?yes else ?no"},
+   CreateCase @{term_pat "?cond::o"}]) *}
+
+definition Ifb :: "[o, o, o] \<Rightarrow> o"  ("(ifb (_)/ then (_)/ else (_))" [10] 10)  where [rewrite]:
+  "(ifb P then a else b) \<longleftrightarrow> (P \<and> a) \<or> (\<not>P \<and> b)"
+ 
+lemma ifb_P [rewrite]: "P \<Longrightarrow> (ifb P then a else b) \<longleftrightarrow> a" by auto2
+lemma ifb_not_P [rewrite]: "\<not>P \<Longrightarrow> (ifb P then a else b) \<longleftrightarrow> b" by auto2
+lemma ifb_not_P' [rewrite]: "P \<Longrightarrow> (ifb \<not>P then a else b) \<longleftrightarrow> b" by auto2
+setup {* fold add_fixed_sc (map (rpair 1) [
+  "Set.ifb_P@eqforward", "Set.ifb_P@invbackward", "Set.ifb_not_P@eqforward",
+  "Set.ifb_not_P@invbackward", "Set.ifb_not_P'@eqforward", "Set.ifb_not_P'@invbackward"]) *}
+setup {* del_prfstep_thm @{thm Ifb_def} *}
+
+setup {* add_gen_prfstep ("case_intro_bool1",
+  [WithFact @{term_pat "ifb ?cond then ?yes else ?no"},
+   CreateCase @{term_pat "?cond::o"}]) *}
+
+setup {* add_gen_prfstep ("case_intro_bool2",
+  [WithGoal @{term_pat "ifb ?cond then ?yes else ?no"},
    CreateCase @{term_pat "?cond::o"}]) *}
 
 section \<open>Functional form of replacement\<close>

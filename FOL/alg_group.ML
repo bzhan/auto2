@@ -12,7 +12,7 @@ sig
   val group_mult_atom: group_info -> wfconv
   val group_mult_monomial: group_info -> wfconv
   val normalize_group: group_info -> wfconv
-  val group_alg_data: thm -> (term list * wfconv) option
+  val group_alg_data: thm -> group_info
 
   val reduce_atom_list: term -> term list -> term list
   val mult_atom_list: term -> term list * term list -> term list
@@ -98,30 +98,27 @@ fun normalize_group info wft =
     end
 
 fun group_alg_data group_th =
-    if not (is_Trueprop (Thm.prop_of group_th)) then NONE
-    else if not (Term.head_of (prop_of' group_th) aconv @{term is_group})
-    then NONE
-    else let
+    let
+      val _ = assert (is_Trueprop (Thm.prop_of group_th) andalso
+                      Term.head_of (prop_of' group_th) aconv @{term is_group})
+                     "group_alg_data"
       val G = dest_arg (prop_of' group_th)
       val fheads = [times_t $ G, inv_t $ G]
       fun rewr th = WfTerm.rewr_obj_eq fheads th
       val monoid_th = group_th RS @{thm is_groupD(1)}
       val times_assoc_th = monoid_th RS @{thm is_monoidD(2)}
       val times_unit_th = monoid_th RS @{thm is_monoidD(1)}
-      val info = {
-        G = G,
-        assoc_l     = rewr (times_assoc_th RS @{thm times_assoc_left}),
-        assoc_r     = rewr (times_assoc_th RS @{thm times_assoc_right}),
-        unit_l      = rewr (times_unit_th  RS @{thm is_mult_id_left}),
-        unit_r      = rewr (times_unit_th  RS @{thm is_mult_id_right}),
-        inv_unit    = rewr (monoid_th      RS @{thm invD(1)}),
-        inv_l       = rewr (monoid_th      RS @{thm invD(2)}),
-        inv_r       = rewr (monoid_th      RS @{thm invD(3)}),
-        inv_inv     = rewr (monoid_th      RS @{thm unit_inv_inv}),
-        inv_distrib = rewr (group_th       RS @{thm inv_distrib_group})
-      }
     in
-      SOME (fheads, normalize_group info)
+      {G = G,
+       assoc_l     = rewr (times_assoc_th RS @{thm times_assoc_left}),
+       assoc_r     = rewr (times_assoc_th RS @{thm times_assoc_right}),
+       unit_l      = rewr (times_unit_th  RS @{thm is_mult_id_left}),
+       unit_r      = rewr (times_unit_th  RS @{thm is_mult_id_right}),
+       inv_unit    = rewr (monoid_th      RS @{thm invD(1)}),
+       inv_l       = rewr (monoid_th      RS @{thm invD(2)}),
+       inv_r       = rewr (monoid_th      RS @{thm invD(3)}),
+       inv_inv     = rewr (monoid_th      RS @{thm unit_inv_inv}),
+       inv_distrib = rewr (group_th       RS @{thm inv_distrib_group})}
     end
 
 (* For simplification on terms, we represent a product of terms as a list. *)
@@ -163,16 +160,15 @@ fun norm_atom_list G t =
 fun norm_term G t =
     list_times G (norm_atom_list G t)
 
+val group_norm_info = {
+  op_heads = [times_t, inv_t], pred_t = @{term is_group}, norm_t = norm_term,
+  excl_norm_t = [AlgMonoid.norm_term],
+  norm_wfcv = normalize_group o group_alg_data}
+
 val add_group_proofsteps =
-    fold WfACUtil.add_alg_data [
-      ("group", group_alg_data)
-
-    ] #> fold add_prfstep [
-      FOLAlgUtil.alg_norm1_prfstep (
-        [times_t, inv_t], norm_term, @{term is_group}),
-
-      FOLAlgUtil.alg_norm2_prfstep (
-        [times_t, inv_t], norm_term, @{term is_group})
+    fold add_prfstep [
+      FOLAlgUtil.alg_norm1_prfstep group_norm_info,
+      FOLAlgUtil.alg_norm2_prfstep group_norm_info
     ]
 
 end  (* structure AlgGroup *)

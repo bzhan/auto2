@@ -232,7 +232,7 @@ setup {* del_prfstep_thm @{thm finite_diff_singleton} *}
 lemma image_finite [forward]:
   "is_function(f) \<Longrightarrow> finite(A) \<Longrightarrow> finite(f `` A)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x B. f `` cons(x,B) \<subseteq> cons(f`x, f``B)" THEN
+    HAVE_RULE "\<forall>x B. f `` cons(x,B) \<subseteq> cons(f`x, f``B)" THEN
     INDUCT_ON "finite(A)" "finite(f `` A)") *})
 
 section {* Finite sets contain greatest element *}
@@ -252,5 +252,18 @@ lemma finite_set_has_greatest [backward]:
   by (tactic {* auto2s_tac @{context} (
     INDUCT_ON "finite(X) \<and> X \<noteq> \<emptyset>" "X \<subseteq> carrier(R) \<longrightarrow> has_greatest(R,X)") *})
 setup {* add_forward_prfstep_cond @{thm finite_set_has_greatest} [with_term "greatest(?R,?X)"] *}
+
+section {* Other consequences of induction *}
+
+lemma ex_least_nat_less [backward1]:
+  "n \<in> nat \<Longrightarrow> \<not>P(0) \<Longrightarrow> P(n) \<Longrightarrow> \<exists>k<\<^sub>\<nat>n. (\<forall>i\<le>\<^sub>\<nat>k. \<not>P(i)) \<and> P(k +\<^sub>\<nat> 1)"
+  by (tactic {* auto2s_tac @{context} (
+    INDUCT_ON "n \<in> nat" "\<forall>i\<le>\<^sub>\<nat>n. \<not>P(i)" THEN
+    HAVE "\<forall>x\<in>nat. (\<forall>i\<le>\<^sub>\<nat>x. \<not>P(i)) \<longrightarrow> (\<forall>i\<le>\<^sub>\<nat>x+\<^sub>\<nat>1. \<not>P(i))" WITH CASE "i = x +\<^sub>\<nat> 1") *})
+      
+lemma ex_nat_split [backward1]:
+  "n \<in> nat \<Longrightarrow> \<not>P(0) \<Longrightarrow> P(n) \<Longrightarrow> \<exists>k<\<^sub>\<nat>n. \<not>P(k) \<and> P(k +\<^sub>\<nat> 1)"
+  by (tactic {* auto2s_tac @{context} (
+    CHOOSE "k <\<^sub>\<nat> n, (\<forall>i\<le>\<^sub>\<nat>k. \<not>P(i)) \<and> P (k +\<^sub>\<nat> 1)") *})
 
 end

@@ -89,12 +89,7 @@ theorem p32: "\<forall>x. (F(x) \<and> (G(x) \<or> H(x))) \<longrightarrow> I(x)
   \<forall>x. K(x) \<longrightarrow> H(x) \<Longrightarrow> \<forall>x. F(x) \<and> K(x) \<longrightarrow> J(x)" by auto2
 
 theorem p33: "(\<forall>x. p(a) \<and> (p(x) \<longrightarrow> p(b)) \<longrightarrow> p(c)) \<longleftrightarrow>
-  (\<forall>x. (\<not>p(a) \<or> p(x) \<or> p(c)) \<and> (\<not>p(a) \<or> \<not>p(b) \<or> p(c)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x. (\<not>p(a) \<or> p(x) \<or> p(c)) \<and> (\<not>p(a) \<or> \<not>p(b) \<or> p(c))" WITH (
-      HAVE "p(a) \<and> (p(x) \<longrightarrow> p(b)) \<longrightarrow> p(c)") THEN
-    HAVE "\<forall>x. p(a) \<and> (p(x) \<longrightarrow> p(b)) \<longrightarrow> p(c)" WITH (
-      HAVE "\<not>p(a) \<or> p(x) \<or> p(c)")) *})
+  (\<forall>x. (\<not>p(a) \<or> p(x) \<or> p(c)) \<and> (\<not>p(a) \<or> \<not>p(b) \<or> p(c)))" by auto2
 
 theorem p35: "\<exists>(x::'a) (y::'b). P(x,y) \<longrightarrow> (\<forall>x y. P(x,y))" by auto2
 
@@ -133,17 +128,7 @@ theorem p47:
    \<forall>x y. P3(x) \<and> P4(y) \<longrightarrow> R(x,y) \<Longrightarrow>
    \<forall>x y. P3(x) \<and> P5(y) \<longrightarrow> \<not>R(x,y) \<Longrightarrow>
    \<forall>x. P4(x) \<or> P5(x) \<longrightarrow> (\<exists>y. Q0(y) \<and> R(x,y)) \<Longrightarrow>
-   \<exists>x y. P0(x) \<and> P0(y) \<and> (\<exists>z. Q1(z) \<and> R(y,z) \<and> R(x,y))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "wolf, P1(wolf)" THEN
-    CHOOSE "fox, P2(fox)" THEN
-    CHOOSE "bird, P3(bird)" THEN
-    CHOOSE "snail, P5(snail)" THEN
-    HAVE "\<forall>y. P0(y) \<and> S(y,wolf) \<and> (\<exists>z. Q0(z) \<and> R(y,z)) \<longrightarrow> R(wolf,y)" THEN
-    HAVE "\<not>R(wolf,fox)" THEN
-    HAVE "\<not>(\<forall>y. Q0(y) \<longrightarrow> R(fox,y))" THEN
-    HAVE "\<not>R(bird,snail)" THEN
-    HAVE "\<not>(\<forall>y. P0(y) \<and> S(y,bird) \<and> (\<exists>z. Q0(z) \<and> R(y,z)) \<longrightarrow> R(bird,y))") *})
+   \<exists>x y. P0(x) \<and> P0(y) \<and> (\<exists>z. Q1(z) \<and> R(y,z) \<and> R(x,y))" by auto2
 
 theorem p48: "a = b \<or> c = d \<Longrightarrow> a = c \<or> b = d \<Longrightarrow> a = d \<or> b = c" by auto2
 

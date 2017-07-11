@@ -153,7 +153,7 @@ lemma qsurj_group_is_surjective:
   "is_normal_subgroup_set(G,H) \<Longrightarrow> surjective(qsurj_group(G,H))"
   by (tactic {* auto2s_tac @{context} (
     LET "R = rcoset_equiv(G,H)" THEN
-    HAVE "\<forall>x \<in>. G //\<^sub>G H. qsurj_group(G,H)`rep(R,x) = x") *})
+    HAVE_RULE "\<forall>x \<in>. G //\<^sub>G H. qsurj_group(G,H)`rep(R,x) = x") *})
 setup {* add_forward_prfstep_cond @{thm qsurj_group_is_surjective} [with_term "qsurj_group(?G,?H)"] *}
   
 lemma qsurj_group_eval [rewrite]:

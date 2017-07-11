@@ -572,10 +572,10 @@ lemma sup_prod_inv:
    sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))"
   by (tactic {* auto2s_tac @{context} (
     LET "M = sup(prod_rel(I,R),A)" THEN
-    HAVE "\<forall>a\<in>I. \<forall>x\<in>upper_bound(R`a,projs(A,a)). le(R`a,M`a,x)" WITH (
+    HAVE_RULE "\<forall>a\<in>I. \<forall>x\<in>upper_bound(R`a,projs(A,a)). le(R`a,M`a,x)" WITH (
       LET "f = Tup(I, \<lambda>b. if b = a then x else M`b)" THEN
       HAVE "f \<in> upper_bound(prod_rel(I,R),A)") THEN
-    HAVE "\<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<and> sup(R`a,projs(A,a)) = M`a") *})
+    HAVE_RULE "\<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<and> sup(R`a,projs(A,a)) = M`a") *})
 
 lemma sup_subset1:
   "order(R) \<Longrightarrow> F \<subseteq> carrier(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(suborder(R,F),A) \<Longrightarrow>
@@ -728,7 +728,7 @@ lemma eq_linorder_order_less [backward1]:
   "ord_form(R) \<Longrightarrow> ord_form(S) \<Longrightarrow> linorder(R) \<Longrightarrow> order(S) \<Longrightarrow> carrier(R) = carrier(S) \<Longrightarrow>
    \<forall>x\<in>.R. \<forall>y\<in>.R. x <\<^sub>R y \<longrightarrow> x <\<^sub>S y \<Longrightarrow> R = S"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> x \<le>\<^sub>S y" WITH CASE "x = y") *})
+    HAVE_RULE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> x \<le>\<^sub>S y" WITH CASE "x = y") *})
 
 section {* Directed family of ordering *}
 

@@ -49,7 +49,8 @@ setup {* add_prfstep_check_req ("Mor(S,T,b)", "Mor(S,T,b) \<in> S \<rightharpoon
 
 lemma Mor_is_morphism [backward]:
   "\<forall>x\<in>.S. f(x)\<in>.T \<Longrightarrow> Mor(S,T,f) \<in> S \<rightharpoonup> T"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x\<in>.S. \<langle>x,f(x)\<rangle>\<in>graph(Mor(S,T,f))") *})
+  by (tactic {* auto2s_tac @{context} (
+    HAVE_RULE "\<forall>x\<in>.S. \<langle>x,f(x)\<rangle>\<in>graph(Mor(S,T,f))") *})
 
 setup {* add_rewrite_rule @{thm feval_def} *}
 lemma Mor_eval [rewrite]:
@@ -119,15 +120,7 @@ lemma mor_comp_assoc_l:
   "mor_form(x) \<Longrightarrow> mor_form(y) \<Longrightarrow> mor_form(z) \<Longrightarrow> target_str(z) = source_str(y) \<Longrightarrow>
    target_str(y \<circ>\<^sub>m z) = source_str(x) \<Longrightarrow> x \<circ>\<^sub>m (y \<circ>\<^sub>m z) = (x \<circ>\<^sub>m y) \<circ>\<^sub>m z \<and>
    mor_form(x \<circ>\<^sub>m y) \<and> target_str(y) = source_str(x) \<and> target_str(z) = source_str(x \<circ>\<^sub>m y)" by auto2
-
-lemma mor_comp_assoc_r:
-  "mor_form(x) \<Longrightarrow> mor_form(y) \<Longrightarrow> mor_form(z) \<Longrightarrow> target_str(y) = source_str(x) \<Longrightarrow>
-   target_str(z) = source_str(x \<circ>\<^sub>m y) \<Longrightarrow> (x \<circ>\<^sub>m y) \<circ>\<^sub>m z = x \<circ>\<^sub>m (y \<circ>\<^sub>m z) \<and>
-   mor_form(y \<circ>\<^sub>m z) \<and> target_str(z) = source_str(y) \<and> target_str(y \<circ>\<^sub>m z) = source_str(x)" by auto2
-
-setup {* WfACUtil.add_wf_ac_data ("mor_comp_assoc", WfACUtil.constr_ac_info
-  {assoc_l_th = @{thm mor_comp_assoc_l}, assoc_r_th = @{thm mor_comp_assoc_r}})
-*}
+setup {* add_prfstep (FOL_Assoc.alg_assoc_prfstep (@{term mor_comp}, @{thm mor_comp_assoc_l})) *}
 
 lemma comp_id_left [rewrite]:
   "mor_form(f) \<Longrightarrow> id_mor(target_str(f)) \<circ>\<^sub>m f = f" by auto2
@@ -179,7 +172,7 @@ setup {* del_prfstep_thm @{thm inverse_mor_def} *}
 lemma inv_mor_bijective [forward]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> bijective(inverse_mor(f))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(f). inverse_mor(f)`(f`x) = x") *})
+    HAVE_RULE "\<forall>x\<in>source(f). inverse_mor(f)`(f`x) = x") *})
 
 lemma inverse_is_left_inv [rewrite]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> inverse_mor(f) \<circ>\<^sub>m f = id_mor(source_str(f))" by auto2

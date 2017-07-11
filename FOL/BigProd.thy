@@ -153,7 +153,7 @@ lemma prod_subset1 [backward]:
 
 lemma prod_subset2:
   "Pi(I,X) \<subseteq> Pi(I,Y) \<Longrightarrow> \<forall>a\<in>I. X(a) \<noteq> \<emptyset> \<Longrightarrow> \<forall>a\<in>I. X(a) \<subseteq> Y(a)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>a\<in>I. surjective(projf(I,X,a))") *})
+  by (tactic {* auto2s_tac @{context} (HAVE_RULE "\<forall>a\<in>I. surjective(projf(I,X,a))") *})
 
 section {* Associativity of products *}  (* Bourbaki II.5.5 *)
 
@@ -175,14 +175,14 @@ setup {* del_prfstep_thm @{thm prod_assoc_fun_def} *}
    define a function from I to \<Union>a\<in>I. X(a), by pasting together the functions J`a (a\<in>L) to
    \<Union>a\<in>I. X(a). *)
 definition prod_assoc_fun_inv1 :: "[i, i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
-  "prod_assoc_fun_inv1(I,J,X,f) = glue_partition_fun(I,J,UnionS(I,X),
-    (\<lambda>a. (\<lambda>b\<in>J`a. f`a`b\<in>UnionS(I,X))))"
+  "prod_assoc_fun_inv1(I,J,X,f) = glue_partition_fun(I,J,\<Union>{X(c). c\<in>I},
+    (\<lambda>a. (\<lambda>b\<in>J`a. f`a`b\<in>\<Union>{X(c). c\<in>I})))"
 setup {* register_wellform_data ("prod_assoc_fun_inv1(I,J,X,f)",
   ["target(J) = Pow(I)", "is_partition(I,J)", "f \<in> Pi(source(J), \<lambda>a. Pi(J`a,X))"]) *}
 
 lemma prod_assoc_fun_inv1_is_fun [typing]:
   "is_function(J) \<Longrightarrow> target(J) = Pow(I) \<Longrightarrow> is_partition(I,J) \<Longrightarrow>
-   f \<in> Pi(source(J), \<lambda>a. Pi(J`a, X)) \<Longrightarrow> prod_assoc_fun_inv1(I,J,X,f) \<in> I \<rightarrow> UnionS(I,X)" by auto2
+   f \<in> Pi(source(J), \<lambda>a. Pi(J`a, X)) \<Longrightarrow> prod_assoc_fun_inv1(I,J,X,f) \<in> I \<rightarrow> \<Union>{X(c). c\<in>I}" by auto2
 
 lemma prod_assoc_fun_inv1_eval [rewrite]:
   "is_function(J) \<Longrightarrow> a \<in> source(J) \<Longrightarrow> target(J) = Pow(I) \<Longrightarrow> is_partition(I,J) \<Longrightarrow>
@@ -263,7 +263,7 @@ lemma distrib_prod_INT:
    Pi(L, \<lambda>b. (\<Inter>a\<in>J(b). X(b)`a)) = (\<Inter>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
   by (tactic {* auto2s_tac @{context} (
     HAVE "\<forall>g\<in>(\<Inter>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))). g\<in>Pi(L, \<lambda>b. (\<Inter>a\<in>J(b). X(b)`a))" WITH (
-      HAVE "\<forall>b\<in>L. \<forall>a\<in>J(b). g`b \<in> X(b)`a" WITH (
+      HAVE_RULE "\<forall>b\<in>L. \<forall>a\<in>J(b). g`b \<in> X(b)`a" WITH (
         CHOOSE "f\<in>Pi(L,J), f`b = a"))) *})
 
 lemma distrib_prod_union:

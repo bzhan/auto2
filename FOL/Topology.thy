@@ -32,8 +32,11 @@ lemma top_space_form_to_raw [forward]: "top_space_form(X) \<Longrightarrow> is_t
 definition raw_top_spaces :: "i \<Rightarrow> i" where [rewrite]:
   "raw_top_spaces(S) = {\<langle>S,T,\<emptyset>\<rangle>. T\<in>Pow(Pow(S))}"
   
-lemma raw_top_spaces_iff [rewrite]:
-  "X \<in> raw_top_spaces(S) \<longleftrightarrow> (top_space_form(X) \<and> carrier(X) = S)" by auto2
+lemma raw_top_spacesD [forward]:
+  "X \<in> raw_top_spaces(S) \<Longrightarrow> top_space_form(X) \<and> carrier(X) = S" by auto2
+    
+lemma raw_top_spacesI [resolve]:
+  "top_space_form(X) \<Longrightarrow> X \<in> raw_top_spaces(carrier(X))" by auto2
 
 definition Top :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "Top(S,T) = \<langle>S,T,\<emptyset>\<rangle>"
@@ -179,7 +182,7 @@ lemma top_has_basis_is_openI' [backward2]:
 
 lemma top_has_basis_id [resolve]:
   "is_top_space(X) \<Longrightarrow> top_has_basis(X, open_sets(X))"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>U\<in>open_sets(X). U = \<Union>{U}") *})
+  by (tactic {* auto2s_tac @{context} (HAVE_RULE "\<forall>U\<in>open_sets(X). U = \<Union>{U}") *})
     
 lemma top_has_basis_eq_str_top [rewrite]:
   "eq_str_top(X,Y) \<Longrightarrow> top_has_basis(X,\<B>) \<longleftrightarrow> top_has_basis(Y,\<B>)" by auto2
@@ -302,16 +305,14 @@ lemma subspace_is_top_space:
   by (tactic {* auto2s_tac @{context} (
     LET "\<Y> = subspace(\<X>,Y)" THEN
     HAVE "\<emptyset> = Y \<inter> \<emptyset>" THEN HAVE "Y = Y \<inter> carrier(\<X>)" THEN
-    HAVE "union_closed(\<Y>)" WITH (
-      HAVE "\<forall>C. (\<forall>x\<in>source(C). is_open(\<Y>,C`x)) \<longrightarrow> is_open(\<Y>,\<Union>x\<in>source(C). C`x)" WITH (
-        LET "C' = Tup(source(C), \<lambda>x. (SOME V\<in>open_sets(\<X>). C`x = Y \<inter> V))" THEN
-        HAVE "\<forall>x\<in>source(C). C`x = Y \<inter> C'`x" THEN
-        HAVE "(Y \<inter> (\<Union>x\<in>source(C).C'`x)) = (\<Union>x\<in>source(C). C`x)")) THEN
-    HAVE "finite_inter_closed(\<Y>)" WITH (
-      HAVE "\<forall>U V. is_open(\<Y>,U) \<longrightarrow> is_open(\<Y>,V) \<longrightarrow> is_open(\<Y>,U \<inter> V)" WITH (
-        CHOOSE "U'\<in>open_sets(\<X>), U = Y \<inter> U'" THEN
-        CHOOSE "V'\<in>open_sets(\<X>), V = Y \<inter> V'" THEN
-        HAVE "Y \<inter> (U' \<inter> V') = U \<inter> V"))) *})
+    HAVE "\<forall>C. (\<forall>x\<in>source(C). is_open(\<Y>,C`x)) \<longrightarrow> is_open(\<Y>,\<Union>x\<in>source(C). C`x)" WITH (
+      LET "C' = Tup(source(C), \<lambda>x. (SOME V\<in>open_sets(\<X>). C`x = Y \<inter> V))" THEN
+      HAVE "\<forall>x\<in>source(C). C`x = Y \<inter> C'`x" THEN
+      HAVE "(Y \<inter> (\<Union>x\<in>source(C).C'`x)) = (\<Union>x\<in>source(C). C`x)") THEN
+    HAVE "\<forall>U V. is_open(\<Y>,U) \<longrightarrow> is_open(\<Y>,V) \<longrightarrow> is_open(\<Y>,U \<inter> V)" WITH (
+      CHOOSE "U'\<in>open_sets(\<X>), U = Y \<inter> U'" THEN
+      CHOOSE "V'\<in>open_sets(\<X>), V = Y \<inter> V'" THEN
+      HAVE "Y \<inter> (U' \<inter> V') = U \<inter> V")) *})
 setup {* add_forward_prfstep_cond @{thm subspace_is_top_space} [with_term "subspace(?\<X>,?Y)"] *}
 
 lemma subspace_is_closedD [resolve]:
@@ -365,7 +366,7 @@ lemma subspace_trans [rewrite]:
     HAVE "top_has_basis(subspace(X,B), \<B>)" THEN
     HAVE "top_has_basis(subspace(subspace(X,A),B), {B \<inter> U. U \<in> \<A>})" THEN
     HAVE "\<B> = {B \<inter> U. U \<in> \<A>}" WITH (
-      HAVE "\<forall>U\<in>open_sets(X). B \<inter> U = B \<inter> (A \<inter> U)")) *})
+      HAVE_RULE "\<forall>U\<in>open_sets(X). B \<inter> U = B \<inter> (A \<inter> U)")) *})
 
 section {* Neighborhoods *}
   
@@ -437,7 +438,7 @@ lemma comp_continuous' [backward]:
   "Y = source_str(G) \<Longrightarrow> G \<in> Y \<rightharpoonup>\<^sub>T target_str(G) \<Longrightarrow> F = Mor(X,Y,\<lambda>x. f(x)) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T Y \<Longrightarrow>
    continuous(Mor(X,target_str(G),\<lambda>x. G`(f(x))))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. F`x = f(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x)" THEN
     HAVE "Mor(X,target_str(G),\<lambda>x. G`(f(x))) = G \<circ>\<^sub>m F") *})
 
 lemma comp_continuous'' [backward2]:
@@ -445,7 +446,7 @@ lemma comp_continuous'' [backward2]:
    F = Mor(X,Y,\<lambda>x. f(x)) \<Longrightarrow> G \<in> Y \<rightharpoonup>\<^sub>T subspace(Z,A) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T Y \<Longrightarrow>
    continuous(Mor(X,Z,\<lambda>x. G`(f(x))))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. F`x = f(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x)" THEN
     HAVE "Mor(X,Z,\<lambda>x. G`(f(x))) = inj_mor(subspace(Z,A),Z) \<circ>\<^sub>m G \<circ>\<^sub>m F") *})
 setup {* del_prfstep_thm @{thm continuous_def} *}
 
@@ -608,7 +609,7 @@ definition top_iso_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<cong>
 lemma top_iso_spaceD [forward]:
   "f \<in> X \<cong>\<^sub>T Y \<Longrightarrow> f \<in> X \<rightharpoonup> Y \<and> homeomorphism(f)" by auto2
 
-lemma top_iso_spaceI [typing, backward]:
+lemma top_iso_spaceI [backward]:
   "mor_form(f) \<Longrightarrow> homeomorphism(f) \<Longrightarrow> f \<in> source_str(f) \<cong>\<^sub>T target_str(f)" by auto2
 setup {* del_prfstep_thm @{thm top_iso_space_def} *}
 

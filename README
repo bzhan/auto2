@@ -6,38 +6,31 @@ Current version of the program works with Isabelle2016-1.
 
 Papers:
 
+Formalization of the fundamental group in untyped set theory using
+auto2 (ITP 2017): http://math.mit.edu/~bzhan/fol.pdf
+
 AUTO2, a saturation-based heuristic prover for higher-order logic
 (ITP 2016): http://arxiv.org/abs/1605.07577
 
 Description of the examples:
 
-- Primes_Ex: elementary number theory of primes, up to the proof of
-  infinitude of primes and the unique factorization theorem. Follows
-  theories Primes and UniqueFactorization in HOL/Number_Theory.
+- HOL/Primes_Ex: elementary number theory of primes, up to the proof
+  of infinitude of primes and the unique factorization
+  theorem. Follows theories Primes and UniqueFactorization in
+  HOL/Number_Theory.
 
-- DataStrs: lists, trees, and red-black trees. Some standard material
-  on lists and trees follow Chapter 2 (Programming and Proving) of
-  "Concrete Semantics". The material on red-black trees follows
-  Section 8.4 of "Certified Programming with Dependent Types", and
-  some of theory RBT_Impl in HOL/Library.
+- HOL/DataStrs: lists, trees, and red-black trees. Some standard
+  material on lists and trees follow Chapter 2 (Programming and
+  Proving) of "Concrete Semantics". The material on red-black trees
+  follows Section 8.4 of "Certified Programming with Dependent Types",
+  and some of theory RBT_Impl in HOL/Library.
 
-- Hoare: development of Hoare logic. Follows chapters Imp, Equiv,
+- HOL/Hoare: development of Hoare logic. Follows chapters Imp, Equiv,
   Hoare, and Hoare2 in "Software Foundations".
 
-- Analysis: construction of real numbers using Cauchy sequences. Proof
-  of completeness of real numbers in several forms. Partly follows
-  theory Real in HOL/.
-
-- Arrow_Ex: Arrow's impossibility theorem, following Arrow_Order in
-  AFP/ArrowImpossibilityGS. The original theory is one of seven test
-  cases in "Sledgehammer: Judgement Day".
-
-- Algebra_Ex: basic group theory. Follows theories Group and Coset in
-  HOL/Algebra.
-
-- SepLogic: separation logic. Foundation of separation logic and part
-  of the linked list example follow "A Separation Logic Framework for
-  Imperative HOL" in Isabelle AFP. Include many other examples in
+- HOL/SepLogic: separation logic. Foundation of separation logic and
+  part of the linked list example follow "A Separation Logic Framework
+  for Imperative HOL" in Isabelle AFP. Include many other examples in
   separation logic.
 
 - FOL: axiomatic set theory based on Isabelle/FOL. Sources:
@@ -49,6 +42,10 @@ Description of the examples:
 
   - Basic group theory and construction of real numbers: corresponding
     examples in HOL.
+
+  - Arrow impossibility theorem: following Arrow_Order in
+    AFP/ArrowImpossibilityGS. The original theory is one of seven test
+    cases in "Sledgehammer: Judgement Day".
 
   - Point-set topology and construction of the fundamental group:
     "Topology" by Munkres.

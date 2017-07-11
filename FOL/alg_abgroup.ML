@@ -32,7 +32,7 @@ sig
   val abgroup_add_atom: abgroup_info -> wfconv
   val abgroup_add_monomial: abgroup_info -> wfconv
   val normalize_abgroup: abgroup_info -> wfconv
-  val abgroup_alg_data: thm -> (term list * wfconv) option
+  val abgroup_alg_data: thm -> abgroup_info
 
   val reduce_atom_list: term -> term list -> term list
   val add_atom_list: term -> term list * term list -> term list
@@ -159,10 +159,11 @@ fun normalize_abgroup info wft =
     end
 
 fun abgroup_alg_data abgroup_th =
-    if not (is_Trueprop (Thm.prop_of abgroup_th)) then NONE
-    else if not (Term.head_of (prop_of' abgroup_th) aconv @{term is_abgroup})
-    then NONE
-    else let
+    let
+      val _ =
+          assert (is_Trueprop (Thm.prop_of abgroup_th) andalso
+                  Term.head_of (prop_of' abgroup_th) aconv @{term is_abgroup})
+                 "abgroup_alg_data"
       val G = dest_arg (prop_of' abgroup_th)
       val fheads = [plus_t $ G, uminus_t $ G, minus_t $ G]
       val rewr = WfTerm.rewr_obj_eq fheads
@@ -170,20 +171,17 @@ fun abgroup_alg_data abgroup_th =
       val add_id_th = ab_monoid_th RS @{thm is_ab_monoidD(2)}
       val plus_comm_th = ab_monoid_th RS @{thm is_ab_monoidD(3)}
       val plus_assoc_th = ab_monoid_th RS @{thm is_ab_monoidD(4)}
-      val info = {
-        G = G,
-        assoc_l     = rewr (plus_assoc_th RS @{thm plus_assoc_left}),
-        assoc_r     = rewr (plus_assoc_th RS @{thm plus_assoc_right}),
-        comm        = rewr (plus_comm_th  RS @{thm plus_commD}),
-        zero_l      = rewr (add_id_th     RS @{thm is_add_idD}),
-        neg_zero    = rewr (abgroup_th    RS @{thm abgroup_neg_zero}),
-        neg_l       = rewr (abgroup_th    RS @{thm abgroup_neg_left}),
-        neg_neg     = rewr (abgroup_th    RS @{thm abgroup_neg_neg}),
-        neg_distrib = rewr (abgroup_th    RS @{thm abgroup_neg_distrib}),
-        minus       = rewr (abgroup_th    RS @{thm minusD})
-      }
     in
-      SOME (fheads, normalize_abgroup info)
+      {G = G,
+       assoc_l     = rewr (plus_assoc_th RS @{thm plus_assoc_left}),
+       assoc_r     = rewr (plus_assoc_th RS @{thm plus_assoc_right}),
+       comm        = rewr (plus_comm_th  RS @{thm plus_commD}),
+       zero_l      = rewr (add_id_th     RS @{thm is_add_idD}),
+       neg_zero    = rewr (abgroup_th    RS @{thm abgroup_neg_zero}),
+       neg_l       = rewr (abgroup_th    RS @{thm abgroup_neg_left}),
+       neg_neg     = rewr (abgroup_th    RS @{thm abgroup_neg_neg}),
+       neg_distrib = rewr (abgroup_th    RS @{thm abgroup_neg_distrib}),
+       minus       = rewr (abgroup_th    RS @{thm minusD})}
     end
 
 (* For simplification on terms, we represent a sum of terms as a list. *)
@@ -229,16 +227,15 @@ fun norm_atom_list G t =
 fun norm_term G t =
     list_plus G (norm_atom_list G t)
 
+val abgroup_norm_info = {
+  op_heads = [plus_t, minus_t, uminus_t], pred_t = @{term is_abgroup},
+  norm_t = norm_term, excl_norm_t = [],
+  norm_wfcv = normalize_abgroup o abgroup_alg_data}
+
 val add_abgroup_proofsteps =
-    fold WfACUtil.add_alg_data [
-      ("abgroup", abgroup_alg_data)
-
-    ] #> fold add_prfstep [
-      FOLAlgUtil.alg_norm1_prfstep (
-        [plus_t, minus_t, uminus_t], norm_term, @{term is_abgroup}),
-
-      FOLAlgUtil.alg_norm2_prfstep (
-        [plus_t, minus_t, uminus_t], norm_term, @{term is_abgroup})
+    fold add_prfstep [
+      FOLAlgUtil.alg_norm1_prfstep abgroup_norm_info,
+      FOLAlgUtil.alg_norm2_prfstep abgroup_norm_info
     ]
 
 end  (* structure AlgAbGroup *)

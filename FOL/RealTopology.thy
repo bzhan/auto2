@@ -210,33 +210,33 @@ lemma real_add_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> G = Mor(X,\<real>,\<lambda>x. g(x)) \<Longrightarrow>
    F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> G \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) +\<^sub>\<real> g(x)))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. F`x = f(x)" THEN HAVE "\<forall>x\<in>.X. G`x = g(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)" THEN
     HAVE "Mor(X, \<real>, \<lambda>x. f(x) +\<^sub>\<real> g(x)) = real_add \<circ>\<^sub>m prod_top_map(F,G) \<circ>\<^sub>m diag_top_map(X)") *})
       
 lemma real_mult_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> G = Mor(X,\<real>,\<lambda>x. g(x)) \<Longrightarrow>
    F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> G \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) *\<^sub>\<real> g(x)))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. F`x = f(x)" THEN HAVE "\<forall>x\<in>.X. G`x = g(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)" THEN
     HAVE "Mor(X,\<real>,\<lambda>x. f(x) *\<^sub>\<real> g(x)) = real_mult \<circ>\<^sub>m prod_top_map(F,G) \<circ>\<^sub>m diag_top_map(X)") *})
       
 lemma real_neg_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. -\<^sub>\<real> f(x)))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. F`x = f(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x)" THEN
     HAVE "Mor(X, \<real>, \<lambda>x. -\<^sub>\<real> f(x)) = real_neg \<circ>\<^sub>m F") *})
       
 lemma real_minus_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> G = Mor(X,\<real>,\<lambda>x. g(x)) \<Longrightarrow>
    F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> G \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) -\<^sub>\<real> g(x)))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. F`x = f(x)" THEN HAVE "\<forall>x\<in>.X. G`x = g(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)" THEN
     HAVE "Mor(X, \<real>, \<lambda>x. f(x) -\<^sub>\<real> g(x)) = Mor(X, \<real>, \<lambda>x. f(x) +\<^sub>\<real> (-\<^sub>\<real> g(x)))") *})
 
 lemma real_divide_const_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> c \<in> units(\<real>) \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) /\<^sub>\<real> c))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. F`x = f(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x)" THEN
     HAVE "Mor(X,\<real>,\<lambda>x. f(x) /\<^sub>\<real> c) = Mor(X,\<real>,\<lambda>x. f(x) *\<^sub>\<real> (1\<^sub>\<real> /\<^sub>\<real> c))") *})
 
 section {* Continuity and convergent sequences *}

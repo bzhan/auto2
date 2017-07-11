@@ -13,8 +13,7 @@ sig
   val norm_mult_poly_monomial: comm_ring_info -> wfconv
   val norm_mult_polynomials: comm_ring_info -> wfconv
   val norm_full: comm_ring_info -> wfconv
-  val comm_ring_alg_info: thm -> comm_ring_info
-  val comm_ring_alg_data: thm -> (term list * wfconv) option
+  val comm_ring_alg_data: thm -> comm_ring_info
 
   type monomial
   val compare_monomial_t: term -> monomial * monomial -> order
@@ -371,8 +370,12 @@ and norm_full info wft =
         WfTerm.all_conv wft
     end
 
-fun comm_ring_alg_info c_ring_th =
+fun comm_ring_alg_data c_ring_th =
     let
+      val _ = assert (
+            is_Trueprop (Thm.prop_of c_ring_th) andalso
+            Term.head_of (prop_of' c_ring_th) aconv @{term is_comm_ring})
+                     "comm_ring_alg_data"
       val G = dest_arg (prop_of' c_ring_th)
       val fheads = rat_fheads G
       fun rewr th = WfTerm.rewr_obj_eq fheads th
@@ -409,16 +412,8 @@ fun comm_ring_alg_info c_ring_th =
        neg_minus_1   = rewr (ring_th        RS @{thm neg_is_minus_1}),
        mult_zero_l   = rewr (ring_th        RS @{thm mult_zero_l'}),
        of_nat_0      = rewr (ring_th        RS @{thm of_nat_zero'}),
-       of_nat_1      = rewr (ring_th        RS @{thm of_nat_one'})
-      }
+       of_nat_1      = rewr (ring_th        RS @{thm of_nat_one'})}
     end
-
-fun comm_ring_alg_data th =
-    if not (is_Trueprop (Thm.prop_of th)) then NONE
-    else if not (Term.head_of (prop_of' th) aconv @{term is_comm_ring})
-    then NONE
-    else SOME (rat_fheads (dest_arg (prop_of' th)),
-               norm_full (comm_ring_alg_info th))
 
 (* Term simplification on rings: represent as a list of (l, c), where
    c is the coefficient, and l is the list of factors of a
@@ -539,20 +534,15 @@ fun norm_atom_list G t =
 fun norm_term G t =
     to_polynomial G (norm_atom_list G t)
 
+val comm_ring_norm_info = {
+  op_heads = rat_opheads, pred_t = @{term is_comm_ring},
+  norm_t = norm_term, excl_norm_t = [AlgMonoid.norm_term, AlgAbGroup.norm_term],
+  norm_wfcv = norm_full o comm_ring_alg_data}
+
 val add_ring_proofsteps =
-    fold WfACUtil.add_alg_data [
-      ("comm_ring", comm_ring_alg_data)
-
-    ] #> fold WfACUtil.add_alg_shadow_data [
-      (@{term is_comm_ring}, @{term is_abgroup}),
-      (@{term is_comm_ring}, @{term is_monoid})
-
-    ] #> fold add_prfstep [
-      FOLAlgUtil.alg_norm1_prfstep (
-        rat_opheads, norm_term, @{term is_comm_ring}),
-
-      FOLAlgUtil.alg_norm2_prfstep (
-        rat_opheads, norm_term, @{term is_comm_ring})
+    fold add_prfstep [
+      FOLAlgUtil.alg_norm1_prfstep comm_ring_norm_info,
+      FOLAlgUtil.alg_norm2_prfstep comm_ring_norm_info
     ]
 
 end  (* structure AlgCommRing *)

@@ -19,6 +19,7 @@ sig
   val check_new_vars: Proof.context -> string list -> term -> unit
   val CASE: string -> pre_scripts
   val HAVE: string -> pre_scripts
+  val HAVE_RULE: string -> pre_scripts
   val THEN: pre_scripts * pre_scripts -> pre_scripts
   val WITH: pre_scripts * pre_scripts -> pre_scripts
 
@@ -26,7 +27,6 @@ sig
   val CHOOSE: string -> pre_scripts
   val CHOOSES: string list -> pre_scripts
   val LET: string -> pre_scripts
-  val CHOOSE_FUN_N: int -> string -> pre_scripts
 end
 
 functor Script(Base:UTIL_BASE) : SCRIPT =
@@ -77,7 +77,7 @@ fun CASE str ctxt =
    assumptions P_1 to P_n and ~Q. The variables x_1 ... x_k should be
    reserved beforehand and not used when this line is executed.
  *)
-fun HAVE str ctxt =
+fun HAVE_gen res_rule str ctxt =
     let
       val t = read_term ctxt str
       val init_infos =
@@ -87,6 +87,11 @@ fun HAVE str ctxt =
       val vars = maps Update.dest_init_var init_infos
       val nms = map (fst o Term.dest_Free) vars
       val _ = check_new_vars ctxt nms t
+
+      fun non_rule_callback ((id, th), {ctxt, ...}) =
+          [Logic_ProofSteps.logic_thm_update ctxt (id, th)]
+      val callback = if res_rule then update_callback
+                     else non_rule_callback
     in
       if exists (Variable.is_fixed ctxt) nms then
         let
@@ -97,9 +102,12 @@ fun HAVE str ctxt =
           raise AUTO2 "HAVE: variable name(s) already used."
         end
       else
-        [Script_Task {inits = init_infos, subs = [], cb = update_callback,
+        [Script_Task {inits = init_infos, subs = [], cb = callback,
                       end_vars = []}]
     end
+
+val HAVE = HAVE_gen false
+val HAVE_RULE = HAVE_gen true
 
 fun (s1 THEN s2) ctxt =
     let
@@ -238,68 +246,6 @@ fun LET str ctxt =
     in
       [Script_Task {inits = [InitAssum not_True], subs = [],
                     cb = let_callback, end_vars = map dest_eq_lhs eqs}]
-    end
-
-fun CHOOSE_FUN_N n str ctxt =
-    let
-      val (new_vars, ex_prop) = read_choose_str str ctxt
-      val _ = assert (length new_vars = 1)
-                     "CHOOSE_FUN_N: only permit defining one function."
-
-      (* Also zero indices *)
-      fun split_conj_th' th =
-          if is_conj (prop_of' th) then
-            Drule.zero_var_indexes (th RS conjunct1_th) ::
-            split_conj_th (Drule.zero_var_indexes (th RS conjunct2_th))
-          else [th]
-
-      (* Given a theorem about function f, for example
-
-         !x. P (f x) & !y. Q (f x y),
-
-         extract the properties of successive applications of f,
-         returning them as term_def items. In the example above, the
-         result would be [(f ?x, P (f ?x)), (f ?x ?y1), Q (f ?x ?y1)].
-       *)
-      fun prop_f_to_updt ctxt count id (f, prop_f_th) =
-          case prop_of' prop_f_th of
-              Const (c, _) $ Abs (nm, T, _) =>
-              if c = All_name then
-                let
-                  val sch_var = Var ((nm, count), T)
-                  val (ths, next) =
-                      prop_f_th |> apply_to_thm (Conv.rewr_conv (
-                                                    meta_sym atomize_all_th))
-                                |> Thm.forall_elim (cert ctxt sch_var)
-                                |> split_conj_th' |> split_last
-                  val pat = f $ sch_var
-                  fun to_updt th = term_def_updt (id, (pat, th))
-                in
-                  if count = n - 1 then
-                    maps to_updt (ths @ [next])
-                  else
-                    maps to_updt ths @
-                    prop_f_to_updt ctxt (count + 1) id (pat, next)
-                end
-              else raise AUTO2 "CHOOSE_FUN_N: wrong form of prop_f_th."
-            | _ => raise AUTO2 "CHOOSE_FUN_N: wrong form of prop_f_th."
-
-      fun choose_callback ((id, th), {ctxt, ...}) =
-          let
-            val (ritems, th) =
-                Update.apply_exists_ritems th ctxt (map fst new_vars)
-
-            (* When choosing function F, this is the theorem !x. P (F i). *)
-            val prop_f_th = th |> split_conj_th' |> List.last
-            val f = Free (the_single new_vars)
-          in
-            AddItems {id = id, sc = NONE,
-                      raw_items = ritems @ [Update.thm_to_ritem th]} ::
-            prop_f_to_updt ctxt 0 id (f, prop_f_th)
-          end
-    in
-      [Script_Task {inits = [InitAssum (get_neg' ex_prop)], subs = [],
-                    cb = choose_callback, end_vars = map Free new_vars}]
     end
 
 end  (* structure Script. *)

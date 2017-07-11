@@ -261,7 +261,7 @@ lemma compat_wellorder_prop [forward]:
    compat_wellorder_cond(E,S,p) \<Longrightarrow> is_segment_rel(R1,R2) \<or> is_segment_rel(R2,R1)"
   by (tactic {* auto2s_tac @{context} (
     LET "V = compat_wellorder_segs(E,S,p,R1,R2)" THEN
-    HAVE "V = carrier(R1) \<or> V = carrier(R2)" WITH (
+    HAVE_RULE "V = carrier(R1) \<or> V = carrier(R2)" WITH (
       CHOOSE "x\<in>.R1, V = less_interval(R1,x)" THEN
       CHOOSE "y\<in>.R2, V = less_interval(R2,y)" THEN HAVE "x = y") THEN
     CASE "V = carrier(R1)") *})
@@ -301,13 +301,14 @@ lemma compat_wellorders_cond_prop' [resolve]:
 setup {* del_prfstep_thm @{thm compat_wellorders_rel_not_in} *}
 
 (* Wellordering theorem *)
-lemma wellorder_theorem:
-  "\<exists>R. ord_form(R) \<and> well_order(R) \<and> carrier(R) = E"
+lemma wellorder_theorem [resolve]:
+  "\<exists>R\<in>raworder_space(E). well_order(R)"
   by (tactic {* auto2s_tac @{context} (
     LET "S = Pow(E)\<midarrow>{E}" THEN
     LET "p = (\<lambda>X\<in>S. (SOME x\<in>E. x \<notin> X)\<in>E)" THEN
     HAVE "compat_wellorder_cond(E,S,p)" THEN
-    CHOOSE "\<Gamma>, ord_form(\<Gamma>) \<and> well_order(\<Gamma>) \<and> carrier(\<Gamma>) \<subseteq> E \<and> carrier(\<Gamma>) \<notin> S") *})
+    CHOOSE "\<Gamma>, ord_form(\<Gamma>) \<and> well_order(\<Gamma>) \<and> carrier(\<Gamma>) \<subseteq> E \<and> carrier(\<Gamma>) \<notin> S" THEN
+    HAVE "\<Gamma> \<in> raworder_space(E)") *})
 
 no_notation adjoin_greatest (infix "++" 55)
 
@@ -331,7 +332,7 @@ lemma zorn_aux [resolve]:
     LET "S = {X\<in>Pow(carrier(R)). upper_bound(R,X) \<midarrow> X \<noteq> \<emptyset>}" THEN
     LET "p = (\<lambda>X\<in>S. (SOME x\<in>upper_bound(R,X). x \<notin> X)\<in>E)" THEN
     HAVE "p \<in> S \<rightarrow> E" THEN
-    HAVE "\<forall>X\<in>S. p`X \<in> upper_bound(R,X)" THEN
+    HAVE_RULE "\<forall>X\<in>S. p`X \<in> upper_bound(R,X)" THEN
     HAVE "compat_wellorder_cond(carrier(R),S,p)" THEN
     CHOOSE ("\<Gamma>, ord_form(\<Gamma>) \<and> well_order(\<Gamma>) \<and> (\<forall>x\<in>.\<Gamma>. less_interval(\<Gamma>,x)\<in>S \<and> p`less_interval(\<Gamma>,x) = x)" ^
             "\<and> carrier(\<Gamma>) \<subseteq> E \<and> carrier(\<Gamma>) \<notin> S") THEN

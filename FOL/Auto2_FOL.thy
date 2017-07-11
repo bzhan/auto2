@@ -4,19 +4,14 @@ theory Auto2_FOL
 imports FOL_Base
 begin
 
-(* Theorem lists for auto2. *)
-named_theorems property_rewrites "Auto2: rewriting theorems to properties"
-
 ML_file "../util.ML"
 ML_file "../util_logic.ML"
 ML_file "../box_id.ML"
-ML_file "../acdata.ML"
 ML_file "../consts.ML"
 ML_file "../subterms.ML"
 ML_file "../property.ML"
 ML_file "../wellform.ML"
 ML_file "../wfterm.ML"
-ML_file "../wfacdata.ML"
 ML_file "../rewrite.ML"
 ML_file "../matcher.ML"
 ML_file "../status.ML"
@@ -25,11 +20,11 @@ ML_file "../proofsteps.ML"
 ML_file "../logic_steps.ML"
 ML_file "../script.ML"
 ML_file "../auto2.ML"
-ML_file "../ac_steps.ML"
 
 ML_file "auto2_fol.ML"
 ML_file "extra_fol.ML"
 ML_file "fol_induct.ML"
+ML_file "alg_assoc.ML"
 
 method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o auto2_tac) *} "auto2 prover"
 
@@ -42,9 +37,10 @@ attribute_setup resolve = {* setup_attrib add_resolve_prfstep_gnrc *}
 attribute_setup rewrite = {* setup_attrib add_rewrite_rule_gnrc *}
 attribute_setup rewrite_back = {* setup_attrib add_rewrite_rule_back_gnrc *}
 attribute_setup rewrite_bidir = {* setup_attrib add_rewrite_rule_bidir_gnrc *}
-attribute_setup horn_clause = {* setup_attrib add_horn_clause_gnrc *}
+attribute_setup horn_clause = {* setup_attrib Logic_ProofSteps.add_horn_clause_gnrc *}
 attribute_setup typing = {* setup_attrib add_typing_rule_gnrc *}
 attribute_setup typing2 = {* setup_attrib add_typing2_rule_gnrc *}
+attribute_setup backward_replace = {* setup_attrib add_backward_replace_gnrc *}
 attribute_setup script_induct = {* setup_attrib add_script_induct_data_gnrc *}
 
 end

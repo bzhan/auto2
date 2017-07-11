@@ -29,12 +29,12 @@ lemma seq_ring_zero_neq_one [resolve]:
 lemma seq_ring_plus_assoc [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> Z \<in>. S \<Longrightarrow> (X +\<^sub>S Y) +\<^sub>S Z = X +\<^sub>S (Y +\<^sub>S Z)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>n\<in>.\<nat>. (X`n +\<^sub>R Y`n) +\<^sub>R Z`n = X`n +\<^sub>R (Y`n +\<^sub>R Z`n)") *})
+    HAVE_RULE "\<forall>n\<in>.\<nat>. (X`n +\<^sub>R Y`n) +\<^sub>R Z`n = X`n +\<^sub>R (Y`n +\<^sub>R Z`n)") *})
 
 lemma seq_ring_times_assoc [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> Z \<in>. S \<Longrightarrow> (X *\<^sub>S Y) *\<^sub>S Z = X *\<^sub>S (Y *\<^sub>S Z)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>n\<in>.\<nat>. (X`n *\<^sub>R Y`n) *\<^sub>R Z`n = X`n *\<^sub>R (Y`n *\<^sub>R Z`n)") *})
+    HAVE_RULE "\<forall>n\<in>.\<nat>. (X`n *\<^sub>R Y`n) *\<^sub>R Z`n = X`n *\<^sub>R (Y`n *\<^sub>R Z`n)") *})
 
 lemma seq_ring_has_add_inverse [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> X +\<^sub>S seq_neg(X) = \<zero>\<^sub>S" by auto2
@@ -43,7 +43,7 @@ lemma seq_ring_left_distrib [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> Z \<in>. S \<Longrightarrow>
    X *\<^sub>S (Y +\<^sub>S Z) = X *\<^sub>S Y +\<^sub>S X *\<^sub>S Z"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>n\<in>.\<nat>. X`n *\<^sub>R (Y`n +\<^sub>R Z`n) = X`n *\<^sub>R Y`n +\<^sub>R X`n *\<^sub>R Z`n") *})
+    HAVE_RULE "\<forall>n\<in>.\<nat>. X`n *\<^sub>R (Y`n +\<^sub>R Z`n) = X`n *\<^sub>R Y`n +\<^sub>R X`n *\<^sub>R Z`n") *})
 
 lemma seq_ring_add_id [forward]: "is_comm_ring(R) \<Longrightarrow> is_add_id(seq_ring(R))" by auto2
 lemma seq_ring_mult_id [forward]: "is_comm_ring(R) \<Longrightarrow> is_mult_id(seq_ring(R))" by auto2
@@ -272,7 +272,7 @@ lemma pos_seq_mult:
   by (tactic {* auto2s_tac @{context} (
     CHOOSE "s >\<^sub>R \<zero>\<^sub>R, i\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>i. s <\<^sub>R X`n" THEN
     CHOOSE "t >\<^sub>R \<zero>\<^sub>R, j\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>j. t <\<^sub>R Y`n" THEN
-    HAVE "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). s *\<^sub>R t <\<^sub>R (X *\<^sub>S Y)`n") *})
+    HAVE "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). s *\<^sub>R t <\<^sub>R (X *\<^sub>S Y)`n" THEN HAVE "s *\<^sub>R t >\<^sub>R \<zero>\<^sub>R") *})
 setup {* add_forward_prfstep_cond @{thm pos_seq_mult} [with_term "?X *\<^sub>?S ?Y"] *}
 
 lemma non_vanishes_pos_seq_cases [backward1]:
@@ -366,7 +366,7 @@ lemma seq_const_mult [rewrite_bidir]:
 
 lemma seq_const_inv [rewrite_bidir]:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> a \<in> units(R) \<Longrightarrow> seq_inverse({a}\<^sub>R) = {inv(R,a)}\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>n\<in>nat. {a}\<^sub>R`n \<in> units(R)") *})
+  by (tactic {* auto2s_tac @{context} (HAVE_RULE "\<forall>n\<in>nat. {a}\<^sub>R`n \<in> units(R)") *})
 
 lemma vanishes_zero [rewrite]:
   "is_ord_ring(R) \<Longrightarrow> c \<in>. R \<Longrightarrow> vanishes({c}\<^sub>R) \<longleftrightarrow> c = \<zero>\<^sub>R"

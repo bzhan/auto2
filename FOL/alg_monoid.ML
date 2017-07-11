@@ -24,7 +24,7 @@ sig
   val monoid_mult_atom: monoid_info -> wfconv
   val monoid_mult_monomial: monoid_info -> wfconv
   val normalize_monoid: monoid_info -> wfconv
-  val monoid_alg_data: thm -> (term list * wfconv) option
+  val monoid_alg_data: thm -> monoid_info
 
   val norm_atom_list: term -> term -> term list
   val norm_term: term -> term -> term
@@ -74,9 +74,10 @@ fun normalize_monoid info wft =
     end
 
 fun monoid_alg_data th =
-    if not (is_Trueprop (Thm.prop_of th)) then NONE else
-    if not (Term.head_of (prop_of' th) aconv @{term is_monoid}) then NONE
-    else let
+    let
+      val _ = assert (is_Trueprop (Thm.prop_of th) andalso
+                      Term.head_of (prop_of' th) aconv @{term is_monoid})
+                     "monoid_alg_data"
       val G = dest_arg (prop_of' th)
       val fheads = [times_t $ G]
       val assoc_l_th = th RS @{thm is_monoidD(2)} RS @{thm times_assoc_left}
@@ -84,9 +85,8 @@ fun monoid_alg_data th =
       val unit_r_th = th RS @{thm is_monoidD(1)} RS @{thm is_mult_id_right}
       val rewr = WfTerm.rewr_obj_eq fheads
     in
-      SOME (fheads, normalize_monoid {
-              G = G, assoc_l = rewr assoc_l_th,
-              unit_l = rewr unit_l_th, unit_r = rewr unit_r_th})
+      {G = G, assoc_l = rewr assoc_l_th,
+       unit_l = rewr unit_l_th, unit_r = rewr unit_r_th}
     end
 
 (* For simplification on terms, we represent a product of terms as a list. *)
@@ -100,13 +100,14 @@ fun norm_atom_list G t =
 fun norm_term G t =
     list_times G (norm_atom_list G t)
 
-val add_monoid_proofsteps =
-    fold WfACUtil.add_alg_data [
-      ("monoid", monoid_alg_data)
+val monoid_norm_info = {
+  op_heads = [times_t], pred_t = @{term is_monoid}, norm_t = norm_term,
+  excl_norm_t = [], norm_wfcv = normalize_monoid o monoid_alg_data}
 
-    ] #> fold add_prfstep [
-      FOLAlgUtil.alg_norm1_prfstep ([times_t], norm_term, @{term is_monoid}),
-      FOLAlgUtil.alg_norm2_prfstep ([times_t], norm_term, @{term is_monoid})
+val add_monoid_proofsteps =
+    fold add_prfstep [
+      FOLAlgUtil.alg_norm1_prfstep monoid_norm_info,
+      FOLAlgUtil.alg_norm2_prfstep monoid_norm_info
     ]
 
 end  (* structure AlgMonoid. *)

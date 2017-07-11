@@ -170,7 +170,7 @@ lemma induced_mor_id [rewrite]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> induced_mor(id_mor(X),x) = id_mor(\<pi>\<^sub>1(X,x))"
   by (tactic {* auto2s_tac @{context} (
     LET "G = \<pi>\<^sub>1(X,x), \<R> = loop_space_rel(X,x)" THEN
-    HAVE "\<forall>f\<in>.G. induced_mor(id_mor(X),x)`f = f" WITH LET "f' = rep(\<R>,f)") *})
+    HAVE_RULE "\<forall>f\<in>.G. induced_mor(id_mor(X),x)`f = f" WITH LET "f' = rep(\<R>,f)") *})
 
 lemma induced_mor_comp' [rewrite]:
   "continuous(k) \<Longrightarrow> continuous(h) \<Longrightarrow> target_str(k) = source_str(h) \<Longrightarrow> x \<in> source(k) \<Longrightarrow>

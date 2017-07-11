@@ -166,7 +166,7 @@ lemma real_inverse_raw_mult_inv [rewrite]:
 
 lemma real_is_field [forward]: "is_field(\<real>)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.\<real>. x \<noteq> \<zero>\<^sub>\<real> \<longrightarrow> x *\<^sub>\<real> real_inverse(x) = 1\<^sub>\<real>") *})
+    HAVE "\<forall>x\<in>.\<real>. x \<noteq> \<zero>\<^sub>\<real> \<longrightarrow> x *\<^sub>\<real> real_inverse(x) = \<one>\<^sub>\<real>") *})
 setup {* fold del_prfstep_thm [@{thm real_inverse_def}, @{thm real_inverse_typing}] *}
 
 section {* Nonnegative real numbers *}

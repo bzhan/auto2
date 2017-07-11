@@ -71,8 +71,6 @@ sig
   val is_rtype_resolved: status -> rewrite_type -> bool
   val scoring: proofstep -> int -> box_item list -> rewrite_type -> status ->
                (box_item -> raw_update list) -> update list
-  val apply_callback:
-      box_id * thm -> int -> resolve_callback list -> status -> status
   val process_shadow: update -> status -> status
   val process_resolve: update -> status -> status
   val apply_update_instant: update -> status -> status
@@ -183,21 +181,10 @@ fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
         end
       | _ => raise AUTO2 "process_shadow: wrong type of update"
 
-fun apply_callback (id, th) sc cbs st =
-    let
-      fun eval_cb cb = cb (id, th)
-      fun form_cb_updts raw_updt =
-          {sc = sc, prfstep_name = "$CALLBACK", source = [],
-           raw_updt = raw_updt}
-      val cb_updts = map form_cb_updts (maps eval_cb cbs)
-    in
-      st |> fold apply_update_instant cb_updts
-    end
-
 (* When a box, whether primitive or composite, is resolved, perform
    the following two actions: 1. Resolve current and all descendent
    boxes. 2. Add the appropriate fact to each of the immediate parent
-   boxes (or invoke callback if available).
+   boxes.
  *)
 and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
     case raw_updt of
@@ -207,42 +194,31 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
                     tracing ("Finished box " ^ string_of_box_id id ^
                              " (" ^ Update.source_info updt ^ ")")
                   else ()
-          val sc' = (if id = get_focus st then 0 else sc)
-
-          fun default_updt (id, th) =
-              {sc = sc', prfstep_name = "$RESOLVE", source = [],
-               raw_updt = Logic_ProofSteps.logic_thm_update ctxt (id, th)}
 
           fun update_one i st =
-              let
+              if get_focus st = [nth id i] then
+                st |> set_resolve_th id (get_on_resolve st id i th)
+              else let
                 val cur_parent = BoxID.get_parent_at_i lat id i
-                val resolve_th = get_on_resolve st id i th
-                val _ = check_hyps cur_parent resolve_th st
+                val res_th = get_on_resolve st id i th
+                val _ = check_hyps cur_parent res_th st
 
-                (* If id is primitive, invoke any callbacks (with
-                   parent id) and add the updates, omitting
-                   resolve_updt from output.
-                 *)
-                val prim_box = get_box st [nth id i]
-                val cbs = Box.get_callbacks prim_box
-                val st' = st |> set_resolve_th id resolve_th
+                val res_obj_th = apply_to_thm (to_obj_conv ctxt) res_th
+                val updt = {sc = sc, prfstep_name = "$RESOLVE", source = [],
+                            raw_updt = Logic_ProofSteps.logic_thm_update
+                                           ctxt (cur_parent, res_obj_th)}
               in
-                if id = [0] then st'
-                else let
-                  val info = (cur_parent,
-                              apply_to_thm (to_obj_conv ctxt) resolve_th)
-                in
-                  if length cbs = 0 then
-                    st' |> apply_update_instant (default_updt info)
-                  else if length id = 1 then
-                    st' |> apply_callback info sc' cbs
-                  else st'
-                end
+                st |> set_resolve_th id res_th
+                   |> apply_update_instant updt
               end
         in
           if is_box_resolved st id then st
-          else st |> fold update_one (0 upto (length id) - 1)
-                  |> add_resolved id
+          else if id = [0] then
+            st |> set_resolve_th id (get_on_resolve st id 0 th)
+               |> add_resolved id
+          else
+            st |> fold update_one (0 upto (length id) - 1)
+               |> add_resolved id
         end
       | _ => raise AUTO2 "process_resolve: wrong type of update"
 
@@ -423,13 +399,14 @@ fun process_fact_all items st =
          relevant terms for that increment.
        *)
       val items' = maps (get_items false st) (get_unresolved st)
-      val infos = map (fn {id, prop, ...} => (id, prop))
-                      (subtract pointer_eq items items')
-      val info_items =
-          filter (match_ty_strs [TY_PROP, TY_EQ, TY_PROPERTY]) items
-      val tbl' = RewriteTable.add_infos infos (id, map #prop info_items) tbl
+      val infos = (subtract pointer_eq items items')
+                      |> map (fn {id, prop, ...} => (id, prop))
+                      |> filter (is_Trueprop o Thm.prop_of o snd)
+      val props = items |> filter (match_ty_strs [TY_PROP, TY_EQ, TY_PROPERTY])
+                        |> map #prop
+      val tbl' = RewriteTable.add_infos infos (id, props) tbl
       val init_type = SINGLE tbl'
-      val incr_type = RewriteTable.get_incr_type tbl infos (id, map #prop items)
+      val incr_type = RewriteTable.get_incr_type tbl infos (id, props)
       val ts = case incr_type of
                    LAST (_, _, ts) => map Thm.term_of ts
                  | _ => raise AUTO2 "process_fact_all"
@@ -528,7 +505,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
 fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
                       update_focus (st as {tbl as {ctxt, ...}, ...}) =
     case raw_updt of
-        AddBoxes {id, inits, cbs, ...} =>
+        AddBoxes {id, inits, ...} =>
         if not (is_shadowing_prfstep prfstep_name tbl) andalso
            exists (query_shadowed st id) source then st
         else let
@@ -568,9 +545,7 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
           if is_some prev_prim_box then
             st |> update_focus ? set_focus (the prev_prim_box)
 
-          (* If the conclusion already exists, apply callback. *)
-          else if is_some neg_form_opt then
-            st |> apply_callback (id, the neg_form_opt) sc cbs
+          else if is_some neg_form_opt then st
 
           (* Otherwise, proceed to create the box. *)
           else let
@@ -578,8 +553,7 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
                       tracing ("Add box under " ^ string_of_box_id id ^ " (" ^
                                Update.source_info updt ^ ")")
                     else ()
-            val init_box = (Box.init_box inits')
-                               |> fold Box.add_callback cbs
+            val init_box = Box.init_box inits'
             val (prim_id, st') = add_prim_box id init_box st
             val new_id = [prim_id]
             val _ = if Config.get ctxt print_trace then
@@ -626,7 +600,7 @@ fun init_status ctxt subgoal =
           maps (fn init => case init of InitVar t => [t] | _ => [])
                assum_inits
       val inits = map InitVar vars @ assum_inits @ [InitAssum (get_neg' concl)]
-      val raw_updt = AddBoxes {id = [], sc = NONE, inits = inits, cbs = []}
+      val raw_updt = AddBoxes {id = [], sc = NONE, inits = inits}
       val updt = {sc = 0, prfstep_name = "$INIT", source = [],
                   raw_updt = raw_updt}
     in
@@ -675,9 +649,7 @@ fun run_script (Script_Task {inits, subs, cb, ...}) (steps, st) =
           case find_neg_form st id inits of
               NONE =>
               let
-                val raw_updt = AddBoxes {
-                      id = id, sc = NONE, inits = inits,
-                      cbs = [Update.null_callback]}
+                val raw_updt = AddBoxes {id = id, sc = NONE, inits = inits}
                 val updt = {sc = 0, prfstep_name = "$SCRIPT", source = [],
                             raw_updt = raw_updt}
                 val st' = process_add_boxes updt true st

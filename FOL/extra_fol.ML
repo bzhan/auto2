@@ -10,19 +10,10 @@ sig
   val add_typing2_rule_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_typing2_rule: thm -> theory -> theory
-
-  val add_rewrite_rule_gnrc: thm -> Context.generic -> Context.generic
-  val add_rewrite_rule_back_gnrc: thm -> Context.generic -> Context.generic
-  val add_rewrite_rule_bidir_gnrc: thm -> Context.generic -> Context.generic
-  val add_rewrite_rule_cond:
+  val add_backward_replace_gnrc: thm -> Context.generic -> Context.generic
+  val add_backward_replace_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_rewrite_rule_back_cond:
-      thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_rewrite_rule_bidir_cond:
-      thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_rewrite_rule: thm -> theory -> theory
-  val add_rewrite_rule_back: thm -> theory -> theory
-  val add_rewrite_rule_bidir: thm -> theory -> theory
+  val add_backward_replace: thm -> theory -> theory
 end;
 
 structure Extra_FOL : EXTRA_FOL =
@@ -60,40 +51,28 @@ fun add_typing2_rule_gnrc th = add_typing2_rule_cond_gnrc th []
 val add_typing2_rule_cond = Context.theory_map oo add_typing2_rule_cond_gnrc
 fun add_typing2_rule th = add_typing2_rule_cond th []
 
-fun add_rewrite_rule_cond_gnrc th conds gnrc =
+fun add_backward_replace_cond_gnrc th conds gnrc =
     let
-      val th = if is_meta_eq (Thm.concl_of th) then to_obj_eq_th th else th
-      val (lhs, _) = th |> concl_of' |> strip_conj |> hd |> dest_eq
+      val ctxt = context_of_gnrc gnrc
+      val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
+      val nm = name_of_thm th
+      val concl = concl_of' th
+      val conds' = map (fn cond => cond ctxt') conds
+      fun prfstep_fn ((id, _), ths) items _ =
+          [AddItems {
+              id = id, sc = SOME 1,
+              raw_items = [Update.thm_to_ritem (ths MRS (backward_th th))]},
+           ShadowItem {id = id, item = the_single items}]
+          handle THM _ => []
     in
-      if fastype_of lhs = boolT then
-        ProofStep_Data.add_rewrite_iff_rule_cond_gnrc th conds gnrc
-      else
-        ProofStep_Data.add_rewrite_rule_cond_gnrc th conds gnrc
+      add_prfstep_custom_gnrc (
+        nm, ([WithGoal concl] @ conds'), PRIORITY_SHADOW, prfstep_fn) gnrc
     end
 
-fun add_rewrite_rule_back_cond_gnrc th conds =
-    add_rewrite_rule_cond_gnrc (obj_sym_th th) conds
-
-fun add_rewrite_rule_bidir_cond_gnrc th conds =
-    (add_rewrite_rule_cond_gnrc th conds)
-        #> add_rewrite_rule_back_cond_gnrc th conds
-
-fun add_rewrite_rule_gnrc th = add_rewrite_rule_cond_gnrc th []
-fun add_rewrite_rule_back_gnrc th = add_rewrite_rule_back_cond_gnrc th []
-fun add_rewrite_rule_bidir_gnrc th = add_rewrite_rule_bidir_cond_gnrc th []
-
-val add_rewrite_rule_cond =
-    Context.theory_map oo add_rewrite_rule_cond_gnrc
-
-val add_rewrite_rule_back_cond =
-    Context.theory_map oo add_rewrite_rule_back_cond_gnrc
-
-val add_rewrite_rule_bidir_cond =
-    Context.theory_map oo add_rewrite_rule_bidir_cond_gnrc
-
-fun add_rewrite_rule th = add_rewrite_rule_cond th []
-fun add_rewrite_rule_back th = add_rewrite_rule_back_cond th []
-fun add_rewrite_rule_bidir th = add_rewrite_rule th #> add_rewrite_rule_back th
+fun add_backward_replace_gnrc th = add_backward_replace_cond_gnrc th []
+val add_backward_replace_cond =
+    Context.theory_map oo add_backward_replace_cond_gnrc
+fun add_backward_replace th = add_backward_replace_cond th []
 
 end  (* structure Extra_FOL *)
 

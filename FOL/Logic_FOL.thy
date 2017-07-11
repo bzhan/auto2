@@ -18,8 +18,14 @@ section \<open>If and only iff\<close>
 setup {* add_gen_prfstep ("iff_intro1",
   [WithGoal @{term_pat "?A \<longleftrightarrow> ?B"}, CreateCase @{term_pat "?A::o"}]) *}
 setup {* add_fixed_sc ("iff_intro1", 25) *}  (* includes the cost of creating a case. *)
-theorem iff_two_dirs [forward]: "\<not>(A \<longleftrightarrow> B) \<Longrightarrow> (A \<longrightarrow> \<not>B) \<and> (\<not>A \<longrightarrow> B)" by auto
-setup {* add_fixed_sc ("Logic_FOL.iff_two_dirs", 1) *}
+theorem iff_goal [forward]:
+  "\<not>(A \<longleftrightarrow> B) \<Longrightarrow> A \<Longrightarrow> \<not>B" "\<not>(A \<longleftrightarrow> B) \<Longrightarrow> B \<Longrightarrow> \<not>A"
+  "\<not>(A \<longleftrightarrow> B) \<Longrightarrow> \<not>A \<Longrightarrow> B" "\<not>(A \<longleftrightarrow> B) \<Longrightarrow> \<not>B \<Longrightarrow> A"
+  "\<not>(\<not>A \<longleftrightarrow> B) \<Longrightarrow> A \<Longrightarrow> B" "\<not>(A \<longleftrightarrow> \<not>B) \<Longrightarrow> B \<Longrightarrow> A" by auto
+setup {* fold add_fixed_sc (map (rpair 1) [
+  "Logic_FOL.iff_goal_1", "Logic_FOL.iff_goal_3",
+  "Logic_FOL.iff_goal_2", "Logic_FOL.iff_goal_4",
+  "Logic_FOL.iff_goal_5", "Logic_FOL.iff_goal_6"]) *}
 
 section \<open>Unique existence\<close>
 

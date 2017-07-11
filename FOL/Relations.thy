@@ -77,14 +77,7 @@ setup {* del_prfstep_thm @{thm rel_comp_def} *}
 lemma rel_comp_assoc_l:
   "rel_form(x) \<Longrightarrow> rel_form(y) \<Longrightarrow> rel_form(z) \<Longrightarrow>
    x \<circ>\<^sub>r (y \<circ>\<^sub>r z) = (x \<circ>\<^sub>r y) \<circ>\<^sub>r z \<and> rel_form(x \<circ>\<^sub>r y)" by auto2
-
-lemma rel_comp_assoc_r:
-  "rel_form(x) \<Longrightarrow> rel_form(y) \<Longrightarrow> rel_form(z) \<Longrightarrow>
-   (x \<circ>\<^sub>r y) \<circ>\<^sub>r z = x \<circ>\<^sub>r (y \<circ>\<^sub>r z) \<and> rel_form(y \<circ>\<^sub>r z)" by auto2
-
-setup {* WfACUtil.add_wf_ac_data ("rel_comp_assoc", WfACUtil.constr_ac_info
-  {assoc_l_th = @{thm rel_comp_assoc_l}, assoc_r_th = @{thm rel_comp_assoc_r}})
-*}
+setup {* add_prfstep (FOL_Assoc.alg_assoc_prfstep (@{term rel_comp}, @{thm rel_comp_assoc_l})) *}
 
 lemma rel_comp_inverse [rewrite_bidir]:
   "is_rel2(\<Gamma>) \<Longrightarrow> is_rel2(\<Gamma>') \<Longrightarrow> rel_inverse(\<Gamma>' \<circ>\<^sub>r \<Gamma>) = rel_inverse(\<Gamma>) \<circ>\<^sub>r rel_inverse(\<Gamma>')" by auto2

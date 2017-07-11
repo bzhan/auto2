@@ -15,7 +15,6 @@ Theory_Data (
 
 signature WELLFORM =
 sig
-  val is_wellform_data_empty: theory -> bool
   val register_wellform_data: string * string list -> theory -> theory
   val lookup_wellform_data: theory -> term -> term list
   val is_subterm_wellform_data':
@@ -31,9 +30,6 @@ struct
 structure UtilLogic = UtilLogic(Base)
 open Base
 open UtilLogic
-
-fun is_wellform_data_empty thy =
-    Symtab.is_empty (WellFormData.get thy)
 
 (* Add a term with its requirements to the table. *)
 fun register_wellform_data (t_str, req_strs) thy =

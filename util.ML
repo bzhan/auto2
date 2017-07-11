@@ -21,17 +21,12 @@ sig
   (* Lists *)
   val max: ('a * 'a -> order) -> 'a list -> 'a
   val max_partial: ('a -> 'a -> bool) -> 'a list -> 'a list
-  val is_sorted: ('a * 'a -> order) -> 'a list -> bool
   val subsets: 'a list -> 'a list list
-  val nth_drop_list: int list -> 'a list -> 'a list
+  val all_permutes: 'a list -> 'a list list
   val the_pair: 'a list -> 'a * 'a
   val the_triple: 'a list -> 'a * 'a * 'a
-  val the_quadruple: 'a list -> 'a * 'a * 'a * 'a
-  val list_pair: 'a * 'a -> 'a list
   val filter_split: ('a -> bool) -> 'a list -> 'a list * 'a list
-  val filter_first_split: ('a -> bool) -> 'a list -> 'a list * 'a list
   val all_pairs: 'a list * 'b list -> ('a * 'b) list
-  val all_distinct_pairs: 'a list -> ('a * 'a) list
 
   (* Strings. *)
   val is_prefix_str: string -> string -> bool
@@ -63,7 +58,6 @@ sig
   (* Printing functions, mostly from Isabelle Cookbook. *)
   val pretty_term: Proof.context -> term -> Pretty.T
   val pretty_term_thy: theory -> term -> Pretty.T
-  val pwriteln: Pretty.T -> unit
   val str: Pretty.T -> string
   val pretty_terms: Proof.context -> term list -> Pretty.T
   val pretty_terms_thy: theory -> term list -> Pretty.T
@@ -79,7 +73,6 @@ sig
   val string_of_list': ('a -> string) -> 'a list -> string
   val string_of_int_list: int list -> string
   val string_of_bool: bool -> string
-  val enum_noindent: string -> string -> string -> Pretty.T list -> Pretty.T
 
   (* Tracing functions. *)
   val trace_t_ctxt: Proof.context -> string -> term -> unit
@@ -95,8 +88,6 @@ sig
   (* Generic context. *)
   val theory_of_gnrc: Context.generic -> theory
   val context_of_gnrc: Context.generic -> Proof.context
-  val local_context_map:
-      (Context.generic -> Context.generic) -> Proof.context -> Proof.context
 
   (* Certifying terms and types. *)
   val cert: Proof.context -> term -> cterm
@@ -112,7 +103,6 @@ sig
   (* Terms. *)
   val null_term: term
   val is_null_term: term -> bool
-  val is_abs: term -> bool
   val is_implies: term -> bool
   val dest_binop: term -> term * (term * term)
   val dest_binop_head: term -> term
@@ -139,7 +129,6 @@ sig
   val dest_binop_cargs: cterm -> cterm * cterm
 
   (* Theorems. *)
-  val apply_on: thm list -> thm -> thm
   val arg_backn_conv: int -> conv -> conv
   val argn_conv: int -> conv -> conv
   val comb_equiv: cterm * thm list -> thm
@@ -151,6 +140,8 @@ sig
   val assume_thm: Proof.context -> term -> thm
   val subst_thm_thy: theory -> Type.tyenv * Envir.tenv -> thm -> thm
   val subst_thm: Proof.context -> Type.tyenv * Envir.tenv -> thm -> thm
+  val send_first_to_hyps: thm -> thm
+  val send_all_to_hyps: thm -> thm
   val subst_thm_atomic: (cterm * cterm) list -> thm -> thm
   val meta_use_vardef: thm -> thm
   val meta_use_vardefs: thm -> thm
@@ -161,8 +152,6 @@ sig
   val apply_to_rhs: conv -> thm -> thm
   val concl_conv_n: int -> conv -> conv
   val concl_conv: conv -> conv
-  val send_to_hyps: cterm -> thm -> thm
-  val send_all_to_hyps: thm -> thm
   val transitive_list: thm list -> thm
   val skip_n_conv: int -> conv -> conv
   val pattern_rewr_conv: term -> (term * thm) list -> conv
@@ -223,19 +212,20 @@ fun max_partial comp lst =
       helper [] lst
     end
 
-(* Determine whether lst is sorted according to ord. *)
-fun is_sorted comp lst =
-    case lst of [] => true | [_] => true
-                | a1 :: a2 :: a' => comp (a1, a2) <> GREATER andalso
-                                    is_sorted comp (a2 :: a')
-
 (* Return all subsets of lst. *)
 fun subsets [] = [[]]
-  | subsets (l::ls) = let val prev = subsets ls
-                      in prev @ map (cons l) prev end
+  | subsets (l::ls) =
+    let val prev = subsets ls in prev @ map (cons l) prev end
 
-(* Drop indices specified by is. *)
-fun nth_drop_list is lst = fold nth_drop (sort (rev_order o int_ord) is) lst
+(* List of all permutations of xs *)
+fun all_permutes xs =
+    case xs of
+        [] => [[]]
+      | [x] => [[x]]
+      | [x, y] => [[x, y], [y, x]]
+      | _ =>
+        maps (fn i => map (cons (nth xs i)) (all_permutes (nth_drop i xs)))
+             (0 upto (length xs - 1))
 
 (* Convert list to pair. List must consist of exactly two items. *)
 fun the_pair lst =
@@ -247,14 +237,6 @@ fun the_triple lst =
     case lst of [i1, i2, i3] => (i1, i2, i3)
               | _ => raise AUTO2 "the_triple: list is not of length 3."
 
-(* Convert list to quadruple. *)
-fun the_quadruple lst =
-    case lst of [i1, i2, i3, i4] => (i1, i2, i3, i4)
-              | _ => raise AUTO2 "the_triple: list is not of length 4."
-
-(* Convert pair to list of two elements. *)
-fun list_pair (x, y) = [x, y]
-
 (* Split list into (ins, outs), where ins satisfy f, and outs don't. *)
 fun filter_split _ [] = ([], [])
   | filter_split f (x :: xs) =
@@ -264,31 +246,9 @@ fun filter_split _ [] = ([], [])
       if f x then (x :: ins, outs) else (ins, x :: outs)
     end
 
-(* Split list into (ins, outs), where ins is the longest prefix of
-   list for which every element satisfy f, and outs is the rest.
- *)
-fun filter_first_split _ [] = ([], [])
-  | filter_first_split f (x :: xs) =
-    if not (f x) then ([], x :: xs)
-    else let
-      val (ins, outs) = filter_first_split f xs
-    in
-      (x :: ins, outs)
-    end
-
 (* Form the Cartesian product of two lists. *)
 fun all_pairs (l1, l2) =
     maps (fn y => (map (fn x => (x, y)) l1)) l2
-
-(* For l of length n, form the n * (n-1) / 2 distinct pairs of
-   elements in l.
- *)
-fun all_distinct_pairs l =
-    let
-      fun list_i i = map (rpair (nth l i)) (take i l)
-    in
-      maps list_i (0 upto (length l - 1))
-    end
 
 (* Whether pre is a prefix of str. *)
 fun is_prefix_str pre str =
@@ -373,7 +333,6 @@ fun pattern_fo_match_list ctxt pairs inst =
 
 val pretty_term = Syntax.pretty_term
 val pretty_term_thy = Syntax.pretty_term_global
-val pwriteln = Pretty.writeln
 val str = Pretty.string_of
 fun pretty_terms ctxt trms =
     Pretty.block (Pretty.commas (map (pretty_term ctxt) trms))
@@ -418,11 +377,6 @@ fun string_of_list' func lst =
     if length lst = 1 then func (the_single lst) else string_of_list func lst
 val string_of_int_list = string_of_list (string_of_int)
 fun string_of_bool b = if b then "true" else "false"
-fun block_noindent prts = Pretty.blk (0, prts)
-fun enclose_noindent lpar rpar prts =
-    block_noindent (Pretty.str lpar :: (prts @ [Pretty.str rpar]))
-fun enum_noindent sep lpar rpar prts =
-    enclose_noindent lpar rpar (Pretty.separate sep prts)
 
 fun trace_t_ctxt ctxt s trm =
     tracing (s ^ " " ^ (trm |> pretty_term ctxt |> str))
@@ -452,8 +406,6 @@ fun ths check_MRS th =
 
 val theory_of_gnrc = Context.cases I Proof_Context.theory_of
 val context_of_gnrc = Context.cases Proof_Context.init_global I
-fun local_context_map f =
-    Local_Theory.map_contexts (fn i => if i = 0 then Context.proof_map f else I)
 
 fun cert ctxt t = Thm.cterm_of ctxt t
 fun tycert ctxt ty = Thm.ctyp_of ctxt ty
@@ -469,7 +421,6 @@ val read_pat = Proof_Context.read_term_pattern
 
 val null_term = Term.dummy
 fun is_null_term t = (t aconv null_term)
-fun is_abs t = case t of Abs _ => true | _ => false
 
 (* Whether a given term is of the form A ==> B. *)
 fun is_implies t =
@@ -614,7 +565,7 @@ fun strip_pure_goal ctxt t = strip_pure_goal_aux ctxt [] t
 fun print_term_detail ctxt t =
     case t of
         Const (s, ty) => "Const (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str)
-      | Free (s, ty) => "Free (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str)
+      | Free (s, ty) => "Free (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str) ^ ")"
       | Var ((nm, i), ty) => "Var ((" ^ nm ^ ", " ^ (string_of_int i) ^ "), " ^
                              (pretty_typ ctxt ty |> str) ^ ")"
       | Bound n => "Bound " ^ (string_of_int n)
@@ -626,8 +577,6 @@ fun print_term_detail ctxt t =
 (* Version for ct. *)
 fun dest_cargs ct = ct |> Drule.strip_comb |> snd
 fun dest_binop_cargs ct = (Thm.dest_arg1 ct, Thm.dest_arg ct)
-
-fun apply_on ths th = ths MRS th
 
 (* Apply cv to nth argument of t, counting from right and starting at 0. *)
 fun arg_backn_conv n cv ct =
@@ -686,6 +635,21 @@ fun subst_thm_thy thy (tyinsts, insts) th =
 fun subst_thm ctxt (tyinsts, insts) th =
     subst_thm_thy (Proof_Context.theory_of ctxt) (tyinsts, insts) th
 
+fun send_first_to_hyps th =
+    let
+      val cprem = Thm.cprem_of th 1
+    in
+      Thm.implies_elim th (Thm.assume cprem)
+    end
+
+fun send_all_to_hyps th =
+    let
+      val _ = assert (forall (not o has_vars) (Thm.prems_of th))
+                     "send_all_to_hyps: schematic variables in hyps."
+    in
+      funpow (Thm.nprems_of th) send_first_to_hyps th
+    end
+
 (* Replace using subst the internal variables in th. This proceeds in
    several steps: first, pull any hypotheses of the theorem involving
    the replaced variables into statement of the theorem, perform the
@@ -703,6 +667,7 @@ fun subst_thm_atomic subst th =
       th |> fold Thm.implies_intr chyps
          |> fold Thm.forall_intr old_cts
          |> fold Thm.forall_elim (rev new_cts)
+         |> funpow (length chyps) send_first_to_hyps
     end
 
 (* Given th where the first premise is in the form ?A == t, replace ?A
@@ -773,18 +738,6 @@ fun concl_conv cv ct =
     case Thm.term_of ct of
         Const ("Pure.imp", _) $ _ $ _ => Conv.arg_conv (concl_conv cv) ct
       | _ => cv ct
-
-fun send_to_hyps ct th =
-    Thm.implies_elim th (Thm.assume ct)
-fun send_all_to_hyps th =
-    let
-      val thy = Thm.theory_of_thm th
-      val _ = assert (forall (not o has_vars) (Thm.prems_of th))
-                     "send_all_to_hyps: schematic variables in hyps."
-      val cprems = map (cert_thy thy) (Thm.prems_of th)
-    in
-      fold send_to_hyps cprems th
-    end
 
 (* Given a list of theorems A = B, B = C, etc., apply
    Thm.transitive to get equality between start and end.

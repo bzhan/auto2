@@ -264,7 +264,7 @@ definition group_iso_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<con
 lemma group_iso_spaceD [forward]:
   "f \<in> G \<cong>\<^sub>G H \<Longrightarrow> f \<in> G \<rightharpoonup> H \<and> is_group_iso(f)" by auto2
 
-lemma group_iso_spaceI [typing, backward]:
+lemma group_iso_spaceI [backward]:
   "mor_form(f) \<Longrightarrow> is_group_iso(f) \<Longrightarrow> f \<in> source_str(f) \<cong>\<^sub>G target_str(f)" by auto2
 setup {* del_prfstep_thm @{thm group_iso_space_def} *}
     

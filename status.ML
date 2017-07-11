@@ -115,8 +115,7 @@ fun instantiate subst ritem =
       case ritem of
           Handler (t, handler) => Handler (subst_fun t, handler)
         | Fact (ty_str, tname, th) =>
-          Fact (ty_str, map subst_fun tname,
-                th |> subst_thm_atomic subst |> send_all_to_hyps)
+          Fact (ty_str, map subst_fun tname, subst_thm_atomic subst th)
     end
 
 val null_item = {uid = 0, id = [], sc = 0, ty_str = TY_NULL,
@@ -659,11 +658,9 @@ datatype update_type = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
 datatype init_info = InitVar of term | InitAssum of term
 datatype raw_update
   = AddItems of {id: box_id, sc: int option, raw_items: raw_item list}
-  | AddBoxes of {id: box_id, sc: int option, inits: init_info list,
-                 cbs: (box_id * thm -> raw_update list) list}
+  | AddBoxes of {id: box_id, sc: int option, inits: init_info list}
   | ResolveBox of {id: box_id, th: thm}
   | ShadowItem of {id: box_id, item: box_item}
-type resolve_callback = box_id * thm -> raw_update list
 type update = {sc: int, prfstep_name: string, source: box_item list,
                raw_updt: raw_update}
 
@@ -688,12 +685,10 @@ sig
   val type_of_update: raw_update -> update_type
   val string_of_update_type: update_type -> string
   val string_of_raw_update: Proof.context -> raw_update -> string
-  val null_callback: resolve_callback
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
 
   val handler_ritems: Proof.context -> term -> retro_handler -> raw_item list
-  val apply_horn_clause: box_id * thm -> resolve_callback -> raw_update list
   val apply_exists_ritems: thm -> Proof.context -> string list ->
                            raw_item list * thm
   val apply_exists: box_id * thm -> Proof.context -> string list ->
@@ -800,8 +795,6 @@ fun string_of_raw_update ctxt raw_updt =
         "Shadow item " ^ (ItemIO.string_of_item ctxt item) ^
         " in box " ^ (string_of_box_id id)
 
-val null_callback = K []
-
 fun thm_to_ritem th =
     let
       val prop = Thm.prop_of th
@@ -824,22 +817,6 @@ fun handler_ritems ctxt t handler =
     in
       [Handler (t, handler), thm_to_ritem (assume_thm ctxt t)]
     end
-
-fun apply_horn_clause (id, th) cb =
-    case Thm.prop_of th of
-        Const ("Pure.imp", _) $ A $ _ =>
-        let
-          val inits =
-              map (fn (is_var, t) => if is_var then InitVar t
-                                     else InitAssum (mk_Trueprop t))
-                  (extract_init_infos true (dest_Trueprop A))
-          fun callback (id', th_fst) =
-              apply_horn_clause (id', [th_fst] MRS th) cb
-        in
-          [AddBoxes {id = id, sc = NONE, inits = inits, cbs = [callback]}]
-        end
-      | _ => if pointer_eq (cb, null_callback) then [thm_update (id, th)]
-             else cb (id, th)
 
 (* nms specify the names of free variables, either internal (use
    obtain_variant_frees to fix) or otherwise (will be put into context
@@ -937,8 +914,7 @@ fun apply_exists_ritems ex_th ctxt nms =
           in
             th |> Thm.implies_intr (cert ctxt t)
                |> fold (ex_elim ctxt) (rev fvars)
-               |> Thm.elim_implies (ex_th' |> subst_thm_atomic subst
-                                           |> send_all_to_hyps)
+               |> Thm.elim_implies (subst_thm_atomic subst ex_th')
           end
 
       val ritems = (map (BoxItem.var_to_fact o Free) vars) @
@@ -990,7 +966,7 @@ end  (* structure Update. *)
 type box = {inits: init_info list,
             handlers: (term * retro_handler) list,
             items: (box_item * box_id list) Inttab.table,
-            cbs: resolve_callback list, resolve_th: thm option}
+            resolve_th: thm option}
 
 signature BOX =
 sig
@@ -1009,9 +985,6 @@ sig
   val get_items: bool -> box -> box_item list
   val lookup_item: box -> int -> (box_item * box_id list) option
 
-  val add_callback: resolve_callback -> box -> box
-  val get_callbacks: box -> resolve_callback list
-
   val set_resolve_th: thm -> box -> box
   val get_resolve_th: box -> thm
 
@@ -1025,18 +998,18 @@ structure BoxItem = BoxItem(Base)
 structure Update = Update(Base)
 
 fun init_box inits = {inits = inits, handlers = [], items = Inttab.empty,
-                      cbs = [], resolve_th = NONE}
+                      resolve_th = NONE}
 fun get_inits {inits, ...} = inits
 fun get_init_vars {inits, ...} = maps Update.dest_init_var inits
 fun get_init_assums {inits, ...} = maps Update.dest_init_assum inits
 
-fun add_handler (t, handler) {inits, handlers, items, cbs, resolve_th} =
+fun add_handler (t, handler) {inits, handlers, items, resolve_th} =
     {inits = inits, handlers = cons (t, handler) handlers, items = items,
-     cbs = cbs, resolve_th = resolve_th}
+     resolve_th = resolve_th}
 fun get_handlers {handlers, ...} = handlers
 
-fun map_items f {inits, handlers, items, cbs, resolve_th} =
-    {inits = inits, handlers = handlers, items = f items, cbs = cbs,
+fun map_items f {inits, handlers, items, resolve_th} =
+    {inits = inits, handlers = handlers, items = f items,
      resolve_th = resolve_th}
 
 fun add_item (item as {uid, ...}) box =
@@ -1054,14 +1027,8 @@ fun get_items incl_removed {items, ...} =
 fun lookup_item {items, ...} uid =
     Inttab.lookup items uid
 
-fun add_callback cb {inits, handlers, items, cbs, resolve_th} =
-    {inits = inits, handlers = handlers, items = items, cbs = cons cb cbs,
-     resolve_th = resolve_th}
-fun get_callbacks {cbs, ...} = cbs
-
-fun set_resolve_th th {inits, handlers, items, cbs, ...} =
-    {inits = inits, handlers = handlers, items = items, cbs = cbs,
-     resolve_th = SOME th}
+fun set_resolve_th th {inits, handlers, items, ...} =
+    {inits = inits, handlers = handlers, items = items, resolve_th = SOME th}
 
 fun get_resolve_th {resolve_th, ...} =
     case resolve_th of

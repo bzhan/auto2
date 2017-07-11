@@ -181,8 +181,8 @@ lemma dedekind_complete [resolve]:
     CHOOSE "x, converges_to(B,x)" THEN
     LET "S = seq_ring(R)" THEN
     HAVE "vanishes(B -\<^sub>S A)" WITH HAVE "half_seq(B -\<^sub>S A)" THEN
-    HAVE "\<forall>n\<in>nat. A`n \<in> U" WITH INDUCT_ON "n \<in> nat" "A`n \<in> U" THEN
-    HAVE "\<forall>n\<in>nat. B`n \<notin> U" WITH INDUCT_ON "n \<in> nat" "B`n \<notin> U" THEN
+    HAVE_RULE "\<forall>n\<in>nat. A`n \<in> U" WITH INDUCT_ON "n \<in> nat" "A`n \<in> U" THEN
+    HAVE_RULE "\<forall>n\<in>nat. B`n \<notin> U" WITH INDUCT_ON "n \<in> nat" "B`n \<notin> U" THEN
     HAVE "\<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" WITH (
       CASE "y <\<^sub>R x" WITH CHOOSE "n\<in>nat, y <\<^sub>R A`n" THEN
       HAVE "x \<in> U" THEN CHOOSE "x' >\<^sub>R x, x' \<in> U" THEN

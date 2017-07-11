@@ -76,8 +76,8 @@ fun INDUCT_ON str_prem str_goal ctxt =
             val inst = update_env (("P", 0), P_inst) fo_init
             val th' = subst_thm_thy thy inst th
 
-            fun callback ((id, _), _) =
-                Update.apply_horn_clause (id, th') (Update.null_callback)
+            fun callback ((id, _), {ctxt, ...}) =
+                Logic_ProofSteps.apply_horn_clause ctxt (id, th')
 
             val not_True = bTrue |> get_neg |> mk_Trueprop
           in

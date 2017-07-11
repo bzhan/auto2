@@ -40,16 +40,18 @@ theorem to_contra_form': "Trueprop (\<not>A) \<equiv> (A \<Longrightarrow> False
 theorem contra_triv: "\<not>A \<Longrightarrow> A \<Longrightarrow> False" by simp
 theorem or_intro1: "\<not> (P \<or> Q) \<Longrightarrow> \<not> P" by simp
 theorem or_intro2: "\<not> (P \<or> Q) \<Longrightarrow> \<not> Q" by simp
+theorem or_cancel1: "\<not>Q \<Longrightarrow> (P \<or> Q) \<longleftrightarrow> P" by auto
+theorem or_cancel2: "\<not>P \<Longrightarrow> (P \<or> Q) \<longleftrightarrow> Q" by auto
 theorem not_imp: "\<not>(P \<longrightarrow> Q) \<longleftrightarrow> P \<and> \<not>Q" by auto
 theorem exE': "(\<And>x. P(x) \<Longrightarrow> Q) \<Longrightarrow> \<exists>x. P(x) \<Longrightarrow> Q" by auto
 theorem eq_True: "A \<Longrightarrow> A \<longleftrightarrow> True" by simp
 theorem eq_True_inv: "A \<longleftrightarrow> True \<Longrightarrow> A" by simp
-theorem eq_False: "\<not>A \<Longrightarrow> A \<longleftrightarrow> False" by simp
-theorem eq_False': "A \<Longrightarrow> \<not>A \<longleftrightarrow> False" by simp
 theorem disj_True1: "(True \<or> A) \<longleftrightarrow> True" by simp
 theorem disj_True2: "(A \<or> True) \<longleftrightarrow> True" by simp
 theorem use_vardef: "(\<forall>x. x = t \<longrightarrow> P(x)) \<longleftrightarrow> P(t)" by simp
 theorem ex_vardef: "\<exists>x. x = a" by simp
+theorem nn_create: "A \<Longrightarrow> \<not>\<not>A" by auto
+theorem all_trivial: "(\<forall>x. P) \<longleftrightarrow> P" by auto
 
 theorem obj_sym: "Trueprop (t = s) \<equiv> Trueprop (s = t)" by (rule equal_intr_rule) auto
 theorem obj_sym_iff: "Trueprop (t \<longleftrightarrow> s) \<equiv> Trueprop (s \<longleftrightarrow> t)" by (rule equal_intr_rule) auto
@@ -64,7 +66,7 @@ theorem resolve_conv: "(A \<Longrightarrow> B) \<equiv> (\<not>B \<Longrightarro
 
 (* Quantifiers: swapping out of ALL or EX *)
 theorem swap_ex_conj: "(P \<and> (\<exists>x. Q(x))) \<longleftrightarrow> (\<exists>x. P \<and> Q(x))" by auto
-theorem swap_all_implies: "(P \<longrightarrow> (\<forall>x. Q(x))) \<longleftrightarrow> (\<forall>x. P \<longrightarrow> Q(x))" by auto
+theorem swap_all_disj: "(P \<or> (\<forall>x. Q(x))) \<longleftrightarrow> (\<forall>x. P \<or> Q(x))" by auto
 
 (* Use these instead of original versions to keep names in abstractions. *)
 theorem Bex_def': "(\<exists>x\<in>S. P(x)) \<longleftrightarrow> (\<exists>x. x \<in> S \<and> P(x))" using Bex_def by auto
@@ -80,8 +82,6 @@ theorem not_all: "\<not>(\<forall>x. P(x)) \<longleftrightarrow> (\<exists>x. \<
 
 (* AC for conj and disj *)
 theorem conj_assoc: "(P \<and> Q) \<and> R \<longleftrightarrow> P \<and> Q \<and> R" by simp
-theorem conj_unitL: "True \<and> A \<longleftrightarrow> A" by simp
 theorem disj_assoc: "(P \<or> Q) \<or> R \<longleftrightarrow> P \<or> Q \<or> R" by simp
-theorem disj_unitL: "False \<or> A \<longleftrightarrow> A" by simp
 
 end

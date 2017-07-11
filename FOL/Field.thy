@@ -233,7 +233,7 @@ lemma avg_ge2 [backward]: "is_ord_field(R) \<Longrightarrow> a \<ge>\<^sub>R b \
 lemma ord_field_dense [forward]: "is_ord_field(R) \<Longrightarrow> dense_order(R)"
   by (tactic {* auto2s_tac @{context} (
     HAVE "\<forall>a b. a <\<^sub>R b \<longrightarrow> (\<exists>c. a <\<^sub>R c \<and> c <\<^sub>R b)" WITH
-    HAVE "a <\<^sub>R avg(R,a,b)") *})
+      HAVE "a <\<^sub>R avg(R,a,b)") *})
 setup {* del_prfstep_thm @{thm avg_def} *}
 
 section {* Comparison of rational numbers *}

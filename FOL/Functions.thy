@@ -150,15 +150,7 @@ lemma comp_assoc_l:
   "func_form(x) \<Longrightarrow> func_form(y) \<Longrightarrow> func_form(z) \<Longrightarrow> target(z) = source(y) \<Longrightarrow>
    target(y \<circ> z) = source(x) \<Longrightarrow> x \<circ> (y \<circ> z) = (x \<circ> y) \<circ> z \<and>
    func_form(x \<circ> y) \<and> target(y) = source(x) \<and> target(z) = source(x \<circ> y)" by auto2
-
-lemma comp_assoc_r:
-  "func_form(x) \<Longrightarrow> func_form(y) \<Longrightarrow> func_form(z) \<Longrightarrow> target(y) = source(x) \<Longrightarrow>
-   target(z) = source(x \<circ> y) \<Longrightarrow> (x \<circ> y) \<circ> z = x \<circ> (y \<circ> z) \<and>
-   func_form(y \<circ> z) \<and> target(z) = source(y) \<and> target(y \<circ> z) = source(x)" by auto2
-
-setup {* WfACUtil.add_wf_ac_data ("comp_assoc", WfACUtil.constr_ac_info
-  {assoc_l_th = @{thm comp_assoc_l}, assoc_r_th = @{thm comp_assoc_r}})
-*}
+setup {* add_prfstep (FOL_Assoc.alg_assoc_prfstep (@{term fun_comp}, @{thm comp_assoc_l})) *}
 
 lemma comp_id_left [rewrite]:
   "func_form(f) \<Longrightarrow> id_fun(target(f)) \<circ> f = f" by auto2
@@ -222,7 +214,7 @@ definition bijection_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<con
 lemma bijective_spaceD [forward]:
   "f \<in> A \<cong> B \<Longrightarrow> f \<in> A \<rightarrow> B \<and> bijective(f)" by auto2
 
-lemma bijective_spaceI [typing, backward]:
+lemma bijective_spaceI [backward]:
   "func_form(f) \<Longrightarrow> bijective(f) \<Longrightarrow> f \<in> source(f) \<cong> target(f)" by auto2
 setup {* del_prfstep_thm @{thm bijection_space_def} *}
 
@@ -294,7 +286,8 @@ setup {* del_prfstep_thm @{thm inverse_def} *}
 
 lemma inv_bijective [typing]:
   "bijective(f) \<Longrightarrow> inverse(f) \<in> target(f) \<cong> source(f)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x\<in>source(f). inverse(f)`(f`x) = x") *})
+  by (tactic {* auto2s_tac @{context} (
+    HAVE_RULE"\<forall>x\<in>source(f). inverse(f)`(f`x) = x") *})
 
 lemma inverse_of_inj [rewrite]:
   "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f -`` (f `` X) = X" by auto2
@@ -414,7 +407,7 @@ lemma exists_left_inverse [backward]:
   by (tactic {* auto2s_tac @{context}
     (CHOOSE "a, a \<in> A" THEN
      LET "r = (\<lambda>y\<in>B. (if (\<exists>x\<in>A. f`x=y) then (SOME x\<in>A. f`x=y) else a)\<in>A)" THEN
-     HAVE "\<forall>x\<in>A. r`(f`x) = x" WITH HAVE "\<exists>x'\<in>A. f`x' = f`x") *})
+     HAVE_RULE "\<forall>x\<in>A. r`(f`x) = x" WITH HAVE "\<exists>x'\<in>A. f`x' = f`x") *})
 
 definition left_inverse :: "i \<Rightarrow> i" where [rewrite]:
   "left_inverse(f) = (SOME r\<in>target(f)\<rightarrow>source(f). r \<circ> f = id_fun(source(f)))"
@@ -443,7 +436,7 @@ lemma exists_pullback_inj:
     HAVE "\<exists>h\<in>G\<rightarrow>F. f = g \<circ> h" WITH (
       CHOOSE "r\<in>E\<rightarrow>F, r \<circ> g = id_fun(F)" THEN
       CHOOSE "h\<in>G\<rightarrow>F, h = r \<circ> f") THEN
-    HAVE "\<forall>x\<in>G. f`x \<subseteq> g``F") *})
+    HAVE_RULE "\<forall>x\<in>G. f`x \<subseteq> g``F") *})
 
 section {* Function of two arguments *}  (* Bourbaki II.3.9 *)
 
@@ -538,7 +531,7 @@ lemma pow_ext_inj [backward]:
   "injective(f) \<Longrightarrow> injective(pow_ext(f))"
   by (tactic {* auto2s_tac @{context} (
     LET "U = source(pow_ext(f))" THEN
-    HAVE "\<forall>S\<in>U. \<forall>T\<in>U. f `` S = f `` T \<longrightarrow> S = T" WITH (
+    HAVE_RULE "\<forall>S\<in>U. \<forall>T\<in>U. f `` S = f `` T \<longrightarrow> S = T" WITH (
       HAVE "\<forall>x. x \<in> S \<longleftrightarrow> x \<in> T" WITH HAVE "f`x \<in> f``S")) *})
 
 section {* Map on function spaces *}  (* Bourbaki II.5.2 *)

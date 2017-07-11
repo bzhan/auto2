@@ -93,7 +93,6 @@ sig
   val immediate_contains: rewrite_table -> term -> cterm list
 
   (* terms table. *)
-  val tbl_cert: rewrite_table -> term -> cterm
   val in_table_raw_ids: rewrite_table -> term -> box_id list
   val in_table_raw_for_id: rewrite_table -> box_id * term -> bool
   val in_table_raw: rewrite_table -> term -> bool
@@ -233,12 +232,9 @@ functor RewriteTable(Base:UTIL_BASE) : REWRITE_TABLE =
 struct
 
 structure UtilLogic = UtilLogic(Base)
-structure ACUtil = ACUtil(Base)
-structure Consts = Consts(Base)
 structure Subterms = Subterms(Base)
 structure Property = Property(Base)
 structure WellForm = WellForm(Base)
-structure WfACUtil = WfACUtil(Base)
 open Base
 open UtilLogic
 
@@ -406,12 +402,6 @@ fun immediate_contains {contain, ...} t =
     the_default [] (Termtab.lookup contain t)
 
 (*** Basic manipulation of the terms table. ***)
-
-(* Using terms table to certify *)
-fun tbl_cert {terms, ctxt, ...} t =
-    case Termtab.lookup terms t of
-        NONE => cert ctxt t
-      | SOME (_, ct) => ct
 
 (* Return ids in which t is directly in table. *)
 fun in_table_raw_ids {terms, ...} t =
@@ -690,11 +680,10 @@ fun get_property_for_term {property, ...} t =
     the_default [] (Termtab.lookup property t)
 
 (* Add a new property. Similar to add_equiv_raw. *)
-fun add_property_raw (cur_info as (id, th)) tbl =
+fun add_property_raw (cur_info as (_, th)) tbl =
     let
       val t = Property.get_property_arg (prop_of' th)
       val property_t = get_property_for_term tbl t
-      val {lat, ...} = tbl
     in
       if exists (fn info => property_eq_better tbl info cur_info)
                 property_t then tbl
@@ -703,7 +692,6 @@ fun add_property_raw (cur_info as (id, th)) tbl =
           Termtab.update (
             t, property_t |> filter_out (property_eq_better tbl cur_info)
                           |> cons cur_info))
-            |> map_context (WfACUtil.add_alg_inst_info lat (id, th))
     end
 
 (* Convert property P s to P t using equality s == t. Merge boxes
@@ -1236,7 +1224,6 @@ fun add_term' (id, ct) tbl =
         tbl' |> fold (add_contain ct) (map Thm.term_of imm_subtrms)
              |> fold update_simp simps
              |> fold update_subsimp simps
-             |> map_context (ACUtil.add_inst_ac_infos t)
              |> process_update_property imm_properties
              |> initialize_wellform_data t
              |> index_all_equiv ct

@@ -50,10 +50,9 @@ lemma connected_union [backward1]:
   by (tactic {* auto2s_tac @{context} (
     LET "Y = (\<Union>A)" THEN
     CHOOSE "p, p \<in> (\<Inter>A)" THEN
-    HAVE "\<forall>a\<in>A. connected_subset(subspace(X,Y),a)" THEN
+    HAVE_RULE "\<forall>a\<in>A. connected_subset(subspace(X,Y),a)" THEN
     CHOOSE "C, D, separation(subspace(X,Y), C, D)" THEN
-    CASE "p \<in> C" WITH HAVE "\<forall>a\<in>A. a \<subseteq> C" THEN
-    CASE "p \<in> D" WITH HAVE "\<forall>a\<in>A. a \<subseteq> D") *})
+    CASE "p \<in> C" WITH HAVE "\<forall>a\<in>A. a \<subseteq> C") *})
       
 lemma connected_union' [backward1]:
   "is_top_space(X) \<Longrightarrow> \<forall>a\<in>A. connected_subset(X,a) \<Longrightarrow> carrier(X) \<subseteq> (\<Union>A) \<Longrightarrow> (\<Inter>A) \<noteq> \<emptyset> \<Longrightarrow> connected(X)"

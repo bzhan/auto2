@@ -393,7 +393,7 @@ section {* Other induction principles *}
 lemma nat_induct_k [script_induct]:
   "P(k) \<Longrightarrow> \<forall>x\<in>nat. x \<ge>\<^sub>\<nat> k \<longrightarrow> P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> n \<ge>\<^sub>\<nat> k \<Longrightarrow> P(n)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>m\<in>nat. P(m +\<^sub>\<nat> k)" WITH
+    HAVE_RULE "\<forall>m\<in>nat. P(m +\<^sub>\<nat> k)" WITH
       INDUCT_ON "m \<in> nat" "P(m +\<^sub>\<nat> k)" THEN
     HAVE "n = (n -\<^sub>\<nat> k) +\<^sub>\<nat> k") *})
 

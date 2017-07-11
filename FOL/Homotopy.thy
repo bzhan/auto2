@@ -63,7 +63,7 @@ lemma restrict_real_fun [backward]:
   "B \<subseteq> carrier(\<real>) \<Longrightarrow> B' = subspace(\<real>,B) \<Longrightarrow>
    Mor(A,B',f) \<in> A \<rightharpoonup> B' \<Longrightarrow> Mor(A,\<real>,f) \<in> A \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(A,B',f))"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.A. Mor(A,B',f)`x = f(x)" THEN
+    HAVE_RULE "\<forall>x\<in>.A. Mor(A,B',f)`x = f(x)" THEN
     HAVE "Mor(A,B',f) = mor_restrict_image_top(Mor(A,\<real>,f),B)") *})
 
 definition interval_inv :: i where [rewrite]:
@@ -308,11 +308,9 @@ lemma homotopy_equivalent_trans [forward]:
     CHOOSE "f\<in>X\<rightharpoonup>\<^sub>TY, f'\<in>Y\<rightharpoonup>\<^sub>TX, homotopy_equiv_pair(f,f')" THEN
     CHOOSE "g\<in>Y\<rightharpoonup>\<^sub>TZ, g'\<in>Z\<rightharpoonup>\<^sub>TY, homotopy_equiv_pair(g,g')" THEN
     HAVE "homotopy_equiv_pair(g \<circ>\<^sub>m f, f' \<circ>\<^sub>m g')" WITH (
-      HAVE "homotopic((g \<circ>\<^sub>m f) \<circ>\<^sub>m (f' \<circ>\<^sub>m g'), id_mor(Z))" WITH (
-        HAVE "(g \<circ>\<^sub>m f) \<circ>\<^sub>m (f' \<circ>\<^sub>m g') = g \<circ>\<^sub>m (f \<circ>\<^sub>m f') \<circ>\<^sub>m g'" THEN
-        HAVE "homotopic(g \<circ>\<^sub>m (f \<circ>\<^sub>m f') \<circ>\<^sub>m g', g \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m g')") THEN
-      HAVE "homotopic((f' \<circ>\<^sub>m g') \<circ>\<^sub>m (g \<circ>\<^sub>m f), id_mor(X))" WITH (
-        HAVE "(f' \<circ>\<^sub>m g') \<circ>\<^sub>m (g \<circ>\<^sub>m f) = f' \<circ>\<^sub>m (g' \<circ>\<^sub>m g) \<circ>\<^sub>m f" THEN
-        HAVE "homotopic(f' \<circ>\<^sub>m (g' \<circ>\<^sub>m g) \<circ>\<^sub>m f, f' \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m f)"))) *})
+      HAVE "homotopic((g \<circ>\<^sub>m f) \<circ>\<^sub>m (f' \<circ>\<^sub>m g'), id_mor(Z))" WITH
+        HAVE "homotopic(g \<circ>\<^sub>m (f \<circ>\<^sub>m f') \<circ>\<^sub>m g', g \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m g')" THEN
+      HAVE "homotopic((f' \<circ>\<^sub>m g') \<circ>\<^sub>m (g \<circ>\<^sub>m f), id_mor(X))" WITH
+        HAVE "homotopic(f' \<circ>\<^sub>m (g' \<circ>\<^sub>m g) \<circ>\<^sub>m f, f' \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m f)")) *})
 
 end

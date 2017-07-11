@@ -15,8 +15,7 @@ signature ORD_RING_STEPS =
 sig
   type ord_ring_info
   val normalize_ineq: ord_ring_info -> wfconv
-  val ord_ring_alg_info: thm -> ord_ring_info
-  val ord_ring_alg_data: thm -> (term list * wfconv) option
+  val ord_ring_alg_data: thm -> ord_ring_info
   val ord_normalize_le: proofstep
   val ord_normalize_less: proofstep
   val add_ord_ring_proofsteps: theory -> theory
@@ -48,7 +47,7 @@ fun normalize_ineq info wft =
         WfTerm.all_conv wft
     end
 
-fun ord_ring_alg_info ord_ring_th =
+fun ord_ring_alg_data ord_ring_th =
     let
       val G = dest_arg (prop_of' ord_ring_th)
       val fheads = ord_heads G
@@ -56,23 +55,16 @@ fun ord_ring_alg_info ord_ring_th =
       val c_ring_th = ord_ring_th RS @{thm is_ord_ringD(2)}
     in
       {G = G,
-       ring_info = AlgCommRing.comm_ring_alg_info c_ring_th,
+       ring_info = AlgCommRing.comm_ring_alg_data c_ring_th,
        switch_le = rewr (ord_ring_th RS @{thm ord_ring_le_switch_left}),
        switch_less = rewr (ord_ring_th RS @{thm ord_ring_less_switch_left})
       }
     end
 
-fun ord_ring_alg_data th =
-    if not (is_Trueprop (Thm.prop_of th)) then NONE
-    else if not (Term.head_of (prop_of' th) aconv @{term is_ord_ring})
-    then NONE
-    else SOME (ord_heads (dest_arg (prop_of' th)),
-               normalize_ineq (ord_ring_alg_info th))
-
 fun ord_normalize_fn rtype _ item1 item2 =
     let
       val tbl = RewriteTable.table_of_rtype rtype
-      val {lat, ctxt, ...} = tbl
+      val {lat, ...} = tbl
       val {id = id1, prop = prop1, ...} = item1
       val {id = id2, prop = prop2, ...} = item2
       val id = BoxID.merge_boxes lat (id1, id2)
@@ -90,8 +82,13 @@ fun ord_normalize_fn rtype _ item1 item2 =
     in
       if not (diff1 aconv diff2) then []
       else let
-        fun process_wft (_, wfcv) (id', (wft1, wft2)) =
+        val pred_t = @{term is_ord_ring}
+        val fheads = ord_heads G
+        val property_infos = RewriteTable.get_property_t tbl (id, pred_t $ G)
+
+        fun process_wft property_th (id', (wft1, wft2)) =
             let
+              val wfcv = normalize_ineq (ord_ring_alg_data property_th)
               val (_, eq1) = wfcv wft1
               val (_, eq2) = wfcv wft2
             in
@@ -107,25 +104,21 @@ fun ord_normalize_fn rtype _ item1 item2 =
               end
             end
 
-        fun process_inst_info (id', (pred, fheads, wfcv)) =
-            if not (Term.head_of pred aconv @{term is_ord_ring}) then []
-            else let
-              val id'' = BoxID.merge_boxes lat (id, id')
+        fun process_property_info (id', property_th) =
+            let
               val wfts1 =
-                  RewriteTable.term_to_wfterm_on_tbl tbl fheads (id'', ct1)
+                  RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct1)
               val wfts2 =
-                  RewriteTable.term_to_wfterm_on_tbl tbl fheads (id'', ct2)
+                  RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct2)
             in
               (all_pairs (wfts1, wfts2))
                   |> map (fn ((id1, wft1), (id2, wft2)) =>
                              (BoxID.merge_boxes lat (id1, id2), (wft1, wft2)))
                   |> RewriteTable.replace_id_for_type' rtype
-                  |> maps (process_wft (pred, wfcv))
+                  |> maps (process_wft property_th)
             end
-
-        val alg_inst_infos = WfACUtil.lookup_alg_inst_info ctxt G
       in
-        maps process_inst_info alg_inst_infos
+        maps process_property_info property_infos
       end
     end
 
@@ -150,6 +143,4 @@ val add_ord_ring_proofsteps =
 
 end  (* OrdRingSteps *)
 
-val _ = Theory.setup (
-      WfACUtil.add_alg_data ("ord_ring", OrdRingSteps.ord_ring_alg_data))
 val _ = Theory.setup OrdRingSteps.add_ord_ring_proofsteps

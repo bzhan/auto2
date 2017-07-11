@@ -20,8 +20,11 @@ lemma rawequiv_graph_is_graph [forward]:
 definition rawequiv_space :: "i \<Rightarrow> i" where [rewrite]:
   "rawequiv_space(S) = {\<langle>S,\<emptyset>,G,\<emptyset>\<rangle>. G\<in>Pow(S\<times>S)}"
   
-lemma rawequiv_space_iff [rewrite]:
-  "R \<in> rawequiv_space(S) \<longleftrightarrow> (rawequiv(R) \<and> carrier(R) = S)" by auto2
+lemma rawequiv_spaceD [forward]:
+  "R \<in> rawequiv_space(S) \<Longrightarrow> rawequiv(R) \<and> carrier(R) = S" by auto2
+    
+lemma rawequiv_spaceI [resolve]:
+  "rawequiv(R) \<Longrightarrow> R \<in> rawequiv_space(carrier(R))" by auto2
 
 (* Constructor for equivalence *)
 definition Equiv :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:
@@ -111,8 +114,11 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm equiv_iff} *}
 definition equiv_space :: "i \<Rightarrow> i" where [rewrite]:
   "equiv_space(S) = {R\<in>rawequiv_space(S). equiv(R)}"
 
-lemma equiv_space_iff [rewrite]:
-  "R \<in> equiv_space(S) \<longleftrightarrow> (equiv(R) \<and> carrier(R) = S)" by auto2
+lemma equiv_spaceD [forward]:
+  "R \<in> equiv_space(S) \<Longrightarrow> equiv(R) \<and> carrier(R) = S" by auto2
+    
+lemma equiv_spaceI [backward]:
+  "equiv(R) \<Longrightarrow> R \<in> equiv_space(carrier(R))" by auto2
 setup {* del_prfstep_thm @{thm equiv_space_def} *}
 
 section {* Quotient construction *}  (* Bourbaki II.6.2 *)
@@ -184,7 +190,8 @@ definition qsurj :: "i \<Rightarrow> i" where [rewrite]:
 lemma qsurj_is_fun [typing]: "qsurj(R) \<in> carrier(R) \<rightarrow> carrier(R)//R" by auto2
 
 lemma qsurj_is_surj [forward]: "equiv(R) \<Longrightarrow> surjective(qsurj(R))"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x\<in>carrier(R)//R. qsurj(R)`rep(R,x) = x") *})
+  by (tactic {* auto2s_tac @{context} (
+    HAVE_RULE "\<forall>x\<in>carrier(R)//R. qsurj(R)`rep(R,x) = x") *})
 
 lemma qsurj_eval [rewrite]:
   "x \<in> source(qsurj(R)) \<Longrightarrow> qsurj(R)`x = equiv_class(R,x)" by auto2
@@ -221,13 +228,10 @@ setup {* del_prfstep_thm @{thm eq_fst_rel_def} *}
 
 lemma qsurj_proj_is_inj:
   "F \<noteq> \<emptyset> \<Longrightarrow> R = eq_fst_rel(E,F) \<Longrightarrow> f = (\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)//R)) \<Longrightarrow> bijective(f)"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "f \<in> E \<rightarrow> (E\<times>F) // R" WITH (
-       CHOOSE "a, a \<in> F" THEN HAVE "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)") THEN
-     HAVE "injective(f)" WITH (
-      HAVE "\<forall>x\<in>E. \<forall>y\<in>E. {x}\<times>F = {y}\<times>F \<longrightarrow> x = y" WITH HAVE "{x} \<noteq> \<emptyset>") THEN
-    (HAVE "surjective(f)" WITH (
-      HAVE "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" WITH HAVE "f`rep(R,S) = S"))) *})
+  by (tactic {* auto2s_tac @{context} (
+    HAVE "f \<in> E \<rightarrow> (E\<times>F) // R" WITH (
+      CHOOSE "a, a \<in> F" THEN HAVE_RULE "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)") THEN
+    HAVE "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" WITH HAVE "f`rep(R,S) = S") *})
 
 (* Elements of quotient form a partition. Conversely, every partition is a quotient set. *)
 lemma equiv_class_disjoint [backward]:
@@ -237,7 +241,7 @@ lemma equiv_class_disjoint [backward]:
 lemma equiv_classes_is_partition:
   "equiv(R) \<Longrightarrow> is_partition_sets(carrier(R),carrier(R)//R)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>carrier(R)//R. x = equiv_class(R,rep(R,x))") *})
+    HAVE_RULE "\<forall>x\<in>carrier(R)//R. x = equiv_class(R,rep(R,x))") *})
 
 lemma partition_mem_unique [backward]:
   "mutually_disjoint_sets(X) \<Longrightarrow> a \<in> \<Union>X \<Longrightarrow> \<exists>!x. x \<in> X \<and> a \<in> x" by auto2

@@ -425,7 +425,7 @@ lemma is_archimedeanI_pos_of_int [forward]:
 
 lemma rat_is_archimedean [forward]: "is_archimedean(\<rat>)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>r >\<^sub>\<rat> 0\<^sub>\<rat>. \<exists>z\<in>int. of_int(\<rat>,z) \<ge>\<^sub>\<rat> r" WITH (
+    HAVE "\<forall>r >\<^sub>\<rat> 0\<^sub>\<rat>. \<exists>z\<in>.\<int>. of_int(\<rat>,z) \<ge>\<^sub>\<rat> r" WITH (
       CHOOSE "a\<in>.\<int>, b>\<^sub>\<int>0\<^sub>\<int>, r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)" THEN
       HAVE "of_int(\<rat>,b) \<ge>\<^sub>\<rat> of_int(\<rat>,1\<^sub>\<int>)")) *})
 

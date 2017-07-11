@@ -80,10 +80,10 @@ lemma rel_graph_is_graph [forward]:
 definition rel2_space :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "rel2_space(S,T) = {\<langle>S,T,G,\<emptyset>\<rangle>. G\<in>Pow(S\<times>T)}"
 
-lemma rel2_space_iff [rewrite]:
-  "\<Gamma> \<in> rel2_space(S,T) \<longleftrightarrow> (rel_form(\<Gamma>) \<and> source(\<Gamma>) = S \<and> target(\<Gamma>) = T)" by auto2
+lemma rel2_spaceD [forward]:
+  "\<Gamma> \<in> rel2_space(S,T) \<Longrightarrow> rel_form(\<Gamma>) \<and> source(\<Gamma>) = S \<and> target(\<Gamma>) = T" by auto2
 
-lemma rel2_spaceI [typing]:
+lemma rel2_spaceI [resolve]:
   "rel_form(\<Gamma>) \<Longrightarrow> \<Gamma> \<in> rel2_space(source(\<Gamma>), target(\<Gamma>))" by auto2
 
 (* Constructor for relations *)
@@ -157,7 +157,8 @@ definition Tup :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> i" where [r
   "Tup(I,f) = \<langle>I, \<emptyset>, {\<langle>a, f(a)\<rangle>. a \<in> I}, \<emptyset>\<rangle>"
 
 lemma TupD: "is_family(Tup(I,f)) \<and> source(Tup(I,f)) = I"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>a\<in>I. \<langle>a, f(a)\<rangle>\<in>graph(Tup(I,f))") *})
+  by (tactic {* auto2s_tac @{context} (
+    HAVE_RULE "\<forall>a\<in>I. \<langle>a, f(a)\<rangle>\<in>graph(Tup(I,f))") *})
 setup {* add_forward_prfstep_cond @{thm TupD} [with_term "Tup(?I,?f)"] *}
 
 (* Evaluation for families. *)
@@ -245,7 +246,8 @@ translations
 
 lemma lambda_is_function [backward]:
   "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> Fun(A,B,f) \<in> A \<rightarrow> B"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x\<in>A. \<langle>x,f(x)\<rangle>\<in>graph(Fun(A,B,f))") *})
+  by (tactic {* auto2s_tac @{context} (
+    HAVE_RULE "\<forall>x\<in>A. \<langle>x,f(x)\<rangle>\<in>graph(Fun(A,B,f))") *})
 
 (* Function evaluation *)
 lemma beta [rewrite]:
@@ -337,8 +339,11 @@ lemma ord_form_to_raw [forward]: "ord_form(R) \<Longrightarrow> raworder(R)" by 
 definition raworder_space :: "i \<Rightarrow> i" where [rewrite]:
   "raworder_space(S) = {\<langle>S,\<emptyset>,G,\<emptyset>\<rangle>. G\<in>Pow(S\<times>S)}"
   
-lemma raworder_space_iff [rewrite]:
-  "R \<in> raworder_space(S) \<longleftrightarrow> (ord_form(R) \<and> carrier(R) = S)" by auto2
+lemma raworder_spaceD [forward]:
+  "R \<in> raworder_space(S) \<Longrightarrow> ord_form(R) \<and> carrier(R) = S" by auto2
+    
+lemma raworder_spaceI [resolve]:
+  "ord_form(R) \<Longrightarrow> R \<in> raworder_space(carrier(R))" by auto2
 
 (* Constructor for ordering *)
 definition Order :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:

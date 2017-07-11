@@ -550,9 +550,9 @@ lemma ord_ring_has_pos_greater [backward]:
 lemma ord_ring_is_unbounded [forward]:
   "is_ord_ring(R) \<Longrightarrow> order_unbounded(R)"
   by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.R. \<exists>y. y <\<^sub>R x" WITH (
+    HAVE_RULE "\<forall>x\<in>.R. \<exists>y. y <\<^sub>R x" WITH (
       HAVE "x <\<^sub>R x +\<^sub>R 1\<^sub>R" THEN HAVE "x -\<^sub>R 1\<^sub>R <\<^sub>R x") THEN
-    HAVE "\<forall>x\<in>.R. \<exists>y. y >\<^sub>R x" WITH HAVE "x +\<^sub>R 1\<^sub>R >\<^sub>R x") *})
+    HAVE_RULE "\<forall>x\<in>.R. \<exists>y. y >\<^sub>R x" WITH HAVE "x +\<^sub>R 1\<^sub>R >\<^sub>R x") *})
 
 lemma power_gt_0 [backward]:
   "is_ord_ring(R) \<Longrightarrow> integral_domain(R) \<Longrightarrow> e \<in> nat \<Longrightarrow> b >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> b ^\<^sub>R e >\<^sub>R \<zero>\<^sub>R"

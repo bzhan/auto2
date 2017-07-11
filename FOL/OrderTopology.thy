@@ -257,7 +257,7 @@ lemma order_top_from_order_finer1 [resolve]:
    Y = order_top_from_order(suborder(X,A)) \<Longrightarrow> is_open(Y, A \<inter> less_interval(X,x))"
   by (tactic {* auto2s_tac @{context} (
     CASE "x \<in> A" WITH HAVE "A \<inter> less_interval(X,x) = less_interval(suborder(X,A),x)" THEN
-    HAVE "A \<inter> less_interval(X,x) = \<emptyset> \<or> A \<subseteq> less_interval(X,x)" WITH (
+    HAVE_RULE "A \<inter> less_interval(X,x) = \<emptyset> \<or> A \<subseteq> less_interval(X,x)" WITH (
       CHOOSE "b \<in> A, b \<in> less_interval(X,x)" THEN
       CHOOSE "c \<in> A, c \<notin> less_interval(X,x)" THEN
       HAVE "closed_interval(X,b,c) \<subseteq> A" THEN
@@ -268,7 +268,7 @@ lemma order_top_from_order_finer2 [resolve]:
    Y = order_top_from_order(suborder(X,A)) \<Longrightarrow> is_open(Y, A \<inter> greater_interval(X,x))"
   by (tactic {* auto2s_tac @{context} (
     CASE "x \<in> A" WITH HAVE "A \<inter> greater_interval(X,x) = greater_interval(suborder(X,A),x)" THEN
-    HAVE "A \<inter> greater_interval(X,x) = \<emptyset> \<or> A \<subseteq> greater_interval(X,x)" WITH (
+    HAVE_RULE "A \<inter> greater_interval(X,x) = \<emptyset> \<or> A \<subseteq> greater_interval(X,x)" WITH (
       CHOOSE "b \<in> A, b \<in> greater_interval(X,x)" THEN
       CHOOSE "c \<in> A, c \<notin> greater_interval(X,x)" THEN
       HAVE "closed_interval(X,c,b) \<subseteq> A" THEN
