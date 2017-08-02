@@ -87,12 +87,6 @@ setup {* add_resolve_prfstep @{thm List.finite_set} *}
 theorem Min_eqI' [backward1]: "finite A \<and> (\<forall>y\<in>A. y \<ge> x) \<Longrightarrow> x \<in> A \<Longrightarrow> Min A = x" using Min_eqI by auto
 theorem Max_ge' [forward]: "finite A \<Longrightarrow> x > Max A \<Longrightarrow> \<not>(x \<in> A)" using Max_ge leD by auto
 
-subsection {* Induction for finite sets *}
-
-theorem finite_less_induct: "finite A \<Longrightarrow> (\<And>A. (\<And>B. B \<subset> A \<Longrightarrow> P B) \<Longrightarrow> P A) \<Longrightarrow> P A"
-  apply (induct rule: finite_psubset_induct) by blast
-ML_file "set_steps.ML"
-
 section {* Multiset *}
 
 subsection {* set_mset *}

@@ -94,22 +94,27 @@ setup {* add_forward_prfstep_cond @{thm bd_inv_intro} [with_term "Node ?l ?c ?k 
 subsection {* is_rbt is recursive *}
 
 theorem is_rbt_rec [forward]: "is_rbt (Node l c k v r) \<Longrightarrow> is_rbt l \<and> is_rbt r"
-  by (tactic {* auto2s_tac @{context} (CASE "c = R") *})
+@proof @case "c = R" @qed
 
 section {* Balancedness of is_rbt *}
 
 theorem depth_min: "is_rbt t \<Longrightarrow> black_depth t \<le> min_depth t"
-  by (tactic {* auto2s_tac @{context}
-    (CASE "t = Leaf" THEN
-     CASE "cl t = R" WITH
-        HAVE "black_depth t \<le> min (min_depth (lsub t)) (min_depth (rsub t))") *} )
+@proof
+  @induct t
+  @case "t = Leaf" @then
+  @case "cl t = R" @with
+    @have "black_depth t \<le> min (min_depth (lsub t)) (min_depth (rsub t))" @end
+@qed
+
 theorem two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 theorem depth_max: "is_rbt t \<Longrightarrow> if cl t = R then max_depth t \<le> 2 * black_depth t + 1
                                  else max_depth t \<le> 2 * black_depth t"
-  by (tactic {* auto2s_tac @{context}
-    (CASE "t = Leaf" THEN CASE "cl t = R" THEN
-     HAVE "max_depth (lsub t) \<le> 2 * black_depth (lsub t) + 1" THEN
-     HAVE "max_depth (rsub t) \<le> 2 * black_depth (rsub t) + 1") *} )
+@proof
+  @induct t
+  @case "t = Leaf" @then @case "cl t = R" @then
+  @have "max_depth (lsub t) \<le> 2 * black_depth (lsub t) + 1" @then
+  @have "max_depth (rsub t) \<le> 2 * black_depth (rsub t) + 1"
+@qed
 
 setup {* fold add_forward_prfstep [@{thm depth_min}, @{thm depth_max}] *}
   
@@ -117,8 +122,7 @@ setup {* add_backward_prfstep @{thm Nat.add_le_mono1} *}
 setup {* add_backward_prfstep @{thm Nat.mult_le_mono2} *}
 
 theorem balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_depth t + 1"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "max_depth t \<le> 2 * black_depth t + 1") *})
+@proof @have "max_depth t \<le> 2 * black_depth t + 1" @qed
 setup {* fold del_prfstep_thm [@{thm depth_min}, @{thm depth_max}] *}
 
 subsection {* Definition and basic properties of cl_inv' *}
@@ -132,7 +136,7 @@ setup {* add_property_const @{term cl_inv'} *}
 theorem cl_inv_B [forward, backward1]: "cl_inv' t \<Longrightarrow> cl t = B \<Longrightarrow> cl_inv t" by auto2
 theorem cl_inv_R [forward]: "cl_inv' (Node l R k v r) \<Longrightarrow> cl l = B \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (Node l R k v r)" by auto2
 theorem cl_inv_imp [forward]: "cl_inv t \<Longrightarrow> cl_inv' t"
-  by (tactic {* auto2s_tac @{context} (CASE "cl t = R") *})
+  @proof @case "cl t = R" @qed
 theorem cl_inv'I: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (Node l c k v r)" by auto
 setup {* add_forward_prfstep_cond @{thm cl_inv'I} [with_term "cl_inv' (Node ?l ?c ?k ?v ?r)"] *}
 
@@ -154,7 +158,8 @@ fun rbt_in_traverse_pairs :: "('a, 'b) pre_rbt \<Rightarrow> ('a \<times> 'b) li
 setup {* fold add_rewrite_rule @{thms rbt_in_traverse_pairs.simps} *}
 
 theorem rbt_in_traverse_fst [rewrite]:
-  "map fst (rbt_in_traverse_pairs t) = rbt_in_traverse t" by auto2
+  "map fst (rbt_in_traverse_pairs t) = rbt_in_traverse t"
+@proof @induct t @qed
 setup {* add_rewrite_rule_back_cond @{thm rbt_in_traverse_fst} [with_filt (size1_filter "t")] *}
 
 definition rbt_map :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) map" where
@@ -179,10 +184,12 @@ theorem rbt_sorted_lr [forward]:
   "rbt_sorted (Node l c k v r) \<Longrightarrow> rbt_sorted l \<and> rbt_sorted r" by auto2
 
 theorem rbt_inorder_preserve_set [rewrite_back]:
-  "set (rbt_in_traverse t) = rbt_set t" by auto2
+  "set (rbt_in_traverse t) = rbt_set t"
+@proof @induct t @qed
 
 theorem rbt_inorder_sorted [rewrite_back]:
-  "strict_sorted (rbt_in_traverse t) = rbt_sorted t" by auto2
+  "strict_sorted (rbt_in_traverse t) = rbt_sorted t"
+@proof @induct t @qed
 
 setup {* fold del_prfstep_thm (@{thms rbt_set.simps} @ @{thms rbt_sorted.simps}) *}
 

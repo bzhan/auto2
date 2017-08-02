@@ -49,8 +49,7 @@ setup {* add_prfstep_check_req ("Mor(S,T,b)", "Mor(S,T,b) \<in> S \<rightharpoon
 
 lemma Mor_is_morphism [backward]:
   "\<forall>x\<in>.S. f(x)\<in>.T \<Longrightarrow> Mor(S,T,f) \<in> S \<rightharpoonup> T"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>.S. \<langle>x,f(x)\<rangle>\<in>graph(Mor(S,T,f))") *})
+@proof @have "\<forall>x\<in>.S. \<langle>x,f(x)\<rangle>\<in>graph(Mor(S,T,f))" @qed
 
 setup {* add_rewrite_rule @{thm feval_def} *}
 lemma Mor_eval [rewrite]:
@@ -171,8 +170,7 @@ setup {* del_prfstep_thm @{thm inverse_mor_def} *}
   
 lemma inv_mor_bijective [forward]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> bijective(inverse_mor(f))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>source(f). inverse_mor(f)`(f`x) = x") *})
+@proof @have "\<forall>x\<in>source(f). inverse_mor(f)`(f`x) = x" @qed
 
 lemma inverse_is_left_inv [rewrite]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> inverse_mor(f) \<circ>\<^sub>m f = id_mor(source_str(f))" by auto2
@@ -193,14 +191,16 @@ section {* Left and right inverses *}
 lemma has_left_inverse_mor_inj [forward]:
   "is_morphism(f) \<Longrightarrow> is_morphism(r) \<Longrightarrow> target_str(f) = source_str(r) \<Longrightarrow>
    r \<circ>\<^sub>m f = id_mor(source_str(f)) \<Longrightarrow> injective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y" WITH HAVE "r`(f`x)=x") *})
+@proof
+  @have "\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y" @with @have "r`(f`x)=x" @end
+@qed
 
 lemma has_right_inverse_mor_surj [forward]:
   "is_morphism(f) \<Longrightarrow> is_morphism(s) \<Longrightarrow> target_str(s) = source_str(f) \<Longrightarrow>
    f \<circ>\<^sub>m s = id_mor(target_str(f)) \<Longrightarrow> surjective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>target(f). x\<in>image(f)" WITH HAVE "f`(s`x) = x") *})
+@proof
+  @have "\<forall>x\<in>target(f). x\<in>image(f)" @with @have "f`(s`x) = x" @end
+@qed
 
 (* Two morphisms that are inverses of each other. *)
 definition inverse_mor_pair :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
@@ -223,24 +223,25 @@ setup {* del_prfstep_thm @{thm inverse_mor_pair_def} *}
 
 lemma inverse_mor_pair_inverse [rewrite]:
   "mor_form(g) \<Longrightarrow> inverse_mor_pair(f,g) \<Longrightarrow> inverse_mor(f) = g"
-  by (tactic {* auto2s_tac @{context} (HAVE "g \<circ>\<^sub>m f = id_mor(source_str(f))") *})
+@proof @have "g \<circ>\<^sub>m f = id_mor(source_str(f))" @qed
     
 lemma inverse_mor_pair_inverse2 [rewrite]:
   "mor_form(f) \<Longrightarrow> inverse_mor_pair(f,g) \<Longrightarrow> inverse_mor(g) = f"
-  by (tactic {* auto2s_tac @{context} (HAVE "g \<circ>\<^sub>m f = id_mor(source_str(f))") *})  
+@proof @have "g \<circ>\<^sub>m f = id_mor(source_str(f))" @qed
 
 (* Construction of left and right inverses. *)
 lemma exists_right_inverse_mor [resolve]:
   "is_morphism(f) \<Longrightarrow> surjective(f) \<Longrightarrow> A = source_str(f) \<Longrightarrow> B = target_str(f) \<Longrightarrow> \<exists>s\<in>B\<rightharpoonup>A. f \<circ>\<^sub>m s = id_mor(B)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "s = Mor(B,A, \<lambda>y. SOME x\<in>.A. f`x=y)") *})
+@proof @let "s = Mor(B,A, \<lambda>y. SOME x\<in>.A. f`x=y)" @qed
 
 lemma exists_pullback_surj_mor [backward1]:
   "is_morphism(f) \<Longrightarrow> surjective(g) \<Longrightarrow> g \<in> E \<rightharpoonup> F \<Longrightarrow> f \<in> E \<rightharpoonup> G \<Longrightarrow>
    \<forall>x\<in>.E. \<forall>y\<in>.E. g`x=g`y \<longrightarrow> f`x=f`y \<Longrightarrow> \<exists>!h. h\<in>F\<rightharpoonup>G \<and> f = h \<circ>\<^sub>m g"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<exists>h\<in>F\<rightharpoonup>G. f = h \<circ>\<^sub>m g" WITH (
-      CHOOSE "s\<in>F\<rightharpoonup>E, g \<circ>\<^sub>m s = id_mor(F)" THEN
-      CHOOSE "h\<in>F\<rightharpoonup>G, h = f \<circ>\<^sub>m s")) *})
+@proof
+  @have "\<exists>h\<in>F\<rightharpoonup>G. f = h \<circ>\<^sub>m g" @with
+    @obtain "s\<in>F\<rightharpoonup>E" where "g \<circ>\<^sub>m s = id_mor(F)" @then
+    @obtain "h\<in>F\<rightharpoonup>G" where "h = f \<circ>\<^sub>m s"
+  @end
+@qed
 
 end

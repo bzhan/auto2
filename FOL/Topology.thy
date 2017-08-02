@@ -51,7 +51,7 @@ setup {* add_forward_prfstep_cond @{thm open_sets_Top} [with_term "Top(?S,?T)"] 
 lemma top_space_form_eq [backward]:
   "top_space_form(X) \<Longrightarrow> top_space_form(Y) \<Longrightarrow> carrier(X) = carrier(Y) \<Longrightarrow>
    \<forall>U. is_open(X,U) \<longleftrightarrow> is_open(Y,U) \<Longrightarrow> X = Y"
-  by (tactic {* auto2s_tac @{context} (HAVE "open_sets(X) = open_sets(Y)") *})
+@proof @have "open_sets(X) = open_sets(Y)" @qed
 
 setup {* fold del_prfstep_thm [
   @{thm top_space_form_def}, @{thm raw_top_spaces_def}, @{thm Top_def}, @{thm is_open_def}] *}
@@ -67,13 +67,13 @@ setup {* add_property_const @{term union_closed} *}
   
 lemma union_closedD1 [backward]:
   "union_closed(X) \<Longrightarrow> \<forall>U\<in>C. is_open(X,U) \<Longrightarrow> is_open(X,\<Union>C)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "F = Tup(C, \<lambda>x. x)" THEN HAVE "(\<Union>C) = (\<Union>x\<in>source(F). F`x)") *})
+@proof
+  @let "F = Tup(C, \<lambda>x. x)" @then @have "(\<Union>C) = (\<Union>x\<in>source(F). F`x)"
+@qed
     
 lemma union_closedD2 [backward]:
   "union_closed(X) \<Longrightarrow> \<forall>a\<in>I. is_open(X,C(a)) \<Longrightarrow> is_open(X,\<Union>a\<in>I. C(a))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(\<Union>a\<in>I. C(a)) = \<Union>{C(a). a\<in>I}") *})
+@proof @have "(\<Union>a\<in>I. C(a)) = \<Union>{C(a). a\<in>I}" @qed
       
 lemma union_closedI [backward]:
   "\<forall>C. (\<forall>x\<in>source(C). is_open(X,C`x)) \<longrightarrow> is_open(X,\<Union>x\<in>source(C).C`x) \<Longrightarrow> union_closed(X)" by auto2
@@ -176,13 +176,14 @@ lemma top_has_basis_is_openE' [forward]:
     
 lemma top_has_basis_is_openI' [backward2]:
   "top_has_basis(X,\<B>) \<Longrightarrow> \<forall>x\<in>U. \<exists>B\<in>\<B>. x \<in> B \<and> B \<subseteq> U \<Longrightarrow> is_open(X,U)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "\<forall>x\<in>U. \<exists>B\<in>\<B>. x \<in> B \<and> B \<subseteq> U" WITH (
-      LET "S = {(SOME B\<in>\<B>. x \<in> B \<and> B \<subseteq> U). x\<in>U}" THEN HAVE "\<Union>S = U")) *})
+@proof
+  @case "\<forall>x\<in>U. \<exists>B\<in>\<B>. x \<in> B \<and> B \<subseteq> U" @with
+    @let "S = {(SOME B\<in>\<B>. x \<in> B \<and> B \<subseteq> U). x\<in>U}" @then @have "\<Union>S = U" @end
+@qed
 
 lemma top_has_basis_id [resolve]:
   "is_top_space(X) \<Longrightarrow> top_has_basis(X, open_sets(X))"
-  by (tactic {* auto2s_tac @{context} (HAVE_RULE "\<forall>U\<in>open_sets(X). U = \<Union>{U}") *})
+@proof @have (@rule) "\<forall>U\<in>open_sets(X). U = \<Union>{U}" @qed
     
 lemma top_has_basis_eq_str_top [rewrite]:
   "eq_str_top(X,Y) \<Longrightarrow> top_has_basis(X,\<B>) \<longleftrightarrow> top_has_basis(Y,\<B>)" by auto2
@@ -190,13 +191,14 @@ lemma top_has_basis_eq_str_top [rewrite]:
 lemma top_has_basisI' [backward1]:
   "is_top_space(X) \<Longrightarrow> \<B> \<subseteq> open_sets(X) \<Longrightarrow> \<forall>U\<in>open_sets(X). \<forall>x\<in>U. \<exists>C\<in>\<B>. x \<in> C \<and> C \<subseteq> U \<Longrightarrow>
    top_has_basis(X,\<B>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "collection_is_basis(\<B>)" WITH (
-      HAVE "\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. \<forall>x\<in>U\<inter>V. \<exists>W\<in>\<B>. x\<in>W \<and> W\<subseteq>U\<inter>V" WITH (
-        HAVE "is_open(X,U \<inter> V)")) THEN
-    HAVE "carrier(X) = \<Union>\<B>" WITH HAVE "is_open(X,carrier(X))" THEN
-    HAVE "\<forall>U\<in>open_sets(X). U \<in> {\<Union>S. S\<in>Pow(\<B>)}" WITH (
-      LET "S = {(SOME B\<in>\<B>. x \<in> B \<and> B \<subseteq> U). x\<in>U}" THEN HAVE "\<Union>S = U")) *})
+@proof
+  @have "collection_is_basis(\<B>)" @with
+    @have "\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. \<forall>x\<in>U\<inter>V. \<exists>W\<in>\<B>. x\<in>W \<and> W\<subseteq>U\<inter>V" @with
+      @have "is_open(X,U \<inter> V)" @end @end
+  @have "carrier(X) = \<Union>\<B>" @with @have "is_open(X,carrier(X))" @end
+  @have "\<forall>U\<in>open_sets(X). U \<in> {\<Union>S. S\<in>Pow(\<B>)}" @with
+    @let "S = {(SOME B\<in>\<B>. x \<in> B \<and> B \<subseteq> U). x\<in>U}" @then @have "\<Union>S = U" @end
+@qed
 
 lemma topology_basis_eq [forward]:
   "top_space_form(X) \<Longrightarrow> top_space_form(Y) \<Longrightarrow> top_has_basis(X,\<B>) \<Longrightarrow> top_has_basis(Y,\<B>) \<Longrightarrow> X = Y"
@@ -210,17 +212,18 @@ setup {* del_prfstep_thm @{thm top_has_basis_def} *}
 
 lemma top_has_basis_finite_inter_closed [forward]:
   "top_has_basis(X,\<B>) \<Longrightarrow> finite_inter_closed(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>U V. is_open(X,U) \<longrightarrow> is_open(X,V) \<longrightarrow> is_open(X,U \<inter> V)" WITH (
-      HAVE "\<forall>x\<in>U\<inter>V. \<exists>B\<in>\<B>. x \<in> B \<and> B \<subseteq> U\<inter>V" WITH (
-        CHOOSE "B1\<in>\<B>, x \<in> B1 \<and> B1 \<subseteq> U" THEN
-        CHOOSE "B2\<in>\<B>, x \<in> B2 \<and> B2 \<subseteq> V" THEN
-        HAVE "x \<in> B1 \<inter> B2" THEN
-        CHOOSE "W\<in>\<B>, x \<in> W \<and> W \<subseteq> B1 \<inter> B2"))) *})
+@proof
+  @have "\<forall>U V. is_open(X,U) \<longrightarrow> is_open(X,V) \<longrightarrow> is_open(X,U \<inter> V)" @with
+    @have "\<forall>x\<in>U\<inter>V. \<exists>B\<in>\<B>. x \<in> B \<and> B \<subseteq> U\<inter>V" @with
+      @obtain "B1\<in>\<B>" where "x \<in> B1 \<and> B1 \<subseteq> U" @then
+      @obtain "B2\<in>\<B>" where "x \<in> B2 \<and> B2 \<subseteq> V" @then
+      @have "x \<in> B1 \<inter> B2" @then
+      @obtain "W\<in>\<B>" where "x \<in> W \<and> W \<subseteq> B1 \<inter> B2" @end @end
+@qed
 
 lemma top_has_basis_is_topology [forward]:
   "is_top_space_raw(X) \<Longrightarrow> top_has_basis(X,\<B>) \<Longrightarrow> is_top_space(X)"
-  by (tactic {* auto2s_tac @{context} (HAVE "carrier(X) = \<Union>\<B>") *})
+@proof @have "carrier(X) = \<Union>\<B>" @qed
 
 lemma top_has_basis_is_open_trivial [forward]:
   "top_has_basis(X,\<B>) \<Longrightarrow> S \<in> \<B> \<Longrightarrow> is_open(X,S)" by auto2
@@ -233,7 +236,7 @@ section {* Open and closed sets *}
   
 lemma open_union_pair [backward1,backward2]:
   "is_top_space(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> is_open(X,V) \<Longrightarrow> is_open(X,U \<union> V)"
-  by (tactic {* auto2s_tac @{context} (HAVE "U \<union> V = \<Union>{U,V}") *})
+@proof @have "U \<union> V = \<Union>{U,V}" @qed
     
 definition is_closed :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "is_closed(X,A) \<longleftrightarrow> (A \<subseteq> carrier(X) \<and> is_open(X, carrier(X) \<midarrow> A))"
@@ -247,11 +250,11 @@ setup {* del_prfstep_thm @{thm closed_sets_def} *}
 
 lemma is_closed_empty [resolve]:
   "is_top_space(X) \<Longrightarrow> is_closed(X,\<emptyset>)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<emptyset> = carrier(X) \<midarrow> carrier(X)") *})
+@proof  @have "\<emptyset> = carrier(X) \<midarrow> carrier(X)" @qed
     
 lemma is_closed_full [resolve]:
   "is_top_space(X) \<Longrightarrow> is_closed(X,carrier(X))"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<emptyset> = carrier(X) \<midarrow> carrier(X)") *})
+@proof  @have "\<emptyset> = carrier(X) \<midarrow> carrier(X)" @qed
 
 lemma is_open_compl [rewrite]:
   "is_top_space(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> is_open(X, carrier(X) \<midarrow> A) \<longleftrightarrow> is_closed(X,A)" by auto2
@@ -270,8 +273,9 @@ lemma closed_inter1 [backward]:
 
 lemma closed_inter2 [backward]:
   "is_top_space(X) \<Longrightarrow> C \<noteq> \<emptyset> \<Longrightarrow> \<forall>A\<in>C. is_closed(X,A) \<Longrightarrow> is_closed(X,\<Inter>C)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "F = Tup(C, \<lambda>x. x)" THEN HAVE "(\<Inter>C) = (\<Inter>x\<in>source(F). F`x)") *})
+@proof
+  @let "F = Tup(C, \<lambda>x. x)" @then @have "(\<Inter>C) = (\<Inter>x\<in>source(F). F`x)"
+@qed
 
 section {* Empty topological space *}
 
@@ -302,71 +306,77 @@ setup {* del_prfstep_thm @{thm subspace_def} *}
 
 lemma subspace_is_top_space:
   "is_top_space(\<X>) \<Longrightarrow> Y \<subseteq> carrier(\<X>) \<Longrightarrow> is_top_space(subspace(\<X>,Y))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "\<Y> = subspace(\<X>,Y)" THEN
-    HAVE "\<emptyset> = Y \<inter> \<emptyset>" THEN HAVE "Y = Y \<inter> carrier(\<X>)" THEN
-    HAVE "\<forall>C. (\<forall>x\<in>source(C). is_open(\<Y>,C`x)) \<longrightarrow> is_open(\<Y>,\<Union>x\<in>source(C). C`x)" WITH (
-      LET "C' = Tup(source(C), \<lambda>x. (SOME V\<in>open_sets(\<X>). C`x = Y \<inter> V))" THEN
-      HAVE "\<forall>x\<in>source(C). C`x = Y \<inter> C'`x" THEN
-      HAVE "(Y \<inter> (\<Union>x\<in>source(C).C'`x)) = (\<Union>x\<in>source(C). C`x)") THEN
-    HAVE "\<forall>U V. is_open(\<Y>,U) \<longrightarrow> is_open(\<Y>,V) \<longrightarrow> is_open(\<Y>,U \<inter> V)" WITH (
-      CHOOSE "U'\<in>open_sets(\<X>), U = Y \<inter> U'" THEN
-      CHOOSE "V'\<in>open_sets(\<X>), V = Y \<inter> V'" THEN
-      HAVE "Y \<inter> (U' \<inter> V') = U \<inter> V")) *})
+@proof
+  @let "\<Y> = subspace(\<X>,Y)" @then
+  @have "\<emptyset> = Y \<inter> \<emptyset>" @then @have "Y = Y \<inter> carrier(\<X>)" @then
+  @have "\<forall>C. (\<forall>x\<in>source(C). is_open(\<Y>,C`x)) \<longrightarrow> is_open(\<Y>,\<Union>x\<in>source(C). C`x)" @with
+    @let "C' = Tup(source(C), \<lambda>x. (SOME V\<in>open_sets(\<X>). C`x = Y \<inter> V))" @then
+    @have "\<forall>x\<in>source(C). C`x = Y \<inter> C'`x" @then
+    @have "(Y \<inter> (\<Union>x\<in>source(C).C'`x)) = (\<Union>x\<in>source(C). C`x)" @end
+  @have "\<forall>U V. is_open(\<Y>,U) \<longrightarrow> is_open(\<Y>,V) \<longrightarrow> is_open(\<Y>,U \<inter> V)" @with
+    @obtain "U'\<in>open_sets(\<X>)" where "U = Y \<inter> U'" @then
+    @obtain "V'\<in>open_sets(\<X>)" where "V = Y \<inter> V'" @then
+    @have "Y \<inter> (U' \<inter> V') = U \<inter> V" @end
+@qed
 setup {* add_forward_prfstep_cond @{thm subspace_is_top_space} [with_term "subspace(?\<X>,?Y)"] *}
 
 lemma subspace_is_closedD [resolve]:
   "is_top_space(\<X>) \<Longrightarrow> X = carrier(\<X>) \<Longrightarrow> Y \<subseteq> X \<Longrightarrow> is_closed(subspace(\<X>,Y),A) \<Longrightarrow>
    \<exists>B\<in>closed_sets(\<X>). A = Y \<inter> B"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "U\<in>open_sets(\<X>), Y \<midarrow> A = Y \<inter> U" THEN
-    HAVE "A = Y \<inter> (X \<midarrow> U)" WITH
-      HAVE "Y \<inter> (X \<midarrow> U) = Y \<inter> X \<midarrow> Y \<inter> U") *})
+@proof
+  @obtain "U\<in>open_sets(\<X>)" where "Y \<midarrow> A = Y \<inter> U" @then
+  @have "A = Y \<inter> (X \<midarrow> U)" @with
+    @have "Y \<inter> (X \<midarrow> U) = Y \<inter> X \<midarrow> Y \<inter> U" @end
+@qed
 
 lemma subspace_is_closedI [backward]:
   "is_top_space(\<X>) \<Longrightarrow> X = carrier(\<X>) \<Longrightarrow> Y \<subseteq> X \<Longrightarrow> is_closed(\<X>,C) \<Longrightarrow> is_closed(subspace(\<X>,Y), Y \<inter> C)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_open(subspace(\<X>,Y), Y \<inter> (X \<midarrow> C))" THEN
-    HAVE "Y \<inter> (X \<midarrow> C) = Y \<midarrow> (Y \<inter> C)") *})
+@proof
+  @have "is_open(subspace(\<X>,Y), Y \<inter> (X \<midarrow> C))" @then
+  @have "Y \<inter> (X \<midarrow> C) = Y \<midarrow> (Y \<inter> C)"
+@qed
       
 (* Open subspaces *)
 lemma open_subspace_is_open [rewrite]:
   "is_top_space(X) \<Longrightarrow> is_open(X,Y) \<Longrightarrow> U \<subseteq> carrier(subspace(X,Y)) \<Longrightarrow>
    is_open(subspace(X,Y),U) \<longleftrightarrow> is_open(X,U)"
-  by (tactic {* auto2s_tac @{context} (CHOOSE "V\<in>open_sets(X), U = Y \<inter> V") *})
+@proof @contradiction @obtain "V\<in>open_sets(X)" where "U = Y \<inter> V" @qed
 
 (* Closed subspaces *)
 lemma closed_subspace_is_closed [rewrite]:
   "is_top_space(X) \<Longrightarrow> is_closed(X,Y) \<Longrightarrow> A \<subseteq> carrier(subspace(X,Y)) \<Longrightarrow>
    is_closed(subspace(X,Y),A) \<longleftrightarrow> is_closed(X,A)"
-  by (tactic {* auto2s_tac @{context} (CHOOSE "B\<in>closed_sets(X), A = Y \<inter> B") *})
+@proof @contradiction @obtain "B\<in>closed_sets(X)" where "A = Y \<inter> B" @qed
 
 lemma subspace_basis [backward]:
   "is_top_space(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> top_has_basis(X,\<B>) \<Longrightarrow> top_has_basis(subspace(X,A), {A \<inter> U. U \<in> \<B>})"
-  by (tactic {* auto2s_tac @{context} (
-    LET "\<C> = {A \<inter> U. U \<in> \<B>}" THEN
-    HAVE "\<forall>U\<in>open_sets(subspace(X,A)). \<forall>x\<in>U. \<exists>C\<in>\<C>. x \<in> C \<and> C \<subseteq> U" WITH (
-      CHOOSE "V\<in>open_sets(X), U = A \<inter> V" THEN
-      CHOOSE "B\<in>\<B>, x \<in> B \<and> B \<subseteq> V" THEN
-      HAVE "x \<in> A \<inter> B \<and> A \<inter> B \<subseteq> U")) *})
+@proof
+  @let "\<C> = {A \<inter> U. U \<in> \<B>}" @then
+  @have "\<forall>U\<in>open_sets(subspace(X,A)). \<forall>x\<in>U. \<exists>C\<in>\<C>. x \<in> C \<and> C \<subseteq> U" @with
+    @obtain "V\<in>open_sets(X)" where "U = A \<inter> V" @then
+    @obtain "B\<in>\<B>" where "x \<in> B \<and> B \<subseteq> V" @then
+    @have "x \<in> A \<inter> B \<and> A \<inter> B \<subseteq> U" @end
+@qed
 
 lemma subspace_id [rewrite]:
   "top_space_form(X) \<Longrightarrow> is_top_space(X) \<Longrightarrow> subspace(X,carrier(X)) = X"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "top_has_basis(X, open_sets(X))" THEN
-    HAVE "top_has_basis(subspace(X,carrier(X)), {carrier(X) \<inter> U. U \<in> open_sets(X)})") *})
+@proof
+  @have "top_has_basis(X, open_sets(X))" @then
+  @have "top_has_basis(subspace(X,carrier(X)), {carrier(X) \<inter> U. U \<in> open_sets(X)})"
+@qed
 
 lemma subspace_trans [rewrite]:
   "is_top_space(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> B \<subseteq> carrier(subspace(X,A)) \<Longrightarrow>
    subspace(subspace(X,A),B) = subspace(X,B)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "\<A> = {A \<inter> U. U \<in> open_sets(X)}" THEN
-    LET "\<B> = {B \<inter> U. U \<in> open_sets(X)}" THEN
-    HAVE "top_has_basis(subspace(X,A), \<A>)" THEN
-    HAVE "top_has_basis(subspace(X,B), \<B>)" THEN
-    HAVE "top_has_basis(subspace(subspace(X,A),B), {B \<inter> U. U \<in> \<A>})" THEN
-    HAVE "\<B> = {B \<inter> U. U \<in> \<A>}" WITH (
-      HAVE_RULE "\<forall>U\<in>open_sets(X). B \<inter> U = B \<inter> (A \<inter> U)")) *})
+@proof
+  @let "\<A> = {A \<inter> U. U \<in> open_sets(X)}" @then
+  @let "\<B> = {B \<inter> U. U \<in> open_sets(X)}" @then
+  @have "top_has_basis(subspace(X,A), \<A>)" @then
+  @have "top_has_basis(subspace(X,B), \<B>)" @then
+  @have "top_has_basis(subspace(subspace(X,A),B), {B \<inter> U. U \<in> \<A>})" @then
+  @have "\<B> = {B \<inter> U. U \<in> \<A>}" @with
+    @have (@rule) "\<forall>U\<in>open_sets(X). B \<inter> U = B \<inter> (A \<inter> U)" @end
+@qed
 
 section {* Neighborhoods *}
   
@@ -380,9 +390,10 @@ setup {* del_prfstep_thm @{thm neighs_def} *}
   
 lemma top_space_is_open_local [backward1]:
   "is_top_space(X) \<Longrightarrow> V \<subseteq> carrier(X) \<Longrightarrow> \<forall>x\<in>V. \<exists>U\<in>neighs(X,x). U \<subseteq> V \<Longrightarrow> is_open(X,V)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "C = Tup(V, \<lambda>x. SOME U\<in>neighs(X,x). U \<subseteq> V)" THEN
-    HAVE "V = (\<Union>x\<in>V. C`x)") *})
+@proof
+  @let "C = Tup(V, \<lambda>x. SOME U\<in>neighs(X,x). U \<subseteq> V)" @then
+  @have "V = (\<Union>x\<in>V. C`x)"
+@qed
 
 section {* Continuous functions *}
 
@@ -437,54 +448,57 @@ setup {* add_forward_prfstep_cond @{thm comp_continuous} [with_term "?g \<circ>\
 lemma comp_continuous' [backward]:
   "Y = source_str(G) \<Longrightarrow> G \<in> Y \<rightharpoonup>\<^sub>T target_str(G) \<Longrightarrow> F = Mor(X,Y,\<lambda>x. f(x)) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T Y \<Longrightarrow>
    continuous(Mor(X,target_str(G),\<lambda>x. G`(f(x))))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x)" THEN
-    HAVE "Mor(X,target_str(G),\<lambda>x. G`(f(x))) = G \<circ>\<^sub>m F") *})
+@proof
+  @have (@rule) "\<forall>x\<in>.X. F`x = f(x)" @then
+  @have "Mor(X,target_str(G),\<lambda>x. G`(f(x))) = G \<circ>\<^sub>m F"
+@qed
 
 lemma comp_continuous'' [backward2]:
   "is_top_space(Z) \<Longrightarrow> A \<subseteq> carrier(Z) \<Longrightarrow> Y = source_str(G) \<Longrightarrow> target_str(G) = subspace(Z,A) \<Longrightarrow>
    F = Mor(X,Y,\<lambda>x. f(x)) \<Longrightarrow> G \<in> Y \<rightharpoonup>\<^sub>T subspace(Z,A) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T Y \<Longrightarrow>
    continuous(Mor(X,Z,\<lambda>x. G`(f(x))))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>.X. F`x = f(x)" THEN
-    HAVE "Mor(X,Z,\<lambda>x. G`(f(x))) = inj_mor(subspace(Z,A),Z) \<circ>\<^sub>m G \<circ>\<^sub>m F") *})
+@proof
+  @have (@rule) "\<forall>x\<in>.X. F`x = f(x)" @then
+  @have "Mor(X,Z,\<lambda>x. G`(f(x))) = inj_mor(subspace(Z,A),Z) \<circ>\<^sub>m G \<circ>\<^sub>m F"
+@qed
 setup {* del_prfstep_thm @{thm continuous_def} *}
 
 lemma continuousD_neighs [backward]:
   "continuous(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> x \<in>. X \<Longrightarrow> V \<in> neighs(target_str(f),f`x) \<Longrightarrow>
    \<exists>U\<in>neighs(X,x). f``U \<subseteq> V"
-  by (tactic {* auto2s_tac @{context} (HAVE "is_open(source_str(f), f -`` V)") *})
+@proof @have "is_open(source_str(f), f -`` V)" @qed
 
 lemma continuousI_neighs [forward]:
   "is_morphism_top(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow>
    \<forall>x\<in>.X. \<forall>V\<in>neighs(Y,f`x). \<exists>U\<in>neighs(X,x). f``U \<subseteq> V \<Longrightarrow> continuous(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>V\<in>open_sets(Y). is_open(X,f-``V)" WITH (
-      HAVE "\<forall>x\<in>f-``V. \<exists>U\<in>neighs(X,x). U \<subseteq> f-``V")) *})
+@proof
+  @have "\<forall>V\<in>open_sets(Y). is_open(X,f-``V)" @with
+    @have "\<forall>x\<in>f-``V. \<exists>U\<in>neighs(X,x). U \<subseteq> f-``V" @end
+@qed
 
 lemma continuousI_basis [forward]:
   "is_morphism_top(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow>
    top_has_basis(Y,\<B>) \<Longrightarrow> \<forall>V\<in>\<B>. is_open(X, f -`` V) \<Longrightarrow> continuous(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. \<forall>V\<in>neighs(Y,f`x). \<exists>U\<in>neighs(X,x). f``U \<subseteq> V") *})
+@proof @have "\<forall>x\<in>.X. \<forall>V\<in>neighs(Y,f`x). \<exists>U\<in>neighs(X,x). f``U \<subseteq> V" @qed
     
 lemma continuousD_closed [backward]:
   "continuous(f) \<Longrightarrow> is_closed(target_str(f),B) \<Longrightarrow> is_closed(source_str(f),f-``B)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_open(source_str(f), f -`` (target(f) \<midarrow> B))") *})
+@proof @have "is_open(source_str(f), f -`` (target(f) \<midarrow> B))" @qed
 setup {* add_forward_prfstep_cond @{thm continuousD_closed} [with_term "?f -`` ?B"] *}
     
 lemma continuousI_closed [forward]:
   "is_morphism_top(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow>
    \<forall>B\<in>closed_sets(Y). is_closed(X, f -`` B) \<Longrightarrow> continuous(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>V\<in>open_sets(Y). is_open(X,f-``V)" WITH (
-      HAVE "is_closed(Y,target(f)\<midarrow>V)")) *})
+@proof
+  @have "\<forall>V\<in>open_sets(Y). is_open(X,f-``V)" @with
+    @have "is_closed(Y,target(f)\<midarrow>V)" @end
+@qed
 
 lemma const_continuous:
   "is_top_space(X) \<Longrightarrow> is_top_space(Y) \<Longrightarrow> y \<in>. Y \<Longrightarrow> const_mor(X,Y,y) \<in> X \<rightharpoonup>\<^sub>T Y"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>V\<in>open_sets(Y). is_open(X,const_mor(X,Y,y)-``V)" WITH CASE "y \<in> V") *})
+@proof
+  @have "\<forall>V\<in>open_sets(Y). is_open(X,const_mor(X,Y,y)-``V)" @with @case "y \<in> V" @end
+@qed
 setup {* add_forward_prfstep_cond @{thm const_continuous} [with_term "const_mor(?X,?Y,?y)"] *}
   
 definition mor_restrict_top :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "|\<^sub>T" 55) where [rewrite]:
@@ -497,8 +511,7 @@ lemma mor_restrict_top_is_morphism [typing]:
 
 lemma mor_restrict_top_is_continuous [typing]:
   "continuous(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> f |\<^sub>T A \<in> subspace(X,A) \<rightharpoonup>\<^sub>T target_str(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f |\<^sub>T A = f \<circ>\<^sub>m inj_mor(subspace(X,A),X)") *})
+@proof @have "f |\<^sub>T A = f \<circ>\<^sub>m inj_mor(subspace(X,A),X)" @qed
 
 lemma mor_restrict_top_eval [rewrite]:
   "is_morphism(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> x \<in> source(f |\<^sub>T A) \<Longrightarrow> (f |\<^sub>T A) ` x = f ` x" by auto2
@@ -518,11 +531,12 @@ setup {* add_prfstep_check_req ("mor_restrict_image_top(f,A)", "image(f) \<subse
 lemma mor_restrict_image_top_is_continuous [typing]:
   "continuous(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow> image(f) \<subseteq> A \<Longrightarrow> A \<subseteq> target(f) \<Longrightarrow>
    Z = subspace(Y,A) \<Longrightarrow> mor_restrict_image_top(f,A) \<in> X \<rightharpoonup>\<^sub>T Z"
-  by (tactic {* auto2s_tac @{context} (
-    LET "g = mor_restrict_image_top(f,A)" THEN
-    HAVE "\<forall>V\<in>open_sets(Z). is_open(X, g -`` V)" WITH (
-      CHOOSE "U\<in>open_sets(Y), V = A \<inter> U" THEN
-      HAVE "g -`` V = f -`` U")) *})
+@proof
+  @let "g = mor_restrict_image_top(f,A)" @then
+  @have "\<forall>V\<in>open_sets(Z). is_open(X, g -`` V)" @with
+    @obtain "U\<in>open_sets(Y)" where "V = A \<inter> U" @then
+    @have "g -`` V = f -`` U" @end
+@qed
 
 lemma mor_restrict_image_top_eval [rewrite]:
   "is_morphism(f) \<Longrightarrow> g = mor_restrict_image_top(f,A) \<Longrightarrow> image(f) \<subseteq> A \<Longrightarrow>
@@ -537,8 +551,7 @@ setup {* add_prfstep_check_req ("mor_restrict2_top(f,A,B)", "A \<subseteq> sourc
 lemma mor_restrict2_top_is_continuous [typing]:
   "continuous(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> f``A \<subseteq> B \<Longrightarrow>
    B \<subseteq> target(f) \<Longrightarrow> X' = subspace(X,A) \<Longrightarrow> Y' = subspace(Y,B) \<Longrightarrow> mor_restrict2_top(f,A,B) \<in> X' \<rightharpoonup>\<^sub>T Y'"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "mor_restrict2_top(f,A,B) = mor_restrict_image_top(f |\<^sub>T A, B)") *})
+@proof @have "mor_restrict2_top(f,A,B) = mor_restrict_image_top(f |\<^sub>T A, B)" @qed
       
 lemma mor_restrict2_top_eval [rewrite]:
   "is_morphism(f) \<Longrightarrow> g = mor_restrict2_top(f,A,B) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> f``A \<subseteq> B \<Longrightarrow>
@@ -549,18 +562,20 @@ lemma continuous_paste_open:
   "is_morphism_top(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow>
    carrier(X) = A \<union> B \<Longrightarrow> is_open(X,A) \<Longrightarrow> is_open(X,B) \<Longrightarrow>
    continuous(f |\<^sub>T A) \<Longrightarrow> continuous(f |\<^sub>T B) \<Longrightarrow> continuous(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>V\<in>open_sets(Y). is_open(X, f -`` V)" WITH (
-      HAVE "f -`` V = ((f |\<^sub>T A) -`` V) \<union> ((f |\<^sub>T B) -`` V)")) *})
+@proof
+  @have "\<forall>V\<in>open_sets(Y). is_open(X, f -`` V)" @with
+    @have "f -`` V = ((f |\<^sub>T A) -`` V) \<union> ((f |\<^sub>T B) -`` V)" @end
+@qed
 
 (* Pasting lemma *)
 lemma continuous_paste_closed [backward2]:
   "is_morphism_top(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow>
    carrier(X) = A \<union> B \<Longrightarrow> is_closed(X,A) \<Longrightarrow> is_closed(X,B) \<Longrightarrow>
    continuous(f |\<^sub>T A) \<Longrightarrow> continuous(f |\<^sub>T B) \<Longrightarrow> continuous(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>D\<in>closed_sets(Y). is_closed(X, f -`` D)" WITH (
-      HAVE "f -`` D = ((f |\<^sub>T A) -`` D) \<union> ((f |\<^sub>T B) -`` D)")) *})
+@proof
+  @have "\<forall>D\<in>closed_sets(Y). is_closed(X, f -`` D)" @with
+    @have "f -`` D = ((f |\<^sub>T A) -`` D) \<union> ((f |\<^sub>T B) -`` D)" @end
+@qed
 
 definition glue_morphism :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
   "glue_morphism(X,g,h) = Mor(X,target_str(g),\<lambda>x. if x\<in>source(g) then g`x else h`x)"
@@ -584,9 +599,10 @@ lemma continuous_paste_closed2 [backward]:
   "is_top_space(X) \<Longrightarrow> A = source(g) \<Longrightarrow> B = source(h) \<Longrightarrow> carrier(X) = A \<union> B \<Longrightarrow>
    g \<in> subspace(X,A) \<rightharpoonup>\<^sub>T Y \<Longrightarrow> h \<in> subspace(X,B) \<rightharpoonup>\<^sub>T Y \<Longrightarrow> is_closed(X,A) \<Longrightarrow> is_closed(X,B) \<Longrightarrow>
    \<forall>x\<in>source(g)\<inter>source(h). g`x = h`x \<Longrightarrow> glue_morphism(X,g,h) \<in> X \<rightharpoonup>\<^sub>T Y"
-  by (tactic {* auto2s_tac @{context} (
-    LET "f = glue_morphism(X,g,h)" THEN
-    HAVE "f |\<^sub>T source(g) = g" THEN HAVE "f |\<^sub>T source(h) = h") *})
+@proof
+  @let "f = glue_morphism(X,g,h)" @then
+  @have "f |\<^sub>T source(g) = g" @then @have "f |\<^sub>T source(h) = h"
+@qed
 setup {* del_prfstep_thm @{thm continuous_paste_closed} *}
 
 section {* Homeomorphisms *}
@@ -601,7 +617,7 @@ lemma top_inverse_pair_homeomorphism [forward]:
 
 lemma homeomorphismD [backward]:
   "homeomorphism(f) \<Longrightarrow> is_open(source_str(f),U) \<Longrightarrow> is_open(target_str(f),f``U)"
-  by (tactic {* auto2s_tac @{context} (HAVE "inverse_mor(f) -`` U = f``U") *})
+@proof @have "inverse_mor(f) -`` U = f``U" @qed
 
 definition top_iso_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<cong>\<^sub>T" 60) where [rewrite]:
   "top_iso_space(X,Y) = {f \<in> mor_space(X,Y). homeomorphism(f)}"
@@ -622,11 +638,12 @@ setup {* del_prfstep_thm @{thm homeomorphic_def} *}
 
 lemma eq_str_top_to_homeomorphic [resolve]:
   "is_top_space(X) \<Longrightarrow> is_top_space(Y) \<Longrightarrow> eq_str_top(X,Y) \<Longrightarrow> homeomorphic(X,Y)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "f = Mor(X,Y,\<lambda>x. x)" THEN HAVE "continuous(f)" WITH (
-      HAVE "\<forall>U\<in>open_sets(Y). is_open(X,f-``U)" WITH HAVE "f-``U = U") THEN
-    LET "g = Mor(Y,X,\<lambda>x. x)" THEN HAVE "continuous(g)" WITH (
-      HAVE "\<forall>U\<in>open_sets(X). is_open(Y,g-``U)" WITH HAVE "g-``U = U") THEN
-    HAVE "inverse_mor_pair(f,g)" THEN HAVE "f \<in> X \<cong>\<^sub>T Y") *})
+@proof
+  @let "f = Mor(X,Y,\<lambda>x. x)" @then @have "continuous(f)" @with
+    @have "\<forall>U\<in>open_sets(Y). is_open(X,f-``U)" @with @have "f-``U = U" @end @end
+  @let "g = Mor(Y,X,\<lambda>x. x)" @then @have "continuous(g)" @with
+    @have "\<forall>U\<in>open_sets(X). is_open(Y,g-``U)" @with @have "g-``U = U" @end @end
+  @have "inverse_mor_pair(f,g)" @then @have "f \<in> X \<cong>\<^sub>T Y"
+@qed
 
 end

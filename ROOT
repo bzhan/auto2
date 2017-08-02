@@ -91,7 +91,9 @@ session Auto2_FOL = FOL +
     "FOL/Coset"
     "FOL/Abs"
     "FOL/Finite"
+    "FOL/Divides"
     "FOL/Rat"
+    "FOL/Lattice"
 
 session FOL_Real = Auto2_FOL +
   description {*

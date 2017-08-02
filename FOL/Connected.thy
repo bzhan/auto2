@@ -25,120 +25,135 @@ setup {* del_prfstep_thm @{thm connected_def} *}
 
 lemma connectedD':
   "connected(X) \<Longrightarrow> is_open(X,A) \<Longrightarrow> is_closed(X,A) \<Longrightarrow> A = \<emptyset> \<or> A = carrier(X)"
-  by (tactic {* auto2s_tac @{context} (HAVE "separation(X,A,carrier(X) \<midarrow> A)") *})
+@proof @contradiction @have "separation(X,A,carrier(X) \<midarrow> A)" @qed
 
 lemma connectedI':
   "is_top_space(X) \<Longrightarrow> \<forall>A\<in>open_sets(X). is_closed(X,A) \<longrightarrow> A = \<emptyset> \<or> A = carrier(X) \<Longrightarrow> connected(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "U, V, separation(X,U,V)" THEN HAVE "U = carrier(X) \<midarrow> V") *})
+@proof
+  @contradiction
+  @obtain U V where "separation(X,U,V)" @then @have "U = carrier(X) \<midarrow> V"
+@qed
 
 definition connected_subset :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "connected_subset(X,Y) \<longleftrightarrow> (Y \<subseteq> carrier(X) \<and> connected(subspace(X,Y)))"
 
 lemma connected_subset_sep [forward]:
   "is_top_space(X) \<Longrightarrow> separation(X,C,D) \<Longrightarrow> connected_subset(X,Y) \<Longrightarrow> Y \<subseteq> C \<or> Y \<subseteq> D"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "Y \<inter> C \<noteq> \<emptyset> \<and> Y \<inter> D \<noteq> \<emptyset>" WITH
-      HAVE "separation(subspace(X,Y),Y \<inter> C,Y \<inter> D)") *})
+@proof 
+  @case "Y \<inter> C \<noteq> \<emptyset> \<and> Y \<inter> D \<noteq> \<emptyset>" @with
+    @have "separation(subspace(X,Y),Y \<inter> C,Y \<inter> D)" @end
+@qed
 
 lemma connected_subset_full [forward]:
   "is_top_space(X) \<Longrightarrow> connected_subset(X,carrier(X)) \<Longrightarrow> connected(X)"
-  by (tactic {* auto2s_tac @{context} (CHOOSE "U,V,separation(X,U,V)") *})
+@proof @contradiction @obtain U V where "separation(X,U,V)" @qed
     
 lemma connected_union [backward1]:
   "is_top_space(X) \<Longrightarrow> \<forall>a\<in>A. connected_subset(X,a) \<Longrightarrow> (\<Inter>A) \<noteq> \<emptyset> \<Longrightarrow> connected_subset(X, \<Union>A)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "Y = (\<Union>A)" THEN
-    CHOOSE "p, p \<in> (\<Inter>A)" THEN
-    HAVE_RULE "\<forall>a\<in>A. connected_subset(subspace(X,Y),a)" THEN
-    CHOOSE "C, D, separation(subspace(X,Y), C, D)" THEN
-    CASE "p \<in> C" WITH HAVE "\<forall>a\<in>A. a \<subseteq> C") *})
+@proof
+  @contradiction
+  @let "Y = (\<Union>A)" @then
+  @obtain p where "p \<in> (\<Inter>A)" @then
+  @have (@rule) "\<forall>a\<in>A. connected_subset(subspace(X,Y),a)" @then
+  @obtain C D where "separation(subspace(X,Y), C, D)" @then
+  @case "p \<in> C" @with @have "\<forall>a\<in>A. a \<subseteq> C" @end
+@qed
       
 lemma connected_union' [backward1]:
   "is_top_space(X) \<Longrightarrow> \<forall>a\<in>A. connected_subset(X,a) \<Longrightarrow> carrier(X) \<subseteq> (\<Union>A) \<Longrightarrow> (\<Inter>A) \<noteq> \<emptyset> \<Longrightarrow> connected(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "carrier(X) = (\<Union>A)" THEN
-    HAVE "connected_subset(X, carrier(X))") *})
+@proof 
+  @have "carrier(X) = (\<Union>A)" @then
+  @have "connected_subset(X, carrier(X))"
+@qed
 
 lemma connected_union2 [backward1]:
   "is_top_space(X) \<Longrightarrow> connected_subset(X,A) \<Longrightarrow> connected_subset(X,B) \<Longrightarrow>
    A \<inter> B \<noteq> \<emptyset> \<Longrightarrow> connected_subset(X, A \<union> B)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "A \<union> B = \<Union>{A,B}" THEN HAVE "A \<inter> B = \<Inter>{A,B}") *})
+@proof @have "A \<union> B = \<Union>{A,B}" @then @have "A \<inter> B = \<Inter>{A,B}" @qed
 
 lemma connected_continuous_surj [forward,resolve]:
   "continuous(f) \<Longrightarrow> surjective(f) \<Longrightarrow> connected(source_str(f)) \<Longrightarrow> connected(target_str(f))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "U, V, separation(target_str(f),U,V)" THEN
-    HAVE "separation(source_str(f), f-``U, f-``V)") *})
+@proof
+  @contradiction
+  @obtain U V where "separation(target_str(f),U,V)" @then
+  @have "separation(source_str(f), f-``U, f-``V)"
+@qed
 
 lemma connected_continuous [backward]:
   "continuous(f) \<Longrightarrow> connected(source_str(f)) \<Longrightarrow> connected_subset(target_str(f),image(f))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "f' = mor_restrict_image_top(f,image(f))" THEN HAVE "surjective(f')") *})
+@proof 
+  @let "f' = mor_restrict_image_top(f,image(f))" @then @have "surjective(f')"
+@qed
 
 lemma connected_continuous_subspace [backward]:
   "continuous(f) \<Longrightarrow> connected_subset(source_str(f),A) \<Longrightarrow> connected_subset(target_str(f),f``A)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "connected_subset(source(f),image(f |\<^sub>T A))") *})
+@proof @contradiction @have "connected_subset(source(f),image(f |\<^sub>T A))" @qed
 
 lemma connected_is_top_prop [forward]:
   "connected(X) \<Longrightarrow> homeomorphic(X,Y) \<Longrightarrow> connected(Y)"
-  by (tactic {* auto2s_tac @{context} (CHOOSE "f, f \<in> X \<cong>\<^sub>T Y") *})
+@proof @obtain "f \<in> X \<cong>\<^sub>T Y" @qed
     
 lemma connected_is_top_prop2 [forward]:
   "connected(X) \<Longrightarrow> eq_str_top(X,Y) \<Longrightarrow> connected(Y)"
-  by (tactic {* auto2s_tac @{context} (HAVE "homeomorphic(X,Y)") *})
+@proof @have "homeomorphic(X,Y)" @qed
 
 section {* Connected-ness on product spaces *}
  
 lemma product_connected [forward]:
   "connected(X) \<Longrightarrow> connected(Y) \<Longrightarrow> connected(X \<times>\<^sub>T Y)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "carrier(X) = \<emptyset>" THEN CASE "carrier(Y) = \<emptyset>" THEN
-    CHOOSE "x, x \<in>. X" THEN
-    LET "A = {{x} \<times> carrier(Y) \<union> carrier(X) \<times> {y}. y\<in>.Y}" THEN
-    HAVE "(\<Inter>A) \<noteq> \<emptyset>" WITH (
-      CHOOSE "y, y \<in>. Y" THEN HAVE "\<langle>x,y\<rangle> \<in> (\<Inter>A)") THEN
-    HAVE "carrier(X \<times>\<^sub>T Y) \<subseteq> (\<Union>A)" WITH
-      HAVE "\<forall>p\<in>carrier(X \<times>\<^sub>T Y). p \<in> (\<Union>A)" WITH (
-        HAVE "p \<in> {x} \<times> carrier(Y) \<union> carrier(X) \<times> {snd(p)}") THEN
-    HAVE "\<forall>a\<in>A. connected_subset(X \<times>\<^sub>T Y,a)" WITH (
-      CHOOSE "y\<in>.Y, a = {x} \<times> carrier(Y) \<union> carrier(X) \<times> {y}" THEN
-      HAVE "{x} \<times> carrier(Y) \<inter> carrier(X) \<times> {y} \<noteq> \<emptyset>" WITH
-        HAVE "\<langle>x,y\<rangle> \<in> {x} \<times> carrier(Y) \<inter> carrier(X) \<times> {y}" THEN
-      HAVE "connected_subset(X \<times>\<^sub>T Y, {x} \<times> carrier(Y))" WITH
-        HAVE "homeomorphic(Y, subspace(X \<times>\<^sub>T Y, {x} \<times> carrier(Y)))" THEN
-      HAVE "connected_subset(X \<times>\<^sub>T Y, carrier(X) \<times> {y})" WITH
-        HAVE "homeomorphic(X, subspace(X \<times>\<^sub>T Y, carrier(X) \<times> {y}))")) *})
+@proof
+  @case "carrier(X) = \<emptyset>" @then @case "carrier(Y) = \<emptyset>" @then
+  @obtain "x \<in>. X" @then
+  @let "A = {{x} \<times> carrier(Y) \<union> carrier(X) \<times> {y}. y\<in>.Y}" @then
+  @have "(\<Inter>A) \<noteq> \<emptyset>" @with
+    @obtain "y \<in>. Y" @then @have "\<langle>x,y\<rangle> \<in> (\<Inter>A)" @end
+  @have "carrier(X \<times>\<^sub>T Y) \<subseteq> (\<Union>A)" @with
+    @have "\<forall>p\<in>carrier(X \<times>\<^sub>T Y). p \<in> (\<Union>A)" @with
+      @have "p \<in> {x} \<times> carrier(Y) \<union> carrier(X) \<times> {snd(p)}" @end @end
+  @have "\<forall>a\<in>A. connected_subset(X \<times>\<^sub>T Y,a)" @with
+    @obtain "y\<in>.Y" where "a = {x} \<times> carrier(Y) \<union> carrier(X) \<times> {y}" @then
+    @have "{x} \<times> carrier(Y) \<inter> carrier(X) \<times> {y} \<noteq> \<emptyset>" @with
+      @have "\<langle>x,y\<rangle> \<in> {x} \<times> carrier(Y) \<inter> carrier(X) \<times> {y}" @end
+    @have "connected_subset(X \<times>\<^sub>T Y, {x} \<times> carrier(Y))" @with
+      @have "homeomorphic(Y, subspace(X \<times>\<^sub>T Y, {x} \<times> carrier(Y)))" @end
+    @have "connected_subset(X \<times>\<^sub>T Y, carrier(X) \<times> {y})" @with
+      @have "homeomorphic(X, subspace(X \<times>\<^sub>T Y, carrier(X) \<times> {y}))" @end
+  @end
+@qed
 
 section {* Connected-ness on order topology *}
 
 lemma connected_convex [resolve]:
   "order_topology(X) \<Longrightarrow> connected_subset(X,A) \<Longrightarrow> order_convex(X,A)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a \<in> A, b \<in> A, \<not>closed_interval(X,a,b) \<subseteq> A" THEN
-    CHOOSE "c \<in> closed_interval(X,a,b), c \<notin> A" THEN
-    LET "U = A \<inter> less_interval(X,c)" THEN
-    LET "V = A \<inter> greater_interval(X,c)" THEN
-    HAVE "U \<inter> V = \<emptyset>" THEN HAVE "U \<union> V = A" THEN
-    HAVE "separation(subspace(X,A),U,V)") *})
+@proof 
+  @have "\<forall>a\<in>A. \<forall>b\<in>A. closed_interval(X,a,b) \<subseteq> A" @with
+    @have "\<forall>c\<in>closed_interval(X,a,b). c \<in> A" @with
+      @contradiction
+      @let "U = A \<inter> less_interval(X,c)" @then
+      @let "V = A \<inter> greater_interval(X,c)" @then
+      @have "U \<inter> V = \<emptyset>" @then @have "U \<union> V = A" @then
+      @have "separation(subspace(X,A),U,V)" @end @end
+@qed
 
 lemma continuum_connected_aux [backward1]:
   "order_topology(X) \<Longrightarrow> linear_continuum(X) \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> B \<Longrightarrow>
    carrier(X) = closed_interval(X,a,b) \<Longrightarrow> \<not>separation(X,A,B)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "has_sup(X,A)" WITH HAVE "b \<in> upper_bound(X,A)" THEN
-    LET "c = sup(X,A)" THEN
-    CASE "c \<in> A" WITH (HAVE "c \<noteq> b" THEN
-      CHOOSE "e >\<^sub>X c, closed_open_interval(X,c,e) \<subseteq> A" THEN
-      CHOOSE "z, c <\<^sub>X z \<and> z <\<^sub>X e" THEN
-      HAVE "z \<in> closed_open_interval(X,c,e)") THEN
-    CASE "c \<in> B" WITH (HAVE "c \<noteq> a" THEN
-      CHOOSE "d <\<^sub>X c, open_closed_interval(X,d,c) \<subseteq> B" THEN
-      HAVE "d \<in> upper_bound(X,A)" WITH (
-        HAVE "\<forall>x\<in>A. d \<ge>\<^sub>X x" WITH (
-          HAVE "x \<in> open_closed_interval(X,d,c)")))) *})
+@proof
+  @contradiction
+  @have "has_sup(X,A)" @with @have "b \<in> upper_bound(X,A)" @end
+  @let "c = sup(X,A)" @then
+  @case "c \<in> A" @with
+    @have "c \<noteq> b" @then
+    @obtain e where "e >\<^sub>X c" "closed_open_interval(X,c,e) \<subseteq> A" @then
+    @obtain z where "c <\<^sub>X z \<and> z <\<^sub>X e" @then
+    @have "z \<in> closed_open_interval(X,c,e)" @end
+  @case "c \<in> B" @with
+    @have "c \<noteq> a" @then
+    @obtain d where "d <\<^sub>X c" "open_closed_interval(X,d,c) \<subseteq> B" @then
+    @have "d \<in> upper_bound(X,A)" @with
+      @have "\<forall>x\<in>A. d \<ge>\<^sub>X x" @with
+        @have "x \<notin> open_closed_interval(X,d,c)" @end @end @end
+@qed
 
 lemma separation_subspace [backward2]:
   "C \<subseteq> carrier(X) \<Longrightarrow> separation(X,A,B) \<Longrightarrow> C \<inter> A \<noteq> \<emptyset> \<Longrightarrow> C \<inter> B \<noteq> \<emptyset> \<Longrightarrow>
@@ -146,21 +161,23 @@ lemma separation_subspace [backward2]:
   
 lemma continuum_connected [forward]:
   "order_topology(X) \<Longrightarrow> linear_continuum(X) \<Longrightarrow> connected(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "A,B,separation(X,A,B)" THEN
-    CHOOSE "a, a \<in> A" THEN CHOOSE "b, b \<in> B" THEN
-    CASE "a <\<^sub>X b" WITH (
-      LET "I = closed_interval(X,a,b)" THEN
-      LET "Y = ord_subspace(X,I)" THEN
-      HAVE "linear_continuum(Y)" WITH HAVE "eq_str_order(suborder(X,I),Y)" THEN
-      HAVE "carrier(Y) = closed_interval(Y,a,b)" THEN
-      HAVE "separation(Y,I \<inter> A,I \<inter> B)" WITH HAVE "eq_str_top(subspace(X,I),Y)") THEN
-    CASE "b <\<^sub>X a" WITH (
-      LET "I = closed_interval(X,b,a)" THEN
-      LET "Y = ord_subspace(X,I)" THEN
-      HAVE "linear_continuum(Y)" WITH HAVE "eq_str_order(suborder(X,I),Y)" THEN
-      HAVE "carrier(Y) = closed_interval(Y,b,a)" THEN
-      HAVE "separation(X,B,A)" THEN
-      HAVE "separation(Y,I \<inter> B,I \<inter> A)" WITH HAVE "eq_str_top(subspace(X,I),Y)")) *})
+@proof
+  @contradiction
+  @obtain A B where "separation(X,A,B)" @then
+  @obtain "a \<in> A" @then @obtain "b \<in> B" @then
+  @case "a <\<^sub>X b" @with
+    @let "I = closed_interval(X,a,b)" @then
+    @let "Y = ord_subspace(X,I)" @then
+    @have "linear_continuum(Y)" @with @have "eq_str_order(suborder(X,I),Y)" @end
+    @have "carrier(Y) = closed_interval(Y,a,b)" @then
+    @have "separation(Y,I \<inter> A,I \<inter> B)" @with @have "eq_str_top(subspace(X,I),Y)" @end @end
+  @case "b <\<^sub>X a" @with
+    @let "I = closed_interval(X,b,a)" @then
+    @let "Y = ord_subspace(X,I)" @then
+    @have "linear_continuum(Y)" @with @have "eq_str_order(suborder(X,I),Y)" @end
+    @have "carrier(Y) = closed_interval(Y,b,a)" @then
+    @have "separation(X,B,A)" @then
+    @have "separation(Y,I \<inter> B,I \<inter> A)" @with @have "eq_str_top(subspace(X,I),Y)" @end @end
+@qed
 
 end

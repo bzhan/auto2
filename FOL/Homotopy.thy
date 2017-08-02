@@ -53,8 +53,9 @@ setup {* fold del_prfstep_thm [@{thm interval_left_def}, @{thm interval_right_de
 lemma real_topology_sub_closed_interval_closed [backward]:
   "a \<in>. \<real> \<Longrightarrow> b \<in>. \<real> \<Longrightarrow> c \<in>. \<real> \<Longrightarrow> d \<in>. \<real> \<Longrightarrow> A = closed_interval(\<real>,a,b) \<Longrightarrow>
    B = closed_interval(\<real>,c,d) \<Longrightarrow> B \<subseteq> A \<Longrightarrow> is_closed(subspace(\<real>,A),B)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_closed(\<real>,A)" THEN HAVE "is_closed(\<real>,B)") *})
+@proof
+  @have "is_closed(\<real>,A)" @then @have "is_closed(\<real>,B)"
+@qed
 
 lemma I1_closed [resolve]: "is_closed(I,carrier(I1))" by auto2
 lemma I2_closed [resolve]: "is_closed(I,carrier(I2))" by auto2
@@ -62,9 +63,10 @@ lemma I2_closed [resolve]: "is_closed(I,carrier(I2))" by auto2
 lemma restrict_real_fun [backward]:
   "B \<subseteq> carrier(\<real>) \<Longrightarrow> B' = subspace(\<real>,B) \<Longrightarrow>
    Mor(A,B',f) \<in> A \<rightharpoonup> B' \<Longrightarrow> Mor(A,\<real>,f) \<in> A \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(A,B',f))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>.A. Mor(A,B',f)`x = f(x)" THEN
-    HAVE "Mor(A,B',f) = mor_restrict_image_top(Mor(A,\<real>,f),B)") *})
+@proof
+  @have (@rule) "\<forall>x\<in>.A. Mor(A,B',f)`x = f(x)" @then
+  @have "Mor(A,B',f) = mor_restrict_image_top(Mor(A,\<real>,f),B)"
+@qed
 
 definition interval_inv :: i where [rewrite]:
   "interval_inv = Mor(I,I,\<lambda>t. 1\<^sub>\<real> -\<^sub>\<real> t)"
@@ -137,8 +139,7 @@ setup {* add_forward_prfstep_cond @{thm id_is_homotopy} [with_term "id_homotopy(
 
 lemma homotopic_id [resolve]:
   "continuous(f) \<Longrightarrow> homotopic(f,f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_homotopy(f,f,id_homotopy(f))") *})
+@proof @have "is_homotopy(f,f,id_homotopy(f))" @qed
 
 definition inv_homotopy :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "inv_homotopy(f,g,F) = F \<circ>\<^sub>m prod_top_map(id_mor(source_str(f)),interval_inv)"
@@ -150,16 +151,16 @@ lemma inv_homotopy_eval [rewrite]:
 
 lemma inv_is_homotopy:
   "is_homotopy(f,g,F) \<Longrightarrow> is_homotopy(g,f,inv_homotopy(f,g,F))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inv_homotopy(f,g,F) \<in> source_str(f) \<times>\<^sub>T I \<rightharpoonup>\<^sub>T target_str(f)") *})
+@proof @have "inv_homotopy(f,g,F) \<in> source_str(f) \<times>\<^sub>T I \<rightharpoonup>\<^sub>T target_str(f)" @qed
 setup {* add_forward_prfstep_cond @{thm inv_is_homotopy} [with_term "inv_homotopy(?f,?g,?F)"] *}
 setup {* del_prfstep_thm @{thm inv_homotopy_def} *}
 
 lemma homotopic_inv [resolve]:
   "homotopic(f,g) \<Longrightarrow> homotopic(g,f)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_homotopy(f,g,F)" THEN
-    HAVE "is_homotopy(g,f,inv_homotopy(f,g,F))") *})
+@proof
+  @obtain F where "is_homotopy(f,g,F)" @then
+  @have "is_homotopy(g,f,inv_homotopy(f,g,F))"
+@qed
 
 definition homotopy_lower_half :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "homotopy_lower_half(X,F) = F \<circ>\<^sub>m prod_top_map(id_mor(X),interval_lower)"
@@ -198,24 +199,27 @@ lemma I1_I2_union [rewrite]: "X \<times> carrier(I1) \<union> X \<times> carrier
 
 lemma compose_is_homotopy:
   "is_homotopy(f,g,F) \<Longrightarrow> is_homotopy(g,h,G) \<Longrightarrow> is_homotopy(f,h,compose_homotopy(f,g,h,F,G))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "X = source_str(f), Y = target_str(f)" THEN
-    HAVE "compose_homotopy(f,g,h,F,G) \<in> X \<times>\<^sub>T I \<rightharpoonup>\<^sub>T Y") *})
+@proof
+  @let "X = source_str(f)" "Y = target_str(f)" @then
+  @have "compose_homotopy(f,g,h,F,G) \<in> X \<times>\<^sub>T I \<rightharpoonup>\<^sub>T Y"
+@qed
 setup {* add_forward_prfstep_cond @{thm compose_is_homotopy} [with_term "compose_homotopy(?f,?g,?h,?F,?G)"] *}
 
 lemma compose_homotopy_eval [rewrite]:
   "is_homotopy(f,g,F) \<Longrightarrow> is_homotopy(g,h,G) \<Longrightarrow> H = compose_homotopy(f,g,h,F,G) \<Longrightarrow> 
    \<langle>x,t\<rangle> \<in> source(H) \<Longrightarrow> H`\<langle>x,t\<rangle> = (if t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real> then F`\<langle>x, 2\<^sub>\<real> *\<^sub>\<real> t\<rangle> else G`\<langle>x, 2\<^sub>\<real> *\<^sub>\<real> t -\<^sub>\<real> 1\<^sub>\<real>\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" WITH HAVE "\<langle>x,t\<rangle> \<in> source(f) \<times> carrier(I1)") *})
+@proof
+  @case "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" @with @have "\<langle>x,t\<rangle> \<in> source(f) \<times> carrier(I1)" @end
+@qed
 setup {* del_prfstep_thm @{thm compose_homotopy_def} *}
 
 lemma homotopic_trans [forward]:
   "homotopic(f,g) \<Longrightarrow> homotopic(g,h) \<Longrightarrow> homotopic(f,h)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_homotopy(f,g,F)" THEN
-    CHOOSE "G, is_homotopy(g,h,G)" THEN
-    HAVE "is_homotopy(f,h,compose_homotopy(f,g,h,F,G))") *})
+@proof
+  @obtain F where "is_homotopy(f,g,F)" @then
+  @obtain G where "is_homotopy(g,h,G)" @then
+  @have "is_homotopy(f,h,compose_homotopy(f,g,h,F,G))"
+@qed
 
 lemma homotopy_maps_comp1 [backward]:
   "continuous(h) \<Longrightarrow> target_str(h) = source_str(f) \<Longrightarrow> is_homotopy(f,g,F) \<Longrightarrow>
@@ -223,9 +227,10 @@ lemma homotopy_maps_comp1 [backward]:
 
 lemma homotopic_comp1 [backward]:
   "continuous(h) \<Longrightarrow> target_str(h) = source_str(f) \<Longrightarrow> homotopic(f,g) \<Longrightarrow> homotopic(f \<circ>\<^sub>m h, g \<circ>\<^sub>m h)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_homotopy(f,g,F)" THEN
-    HAVE "is_homotopy(f \<circ>\<^sub>m h, g \<circ>\<^sub>m h, F \<circ>\<^sub>m prod_top_map(h,id_mor(I)))") *})
+@proof
+  @obtain F where "is_homotopy(f,g,F)" @then
+  @have "is_homotopy(f \<circ>\<^sub>m h, g \<circ>\<^sub>m h, F \<circ>\<^sub>m prod_top_map(h,id_mor(I)))"
+@qed
 
 lemma homotopy_maps_comp2 [backward]:
   "continuous(h) \<Longrightarrow> target_str(f) = source_str(h) \<Longrightarrow> is_homotopy(f,g,F) \<Longrightarrow>
@@ -233,9 +238,10 @@ lemma homotopy_maps_comp2 [backward]:
     
 lemma homotopic_comp2 [backward]:
   "continuous(h) \<Longrightarrow> target_str(f) = source_str(h) \<Longrightarrow> homotopic(f,g) \<Longrightarrow> homotopic(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_homotopy(f,g,F)" THEN
-    HAVE "is_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)") *})
+@proof
+  @obtain F where "is_homotopy(f,g,F)" @then
+  @have "is_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)"
+@qed
     
 section {* Homotopy equivalence between two spaces *}
   
@@ -294,23 +300,25 @@ setup {* del_prfstep_thm @{thm homotopy_equivalent_def} *}
   
 lemma homotopy_equivalent_refl [resolve]:
   "is_top_space(X) \<Longrightarrow> homotopy_equivalent(X,X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "homotopy_equiv_pair(id_mor(X),id_mor(X))") *})
+@proof @have "homotopy_equiv_pair(id_mor(X),id_mor(X))" @qed
       
 lemma homotopy_equivalent_sym [forward]:
   "homotopy_equivalent(X,Y) \<Longrightarrow> homotopy_equivalent(Y,X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "f\<in>X\<rightharpoonup>\<^sub>TY, g\<in>Y\<rightharpoonup>\<^sub>TX, homotopy_equiv_pair(f,g)") *})
+@proof
+  @obtain "f\<in>X\<rightharpoonup>\<^sub>TY" "g\<in>Y\<rightharpoonup>\<^sub>TX" where "homotopy_equiv_pair(f,g)"
+@qed
 
 lemma homotopy_equivalent_trans [forward]:
   "homotopy_equivalent(X,Y) \<Longrightarrow> homotopy_equivalent(Y,Z) \<Longrightarrow> homotopy_equivalent(X,Z)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "f\<in>X\<rightharpoonup>\<^sub>TY, f'\<in>Y\<rightharpoonup>\<^sub>TX, homotopy_equiv_pair(f,f')" THEN
-    CHOOSE "g\<in>Y\<rightharpoonup>\<^sub>TZ, g'\<in>Z\<rightharpoonup>\<^sub>TY, homotopy_equiv_pair(g,g')" THEN
-    HAVE "homotopy_equiv_pair(g \<circ>\<^sub>m f, f' \<circ>\<^sub>m g')" WITH (
-      HAVE "homotopic((g \<circ>\<^sub>m f) \<circ>\<^sub>m (f' \<circ>\<^sub>m g'), id_mor(Z))" WITH
-        HAVE "homotopic(g \<circ>\<^sub>m (f \<circ>\<^sub>m f') \<circ>\<^sub>m g', g \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m g')" THEN
-      HAVE "homotopic((f' \<circ>\<^sub>m g') \<circ>\<^sub>m (g \<circ>\<^sub>m f), id_mor(X))" WITH
-        HAVE "homotopic(f' \<circ>\<^sub>m (g' \<circ>\<^sub>m g) \<circ>\<^sub>m f, f' \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m f)")) *})
+@proof
+  @obtain "f\<in>X\<rightharpoonup>\<^sub>TY" "f'\<in>Y\<rightharpoonup>\<^sub>TX" where "homotopy_equiv_pair(f,f')" @then
+  @obtain "g\<in>Y\<rightharpoonup>\<^sub>TZ" "g'\<in>Z\<rightharpoonup>\<^sub>TY" where "homotopy_equiv_pair(g,g')" @then
+  @have "homotopy_equiv_pair(g \<circ>\<^sub>m f, f' \<circ>\<^sub>m g')" @with
+    @have "homotopic((g \<circ>\<^sub>m f) \<circ>\<^sub>m (f' \<circ>\<^sub>m g'), id_mor(Z))" @with
+      @have "homotopic(g \<circ>\<^sub>m (f \<circ>\<^sub>m f') \<circ>\<^sub>m g', g \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m g')" @end
+    @have "homotopic((f' \<circ>\<^sub>m g') \<circ>\<^sub>m (g \<circ>\<^sub>m f), id_mor(X))" @with
+      @have "homotopic(f' \<circ>\<^sub>m (g' \<circ>\<^sub>m g) \<circ>\<^sub>m f, f' \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m f)" @end
+  @end
+@qed
 
 end

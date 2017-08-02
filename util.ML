@@ -31,7 +31,6 @@ sig
   (* Strings. *)
   val is_prefix_str: string -> string -> bool
   val is_just_internal: string -> bool
-  val split_commas: string -> string list
 
   (* Managing matching environments. *)
   val fo_init: Type.tyenv * Envir.tenv
@@ -122,6 +121,7 @@ sig
   val is_pattern_list: term list -> bool
   val is_pattern: term -> bool
   val strip_pure_goal: Proof.context -> term -> (bool * term) list * term
+  val rename_abs_term: term list -> term -> term
   val print_term_detail: Proof.context -> term -> string
 
   (* cterms. *)
@@ -257,31 +257,6 @@ fun is_prefix_str pre str =
 (* Test whether nm is followed by exactly one _. *)
 fun is_just_internal nm =
     Name.is_internal nm andalso not (Name.is_skolem nm)
-
-(* Split a string by commas. Do not split on commas that are inside
-   any kind of brackets.
- *)
-val left_brackets = ["(", "[", "{", "\<langle>"]
-val right_brackets = [")", "]", "}", "\<rangle>"]
-
-fun count_brackets str =
-    if member (op =) left_brackets str then 1
-    else if member (op =) right_brackets str then ~1
-    else 0
-
-fun split_commas str =
-    let
-      val syms = Symbol.explode str
-      fun can_split_id i =
-          nth syms i = "," andalso
-          Integer.sum (map count_brackets (take i syms)) = 0
-    in
-      case find_first can_split_id (0 upto (length syms - 1)) of
-          NONE => [str]
-        | SOME n =>
-          String.concat (take n syms) ::
-          split_commas (String.concat (drop (n+1) syms))
-    end
 
 val fo_init = (Vartab.empty, Vartab.empty)
 
@@ -561,6 +536,18 @@ fun strip_pure_goal_aux ctxt prevs t =
       | _ => ([], t)
 
 fun strip_pure_goal ctxt t = strip_pure_goal_aux ctxt [] t
+
+fun rename_abs_term vars t =
+    case vars of
+        [] => t
+      | var :: rest =>
+        let
+          val (nm, _) = Term.dest_Free var
+        in
+          case t of A $ Abs (_, T1, body) =>
+                    A $ Abs (nm, T1, rename_abs_term rest body)
+                  | _ => raise ERROR "rename_abs_term"
+        end
 
 fun print_term_detail ctxt t =
     case t of

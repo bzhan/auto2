@@ -141,7 +141,7 @@ lemma order_le_compl [rewrite]:
 lemma ge_compl_is_less' [forward]:
   "linorder(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> S \<subseteq> carrier(R) \<Longrightarrow> carrier(R) \<midarrow> S = ge_interval(R,a) \<Longrightarrow>
    S = less_interval(R,a)"
-  by (tactic {* auto2s_tac @{context} (HAVE "S = carrier(R) \<midarrow> (carrier(R) \<midarrow> S)") *})
+@proof @have "S = carrier(R) \<midarrow> (carrier(R) \<midarrow> S)" @qed
     
 section {* Inclusion results on intervals *}
 
@@ -185,7 +185,7 @@ section {* Other results *}
 (* Intervals with one boundary are distinct *)
 lemma less_interval_neq [backward]:
   "linorder(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> a \<noteq> b \<Longrightarrow> less_interval(R,a) \<noteq> less_interval(R,b)"
-  by (tactic {* auto2s_tac @{context} (CASE "a <\<^sub>R b") *})
+@proof @case "a <\<^sub>R b" @qed
 
 (* Ordering on less_interval. *)
 definition less_interval_rel :: "[i, i] \<Rightarrow> i" where [rewrite]:
@@ -199,26 +199,32 @@ lemma less_interval_rel_eq_trans [forward]:
   "linorder(R) \<Longrightarrow> linorder(S) \<Longrightarrow> x \<in>. S \<Longrightarrow> y \<le>\<^sub>R x \<Longrightarrow>
    less_interval_rel(R,x) = less_interval_rel(S,x) \<Longrightarrow>
    y\<in>.S \<and> less_interval_rel(R,y) = less_interval_rel(S,y)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "y \<noteq> x" WITH HAVE "less_interval_rel(less_interval_rel(R,x),y) = less_interval_rel(R,y)") *})
+@proof
+  @case "y \<noteq> x" @with
+    @have "less_interval_rel(less_interval_rel(R,x),y) = less_interval_rel(R,y)" @end
+@qed
 
 section {* Intervals inherit a number of order properties *}
   
 lemma dense_order_closed_interval:
   "linorder(R) \<Longrightarrow> dense_order(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> S = suborder(R,closed_interval(R,a,b)) \<Longrightarrow> 
    dense_order(S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x y. x <\<^sub>S y \<longrightarrow> (\<exists>z. x <\<^sub>S z \<and> z <\<^sub>S y)" WITH (
-      CHOOSE "z, x <\<^sub>R z \<and> z <\<^sub>R y" THEN HAVE "x <\<^sub>S z")) *})
+@proof
+  @have "\<forall>x y. x <\<^sub>S y \<longrightarrow> (\<exists>z. x <\<^sub>S z \<and> z <\<^sub>S y)" @with
+    @obtain z where "x <\<^sub>R z \<and> z <\<^sub>R y" @then @have "x <\<^sub>S z" @end
+@qed
 setup {* add_forward_prfstep_cond @{thm dense_order_closed_interval} [with_term "?S"] *}
 
 lemma linear_continuum_closed_interval:
   "linear_continuum(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> S = suborder(R,closed_interval(R,a,b)) \<Longrightarrow> 
    linear_continuum(S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>T. T \<noteq> \<emptyset> \<longrightarrow> upper_bound(S,T) \<noteq> \<emptyset> \<longrightarrow> has_sup(S,T)" WITH (
-      HAVE "has_sup(R,T)" THEN
-      HAVE "has_sup(S,T) \<and> sup(S,T) = sup(R,T)")) *})
+@proof
+  @have "\<forall>T. T \<noteq> \<emptyset> \<longrightarrow> upper_bound(S,T) \<noteq> \<emptyset> \<longrightarrow> has_sup(S,T)" @with
+    @have "has_sup(R,T)" @then
+    @have "has_sup(S,T) \<and> sup(S,T) = sup(R,T)"
+  @end
+@qed
+
 setup {* add_forward_prfstep_cond @{thm linear_continuum_closed_interval} [with_term "?S"] *}
   
 end

@@ -31,7 +31,7 @@ axiomatization Upair :: "[i, i] \<Rightarrow> i" where
   upair [rewrite]: "x \<in> Upair(y,z) \<longleftrightarrow> (x = y \<or> x = z)"
 
 lemma Upair_nonempty [resolve]: "Upair(a,b) \<noteq> \<emptyset>"
-  by (tactic {* auto2s_tac @{context} (HAVE "a \<in> Upair(a,b)") *})
+@proof @have "a \<in> Upair(a,b)" @qed
 
 section \<open>Axiom of union\<close>
 
@@ -65,9 +65,10 @@ lemma PowI [typing2]: "x \<subseteq> S \<Longrightarrow> x \<in> Pow(S)" by auto
 
 (* Cantor's theorem *)
 lemma cantor: "\<exists>S \<in> Pow(A). \<forall>x\<in>A. b(x) \<noteq> S"
-  by (tactic {* auto2s_tac @{context}
-    (LET "S = {x\<in>A. x \<notin> b(x)}" THEN
-     HAVE "\<forall>x\<in>A. b(x) \<noteq> S" WITH CASE "x \<in> b(x)") *})
+@proof
+  @let "S = {x \<in> A. x \<notin> b(x)}"
+  @have "\<forall>x\<in>A. b(x) \<noteq> S" @with @case "x \<in> b(x)" @end
+@qed
 
 section \<open>General intersection\<close>
 
@@ -116,16 +117,25 @@ definition Diff :: "i \<Rightarrow> i \<Rightarrow> i"  (infixl "\<midarrow>" 65
   "A \<midarrow> B = {x \<in> A. x \<notin> B}"
 lemma Diff_iff [rewrite]: "c \<in> A \<midarrow> B \<longleftrightarrow> (c \<in> A \<and> c \<notin> B)" by auto2
 setup {* del_prfstep_thm @{thm Diff_def} *}
+
 lemma diff_subset [resolve]: "A \<midarrow> B \<subseteq> A" by auto2
+
 lemma diff_empty [forward]: "A \<midarrow> B = \<emptyset> \<Longrightarrow> A \<subseteq> B"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x\<in>A, x \<notin> B" THEN HAVE "x \<in> A \<midarrow> B") *})
+@proof
+  @have "\<forall>x\<in>A. x \<in> B" @with
+    @contradiction @have "x \<in> A \<midarrow> B"
+  @end
+@qed
+
 lemma diff_double [rewrite]: "B \<subseteq> A \<Longrightarrow> A \<midarrow> (A \<midarrow> B) = B" by auto2
+
 lemma compl_eq: "E\<midarrow>A = E\<midarrow>B \<Longrightarrow> A \<subseteq> E \<Longrightarrow> B \<subseteq> E \<Longrightarrow> A = B"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x. x \<in> A \<longleftrightarrow> x \<in> B" WITH (
-      (CASE "x \<in> A" WITH HAVE "x \<notin> E\<midarrow>A") THEN
-      (CASE "x \<in> B" WITH HAVE "x \<notin> E\<midarrow>B"))) *})
+@proof
+  @have "\<forall>x. x \<in> A \<longleftrightarrow> x \<in> B" @with
+    @case "x \<in> A" @with @have "x \<notin> E\<midarrow>A" @end
+    @case "x \<in> B" @with @have "x \<notin> E\<midarrow>B" @end
+  @end 
+@qed
 setup {* add_forward_prfstep_cond @{thm compl_eq}
   [with_cond "?A \<noteq> ?B", with_filt (order_filter "A" "B")] *}
 
@@ -133,10 +143,9 @@ lemma inter_compl1 [rewrite]: "(X \<midarrow> A) \<inter> A = \<emptyset>" by au
 lemma inter_compl2 [rewrite]: "A \<inter> (X \<midarrow> A) = \<emptyset>" by auto2
 lemma union_compl1 [rewrite]: "A \<subseteq> X \<Longrightarrow> A \<union> (X \<midarrow> A) = X" by auto2
 lemma union_compl2 [rewrite]: "A \<subseteq> X \<Longrightarrow> (X \<midarrow> A) \<union> A = X" by auto2
-lemma Int_empty [forward]:
-  "A \<inter> B = \<emptyset> \<Longrightarrow> x \<in> A \<Longrightarrow> x \<notin> B"
-  "A \<inter> B = \<emptyset> \<Longrightarrow> x \<in> B \<Longrightarrow> x \<notin> A"
-  by (tactic {* auto2s_tac @{context} (HAVE "x \<in> A \<inter> B") *})+
+lemma Int_empty1 [forward]: "A \<inter> B = \<emptyset> \<Longrightarrow> x \<in> A \<Longrightarrow> x \<notin> B"
+  @proof @contradiction @have "x \<in> A \<inter> B" @qed
+lemma Int_empty2 [forward]: "A \<inter> B = \<emptyset> \<Longrightarrow> x \<in> B \<Longrightarrow> x \<notin> A" by auto2
 
 section \<open>Strict subsets\<close>
 
@@ -199,7 +208,7 @@ definition The :: "(i \<Rightarrow> o) \<Rightarrow> i"  (binder "THE " 10) wher
    THE x. P(x) satisfies P. *)
 setup {* add_prfstep_check_req ("THE x. P(x)", "\<exists>!x. P(x)") *}
 lemma theI' [forward]: "\<exists>!x. P(x) \<Longrightarrow> P (THE x. P(x))"
-  by (tactic {* auto2s_tac @{context} (CHOOSE "a, P(a)" THEN HAVE "(THE x. P(x)) = a") *})
+  @proof @obtain "a" where "P(a)" @then @have "(THE x. P(x)) = a" @qed
 
 (* When trying to show (THE x. P(x)) = a, there is an alternative,
    since because we already know term a satisfies predicate P. *)
@@ -249,12 +258,10 @@ lemma pair_eqI_snd [backward]: "b = d \<Longrightarrow> \<langle>a,b\<rangle> = 
 
 setup {* del_prfstep_thm @{thm Pair_def} *}
 
-lemma fst_conv [rewrite]: "fst(\<langle>a, b\<rangle>) = a"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<exists>y. \<langle>a, b\<rangle> = \<langle>a, y\<rangle>") *})
+lemma fst_conv [rewrite]: "fst(\<langle>a, b\<rangle>) = a" by auto2
 setup {* del_prfstep_thm @{thm fst_def} *}
 
-lemma snd_conv [rewrite]: "snd(\<langle>a, b\<rangle>) = b"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<exists>x. \<langle>a, b\<rangle> = \<langle>x, b\<rangle>") *})
+lemma snd_conv [rewrite]: "snd(\<langle>a, b\<rangle>) = b" by auto2
 setup {* del_prfstep_thm @{thm snd_def} *}
 
 section \<open>If expressions\<close>
@@ -306,8 +313,7 @@ translations
   "{b. x\<in>A}" \<rightleftharpoons> "CONST RepFun(A, \<lambda>x. b)"
 
 lemma repfun_nonempty [backward]: "A \<noteq> \<emptyset> \<Longrightarrow> {b(x). x\<in>A} \<noteq> \<emptyset>"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a, a \<in> A" THEN HAVE "b(a) \<in> {b(x). x\<in>A}") *})
+  @proof @obtain "a \<in> A" @then @have "b(a) \<in> {b(x). x\<in>A}" @qed
 
 section \<open>Parametrized union and intersection\<close>
 

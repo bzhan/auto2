@@ -7,12 +7,9 @@ sig
 
   type box_lattice
   val empty: box_lattice
-  val get_focus: box_lattice -> box_id
-  val set_focus: box_id -> box_lattice -> box_lattice
   val num_prim_id: box_lattice -> int
   val get_parent_prim: box_lattice -> int -> box_id
   val get_ancestors_prim: box_lattice -> box_id -> int list
-  val get_extras_prim: box_lattice -> box_id -> int list
   val reduce_box_id: box_lattice -> int list -> box_id
   val get_parent_at_i: box_lattice -> box_id -> int -> box_id
   val merge_boxes: box_lattice -> box_id * box_id -> box_id
@@ -42,15 +39,10 @@ structure Boxidtab = Table (type key = box_id val ord = list_ord int_ord)
 
 type box_lattice = {
   parents: box_id vector,
-  focus: box_id,
   resolved: box_id list
 }
 
-val empty = {parents = Vector.fromList [], focus = [], resolved = []}
-
-fun get_focus {focus, ...} = focus
-fun set_focus foc {parents, focus = _, resolved} =
-    {parents = parents, focus = foc, resolved = resolved}
+val empty = {parents = Vector.fromList [], resolved = []}
 
 fun num_prim_id {parents, ...} = Vector.length parents
 
@@ -78,12 +70,6 @@ fun get_ancestors_prim lat id =
     end
     handle Option.Option =>
            raise AUTO2 "get_ancestors_prim: unexpected prim id."
-
-(* Returns the list of primitive ancestors of id that are not also
-   primitive ancestors of focus. Result may not be in order.
- *)
-fun get_extras_prim (lat as {focus, ...}) id =
-    subtract (op =) (get_ancestors_prim lat focus) (get_ancestors_prim lat id)
 
 (* For any {a, b} in ids where a is an ancestor of b, remove a from
    ids. Assume input is in order. Output is a valid box_id.
@@ -171,16 +157,16 @@ fun is_box_supported lat id =
 
 fun id_is_eq_ancestor lat (id, _) (id', _) = is_eq_ancestor lat id id'
 
-fun add_prim_id parent_id {parents, focus, resolved} =
+fun add_prim_id parent_id {parents, resolved} =
     let
       val prim_id = Vector.length parents
       val parents' = Vector.concat [parents, Vector.fromList [parent_id]]
     in
-      (prim_id, {parents = parents', focus = focus, resolved = resolved})
+      (prim_id, {parents = parents', resolved = resolved})
     end
 
-fun add_resolved id (lat as {parents, focus, resolved}) =
-    {parents = parents, focus = focus,
+fun add_resolved id (lat as {parents, resolved}) =
+    {parents = parents,
      resolved = if exists (is_eq_descendent lat id) resolved then resolved
                 else id :: filter_out (is_eq_ancestor lat id) resolved}
 

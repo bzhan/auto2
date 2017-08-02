@@ -41,7 +41,7 @@ setup {* register_wellform_data ("inv(G,x)", ["x \<in> units(G)"]) *}
 lemma inv_unique [forward]:
   "is_monoid(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> y' \<in>. G \<Longrightarrow>
    y *\<^sub>G x = \<one>\<^sub>G \<Longrightarrow> x *\<^sub>G y' = \<one>\<^sub>G \<Longrightarrow> y = y'"
-  by (tactic {* auto2s_tac @{context} (HAVE "y *\<^sub>G x *\<^sub>G y' = y *\<^sub>G (x *\<^sub>G y')") *})
+@proof @have "y *\<^sub>G x *\<^sub>G y' = y *\<^sub>G (x *\<^sub>G y')" @qed
     
 lemma inv_equality [backward1, backward2]:
   "is_monoid(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> y *\<^sub>G x = \<one>\<^sub>G \<Longrightarrow> x *\<^sub>G y = \<one>\<^sub>G \<Longrightarrow> inv(G,x) = y"
@@ -62,19 +62,21 @@ lemma inv_group_fun [rewrite]:
 
 lemma unit_l_cancel [forward]:
   "is_monoid(G) \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x *\<^sub>G y = x *\<^sub>G z \<Longrightarrow> x \<in> units(G) \<Longrightarrow> y = z"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inv(G,x) *\<^sub>G x *\<^sub>G y = inv(G,x) *\<^sub>G (x *\<^sub>G y)" THEN
-    HAVE "inv(G,x) *\<^sub>G x *\<^sub>G z = inv(G,x) *\<^sub>G (x *\<^sub>G z)") *})
+@proof
+  @have "inv(G,x) *\<^sub>G x *\<^sub>G y = inv(G,x) *\<^sub>G (x *\<^sub>G y)" @then
+  @have "inv(G,x) *\<^sub>G x *\<^sub>G z = inv(G,x) *\<^sub>G (x *\<^sub>G z)"
+@qed
 
 lemma unit_r_cancel [forward]:
   "is_monoid(G) \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> y *\<^sub>G x = z *\<^sub>G x \<Longrightarrow> x \<in> units(G) \<Longrightarrow> y = z"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "y *\<^sub>G (x *\<^sub>G inv(G,x)) = y *\<^sub>G x *\<^sub>G inv(G,x)" THEN
-    HAVE "z *\<^sub>G (x *\<^sub>G inv(G,x)) = z *\<^sub>G x *\<^sub>G inv(G,x)") *})
+@proof
+  @have "y *\<^sub>G (x *\<^sub>G inv(G,x)) = y *\<^sub>G x *\<^sub>G inv(G,x)" @then
+  @have "z *\<^sub>G (x *\<^sub>G inv(G,x)) = z *\<^sub>G x *\<^sub>G inv(G,x)"
+@qed
 
 lemma unit_inv_inv [rewrite]:
   "is_monoid(G) \<Longrightarrow> x \<in> units(G) \<Longrightarrow> inv(G, inv(G,x)) = x"
-  by (tactic {* auto2s_tac @{context} (HAVE "inv(G,x) *\<^sub>G x = \<one>\<^sub>G") *})
+@proof @have "inv(G,x) *\<^sub>G x = \<one>\<^sub>G" @qed
 
 lemma unit_inv_comm:
   "is_monoid(G) \<Longrightarrow> y \<in>. G \<Longrightarrow> x \<in> units(G) \<Longrightarrow> x *\<^sub>G y = \<one>\<^sub>G \<Longrightarrow> y *\<^sub>G x = \<one>\<^sub>G" by auto2
@@ -95,17 +97,19 @@ lemma is_groupI [backward1]:
   "is_monoid(G) \<Longrightarrow> unary_fun(carrier(G),f) \<Longrightarrow> \<forall>x\<in>.G. f(x) *\<^sub>G x = \<one>\<^sub>G \<Longrightarrow> is_group(G)" by auto2
 setup {* del_prfstep_thm @{thm is_group_def} *}
 
-lemma inv_equality_group [backward]:
+lemma inv_equality_group1 [backward]:
   "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> y *\<^sub>G x = \<one>\<^sub>G \<Longrightarrow> inv(G,x) = y"
+@proof @have "inv(G,x) *\<^sub>G x = \<one>\<^sub>G" @qed
+
+lemma inv_equality_group2 [backward]:
   "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> y *\<^sub>G x = \<one>\<^sub>G \<Longrightarrow> y = inv(G,x)"
-  by (tactic {* auto2s_tac @{context} (HAVE "inv(G,x) *\<^sub>G x = \<one>\<^sub>G") *})+
+@proof @have "inv(G,x) *\<^sub>G x = \<one>\<^sub>G" @qed
 
 lemma inv_distrib_group:
   "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow>
    inv(G, x *\<^sub>G y) = inv(G,y) *\<^sub>G inv(G,x) \<and>
    x \<in> units(G) \<and> y \<in> units(G) \<and> inv(G,y) \<in>. G \<and> inv(G,x) \<in>. G"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inv(G,y) *\<^sub>G inv(G,x) *\<^sub>G (x *\<^sub>G y) = inv(G,y) *\<^sub>G (inv(G,x) *\<^sub>G x) *\<^sub>G y") *})
+@proof @have "inv(G,y) *\<^sub>G inv(G,x) *\<^sub>G (x *\<^sub>G y) = inv(G,y) *\<^sub>G (inv(G,x) *\<^sub>G x) *\<^sub>G y" @qed
 
 ML_file "alg_group.ML"
 
@@ -114,14 +118,12 @@ lemma inv_distrib_test:
    inv(G, x *\<^sub>G y *\<^sub>G z) = inv(G,z) *\<^sub>G inv(G,y) *\<^sub>G inv(G,x)" by auto2
 
 lemma move_inv_r [rewrite]:
-  "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow>
-   x *\<^sub>G inv(G,y) = z \<Longrightarrow> z *\<^sub>G y = x"
-  by (tactic {* auto2s_tac @{context} (HAVE "z *\<^sub>G y *\<^sub>G inv(G,y) = z") *})
+  "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x *\<^sub>G inv(G,y) = z \<Longrightarrow> z *\<^sub>G y = x"
+@proof @have "z *\<^sub>G y *\<^sub>G inv(G,y) = z" @qed
 
 lemma move_inv_l [rewrite]:
-  "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow>
-   inv(G,x) *\<^sub>G y = z \<Longrightarrow> x *\<^sub>G z = y"
-  by (tactic {* auto2s_tac @{context} (HAVE "z = inv(G,x) *\<^sub>G (x *\<^sub>G z)") *})
+  "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> inv(G,x) *\<^sub>G y = z \<Longrightarrow> x *\<^sub>G z = y"
+@proof @have "z = inv(G,x) *\<^sub>G (x *\<^sub>G z)" @qed
 
 section {* Subgroups *}
 
@@ -162,12 +164,13 @@ setup {* del_prfstep_thm @{thm subgroup_def} *}
 
 lemma subgroup_is_group:
   "is_subgroup_set(G,H) \<Longrightarrow> \<H> = subgroup(G,H) \<Longrightarrow> is_group(\<H>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_monoid(\<H>)" WITH (
-      HAVE "is_times_assoc(\<H>)" WITH (
-        HAVE "\<forall>x\<in>H. \<forall>y\<in>H. \<forall>z\<in>H. (x *\<^sub>\<H> y) *\<^sub>\<H> z = x *\<^sub>\<H> (y *\<^sub>\<H> z)" WITH (
-          HAVE "(x *\<^sub>G y) *\<^sub>G z = x *\<^sub>G (y *\<^sub>G z)"))) THEN
-    HAVE "\<forall>x\<in>H. inv(G,x) *\<^sub>\<H> x = \<one>\<^sub>\<H>") *})
+@proof
+  @have "is_monoid(\<H>)" @with
+    @have "is_times_assoc(\<H>)" @with
+      @have "\<forall>x\<in>H. \<forall>y\<in>H. \<forall>z\<in>H. (x *\<^sub>\<H> y) *\<^sub>\<H> z = x *\<^sub>\<H> (y *\<^sub>\<H> z)" @with
+        @have "(x *\<^sub>G y) *\<^sub>G z = x *\<^sub>G (y *\<^sub>G z)" @end @end @end
+  @have "\<forall>x\<in>H. inv(G,x) *\<^sub>\<H> x = \<one>\<^sub>\<H>"
+@qed
 setup {* add_forward_prfstep_cond @{thm subgroup_is_group} [with_term "subgroup(?G,?H)"] *}
 
 lemma subgroup_inv [rewrite]:
@@ -175,7 +178,7 @@ lemma subgroup_inv [rewrite]:
    inv(\<H>,x) = inv(G,x)" by auto2
 
 lemma subgroup_non_empty [resolve]: "\<not>is_subgroup_set(G,\<emptyset>)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<one>\<^sub>G \<in> \<emptyset>") *})
+@proof @contradiction @have "\<one>\<^sub>G \<in> \<emptyset>" @qed
 
 section {* Direct products *}
   
@@ -197,18 +200,22 @@ setup {* del_prfstep_thm @{thm group_prod_def} *}
 
 lemma group_prod_is_monoid [forward]:
   "is_monoid(G) \<Longrightarrow> is_monoid(H) \<Longrightarrow> is_monoid(G \<times>\<^sub>G H)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "K = G \<times>\<^sub>G H" THEN
-    HAVE "is_times_assoc(K)" WITH (
-      HAVE "\<forall>x\<in>.K. \<forall>y\<in>.K. \<forall>z\<in>.K. (x *\<^sub>K y) *\<^sub>K z = x *\<^sub>K (y *\<^sub>K z)" WITH (
-        HAVE "(fst(x) *\<^sub>G fst(y)) *\<^sub>G fst(z) = fst(x) *\<^sub>G (fst(y) *\<^sub>G fst(z))" THEN
-        HAVE "(snd(x) *\<^sub>H snd(y)) *\<^sub>H snd(z) = snd(x) *\<^sub>H (snd(y) *\<^sub>H snd(z))"))) *})
+@proof
+  @let "K = G \<times>\<^sub>G H" @then
+  @have "is_times_assoc(K)" @with
+    @have "\<forall>x\<in>.K. \<forall>y\<in>.K. \<forall>z\<in>.K. (x *\<^sub>K y) *\<^sub>K z = x *\<^sub>K (y *\<^sub>K z)" @with
+      @have "(fst(x) *\<^sub>G fst(y)) *\<^sub>G fst(z) = fst(x) *\<^sub>G (fst(y) *\<^sub>G fst(z))" @then
+      @have "(snd(x) *\<^sub>H snd(y)) *\<^sub>H snd(z) = snd(x) *\<^sub>H (snd(y) *\<^sub>H snd(z))"
+    @end
+  @end
+@qed
 
 lemma group_prod_is_group [forward]:
   "is_group(G) \<Longrightarrow> is_group(H) \<Longrightarrow> is_group(G \<times>\<^sub>G H)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "K = G \<times>\<^sub>G H" THEN
-    HAVE "\<forall>x\<in>.K. \<langle>inv(G,fst(x)), inv(H,snd(x))\<rangle> *\<^sub>K x = \<one>\<^sub>K") *})
+@proof
+  @let "K = G \<times>\<^sub>G H" @then
+  @have "\<forall>x\<in>.K. \<langle>inv(G,fst(x)), inv(H,snd(x))\<rangle> *\<^sub>K x = \<one>\<^sub>K"
+@qed
 
 lemma group_prod_inv [rewrite]:
   "is_group(G) \<Longrightarrow> is_group(H) \<Longrightarrow> K = G \<times>\<^sub>G H \<Longrightarrow> \<langle>x,y\<rangle> \<in> units(K) \<Longrightarrow>
@@ -246,13 +253,12 @@ setup {* add_forward_prfstep_cond @{thm group_hom_compose} [with_term "?g \<circ
 
 lemma group_hom_one [rewrite]:
   "is_group_hom(f) \<Longrightarrow> G = source_str(f) \<Longrightarrow> H = target_str(f) \<Longrightarrow> f ` \<one>\<^sub>G = \<one>\<^sub>H"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f ` (\<one>\<^sub>G *\<^sub>G \<one>\<^sub>G) *\<^sub>H \<one>\<^sub>H = f ` \<one>\<^sub>G *\<^sub>H f ` \<one>\<^sub>G") *})
+@proof @have "f ` (\<one>\<^sub>G *\<^sub>G \<one>\<^sub>G) *\<^sub>H \<one>\<^sub>H = f ` \<one>\<^sub>G *\<^sub>H f ` \<one>\<^sub>G" @qed
 
 lemma group_hom_inv [rewrite]:
   "is_group_hom(f) \<Longrightarrow> G = source_str(f) \<Longrightarrow> H = target_str(f) \<Longrightarrow>
    x \<in> units(G) \<Longrightarrow> f`(inv(G,x)) = inv(H,f`x)"
-  by (tactic {* auto2s_tac @{context} (HAVE "f ` (inv(G,x) *\<^sub>G x) = \<one>\<^sub>H") *})
+@proof @have "f ` (inv(G,x) *\<^sub>G x) = \<one>\<^sub>H" @qed
 
 definition is_group_iso :: "i \<Rightarrow> o" where [rewrite]:
   "is_group_iso(f) \<longleftrightarrow> (is_group_hom(f) \<and> bijective(f))"
@@ -281,18 +287,19 @@ section {* Image of a homomorphism *}
   
 lemma image_is_subgroup:
   "is_group_hom(f) \<Longrightarrow> H = target_str(f) \<Longrightarrow> is_subgroup_set(H, image(f))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "G = source_str(f)" THEN
-    HAVE "f ` \<one>\<^sub>G = \<one>\<^sub>H" THEN
-    HAVE "subset_mult_closed(H, image(f))" WITH (
-      HAVE "\<forall>x\<in>image(f). \<forall>y\<in>image(f). x *\<^sub>H y \<in> image(f)" WITH (
-        CHOOSE "x'\<in>source(f), f`x' = x" THEN
-        CHOOSE "y'\<in>source(f), f`y' = y" THEN
-        HAVE "f`(x' *\<^sub>G y') = x *\<^sub>H y")) THEN
-    HAVE "subset_inv_closed(H, image(f))" WITH (
-      HAVE "\<forall>x\<in>image(f). inv(H,x) \<in> image(f)" WITH (
-        CHOOSE "x'\<in>source(f), f`x' = x" THEN
-        HAVE "f`(inv(G,x')) = inv(H,x)"))) *})
+@proof
+  @let "G = source_str(f)" @then
+  @have "f ` \<one>\<^sub>G = \<one>\<^sub>H" @then
+  @have "subset_mult_closed(H, image(f))" @with
+    @have "\<forall>x\<in>image(f). \<forall>y\<in>image(f). x *\<^sub>H y \<in> image(f)" @with
+      @obtain "x'\<in>source(f)" where "f`x' = x"
+      @obtain "y'\<in>source(f)" where "f`y' = y"
+      @have "f`(x' *\<^sub>G y') = x *\<^sub>H y" @end @end
+  @have "subset_inv_closed(H, image(f))" @with
+    @have "\<forall>x\<in>image(f). inv(H,x) \<in> image(f)" @with
+      @obtain "x'\<in>source(f)" where "f`x' = x"
+      @have "f`(inv(G,x')) = inv(H,x)" @end @end
+@qed
 setup {* add_forward_prfstep_cond @{thm image_is_subgroup} [with_term "image(?f)"] *}
 
 definition image_subgroup :: "i \<Rightarrow> i" where image_subgroup_def [rewrite_bidir]:

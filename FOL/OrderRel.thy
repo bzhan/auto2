@@ -103,7 +103,7 @@ lemma subset_order_type [typing]: "subset_order(S) \<in> raworder_space(S)" by a
 lemma subset_order_is_order [forward]: "order(subset_order(S))" by auto2
 
 lemma subset_order_eval [rewrite]:
-  "R = subset_order(S) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> x \<subseteq> y" by auto2
+  "R = subset_order(S) \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> (x \<in>. R \<and> y \<in>. R \<and> x \<subseteq> y)" by auto2
 setup {* del_prfstep_thm @{thm subset_order_def} *}
 
 section {* Notations for order relations *}  (* Bourbaki III.1.3 *)
@@ -218,7 +218,7 @@ lemma suborder_eval [rewrite]:
     
 lemma suborder_less_eval [rewrite]:
   "preorder(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> S = suborder(R,A) \<Longrightarrow> x <\<^sub>S y \<longleftrightarrow> (x \<in>. S \<and> y \<in>. S \<and> x <\<^sub>R y)"
-  by (tactic {* auto2s_tac @{context} (CASE "x = y") *})
+@proof @case "x = y" @qed
 setup {* del_prfstep_thm @{thm suborder_def} *}
 
 lemma subset_order_suborder [rewrite]:
@@ -287,7 +287,7 @@ lemma compl_strict_decr:
 
 lemma greater_elts_strict_subset [backward]:
   "order(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> {z\<in>.R. z \<ge>\<^sub>R y} \<subset> {z\<in>.R. z \<ge>\<^sub>R x}"
-  by (tactic {* auto2s_tac @{context} (HAVE "x\<in>{z\<in>.R. z \<ge>\<^sub>R x}") *})
+@proof @have "x\<in>{z\<in>.R. z \<ge>\<^sub>R x}" @qed
 
 lemma greater_elts_strict_decr:
   "order(R) \<Longrightarrow> strict_decr(Mor(R,subset_order(Pow(carrier(R))), \<lambda>x. {y\<in>.R. y \<ge>\<^sub>R x}))" by auto2
@@ -403,8 +403,7 @@ setup {* add_backward2_prfstep (conj_left_th @{thm has_least_singleton}) *}
 lemma has_least_sub_singleton [backward2]:
   "order(R) \<Longrightarrow> has_least(R,X\<midarrow>{a}) \<Longrightarrow> \<forall>x\<in>X. x \<le>\<^sub>R a \<Longrightarrow>
    has_least(R,X) \<and> least(R,X) = least(R,X\<midarrow>{a})"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "a \<in> X" WITH HAVE "X = (X \<midarrow> {a}) \<union> {a}") *})
+@proof @case "a \<in> X" @with @have "X = (X \<midarrow> {a}) \<union> {a}" @end @qed
 setup {* add_backward2_prfstep (conj_left_th @{thm has_least_sub_singleton}) *}
 
 (* Cofinal and coinitial subsets *)
@@ -532,7 +531,7 @@ lemma sup_mem [typing]: "order(R) \<Longrightarrow> has_sup(R,X) \<Longrightarro
 
 lemma sup_le [backward2]:
   "order(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> a \<in>. R \<Longrightarrow> \<forall>x\<in>X. x \<le>\<^sub>R a \<Longrightarrow> sup(R,X) \<le>\<^sub>R a"
-  by (tactic {* auto2s_tac @{context} (HAVE "a \<in> upper_bound(R,X)") *})
+@proof @have "a \<in> upper_bound(R,X)" @qed
 
 lemma sup_on_subset_le:
   "order(R) \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(R,B) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> sup(R,A) \<le>\<^sub>R sup(R,B)" by auto2
@@ -570,12 +569,13 @@ lemma sup_prod:
 lemma sup_prod_inv:
   "\<forall>a\<in>I. order(R`a) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> has_sup(prod_rel(I,R),A) \<Longrightarrow>
    sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "M = sup(prod_rel(I,R),A)" THEN
-    HAVE_RULE "\<forall>a\<in>I. \<forall>x\<in>upper_bound(R`a,projs(A,a)). le(R`a,M`a,x)" WITH (
-      LET "f = Tup(I, \<lambda>b. if b = a then x else M`b)" THEN
-      HAVE "f \<in> upper_bound(prod_rel(I,R),A)") THEN
-    HAVE_RULE "\<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<and> sup(R`a,projs(A,a)) = M`a") *})
+@proof
+  @let "M = sup(prod_rel(I,R),A)" @then
+  @have (@rule) "\<forall>a\<in>I. \<forall>x\<in>upper_bound(R`a,projs(A,a)). le(R`a,M`a,x)" @with
+    @let "f = Tup(I, \<lambda>b. if b = a then x else M`b)" @then
+    @have "f \<in> upper_bound(prod_rel(I,R),A)" @end
+  @have (@rule) "\<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<and> sup(R`a,projs(A,a)) = M`a"
+@qed
 
 lemma sup_subset1:
   "order(R) \<Longrightarrow> F \<subseteq> carrier(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(suborder(R,F),A) \<Longrightarrow>
@@ -595,32 +595,30 @@ lemma right_directedE1 [forward]: "right_directed(R) \<Longrightarrow> order(R)"
 lemma right_directedE2 [backward]: "right_directed(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<exists>z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm right_directed_def} *}
 
-definition join :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
-  "join(R,x,y) = (SOME z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y)"
-
-lemma right_directed_join:
-  "right_directed(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow>
-   join(R,x,y) \<in>. R \<and> join(R,x,y) \<ge>\<^sub>R x \<and> join(R,x,y) \<ge>\<^sub>R y" by auto2
-setup {* add_forward_prfstep_cond @{thm right_directed_join} [with_term "join(?R,?x,?y)"] *}
-
 lemma right_directed_max_is_greatest:
   "right_directed(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> maximal(R,a) \<Longrightarrow> has_greatest(R,carrier(R)) \<and> greatest(R,carrier(R)) = a"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "b \<in> carrier(R), \<not>b \<le>\<^sub>R a" THEN HAVE "join(R,a,b) \<ge>\<^sub>R a") *})
+@proof
+  @have "\<forall>b\<in>.R. b \<le>\<^sub>R a" @with @obtain "z\<in>.R" where "z \<ge>\<^sub>R a \<and> z \<ge>\<^sub>R b" @end
+@qed
 
 lemma right_directed_prod:
   "\<forall>a\<in>I. right_directed(R`a) \<Longrightarrow> S = prod_rel(I,R) \<Longrightarrow> right_directed(S)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "E = prod_src(I,R)" THEN
-    HAVE "\<forall>x\<in>E. \<forall>y\<in>E. \<exists>z\<in>E. z \<ge>\<^sub>S x \<and> z \<ge>\<^sub>S y" WITH (
-      LET "z = Tup(I, \<lambda>a. join(R`a,x`a,y`a))" THEN
-      HAVE "z \<in> E" THEN HAVE "z \<ge>\<^sub>S x")) *})
+@proof
+  @let "E = prod_src(I,R)" @then
+  @have "\<forall>x\<in>E. \<forall>y\<in>E. \<exists>z\<in>E. z \<ge>\<^sub>S x \<and> z \<ge>\<^sub>S y" @with
+    @let "z = Tup(I, \<lambda>a. SOME w\<in>.R`a. le(R`a,x`a,w) \<and> le(R`a,y`a,w))" @then
+    @have "z \<in> E" @then @have "z \<ge>\<^sub>S x"
+  @end
+@qed
 
 lemma right_directed_cofinal:
   "right_directed(R) \<Longrightarrow> cofinal(R,A) \<Longrightarrow> right_directed(suborder(R,A))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>A. \<forall>y\<in>A. \<exists>z\<in>A. ge(z,suborder(R,A),x) \<and> ge(z,suborder(R,A),y)" WITH (
-      CHOOSE "z\<in>A, join(R,x,y) \<le>\<^sub>R z")) *})
+@proof
+  @let "S = suborder(R,A)" @then
+  @have "\<forall>x\<in>A. \<forall>y\<in>A. \<exists>z\<in>A. z \<ge>\<^sub>S x \<and> z \<ge>\<^sub>S y" @with
+    @obtain "z'\<in>.R" where "z' \<ge>\<^sub>R x \<and> z' \<ge>\<^sub>R y" @then @obtain "z\<in>A" where "z' \<le>\<^sub>R z"
+  @end
+@qed
 
 section {* Totally ordered sets *}  (* Bourbaki III.1.12 *)
 
@@ -636,7 +634,7 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm linorder_def} *}
 
 lemma linorder_iso [forward]:
   "linorder(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> linorder(S)"
-  by (tactic {* auto2s_tac @{context} (CHOOSE "f, f \<in> R \<cong>\<^sub>O S") *})
+@proof @obtain "f \<in> R \<cong>\<^sub>O S" @qed
 
 lemma linorder_suborder:
   "linorder(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> linorder(suborder(R,A))" by auto2
@@ -648,8 +646,9 @@ lemma linorder_eq_str [forward]:
 lemma strict_monotone_to_inj:
   "is_morphism(f) \<Longrightarrow> R = source_str(f) \<Longrightarrow> linorder(R) \<Longrightarrow> order(target_str(f)) \<Longrightarrow>
    strict_incr(f) \<Longrightarrow> injective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<noteq> y \<longrightarrow> f`x \<noteq> f`y" WITH CASE "x \<ge>\<^sub>R y") *})
+@proof
+  @have "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<noteq> y \<longrightarrow> f`x \<noteq> f`y" @with @case "x \<ge>\<^sub>R y" @end
+@qed
 
 lemma incr_to_iso [backward]:
   "is_morphism(f) \<Longrightarrow> R = source_str(f) \<Longrightarrow> S = target_str(f) \<Longrightarrow>
@@ -688,7 +687,7 @@ lemma max_greaterI [backward1, backward2]:
 
 lemma linorder_has_max3:
   "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> \<exists>w. w \<ge>\<^sub>R x \<and> w \<ge>\<^sub>R y \<and> w \<ge>\<^sub>R z"
-  by (tactic {* auto2s_tac @{context} (LET "w = max(R,max(R,x,y),z)") *})
+@proof @let "w = max(R,max(R,x,y),z)" @qed
 setup {* add_backward_prfstep_cond @{thm linorder_has_max3} [
   with_filt (order_filter "x" "y"), with_filt (order_filter "y" "z")] *}
 
@@ -719,7 +718,7 @@ setup {* del_prfstep_thm @{thm min_def} *}
 
 lemma linorder_has_min3:
   "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> \<exists>w. w \<le>\<^sub>R x \<and> w \<le>\<^sub>R y \<and> w \<le>\<^sub>R z"
-  by (tactic {* auto2s_tac @{context} (LET "w = min(R,min(R,x,y),z)") *})
+@proof @let "w = min(R,min(R,x,y),z)" @qed
 setup {* add_backward_prfstep_cond @{thm linorder_has_min3} [
   with_filt (order_filter "x" "y"), with_filt (order_filter "y" "z")] *}
 
@@ -727,8 +726,9 @@ setup {* add_backward_prfstep_cond @{thm linorder_has_min3} [
 lemma eq_linorder_order_less [backward1]:
   "ord_form(R) \<Longrightarrow> ord_form(S) \<Longrightarrow> linorder(R) \<Longrightarrow> order(S) \<Longrightarrow> carrier(R) = carrier(S) \<Longrightarrow>
    \<forall>x\<in>.R. \<forall>y\<in>.R. x <\<^sub>R y \<longrightarrow> x <\<^sub>S y \<Longrightarrow> R = S"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> x \<le>\<^sub>S y" WITH CASE "x = y") *})
+@proof
+  @have (@rule) "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> x \<le>\<^sub>S y" @with @case "x = y" @end
+@qed
 
 section {* Directed family of ordering *}
 
@@ -774,58 +774,67 @@ lemma union_rel_eval [rewrite]:
 setup {* del_prfstep_thm @{thm union_rel_def} *}
 
 lemma directed_elt_in_rel2:
-  "directed_rels(X) \<Longrightarrow> x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow>
-   \<exists>R\<in>X. x \<in>. R \<and> y \<in>. R"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "R\<in>X, x\<in>.R" THEN
-    CHOOSE "S\<in>X, y\<in>.S" THEN
-    CHOOSE "T\<in>X, is_suborder(R,T) \<and> is_suborder(S,T)") *})
+  "directed_rels(X) \<Longrightarrow> x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow> \<exists>R\<in>X. x \<in>. R \<and> y \<in>. R"
+@proof
+  @obtain "R\<in>X" where "x\<in>.R" @then
+  @obtain "S\<in>X" where "y\<in>.S" @then
+  @obtain "T\<in>X" where "is_suborder(R,T)" "is_suborder(S,T)"
+@qed
 setup {* add_backward_prfstep_cond @{thm directed_elt_in_rel2} [with_filt (order_filter "x" "y")] *}
 
 lemma directed_elt_in_rel3:
   "directed_rels(X) \<Longrightarrow> x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow> z \<in> union_src(X) \<Longrightarrow>
    \<exists>R\<in>X. x \<in>. R \<and> y \<in>. R \<and> z \<in>. R"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "R\<in>X, x\<in>.R \<and> y\<in>.R" THEN
-    CHOOSE "S\<in>X, z\<in>.S" THEN
-    CHOOSE "T\<in>X, is_suborder(R,T) \<and> is_suborder(S,T)") *})
+@proof
+  @obtain "R\<in>X" where "x\<in>.R" "y\<in>.R" @then
+  @obtain "S\<in>X" where "z\<in>.S" @then
+  @obtain "T\<in>X" where "is_suborder(R,T)" "is_suborder(S,T)"
+@qed
 setup {* add_backward_prfstep_cond @{thm directed_elt_in_rel3} [
   with_filt (order_filter "x" "y"), with_filt (order_filter "y" "z")] *}
 
 lemma union_rel_prop:
   "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> U = union_rel(X) \<Longrightarrow> is_suborder(R,U)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>U y" WITH (
-      CASE "x \<le>\<^sub>U y" WITH (
-        CHOOSE "S\<in>X, x \<le>\<^sub>S y" THEN
-        CHOOSE "T\<in>X, is_suborder(R,T) \<and> is_suborder(S,T)"))) *})
+@proof
+  @have "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>U y" @with
+    @case "x \<le>\<^sub>U y" @with
+      @obtain "S\<in>X" where "x \<le>\<^sub>S y" @then
+      @obtain "T\<in>X" where "is_suborder(R,T)" "is_suborder(S,T)"
+    @end
+  @end
+@qed
 setup {* add_forward_prfstep_cond @{thm union_rel_prop} [with_term "union_rel(?X)"] *}
 
 lemma union_rel_unique_prop:
   "directed_rels(X) \<Longrightarrow> ord_form(R) \<Longrightarrow> order(R) \<Longrightarrow> carrier(R) = union_src(X) \<Longrightarrow>
    \<forall>S\<in>X. is_suborder(S,R) \<Longrightarrow> R = union_rel(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<longleftrightarrow> le(union_rel(X),x,y)" WITH (
-      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S")) *})
+@proof
+  @have "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<longleftrightarrow> le(union_rel(X),x,y)" @with
+    @obtain "S\<in>X" where "x \<in>. S" "y \<in>. S" @end
+@qed
 
 lemma union_rel_preorder [forward]:
   "directed_rels(X) \<Longrightarrow> R = union_rel(X) \<Longrightarrow> preorder(R)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z" WITH (
-      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S \<and> z \<in>. S" THEN
-      HAVE "x \<le>\<^sub>S y" THEN HAVE "y \<le>\<^sub>S z")) *})
+@proof
+  @have "\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z" @with
+    @obtain "S\<in>X" where "x \<in>. S" "y \<in>. S" "z \<in>. S" @then
+    @have "x \<le>\<^sub>S y" @then @have "y \<le>\<^sub>S z"
+  @end
+@qed
 
 lemma union_rel_order [forward]:
   "directed_rels(X) \<Longrightarrow> R = union_rel(X) \<Longrightarrow> order(R)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y" WITH (
-      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S")) *})
+@proof
+  @have "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y" @with
+    @obtain "S\<in>X" where "x \<in>. S" "y \<in>. S" @end
+@qed
 
 lemma union_rel_linorder [backward]:
   "directed_rels(X) \<Longrightarrow> \<forall>R\<in>X. linorder(R) \<Longrightarrow> R = union_rel(X) \<Longrightarrow> linorder(R)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y" WITH (
-      CHOOSE "S\<in>X, x \<in>. S \<and> y \<in>. S")) *})
+@proof
+  @have "\<forall>x\<in>union_src(X). \<forall>y\<in>union_src(X). x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y" @with
+    @obtain "S\<in>X" where "x \<in>. S" "y \<in>. S" @end
+@qed
 
 section {* Linear continuum *}
   
@@ -864,15 +873,18 @@ setup {* del_prfstep_thm @{thm linear_continuum_def} *}
 
 lemma dense_order_eq_str [forward]:
   "dense_order(R) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> dense_order(S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x y. x <\<^sub>S y \<longrightarrow> (\<exists>z. x <\<^sub>S z \<and> z <\<^sub>S y)" WITH (
-      CHOOSE "z, x <\<^sub>R z \<and> z <\<^sub>R y")) *})
+@proof
+  @have "\<forall>x y. x <\<^sub>S y \<longrightarrow> (\<exists>z. x <\<^sub>S z \<and> z <\<^sub>S y)" @with
+    @obtain z where "x <\<^sub>R z \<and> z <\<^sub>R y" @end
+@qed
 
 lemma linear_continuum_eq_str_ord [forward]:
   "linear_continuum(R) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> linear_continuum(S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>T. T \<noteq> \<emptyset> \<longrightarrow> upper_bound(S,T) \<noteq> \<emptyset> \<longrightarrow> has_sup(S,T)" WITH (
-      HAVE "has_sup(R,T)" THEN
-      HAVE "has_sup(S,T) \<and> sup(S,T) = sup(R,T)")) *})
+@proof
+  @have "\<forall>T. T \<noteq> \<emptyset> \<longrightarrow> upper_bound(S,T) \<noteq> \<emptyset> \<longrightarrow> has_sup(S,T)" @with
+    @have "has_sup(R,T)" @then
+    @have "has_sup(S,T) \<and> sup(S,T) = sup(R,T)"
+  @end
+@qed
 
 end

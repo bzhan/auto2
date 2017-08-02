@@ -28,6 +28,9 @@ sig
   val mk_nat_add_th: int * int -> thm
   val mk_nat_mult_th: int * int -> thm
   val nat_neq_resolve: thm -> thm
+  val nat_neq_zero: int -> thm
+  val nat_neq: int * int -> thm
+  val nat_less: int * int -> thm
 
   val add_nat_arith_proofsteps: theory -> theory
 end;
@@ -171,6 +174,43 @@ fun nat_neq_resolve th =
         nat_neq_resolve (th RS @{thm nat_Suc_inj})
     end
 
+(* Produce the theorem n ~= 0. *)
+fun nat_neq_zero n =
+    if n <= 0 then raise AUTO2 "nat_neq_zero"
+    else let
+      val nt = mk_nat (n - 1)
+      val inst = update_env (("n",0), nt) fo_init
+      val ctxt = @{context}
+    in
+      (subst_thm ctxt inst @{thm nat_Suc_not_zero}) RS @{thm not_sym}
+    end
+
+(* Produce the theorem m ~= n. *)
+fun nat_neq (m, n) =
+    if m = n then raise AUTO2 "nat_neq" else
+    let
+      val m_eq_n = mk_eq (mk_nat m, mk_nat n) |> mk_Trueprop |> cert @{context}
+    in
+      m_eq_n |> Thm.assume
+             |> nat_neq_resolve
+             |> Thm.implies_intr m_eq_n
+             |> rewrite_thm_from_contra_form
+    end
+
+val nat_linorder_th = @{thm nat_is_linorder}
+val nat_order_th = nat_linorder_th RS @{thm linorderD(1)}
+val nat_preorder_th = nat_order_th RS @{thm orderD(1)}
+
+(* Produce the theorem m < n. *)
+fun nat_less (m, n) =
+    if m >= n then raise AUTO2 "nat_less" else
+    let
+      val le_th = nat_le (m, n)
+      val neq_th = nat_neq (m, n)
+    in
+      [nat_preorder_th, le_th, neq_th] MRS @{thm preorder_lessI}
+    end
+
 val add_nat_arith_proofsteps =
     fold Consts.add_const_data [
       ("nat", is_nat)
@@ -204,6 +244,23 @@ val add_nat_arith_proofsteps =
                 [Update.thm_update (id, [th, le_th] MRS contra_triv_th)]
               end
             else []
+          end),
+
+      ("nat_less_consts",
+       [WithGoal @{term_pat "less(nat_ring,?NUMC1,?NUMC2)"}],
+       PRIORITY_RESOLVE,
+       fn ((id, _), ths) => fn _ => fn _ =>
+          let
+            val th = the_single ths
+            val (m, n) = th |> prop_of' |> dest_not |> dest_binop_args
+          in
+            if is_nat m andalso is_nat n andalso dest_nat m < dest_nat n then
+              let
+                val less_th = nat_less (dest_nat m, dest_nat n)
+              in
+                [Update.thm_update (id, [th, less_th] MRS contra_triv_th)]
+              end
+            else []
           end)
 
     ] #> fold add_prfstep_conv [
@@ -235,5 +292,4 @@ val add_nat_arith_proofsteps =
 
 end  (* structure NatArith *)
 
-open NatArith
-val _ = Theory.setup add_nat_arith_proofsteps
+val _ = Theory.setup NatArith.add_nat_arith_proofsteps

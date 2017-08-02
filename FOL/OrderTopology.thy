@@ -34,16 +34,17 @@ lemma ord_basis_eq_str [rewrite]:
 
 lemma ord_basis_is_basis [forward]:
   "linorder(X) \<Longrightarrow> collection_is_basis(ord_basis(X))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "\<B> = ord_basis(X)" THEN HAVE "\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. U \<inter> V \<in> \<B>") *})
+@proof @let "\<B> = ord_basis(X)" @then @have "\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. U \<inter> V \<in> \<B>" @qed
 
 lemma ord_basis_union [rewrite]:
   "linorder(X) \<Longrightarrow> card_ge2(carrier(X)) \<Longrightarrow> \<Union>ord_basis(X) = carrier(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.X. x \<in> \<Union>ord_basis(X)" WITH (
-      CHOOSE "y\<in>.X, y \<noteq> x" THEN
-      CASE "y <\<^sub>X x" WITH HAVE "x \<in> greater_interval(X,y)" THEN
-      CASE "y >\<^sub>X x" WITH HAVE "x \<in> less_interval(X,y)")) *})
+@proof
+  @have "\<forall>x\<in>.X. x \<in> \<Union>ord_basis(X)" @with
+    @obtain "y\<in>.X" where "y \<noteq> x" @then
+    @case "y <\<^sub>X x" @with @have "x \<in> greater_interval(X,y)" @end
+    @case "y >\<^sub>X x" @with @have "x \<in> less_interval(X,y)" @end
+  @end
+@qed
 
 definition order_topology :: "i \<Rightarrow> o" where [rewrite]:
   "order_topology(X) \<longleftrightarrow> (linorder(X) \<and> is_top_space_raw(X) \<and> card_ge2(carrier(X)) \<and>
@@ -79,32 +80,36 @@ lemma order_topology_ge_interval [resolve]:
     
 lemma order_topology_closed_interval [resolve]:
   "order_topology(X) \<Longrightarrow> a \<in>. X \<Longrightarrow> b \<in>. X \<Longrightarrow> is_closed(X,closed_interval(X,a,b))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "closed_interval(X,a,b) = le_interval(X,b) \<inter> ge_interval(X,a)") *})
+@proof
+  @have "closed_interval(X,a,b) = le_interval(X,b) \<inter> ge_interval(X,a)"
+@qed
 
 lemma order_top_is_openI [forward]:
   "order_topology(X) \<Longrightarrow> \<forall>x\<in>U. \<exists>a b. x \<in> open_interval(X,a,b) \<and> open_interval(X,a,b) \<subseteq> U \<Longrightarrow> is_open(X,U)" by auto2
   
 lemma order_top_is_openD_gt [backward2]:
   "order_topology(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> a \<in> U \<Longrightarrow> \<exists>M. M >\<^sub>X a \<Longrightarrow> \<exists>c >\<^sub>X a. closed_open_interval(X,a,c) \<subseteq> U"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "W\<in>ord_basis(X), a \<in> W \<and> W \<subseteq> U" THEN
-    CASE "\<exists>p\<in>.X. \<exists>q\<in>.X. W = open_interval(X,p,q)") *})
-      
+@proof
+  @obtain "W\<in>ord_basis(X)" where "a \<in> W \<and> W \<subseteq> U" @then
+  @case "\<exists>p\<in>.X. \<exists>q\<in>.X. W = open_interval(X,p,q)"
+@qed
+
 lemma order_top_is_openD_lt [backward2]:
   "order_topology(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> a \<in> U \<Longrightarrow> \<exists>M. M <\<^sub>X a \<Longrightarrow> \<exists>c <\<^sub>X a. open_closed_interval(X,c,a) \<subseteq> U"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "W\<in>ord_basis(X), a \<in> W \<and> W \<subseteq> U" THEN
-    CASE "\<exists>p\<in>.X. \<exists>q\<in>.X. W = open_interval(X,p,q)") *})
+@proof
+  @obtain "W\<in>ord_basis(X)" where "a \<in> W \<and> W \<subseteq> U" @then
+  @case "\<exists>p\<in>.X. \<exists>q\<in>.X. W = open_interval(X,p,q)"
+@qed
 
 lemma order_top_is_openD_unbounded [backward2]:
   "order_topology(X) \<Longrightarrow> order_unbounded(X) \<Longrightarrow>
    is_open(X,U) \<Longrightarrow> x \<in> U \<Longrightarrow> \<exists>a b. x \<in> open_interval(X,a,b) \<and> open_interval(X,a,b) \<subseteq> U"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "b >\<^sub>X x, closed_open_interval(X,x,b) \<subseteq> U" THEN
-    CHOOSE "a <\<^sub>X x, open_closed_interval(X,a,x) \<subseteq> U" THEN
-    HAVE "x \<in> open_interval(X,a,b)" THEN
-    HAVE "open_interval(X,a,b) = open_closed_interval(X,a,x) \<union> closed_open_interval(X,x,b)") *})
+@proof
+  @obtain b where "b >\<^sub>X x" "closed_open_interval(X,x,b) \<subseteq> U" @then
+  @obtain a where "a <\<^sub>X x" "open_closed_interval(X,a,x) \<subseteq> U" @then
+  @have "x \<in> open_interval(X,a,b)" @then
+  @have "open_interval(X,a,b) = open_closed_interval(X,a,x) \<union> closed_open_interval(X,x,b)"
+@qed
 
 setup {* fold del_prfstep_thm [@{thm order_topology_has_basis}, @{thm order_topology_def}] *}
 setup {* add_resolve_prfstep @{thm order_topology_has_basis} *}
@@ -243,68 +248,71 @@ setup {* add_forward_prfstep_cond @{thm ord_subspace_carrier} [with_term "ord_su
 
 lemma ord_subspace_eq_str [resolve]:
   "is_top_space(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> eq_str_top(subspace(X,A),ord_subspace(X,A))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "open_sets(subspace(X,A)) = open_sets(ord_subspace(X,A))") *})
+@proof @have "open_sets(subspace(X,A)) = open_sets(ord_subspace(X,A))" @qed
   
 lemma ord_subspace_is_top_space:
   "is_top_space(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> is_top_space(ord_subspace(X,A))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "eq_str_top(subspace(X,A),ord_subspace(X,A))") *})
+@proof @have "eq_str_top(subspace(X,A),ord_subspace(X,A))" @qed
 setup {* add_forward_prfstep_cond @{thm ord_subspace_is_top_space} [with_term "ord_subspace(?X,?A)"] *}
 
 lemma order_top_from_order_finer1 [resolve]:
   "order_topology(X) \<Longrightarrow> card_ge2(A) \<Longrightarrow> order_convex(X,A) \<Longrightarrow>
    Y = order_top_from_order(suborder(X,A)) \<Longrightarrow> is_open(Y, A \<inter> less_interval(X,x))"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "x \<in> A" WITH HAVE "A \<inter> less_interval(X,x) = less_interval(suborder(X,A),x)" THEN
-    HAVE_RULE "A \<inter> less_interval(X,x) = \<emptyset> \<or> A \<subseteq> less_interval(X,x)" WITH (
-      CHOOSE "b \<in> A, b \<in> less_interval(X,x)" THEN
-      CHOOSE "c \<in> A, c \<notin> less_interval(X,x)" THEN
-      HAVE "closed_interval(X,b,c) \<subseteq> A" THEN
-      HAVE "x \<in> closed_interval(X,b,c)")) *})
+@proof
+  @case "x \<in> A" @with @have "A \<inter> less_interval(X,x) = less_interval(suborder(X,A),x)" @end
+  @have (@rule) "A \<inter> less_interval(X,x) = \<emptyset> \<or> A \<subseteq> less_interval(X,x)" @with
+    @contradiction
+    @obtain "b \<in> A" where "b \<in> less_interval(X,x)" @then
+    @obtain "c \<in> A" where "c \<notin> less_interval(X,x)" @then
+    @have "closed_interval(X,b,c) \<subseteq> A" @then
+    @have "x \<in> closed_interval(X,b,c)" @end
+@qed
 
 lemma order_top_from_order_finer2 [resolve]:
   "order_topology(X) \<Longrightarrow> card_ge2(A) \<Longrightarrow> order_convex(X,A) \<Longrightarrow>
    Y = order_top_from_order(suborder(X,A)) \<Longrightarrow> is_open(Y, A \<inter> greater_interval(X,x))"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "x \<in> A" WITH HAVE "A \<inter> greater_interval(X,x) = greater_interval(suborder(X,A),x)" THEN
-    HAVE_RULE "A \<inter> greater_interval(X,x) = \<emptyset> \<or> A \<subseteq> greater_interval(X,x)" WITH (
-      CHOOSE "b \<in> A, b \<in> greater_interval(X,x)" THEN
-      CHOOSE "c \<in> A, c \<notin> greater_interval(X,x)" THEN
-      HAVE "closed_interval(X,c,b) \<subseteq> A" THEN
-      HAVE "x \<in> closed_interval(X,c,b)")) *})
+@proof
+  @case "x \<in> A" @with @have "A \<inter> greater_interval(X,x) = greater_interval(suborder(X,A),x)" @end
+  @have (@rule) "A \<inter> greater_interval(X,x) = \<emptyset> \<or> A \<subseteq> greater_interval(X,x)" @with
+    @contradiction
+    @obtain "b \<in> A" where "b \<in> greater_interval(X,x)" @then
+    @obtain "c \<in> A" where "c \<notin> greater_interval(X,x)" @then
+    @have "closed_interval(X,c,b) \<subseteq> A" @then
+    @have "x \<in> closed_interval(X,c,b)" @end
+@qed
 
 lemma order_top_from_order_finer3 [resolve]:
   "order_topology(X) \<Longrightarrow> card_ge2(A) \<Longrightarrow> order_convex(X,A) \<Longrightarrow>
    Y = order_top_from_order(suborder(X,A)) \<Longrightarrow> is_open(Y, A \<inter> open_interval(X,x,y))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "open_interval(X,x,y) = less_interval(X,y) \<inter> greater_interval(X,x)" THEN
-    HAVE "A \<inter> open_interval(X,x,y) = (A \<inter> less_interval(X,y)) \<inter> (A \<inter> greater_interval(X,x))" THEN
-    HAVE "is_open(Y, A \<inter> less_interval(X,y))") *})
+@proof
+  @have "open_interval(X,x,y) = less_interval(X,y) \<inter> greater_interval(X,x)" @then
+  @have "A \<inter> open_interval(X,x,y) = (A \<inter> less_interval(X,y)) \<inter> (A \<inter> greater_interval(X,x))" @then
+  @have "is_open(Y, A \<inter> less_interval(X,y))"
+@qed
 
 lemma order_top_from_order_eq_sub [backward]:
   "order_topology(X) \<Longrightarrow> card_ge2(A) \<Longrightarrow> order_convex(X,A) \<Longrightarrow>
    eq_str_top(ord_subspace(X,A),order_top_from_order(suborder(X,A)))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "Y = order_top_from_order(suborder(X,A))" THEN
-    LET "Z = ord_subspace(X,A)" THEN
-    HAVE "top_space_finer(Z,Y)" THEN
-    LET "\<B> = {A \<inter> U. U \<in> ord_basis(X)}" THEN
-    HAVE "top_has_basis(Z,\<B>)" WITH
-      HAVE "eq_str_top(subspace(X,A),Z)" THEN
-    HAVE "top_space_finer(Y,Z)" WITH HAVE "\<forall>U\<in>\<B>. is_open(Y,U)") *})
+@proof
+  @let "Y = order_top_from_order(suborder(X,A))" @then
+  @let "Z = ord_subspace(X,A)" @then
+  @have "top_space_finer(Z,Y)" @then
+  @let "\<B> = {A \<inter> U. U \<in> ord_basis(X)}" @then
+  @have "top_has_basis(Z,\<B>)" @with @have "eq_str_top(subspace(X,A),Z)" @end
+  @have "top_space_finer(Y,Z)" @with @have "\<forall>U\<in>\<B>. is_open(Y,U)" @end
+@qed
 
 lemma ord_subspace_is_order_top:
   "order_topology(X) \<Longrightarrow> card_ge2(A) \<Longrightarrow> order_convex(X,A) \<Longrightarrow> order_topology(ord_subspace(X,A))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "ord_subspace(X,A) = order_top_from_order(suborder(X,A))") *})
+@proof @have "ord_subspace(X,A) = order_top_from_order(suborder(X,A))"@qed
 setup {* add_forward_prfstep_cond @{thm ord_subspace_is_order_top} [with_term "ord_subspace(?X,?A)"] *}
 
 lemma closed_interval_order_topology:
   "order_topology(X) \<Longrightarrow> a <\<^sub>X b \<Longrightarrow> I = closed_interval(X,a,b) \<Longrightarrow> order_topology(ord_subspace(X,I))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "card_ge2(I)" WITH HAVE "{a,b} \<subseteq> I" THEN
-    HAVE "order_convex(X,I)") *})
+@proof
+  @have "card_ge2(I)" @with @have "{a,b} \<subseteq> I" @end
+  @have "order_convex(X,I)"
+@qed
 setup {* add_forward_prfstep_cond @{thm closed_interval_order_topology} [with_term "ord_subspace(?X,?I)"] *}
 
 end

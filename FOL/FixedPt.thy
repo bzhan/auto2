@@ -29,9 +29,9 @@ lemma bnd_mono_Un: "bnd_mono(D,h) \<Longrightarrow> A \<subseteq> D \<Longrighta
 
 section {* Knaster-Tarski Theorem using lfp *}
 
-lemma lfp_set_nonempty [backward2]: "h(A) \<subseteq> A \<Longrightarrow> A \<subseteq> D \<Longrightarrow> {X \<in> Pow(D). h(X) \<subseteq> X} \<noteq> \<emptyset>"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "A \<in> {X \<in> Pow(D). h(X) \<subseteq> X}") *})
+lemma lfp_set_nonempty [backward2]:
+  "h(A) \<subseteq> A \<Longrightarrow> A \<subseteq> D \<Longrightarrow> {X \<in> Pow(D). h(X) \<subseteq> X} \<noteq> \<emptyset>"
+@proof @have "A \<in> {X \<in> Pow(D). h(X) \<subseteq> X}" @qed
 
 (* lfp(D,h) is a subset of any fixed point of h. *)
 lemma lfp_lowerbound [backward]:
@@ -44,7 +44,7 @@ lemma lfp_greatest [backward2]:
 (* lfp is indeed a fixed point of h. *)
 lemma lfp_unfold [rewrite]:
   "bnd_mono(D,h) \<Longrightarrow> h(lfp(D,h)) = lfp(D,h)"
-  by (tactic {* auto2s_tac @{context} (HAVE "h(lfp(D,h)) \<subseteq> lfp(D,h)") *})
+@proof @have  "h(lfp(D,h)) \<subseteq> lfp(D,h)" @qed
 
 section {* General induction rule for least fixed points *}
 
@@ -52,8 +52,7 @@ section {* General induction rule for least fixed points *}
    If everything in h(A) also satisfies P, then in fact A = lfp. *)
 lemma lfp_induct [script_induct]:
   "bnd_mono(D,h) \<Longrightarrow> \<forall>x\<in>h(Collect(lfp(D,h),P)). P(x) \<Longrightarrow> a \<in> lfp(D,h) \<Longrightarrow> P(a)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "h(Collect(lfp(D,h),P)) \<subseteq> lfp(D,h)") *})
+@proof @have "h(Collect(lfp(D,h),P)) \<subseteq> lfp(D,h)" @qed
 
 lemma lfp_Int_lowerbound [backward1]:
   "bnd_mono(D,h) \<Longrightarrow> h(D \<inter> A) \<subseteq> A \<Longrightarrow> lfp(D,h) \<subseteq> A" by auto2
@@ -61,9 +60,10 @@ lemma lfp_Int_lowerbound [backward1]:
 lemma lfp_mono:
   "bnd_mono(D,h) \<Longrightarrow> bnd_mono(E,i) \<Longrightarrow> \<forall>X. X \<subseteq> D \<longrightarrow> h(X) \<subseteq> i(X) \<Longrightarrow>
    lfp(D,h) \<subseteq> lfp(E,i)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>X. i(X) \<subseteq> X \<longrightarrow> X \<subseteq> E \<longrightarrow> lfp(D,h) \<subseteq> X" WITH
-      (HAVE "h(D \<inter> X) \<subseteq> X" WITH HAVE "h(D \<inter> X) \<subseteq> i(D \<inter> X)")) *})
+@proof
+  @have "\<forall>X. i(X) \<subseteq> X \<longrightarrow> X \<subseteq> E \<longrightarrow> lfp(D,h) \<subseteq> X" @with
+    @have "h(D \<inter> X) \<subseteq> X" @with @have "h(D \<inter> X) \<subseteq> i(D \<inter> X)" @end @end
+@qed
 
 lemma lfp_cong:
   "\<forall>X. X \<subseteq> D \<longrightarrow> h(X) = h'(X) \<Longrightarrow> lfp(D,h) = lfp(D,h')" by auto2
@@ -82,7 +82,7 @@ lemma gfp_least [backward2]:
 (* gfp is indeed a fixed point of h. *)
 lemma gfp_unfold [rewrite]:
   "bnd_mono(D,h) \<Longrightarrow> h(gfp(D,h)) = gfp(D,h)"
-  by (tactic {* auto2s_tac @{context} (HAVE "gfp(D,h) \<subseteq> h(gfp(D,h))") *})
+@proof @have "gfp(D,h) \<subseteq> h(gfp(D,h))" @qed
 
 section {* General induction rule for greatest fixed points *}
 
@@ -119,21 +119,24 @@ lemma rtrans_cl_full_induct [script_induct]:
   "\<forall>x\<in>gr_field(r). P(\<langle>x,x\<rangle>) \<Longrightarrow>
    \<forall>x y z. P(\<langle>x,y\<rangle>) \<longrightarrow> \<langle>x,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> P(\<langle>x,z\<rangle>) \<Longrightarrow>
    x \<in> rtrans_cl(r) \<Longrightarrow> P(x)"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "x \<in> lfp(gr_field(r)\<times>gr_field(r), \<lambda>s. gr_id(gr_field(r)) \<union> (r \<circ>\<^sub>g s))" "P(x)") *})
+@proof
+  @induct "x \<in> lfp(gr_field(r)\<times>gr_field(r), \<lambda>s. gr_id(gr_field(r)) \<union> (r \<circ>\<^sub>g s))" "P(x)"
+@qed
 setup {* del_prfstep_thm @{thm rtrans_cl_def} *}
 
 lemma rtrans_cl_induct [script_induct]:
   "\<forall>y z. \<langle>a,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow>
    P(a) \<Longrightarrow> \<langle>a,b\<rangle>\<in>rtrans_cl(r) \<Longrightarrow> P(b)"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "\<langle>a,b\<rangle> \<in> rtrans_cl(r)" "fst(\<langle>a,b\<rangle>) = a \<longrightarrow> P(snd(\<langle>a,b\<rangle>))") *})
+@proof
+  @induct "\<langle>a,b\<rangle> \<in> rtrans_cl(r)" "fst(\<langle>a,b\<rangle>) = a \<longrightarrow> P(snd(\<langle>a,b\<rangle>))"
+@qed
 setup {* delete_script_induct_data @{thm rtrans_cl_full_induct} *}
 
 lemma rtrans_cl_trans [forward]:
   "\<langle>c,a\<rangle>\<in>rtrans_cl(r) \<Longrightarrow> \<langle>a,b\<rangle>\<in>rtrans_cl(r) \<Longrightarrow> \<langle>c,b\<rangle>\<in>rtrans_cl(r)"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "\<langle>a,b\<rangle> \<in> rtrans_cl(r)" "\<langle>c,b\<rangle>\<in>rtrans_cl(r)") *})
+@proof
+  @induct "\<langle>a,b\<rangle> \<in> rtrans_cl(r)" "\<langle>c,b\<rangle>\<in>rtrans_cl(r)"
+@qed
 setup {* del_prfstep_thm @{thm rtrans_cl_eq} *}
 
 definition trans_cl :: "i \<Rightarrow> i" where [rewrite]:
@@ -141,16 +144,17 @@ definition trans_cl :: "i \<Rightarrow> i" where [rewrite]:
 
 lemma trans_cl_is_graph [forward]: "is_graph(trans_cl(r))" by auto2
 lemma trans_clI1 [typing2]: "\<langle>a,b\<rangle> \<in> r \<Longrightarrow> \<langle>a,b\<rangle> \<in> trans_cl(r)"
-  by (tactic {* auto2s_tac @{context} (HAVE "b \<in> gr_field(r)") *})
+  @proof @have "b \<in> gr_field(r)" @qed
 lemma trans_clI2 [forward]: "\<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<langle>b,c\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<langle>a,c\<rangle> \<in> trans_cl(r)" by auto2
 
 lemma trans_cl_induct [script_induct]:
   "\<forall>y. \<langle>a,y\<rangle> \<in> r \<longrightarrow> P(y) \<Longrightarrow>
    \<forall>y z. \<langle>a,y\<rangle> \<in> trans_cl(r) \<longrightarrow> \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow>
    \<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> P(b)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "y, \<langle>a,y\<rangle> \<in> rtrans_cl(r) \<and> \<langle>y,b\<rangle> \<in> r" THEN
-    INDUCT_ON "\<langle>a,y\<rangle> \<in> rtrans_cl(r)" "\<forall>z. \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(z)") *})
+@proof
+  @obtain y where "\<langle>a,y\<rangle> \<in> rtrans_cl(r) \<and> \<langle>y,b\<rangle> \<in> r" @then
+  @induct "\<langle>a,y\<rangle> \<in> rtrans_cl(r)" "\<forall>z. \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(z)"
+@qed
 setup {* del_prfstep_thm @{thm trans_cl_def} *}
 
 definition trans :: "i \<Rightarrow> o" where [rewrite]:
@@ -173,7 +177,7 @@ lemma rel_trans_cl_is_rel [typing]:
 
 lemma rel_trans_clI1:
   "is_rel(R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> rel(rel_trans_cl(R),x,y)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<langle>x,y\<rangle> \<in> graph(R)") *})
+@proof @have "\<langle>x,y\<rangle> \<in> graph(R)" @qed
 setup {* add_forward_prfstep_cond @{thm rel_trans_clI1} [with_term "rel_trans_cl(?R)"] *}
 
 lemma rel_trans_clI2 [forward]: "is_rel(R) \<Longrightarrow> trans(rel_trans_cl(R))" by auto2
@@ -182,7 +186,9 @@ lemma rel_trans_cl_induct [script_induct]:
   "is_rel(R) \<Longrightarrow> \<forall>y. rel(R,a,y) \<longrightarrow> P(y) \<Longrightarrow>
    \<forall>y z. rel(rel_trans_cl(R),a,y) \<longrightarrow> rel(R,y,z) \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow>
    rel(rel_trans_cl(R),a,b) \<Longrightarrow> P(b)"
-  by (tactic {* auto2s_tac @{context} (INDUCT_ON "\<langle>a,b\<rangle>\<in>trans_cl(graph(R))" "P(b)") *})
+@proof
+  @induct "\<langle>a,b\<rangle>\<in>trans_cl(graph(R))" "P(b)"
+@qed
 
 setup {* del_prfstep_thm @{thm rel_trans_cl_def} *}
 

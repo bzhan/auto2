@@ -58,8 +58,7 @@ setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
 
 lemma btree_prec [sep_prec_thms]:
   "h \<Turnstile> btree t p * F1 \<Longrightarrow> h \<Turnstile> btree t' p * F2 \<Longrightarrow> t = t'"
-  by (tactic {* auto2s_tac @{context}
-    (INDUCT ("t", Arbitraries ["p", "t'", "F1", "F2"]) THEN CASE "t' = Leaf") *})
+@proof @induct t arbitrary p t' F1 F2 @then @case "t' = Leaf" @qed
 
 setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
@@ -104,7 +103,7 @@ declare extract_tree.simps [sep_proc_defs]
 
 theorem extract_tree_rule [hoare_triple_direct]:
   "<btree t p> extract_tree p <\<lambda>r. btree t p * \<up>(r = t)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["p"])) *})
+@proof @induct t arbitrary p @qed
 
 definition set_color :: "color \<Rightarrow> ('a::heap, 'b::heap) btree \<Rightarrow> unit Heap" where
   "set_color c p = (case p of
@@ -173,7 +172,7 @@ declare get_cl_def [sep_proc_defs]
 
 theorem get_cl_heap_preserving [heap_presv_thms]:
   "heap_preserving (get_cl p)"
-  by (tactic {* auto2s_tac @{context} (CASE "p = None") *})
+@proof @case "p = None" @qed
 
 theorem get_cl_rule [hoare_triple_direct]:
   "<btree t p> get_cl p <\<lambda>r. btree t p * \<up>(r = pre_rbt.cl t)>" by auto2
@@ -279,8 +278,7 @@ theorem ins_bd [hoare_triple]:
   "<btree t p * \<up>(bd_inv t)>
    rbt_ins k v p
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(bd_inv t') * \<up>(black_depth t' = black_depth t)>"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT ("t", Arbitraries ["p"]) THEN CASE "pre_rbt.cl t = R") *})
+@proof @induct t arbitrary p @then @case "pre_rbt.cl t = R" @qed
 
 setup {* fold del_prfstep_thm [@{thm balanceR_bd}, @{thm balance_bd}] *}
 
@@ -324,13 +322,13 @@ theorem balance_on_R [hoare_triple]:
 
 theorem ins_non_leaf [hoare_triple]:
   "<btree t p> rbt_ins k v p <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(t' \<noteq> Leaf)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["p"])) *})
+@proof @induct t arbitrary p @qed
 
 theorem ins_cl [hoare_triple]:
   "<btree t p * \<up>(cl_inv t)>
    rbt_ins k v p
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(if pre_rbt.cl t = B then cl_inv t' else pre_rbt.cl t' = R \<and> cl_inv' t')>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["p"])) *})
+@proof @induct t arbitrary p @qed
 
 section {* Insert function *}
 
@@ -363,7 +361,7 @@ theorem ins_inorder_pairs [hoare_triple]:
   "<btree t p * \<up>(rbt_sorted t)>
    rbt_ins k v p
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_in_traverse_pairs t' = ordered_insert_pairs k v (rbt_in_traverse_pairs t))>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["p"])) *})
+@proof @induct t arbitrary p @qed
 
 theorem insert_inorder_pairs [hoare_triple]:
   "<btree t p * \<up>(rbt_sorted t)>
@@ -400,7 +398,7 @@ lemma btree_search_correct [hoare_triple]:
   "<btree t b * \<up>(rbt_sorted t)>
    rbt_search x b
    <\<lambda>r. btree t b * \<up>(r = (rbt_map t)\<langle>x\<rangle>)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+@proof @induct t arbitrary b @qed
 declare rbt_search.simps [sep_proc_defs del]
 
 section {* Outer interface *}

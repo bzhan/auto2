@@ -93,14 +93,14 @@ lemma Inl_Inr_neq [resolve]: "Inl(a) \<noteq> Inr(b)" by auto2
 lemma sum_empty: "\<emptyset> + \<emptyset> = \<emptyset>" by auto2
 
 lemma sum_subset_iff [rewrite]: "A + B \<subseteq> C + D \<longleftrightarrow> A \<subseteq> C \<and> B \<subseteq> D"
-  by (tactic {* auto2s_tac @{context}
-    (CASE "A + B \<subseteq> C + D" WITH (
-      HAVE "\<forall>x\<in>A. x \<in> C" WITH HAVE "Inl(x) \<in> A + B" THEN
-      HAVE "\<forall>y\<in>B. y \<in> D" WITH HAVE "Inr(y) \<in> A + B")) *})
+@proof
+  @case "A + B \<subseteq> C + D" @with
+    @have "\<forall>x\<in>A. x \<in> C" @with @have "Inl(x) \<in> A + B" @end
+    @have "\<forall>y\<in>B. y \<in> D" @with @have "Inr(y) \<in> A + B" @end @end
+@qed
 
 lemma sum_equal [forward]: "A + B = C + D \<Longrightarrow> A = C \<and> B = D"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "A + B \<subseteq> C + D" THEN HAVE "C + D \<subseteq> A + B") *})
+@proof @have "A + B \<subseteq> C + D" @then @have "C + D \<subseteq> A + B" @qed
 
 section {* Case *}
 

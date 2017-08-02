@@ -19,9 +19,9 @@ fun cv_to_wfcv cv wft =
       (rhs, eq_th)
     end
 
-val nat_add_wf = cv_to_wfcv nat_add
-val nat_mult_wf = cv_to_wfcv nat_mult
-val nat_sub_wf = cv_to_wfcv nat_sub
+val nat_add_wf = cv_to_wfcv NatArith.nat_add
+val nat_mult_wf = cv_to_wfcv NatArith.nat_mult
+val nat_sub_wf = cv_to_wfcv NatArith.nat_sub
 
 signature RAT_ARITH =
 sig
@@ -66,6 +66,8 @@ end;
 
 structure RatArith : RAT_ARITH =
 struct
+
+open NatArith
 
 type rat_info = {
   G: term,

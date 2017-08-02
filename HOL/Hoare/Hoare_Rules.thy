@@ -72,10 +72,11 @@ theorem hoare_if: "{{ (P && b) }} c1 {{ Q }} \<Longrightarrow> {{ P &~ b }} c2 {
                    {{ P }} (IF b THEN c1 ELSE c2 FI) {{ Q }}" by auto2
 
 theorem hoare_while: "{{ P && b }} c {{ P }} \<Longrightarrow> {{ P }} (WHILE b DO c OD) {{ P &~ b }}"
-  by (tactic {* auto2s_tac @{context} (
-    LET "v = WHILE b DO c OD" THEN
-    HAVE "\<forall>st st'. ceval v st st' \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'" WITH (
-      PROP_INDUCT ("ceval v st st'", "v = WHILE b DO c OD \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'"))) *})
+@proof
+  @let "v = WHILE b DO c OD" @then
+  @have "\<forall>st st'. ceval v st st' \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'" @with
+    @prop_induct "ceval v st st'" "v = WHILE b DO c OD \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'" @end
+@qed
 
 (* Formally decorated programs. *)
 datatype dcom =
@@ -153,8 +154,7 @@ setup {* add_backward1_prfstep @{thm hoare_seq} *}
 setup {* add_backward1_prfstep @{thm hoare_if} *}
 setup {* add_backward_prfstep @{thm hoare_while} *}
 theorem vcond_correct: "vcond P d \<Longrightarrow> {{ P }} (extract_dcom d) {{ post d }}"
-  by (tactic {* auto2s_tac @{context} (
-    VAR_INDUCT ("d", "\<forall>P. vcond P d \<longrightarrow> {{ P }} (extract_dcom d) {{ post d }}")) *})
+  @proof @var_induct d "\<forall>P. vcond P d \<longrightarrow> {{ P }} (extract_dcom d) {{ post d }}" @qed
 
 setup {* add_backward_prfstep @{thm vcond_correct} *}
 setup {* fold del_prfstep_thm @{thms extract_dcom.simps} *}

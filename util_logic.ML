@@ -76,6 +76,7 @@ sig
   val or_cancel2_th: thm
   val swap_all_disj_th: thm
   val all_trivial_th: thm
+  val case_split_th: thm
 
   (* Theorems for proofstep module *)
   val atomize_conjL_th: thm
@@ -128,6 +129,7 @@ sig
   val is_conj: term -> bool
   val mk_conj: term * term -> term
   val strip_conj: term -> term list
+  val list_conj: term list -> term
   val disj: term
   val is_disj: term -> bool
   val mk_disj: term * term -> term
@@ -137,12 +139,14 @@ sig
   val mk_imp: term * term -> term
   val dest_imp: term -> term * term
   val strip_obj_imp: term -> term list * term
+  val list_obj_imp: term list * term -> term
   val is_obj_all: term -> bool
   val is_all: term -> bool
   val is_ball: term -> bool
+  val mk_obj_all: term -> term -> term
   val is_ex: term -> bool
   val is_bex: term -> bool
-  val mk_exists: string * typ * term -> term
+  val mk_exists: term -> term -> term
   val is_mem: term -> bool
   val mk_mem: term * term -> term
   val extract_init_infos: bool -> term -> (bool * term) list
@@ -173,8 +177,8 @@ sig
   val to_obj_conv_on_horn: Proof.context -> conv
   val to_obj_conv_on_horn_th: thm -> thm
   val to_meta_imp_conv: conv
-  val to_meta_imp_conv_n: int -> conv
   val to_meta_all_conv: Proof.context -> conv
+  val to_meta_all_imp_conv: Proof.context -> conv
   val conj_left_th: thm -> thm
   val conj_right_th: thm -> thm
   val equiv_forward_th: thm -> thm
@@ -301,6 +305,11 @@ fun strip_conj t =
         Const (c, _) $ A $ B =>
         if c = Conj_name then A :: strip_conj B else [t]
       | _ => [t]
+fun list_conj ts =
+    case ts of
+        [] => raise ERROR "list_conj"
+      | [t] => t
+      | t :: rest => mk_conj (t, list_conj rest)
 
 val disj = Const (Disj_name, boolT --> boolT --> boolT)
 fun is_disj t = case t of Const (c, _) $ _ $ _ => c = Disj_name | _ => false
@@ -332,6 +341,11 @@ fun strip_obj_imp t =
         else ([], t)
       | _ => ([], t)
 
+fun list_obj_imp (As, C) =
+    case As of
+        [] => C
+      | A :: rest => mk_imp (A, list_obj_imp (rest, C))
+
 fun is_obj_all t =
     case t of
         Const (c, _) $ Abs _ => c = All_name
@@ -345,6 +359,13 @@ fun is_ball t =
     case t of Const (c, _) $ _ $ _ => (c = Ball_name)
             | _ => false
 
+fun mk_obj_all t body =
+    let
+      val (x, T) = Term.dest_Free t
+    in
+      Const (All_name, (T --> boolT) --> boolT) $ Term.absfree (x, T) body
+    end
+
 fun is_ex t =
     case t of Const (c, _) $ Abs _ => (c = Ex_name)
             | _ => false
@@ -353,8 +374,12 @@ fun is_bex t =
     case t of Const (c, _) $ _ $ _ => (c = Bex_name)
             | _ => false
 
-fun mk_exists (x, T, P) =
-    Const (Ex_name, (T --> boolT) --> boolT) $ Term.absfree (x, T) P
+fun mk_exists t body =
+    let
+      val (x, T) = Term.dest_Free t
+    in
+      Const (Ex_name, (T --> boolT) --> boolT) $ Term.absfree (x, T) body
+    end
 
 fun is_mem t =
     case t of Const (c, _) $ _ $ _ => (c = Mem_name)
@@ -571,13 +596,6 @@ fun to_meta_imp_conv ct =
         Conv.all_conv ct
     end
 
-(* Convert the first n object implies to meta implies. *)
-fun to_meta_imp_conv_n n ct =
-    (case n of
-         0 => Conv.all_conv
-       | _ => (Conv.rewr_conv (meta_sym atomize_imp_th))
-                  then_conv (Conv.arg_conv (to_meta_imp_conv_n (n-1)))) ct
-
 (* Converts ! to !! on the outermost level. *)
 fun to_meta_all_conv ctxt ct =
     let
@@ -586,6 +604,35 @@ fun to_meta_all_conv ctxt ct =
       if is_Trueprop t andalso is_obj_all (dest_Trueprop t) then
         ((Conv.rewr_conv (meta_sym atomize_all_th))
              then_conv (Conv.binder_conv (to_meta_all_conv o snd) ctxt)) ct
+      else
+        Conv.all_conv ct
+    end
+
+fun norm_hhf_cv ctxt ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_implies t andalso Logic.is_all (dest_arg t) then
+        Conv.every_conv [Conv.rewr_conv @{thm Pure.norm_hhf_eq},
+                         Conv.binder_conv (norm_hhf_cv o snd) ctxt] ct
+      else
+        Conv.all_conv ct
+    end
+
+(* Convert !! and ==> on the outermost level. Pull all !! to the front. *)
+fun to_meta_all_imp_conv ctxt ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_Trueprop t andalso is_obj_all (dest_Trueprop t) then
+        Conv.every_conv [Conv.rewr_conv (meta_sym atomize_all_th),
+                         Conv.binder_conv (to_meta_all_imp_conv o snd) ctxt] ct
+      else if is_Trueprop t andalso is_imp (dest_Trueprop t) then
+        Conv.every_conv [Conv.rewr_conv (meta_sym atomize_imp_th),
+                         Conv.arg_conv (to_meta_all_imp_conv ctxt),
+                         norm_hhf_cv ctxt] ct
+      else if is_implies t then
+        Conv.arg_conv (to_meta_all_imp_conv ctxt) ct
       else
         Conv.all_conv ct
     end

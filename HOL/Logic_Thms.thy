@@ -11,6 +11,7 @@ setup {* add_resolve_prfstep @{thm TrueI} *}
 setup {* add_forward_prfstep_cond @{thm TrueI} [with_term "True"] *}
 theorem FalseD [resolve]: "\<not>False" by simp
 setup {* add_forward_prfstep_cond @{thm FalseD} [with_term "False"] *}
+lemma exists_triv_eq [resolve]: "\<exists>x. x = x" by auto
 
 (* Not. *)
 setup {* add_forward_prfstep_cond @{thm HOL.not_sym} [with_filt (not_type_filter "s" boolT)] *}
@@ -105,7 +106,6 @@ setup {* fold add_rewrite_rule @{thms Option.option.case} *}
 setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2", 1)] *}
 
 (* Quantifiers and other fundamental proofsteps. *)
-ML_file "double_induct.ML"
 ML_file "util_arith.ML"
 setup {* Consts.add_const_data ("NUMC", is_numc) *}
 

@@ -48,7 +48,7 @@ lemma rawequivD [forward]:
 lemma equiv_eq [backward]:
   "rawequiv(R) \<Longrightarrow> rawequiv(S) \<Longrightarrow> carrier(R) = carrier(S) \<Longrightarrow>
    \<forall>x y. x \<sim>\<^sub>R y \<longleftrightarrow> x \<sim>\<^sub>S y \<Longrightarrow> R = S"
-  by (tactic {* auto2s_tac @{context} (HAVE "equiv_graph(R) = equiv_graph(S)") *})
+@proof @have "equiv_graph(R) = equiv_graph(S)" @qed
 
 setup {* fold del_prfstep_thm [
   @{thm rawequiv_def}, @{thm rawequiv_space_def}, @{thm Equiv_def}, @{thm eq_sim_def}] *}
@@ -147,7 +147,7 @@ lemma equiv_class_mem [typing2]: "equiv(R) \<Longrightarrow> x \<sim>\<^sub>R y 
 
 lemma equiv_class_eq [rewrite]:
   "equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> equiv_class(R,x) = equiv_class(R,y) \<longleftrightarrow> x \<sim>\<^sub>R y"
-  by (tactic {* auto2s_tac @{context} (HAVE "x \<sim>\<^sub>R x") *})
+@proof @have "x \<sim>\<^sub>R x" @qed
 
 (* Usually E = carrier(R) *)
 definition quotient_set :: "[i, i] \<Rightarrow> i"  (infixl "'/'/" 90) where [rewrite]:
@@ -190,8 +190,7 @@ definition qsurj :: "i \<Rightarrow> i" where [rewrite]:
 lemma qsurj_is_fun [typing]: "qsurj(R) \<in> carrier(R) \<rightarrow> carrier(R)//R" by auto2
 
 lemma qsurj_is_surj [forward]: "equiv(R) \<Longrightarrow> surjective(qsurj(R))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>carrier(R)//R. qsurj(R)`rep(R,x) = x") *})
+@proof @have "\<forall>x\<in>carrier(R)//R. qsurj(R)`rep(R,x) = x" @qed
 
 lemma qsurj_eval [rewrite]:
   "x \<in> source(qsurj(R)) \<Longrightarrow> qsurj(R)`x = equiv_class(R,x)" by auto2
@@ -228,10 +227,12 @@ setup {* del_prfstep_thm @{thm eq_fst_rel_def} *}
 
 lemma qsurj_proj_is_inj:
   "F \<noteq> \<emptyset> \<Longrightarrow> R = eq_fst_rel(E,F) \<Longrightarrow> f = (\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)//R)) \<Longrightarrow> bijective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f \<in> E \<rightarrow> (E\<times>F) // R" WITH (
-      CHOOSE "a, a \<in> F" THEN HAVE_RULE "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)") THEN
-    HAVE "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" WITH HAVE "f`rep(R,S) = S") *})
+@proof
+  @have "f \<in> E \<rightarrow> (E\<times>F) // R" @with
+    @obtain "a \<in> F" @then @have "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)" @end
+  @have "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" @with
+    @contradiction @have "f`rep(R,S) = S" @end
+@qed
 
 (* Elements of quotient form a partition. Conversely, every partition is a quotient set. *)
 lemma equiv_class_disjoint [backward]:
@@ -240,8 +241,7 @@ lemma equiv_class_disjoint [backward]:
 
 lemma equiv_classes_is_partition:
   "equiv(R) \<Longrightarrow> is_partition_sets(carrier(R),carrier(R)//R)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>carrier(R)//R. x = equiv_class(R,rep(R,x))") *})
+@proof @have "\<forall>x\<in>carrier(R)//R. x = equiv_class(R,rep(R,x))" @qed
 
 lemma partition_mem_unique [backward]:
   "mutually_disjoint_sets(X) \<Longrightarrow> a \<in> \<Union>X \<Longrightarrow> \<exists>!x. x \<in> X \<and> a \<in> x" by auto2
@@ -298,8 +298,7 @@ lemma saturated_subset_alt' [rewrite]:
 
 lemma saturated_subset_alt2:
   "equiv(R) \<Longrightarrow> saturated_subset(R,A) \<longleftrightarrow> (\<exists>B. B \<subseteq> carrier(R)//R \<and> A = qsurj(R) -`` B)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "saturated_subset(R,A) \<longleftrightarrow> A = qsurj(R) -`` (qsurj(R) `` A)") *})
+@proof @have "saturated_subset(R,A) \<longleftrightarrow> A = qsurj(R) -`` (qsurj(R) `` A)" @qed
 
 lemma saturated_subset_union [backward]:
   "equiv(R) \<Longrightarrow> \<forall>a\<in>I. saturated_subset(R,X(a)) \<Longrightarrow> saturated_subset(R,\<Union>a\<in>I. X(a))" by auto2
@@ -344,8 +343,7 @@ lemma compat_fun_alt:
 (* Compatible functions pass to the quotient. *)
 lemma exists_induced_fun [backward]:
   "equiv(R) \<Longrightarrow> f \<in> E \<rightarrow> F \<Longrightarrow> compat_fun(f,R) \<Longrightarrow> \<exists>!h. h\<in>(E//R)\<rightarrow>F \<and> f = h \<circ> qsurj(R)"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "\<forall>x\<in>E. \<forall>y\<in>E. qsurj(R)`x = qsurj(R)`y \<longrightarrow> f`x = f`y") *})
+@proof @have "\<forall>x\<in>E. \<forall>y\<in>E. qsurj(R)`x = qsurj(R)`y \<longrightarrow> f`x = f`y" @qed
 
 definition induced_fun :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "induced_fun(f,R) = (THE h. h \<in> (source(f)//R)\<rightarrow>target(f) \<and> f = h \<circ> qsurj(R))"
@@ -489,8 +487,7 @@ lemma vImage_finer [resolve]:
 (* Any equivalence relation T on E//S is the quotient between a coarser equivalence relation R and S. *)
 lemma equiv_is_quotient_rel:
   "equiv(S) \<Longrightarrow> equiv(T) \<Longrightarrow> carrier(T) = carrier(S)//S \<Longrightarrow> T = quotient_rel(vImage_equiv(qsurj(S),T),S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "finer_rel(S,vImage_equiv(qsurj(S),T))") *})
+@proof @have "finer_rel(S,vImage_equiv(qsurj(S),T))" @qed
 
 section {* Product of two equivalence relations *}  (* Bourbaki II.6.8 *)
 
@@ -513,9 +510,10 @@ definition prod_quotient_isomorphism :: "[i, i] \<Rightarrow> i" where [rewrite]
 lemma prod_quotient_isomorphism:
   "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> A = carrier(R) \<Longrightarrow> B = carrier(S) \<Longrightarrow>
    prod_quotient_isomorphism(R,S) \<in> (A\<times>B)//prod_equiv(R,S) \<cong> (A//R) \<times> (B//S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "surjective(qsurj(R) \<times>\<^sub>f qsurj(S))" THEN
-    HAVE "fun_equiv(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv(R,S)") *})
+@proof
+  @have "surjective(qsurj(R) \<times>\<^sub>f qsurj(S))" @then
+  @have "fun_equiv(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv(R,S)"
+@qed
 
 section {* Compatible binary operators *}
 
@@ -540,9 +538,10 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm compat_meta_bin2_def} *}
 
 lemma compat_meta_binI [backward]:
   "equiv(R) \<Longrightarrow> compat_meta_bin1(R,f) \<Longrightarrow> compat_meta_bin2(R,f) \<Longrightarrow> compat_meta_bin(R,f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x1 x2 y1 y2. x1 \<sim>\<^sub>R x2 \<longrightarrow> y1 \<sim>\<^sub>R y2 \<longrightarrow> f(x1,y1) \<sim>\<^sub>R f(x2,y2)" WITH (
-      HAVE "f(x1,y1) \<sim>\<^sub>R f(x2,y1)" THEN HAVE "f(x2,y1) \<sim>\<^sub>R f(x2,y2)")) *})
+@proof
+  @have "\<forall>x1 x2 y1 y2. x1 \<sim>\<^sub>R x2 \<longrightarrow> y1 \<sim>\<^sub>R y2 \<longrightarrow> f(x1,y1) \<sim>\<^sub>R f(x2,y2)" @with
+    @have "f(x1,y1) \<sim>\<^sub>R f(x2,y1)" @then @have "f(x2,y1) \<sim>\<^sub>R f(x2,y2)" @end
+@qed
 
 lemma compat_meta_binD [backward2]:
   "compat_meta_bin(R,f) \<Longrightarrow> x1 \<sim>\<^sub>R x2 \<Longrightarrow> y1 \<sim>\<^sub>R y2 \<Longrightarrow> f(x1,y1) \<sim>\<^sub>R f(x2,y2)" by auto2
@@ -553,7 +552,6 @@ setup {* del_prfstep_thm @{thm compat_meta_bin_def} *}
 lemma induced_meta_bin [rewrite]:
   "equiv(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> compat_meta_bin(R,f) \<Longrightarrow>
    equiv_class(R,f(rep(R,equiv_class(R,x)),rep(R,equiv_class(R,y)))) = equiv_class(R,f(x,y))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f(rep(R, equiv_class(R, x)), rep(R, equiv_class(R, y))) \<sim>\<^sub>R f(x,y)") *})
+@proof @have "f(rep(R, equiv_class(R, x)), rep(R, equiv_class(R, y))) \<sim>\<^sub>R f(x,y)" @qed
 
 end

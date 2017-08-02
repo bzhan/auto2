@@ -18,10 +18,11 @@ setup {* del_prfstep_thm @{thm int_rel_space_def} *}
 lemma int_rel_trans [backward2]:
   "a1 \<in>. \<nat> \<Longrightarrow> a2 \<in>. \<nat> \<Longrightarrow> b1 \<in>. \<nat> \<Longrightarrow> b2 \<in>. \<nat> \<Longrightarrow> c1 \<in>. \<nat> \<Longrightarrow> c2 \<in>. \<nat> \<Longrightarrow>
    a1 +\<^sub>\<nat> b2 = a2 +\<^sub>\<nat> b1 \<Longrightarrow> b1 +\<^sub>\<nat> c2 = b2 +\<^sub>\<nat> c1 \<Longrightarrow> a1 +\<^sub>\<nat> c2 = a2 +\<^sub>\<nat> c1"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(a1 +\<^sub>\<nat> c2) +\<^sub>\<nat> b2 = (a1 +\<^sub>\<nat> b2) +\<^sub>\<nat> c2" THEN
-    HAVE "(a2 +\<^sub>\<nat> b1) +\<^sub>\<nat> c2 = a2 +\<^sub>\<nat> (b1 +\<^sub>\<nat> c2)" THEN
-    HAVE "a2 +\<^sub>\<nat> (b2 +\<^sub>\<nat> c1) = (a2 +\<^sub>\<nat> c1) +\<^sub>\<nat> b2") *})
+@proof
+  @have "(a1 +\<^sub>\<nat> c2) +\<^sub>\<nat> b2 = (a1 +\<^sub>\<nat> b2) +\<^sub>\<nat> c2" @then
+  @have "(a2 +\<^sub>\<nat> b1) +\<^sub>\<nat> c2 = a2 +\<^sub>\<nat> (b1 +\<^sub>\<nat> c2)" @then
+  @have "a2 +\<^sub>\<nat> (b2 +\<^sub>\<nat> c1) = (a2 +\<^sub>\<nat> c1) +\<^sub>\<nat> b2"
+@qed
 
 lemma int_rel_is_rel [typing]: "\<R> \<in> equiv_space(int_rel_space)" by auto2
 setup {* del_prfstep_thm @{thm int_rel_trans} *}
@@ -91,19 +92,21 @@ section {* Addition on integers *}
 
 lemma int_add_raw_compat1 [backward]:
   "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> int_add_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(a' +\<^sub>\<nat> c) +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a' +\<^sub>\<nat> b) +\<^sub>\<nat> (c +\<^sub>\<nat> d)" THEN
-    HAVE "(b' +\<^sub>\<nat> d) +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (b' +\<^sub>\<nat> a) +\<^sub>\<nat> (c +\<^sub>\<nat> d)") *})
+@proof
+  @have "(a' +\<^sub>\<nat> c) +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a' +\<^sub>\<nat> b) +\<^sub>\<nat> (c +\<^sub>\<nat> d)" @then
+  @have "(b' +\<^sub>\<nat> d) +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (b' +\<^sub>\<nat> a) +\<^sub>\<nat> (c +\<^sub>\<nat> d)"
+@qed
 
 lemma int_add_raw_compat2 [backward]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> int_add_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(a +\<^sub>\<nat> c') +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (c' +\<^sub>\<nat> d)" THEN
-    HAVE "(b +\<^sub>\<nat> d') +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (d' +\<^sub>\<nat> c)") *})
+@proof
+  @have "(a +\<^sub>\<nat> c') +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (c' +\<^sub>\<nat> d)" @then
+  @have "(b +\<^sub>\<nat> d') +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (d' +\<^sub>\<nat> c)"
+@qed
 
 lemma int_add_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Int(x) +\<^sub>\<int> Int(y) = Int(int_add_raw(x,y))"
-  by (tactic {* auto2s_tac @{context} (HAVE "compat_meta_bin(\<R>, int_add_raw)") *})
+@proof @have "compat_meta_bin(\<R>, int_add_raw)" @qed
 setup {* fold del_prfstep_thm [@{thm int_add_raw_compat1}, @{thm int_add_raw_compat2}] *}
 setup {* del_prfstep_thm @{thm int_evals(3)} *}
 
@@ -114,22 +117,24 @@ section {* Multiplication on integers *}
 
 lemma int_mult_raw_compat1 [backward]:
   "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> int_mult_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(a'*\<^sub>\<nat>c +\<^sub>\<nat> b'*\<^sub>\<nat>d) +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (a'+\<^sub>\<nat>b) *\<^sub>\<nat> c +\<^sub>\<nat> (b'+\<^sub>\<nat>a) *\<^sub>\<nat> d" THEN
-    HAVE "(a'*\<^sub>\<nat>d +\<^sub>\<nat> b'*\<^sub>\<nat>c) +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (b'+\<^sub>\<nat>a) *\<^sub>\<nat> c +\<^sub>\<nat> (a'+\<^sub>\<nat>b) *\<^sub>\<nat> d") *})
+@proof
+  @have "(a'*\<^sub>\<nat>c +\<^sub>\<nat> b'*\<^sub>\<nat>d) +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (a'+\<^sub>\<nat>b) *\<^sub>\<nat> c +\<^sub>\<nat> (b'+\<^sub>\<nat>a) *\<^sub>\<nat> d" @then
+  @have "(a'*\<^sub>\<nat>d +\<^sub>\<nat> b'*\<^sub>\<nat>c) +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (b'+\<^sub>\<nat>a) *\<^sub>\<nat> c +\<^sub>\<nat> (a'+\<^sub>\<nat>b) *\<^sub>\<nat> d"
+@qed
 
 lemma int_mult_raw_compat2 [backward]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(a*\<^sub>\<nat>c' +\<^sub>\<nat> b*\<^sub>\<nat>d') +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (c'+\<^sub>\<nat>d) *\<^sub>\<nat> a +\<^sub>\<nat> (d'+\<^sub>\<nat>c) *\<^sub>\<nat> b" THEN
-    HAVE "(a*\<^sub>\<nat>d' +\<^sub>\<nat> b*\<^sub>\<nat>c') +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (d'+\<^sub>\<nat>c) *\<^sub>\<nat> a +\<^sub>\<nat> (c'+\<^sub>\<nat>d) *\<^sub>\<nat> b") *})
+@proof
+  @have "(a*\<^sub>\<nat>c' +\<^sub>\<nat> b*\<^sub>\<nat>d') +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (c'+\<^sub>\<nat>d) *\<^sub>\<nat> a +\<^sub>\<nat> (d'+\<^sub>\<nat>c) *\<^sub>\<nat> b" @then
+  @have "(a*\<^sub>\<nat>d' +\<^sub>\<nat> b*\<^sub>\<nat>c') +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (d'+\<^sub>\<nat>c) *\<^sub>\<nat> a +\<^sub>\<nat> (c'+\<^sub>\<nat>d) *\<^sub>\<nat> b"
+@qed
 
 lemma int_mult_raw_compat [resolve]: "compat_meta_bin(\<R>, int_mult_raw)" by auto2
 setup {* fold del_prfstep_thm [@{thm int_mult_raw_compat1}, @{thm int_mult_raw_compat2}] *}
 
 lemma int_mult_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Int(x) *\<^sub>\<int> Int(y) = Int(int_mult_raw(x,y))"
-  by (tactic {* auto2s_tac @{context} (HAVE "compat_meta_bin(\<R>, int_mult_raw)") *})
+@proof @have "compat_meta_bin(\<R>, int_mult_raw)" @qed
 setup {* del_prfstep_thm @{thm int_mult_raw_compat} *}
 setup {* del_prfstep_thm @{thm int_evals(4)} *}
 
@@ -153,7 +158,7 @@ definition int_neg :: "i \<Rightarrow> i" where [rewrite]:
 
 lemma int_neg_typing [typing]: "x \<in>. \<int> \<Longrightarrow> int_neg(x) \<in>. \<int>" by auto2
 lemma int_has_add_inverse [forward]: "has_add_inverse(\<int>)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x\<in>.\<int>. x +\<^sub>\<int> int_neg(x) = \<zero>\<^sub>\<int>") *})
+@proof @have "\<forall>x\<in>.\<int>. x +\<^sub>\<int> int_neg(x) = \<zero>\<^sub>\<int>" @qed
   
 lemma int_is_comm_ring [forward]: "is_comm_ring(\<int>)" by auto2
 
@@ -161,7 +166,7 @@ section {* Nonnegative integers *}
 
 lemma nonneg_int_compat [forward]:
   "\<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> a \<ge>\<^sub>\<nat> b \<Longrightarrow> c \<ge>\<^sub>\<nat> d"
-  by (tactic {* auto2s_tac @{context} (HAVE "a +\<^sub>\<nat> d >\<^sub>\<nat> b +\<^sub>\<nat> c") *})
+@proof @contradiction @have "a +\<^sub>\<nat> d >\<^sub>\<nat> b +\<^sub>\<nat> c" @qed
   
 lemma nonneg_int_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> nonneg_int(Int(x)) \<longleftrightarrow> nonneg_int_raw(x)" by auto2
@@ -169,22 +174,23 @@ setup {* del_prfstep_thm @{thm nonneg_int_compat} *}
 setup {* del_prfstep_thm @{thm nonneg_int_def} *}
 
 lemma int_neg_eval [rewrite]: "x \<in>. \<R> \<Longrightarrow> -\<^sub>\<int> Int(x) = Int(int_neg_raw(x))"
-  by (tactic {* auto2s_tac @{context} (HAVE "Int(x) +\<^sub>\<int> Int(int_neg_raw(x)) = \<zero>\<^sub>\<int>") *})
+@proof @have "Int(x) +\<^sub>\<int> Int(int_neg_raw(x)) = \<zero>\<^sub>\<int>" @qed
 
 lemma nonneg_int_raw_mult [backward2]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> nonneg_int_raw(\<langle>a,b\<rangle>) \<Longrightarrow> nonneg_int_raw(\<langle>c,d\<rangle>) \<Longrightarrow>
    nonneg_int_raw(int_mult_raw(\<langle>a,b\<rangle>, \<langle>c,d\<rangle>))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "p\<in>nat, a = b +\<^sub>\<nat> p" THEN
-    CHOOSE "q\<in>nat, c = d +\<^sub>\<nat> q" THEN
-    HAVE "(b+\<^sub>\<nat>p)*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>(d+\<^sub>\<nat>q) +\<^sub>\<nat> p*\<^sub>\<nat>q = (b+\<^sub>\<nat>p)*\<^sub>\<nat>(d+\<^sub>\<nat>q) +\<^sub>\<nat> b*\<^sub>\<nat>d") *})
+@proof
+  @obtain "p\<in>nat" where "a = b +\<^sub>\<nat> p" @then
+  @obtain "q\<in>nat" where "c = d +\<^sub>\<nat> q" @then
+  @have "(b+\<^sub>\<nat>p)*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>(d+\<^sub>\<nat>q) +\<^sub>\<nat> p*\<^sub>\<nat>q = (b+\<^sub>\<nat>p)*\<^sub>\<nat>(d+\<^sub>\<nat>q) +\<^sub>\<nat> b*\<^sub>\<nat>d"
+@qed
 
 lemma int_nonneg_compat [resolve]: "nonneg_compat(\<int>, nonneg_ints)" by auto2
 setup {* fold del_prfstep_thm [@{thm nonneg_int_eval}, @{thm nonneg_int_raw_mult},
   @{thm nonneg_int_raw_def}, @{thm nonneg_ints_def}] *}
 
 lemma int_is_ord_ring [forward]: "is_ord_ring(\<int>)"
-  by (tactic {* auto2s_tac @{context} (HAVE "nonneg_compat(\<int>, nonneg_ints)") *})
+@proof @have "nonneg_compat(\<int>, nonneg_ints)" @qed
 setup {* del_prfstep_thm @{thm int_is_ord_ring_prep} *}
 
 section {* Integers as integral domain *}
@@ -192,33 +198,34 @@ section {* Integers as integral domain *}
 lemma int_is_domain_raw [forward]:
   "x1 \<in>. \<nat> \<Longrightarrow> y1 \<in>. \<nat> \<Longrightarrow> x2 \<in>. \<nat> \<Longrightarrow> y2 \<in>. \<nat> \<Longrightarrow>
    x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2 = x1 *\<^sub>\<nat> y2 +\<^sub>\<nat> y1 *\<^sub>\<nat> x2 \<Longrightarrow> x1 = y1 \<or> x2 = y2"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "x1 <\<^sub>\<nat> y1" WITH (
-      CHOOSE "p\<in>nat, p \<noteq> 0 \<and> y1 = x1 +\<^sub>\<nat> p" THEN
-      HAVE "x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> (x1 +\<^sub>\<nat> p) *\<^sub>\<nat> y2 = (x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> x1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> y2" THEN
-      HAVE "x1 *\<^sub>\<nat> y2 +\<^sub>\<nat> (x1 +\<^sub>\<nat> p) *\<^sub>\<nat> x2 = (x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> x1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> x2") THEN
-    CASE "x1 >\<^sub>\<nat> y1" WITH (
-      CHOOSE "p\<in>nat, p \<noteq> 0 \<and> x1 = y1 +\<^sub>\<nat> p" THEN
-      HAVE "(y1 +\<^sub>\<nat> p) *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2 = (y1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> x2" THEN
-      HAVE "(y1 +\<^sub>\<nat> p) *\<^sub>\<nat> y2 +\<^sub>\<nat> y1 *\<^sub>\<nat> x2 = (y1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> y2")) *})
+@proof
+  @case "x1 <\<^sub>\<nat> y1" @with
+    @obtain "p\<in>nat" where "p \<noteq> 0" "y1 = x1 +\<^sub>\<nat> p" @then
+    @have "x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> (x1 +\<^sub>\<nat> p) *\<^sub>\<nat> y2 = (x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> x1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> y2" @then
+    @have "x1 *\<^sub>\<nat> y2 +\<^sub>\<nat> (x1 +\<^sub>\<nat> p) *\<^sub>\<nat> x2 = (x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> x1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> x2" @end
+  @case "x1 >\<^sub>\<nat> y1" @with
+    @obtain "p\<in>nat" where "p \<noteq> 0" "x1 = y1 +\<^sub>\<nat> p" @then
+    @have "(y1 +\<^sub>\<nat> p) *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2 = (y1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> x2" @then
+    @have "(y1 +\<^sub>\<nat> p) *\<^sub>\<nat> y2 +\<^sub>\<nat> y1 *\<^sub>\<nat> x2 = (y1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> y2" @end
+@qed
 
 lemma int_is_domain [forward]: "integral_domain(\<int>)" by auto2
 
 section {* Integer as a difference of two natural numbers *}
 
 lemma int_of_nat [rewrite]: "n \<in> nat \<Longrightarrow> of_nat(\<int>,n) = Int(\<langle>n,0\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (INDUCT_ON "n \<in> nat" "of_nat(\<int>,n) = Int(\<langle>n,0\<rangle>)") *})
+@proof @induct "n \<in> nat" "of_nat(\<int>,n) = Int(\<langle>n,0\<rangle>)" @qed
 
 lemma int_diff_eval [rewrite]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> Int(\<langle>a,b\<rangle>) -\<^sub>\<int> Int(\<langle>c,d\<rangle>) = Int(\<langle>a+\<^sub>\<nat>d,b+\<^sub>\<nat>c\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "Int(\<langle>a,b\<rangle>) -\<^sub>\<int> Int(\<langle>c,d\<rangle>) = Int(\<langle>a,b\<rangle>) +\<^sub>\<int> (-\<^sub>\<int> Int(\<langle>c,d\<rangle>))") *})
+@proof @have "Int(\<langle>a,b\<rangle>) -\<^sub>\<int> Int(\<langle>c,d\<rangle>) = Int(\<langle>a,b\<rangle>) +\<^sub>\<int> (-\<^sub>\<int> Int(\<langle>c,d\<rangle>))" @qed
 
 lemma int_is_diff [backward]:
   "n \<in> int \<Longrightarrow> \<exists>a\<in>.\<nat>. \<exists>b\<in>.\<nat>. n = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "p = rep(\<R>,n)" THEN
-    HAVE "p = of_nat(\<int>,fst(p)) -\<^sub>\<int> of_nat(\<int>,snd(p))") *})
+@proof
+  @let "p = rep(\<R>,n)" @then
+  @have "n = of_nat(\<int>,fst(p)) -\<^sub>\<int> of_nat(\<int>,snd(p))"
+@qed
 
 section {* Definition of of_int *}
 
@@ -231,13 +238,11 @@ setup {* del_prfstep_thm @{thm of_int_raw_def} *}
 lemma comm_ring_switch_sides4 [resolve]:
   "is_comm_ring(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> d \<in>. R \<Longrightarrow>
    a +\<^sub>R d = b +\<^sub>R c \<Longrightarrow> a -\<^sub>R b = c -\<^sub>R d"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "a -\<^sub>R b +\<^sub>R (b +\<^sub>R d) = c -\<^sub>R d +\<^sub>R (b +\<^sub>R d)") *})
+@proof @have "a -\<^sub>R b +\<^sub>R (b +\<^sub>R d) = c -\<^sub>R d +\<^sub>R (b +\<^sub>R d)" @qed
 
 lemma of_int_raw_compat [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> of_int_raw(R,\<langle>a,b\<rangle>) = of_int_raw(R,\<langle>c,d\<rangle>)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "of_nat(R,a) +\<^sub>R of_nat(R,d) = of_nat(R,b) +\<^sub>R of_nat(R,c)") *})
+@proof @have "of_nat(R,a) +\<^sub>R of_nat(R,d) = of_nat(R,b) +\<^sub>R of_nat(R,c)" @qed
 
 definition of_int :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "of_int(R,z) = of_int_raw(R,rep(\<R>,z))"
@@ -252,9 +257,10 @@ lemma of_int_type [typing]:
 
 lemma of_int_eval_diff [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> a \<in> nat \<Longrightarrow> b \<in> nat \<Longrightarrow> of_int(R,of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)) = of_nat(R,a) -\<^sub>R of_nat(R,b)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "z = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" THEN
-    LET "p = rep(\<R>,z)" THEN HAVE "rep(\<R>,z) \<sim>\<^sub>\<R> \<langle>a,b\<rangle>") *})
+@proof
+  @let "z = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @let "p = rep(\<R>,z)" @then @have "rep(\<R>,z) \<sim>\<^sub>\<R> \<langle>a,b\<rangle>"
+@qed
       
 lemma of_int_of_nat [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_int(R,of_nat(\<int>,n)) = of_nat(R,n)" by auto2
@@ -271,33 +277,33 @@ section {* Further properties *}
 
 lemma of_int_add [rewrite_bidir]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) +\<^sub>R of_int(R,y) = of_int(R,x +\<^sub>\<int> y)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a\<in>.\<nat>, b\<in>.\<nat>, x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" THEN
-    CHOOSE "c\<in>.\<nat>, d\<in>.\<nat>, y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" THEN
-    LET "za = of_nat(\<int>,a), zb = of_nat(\<int>,b), zc = of_nat(\<int>,c), zd = of_nat(\<int>,d)" THEN
-    LET "ra = of_nat(R,a), rb = of_nat(R,b), rc = of_nat(R,c), rd = of_nat(R,d)" THEN
-    HAVE "(za -\<^sub>\<int> zb) +\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za +\<^sub>\<int> zc) -\<^sub>\<int> (zb +\<^sub>\<int> zd)" THEN
-    HAVE "(ra -\<^sub>R rb) +\<^sub>R (rc -\<^sub>R rd) = (ra +\<^sub>R rc) -\<^sub>R (rb +\<^sub>R rd)") *})
+@proof
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
+  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)" @then
+  @let "ra = of_nat(R,a)" "rb = of_nat(R,b)" "rc = of_nat(R,c)" "rd = of_nat(R,d)" @then
+  @have "(za -\<^sub>\<int> zb) +\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za +\<^sub>\<int> zc) -\<^sub>\<int> (zb +\<^sub>\<int> zd)" @then
+  @have "(ra -\<^sub>R rb) +\<^sub>R (rc -\<^sub>R rd) = (ra +\<^sub>R rc) -\<^sub>R (rb +\<^sub>R rd)"
+@qed
 
 lemma of_int_uminus [rewrite_bidir]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> -\<^sub>R of_int(R,x) = of_int(R,-\<^sub>\<int> x)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "of_int(R,-\<^sub>\<int> x) +\<^sub>R of_int(R,x) = 0\<^sub>R") *})
+@proof @have "of_int(R,-\<^sub>\<int> x) +\<^sub>R of_int(R,x) = 0\<^sub>R" @qed
 
 lemma of_int_sub [rewrite_bidir]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) -\<^sub>R of_int(R,y) = of_int(R,x -\<^sub>\<int> y)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "of_int(R,x) -\<^sub>R of_int(R,y) = of_int(R,x) +\<^sub>R (-\<^sub>R of_int(R,y))") *})
+@proof @have "of_int(R,x) -\<^sub>R of_int(R,y) = of_int(R,x) +\<^sub>R (-\<^sub>R of_int(R,y))" @qed
       
 lemma of_int_mult [rewrite_bidir]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) *\<^sub>R of_int(R,y) = of_int(R,x *\<^sub>\<int> y)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a\<in>.\<nat>, b\<in>.\<nat>, x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" THEN
-    CHOOSE "c\<in>.\<nat>, d\<in>.\<nat>, y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" THEN
-    LET "za = of_nat(\<int>,a), zb = of_nat(\<int>,b), zc = of_nat(\<int>,c), zd = of_nat(\<int>,d)" THEN
-    LET "ra = of_nat(R,a), rb = of_nat(R,b), rc = of_nat(R,c), rd = of_nat(R,d)" THEN
-    HAVE "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)" THEN
-    HAVE "(ra -\<^sub>R rb) *\<^sub>R (rc -\<^sub>R rd) = (ra *\<^sub>R rc +\<^sub>R rb *\<^sub>R rd) -\<^sub>R (ra *\<^sub>R rd +\<^sub>R rb *\<^sub>R rc)") *})
+@proof
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
+  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)" @then
+  @let "ra = of_nat(R,a)" "rb = of_nat(R,b)" "rc = of_nat(R,c)" "rd = of_nat(R,d)" @then
+  @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)" @then
+  @have "(ra -\<^sub>R rb) *\<^sub>R (rc -\<^sub>R rd) = (ra *\<^sub>R rc +\<^sub>R rb *\<^sub>R rd) -\<^sub>R (ra *\<^sub>R rd +\<^sub>R rb *\<^sub>R rc)"
+@qed
 
 lemma ord_ring_switch_sides4 [resolve]:
   "is_ord_ring(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> d \<in>. R \<Longrightarrow>
@@ -317,46 +323,50 @@ lemma ord_ring_switch_sides4_less' [resolve]:
 
 lemma ord_ring_of_int_le [backward]:
   "is_ord_ring(R) \<Longrightarrow> x \<le>\<^sub>\<int> y \<Longrightarrow> of_int(R,x) \<le>\<^sub>R of_int(R,y)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a\<in>.\<nat>, b\<in>.\<nat>, x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" THEN
-    CHOOSE "c\<in>.\<nat>, d\<in>.\<nat>, y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" THEN
-    HAVE "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<le>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" THEN
-    HAVE "of_nat(R,a) +\<^sub>R of_nat(R,d) \<le>\<^sub>R of_nat(R,b) +\<^sub>R of_nat(R,c)") *})
+@proof
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<le>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" @then
+  @have "of_nat(R,a) +\<^sub>R of_nat(R,d) \<le>\<^sub>R of_nat(R,b) +\<^sub>R of_nat(R,c)"
+@qed
 
 lemma ord_ring_of_int_less [backward]:
   "is_ord_ring(R) \<Longrightarrow> x <\<^sub>\<int> y \<Longrightarrow> of_int(R,x) <\<^sub>R of_int(R,y)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a\<in>.\<nat>, b\<in>.\<nat>, x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" THEN
-    CHOOSE "c\<in>.\<nat>, d\<in>.\<nat>, y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" THEN
-    HAVE "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) <\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" THEN
-    HAVE "of_nat(R,a) +\<^sub>R of_nat(R,d) <\<^sub>R of_nat(R,b) +\<^sub>R of_nat(R,c)") *})
+@proof
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) <\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" @then
+  @have "of_nat(R,a) +\<^sub>R of_nat(R,d) <\<^sub>R of_nat(R,b) +\<^sub>R of_nat(R,c)"
+@qed
 
 lemma ord_ring_of_int_le_back [forward]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) \<le>\<^sub>R of_int(R,y) \<Longrightarrow> x \<le>\<^sub>\<int> y"
-  by (tactic {* auto2s_tac @{context} (CASE "of_int(R,y) <\<^sub>R of_int(R,x)") *})
+@proof @case "of_int(R,y) <\<^sub>R of_int(R,x)" @qed
 
 lemma ord_ring_of_int_eq [forward]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) = of_int(R,y) \<Longrightarrow> x = y"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "x <\<^sub>\<int> y" WITH HAVE "of_int(R,x) <\<^sub>R of_int(R,y)" THEN
-    CASE "x >\<^sub>\<int> y" WITH HAVE "of_int(R,x) >\<^sub>R of_int(R,y)") *})
+@proof
+  @case "x <\<^sub>\<int> y" @with @have "of_int(R,x) <\<^sub>R of_int(R,y)" @end
+  @case "x >\<^sub>\<int> y" @with @have "of_int(R,x) >\<^sub>R of_int(R,y)" @end
+@qed
 
 lemma ord_ring_of_int_positive:
   "is_ord_ring(R) \<Longrightarrow> b >\<^sub>\<int> 0\<^sub>\<int> \<Longrightarrow> of_int(R,b) >\<^sub>R 0\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (HAVE "of_int(R,b) >\<^sub>R of_int(R,0\<^sub>\<int>)") *})
+@proof @have "of_int(R,b) >\<^sub>R of_int(R,0\<^sub>\<int>)" @qed
 setup {* add_forward_prfstep_cond @{thm ord_ring_of_int_positive} [with_term "of_int(?R,?b)"] *}
 
 lemma int_gt_to_ge [backward]:
   "x >\<^sub>\<int> y \<Longrightarrow> x \<ge>\<^sub>\<int> y +\<^sub>\<int> 1\<^sub>\<int>"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a\<in>.\<nat>, b\<in>.\<nat>, x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" THEN
-    CHOOSE "c\<in>.\<nat>, d\<in>.\<nat>, y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" THEN
-    HAVE "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) >\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" THEN
-    HAVE "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<ge>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c) +\<^sub>\<int> 1\<^sub>\<int>" THEN
-    HAVE "of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b) \<ge>\<^sub>\<int> of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d) +\<^sub>\<int> 1\<^sub>\<int>") *})
+@proof
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) >\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" @then
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<ge>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c) +\<^sub>\<int> 1\<^sub>\<int>" @then
+  @have "of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b) \<ge>\<^sub>\<int> of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d) +\<^sub>\<int> 1\<^sub>\<int>"
+@qed
   
 lemma int_gt_to_ge_one [resolve]:
   "x >\<^sub>\<int> 0\<^sub>\<int> \<Longrightarrow> x \<ge>\<^sub>\<int> 1\<^sub>\<int>"
-  by (tactic {* auto2s_tac @{context} (HAVE "0\<^sub>\<int> = 0\<^sub>\<int> +\<^sub>\<int> 1\<^sub>\<int>") *})
+@proof @have "1\<^sub>\<int> = 0\<^sub>\<int> +\<^sub>\<int> 1\<^sub>\<int>" @qed
 
 end

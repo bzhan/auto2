@@ -24,8 +24,7 @@ lemma abs_positive [rewrite]: "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Lon
 lemma abs_mult [rewrite]: "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x *\<^sub>R y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R *\<^sub>R \<bar>y\<bar>\<^sub>R" by auto2
 lemma abs_inverse [rewrite]: "is_ord_field(R) \<Longrightarrow> x \<in> units(R) \<Longrightarrow> \<bar>inv(R,x)\<bar>\<^sub>R = inv(R,\<bar>x\<bar>\<^sub>R)" by auto2
 lemma abs_div [rewrite]: "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in> units(R) \<Longrightarrow> \<bar>x /\<^sub>R y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R /\<^sub>R \<bar>y\<bar>\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "x /\<^sub>R y = x *\<^sub>R inv(R,y)" THEN HAVE "\<bar>x\<bar>\<^sub>R /\<^sub>R \<bar>y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R *\<^sub>R inv(R,\<bar>y\<bar>\<^sub>R)") *})
+  @proof @have "x /\<^sub>R y = x *\<^sub>R inv(R,y)" @then @have "\<bar>x\<bar>\<^sub>R /\<^sub>R \<bar>y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R *\<^sub>R inv(R,\<bar>y\<bar>\<^sub>R)" @qed
 
 lemma abs_ge_cases [forward]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> r \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R \<ge>\<^sub>R r \<Longrightarrow> x >\<^sub>R -\<^sub>R r \<Longrightarrow> x \<ge>\<^sub>R r"
@@ -50,39 +49,42 @@ setup {* del_prfstep "abs_case" *}
   
 lemma abs_diff_sym [rewrite]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x -\<^sub>R y\<bar>\<^sub>R = \<bar>y -\<^sub>R x\<bar>\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (HAVE "y -\<^sub>R x = -\<^sub>R (x -\<^sub>R y)") *})
+@proof @have "y -\<^sub>R x = -\<^sub>R (x -\<^sub>R y)" @qed
 
 lemma abs_sum [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R \<le>\<^sub>R s \<Longrightarrow> \<bar>y\<bar>\<^sub>R \<le>\<^sub>R t \<Longrightarrow> \<bar>x +\<^sub>R y\<bar>\<^sub>R \<le>\<^sub>R s +\<^sub>R t"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "x +\<^sub>R y \<le>\<^sub>R s +\<^sub>R t" WITH HAVE "x \<le>\<^sub>R s" THEN
-    HAVE "x +\<^sub>R y \<ge>\<^sub>R -\<^sub>R s +\<^sub>R -\<^sub>R t" WITH HAVE "x \<ge>\<^sub>R -\<^sub>R s") *})
+@proof
+  @have "x +\<^sub>R y \<le>\<^sub>R s +\<^sub>R t" @with @have "x \<le>\<^sub>R s" @end
+  @have "x +\<^sub>R y \<ge>\<^sub>R -\<^sub>R s +\<^sub>R -\<^sub>R t" @with @have "x \<ge>\<^sub>R -\<^sub>R s" @end
+@qed
       
 lemma abs_sum_strict1 [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R <\<^sub>R s \<Longrightarrow> \<bar>y\<bar>\<^sub>R \<le>\<^sub>R t \<Longrightarrow> \<bar>x +\<^sub>R y\<bar>\<^sub>R <\<^sub>R s +\<^sub>R t"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "x +\<^sub>R y <\<^sub>R s +\<^sub>R t" WITH HAVE "x <\<^sub>R s" THEN
-    HAVE "x +\<^sub>R y >\<^sub>R -\<^sub>R s +\<^sub>R -\<^sub>R t" WITH HAVE "x >\<^sub>R -\<^sub>R s") *})
+@proof
+  @have "x +\<^sub>R y <\<^sub>R s +\<^sub>R t" @with @have "x <\<^sub>R s" @end
+  @have "x +\<^sub>R y >\<^sub>R -\<^sub>R s +\<^sub>R -\<^sub>R t" @with @have "x >\<^sub>R -\<^sub>R s" @end
+@qed
 
 lemma abs_sum_strict2 [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R \<le>\<^sub>R s \<Longrightarrow> \<bar>y\<bar>\<^sub>R <\<^sub>R t \<Longrightarrow> \<bar>x +\<^sub>R y\<bar>\<^sub>R <\<^sub>R s +\<^sub>R t"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "x +\<^sub>R y <\<^sub>R s +\<^sub>R t" WITH HAVE "x \<le>\<^sub>R s" THEN
-    HAVE "x +\<^sub>R y >\<^sub>R -\<^sub>R s +\<^sub>R -\<^sub>R t" WITH HAVE "x \<ge>\<^sub>R -\<^sub>R s") *})
+@proof
+  @have "x +\<^sub>R y <\<^sub>R s +\<^sub>R t" @with @have "x \<le>\<^sub>R s" @end
+  @have "x +\<^sub>R y >\<^sub>R -\<^sub>R s +\<^sub>R -\<^sub>R t" @with @have "x \<ge>\<^sub>R -\<^sub>R s" @end
+@qed
 
 lemma abs_sum_half1 [backward1, backward2]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> r \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R <\<^sub>R r /\<^sub>R 2\<^sub>R \<Longrightarrow> \<bar>y\<bar>\<^sub>R <\<^sub>R r /\<^sub>R 2\<^sub>R \<Longrightarrow> \<bar>x +\<^sub>R y\<bar>\<^sub>R <\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (HAVE "r = r /\<^sub>R 2\<^sub>R +\<^sub>R r /\<^sub>R 2\<^sub>R") *})
+@proof @have "r = r /\<^sub>R 2\<^sub>R +\<^sub>R r /\<^sub>R 2\<^sub>R" @qed
 
 lemma abs_cancel_diff [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow>
    \<bar>x -\<^sub>R y\<bar>\<^sub>R \<le>\<^sub>R s \<Longrightarrow> \<bar>y -\<^sub>R z\<bar>\<^sub>R \<le>\<^sub>R t \<Longrightarrow> \<bar>x -\<^sub>R z\<bar>\<^sub>R \<le>\<^sub>R s +\<^sub>R t"
-  by (tactic {* auto2s_tac @{context} (HAVE "x -\<^sub>R z = (x -\<^sub>R y) +\<^sub>R (y -\<^sub>R z)") *})
+@proof @have "x -\<^sub>R z = (x -\<^sub>R y) +\<^sub>R (y -\<^sub>R z)" @qed
 
 lemma abs_cancel_diff_strict1 [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow>
    \<bar>x -\<^sub>R y\<bar>\<^sub>R <\<^sub>R s \<Longrightarrow> \<bar>y -\<^sub>R z\<bar>\<^sub>R \<le>\<^sub>R t \<Longrightarrow> \<bar>x -\<^sub>R z\<bar>\<^sub>R <\<^sub>R s +\<^sub>R t"
-  by (tactic {* auto2s_tac @{context} (HAVE "x -\<^sub>R z = (x -\<^sub>R y) +\<^sub>R (y -\<^sub>R z)") *})
+@proof @have "x -\<^sub>R z = (x -\<^sub>R y) +\<^sub>R (y -\<^sub>R z)" @qed
 
 lemma abs_cancel_diff_strict2 [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow>
@@ -91,21 +93,21 @@ lemma abs_cancel_diff_strict2 [backward1, backward2]:
 lemma abs_cancel_diff_half1 [backward1, backward2]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> r \<in>. R \<Longrightarrow>
    \<bar>x -\<^sub>R y\<bar>\<^sub>R <\<^sub>R r /\<^sub>R 2\<^sub>R \<Longrightarrow> \<bar>y -\<^sub>R z\<bar>\<^sub>R <\<^sub>R r /\<^sub>R 2\<^sub>R \<Longrightarrow> \<bar>x -\<^sub>R z\<bar>\<^sub>R <\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (HAVE "r = r /\<^sub>R 2\<^sub>R +\<^sub>R r /\<^sub>R 2\<^sub>R") *})
+@proof @have "r = r /\<^sub>R 2\<^sub>R +\<^sub>R r /\<^sub>R 2\<^sub>R" @qed
 
 lemma abs_prod_upper_bound [backward1, backward2]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R <\<^sub>R s \<Longrightarrow> \<bar>y\<bar>\<^sub>R <\<^sub>R t \<Longrightarrow> \<bar>x *\<^sub>R y\<bar>\<^sub>R <\<^sub>R s *\<^sub>R t"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<bar>x *\<^sub>R y\<bar>\<^sub>R \<noteq> s *\<^sub>R t") *})
+@proof @contradiction @have "\<bar>x *\<^sub>R y\<bar>\<^sub>R \<noteq> s *\<^sub>R t" @qed
 
 lemma abs_prod_upper_bound2 [backward2]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> s \<in>. R \<Longrightarrow> t \<in> units(R) \<Longrightarrow>
    \<bar>x\<bar>\<^sub>R <\<^sub>R s /\<^sub>R t \<Longrightarrow> \<bar>y\<bar>\<^sub>R <\<^sub>R t \<Longrightarrow> \<bar>x *\<^sub>R y\<bar>\<^sub>R <\<^sub>R s"
-  by (tactic {* auto2s_tac @{context} (HAVE "s = (s /\<^sub>R t) *\<^sub>R t") *})
+@proof @have "s = (s /\<^sub>R t) *\<^sub>R t" @qed
 
 lemma abs_prod_upper_bound2' [backward2]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> s \<in>. R \<Longrightarrow> t \<in> units(R) \<Longrightarrow>
    \<bar>x\<bar>\<^sub>R <\<^sub>R s /\<^sub>R t \<Longrightarrow> \<bar>y\<bar>\<^sub>R <\<^sub>R t \<Longrightarrow> \<bar>y *\<^sub>R x\<bar>\<^sub>R <\<^sub>R s"
-  by (tactic {* auto2s_tac @{context} (HAVE "x *\<^sub>R y = y *\<^sub>R x") *})
+@proof @have "x *\<^sub>R y = y *\<^sub>R x" @qed
 
 lemma abs_prod_lower_bound [backward1]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> s >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> t >\<^sub>R \<zero>\<^sub>R \<Longrightarrow>
@@ -113,34 +115,36 @@ lemma abs_prod_lower_bound [backward1]:
   
 lemma abs_div_upper_bound [backward2]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R <\<^sub>R a \<Longrightarrow> \<bar>y\<bar>\<^sub>R >\<^sub>R b \<and> b >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> \<bar>x /\<^sub>R y\<bar>\<^sub>R <\<^sub>R a /\<^sub>R b"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<bar>x\<bar>\<^sub>R *\<^sub>R inv(R,\<bar>y\<bar>\<^sub>R) <\<^sub>R a *\<^sub>R inv(R,b)") *})
+@proof @have "\<bar>x\<bar>\<^sub>R *\<^sub>R inv(R,\<bar>y\<bar>\<^sub>R) <\<^sub>R a *\<^sub>R inv(R,b)" @qed
       
 lemma abs_div_upper_bound2 [backward2]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in> units(R) \<Longrightarrow> s \<in>. R \<Longrightarrow>
    \<bar>x\<bar>\<^sub>R <\<^sub>R s *\<^sub>R t \<Longrightarrow> \<bar>y\<bar>\<^sub>R >\<^sub>R t \<and> t >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> \<bar>x /\<^sub>R y\<bar>\<^sub>R <\<^sub>R s"
-  by (tactic {* auto2s_tac @{context} (HAVE "s = s *\<^sub>R t /\<^sub>R t") *})
+@proof @have "s = s *\<^sub>R t /\<^sub>R t" @qed
 
 (* Bounds on Abs in terms of components. *)
 lemma abs_sum_bound [resolve]:
   "is_ord_ring(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> \<bar>a +\<^sub>R b\<bar>\<^sub>R \<le>\<^sub>R \<bar>a\<bar>\<^sub>R +\<^sub>R \<bar>b\<bar>\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<bar>a\<bar>\<^sub>R \<le>\<^sub>R \<bar>a\<bar>\<^sub>R") *})
+@proof @have "\<bar>a\<bar>\<^sub>R \<le>\<^sub>R \<bar>a\<bar>\<^sub>R" @qed
 
 lemma abs_diff_to_abs_bound [resolve]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> \<bar>a -\<^sub>R b\<bar>\<^sub>R <\<^sub>R c \<Longrightarrow> \<bar>a\<bar>\<^sub>R <\<^sub>R \<bar>b\<bar>\<^sub>R +\<^sub>R c"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<bar>b +\<^sub>R (a -\<^sub>R b)\<bar>\<^sub>R \<le>\<^sub>R \<bar>b\<bar>\<^sub>R +\<^sub>R \<bar>a -\<^sub>R b\<bar>\<^sub>R") *})
+@proof @have "\<bar>b +\<^sub>R (a -\<^sub>R b)\<bar>\<^sub>R \<le>\<^sub>R \<bar>b\<bar>\<^sub>R +\<^sub>R \<bar>a -\<^sub>R b\<bar>\<^sub>R" @qed
 
 (* Bounds on differences to averages *)
 setup {* add_rewrite_rule @{thm avg_def} *}
 lemma avg_diff [rewrite]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> \<bar>a -\<^sub>R avg(R,a,b)\<bar>\<^sub>R = \<bar>a -\<^sub>R b\<bar>\<^sub>R /\<^sub>R 2\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "a \<le>\<^sub>R b" WITH (HAVE "a \<le>\<^sub>R avg(R,a,b)" THEN HAVE "(a +\<^sub>R b) /\<^sub>R 2\<^sub>R -\<^sub>R a = (b -\<^sub>R a) /\<^sub>R 2\<^sub>R") THEN
-    CASE "a \<ge>\<^sub>R b" WITH (HAVE "a \<ge>\<^sub>R avg(R,a,b)" THEN HAVE "a -\<^sub>R (a +\<^sub>R b) /\<^sub>R 2\<^sub>R = (a -\<^sub>R b) /\<^sub>R 2\<^sub>R")) *})
+@proof
+  @case "a \<le>\<^sub>R b" @with
+    @have "a \<le>\<^sub>R avg(R,a,b)" @then @have "(a +\<^sub>R b) /\<^sub>R 2\<^sub>R -\<^sub>R a = (b -\<^sub>R a) /\<^sub>R 2\<^sub>R" @end
+  @case "a \<ge>\<^sub>R b" @with
+    @have "a \<ge>\<^sub>R avg(R,a,b)" @then @have "a -\<^sub>R (a +\<^sub>R b) /\<^sub>R 2\<^sub>R = (a -\<^sub>R b) /\<^sub>R 2\<^sub>R" @end
+@qed
 
 lemma avg_diff2 [rewrite]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> \<bar>b -\<^sub>R avg(R,a,b)\<bar>\<^sub>R = \<bar>a -\<^sub>R b\<bar>\<^sub>R /\<^sub>R 2\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (HAVE "avg(R,a,b) = avg(R,b,a)") *})
+@proof @have "avg(R,a,b) = avg(R,b,a)" @qed
 setup {* del_prfstep_thm @{thm avg_def} *}
 
 (* Two redundancies *)

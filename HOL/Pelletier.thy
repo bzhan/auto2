@@ -27,7 +27,10 @@ theorem p10: "q \<longrightarrow> r \<Longrightarrow> r \<longrightarrow> p \<an
 theorem p11: "p \<longleftrightarrow> p" by auto2
 
 theorem p12: "((p \<longleftrightarrow> q) \<longleftrightarrow> r) \<longleftrightarrow> (p \<longleftrightarrow> (q \<longleftrightarrow> r))"
-  by (tactic {* auto2s_tac @{context} (CASE "p" THEN CASE "q") *})
+@proof
+  @case "p" @then
+  @case "q"
+@qed
 
 theorem p13: "p \<or> (q \<and> r) \<longleftrightarrow> (p \<or> q) \<and> (p \<or> r)" by auto2
 
@@ -40,47 +43,59 @@ theorem p16: "(p \<longrightarrow> q) \<or> (q \<longrightarrow> p)" by auto2
 theorem p17: "(p \<and> (q \<longrightarrow> r) \<longrightarrow> s) \<longleftrightarrow> (\<not>p \<or> q \<or> s) \<and> (\<not>p \<or> \<not>r \<or> s)" by auto2
 
 theorem p18: "\<exists>y::'a. \<forall>x. F(y) \<longrightarrow> F(x)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "\<forall>x. F(x)" WITH (CHOOSE "y::'a, True" THEN HAVE "\<forall>x. F(y) \<longrightarrow> F(x)") THEN
-    CHOOSE "y, \<not>F(y)" THEN HAVE "\<forall>x. F(y) \<longrightarrow> F(x)") *})
+@proof
+  @case "\<forall>x. F(x)" @with
+    @obtain "y::'a" where "y = y" @then @have "\<forall>x. F(y) \<longrightarrow> F(x)"
+  @end
+  @obtain y where "\<not>F(y)" @then @have "\<forall>x. F(y) \<longrightarrow> F(x)"
+@qed
 
 theorem p19: "\<exists>x::'a. \<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "\<exists>x. P(x) \<longrightarrow> Q(x)" WITH (
-      CHOOSE "x, P(x) \<longrightarrow> Q(x)" THEN
-      HAVE "\<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))") THEN
-    CHOOSE "x::'a, True" THEN
-    HAVE "\<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))" WITH HAVE "P(y)") *})
+@proof
+  @case "\<exists>x. P(x) \<longrightarrow> Q(x)" @with
+    @obtain x where "P(x) \<longrightarrow> Q(x)" @then
+    @have "\<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))"
+  @end
+  @obtain "x::'a" where "x = x" @then
+  @have "\<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))"
+@qed
 
 theorem p20: "\<forall>x y. \<exists>z. \<forall>w. P(x) \<and> Q(y) \<longrightarrow> R(z) \<and> S(w) \<Longrightarrow>
   \<exists>x y. P(x) \<and> Q(y) \<Longrightarrow> \<exists>z. R(z)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x, y, P(x) \<and> Q(y)" THEN
-    CHOOSE "z, \<forall>w. P(x) \<and> Q(y) \<longrightarrow> R(z) \<and> S(w)") *})
-
+@proof
+  @obtain x y where "P(x)" "Q(y)" @then
+  @obtain z where "\<forall>w. P(x) \<and> Q(y) \<longrightarrow> R(z) \<and> S(w)"
+@qed
+    
 theorem p21: "\<exists>x. p \<longrightarrow> F(x) \<Longrightarrow> \<exists>x. F(x) \<longrightarrow> p \<Longrightarrow> \<exists>x. p \<longleftrightarrow> F(x)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "p" WITH (CHOOSE "x, F(x)" THEN HAVE "p \<longleftrightarrow> F(x)") THEN
-    CASE "\<not>p" WITH (CHOOSE "x, \<not>F(x)" THEN HAVE "p \<longleftrightarrow> F(x)")) *})
+@proof
+  @case "p" @with @obtain x where "F(x)" @then @have "p \<longleftrightarrow> F(x)" @end
+  @case "\<not>p" @with @obtain x where "\<not>F(x)" @then @have "p \<longleftrightarrow> F(x)" @end
+@qed
 
 theorem p22: "\<forall>x::'a. p \<longleftrightarrow> F(x) \<Longrightarrow> p \<longleftrightarrow> (\<forall>x. F(x))"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "p" THEN CHOOSE "x::'a, True") *})
+@proof
+  @case "p" @then @obtain "x::'a" where "x = x"
+@qed
 
 theorem p23: "(\<forall>x::'a. p \<or> F(x)) \<longleftrightarrow> (p \<or> (\<forall>x. F(x)))" by auto2
 
 theorem p29: "\<exists>x. F(x) \<Longrightarrow> \<exists>x. G(x) \<Longrightarrow>
   ((\<forall>x. F(x) \<longrightarrow> H(x)) \<and> (\<forall>x. G(x) \<longrightarrow> J(x))) \<longleftrightarrow>
   (\<forall>x y. F(x) \<and> G(y) \<longrightarrow> H(x) \<and> J(y))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a, F(a)" THEN CHOOSE "b, G(b)" THEN
-    CASE "\<forall>x y. F(x) \<and> G(y) \<longrightarrow> H(x) \<and> J(y)" WITH (
-      HAVE "\<forall>x. F(x) \<longrightarrow> H(x)" WITH HAVE "F(x) \<and> G(b)" THEN
-      HAVE "\<forall>y. G(y) \<longrightarrow> J(y)" WITH HAVE "F(a) \<and> G(y)")) *})  (* why can't put x? *)
+@proof
+  @obtain a b where "F(a)" "G(b)" @then
+  @case "\<forall>x y. F(x) \<and> G(y) \<longrightarrow> H(x) \<and> J(y)" @with
+    @have "\<forall>x. F(x) \<longrightarrow> H(x)" @with @have "F(x) \<and> G(b)" @end
+    @have "\<forall>y. G(y) \<longrightarrow> J(y)" @with @have "F(a) \<and> G(y)" @end
+  @end
+@qed
 
 theorem p30: "\<forall>x. F(x) \<or> G(x) \<longrightarrow> \<not>H(x) \<Longrightarrow>
   \<forall>x. (G(x) \<longrightarrow> \<not>I(x)) \<longrightarrow> F(x) \<and> H(x) \<Longrightarrow> \<forall>x. I(x)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x. I(x)" WITH CASE "F(x)") *})
+@proof
+  @have "\<forall>x. I(x)" @with @case "F(x)" @end
+@qed
 
 theorem p31: "\<not>(\<exists>x. F(x) \<and> (G(x) \<or> H(x))) \<Longrightarrow> \<exists>x. I(x) \<and> F(x) \<Longrightarrow> \<forall>x. \<not>H(x) \<longrightarrow> J(x) \<Longrightarrow>
   \<exists>x. I(x) \<and> J(x)" by auto2
@@ -94,20 +109,29 @@ theorem p33: "(\<forall>x. p(a) \<and> (p(x) \<longrightarrow> p(b)) \<longright
 theorem p35: "\<exists>(x::'a) (y::'b). P(x,y) \<longrightarrow> (\<forall>x y. P(x,y))" by auto2
 
 theorem p39: "\<not>(\<exists>x. \<forall>y. F(y,x) \<longleftrightarrow> \<not>F(y,y))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x, \<forall>y. F(y,x) \<longleftrightarrow> \<not>F(y,y)" THEN CASE "F(x,x)") *})
+@proof
+  @contradiction
+  @obtain x where "\<forall>y. F(y,x) \<longleftrightarrow> \<not>F(y,y)" @then
+  @case "F(x,x)"
+@qed
 
 (* Note there is a typo in the original text. *)
 theorem p40: "\<exists>y. \<forall>x. F(x,y) \<longleftrightarrow> F(x,x) \<Longrightarrow> \<not>(\<forall>x. \<exists>y. \<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,x))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "A, \<forall>x. F(x,A) \<longleftrightarrow> F(x,x)" THEN
-    HAVE "\<not>(\<exists>y. \<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,A))" WITH
-      HAVE "\<forall>y. \<not>(\<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,A))" WITH
-        HAVE "\<not>(F(y,y) \<longleftrightarrow> \<not>F(y,A))" WITH CASE "F(y,y)") *})
+@proof
+  @obtain A where "\<forall>x. F(x,A) \<longleftrightarrow> F(x,x)" @then
+  @have "\<not>(\<exists>y. \<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,A))" @with
+    @have (@rule) "\<forall>y. \<not>(\<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,A))" @with
+      @have "\<not>(F(y,y) \<longleftrightarrow> \<not>F(y,A))" @with @case "F(y,y)" @end
+    @end
+  @end
+@qed
 
 theorem p42: "\<not>(\<exists>y. \<forall>x. F(x,y) \<longleftrightarrow> \<not>(\<exists>z. F(x,z) \<and> F(z,x)))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "y, \<forall>x. F(x,y) \<longleftrightarrow> \<not>(\<exists>z. F(x,z) \<and> F(z,x))" THEN CASE "F(y,y)") *})
+@proof
+  @contradiction
+  @obtain y where "\<forall>x. F(x,y) \<longleftrightarrow> \<not>(\<exists>z. F(x,z) \<and> F(z,x))" @then
+  @case "F(y,y)"
+@qed
 
 theorem p43: "\<forall>x y. Q(x,y) \<longleftrightarrow> (\<forall>z. F(z,x) \<longleftrightarrow> F(z,y)) \<Longrightarrow>
   \<forall>x y. Q(x,y) \<longleftrightarrow> Q(y,x)" by auto2
@@ -133,27 +157,34 @@ theorem p47:
 theorem p48: "a = b \<or> c = d \<Longrightarrow> a = c \<or> b = d \<Longrightarrow> a = d \<or> b = c" by auto2
 
 theorem p49: "\<exists>x y. \<forall>(z::'a). z = x \<or> z = y \<Longrightarrow> P(a) \<and> P(b) \<Longrightarrow> (a::'a) \<noteq> b \<Longrightarrow> \<forall>x. P(x)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x, y, \<forall>(z::'a). z = x \<or> z = y" THEN
-    HAVE "x = a \<or> x = b" THEN
-    HAVE "\<forall>c. P(c)" WITH HAVE "c = a \<or> c = b") *})
+@proof
+  @obtain x y where "\<forall>(z::'a). z = x \<or> z = y" @then
+  @have "x = a \<or> x = b" @then
+  @have "\<forall>c. P(c)" @with @have "c = a \<or> c = b" @end
+@qed
 
 theorem p50: "\<forall>x. F(a,x) \<or> (\<forall>y. F(x,y)) \<Longrightarrow> \<exists>x. \<forall>y. F(x,y)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>y. F(a,y)") *})
+@proof
+  @case "\<forall>y. F(a,y)"
+@qed
 
 theorem p51: "\<exists>z w. \<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w \<Longrightarrow>
   \<exists>z. \<forall>x. (\<exists>w. \<forall>y. F(x,y) \<longleftrightarrow> y = w) \<longleftrightarrow> x = z"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "z, w, \<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w" THEN
-    HAVE "\<forall>x. (\<exists>w. \<forall>y. F(x,y) \<longleftrightarrow> y = w) \<longleftrightarrow> x = z" WITH (
-      CASE "x = z" WITH HAVE "\<forall>y. F(x,y) \<longleftrightarrow> y = w")) *})
+@proof
+  @obtain z w where "\<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w" @then
+  @have "\<forall>x. (\<exists>w. \<forall>y. F(x,y) \<longleftrightarrow> y = w) \<longleftrightarrow> x = z" @with
+    @case "x = z" @with @have "\<forall>y. F(x,y) \<longleftrightarrow> y = w" @end
+  @end
+@qed
 
 theorem p52: "\<exists>z w. \<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w \<Longrightarrow>
   \<exists>w. \<forall>y. (\<exists>z. \<forall>x. F(x,y) \<longleftrightarrow> x = z) \<longleftrightarrow> y = w"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "z, w, \<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w" THEN
-    HAVE "\<forall>y. (\<exists>z. \<forall>x. F(x,y) \<longleftrightarrow> x = z) \<longleftrightarrow> y = w" WITH (
-      CASE "y = w" WITH HAVE "\<forall>x. F(x,y) \<longleftrightarrow> x = z")) *})
+@proof
+  @obtain z w where "\<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w" @then
+  @have"\<forall>y. (\<exists>z. \<forall>x. F(x,y) \<longleftrightarrow> x = z) \<longleftrightarrow> y = w" @with
+    @case "y = w" @with @have "\<forall>x. F(x,y) \<longleftrightarrow> x = z" @end
+  @end
+@qed
 
 theorem p55:
   "\<exists>x. L(x) \<and> K(x,a) \<Longrightarrow>
@@ -168,23 +199,21 @@ theorem p55:
    \<forall>x. \<exists>y. \<not>H(x,y) \<Longrightarrow>
    a \<noteq> b \<Longrightarrow>
    K(a,a)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "K(b,a)" WITH HAVE "\<forall>x. H(b,x)") *})
+@proof
+  @case "K(b,a)" @with @have "\<forall>x. H(b,x)" @end
+@qed
 
 theorem p56: "(\<forall>x. (\<exists>y. F(y) \<and> x = f(y)) \<longrightarrow> F(x)) \<longleftrightarrow> (\<forall>x. F(x) \<longrightarrow> F(f(x)))" by auto2
 
 theorem p57: "F(f(a,b),f(b,c)) \<Longrightarrow> F(f(b,c),f(a,c)) \<Longrightarrow>
-  \<forall>x y z. F(x,y) \<and> F(y,z) \<longrightarrow> F(x,z) \<Longrightarrow> F(f(a,b),f(a,c))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "F(f(a,b),f(b,c)) \<and> F(f(b,c),f(a,c))") *})
+  \<forall>x y z. F(x,y) \<and> F(y,z) \<longrightarrow> F(x,z) \<Longrightarrow> F(f(a,b),f(a,c))" by auto2
 
-theorem p58: "\<forall>x y. f(x) = g(y) \<Longrightarrow> \<forall>x y. f(f(x)) = f(g(y))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x y. f(f(x)) = f(g(y))" WITH HAVE "f(x) = g(y)") *})
+theorem p58: "\<forall>x y. f(x) = g(y) \<Longrightarrow> \<forall>x y. f(f(x)) = f(g(y))" by auto2
 
 theorem p59: "\<forall>x::'a. F(x) \<longleftrightarrow> \<not>F(f(x)) \<Longrightarrow> \<exists>x. F(x) \<and> \<not>F(f(x))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x::'a, True" THEN CASE "F(x)") *})
+@proof
+  @obtain "x::'a" where "x = x" @then @case "F(x)"
+@qed
 
 theorem p60: "\<forall>x. F(x,f(x)) \<longleftrightarrow> (\<exists>y. (\<forall>z. F(z,y) \<longrightarrow> F(z,f(x))) \<and> F(x,y))" by auto2
 

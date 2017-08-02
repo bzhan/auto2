@@ -1,5 +1,26 @@
 (* Core (logic) proofsteps. *)
 
+(* Current state, function for modifying the goal. *)
+type auto2_frame = {prop: thm,
+                    induct_stmt: term option,
+                    prem_only: term list,
+                    after_qed: (term list * (thm -> thm -> thm)) option}
+
+type auto2_state = auto2_frame list
+
+structure Auto2_Data = Proof_Data
+(
+  type T = auto2_state
+  fun init _ = []
+)
+
+fun lookup_prem_only ctxt t =
+    let
+      val prem_only = maps #prem_only (Auto2_Data.get ctxt)
+    in
+      member (op aconv) prem_only t
+    end
+
 signature LOGIC_PROOFSTEPS =
 sig
   (* General logic *)
@@ -863,6 +884,10 @@ fun disj_cancel_prop ctxt th prop =
       else prop'
     end
 
+fun is_avoid_term t =
+    is_mem t andalso Term.is_Var (dest_arg1 t) andalso
+    length (Term.add_frees (dest_arg t) []) = 0
+
 (* Reduce a disjunction p_1 | ... | t | ... | p_n by matching ~t with
    the second item. If the disjunction contains schematic variables, t
    must have either zero or the largest number of schematic variables.
@@ -890,6 +915,7 @@ fun match_update_fn rtype {ctxt, ...} item1 item2 =
                     Property.is_property_prem thy nsub then NO_MATCH
             else if has_priority_term andalso
                     not (is_priority_term nsub) then SLOW_MATCH
+            else if is_avoid_term nsub then SLOW_MATCH
             else if nvar = 0 orelse nvar = max_nvar then YES_MATCH
             else if i > 0 then NO_MATCH else FREE_ONLY
           end
@@ -1227,8 +1253,9 @@ fun disj_normalizer ctxt ritem =
           then
             let
               val (disj_head, disj_th) = analyze_disj_th ctxt th
+              val prem_only = lookup_prem_only ctxt t
             in
-              disj_to_ritems false disj_head disj_th
+              disj_to_ritems prem_only disj_head disj_th
             end
           else [ritem]
         end

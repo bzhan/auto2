@@ -28,14 +28,15 @@ abbreviation hoare_triple' :: "assn \<Rightarrow> 'r Heap \<Rightarrow> ('r \<Ri
 
 lemma frame_rule [backward]:
   "<P> c <Q> \<Longrightarrow> <P * R> c <\<lambda>x. Q x * R>"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE ("\<forall>h as \<sigma> r. (h, as) \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>" ^
-                "(\<sigma> \<noteq> None \<and> (the \<sigma>, new_addrs h as (the \<sigma>)) \<Turnstile> Q r * R \<and> relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and>" ^
-                "lim h \<le> lim (the \<sigma>))") WITH (
-       CHOOSE "as1, as2, set_partition as as1 as2 \<and> (h, as1) \<Turnstile> P \<and> (h, as2) \<Turnstile> R" THEN
-       HAVE "relH as2 h (the \<sigma>)" THEN
-       HAVE "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2" WITH
-         HAVE "\<forall>x. x \<in> as2 \<longrightarrow> x \<notin> {a. lim h \<le> a \<and> a < lim (the \<sigma>)}")) *})
+@proof
+  @have "\<forall>h as \<sigma> r. (h, as) \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow> (\<sigma> \<noteq> None \<and> (the \<sigma>, new_addrs h as (the \<sigma>)) \<Turnstile> Q r * R \<and> relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and> lim h \<le> lim (the \<sigma>))" @with
+    @obtain as1 as2 where "set_partition as as1 as2" "(h, as1) \<Turnstile> P \<and> (h, as2) \<Turnstile> R" @then
+    @have "relH as2 h (the \<sigma>)" @then
+    @have "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2" @with
+      @have "\<forall>x. x \<in> as2 \<longrightarrow> x \<notin> {a. lim h \<le> a \<and> a < lim (the \<sigma>)}"
+    @end
+  @end
+@qed
 
 (* This is the last use of the definition of separating conjunction. *)
 setup {* del_prfstep_thm @{thm mod_star_conv} *}
@@ -129,8 +130,7 @@ section {* success_run and its properties. *}
 theorem union_case [forward]: "x \<in> A \<union> B \<Longrightarrow> x \<in> A \<or> x \<in> B" by auto2
 theorem new_addrs_bind [rewrite]: "lim h \<le> lim h' \<Longrightarrow> lim h' \<le> lim h'' \<Longrightarrow>
   new_addrs h' (new_addrs h as h') h'' = new_addrs h as h''"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "\<forall>x. x \<in> new_addrs h' (new_addrs h as h') h'' \<longleftrightarrow> x \<in> new_addrs h as h''") *})
+@proof @have "\<forall>x. x \<in> new_addrs h' (new_addrs h as h') h'' \<longleftrightarrow> x \<in> new_addrs h as h''" @qed
 setup {* del_prfstep_thm @{thm union_case} *}
 
 fun success_run :: "'a Heap \<Rightarrow> pheap \<Rightarrow> pheap \<Rightarrow> 'a \<Rightarrow> bool" where
@@ -152,19 +152,20 @@ theorem hoare_triple_def' [rewrite]:
 
 theorem hoare_tripleE': "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run c (Some (fst h)) \<sigma> r \<Longrightarrow>
   \<exists>h'. h' \<Turnstile> Q r * Ru \<and> \<sigma> = Some (fst h') \<and> success_run c h h' r"
-  by (tactic {* auto2s_tac @{context} (HAVE "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
+@proof @have "<P * Ru> c <\<lambda>r. Q r * Ru>" @qed
 
 theorem hoare_tripleI: "\<not><P> c <Q> \<Longrightarrow> \<exists>h \<sigma> r. h \<Turnstile> P \<and> run c (Some (fst h)) \<sigma> r \<and>
   (\<forall>h'. \<sigma> = Some (fst h') \<and> success_run c h h' r \<longrightarrow> \<not>h' \<Turnstile> Q r)" by auto2
 
 theorem hoare_triple_mp: "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> success_run c h h' r \<Longrightarrow> h' \<Turnstile> (Q r) * Ru"
-  by (tactic {* auto2s_tac @{context} (HAVE "<P * Ru> c <\<lambda>r. Q r * Ru>") *})
+@proof @have "<P * Ru> c <\<lambda>r. Q r * Ru>" @qed
 
 theorem hoare_tripleE'': "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run (c \<bind> g) (Some (fst h)) \<sigma> r \<Longrightarrow>
   \<exists>r' h'. run (g r') (Some (fst h')) \<sigma> r \<and> h' \<Turnstile> Q r' * Ru \<and> success_run c h h' r'"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "<P * Ru> c <\<lambda>r. Q r * Ru>" THEN
-     CHOOSE "\<sigma>', r', run c (Some (fst h)) \<sigma>' r'") *})
+@proof
+  @have "<P * Ru> c <\<lambda>r. Q r * Ru>" @then
+  @obtain \<sigma>' r' where "run c (Some (fst h)) \<sigma>' r'"
+@qed
 
 definition heap_preserving :: "'a Heap \<Rightarrow> bool" where
   "heap_preserving c = (\<forall>h h' r. effect c h h' r \<longrightarrow> h = h')"

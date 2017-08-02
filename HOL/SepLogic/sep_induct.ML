@@ -1,47 +1,63 @@
 (* Using induction rules derived from function definitions. *)
 
-fun prfstep_hoare_triple_induction name descs ind_th =
-    prfstep_custom
-        name descs PRIORITY_ADD
-        (fn ((id, _), ths) => fn _ => fn (st as {ctxt, ...}) =>
-            if id <> [0] then []
-            else let
-              val init_th = the_single ths
-              val init_prop = Thm.prop_of init_th
-              val init_prop' = dest_Trueprop init_prop
-              val (_, c, _) = SepUtil.dest_hoare_triple (get_neg init_prop')
-              val ind_vars = dest_args c
-              val gen_vars = map Free (Term.add_frees init_prop' [])
-              val var_ctxt = get_var_context id gen_vars st
-            in
-              case var_ctxt of
-                  NONE => []
-                | SOME (inits as (_, assums)) =>
-                  if member (op aconv) assums init_prop then
-                    let
-                      val ritems = apply_induction inits ind_vars ctxt ind_th []
-                    in
-                      [AddItems {id = id, sc = NONE, raw_items = ritems}]
-                    end
-                  else []
-            end)
+signature SEP_INDUCT =
+sig
+  val add_hoare_induct_rule: term * thm -> theory -> theory
+  val hoare_induct_cmd: Proof.state -> Proof.state
+end;
 
-fun add_prfstep_imp_induction cmd_pat ind_th thy =
+structure SepInduct : SEP_INDUCT =
+struct
+
+open Auto2_Outer
+
+fun add_hoare_induct_rule (t, ind_th) thy =
+    thy |> add_induct_data "hoare_induct" (t, ind_th)
+
+fun hoare_induct_cmd state =
     let
-      val name = name_of_thm ind_th
+      val {context = ctxt, ...} = Proof.goal state
+      val thy = Proof_Context.theory_of ctxt
 
-      (* Obtain type 'a Heap. *)
-      val ty_aHeap = @{typ_pat "?'a Heap"}
-      val ty_inst = typ_match thy (ty_aHeap, type_of cmd_pat)
-      val cmd_inst = update_env (("c", 0), cmd_pat) fo_init
+      val {prop, ...} = get_head ctxt
+      val subgoal = prop |> subgoal_of |> Thm.term_of |> dest_Trueprop
+      val (_, c, _) = SepUtil.dest_hoare_triple subgoal
+      val (c_head, vars) = Term.strip_comb c
+      val arbitraries = (map Free (Term.add_frees subgoal []))
+                            |> subtract (op aconv) vars
 
-      val name_ht = name ^ "@htinduct"
-      val ht_pat = @{term_pat "~ (<?P> (?c::?'a Heap) <?Q>)"}
-                        |> Envir.subst_term_types ty_inst
-                        |> Envir.subst_term cmd_inst
-      val descs_ht = [WithFact ht_pat]
-      val _ = writeln (name_ht ^ "\n" ^ (string_of_descs thy descs_ht))
-      val prfstep_ht = prfstep_hoare_triple_induction name_ht descs_ht ind_th
+      val ind_th = the (get_term_ind_th thy "hoare_induct" c_head)
+
+      val P = subgoal |> fold mk_obj_all (rev arbitraries)
+                      |> fold lambda_abstract (rev vars)
+
+      val (var_P, var_args) = ind_th |> concl_of' |> Term.strip_comb
+      val inst = fold (Pattern.match thy) ((var_P, P) :: (var_args ~~ vars))
+                      fo_init
+      val ind_th =
+          ind_th |> subst_thm ctxt inst
+                 |> apply_to_thm (Conv.binop_conv (to_meta_all_imp_conv ctxt))
+
+      val assum = hd (Drule.cprems_of ind_th)
+      val ind_th =
+          ind_th |> send_first_to_hyps
+                 |> fold Thm.forall_elim (map (cert ctxt) arbitraries)
+                 |> Thm.implies_intr assum
+
+      val t' = case Thm.prop_of ind_th of
+                   imp $ A $ B => imp $ rename_abs_term vars A $ B
+                 | _ => raise ERROR "hoare_induct_cmd"
+      val ind_th = ind_th |> Thm.renamed_prop t'
+                          |> Goal.protect 1
     in
-      add_prfstep prfstep_ht thy
+      state |> Proof.map_contexts (set_head_th ind_th)
     end
+
+val _ =
+  Outer_Syntax.command @{command_keyword "@hoare_induct"} "Hoare induction"
+    (Scan.succeed (
+        Toplevel.proof (fn state => hoare_induct_cmd state)))
+
+end  (* structure SepInduct *)
+
+open SepInduct

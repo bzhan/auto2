@@ -24,9 +24,7 @@ setup {* add_forward_prfstep @{thm list.collapse} *}
 text {* Induction. After proving a property P holds for [], can assume P holds
   for tl l when trying to show P l. *}
 
-theorem list_induct': "P [] \<Longrightarrow> (\<forall>l. P (tl l) \<longrightarrow> P l) \<Longrightarrow> P l"
-  by (metis list.sel(3) list_nonempty_induct)
-setup {* add_prfstep_induction @{thm list_induct'} *}
+setup {* add_var_induct_rule @{thm list.induct} *}
 
 section {* Other functions *}
 

@@ -64,25 +64,29 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm well_order_def} *}
 
 lemma wellorder_iso [forward]:
   "well_order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> well_order(S)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "f, f \<in> R \<cong>\<^sub>O S" THEN
-    HAVE "\<forall>X. X \<subseteq> carrier(S) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(S,X)" WITH (
-      LET "U = f -`` X" THEN
-      HAVE "has_least(R,U)" THEN
-      HAVE "has_least(S,X) \<and> least(S,X) = f ` least(R,U)")) *})
+@proof
+  @obtain "f \<in> R \<cong>\<^sub>O S" @then
+  @have "\<forall>X. X \<subseteq> carrier(S) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(S,X)" @with
+    @let "U = f -`` X" @then
+    @have "has_least(R,U)" @then
+    @have "has_least(S,X) \<and> least(S,X) = f ` least(R,U)" @end
+@qed
 
 lemma well_order_suborder:
   "well_order(R) \<Longrightarrow> linorder(A) \<Longrightarrow> is_suborder(A,R) \<Longrightarrow> well_order(A)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>X. X \<subseteq> carrier(A) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(A,X)" WITH (
-      HAVE "has_least(A,X) \<and> least(A,X) = least(R,X)")) *})
+@proof
+  @have "\<forall>X. X \<subseteq> carrier(A) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(A,X)" @with
+    @have "has_least(A,X) \<and> least(A,X) = least(R,X)" @end
+@qed
 
 lemma well_order_adjoin [resolve]:
   "well_order(R) \<Longrightarrow> a \<notin> carrier(R) \<Longrightarrow> well_order(R ++ a)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>X. X \<subseteq> carrier(R)\<union>{a} \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(R ++ a,X)" WITH (
-      HAVE "has_least(R,X\<midarrow>{a})" THEN
-      HAVE "has_least(R ++ a, X\<midarrow>{a}) \<and> least(R ++ a, X\<midarrow>{a}) = least(R, X\<midarrow>{a})")) *})
+@proof
+  @have "\<forall>X. X \<subseteq> carrier(R)\<union>{a} \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(R ++ a,X)" @with
+    @contradiction
+    @have "has_least(R,X\<midarrow>{a})" @then
+    @have "has_least(R ++ a, X\<midarrow>{a}) \<and> least(R ++ a, X\<midarrow>{a}) = least(R, X\<midarrow>{a})" @end
+@qed
 
 (* Segments. Correspond to less_intervals for well_order. The main result in
    this portion is that if R is well-ordered, the set of segments of R is well-ordered,
@@ -97,10 +101,11 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm is_segment_def} *}
 
 lemma segment_is_interval [backward2]:
   "well_order(R) \<Longrightarrow> is_segment(R,S) \<Longrightarrow> S \<noteq> carrier(R) \<Longrightarrow> \<exists>a\<in>.R. S = less_interval(R,a)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "has_least(R,carrier(R)\<midarrow>S)" THEN
-    HAVE "least(R,carrier(R)\<midarrow>S) \<in>. R" THEN
-    HAVE "carrier(R)\<midarrow>S = ge_interval(R,least(R,carrier(R)\<midarrow>S))") *})
+@proof
+  @have "has_least(R,carrier(R)\<midarrow>S)" @then
+  @have "least(R,carrier(R)\<midarrow>S) \<in>. R" @then
+  @have "carrier(R)\<midarrow>S = ge_interval(R,least(R,carrier(R)\<midarrow>S))"
+@qed
 
 lemma interval_is_segment [resolve]:
   "order(R) \<Longrightarrow> is_segment(R,less_interval(R,a))" by auto2
@@ -128,15 +133,15 @@ setup {* add_forward_prfstep_cond @{thm pt_to_segment_fun_incr} [with_term "pt_t
 
 lemma pt_to_segment_fun_image [rewrite]:
   "well_order(R) \<Longrightarrow> image(pt_to_segment_fun(R)) = segments(R) \<midarrow> {carrier(R)}"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>S\<in>segments(R) \<midarrow> {carrier(R)}. S \<in> image(pt_to_segment_fun(R))" WITH (
-      CHOOSE "a\<in>.R, S = less_interval(R,a)" THEN
-      HAVE "S = pt_to_segment_fun(R) ` a")) *})
+@proof
+  @have "\<forall>S\<in>segments(R) \<midarrow> {carrier(R)}. S \<in> image(pt_to_segment_fun(R))" @with
+    @obtain "a\<in>.R" where "S = less_interval(R,a)" @then
+    @have "S = pt_to_segment_fun(R) ` a" @end
+@qed
 
 lemma pt_to_segment_fun_iso:
   "well_order(R) \<Longrightarrow> S = subset_order(segments(R)\<midarrow>{carrier(R)}) \<Longrightarrow> well_order(S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "mor_restrict_image_ord(pt_to_segment_fun(R)) \<in> R \<cong>\<^sub>O S") *})
+@proof @have "mor_restrict_image_ord(pt_to_segment_fun(R)) \<in> R \<cong>\<^sub>O S" @qed
 setup {* add_forward_prfstep_cond @{thm pt_to_segment_fun_iso} [with_term "?S"] *}
 
 lemma segments_order [rewrite_back]:
@@ -144,8 +149,9 @@ lemma segments_order [rewrite_back]:
 
 lemma segments_wellorder:
   "well_order(R) \<Longrightarrow> well_order(subset_order(segments(R)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "subset_order(segments(R)) = subset_order(segments(R)\<midarrow>{carrier(R)}) ++ carrier(R)") *})
+@proof
+  @have "subset_order(segments(R)) = subset_order(segments(R)\<midarrow>{carrier(R)}) ++ carrier(R)"
+@qed
 
 (* Families of well-ordered sets *)
 definition is_segment_rel :: "[i, i] \<Rightarrow> o" where [rewrite]:
@@ -167,40 +173,47 @@ lemma well_order_familyD' [backward]:
 
 lemma well_order_family_directed [forward]:
   "well_order_family(X) \<Longrightarrow> directed_rels(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>R\<in>X. \<forall>S\<in>X. \<exists>T\<in>X. is_suborder(R,T) \<and> is_suborder(S,T)" WITH (
-      CASE "is_segment_rel(R,S)")) *})
+@proof
+  @have "\<forall>R\<in>X. \<forall>S\<in>X. \<exists>T\<in>X. is_suborder(R,T) \<and> is_suborder(S,T)" @with
+    @case "is_segment_rel(R,S)" @end
+@qed
 
 lemma is_segment_union [backward]:
   "well_order_family(X) \<Longrightarrow> R \<in> X \<Longrightarrow> U = union_rel(X) \<Longrightarrow> is_segment_rel(R,U)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>.R. \<forall>y\<in>union_src(X). y \<le>\<^sub>U x \<longrightarrow> y \<in>. R" WITH (
-      CHOOSE "S\<in>X, y \<in>. S \<and> is_segment_rel(R,S)")) *})
+@proof
+  @have "\<forall>x\<in>.R. \<forall>y\<in>union_src(X). y \<le>\<^sub>U x \<longrightarrow> y \<in>. R" @with
+    @obtain "S\<in>X" where "y \<in>. S" "is_segment_rel(R,S)" @end
+@qed
 
 lemma well_order_family_union_prop [forward]:
   "well_order_family(X) \<Longrightarrow> well_order(union_rel(X))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>H. H \<subseteq> union_src(X) \<longrightarrow> H \<noteq> \<emptyset> \<longrightarrow> has_least(union_rel(X),H)" WITH (
-      CHOOSE "R\<in>X, H \<inter> carrier(R) \<noteq> \<emptyset>" WITH (
-        CHOOSE "x, x \<in> H" THEN CHOOSE "S\<in>X, x \<in>. S") THEN
-      HAVE "has_least(R, H \<inter> carrier(R))" THEN
-      LET "m = least(R, H \<inter> carrier(R))" THEN
-      HAVE "has_least(union_rel(X),H) \<and> least(union_rel(X),H) = m" WITH (
-        HAVE "\<forall>x\<in>H. ge(x,union_rel(X),m)" WITH (
-          CASE "x \<in>. R" WITH HAVE "x \<in> H \<inter> carrier(R)" THEN
-          CHOOSE "S\<in>X, x \<in>. S \<and> is_segment_rel(R,S)")))) *})
+@proof
+  @have "\<forall>H. H \<subseteq> union_src(X) \<longrightarrow> H \<noteq> \<emptyset> \<longrightarrow> has_least(union_rel(X),H)" @with
+    @obtain "R\<in>X" where "H \<inter> carrier(R) \<noteq> \<emptyset>" @with
+      @obtain "x \<in> H" @then @obtain "S\<in>X" where "x \<in>. S"
+    @end
+    @have "has_least(R, H \<inter> carrier(R))" @then
+    @let "m = least(R, H \<inter> carrier(R))" @then
+    @have "has_least(union_rel(X),H) \<and> least(union_rel(X),H) = m" @with
+      @have "\<forall>x\<in>H. ge(x,union_rel(X),m)" @with
+        @case "x \<in>. R" @with @have "x \<in> H \<inter> carrier(R)" @end
+        @obtain "S\<in>X" where "x \<in>. S" "is_segment_rel(R,S)"
+      @end
+    @end
+  @end
+@qed
 
 lemma well_order_family_segments [rewrite]:
   "well_order_family(X) \<Longrightarrow> x \<in>. R \<Longrightarrow> R \<in> X \<Longrightarrow> less_interval(R,x) = less_interval(union_rel(X),x)"
-  by (tactic {* auto2s_tac @{context} (HAVE "is_segment_rel(R,union_rel(X))") *})
+@proof@have "is_segment_rel(R,union_rel(X))" @qed
 
 lemma well_order_family_segments2:
-  "well_order_family(X) \<Longrightarrow> is_segment(union_rel(X),S) \<Longrightarrow> S \<noteq> union_src(X) \<Longrightarrow>
-   \<exists>R\<in>X. is_segment(R,S)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x\<in>union_src(X), S = less_interval(union_rel(X),x)" THEN
-    CHOOSE "R\<in>X, x \<in>. R" THEN
-    HAVE "less_interval(R,x) = less_interval(union_rel(X),x)") *})
+  "well_order_family(X) \<Longrightarrow> is_segment(union_rel(X),S) \<Longrightarrow> S \<noteq> union_src(X) \<Longrightarrow> \<exists>R\<in>X. is_segment(R,S)"
+@proof
+  @obtain "x\<in>union_src(X)" where "S = less_interval(union_rel(X),x)" @then
+  @obtain "R\<in>X" where "x \<in>. R" @then
+  @have "less_interval(R,x) = less_interval(union_rel(X),x)"
+@qed
 
 section {* Zermelo's Theorem *}  (* Bourbaki III.2.3 *)
 
@@ -259,12 +272,14 @@ definition compat_wellorder_cond :: "[i, i, i] \<Rightarrow> o" where [rewrite]:
 lemma compat_wellorder_prop [forward]:
   "R1 \<in> compat_wellorders(E,S,p) \<Longrightarrow> R2 \<in> compat_wellorders(E,S,p) \<Longrightarrow>
    compat_wellorder_cond(E,S,p) \<Longrightarrow> is_segment_rel(R1,R2) \<or> is_segment_rel(R2,R1)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "V = compat_wellorder_segs(E,S,p,R1,R2)" THEN
-    HAVE_RULE "V = carrier(R1) \<or> V = carrier(R2)" WITH (
-      CHOOSE "x\<in>.R1, V = less_interval(R1,x)" THEN
-      CHOOSE "y\<in>.R2, V = less_interval(R2,y)" THEN HAVE "x = y") THEN
-    CASE "V = carrier(R1)") *})
+@proof
+  @let "V = compat_wellorder_segs(E,S,p,R1,R2)" @then
+  @have (@rule) "V = carrier(R1) \<or> V = carrier(R2)" @with
+    @contradiction
+    @obtain "x\<in>.R1" where "V = less_interval(R1,x)" @then
+    @obtain "y\<in>.R2" where "V = less_interval(R2,y)" @then @have "x = y" @end
+  @case "V = carrier(R1)"
+@qed
 
 lemma compat_wellorders_family [forward]:
   "compat_wellorder_cond(E,S,p) \<Longrightarrow> well_order_family(compat_wellorders(E,S,p))" by auto2
@@ -276,18 +291,21 @@ definition compat_wellorder :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
 lemma compat_wellorders_step [backward2]:
   "compat_wellorder_cond(E,S,p) \<Longrightarrow> carrier(M) \<in> S \<Longrightarrow> M \<in> compat_wellorders(E,S,p) \<Longrightarrow>
    M' = M ++ p`carrier(M) \<Longrightarrow> M' \<in> compat_wellorders(E,S,p)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "well_order(M')" THEN
-    HAVE "\<forall>x\<in>.M'. less_interval(M',x) \<in> S \<and> p`(less_interval(M',x)) = x" WITH (
-      CASE "x = p`carrier(M)" THEN HAVE "x \<in>. M" THEN
-      HAVE "less_interval(M,x) = less_interval(M',x)")) *})
+@proof
+  @have "well_order(M')" @then
+  @have "\<forall>x\<in>.M'. less_interval(M',x) \<in> S \<and> p`(less_interval(M',x)) = x" @with
+    @case "x = p`carrier(M)" @then @have "x \<in>. M" @then
+    @have "less_interval(M,x) = less_interval(M',x)" @end
+@qed
 
 lemma compat_wellorders_rel_not_in [forward]:
   "compat_wellorder_cond(E,S,p) \<Longrightarrow> M = compat_wellorder(E,S,p) \<Longrightarrow> carrier(M) \<notin> S"
-  by (tactic {* auto2s_tac @{context} (
-    LET "a = p`carrier(M)" THEN
-    LET "M' = compat_wellorder(E,S,p) ++ a" THEN
-    HAVE "M' \<in> compat_wellorders(E,S,p)") *})
+@proof
+  @contradiction
+  @let "a = p`carrier(M)" @then
+  @let "M' = compat_wellorder(E,S,p) ++ a" @then
+  @have "M' \<in> compat_wellorders(E,S,p)"
+@qed
 
 (* The final result *)
 lemma compat_wellorders_cond_prop [resolve]:
@@ -303,12 +321,13 @@ setup {* del_prfstep_thm @{thm compat_wellorders_rel_not_in} *}
 (* Wellordering theorem *)
 lemma wellorder_theorem [resolve]:
   "\<exists>R\<in>raworder_space(E). well_order(R)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "S = Pow(E)\<midarrow>{E}" THEN
-    LET "p = (\<lambda>X\<in>S. (SOME x\<in>E. x \<notin> X)\<in>E)" THEN
-    HAVE "compat_wellorder_cond(E,S,p)" THEN
-    CHOOSE "\<Gamma>, ord_form(\<Gamma>) \<and> well_order(\<Gamma>) \<and> carrier(\<Gamma>) \<subseteq> E \<and> carrier(\<Gamma>) \<notin> S" THEN
-    HAVE "\<Gamma> \<in> raworder_space(E)") *})
+@proof
+  @let "S = Pow(E)\<midarrow>{E}" @then
+  @let "p = (\<lambda>X\<in>S. (SOME x\<in>E. x \<notin> X)\<in>E)" @then
+  @have "compat_wellorder_cond(E,S,p)" @then
+  @obtain \<Gamma> where "ord_form(\<Gamma>)" "well_order(\<Gamma>)" "carrier(\<Gamma>) \<subseteq> E" "carrier(\<Gamma>) \<notin> S" @then
+  @have "\<Gamma> \<in> raworder_space(E)"
+@qed
 
 no_notation adjoin_greatest (infix "++" 55)
 
@@ -327,49 +346,55 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm inductive_order_def} *}
 lemma zorn_aux [resolve]:
   "order(R) \<Longrightarrow> \<forall>X. X \<subseteq> carrier(R) \<longrightarrow> well_order(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset> \<Longrightarrow>
    \<exists>x. maximal(R,x)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "E = carrier(R)" THEN
-    LET "S = {X\<in>Pow(carrier(R)). upper_bound(R,X) \<midarrow> X \<noteq> \<emptyset>}" THEN
-    LET "p = (\<lambda>X\<in>S. (SOME x\<in>upper_bound(R,X). x \<notin> X)\<in>E)" THEN
-    HAVE "p \<in> S \<rightarrow> E" THEN
-    HAVE_RULE "\<forall>X\<in>S. p`X \<in> upper_bound(R,X)" THEN
-    HAVE "compat_wellorder_cond(carrier(R),S,p)" THEN
-    CHOOSE ("\<Gamma>, ord_form(\<Gamma>) \<and> well_order(\<Gamma>) \<and> (\<forall>x\<in>.\<Gamma>. less_interval(\<Gamma>,x)\<in>S \<and> p`less_interval(\<Gamma>,x) = x)" ^
-            "\<and> carrier(\<Gamma>) \<subseteq> E \<and> carrier(\<Gamma>) \<notin> S") THEN
-    LET "M = carrier(\<Gamma>)" THEN
-    HAVE "\<Gamma> = suborder(R,M)" WITH (
-      HAVE "\<forall>x\<in>M. \<forall>y\<in>M. x <\<^sub>\<Gamma> y \<longrightarrow> less(suborder(R,M),x,y)" WITH (
-        HAVE "p`less_interval(\<Gamma>,y) = y")) THEN
-    CHOOSE "x, x \<in> upper_bound(R,M)" THEN HAVE "maximal(R,x)") *})
+@proof
+  @let "E = carrier(R)" @then
+  @let "S = {X\<in>Pow(carrier(R)). upper_bound(R,X) \<midarrow> X \<noteq> \<emptyset>}" @then
+  @let "p = (\<lambda>X\<in>S. (SOME x\<in>upper_bound(R,X). x \<notin> X)\<in>E)" @then
+  @have "p \<in> S \<rightarrow> E" @then
+  @have (@rule) "\<forall>X\<in>S. p`X \<in> upper_bound(R,X)" @then
+  @have "compat_wellorder_cond(carrier(R),S,p)" @then
+  @obtain \<Gamma> where "ord_form(\<Gamma>)" "well_order(\<Gamma>)" "\<forall>x\<in>.\<Gamma>. less_interval(\<Gamma>,x)\<in>S \<and> p`less_interval(\<Gamma>,x) = x"
+                  "carrier(\<Gamma>) \<subseteq> E" "carrier(\<Gamma>) \<notin> S" @then
+  @let "M = carrier(\<Gamma>)" @then
+  @have "\<Gamma> = suborder(R,M)" @with
+  @have "\<forall>x\<in>M. \<forall>y\<in>M. x <\<^sub>\<Gamma> y \<longrightarrow> less(suborder(R,M),x,y)" @with
+    @have "p`less_interval(\<Gamma>,y) = y" @end @end
+  @obtain x where "x \<in> upper_bound(R,M)" @then @have "maximal(R,x)"
+@qed
 
 lemma zorn [resolve]:
   "inductive_order(R) \<Longrightarrow> \<exists>x. maximal(R,x)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> well_order(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset>") *})
+@proof
+  @have "\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> well_order(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset>"
+@qed
 
 lemma inductive_ge_interval:
   "inductive_order(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> S = suborder(R,ge_interval(R,a)) \<Longrightarrow> inductive_order(S)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>X. X \<subseteq> carrier(S) \<longrightarrow> linorder(suborder(S,X)) \<longrightarrow> upper_bound(S,X) \<noteq> \<emptyset>" WITH (
-      CASE "X = \<emptyset>" WITH HAVE "a \<in> upper_bound(S,X)" THEN
-      HAVE "suborder(R,X) = suborder(S,X)" THEN
-      CHOOSE "x, x \<in> upper_bound(R,X)" THEN
-      CHOOSE "y, y \<in> X" THEN HAVE "x \<ge>\<^sub>R y" THEN
-      HAVE "x \<in> upper_bound(S,X)")) *})
+@proof
+  @have "\<forall>X. X \<subseteq> carrier(S) \<longrightarrow> linorder(suborder(S,X)) \<longrightarrow> upper_bound(S,X) \<noteq> \<emptyset>" @with
+    @case "X = \<emptyset>" @with @have "a \<in> upper_bound(S,X)" @end
+    @have "suborder(R,X) = suborder(S,X)" @then
+    @obtain x where "x \<in> upper_bound(R,X)" @then
+    @obtain "y \<in> X" @then @have "x \<ge>\<^sub>R y" @then
+    @have "x \<in> upper_bound(S,X)"
+  @end
+@qed
 setup {* add_forward_prfstep_cond @{thm inductive_ge_interval} [with_term "?S"] *}
 
 lemma zorn_ge_elt: "inductive_order(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> \<exists>x. x \<ge>\<^sub>R a \<and> maximal(R,x)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inductive_order(suborder(R,ge_interval(R,a)))" THEN
-    CHOOSE "x, maximal(suborder(R,ge_interval(R,a)),x)" THEN
-    HAVE "maximal(R,x)") *})
+@proof
+  @have "inductive_order(suborder(R,ge_interval(R,a)))" @then
+  @obtain x where "maximal(suborder(R,ge_interval(R,a)),x)" @then
+  @have "maximal(R,x)"
+@qed
 
 lemma zorn_subsets:
   "F \<subseteq> Pow(E) \<Longrightarrow> R = subset_order(F) \<Longrightarrow>
    \<forall>X. X \<subseteq> F \<longrightarrow> linorder(subset_order(X)) \<longrightarrow> \<Union>X \<in> F \<Longrightarrow> \<exists>x. maximal(R,x)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inductive_order(R)" WITH (
-      HAVE "\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> linorder(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset>" WITH (
-        HAVE "\<Union>X \<in> upper_bound(R,X)"))) *})
+@proof
+  @have "inductive_order(R)" @with
+    @have "\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> linorder(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset>" @with
+      @have "\<Union>X \<in> upper_bound(R,X)" @end @end
+@qed
 
 end

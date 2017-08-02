@@ -21,30 +21,35 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm wf_def} *}
 lemma rel_trans_cl_prev [backward]:
   "is_rel(R) \<Longrightarrow> R' = rel_trans_cl(R) \<Longrightarrow> rel(R',a,b) \<Longrightarrow>
    \<exists>a'\<in>source(R). rel(R,a',b) \<and> (a = a' \<or> rel(R',a,a'))"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "rel(rel_trans_cl(R),a,b)" "\<exists>a'\<in>source(R). rel(R,a',b) \<and> (a = a' \<or> rel(R',a,a'))") *})
+@proof
+  @induct "rel(rel_trans_cl(R),a,b)" "\<exists>a'\<in>source(R). rel(R,a',b) \<and> (a = a' \<or> rel(R',a,a'))"
+@qed
 
 lemma wf_trans_cl [forward]:
   "wf(r) \<Longrightarrow> wf(rel_trans_cl(r))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "A = source(r)" THEN
-    LET "r' = rel_trans_cl(r)" THEN
-    HAVE "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. rel_minimal(r',B,x))" WITH (
-      LET "B' = {x\<in>A. \<exists>y\<in>B. rel(r',y,x)}" THEN
-      CHOOSE "m\<in>B', rel_minimal(r,B',m)" THEN
-      HAVE "m \<in> B" WITH (
-        CHOOSE "y \<in> B, rel(r',y,m)" THEN
-        CHOOSE "y' \<in> A, rel(r,y',m) \<and> (y=y' \<or> rel(r',y,y'))") THEN
-      HAVE "\<forall>y\<in>source(r). rel(r',y,m) \<longrightarrow> y \<notin> B" WITH (
-        CHOOSE "y' \<in> A, rel(r,y',m) \<and> (y=y' \<or> rel(r',y,y'))"))) *})
+@proof
+  @let "A = source(r)" @then
+  @let "r' = rel_trans_cl(r)" @then
+  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. rel_minimal(r',B,x))" @with
+    @contradiction
+    @let "B' = {x\<in>A. \<exists>y\<in>B. rel(r',y,x)}" @then
+    @obtain "m\<in>B'" where "rel_minimal(r,B',m)" @then
+    @have "m \<in> B" @with
+      @obtain "y \<in> B" where "rel(r',y,m)" @then
+      @obtain "y' \<in> A" where "rel(r,y',m)" "(y=y' \<or> rel(r',y,y'))" @end
+    @have "\<forall>y\<in>source(r). rel(r',y,m) \<longrightarrow> y \<notin> B" @with
+      @obtain "y' \<in> A" where "rel(r,y',m)" "(y=y' \<or> rel(r',y,y'))" @end
+  @end
+@qed
 
 (* Well-founded induction *)
 lemma wf_induct [script_induct]:
   "\<forall>x\<in>source(r). (\<forall>y\<in>source(r). rel(r,y,x) \<longrightarrow> P(y)) \<longrightarrow> P(x) \<Longrightarrow> wf(r) \<and> a \<in> source(r) \<Longrightarrow> P(a)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "Z = {z \<in> source(r). \<not>P(z)}" THEN
-    CASE "Z = \<emptyset>" WITH HAVE "a \<notin> Z" THEN
-    CHOOSE "m\<in>Z, rel_minimal(r,Z,m)") *})
+@proof
+  @let "Z = {z \<in> source(r). \<not>P(z)}" @then
+  @case "Z = \<emptyset>" @with @have "a \<notin> Z" @end
+  @obtain "m\<in>Z" where "rel_minimal(r,Z,m)"
+@qed
 
 (* f is a family indexed by rel_vsection(r,a) (set of all x such that rel(r,x,a)),
    H is a meta-function from x and the segment of f before x to T. *)
@@ -67,9 +72,10 @@ setup {* del_prfstep_thm @{thm is_recfun_def} *}
 lemma is_recfun_agree [forward]:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> is_recfun(r,a,H,f) \<Longrightarrow> is_recfun(r,b,H,g) \<Longrightarrow>
    \<forall>x. rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x. rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x" WITH (
-      INDUCT_ON "wf(r) \<and> x \<in> source(r)" "rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x")) *})
+@proof
+  @have "\<forall>x. rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x" @with
+    @induct "wf(r) \<and> x \<in> source(r)" "rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x" @end
+@qed    
 
 lemma is_recfun_unique [forward]:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> is_recfun(r,a,H,f) \<Longrightarrow> is_recfun(r,a,H,g) \<Longrightarrow> f = g" by auto2
@@ -94,11 +100,13 @@ setup {* del_prfstep_thm @{thm the_recfun_def} *}
 (* Existence of recursive function, proved by a second well-founded induction. *)
 lemma unfold_the_recfun:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> a \<in> source(r) \<Longrightarrow> is_recfun(r,a,H,the_recfun(r,a,H))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(r). (\<forall>y\<in>source(r). rel(r,y,x) \<longrightarrow> is_recfun(r,y,H,the_recfun(r,y,H))) \<longrightarrow> is_recfun(r,x,H,the_recfun(r,x,H))" WITH (
-      LET "f = Tup(rel_vsection(r,x), \<lambda>y. H(y, the_recfun(r,y,H)))" THEN
-      HAVE "is_recfun(r,x,H,f)") THEN
-    INDUCT_ON "wf(r) \<and> a \<in> source(r)" "is_recfun(r,a,H,the_recfun(r,a,H))") *})
+@proof
+  @have "\<forall>x\<in>source(r). (\<forall>y\<in>source(r). rel(r,y,x) \<longrightarrow> is_recfun(r,y,H,the_recfun(r,y,H))) \<longrightarrow> is_recfun(r,x,H,the_recfun(r,x,H))" @with
+    @let "f = Tup(rel_vsection(r,x), \<lambda>y. H(y, the_recfun(r,y,H)))" @then
+    @have "is_recfun(r,x,H,f)"
+  @end
+  @induct "wf(r) \<and> a \<in> source(r)" "is_recfun(r,a,H,the_recfun(r,a,H))"
+@qed
 setup {* add_forward_prfstep_cond @{thm unfold_the_recfun} [with_term "the_recfun(?r,?a,?H)"] *}
 
 (* The full recursive function and its rewrite property. *)

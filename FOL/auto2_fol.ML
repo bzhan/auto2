@@ -138,6 +138,7 @@ val or_cancel1_th = @{thm or_cancel1}
 val or_cancel2_th = @{thm or_cancel2}
 val swap_all_disj_th = @{thm swap_all_disj}
 val all_trivial_th = @{thm all_trivial}
+val case_split_th = @{thm case_split}
 
 val atomize_conjL_th = @{thm atomize_conjL}
 val atomize_conjL2_th = @{thm atomize_conjL2}
@@ -179,17 +180,16 @@ structure Status = Status(Base)
 structure Normalizer = Normalizer(Base)
 structure ProofStep = ProofStep(Base)
 structure ProofStep_Data = ProofStep_Data(Base)
-structure Script = Script(Base)
 structure Scores = Scores(Base)
 structure ProofStatus = ProofStatus(Base)
 structure Logic_ProofSteps = Logic_ProofSteps(Base)
 structure Auto2 = Auto2(Base)
+structure Auto2_Outer = Auto2_Outer(Base)
 open Base
 open UtilLogic
 open Normalizer
 open ProofStep
 open ProofStep_Data
-open Script
 open Auto2
 
 val _ = Theory.setup (ItemIO.add_basic_item_io)

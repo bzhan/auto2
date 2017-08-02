@@ -8,6 +8,7 @@ end;
 structure IntervalSteps : INTERVAL_STEPS =
 struct
 
+open NatArith
 open FieldSteps
 
 fun mk_rat_divide_th info (r, n) =

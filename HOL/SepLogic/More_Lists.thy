@@ -1,5 +1,5 @@
 theory More_Lists
-imports "../Auto2_Main" "~~/src/HOL/Imperative_HOL/ex/Subarray"
+imports "../DataStrs/Lists_Ex" "~~/src/HOL/Imperative_HOL/ex/Subarray"
 begin
 
 lemma append_eq_first [backward]: "b = c \<Longrightarrow> a @ b = a @ c" by simp
@@ -43,17 +43,17 @@ setup {* add_rewrite_rule_back @{thm list_update_range.simps(2)} *}
 
 theorem length_list_update_range [rewrite]:
   "length (list_update_range l i l') = length l"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l'", Arbitraries ["i", "l"])) *})
+@proof @induct l' arbitrary i l @qed
 
 theorem list_update_range_rule:
   "length l' + i \<le> length l \<Longrightarrow> list_update_range l i l' = take i l @ l' @ drop (i + length l') l"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT ("l'", Arbitraries ["i", "l"]) THEN
-    HAVE "length (tl l') + 1 + i \<le> length l" THEN
-    HAVE "i < length l" THEN
-    HAVE "take (1 + i) (l[i := hd l']) = (take (1 + i) l)[i := hd l']" THEN
-    HAVE ("take i l @ [hd l'] @ tl l' @ drop (1 + i + length (tl l')) (l[i := hd l']) = " ^
-          "take (1 + i) l[i := hd l'] @ tl l' @ drop (1 + i + length (tl l')) (l[i := hd l'])")) *})
+@proof
+  @induct l' arbitrary i l
+  @have "length (tl l') + 1 + i \<le> length l" @then
+  @have "i < length l" @then
+  @have "take (1 + i) (l[i := hd l']) = (take (1 + i) l)[i := hd l']" @then
+  @have "take i l @ [hd l'] @ tl l' @ drop (1 + i + length (tl l')) (l[i := hd l']) = take (1 + i) l[i := hd l'] @ tl l' @ drop (1 + i + length (tl l')) (l[i := hd l'])"
+@qed
 
 theorem list_update_range_rule_zero [rewrite]:
   "length l' \<le> length l \<Longrightarrow> list_update_range l 0 l' = l' @ drop (length l') l"

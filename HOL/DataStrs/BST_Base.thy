@@ -12,6 +12,7 @@ datatype ('a, 'b) tree =
 
 setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
 setup {* add_forward_prfstep (equiv_forward_th (@{thm tree.simps(1)})) *}
+setup {* fold add_rewrite_rule @{thms tree.sel} *}
 
 text {* Case checking for trees: first verify the Tip case, then can assume t is
   in the form Node l n r. *}
@@ -25,8 +26,9 @@ setup {* add_forward_prfstep_cond @{thm tree.collapse} [with_cond "?tree \<noteq
 text {* Induction on trees: after checking Tip case, can assume P (lsub t)
   and P (rsub t) holds when trying to prove P t. *}
 
-theorem tree_induct': "P Tip \<Longrightarrow> (\<forall>t. P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
-  apply (induct t) apply blast by (metis tree.sel(1) tree.sel(4))
+setup {* add_var_induct_rule @{thm tree.induct} *}
+theorem tree_induct': "P Tip \<Longrightarrow> (\<forall>t. t \<noteq> Tip \<and> P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
+  @proof @var_induct t "P t" @qed
 setup {* add_prfstep_induction @{thm tree_induct'} *}
 
 section {* Inorder traversal, and set of elements of a tree *}
@@ -47,7 +49,8 @@ fun in_traverse_pairs :: "('a, 'b) tree \<Rightarrow> ('a \<times> 'b) list" whe
 setup {* fold add_rewrite_rule @{thms in_traverse_pairs.simps} *}
 
 theorem in_traverse_fst [rewrite]:
-  "map fst (in_traverse_pairs t) = in_traverse t" by auto2
+  "map fst (in_traverse_pairs t) = in_traverse t"
+@proof @induct t @qed
 setup {* add_rewrite_rule_back_cond @{thm in_traverse_fst} [with_filt (size1_filter "t")] *}
 
 definition tree_map :: "('a, 'b) tree \<Rightarrow> ('a, 'b) map" where
@@ -74,10 +77,12 @@ theorem tree_sorted_lr [forward]:
   "tree_sorted (Node l k v r) \<Longrightarrow> tree_sorted l \<and> tree_sorted r" by auto2
 
 theorem inorder_preserve_set [rewrite_back]:
-  "set (in_traverse t) = tree_set t" by auto2
+  "set (in_traverse t) = tree_set t"
+@proof @induct t @qed
 
 theorem inorder_sorted [rewrite_back]:
-  "strict_sorted (in_traverse t) = tree_sorted t" by auto2
+  "strict_sorted (in_traverse t) = tree_sorted t"
+@proof @induct t @qed
 
 (* Use definition in terms of in_traverse from now on. *)
 setup {* fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps}) *}
@@ -96,9 +101,9 @@ fun rotateR :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where
 setup {* fold add_rewrite_rule (@{thms rotateL.simps} @ @{thms rotateR.simps}) *}
 
 theorem rotateL_in_trav [rewrite]: "in_traverse (rotateL t) = in_traverse t"
-  by (tactic {* auto2s_tac @{context} (CASE "t = Tip" THEN CASE "rsub t = Tip") *})
+  @proof @case "t = Tip" @then @case "rsub t = Tip" @qed
 theorem rotateR_in_trav [rewrite]: "in_traverse (rotateR t) = in_traverse t"
-  by (tactic {* auto2s_tac @{context} (CASE "t = Tip" THEN CASE "lsub t = Tip") *})
+  @proof @case "t = Tip" @then @case "lsub t = Tip" @qed
 
 theorem rotateL_sorted [rewrite]: "tree_sorted (rotateL t) = tree_sorted t" by auto2
 theorem rotateR_sorted [rewrite]: "tree_sorted (rotateR t) = tree_sorted t" by auto2

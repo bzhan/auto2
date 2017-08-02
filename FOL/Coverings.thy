@@ -48,22 +48,24 @@ lemma image_covering: "surjective(f) \<Longrightarrow> f \<in> A \<rightarrow> B
 
 lemma vImage_covering: "g \<in> C \<rightarrow> A \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
   is_covering(C, \<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "Y = (\<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))" THEN
-    HAVE "\<forall>x\<in>C. \<exists>p\<in>I. x \<in> Y ` p" WITH CHOOSE "a\<in>I, g`x \<in> a") *})
+@proof
+  @let "Y = (\<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))" @then
+  @have "\<forall>x\<in>C. \<exists>p\<in>I. x \<in> Y ` p" @with
+    @contradiction @obtain "a\<in>I" where "g`x \<in> a" @end
+@qed
 
 lemma product_covering: "X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(B) \<Longrightarrow>
   is_covering(A,X) \<Longrightarrow> is_covering(B,Y) \<Longrightarrow>
   is_covering(A\<times>B, \<lambda>p\<in>I\<times>K. (X`fst(p) \<times> Y`snd(p))\<in>Pow(A\<times>B))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "Z = (\<lambda>p\<in>I\<times>K. (X`fst(p) \<times> Y`snd(p))\<in>Pow(A\<times>B))") *})
+@proof @let "Z = (\<lambda>p\<in>I\<times>K. (X`fst(p) \<times> Y`snd(p))\<in>Pow(A\<times>B))" @qed
 
 lemma glue_fun_on_covering [backward1]: "is_function(X) \<Longrightarrow> I = source(X) \<Longrightarrow> \<forall>a\<in>I. F(a) \<in> X`a \<rightarrow> D \<Longrightarrow>
   \<forall>a\<in>I. \<forall>b\<in>I. func_coincide(F(a), F(b), X`a \<inter> X`b) \<Longrightarrow>
   \<exists>!f. f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D \<and> (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<exists>f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D. (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)" WITH (
-      LET "f = (\<lambda>x\<in>(\<Union>a\<in>I. X`a). (F(SOME a\<in>I. x\<in>X`a) ` x) \<in> D)")) *})
+@proof
+  @have "\<exists>f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D. (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)" @with
+    @let "f = (\<lambda>x\<in>(\<Union>a\<in>I. X`a). (F(SOME a\<in>I. x\<in>X`a) ` x) \<in> D)" @end
+@qed
 
 section {* Partitions *}  (* Bourbaki II.4.7 *)
 
@@ -74,17 +76,21 @@ definition mutually_disjoint :: "i \<Rightarrow> o" where [rewrite]:
 
 lemma vImage_set_disjoint [backward2]:
   "f \<in> A \<rightarrow> B \<Longrightarrow> X \<subseteq> B \<Longrightarrow> Y \<subseteq> B \<Longrightarrow> X \<inter> Y = \<emptyset> \<Longrightarrow> f -`` X \<inter> f -`` Y = \<emptyset>"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "b, b \<in> (f -`` X) \<inter> (f -`` Y)" THEN HAVE "f ` b \<in> X \<inter> Y") *})
+@proof
+  @contradiction
+  @obtain "b \<in> (f -`` X) \<inter> (f -`` Y)" @then @have "f ` b \<in> X \<inter> Y"
+@qed
 
 lemma vImage_mutually_disjoint [backward2]:
   "is_function(f) \<Longrightarrow> Y \<in> I \<rightarrow> Pow(target(f)) \<Longrightarrow> mutually_disjoint(Y) \<Longrightarrow>
    mutually_disjoint(\<lambda>a\<in>I. (f -`` (Y`a))\<in>Pow(source(f)))" by auto2
 
-lemma glue_fun_on_mut_disj [backward1]: "is_function(X) \<Longrightarrow> I = source(X) \<Longrightarrow> \<forall>a\<in>I. F(a) \<in> X`a \<rightarrow> D \<Longrightarrow>
+lemma glue_fun_on_mut_disj [backward1]:
+  "is_function(X) \<Longrightarrow> I = source(X) \<Longrightarrow> \<forall>a\<in>I. F(a) \<in> X`a \<rightarrow> D \<Longrightarrow>
   mutually_disjoint(X) \<Longrightarrow> \<exists>!f. f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D \<and> (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>a\<in>I. \<forall>b\<in>I. func_coincide(F(a), F(b), X`a \<inter> X`b)" WITH CASE "a = b") *})
+@proof
+  @have "\<forall>a\<in>I. \<forall>b\<in>I. func_coincide(F(a), F(b), X`a \<inter> X`b)" @with @case "a = b" @end
+@qed
 
 (* For partitions, usually definition in terms of sets is more convenient *)
 definition mutually_disjoint_sets :: "i \<Rightarrow> o" where [rewrite]:
@@ -95,8 +101,7 @@ definition is_partition_sets :: "i \<Rightarrow> i \<Rightarrow> o" where [rewri
   "is_partition_sets(E,X) \<longleftrightarrow> (E = \<Union>X \<and> mutually_disjoint_sets(X))"
 
 lemma singletons_is_partition: "is_partition_sets(E, {{x}. x\<in>E})"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>E. x \<in> \<Union>{{x}. x \<in> E}" WITH HAVE "x \<in> {x}") *})
+@proof @have "\<forall>x\<in>E. x \<in> \<Union>{{x}. x \<in> E}" @with @have "x \<in> {x}" @end @qed
 
 (* Version for a family of sets *)
 definition is_partition :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:

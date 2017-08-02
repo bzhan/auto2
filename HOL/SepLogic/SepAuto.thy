@@ -1,5 +1,6 @@
 theory SepAuto
 imports Hoare_Triple
+keywords "@hoare_induct" :: prf_decl % "proof"
 begin
 
 subsection {* Assertions *}

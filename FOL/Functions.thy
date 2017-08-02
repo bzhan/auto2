@@ -37,12 +37,15 @@ lemma fVImage_target [rewrite]: "is_function(f) \<Longrightarrow> f -`` target(f
 
 (* Here we characterize when a function space is empty. *)
 lemma empty_fun_space [rewrite]: "A \<rightarrow> B = \<emptyset> \<longleftrightarrow> A \<noteq> \<emptyset> \<and> B = \<emptyset>"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "A \<rightarrow> B = \<emptyset>" WITH (  (* Show A \<noteq> 0 and B = 0 *)
-      CASE "A = \<emptyset>" WITH HAVE "(\<lambda>a\<in>\<emptyset>. \<emptyset>\<in>B) \<in> A \<rightarrow> B" THEN
-      CASE "B \<noteq> \<emptyset>" WITH (CHOOSE "b, b \<in> B" THEN HAVE "(\<lambda>a\<in>A. b\<in>B) \<in> A \<rightarrow> B")) THEN
-    (* Know A \<noteq> \<emptyset> and B = \<emptyset>, show A \<rightarrow> B = \<emptyset> *)
-    CHOOSE "f, f \<in> A \<rightarrow> B" THEN CHOOSE "a, a \<in> A" THEN HAVE "f ` a \<in> B") *})
+@proof
+  @case "A \<rightarrow> B = \<emptyset>" @with  (* Show A \<noteq> 0 and B = 0 *)
+    @case "A = \<emptyset>" @with @have "Fun(A,B,\<lambda>_.\<emptyset>) \<in> A \<rightarrow> B" @end
+    @case "B \<noteq> \<emptyset>" @with @obtain "b \<in> B" @then @have "Fun(A,B,\<lambda>_.b) \<in> A \<rightarrow> B" @end
+  @end
+  @case "A \<noteq> \<emptyset> \<and> B = \<emptyset>" @with
+    @obtain "f \<in> A \<rightarrow> B" "a \<in> A" @then @have "f ` a \<in> B"
+  @end
+@qed
 
 section {* Important examples of functions *}
 
@@ -286,8 +289,7 @@ setup {* del_prfstep_thm @{thm inverse_def} *}
 
 lemma inv_bijective [typing]:
   "bijective(f) \<Longrightarrow> inverse(f) \<in> target(f) \<cong> source(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE"\<forall>x\<in>source(f). inverse(f)`(f`x) = x") *})
+  @proof @have "\<forall>x\<in>source(f). inverse(f)`(f`x) = x" @qed
 
 lemma inverse_of_inj [rewrite]:
   "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f -`` (f `` X) = X" by auto2
@@ -307,14 +309,16 @@ section {* Left and right inverses *}  (* Bourbaki II.3.8 *)
 lemma has_left_inverse_inj [forward]:
   "is_function(f) \<Longrightarrow> is_function(r) \<Longrightarrow> target(f) = source(r) \<Longrightarrow>
    r \<circ> f = id_fun(source(f)) \<Longrightarrow> injective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y" WITH HAVE "r`(f`x)=x") *})
+@proof
+  @have "\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y" @with @have "r`(f`x)=x" @end
+@qed
 
 lemma has_right_inverse_surj [forward]:
   "is_function(f) \<Longrightarrow> is_function(s) \<Longrightarrow> target(s) = source(f) \<Longrightarrow>
    f \<circ> s = id_fun(source(s)) \<Longrightarrow> surjective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>target(f). x\<in>image(f)" WITH HAVE "f`(s`x) = x") *})
+@proof
+  @have "\<forall>x\<in>target(f). x\<in>image(f)" @with @have "f`(s`x) = x" @end
+@qed
 
 lemma has_left_right_inverse_bij [forward]:
   "func_form(f) \<Longrightarrow> is_function(r) \<Longrightarrow> is_function(s) \<Longrightarrow> target(f) = source(r) \<Longrightarrow>
@@ -323,8 +327,9 @@ lemma has_left_right_inverse_bij [forward]:
 lemma right_inverse_unique:
   "is_function(f) \<Longrightarrow> f \<circ> s = id_fun(B) \<Longrightarrow> f \<circ> s' = id_fun(B) \<Longrightarrow>
    f \<in> A \<rightarrow> B \<Longrightarrow> s \<in> B \<rightarrow> A \<Longrightarrow> s' \<in> B \<rightarrow> A \<Longrightarrow> s `` B = s' `` B \<Longrightarrow> s = s'"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>B. s`x = s'`x" WITH HAVE "f`(s`x) = x") *})
+@proof
+  @have "\<forall>x\<in>B. s`x = s'`x" @with @have "f`(s`x) = x" @end
+@qed
 
 (* Two functions are inverses of each other. This pattern occurs very frequently. *)
 definition inverse_pair :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
@@ -344,10 +349,10 @@ lemma inverse_pairE [rewrite]:
 setup {* del_prfstep_thm @{thm inverse_pair_def} *}
 
 lemma inverse_pair_inverse [rewrite]: "func_form(g) \<Longrightarrow> inverse_pair(f,g) \<Longrightarrow> inverse(f) = g"
-  by (tactic {* auto2s_tac @{context} (HAVE "g \<circ> f = id_fun(source(f))") *})
+  @proof @have "g \<circ> f = id_fun(source(f))" @qed
 
 lemma inverse_pair_inverse2 [rewrite]: "func_form(f) \<Longrightarrow> inverse_pair(f,g) \<Longrightarrow> inverse(g) = f"
-  by (tactic {* auto2s_tac @{context} (HAVE "g \<circ> f = id_fun(source(f))") *})
+  @proof @have "g \<circ> f = id_fun(source(f))" @qed
 
 (* Six parts of Theorem 1 in Bourbaki II.3.8. May be easier with existence
    of left/right-inverse, but not necessary. *)
@@ -361,22 +366,21 @@ setup {* add_forward_prfstep_cond @{thm comp_is_surj} [with_term "?f' \<circ> ?f
 
 lemma comp_is_inj_to_first_inj [forward]:
   "is_function(f) \<Longrightarrow> is_function(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> injective(f' \<circ> f) \<Longrightarrow> injective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y" WITH
-      HAVE "(f' \<circ> f) ` x = (f' \<circ> f) ` y") *})
+@proof
+  @have "\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y" @with
+    @have "(f' \<circ> f) ` x = (f' \<circ> f) ` y" @end
+@qed
 
 lemma comp_is_surj_to_second_surj [forward]:
   "is_function(f) \<Longrightarrow> is_function(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> surjective(f' \<circ> f) \<Longrightarrow> surjective(f')" by auto2
 
 lemma comp_is_surj_to_first_surj [forward]:
   "is_function(f) \<Longrightarrow> injective(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> surjective(f' \<circ> f) \<Longrightarrow> surjective(f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f = inverse(f') \<circ> (f' \<circ> f)") *})
+@proof @contradiction @have "f = inverse(f') \<circ> (f' \<circ> f)" @qed
 
 lemma comp_is_inj_to_second_inj [forward]:
   "surjective(f) \<Longrightarrow> func_form(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> injective(f' \<circ> f) \<Longrightarrow> injective(f')"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f' = (f' \<circ> f) \<circ> inverse(f)") *})
+@proof @have "f' = (f' \<circ> f) \<circ> inverse(f)" @qed
 
 lemma inverse_unique [rewrite]:
   "bijective(f) \<Longrightarrow> func_form(g) \<Longrightarrow> target(f) = source(g) \<Longrightarrow>
@@ -389,8 +393,7 @@ lemma inverse_unique' [rewrite]:
 (* Now we construct the left and right inverses explicitly. *)
 lemma exists_right_inverse [resolve]:
   "surjective(f) \<Longrightarrow> A = source(f) \<Longrightarrow> B = target(f) \<Longrightarrow> \<exists>s\<in>B\<rightarrow>A. f \<circ> s = id_fun(B)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "s = (\<lambda>y\<in>B. (SOME x\<in>A. f`x=y)\<in>A)") *})
+@proof @let "s = (\<lambda>y\<in>B. (SOME x\<in>A. f`x=y)\<in>A)" @qed
 
 definition right_inverse :: "i \<Rightarrow> i" where [rewrite]:
   "right_inverse(f) = (SOME s\<in>target(f)\<rightarrow>source(f). f \<circ> s = id_fun(target(f)))"
@@ -404,10 +407,11 @@ setup {* del_prfstep_thm @{thm right_inverse_def} *}
 
 lemma exists_left_inverse [backward]:
   "injective(f) \<Longrightarrow> A = source(f) \<Longrightarrow> B = target(f) \<Longrightarrow> A \<noteq> \<emptyset> \<Longrightarrow> \<exists>r\<in>B\<rightarrow>A. r \<circ> f = id_fun(A)"
-  by (tactic {* auto2s_tac @{context}
-    (CHOOSE "a, a \<in> A" THEN
-     LET "r = (\<lambda>y\<in>B. (if (\<exists>x\<in>A. f`x=y) then (SOME x\<in>A. f`x=y) else a)\<in>A)" THEN
-     HAVE_RULE "\<forall>x\<in>A. r`(f`x) = x" WITH HAVE "\<exists>x'\<in>A. f`x' = f`x") *})
+@proof
+  @obtain "a \<in> A" @then
+  @let "r = (\<lambda>y\<in>B. (if (\<exists>x\<in>A. f`x=y) then (SOME x\<in>A. f`x=y) else a)\<in>A)" @then
+  @have "\<forall>x\<in>A. r`(f`x) = x" @with @have "\<exists>x'\<in>A. f`x' = f`x" @end
+@qed
 
 definition left_inverse :: "i \<Rightarrow> i" where [rewrite]:
   "left_inverse(f) = (SOME r\<in>target(f)\<rightarrow>source(f). r \<circ> f = id_fun(source(f)))"
@@ -424,19 +428,22 @@ setup {* del_prfstep_thm @{thm left_inverse_def} *}
 lemma exists_pullback_surj [backward1]:
   "surjective(g) \<Longrightarrow> g \<in> E \<rightarrow> F \<Longrightarrow> f \<in> E \<rightarrow> G \<Longrightarrow> \<forall>x\<in>E. \<forall>y\<in>E. g`x=g`y \<longrightarrow> f`x=f`y \<Longrightarrow>
    \<exists>!h. h\<in>F\<rightarrow>G \<and> f = h \<circ> g"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<exists>h\<in>F\<rightarrow>G. f = h \<circ> g" WITH (
-      CHOOSE "s\<in>F\<rightarrow>E, g \<circ> s = id_fun(F)" THEN
-      CHOOSE "h\<in>F\<rightarrow>G, h = f \<circ> s")) *})
+@proof
+  @have "\<exists>h\<in>F\<rightarrow>G. f = h \<circ> g" @with
+    @obtain "s \<in> F \<rightarrow> E" where "g \<circ> s = id_fun(F)" @then
+    @obtain "h \<in> F \<rightarrow> G" where "h = f \<circ> s"
+  @end
+@qed
 
 lemma exists_pullback_inj:
   "injective(g) \<Longrightarrow> g \<in> F \<rightarrow> E \<Longrightarrow> f \<in> G \<rightarrow> E \<Longrightarrow> F \<noteq> \<emptyset> \<Longrightarrow> f``G \<subseteq> g``F \<Longrightarrow>
    \<exists>!h. h\<in>G\<rightarrow>F \<and> f = g \<circ> h"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<exists>h\<in>G\<rightarrow>F. f = g \<circ> h" WITH (
-      CHOOSE "r\<in>E\<rightarrow>F, r \<circ> g = id_fun(F)" THEN
-      CHOOSE "h\<in>G\<rightarrow>F, h = r \<circ> f") THEN
-    HAVE_RULE "\<forall>x\<in>G. f`x \<subseteq> g``F") *})
+@proof
+  @have "\<exists>h\<in>G\<rightarrow>F. f = g \<circ> h" @with
+    @obtain "r \<in> E \<rightarrow> F" where "r \<circ> g = id_fun(F)" @then
+    @obtain "h \<in> G \<rightarrow> F" where "h = r \<circ> f" @end
+  @contradiction @have "\<forall>x\<in>G. f`x \<subseteq> g``F"
+@qed
 
 section {* Function of two arguments *}  (* Bourbaki II.3.9 *)
 
@@ -467,8 +474,9 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm is_const_fun_def} *}
 lemma exists_proj_fun:
   "B \<noteq> \<emptyset> \<Longrightarrow> f \<in> (A \<times> B) \<rightarrow> D \<Longrightarrow> \<forall>x\<in>A. is_const_fun(curry(A,B,D)`f`x) \<Longrightarrow>
    \<exists>g\<in>A\<rightarrow>D. \<forall>x\<in>A. \<forall>y\<in>B. f`\<langle>x,y\<rangle> = g`x"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "y, y \<in> B" THEN CHOOSE "g, g = (\<lambda>x\<in>A. f`\<langle>x,y\<rangle>\<in>D)") *})
+@proof
+  @obtain "y \<in> B" @then @let "g = (\<lambda>x\<in>A. f`\<langle>x,y\<rangle>\<in>D)"
+@qed
 
 (* Product map *)
 definition prod_map :: "i \<Rightarrow> i \<Rightarrow> i" (infixr "\<times>\<^sub>f" 80) where [rewrite]:
@@ -522,17 +530,22 @@ lemma pow_ext_id [rewrite]:
 
 lemma pow_ext_surj [backward]:
   "is_function(f) \<Longrightarrow> surjective(f) \<Longrightarrow> surjective(pow_ext(f))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "A = source(f), B = target(f)" THEN
-    CHOOSE "s\<in>B\<rightarrow>A, f \<circ> s = id_fun(target(f))" THEN
-    HAVE "pow_ext(f \<circ> s) = pow_ext(f) \<circ> pow_ext(s)") *})
+@proof
+  @let "A = source(f)" "B = target(f)" @then
+  @obtain "s \<in> B \<rightarrow> A" where "f \<circ> s = id_fun(target(f))" @then
+  @have "pow_ext(f \<circ> s) = pow_ext(f) \<circ> pow_ext(s)"
+@qed
 
 lemma pow_ext_inj [backward]:
   "injective(f) \<Longrightarrow> injective(pow_ext(f))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "U = source(pow_ext(f))" THEN
-    HAVE_RULE "\<forall>S\<in>U. \<forall>T\<in>U. f `` S = f `` T \<longrightarrow> S = T" WITH (
-      HAVE "\<forall>x. x \<in> S \<longleftrightarrow> x \<in> T" WITH HAVE "f`x \<in> f``S")) *})
+@proof
+  @let "U = source(pow_ext(f))" @then
+  @have (@rule) "\<forall>S\<in>U. \<forall>T\<in>U. f `` S = f `` T \<longrightarrow> S = T" @with
+    @have "\<forall>x. x \<in> S \<longleftrightarrow> x \<in> T" @with
+      @contradiction @have "f`x \<in> f``S"
+    @end
+  @end
+@qed
 
 section {* Map on function spaces *}  (* Bourbaki II.5.2 *)
 
@@ -550,15 +563,18 @@ setup {* del_prfstep_thm @{thm left_comp_def} *}
 
 lemma injective_left_comp [forward]:
   "injective(u) \<Longrightarrow> injective(left_comp(u,E))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r\<in>target(u)\<rightarrow>source(u), r \<circ> u = id_fun(source(u))" THEN
-    HAVE "left_comp(r,E) \<circ> left_comp(u,E) = id_fun(E\<rightarrow>source(u))") *})
+@proof
+  @contradiction
+  @obtain "r \<in> target(u) \<rightarrow> source(u)" where "r \<circ> u = id_fun(source(u))" @then
+  @have "left_comp(r,E) \<circ> left_comp(u,E) = id_fun(E\<rightarrow>source(u))"
+@qed
 
 lemma surjective_left_comp [forward]:
   "surjective(u) \<Longrightarrow> surjective(left_comp(u,E))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "s\<in>target(u)\<rightarrow>source(u), u \<circ> s = id_fun(target(u))" THEN
-    HAVE "left_comp(u,E) \<circ> left_comp(s,E) = id_fun(E\<rightarrow>target(u))") *})
+@proof
+  @obtain "s \<in> target(u) \<rightarrow> source(u)" where "u \<circ> s = id_fun(target(u))" @then
+  @have "left_comp(u,E) \<circ> left_comp(s,E) = id_fun(E\<rightarrow>target(u))"
+@qed
 
 lemma bijective_left_comp [forward]:
   "bijective(u) \<Longrightarrow> bijective(left_comp(u,E))" by auto2
@@ -575,20 +591,22 @@ setup {* del_prfstep_thm @{thm right_comp_def} *}
 
 lemma injective_right_comp [forward]:
   "surjective(u) \<Longrightarrow> injective(right_comp(E,u))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "s\<in>target(u)\<rightarrow>source(u), u \<circ> s = id_fun(target(u))" THEN
-    HAVE "right_comp(E,s) \<circ> right_comp(E,u) = id_fun(target(u)\<rightarrow>E)") *})
+@proof
+  @obtain "s \<in> target(u) \<rightarrow> source(u)" where "u \<circ> s = id_fun(target(u))" @then
+  @have "right_comp(E,s) \<circ> right_comp(E,u) = id_fun(target(u)\<rightarrow>E)"
+@qed
 
 lemma surjective_right_comp [backward]:
   "injective(u) \<Longrightarrow> source(u) \<noteq> \<emptyset> \<Longrightarrow> surjective(right_comp(E,u))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r\<in>target(u)\<rightarrow>source(u), r \<circ> u = id_fun(source(u))" THEN
-    HAVE "right_comp(E,u) \<circ> right_comp(E,r) = id_fun(target(r)\<rightarrow>E)") *})
+@proof
+  @obtain "r \<in> target(u) \<rightarrow> source(u)" where "r \<circ> u = id_fun(source(u))" @then
+  @have "right_comp(E,u) \<circ> right_comp(E,r) = id_fun(target(r)\<rightarrow>E)"
+@qed
 
 (* The requirement that source(u) \<noteq> \<emptyset> is necessary here, as the following example shows. *)
 lemma injective_two_side_comp_counterexample:
   "u = (\<lambda>a\<in>\<emptyset>. \<emptyset>\<in>{\<emptyset>}) \<Longrightarrow> injective(u) \<and> \<not>surjective(right_comp(\<emptyset>,u))"
-  by (tactic {* auto2s_tac @{context} (HAVE "target(u) \<rightarrow> \<emptyset> = \<emptyset>") *})
+@proof @have "target(u) \<rightarrow> \<emptyset> = \<emptyset>" @qed
 
 (* Nevertheless, no condition is required when u is bijective. *)
 lemma bijective_right_comp [forward]:
@@ -606,7 +624,6 @@ lemma uncurry_eval [rewrite]:
 setup {* del_prfstep_thm @{thm uncurry_def} *}
 
 lemma curry_bijective [forward]: "bijective(curry(A,B,D))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inverse_pair(curry(A,B,D), uncurry(A,B,D))") *})
+  @proof @have "inverse_pair(curry(A,B,D), uncurry(A,B,D))" @qed
 
 end

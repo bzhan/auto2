@@ -23,9 +23,10 @@ translations
   "SOME x\<in>.S. P" == "CONST choiceP_carrier(S, \<lambda>x. P)"
 
 lemma someI: "\<exists>x\<in>A. P(x) \<Longrightarrow> (SOME x\<in>A. P(x)) \<in> A \<and> P(SOME x\<in>A. P(x))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x\<in>A, P(x)" THEN HAVE "x\<in>{x\<in>A. P(x)}" THEN
-    HAVE "Choice({x\<in>A. P(x)}) \<in> {x\<in>A. P(x)}") *})
+@proof
+  @obtain "x \<in> A" where "P(x)" @then @have "x\<in>{x\<in>A. P(x)}" @then
+  @have "Choice({x\<in>A. P(x)}) \<in> {x\<in>A. P(x)}"
+@qed
 setup {* add_forward_prfstep_cond @{thm someI} [with_term "SOME x\<in>?A. ?P(x)"] *}
 
 setup {* add_prfstep_check_req ("SOME k\<in>A. P(k)", "\<exists>k\<in>A. P(k)") *}

@@ -40,20 +40,21 @@ lemma lseg_prepend [forward_ent]:
 (* Several examples for using induction. *)
 lemma lseg_append [forward_ent]:
   "lseg l p (Some s) * s \<mapsto>\<^sub>r Node x q \<Longrightarrow>\<^sub>A lseg (l @ [x]) p q"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l", [Arbitrary "p"])) *})
+@proof @induct l arbitrary p @qed
 
 lemma lseg_conc [forward_ent]:
   "lseg l1 p q * lseg l2 q r \<Longrightarrow>\<^sub>A lseg (l1 @ l2) p r"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l1", [Arbitrary "p"])) *})
+@proof @induct l1 arbitrary p @qed
 
 lemma lseg_split:
   "lseg (l1 @ l2) p r \<Longrightarrow>\<^sub>A \<exists>\<^sub>Aq. lseg l1 p q * lseg l2 q r"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l1", [Arbitrary "p"])) *})
+@proof @induct l1 arbitrary p @qed
 
 lemma lseg_prec [forward]:
   "h \<Turnstile> lseg l p None * F1 \<Longrightarrow> h \<Turnstile> lseg l' p None * F2 \<Longrightarrow> l = l'"
-  by (tactic {* auto2s_tac @{context}
-    (INDUCT ("l", Arbitraries ["p", "l'", "F1", "F2"]) THEN CASE "l' = []") *})
+@proof
+  @induct l arbitrary p l' F1 F2 @then @case "l' = []"
+@qed
 
 subsection {* List assertion *}
 
@@ -132,7 +133,7 @@ definition os_is_it :: "('a::heap) list \<Rightarrow> 'a node ref option \<Right
 setup {* add_rewrite_ent_rule @{thm os_is_it_def} *}
 
 theorem os_is_it_empty [backward]: "h \<Turnstile> os_list l p \<Longrightarrow> h \<Turnstile> os_is_it l p l p"
-  by (tactic {* auto2s_tac @{context} (HAVE "h \<Turnstile> lseg [] p p * os_list l p") *})
+@proof @have "h \<Turnstile> lseg [] p p * os_list l p" @qed
 
 definition os_it_init :: "'a os_list \<Rightarrow> ('a os_list_it) Heap" where
   "os_it_init l = return l"
@@ -160,7 +161,7 @@ theorem os_is_has_next_rule' [forward_ent]:
 
 theorem os_it_next_rule [hoare_triple]:
   "<os_is_it l p l' (Some q)> os_it_next (Some q) <\<lambda>(a, it'). os_is_it l p (tl l') it' * \<up>(a = hd l')>"
-  by (tactic {* auto2s_tac @{context} (CASE "l' = []") *})
+@proof @case "l' = []" @qed
 
 setup {* del_prfstep_thm @{thm os_list_def} *}
 setup {* del_prfstep_thm @{thm os_is_it_def} *}
@@ -182,7 +183,7 @@ lemma os_sum'_rule [hoare_triple]:
   "<os_is_it l p l' it>
     os_sum' it s
   <\<lambda>r. os_list l p * \<up>(r = s + sum_list l')>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l'", Arbitraries ["it", "s"])) *})
+@proof @induct l' arbitrary it s @qed
 
 definition os_sum :: "int node ref option \<Rightarrow> int Heap" where
   "os_sum p \<equiv> do {
@@ -210,9 +211,7 @@ lemma os_reverse_aux_rule [hoare_triple]:
   "<os_list xs p * os_list ys q> 
     os_reverse_aux q p 
   <os_list ((rev xs) @ ys)>"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT ("xs", Arbitraries ["p", "q", "ys"]) THEN
-    HAVE "[hd xs] @ ys = hd xs # ys") *})
+@proof @induct xs arbitrary p q ys @then @have "[hd xs] @ ys = hd xs # ys" @qed
 
 definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
   "os_reverse p = os_reverse_aux None p"
@@ -239,7 +238,7 @@ declare os_rem.simps [sep_proc_defs]
 
 lemma os_rem_rule [hoare_triple]:
   "<os_list xs b> os_rem x b <\<lambda>r. os_list (removeAll x xs) r>\<^sub>t"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 subsubsection {* Insert in order *}
 
@@ -258,15 +257,15 @@ declare os_insert.simps [sep_proc_defs]
 
 lemma os_insert_mset_rule [hoare_triple]:
   "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = {#x#} + mset xs)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 lemma os_insert_set_rule [hoare_triple]:
   "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(set xs' = {x} \<union> set xs)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 lemma os_insert_sorted [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 subsection {* Application: insertion sort *}
 
@@ -282,7 +281,7 @@ declare extract_list.simps [sep_proc_defs]
 
 theorem extract_list_rule [hoare_triple_direct]:
   "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("l", Arbitraries ["p"])) *})
+@proof @induct l arbitrary p @qed
 
 fun os_insert_list :: "'a::{ord,heap} list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "os_insert_list xs b = (
@@ -296,11 +295,11 @@ declare os_insert_list.simps [sep_proc_defs]
 
 lemma os_insert_list_sorted [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("ys", Arbitraries ["b", "xs"])) *})
+@proof @induct ys arbitrary b xs @qed
 
 lemma os_insert_list_mset [hoare_triple]:
   "<os_list xs b> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = mset ys + mset xs)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("ys", Arbitraries ["b", "xs"])) *})
+@proof @induct ys arbitrary b xs @qed
 
 definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where
   "insertion_sort xs = do {
@@ -313,7 +312,7 @@ declare insertion_sort_def [sep_proc_defs]
 setup {* add_backward2_prfstep @{thm properties_for_sort} *}
 lemma insertion_sort_rule:
   "<emp> insertion_sort (xs::'a::{heap,linorder} list) <\<lambda>ys. \<up>(ys = sort xs) * true>"
-  by (tactic {* auto2s_tac @{context} (HAVE "sorted ([]::'a list)") *})
+@proof @have "sorted ([]::'a list)" @qed
 
 subsection {* Merging two lists *}
 
@@ -337,23 +336,17 @@ partial_function (heap) merge_os_list ::
      })"
 declare merge_os_list.simps [sep_proc_defs]
 
-theorem list_double_induct: "\<forall>ys. P [] ys \<Longrightarrow> \<forall>xs. P xs [] \<Longrightarrow> \<forall>xs ys. P (tl xs) ys \<and> P xs (tl ys) \<longrightarrow> P xs ys \<Longrightarrow> P xs ys"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", []) THEN INDUCT ("ys", [Arbitrary "xs"])) *})
-setup {* add_prfstep_double_induction @{thm list_double_induct} *}
-
 lemma merge_list_keys [hoare_triple]:
   "<os_list xs p * os_list ys q>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(set zs = set xs \<union> set ys)>"
-  by (tactic {* auto2s_tac @{context} (
-    DOUBLE_INDUCT (("xs", "ys"), Arbitraries ["p", "q"])) *})
+@proof @double_induct xs ys arbitrary p q @qed
 
 lemma merge_list_sorted [hoare_triple]:
   "<os_list xs p * os_list ys q * \<up>(sorted xs) * \<up>(sorted ys)>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(sorted zs)>"
-  by (tactic {* auto2s_tac @{context} (
-    DOUBLE_INDUCT (("xs", "ys"), Arbitraries ["p", "q"])) *})
+@proof @double_induct xs ys arbitrary p q @qed
 
 subsection {* List copy *}
 
@@ -368,7 +361,7 @@ declare copy_os_list.simps [sep_proc_defs]
 
 lemma copy_os_list_rule [hoare_triple]:
   "<os_list xs b> copy_os_list b <\<lambda>r. os_list xs b * os_list xs r>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 subsection {* Higher-order functions *}
 
@@ -385,7 +378,7 @@ declare map_os_list.simps [sep_proc_defs]
 
 lemma map_os_list_rule [hoare_triple]:
   "<os_list xs b> map_os_list f b <os_list (map f xs)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 partial_function (heap) filter_os_list ::
   "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
@@ -402,7 +395,7 @@ declare filter_os_list.simps [sep_proc_defs]
 
 lemma filter_os_list_rule [hoare_triple]:
   "<os_list xs b> filter_os_list f b <\<lambda>r. os_list (filter f xs) r * true>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 partial_function (heap) filter_os_list2 ::
   "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
@@ -417,7 +410,7 @@ declare filter_os_list2.simps [sep_proc_defs]
 
 lemma filter_os_list2_rule [hoare_triple]:
   "<os_list xs b> filter_os_list2 f b <\<lambda>r. os_list xs b * os_list (filter f xs) r>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b"])) *})
+@proof @induct xs arbitrary b @qed
 
 partial_function (heap) fold_os_list ::
   "('a::heap \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a os_list \<Rightarrow> 'b \<Rightarrow> 'b Heap" where
@@ -431,6 +424,6 @@ declare fold_os_list.simps [sep_proc_defs]
 
 theorem fold_os_list_rule [hoare_triple]:
   "<os_list xs b> fold_os_list f b x <\<lambda>r. os_list xs b * \<up>(r = fold f xs x)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("xs", Arbitraries ["b", "x"])) *})
+@proof @induct xs arbitrary b x @qed
 
 end

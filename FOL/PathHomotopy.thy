@@ -49,8 +49,7 @@ setup {* add_forward_prfstep_cond @{thm id_is_path_homotopy} [with_term "id_homo
 
 lemma path_homotopic_id [resolve]:
   "is_path(f) \<Longrightarrow> path_homotopic(f,f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_path_homotopy(f,f,id_homotopy(f))") *})
+@proof @have "is_path_homotopy(f,f,id_homotopy(f))" @qed
       
 lemma inv_is_path_homotopy:
   "is_path_homotopy(f,g,F) \<Longrightarrow> is_path_homotopy(g,f,inv_homotopy(f,g,F))" by auto2
@@ -58,9 +57,10 @@ setup {* add_forward_prfstep_cond @{thm inv_is_path_homotopy} [with_term "inv_ho
 
 lemma path_homotopy_inv [resolve]:
   "path_homotopic(f,g) \<Longrightarrow> path_homotopic(g,f)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_path_homotopy(f,g,F)" THEN
-    HAVE "is_path_homotopy(g,f,inv_homotopy(f,g,F))") *})
+@proof
+  @obtain F where "is_path_homotopy(f,g,F)" @then
+  @have "is_path_homotopy(g,f,inv_homotopy(f,g,F))"
+@qed
 
 lemma compose_is_path_homotopy:
   "is_path_homotopy(f,g,F) \<Longrightarrow> is_path_homotopy(g,h,G) \<Longrightarrow>
@@ -70,10 +70,11 @@ setup {* add_forward_prfstep_cond @{thm compose_is_path_homotopy}
 
 lemma path_homotopy_trans [forward]:
   "path_homotopic(f,g) \<Longrightarrow> path_homotopic(g,h) \<Longrightarrow> path_homotopic(f,h)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_path_homotopy(f,g,F)" THEN
-    CHOOSE "G, is_path_homotopy(g,h,G)" THEN
-    HAVE "is_path_homotopy(f,h,compose_homotopy(f,g,h,F,G))") *})
+@proof
+  @obtain F where "is_path_homotopy(f,g,F)" @then
+  @obtain G where "is_path_homotopy(g,h,G)" @then
+  @have "is_path_homotopy(f,h,compose_homotopy(f,g,h,F,G))"
+@qed
 
 section {* Product of paths *}
   
@@ -93,8 +94,9 @@ setup {* add_forward_prfstep_cond @{thm path_product_is_path} [with_term "?f \<s
 lemma path_product_eval [rewrite]:
   "is_path(f) \<Longrightarrow> is_path(g) \<Longrightarrow> target_str(f) = target_str(g) \<Longrightarrow> f`(1\<^sub>\<real>) = g`(0\<^sub>\<real>) \<Longrightarrow>
    t \<in> source(f \<star> g) \<Longrightarrow> (f \<star> g)`t = (if t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real> then f`(2\<^sub>\<real> *\<^sub>\<real> t) else g`(2\<^sub>\<real> *\<^sub>\<real> t -\<^sub>\<real> 1\<^sub>\<real>))"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" WITH HAVE "t \<in>. I1") *})
+@proof
+  @case "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" @with @have "t \<in>. I1" @end
+@qed
 
 lemma path_product_eval' [rewrite]:
   "is_path(f) \<Longrightarrow> is_path(g) \<Longrightarrow> target_str(f) = target_str(g) \<Longrightarrow> f`(1\<^sub>\<real>) = g`(0\<^sub>\<real>) \<Longrightarrow> (f \<star> g)`(0\<^sub>\<real>) = f`(0\<^sub>\<real>)"
@@ -153,29 +155,31 @@ lemma join_is_homotopy:
   "is_path_homotopy(f,f',F) \<Longrightarrow> is_path_homotopy(g,g',G) \<Longrightarrow>
    target_str(f) = target_str(g) \<Longrightarrow> f`(1\<^sub>\<real>) = g`(0\<^sub>\<real>) \<Longrightarrow>
    is_path_homotopy(f \<star> g, f' \<star> g', join_homotopy(f,g,f',g',F,G))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_homotopy(f \<star> g, f' \<star> g', join_homotopy(f,g,f',g',F,G))") *})
+@proof
+  @have "is_homotopy(f \<star> g, f' \<star> g', join_homotopy(f,g,f',g',F,G))"
+@qed
 setup {* add_forward_prfstep_cond @{thm join_is_homotopy} [with_term "join_homotopy(?f,?g,?f',?g',?F,?G)"] *}
 
 lemma path_homotopy_product [backward]:
   "target_str(f) = target_str(g) \<Longrightarrow> f`(1\<^sub>\<real>) = g`(0\<^sub>\<real>) \<Longrightarrow>
    path_homotopic(f,f') \<Longrightarrow> path_homotopic(g,g') \<Longrightarrow> path_homotopic(f \<star> g, f' \<star> g')"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_path_homotopy(f,f',F)" THEN
-    CHOOSE "G, is_path_homotopy(g,g',G)" THEN
-    HAVE "is_path_homotopy(f \<star> g, f' \<star> g', join_homotopy(f,g,f',g',F,G))") *})
+@proof
+  @obtain F where "is_path_homotopy(f,f',F)" @then
+  @obtain G where "is_path_homotopy(g,g',G)" @then
+  @have "is_path_homotopy(f \<star> g, f' \<star> g', join_homotopy(f,g,f',g',F,G))"
+@qed
 
 lemma path_homotopy_maps_comp2 [backward]:
   "continuous(h) \<Longrightarrow> target_str(f) = source_str(h) \<Longrightarrow> is_path_homotopy(f,g,F) \<Longrightarrow>
    is_path_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "is_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)") *})
+@proof @have "is_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)" @qed
 
 lemma path_homotopy_comp2 [backward]:
   "continuous(h) \<Longrightarrow> target_str(f) = source_str(h) \<Longrightarrow> path_homotopic(f,g) \<Longrightarrow> path_homotopic(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "F, is_path_homotopy(f,g,F)" THEN
-    HAVE "is_path_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)") *})
+@proof
+  @obtain F where "is_path_homotopy(f,g,F)" @then
+  @have "is_path_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)"
+@qed
 
 section {* Interval is simply connected *}
 
@@ -185,13 +189,14 @@ setup {* register_wellform_data ("linear_homotopy(f,g)", ["f \<in> I \<rightharp
 
 lemma linear_homotopy_in_range [backward2]:
   "t \<in>. I \<Longrightarrow> a \<in>. I \<Longrightarrow> b \<in>. I \<Longrightarrow> (1\<^sub>\<real> -\<^sub>\<real> t) *\<^sub>\<real> a +\<^sub>\<real> t *\<^sub>\<real> b \<in>. I"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "a \<le>\<^sub>\<real> b" WITH HAVE "(1\<^sub>\<real> -\<^sub>\<real> t) *\<^sub>\<real> a \<le>\<^sub>\<real> (1\<^sub>\<real> -\<^sub>\<real> t) *\<^sub>\<real> b" THEN
-    CASE "a \<ge>\<^sub>\<real> b" WITH HAVE "t *\<^sub>\<real> a \<ge>\<^sub>\<real> t *\<^sub>\<real> b") *})
+@proof
+  @case "a \<le>\<^sub>\<real> b" @with @have "(1\<^sub>\<real> -\<^sub>\<real> t) *\<^sub>\<real> a \<le>\<^sub>\<real> (1\<^sub>\<real> -\<^sub>\<real> t) *\<^sub>\<real> b" @end
+  @case "a \<ge>\<^sub>\<real> b" @with @have "t *\<^sub>\<real> a \<ge>\<^sub>\<real> t *\<^sub>\<real> b" @end
+@qed
 
 lemma linear_homotopy_continuous [typing]:
   "f \<in> I \<rightharpoonup>\<^sub>T I \<Longrightarrow> g \<in> I \<rightharpoonup>\<^sub>T I \<Longrightarrow> linear_homotopy(f,g) \<in> I \<times>\<^sub>T I \<rightharpoonup>\<^sub>T I"
-  by (tactic {* auto2s_tac @{context} (HAVE "I = subspace(\<real>,carrier(I))") *})
+@proof @have "I = subspace(\<real>,carrier(I))" @qed
 setup {* del_prfstep_thm @{thm linear_homotopy_in_range} *}
 
 lemma linear_homotopy_eval [rewrite]:
@@ -226,9 +231,10 @@ lemma simply_connectedD [backward]:
 setup {* del_prfstep_thm @{thm simply_connected_def} *}
   
 lemma interval_simply_connected [forward]: "simply_connected(I)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>f\<in>I\<rightharpoonup>\<^sub>TI. \<forall>g\<in>I\<rightharpoonup>\<^sub>TI. f`(0\<^sub>\<real>) = g`(0\<^sub>\<real>) \<longrightarrow> f`(1\<^sub>\<real>) = g`(1\<^sub>\<real>) \<longrightarrow> path_homotopic(f,g)" WITH
-      HAVE "is_path_homotopy(f,g,linear_homotopy(f,g))") *})
+@proof
+  @have "\<forall>f\<in>I\<rightharpoonup>\<^sub>TI. \<forall>g\<in>I\<rightharpoonup>\<^sub>TI. f`(0\<^sub>\<real>) = g`(0\<^sub>\<real>) \<longrightarrow> f`(1\<^sub>\<real>) = g`(1\<^sub>\<real>) \<longrightarrow> path_homotopic(f,g)" @with
+    @have "is_path_homotopy(f,g,linear_homotopy(f,g))" @end
+@qed
 
 section {* Groupoid properties of product *}
 
@@ -298,17 +304,18 @@ lemma path_assoc_comp [rewrite]:
   "is_path(f) \<Longrightarrow> is_path(g) \<Longrightarrow> is_path(h) \<Longrightarrow> target_str(f) = target_str(g \<star> h) \<Longrightarrow>
    target_str(g) = target_str(h) \<Longrightarrow> f`(1\<^sub>\<real>) = (g \<star> h)`(0\<^sub>\<real>) \<Longrightarrow> g`(1\<^sub>\<real>) = h`(0\<^sub>\<real>) \<Longrightarrow>
    t \<in> source(path_assoc_reparam) \<Longrightarrow> (f \<star> (g \<star> h)) ` (path_assoc_reparam ` t) = ((f \<star> g) \<star> h) ` t"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>" WITH (
-      HAVE "2\<^sub>\<real> *\<^sub>\<real> t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" WITH (
-        HAVE "2\<^sub>\<real> *\<^sub>\<real> t \<le>\<^sub>\<real> 2\<^sub>\<real> *\<^sub>\<real> (1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>)")) THEN
-    CASE "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" WITH (
-      HAVE "t +\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real> >\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" THEN
-      HAVE "t +\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real> \<le>\<^sub>\<real> 3\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>" THEN
-      HAVE "2\<^sub>\<real> *\<^sub>\<real> ((2\<^sub>\<real> *\<^sub>\<real> (t +\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>)) -\<^sub>\<real> 1\<^sub>\<real>) = (2\<^sub>\<real> *\<^sub>\<real> (2\<^sub>\<real> *\<^sub>\<real> t)) -\<^sub>\<real> 1\<^sub>\<real>") THEN
-    HAVE "(t +\<^sub>\<real> 1\<^sub>\<real>) /\<^sub>\<real> 2\<^sub>\<real> >\<^sub>\<real> 3\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>" WITH (
-      HAVE "(t +\<^sub>\<real> 1\<^sub>\<real>) /\<^sub>\<real> 2\<^sub>\<real> >\<^sub>\<real> 3\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>") THEN
-    HAVE "(2\<^sub>\<real> *\<^sub>\<real> ((2\<^sub>\<real> *\<^sub>\<real> ((t +\<^sub>\<real> 1\<^sub>\<real>) /\<^sub>\<real> 2\<^sub>\<real>)) -\<^sub>\<real> 1\<^sub>\<real>)) -\<^sub>\<real> 1\<^sub>\<real> = 2\<^sub>\<real> *\<^sub>\<real> t -\<^sub>\<real> 1\<^sub>\<real>") *})
+@proof
+  @case "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>" @with
+    @have "2\<^sub>\<real> *\<^sub>\<real> t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" @with
+      @have "2\<^sub>\<real> *\<^sub>\<real> t \<le>\<^sub>\<real> 2\<^sub>\<real> *\<^sub>\<real> (1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>)" @end @end
+  @case "t \<le>\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" @with
+    @have "t +\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real> >\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" @then
+    @have "t +\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real> \<le>\<^sub>\<real> 3\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>" @then
+    @have "2\<^sub>\<real> *\<^sub>\<real> ((2\<^sub>\<real> *\<^sub>\<real> (t +\<^sub>\<real> 1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>)) -\<^sub>\<real> 1\<^sub>\<real>) = (2\<^sub>\<real> *\<^sub>\<real> (2\<^sub>\<real> *\<^sub>\<real> t)) -\<^sub>\<real> 1\<^sub>\<real>" @end
+  @have "(t +\<^sub>\<real> 1\<^sub>\<real>) /\<^sub>\<real> 2\<^sub>\<real> >\<^sub>\<real> 3\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>" @with
+    @have "(t +\<^sub>\<real> 1\<^sub>\<real>) /\<^sub>\<real> 2\<^sub>\<real> >\<^sub>\<real> 3\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>" @end
+    @have "(2\<^sub>\<real> *\<^sub>\<real> ((2\<^sub>\<real> *\<^sub>\<real> ((t +\<^sub>\<real> 1\<^sub>\<real>) /\<^sub>\<real> 2\<^sub>\<real>)) -\<^sub>\<real> 1\<^sub>\<real>)) -\<^sub>\<real> 1\<^sub>\<real> = 2\<^sub>\<real> *\<^sub>\<real> t -\<^sub>\<real> 1\<^sub>\<real>"
+@qed
   
 lemma path_assoc_reparam_homotopy [resolve]:
   "path_homotopic(path_assoc_reparam, id_mor(I))" by auto2
@@ -317,9 +324,10 @@ lemma path_assoc_homotopic [resolve]:
   "is_path(f) \<Longrightarrow> is_path(g) \<Longrightarrow> is_path(h) \<Longrightarrow> target_str(f) = target_str(g \<star> h) \<Longrightarrow>
    target_str(g) = target_str(h) \<Longrightarrow> f`(1\<^sub>\<real>) = (g \<star> h)`(0\<^sub>\<real>) \<Longrightarrow> g`(1\<^sub>\<real>) = h`(0\<^sub>\<real>) \<Longrightarrow>
    path_homotopic((f \<star> g) \<star> h, f \<star> (g \<star> h))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(f \<star> (g \<star> h)) \<circ>\<^sub>m path_assoc_reparam = (f \<star> g) \<star> h" THEN
-    HAVE "(f \<star> (g \<star> h)) \<circ>\<^sub>m id_mor(I) = f \<star> (g \<star> h)") *})
+@proof
+  @have "(f \<star> (g \<star> h)) \<circ>\<^sub>m path_assoc_reparam = (f \<star> g) \<star> h" @then
+  @have "(f \<star> (g \<star> h)) \<circ>\<^sub>m id_mor(I) = f \<star> (g \<star> h)"
+@qed
       
 setup {* del_prfstep_thm @{thm path_product_eval} *}
 
@@ -335,24 +343,24 @@ lemma const_mor_eval_one [rewrite]: "const_mor(I,I,1\<^sub>\<real>)`(1\<^sub>\<r
 
 lemma path_product_right_id [resolve]:
   "is_path(f) \<Longrightarrow> X = target_str(f) \<Longrightarrow> path_homotopic(f, f \<star> const_mor(I,X,f`(1\<^sub>\<real>)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "path_homotopic(f \<circ>\<^sub>m id_mor(I), f \<circ>\<^sub>m (id_mor(I) \<star> const_mor(I,I,1\<^sub>\<real>)))") *})
+@proof @have "path_homotopic(f \<circ>\<^sub>m id_mor(I), f \<circ>\<^sub>m (id_mor(I) \<star> const_mor(I,I,1\<^sub>\<real>)))" @qed
 
 lemma path_product_left_id [resolve]:
   "is_path(f) \<Longrightarrow> X = target_str(f) \<Longrightarrow> path_homotopic(f, const_mor(I,X,f`(0\<^sub>\<real>)) \<star> f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "path_homotopic(f \<circ>\<^sub>m id_mor(I), f \<circ>\<^sub>m (const_mor(I,I,0\<^sub>\<real>) \<star> id_mor(I)))") *})
+@proof @have "path_homotopic(f \<circ>\<^sub>m id_mor(I), f \<circ>\<^sub>m (const_mor(I,I,0\<^sub>\<real>) \<star> id_mor(I)))" @qed
   
 lemma path_product_inv_left [resolve]:
   "is_path(f) \<Longrightarrow> X = target_str(f) \<Longrightarrow> path_homotopic(f \<star> inv_path(f), const_mor(I,X,f`(0\<^sub>\<real>)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f \<circ>\<^sub>m const_mor(I,I,0\<^sub>\<real>) = const_mor(I,X,f`(0\<^sub>\<real>))" THEN
-    HAVE "f \<circ>\<^sub>m (id_mor(I) \<star> interval_inv) = f \<star> inv_path(f)") *})
+@proof
+  @have "f \<circ>\<^sub>m const_mor(I,I,0\<^sub>\<real>) = const_mor(I,X,f`(0\<^sub>\<real>))" @then
+  @have "f \<circ>\<^sub>m (id_mor(I) \<star> interval_inv) = f \<star> inv_path(f)"
+@qed
 
 lemma path_product_inv_right [resolve]:
   "is_path(f) \<Longrightarrow> X = target_str(f) \<Longrightarrow> path_homotopic(inv_path(f) \<star> f, const_mor(I,X,f`(1\<^sub>\<real>)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f \<circ>\<^sub>m const_mor(I,I,1\<^sub>\<real>) = const_mor(I,X,f`(1\<^sub>\<real>))" THEN
-    HAVE "f \<circ>\<^sub>m (interval_inv \<star> id_mor(I)) = inv_path(f) \<star> f") *})
+@proof
+  @have "f \<circ>\<^sub>m const_mor(I,I,1\<^sub>\<real>) = const_mor(I,X,f`(1\<^sub>\<real>))" @then
+  @have "f \<circ>\<^sub>m (interval_inv \<star> id_mor(I)) = inv_path(f) \<star> f"
+@qed
 
 end

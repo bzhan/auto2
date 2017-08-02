@@ -1065,8 +1065,6 @@ sig
   val get_box: status -> box_id -> box
 
   val get_lattice: status -> BoxID.box_lattice
-  val get_focus: status -> box_id
-  val set_focus: box_id -> status -> status
   val get_parent_prim: status -> int -> box_id
   val merge_boxes: status -> box_id * box_id -> box_id
   val is_ancestor: status -> box_id -> box_id -> bool
@@ -1145,7 +1143,6 @@ fun get_box {boxes, ...} id =
     handle Option.Option => raise AUTO2 "get_box: id not found."
 
 fun get_lattice {lat, ...} = lat
-val get_focus = BoxID.get_focus o get_lattice
 val get_parent_prim = BoxID.get_parent_prim o get_lattice
 val merge_boxes = BoxID.merge_boxes o get_lattice
 val is_ancestor = BoxID.is_ancestor o get_lattice
@@ -1183,11 +1180,6 @@ fun add_prim_box parent_id new_box {uid_next, lat, boxes, queue, tbl, ctxt} =
             boxes = Boxidtab.update_new ([id], new_box) boxes, queue = queue,
             tbl = RewriteTable.map_lat (K lat') tbl, ctxt = ctxt})
     end
-
-fun set_focus foc {uid_next, lat, boxes, queue, tbl, ctxt} =
-    {uid_next = uid_next, lat = lat |> BoxID.set_focus foc, boxes = boxes,
-     queue = queue, tbl = tbl |> RewriteTable.map_lat (BoxID.set_focus foc),
-     ctxt = ctxt}
 
 fun add_resolved id {uid_next, lat, boxes, queue, tbl, ctxt} =
     let

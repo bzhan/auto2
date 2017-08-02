@@ -47,8 +47,7 @@ setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
 
 lemma btree_prec [sep_prec_thms]:
   "h \<Turnstile> btree t p * F1 \<Longrightarrow> h \<Turnstile> btree t' p * F2 \<Longrightarrow> t = t'"
-  by (tactic {* auto2s_tac @{context}
-    (INDUCT ("t", Arbitraries ["p", "t'", "F1", "F2"]) THEN CASE "t' = Tip") *})
+@proof @induct t arbitrary p t' F1 F2 @then @case "t' = Tip" @qed
 
 setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
@@ -104,13 +103,13 @@ lemma btree_insert_in_traverse [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_insert k v b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(in_traverse t' = ordered_insert k (in_traverse t))>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+@proof @induct t arbitrary b @qed
 
 lemma btree_insert_in_traverse_pairs [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_insert k v b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(in_traverse_pairs t' = ordered_insert_pairs k v (in_traverse_pairs t))>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+@proof @induct t arbitrary b @qed
 
 declare btree_insert.simps [sep_proc_defs del]
 lemma btree_insert_sorted_rule [hoare_triple]:
@@ -145,15 +144,13 @@ lemma btree_del_min_in_traverse [hoare_triple]:
   "<btree t b * \<up>(b \<noteq> None)>
    btree_del_min b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' (snd r) * true * \<up>(fst (fst r) # in_traverse t' = in_traverse t)>"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT ("t", Arbitraries ["b"]) THEN CASE "tree.lsub t = Tip") *})
+@proof @induct t arbitrary b @then @case "tree.lsub t = Tip" @qed
 
 lemma btree_del_min_in_traverse_pairs [hoare_triple]:
   "<btree t b * \<up>(b \<noteq> None)>
    btree_del_min b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' (snd r) * true * \<up>(fst r # in_traverse_pairs t' = in_traverse_pairs t)>"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT ("t", Arbitraries ["b"]) THEN CASE "tree.lsub t = Tip") *})
+@proof @induct t arbitrary b @then @case "tree.lsub t = Tip" @qed
 
 definition btree_del_elt :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_del_elt b = (case b of
@@ -172,13 +169,13 @@ lemma btree_del_elt_in_traverse [hoare_triple]:
   "<btree (tree.Node lt x v rt) b>
    btree_del_elt b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse t' = in_traverse lt @ in_traverse rt)>"
-  by (tactic {* auto2s_tac @{context} (CASE "lt = Tip" THEN CASE "rt = Tip") *})
+@proof @case "lt = Tip" @then @case "rt = Tip" @qed
 
 lemma btree_del_elt_in_traverse_pairs [hoare_triple]:
   "<btree (tree.Node lt x v rt) b>
    btree_del_elt b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse_pairs t' = in_traverse_pairs lt @ in_traverse_pairs rt)>"
-  by (tactic {* auto2s_tac @{context} (CASE "lt = Tip" THEN CASE "rt = Tip") *})
+@proof @case "lt = Tip" @then @case "rt = Tip" @qed
 
 partial_function (heap) btree_delete ::
   "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -203,13 +200,13 @@ lemma btree_delete_in_traverse [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_delete x b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse t' = remove_elt_list x (in_traverse t))>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+@proof @induct t arbitrary b @qed
 
 lemma btree_delete_in_traverse_pairs [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_delete x b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse_pairs t' = remove_elt_pairs x (in_traverse_pairs t))>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+@proof @induct t arbitrary b @qed
 
 declare btree_delete.simps [sep_proc_defs del]
 lemma btree_delete_sorted_rule [hoare_triple]:
@@ -242,7 +239,7 @@ lemma btree_search_correct [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_search x b
    <\<lambda>r. btree t b * \<up>(r = (tree_map t)\<langle>x\<rangle>)>"
-  by (tactic {* auto2s_tac @{context} (INDUCT ("t", Arbitraries ["b"])) *})
+@proof @induct t arbitrary b @qed
 declare btree_search.simps [sep_proc_defs del]
 
 section {* Outer interface *}

@@ -50,14 +50,14 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm is_ord_semiring_def} *}
 
 lemma ord_semiring_mult_right [backward]:
   "is_ord_semiring(R) \<Longrightarrow> c \<in>. R \<Longrightarrow> a \<le>\<^sub>R b \<Longrightarrow> a *\<^sub>R c \<le>\<^sub>R b *\<^sub>R c"
-  by (tactic {* auto2s_tac @{context} (HAVE "c *\<^sub>R a \<le>\<^sub>R c *\<^sub>R b") *})
+@proof @have "c *\<^sub>R a \<le>\<^sub>R c *\<^sub>R b" @qed
 
 lemma ord_semiring_add_right [backward]:
   "is_ord_semiring(R) \<Longrightarrow> c \<in>. R \<Longrightarrow> a \<le>\<^sub>R b \<Longrightarrow> a +\<^sub>R c \<le>\<^sub>R b +\<^sub>R c"
-  by (tactic {* auto2s_tac @{context} (HAVE "c +\<^sub>R a \<le>\<^sub>R c +\<^sub>R b") *})
+@proof @have "c +\<^sub>R a \<le>\<^sub>R c +\<^sub>R b" @qed
 
 lemma ord_semiring_add_mix [backward1, backward2]:
   "is_ord_semiring(R) \<Longrightarrow> p \<le>\<^sub>R q \<Longrightarrow> r \<le>\<^sub>R s \<Longrightarrow> p +\<^sub>R r \<le>\<^sub>R q +\<^sub>R s"
-  by (tactic {* auto2s_tac @{context} (HAVE "p +\<^sub>R r \<le>\<^sub>R p +\<^sub>R s") *})
+@proof @have "p +\<^sub>R r \<le>\<^sub>R p +\<^sub>R s" @qed
 
 end

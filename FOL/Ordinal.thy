@@ -8,12 +8,14 @@ axiomatization where
   foundation [backward]: "x \<noteq> \<emptyset> \<Longrightarrow> \<exists>y\<in>x. y \<inter> x = \<emptyset>"
 
 lemma no_mem_cycle1 [resolve]: "a \<notin> a"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x\<in>{a}, x \<inter> {a} = \<emptyset>") *})
+@proof
+  @obtain "x\<in>{a}" where "x \<inter> {a} = \<emptyset>"
+@qed
 
 lemma no_mem_cycle2 [resolve]: "x \<in> y \<Longrightarrow> y \<notin> x"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a \<in> {x,y}, a \<inter> {x,y} = \<emptyset>") *})
+@proof
+  @obtain "a \<in> {x,y}" where "a \<inter> {x,y} = \<emptyset>"
+@qed
 
 section {* Membership relation is well-founded *}
 
@@ -26,9 +28,10 @@ lemma mem_rel_eval [rewrite]:
 setup {* del_prfstep_thm @{thm mem_rel_def} *}
 
 lemma wf_mem_rel [forward]: "wf(mem_rel(A))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. rel_minimal(mem_rel(A),B,x))" WITH (
-      CHOOSE "x\<in>B, x \<inter> B = \<emptyset>")) *})
+@proof
+  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. rel_minimal(mem_rel(A),B,x))" @with
+    @obtain "x\<in>B" where "x \<inter> B = \<emptyset>" @end
+@qed
 
 section {* Definition of ordinals *}
 
@@ -61,26 +64,29 @@ section {* Induction on ordinals *}
 
 lemma ord_induct' [script_induct]:
   "\<forall>x\<in>k. (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> ord(k) \<and> i \<in> k \<Longrightarrow> P(i)"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "wf(mem_rel(k)) \<and> i \<in> source(mem_rel(k))" "P(i)") *})
+@proof
+  @induct "wf(mem_rel(k)) \<and> i \<in> source(mem_rel(k))" "P(i)"
+@qed
   
 lemma ord_induct [script_induct]:
   "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> ord(i) \<Longrightarrow> P(i)"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "ord(succ(i)) \<and> i \<in> succ(i)" "P(i)") *})
+@proof
+  @induct "ord(succ(i)) \<and> i \<in> succ(i)" "P(i)"
+@qed
 
 lemma ord_double_induct [script_induct]:
   "\<forall>x y. ord(x) \<longrightarrow> ord(y) \<longrightarrow> (\<forall>x'\<in>x. P(x',y)) \<longrightarrow> (\<forall>y'\<in>y. P(x,y')) \<longrightarrow> P(x,y) \<Longrightarrow>
    ord(i) \<and> ord(j) \<Longrightarrow> P(i,j)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>i'. ord(i') \<longrightarrow> (\<forall>i\<in>i'. \<forall>j. ord(j) \<longrightarrow> P(i, j)) \<longrightarrow> (\<forall>j'. ord(j') \<longrightarrow> P(i', j'))" WITH (
-      INDUCT_ON "ord(j')" "P(i',j')") THEN
-    INDUCT_ON "ord(i)" "\<forall>j. ord(j) \<longrightarrow> P(i,j)") *})
+@proof
+  @have "\<forall>i'. ord(i') \<longrightarrow> (\<forall>i\<in>i'. \<forall>j. ord(j) \<longrightarrow> P(i, j)) \<longrightarrow> (\<forall>j'. ord(j') \<longrightarrow> P(i', j'))" @with
+    @induct "ord(j')" "P(i',j')" @end
+  @induct "ord(i)" "\<forall>j. ord(j) \<longrightarrow> P(i,j)"
+@qed
 
 (* Ordinals are linearly ordered *)
-lemma ord_linear:
-  "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<or> i = j \<or> j \<in> i"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "ord(i) \<and> ord(j)" "i \<in> j \<or> i = j \<or> j \<in> i") *})
+lemma ord_linear: "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<or> i = j \<or> j \<in> i"
+@proof
+  @induct "ord(i) \<and> ord(j)" "i \<in> j \<or> i = j \<or> j \<in> i"
+@qed
 
 end

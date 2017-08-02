@@ -53,9 +53,10 @@ theorem if_cong: "bequiv b b' \<Longrightarrow> cequiv c1 c1' \<Longrightarrow> 
 (* Prove lemma by induction separately *)
 theorem while_cong1 [backward1]:
   "bequiv b b' \<Longrightarrow> cequiv c c' \<Longrightarrow> ceval (WHILE b DO c OD) st st' \<Longrightarrow> ceval (WHILE b' DO c' OD) st st'"
-  by (tactic {* auto2s_tac @{context} (
-    LET "v = WHILE b DO c OD" THEN
-    PROP_INDUCT ("ceval v st st'", "v = WHILE b DO c OD \<longrightarrow> ceval (WHILE b' DO c' OD) st st'")) *})
+@proof
+  @let "v = WHILE b DO c OD" @then
+  @prop_induct "ceval v st st'" "v = WHILE b DO c OD \<longrightarrow> ceval (WHILE b' DO c' OD) st st'"
+@qed
 
 (* This lemma is then used twice in the proof below *)
 theorem while_cong: "bequiv b b' \<Longrightarrow> cequiv c c' \<Longrightarrow> cequiv (WHILE b DO c OD) (WHILE b' DO c' OD)" by auto2

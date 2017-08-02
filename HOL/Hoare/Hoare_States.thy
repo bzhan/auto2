@@ -158,7 +158,7 @@ theorem ceval_assign' [backward]: "st { x \<rightarrow> aeval st a } = st' \<Lon
 
 (* Automatically step forward a skip step. *)
 theorem ceval_skip_left [backward]: "ceval C st st' \<Longrightarrow> ceval (SKIP; C) st st'"
-  by (tactic {* auto2s_tac @{context} (HAVE "ceval SKIP st st") *})
+@proof @have "ceval SKIP st st" @qed
 
 theorem ceval_example1: "ceval (X := ANum 2; IF BLe (AId X) (ANum 1) THEN Y := ANum 3 ELSE Z := ANum 4 FI)
   ES (ES {X \<rightarrow> 2} {Z \<rightarrow> 4})" by auto2
@@ -176,16 +176,10 @@ setup {* add_rewrite_rule @{thm pup_to_n_def} *}
 
 theorem pup_to_2_ceval: "ceval pup_to_n (ES { X \<rightarrow> 2 })
   (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE
-      ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
-       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0})" ^
-       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})")
-     THEN HAVE
-      ("ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))" ^
-       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})" ^
-       "(ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"))
-  *})
+@proof
+  @have "ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1)) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0}) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})"
+  @have "ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1)) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1}) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"
+@qed
 
 (* Inversion rules. *)
 theorem skip_invert: "ceval SKIP st st' \<Longrightarrow> st = st'" using ceval.cases by auto
@@ -210,12 +204,16 @@ setup {* add_prop_induct_rule @{thm ceval.induct} *}
 
 (* ceval is deterministic. *)
 theorem ceval_deterministic: "ceval c st st1 \<Longrightarrow> ceval c st st2 \<Longrightarrow> st1 = st2"
-  by (tactic {* auto2s_tac @{context} (
-    PROP_INDUCT ("ceval c st st1", "\<forall>st2. ceval c st st2 \<longrightarrow> st1 = st2")) *})
+@proof
+  @prop_induct "ceval c st st1" "\<forall>st2. ceval c st st2 \<longrightarrow> st1 = st2"
+@qed
 
 setup {* add_rewrite_rule @{thm loop_def} *}
 theorem loop_never_stops: "\<not>(ceval loop st st')"
-  by (tactic {* auto2s_tac @{context} (
-    LET "v = loop" THEN PROP_INDUCT ("ceval v st st'", "v \<noteq> loop")) *})
+@proof
+  @contradiction
+  @let "v = loop" @then
+  @prop_induct "ceval v st st'" "v \<noteq> loop"
+@qed
 
 end

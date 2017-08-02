@@ -35,65 +35,60 @@ theorem balance_def' [rewrite]:
   apply (metis balance.simps(14) balance.simps(5) pre_rbt.collapse)
   by (smt balance.simps(11) balance.simps(12) balance.simps(4) balance.simps(7) balance.simps(8) pre_rbt.collapse red_not_leaf)
 
-text {*
-  Script specifying the case checking needed when proving theorems involving
-  balanceR t / balance t.
-*}
-
-ML {*
-(* For balanceR t *)
-val balanceR_cases =
-CASE "t = Leaf"
-THEN CASE "cl t = B" WITH
-  CASE "cl (rsub t) = R" WITH
-    (CASE "cl (lsub (rsub t)) = R" THEN CASE "cl (rsub (rsub t)) = R")
-
-(* For balance t *)
-val balance_cases =
-CASE "t = Leaf"
-THEN CASE "cl t = B" WITH
-  CASE "cl (lsub t) = R" WITH
-    (CASE "cl (lsub (lsub t)) = R" THEN CASE "cl (rsub (lsub t)) = R")
-
-(* For balanceR (Node l B x r) *)
-val balanceR_node_cases =
-  CASE "cl r = R" WITH (CASE "cl (lsub r) = R" THEN CASE "cl (rsub r) = R")
-
-(* For balance (Node l B x r) *)
-val balance_node_cases =
-  CASE "cl l = R" WITH (CASE "cl (lsub l) = R" THEN CASE "cl (rsub l) = R")
-*}
-
 subsection {* balance function preserves bd_inv *}
 
 theorem balance_bd': "bd_inv t \<Longrightarrow> bd_inv (balanceR t) \<and> black_depth t = black_depth (balanceR t)"
-  by (tactic {* auto2s_tac @{context} balanceR_cases *})
+@proof
+  @case "t = Leaf" @then
+  @case "cl t = B" @with
+    @case "cl (rsub t) = R" @with
+      @case "cl (lsub (rsub t)) = R" @then @case "cl (rsub (rsub t)) = R" @end @end
+@qed
 setup {* fold add_backward_prfstep [conj_left_th @{thm balance_bd'}, conj_right_th @{thm balance_bd'}] *}
 
 theorem balance_bd: "bd_inv t \<Longrightarrow> bd_inv (balance t) \<and> black_depth (balance t) = black_depth t"
-  by (tactic {* auto2s_tac @{context} balance_cases *})
+@proof
+  @case "t = Leaf" @then
+  @case "cl t = B" @with
+    @case "cl (lsub t) = R" @with
+      @case "cl (lsub (lsub t)) = R" @then @case "cl (rsub (lsub t)) = R" @end @end
+@qed
 setup {* add_backward_prfstep (conj_left_th @{thm balance_bd}) #> add_rewrite_rule (conj_right_th @{thm balance_bd}) *}
 
 subsection {* balance function preserves cl_inv *}
 
 theorem balanceR [backward1, backward2]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balanceR (Node l B k v r))"
-  by (tactic {* auto2s_tac @{context} balanceR_node_cases *})
+@proof
+  @case "cl r = R" @with @case "cl (lsub r) = R" @then @case "cl (rsub r) = R" @end
+@qed
 
 theorem balance1 [backward1, backward2]:
   "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (balance (Node l B k v r))"
-  by (tactic {* auto2s_tac @{context} balance_node_cases *})
+@proof
+  @case "cl l = R" @with @case "cl (lsub l) = R" @then @case "cl (rsub l) = R" @end
+@qed
+
 theorem balance2 [backward1, backward2]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balance (Node l B k v r))"
-  by (tactic {* auto2s_tac @{context} balance_node_cases *})
+@proof
+  @case "cl l = R" @with @case "cl (lsub l) = R" @then @case "cl (rsub l) = R" @end
+@qed
 setup {* del_prfstep_thm @{thm balanceR} *}
 
 subsection {* Balance function takes non-leafs to non-leafs *}
 
 theorem balanceR_non_Leaf [resolve]: "balanceR (Node l c k v r) \<noteq> Leaf"
-  by (tactic {* auto2s_tac @{context} (CASE "c = R" THEN balanceR_node_cases) *})
+@proof
+  @case "c = R" @then
+  @case "cl r = R" @with @case "cl (lsub r) = R" @then @case "cl (rsub r) = R" @end
+@qed
+
 theorem balance_non_Leaf: "balance (Node l c k v r) \<noteq> Leaf"
-  by (tactic {* auto2s_tac @{context} (CASE "c = R" THEN balance_node_cases) *})
+@proof
+  @case "c = R" @then
+  @case "cl l = R" @with @case "cl (lsub l) = R" @then @case "cl (rsub l) = R" @end
+@qed
 setup {* add_forward_prfstep_cond @{thm balance_non_Leaf} [with_term "balance (Node ?l ?c ?k ?v ?r)"] *}
 
 section {* ins function *}
@@ -114,15 +109,17 @@ setup {* add_forward_prfstep_cond @{thm ins_non_Leaf} [with_term "ins ?x ?v ?t"]
 subsection {* Properties of ins function on cl_inv, bd_inv, and set of keys *}
 
 theorem cl_inv_ins:
-  "cl_inv t \<Longrightarrow> if cl t = B then cl_inv (ins x v t) else cl (ins x v t) = R \<and> cl_inv' (ins x v t)" by auto2
+  "cl_inv t \<Longrightarrow> if cl t = B then cl_inv (ins x v t) else cl (ins x v t) = R \<and> cl_inv' (ins x v t)"
+@proof @induct t @qed
 
 setup {* add_forward_prfstep_cond @{thm cl_inv_ins} [with_term "ins ?x ?v ?t"] *}
 theorem cl_inv_ins_l [backward]: "cl_inv t \<Longrightarrow> cl_inv (lsub (ins x v t))" by auto2
 theorem cl_inv_ins_r [backward]: "cl_inv t \<Longrightarrow> cl_inv (rsub (ins x v t))" by auto2
 setup {* del_prfstep_thm @{thm cl_inv_ins} *}
 
-theorem bd_inv_ins: "bd_inv t \<Longrightarrow> bd_inv (ins x v t) \<and> black_depth t = black_depth (ins x v t)"
-  by (tactic {* auto2s_tac @{context} (CASE "cl t = R") *})
+theorem bd_inv_ins:
+  "bd_inv t \<Longrightarrow> bd_inv (ins x v t) \<and> black_depth t = black_depth (ins x v t)"
+@proof @induct t @case "cl t = R" @qed
 setup {* add_forward_prfstep_cond (conj_left_th @{thm bd_inv_ins}) [with_term "ins ?x ?v ?t"] *}
 
 section {* Insert function *}
@@ -146,32 +143,41 @@ theorem is_rbt_insert: "is_rbt t \<Longrightarrow> is_rbt (rbt_insert x v t)" by
 section {* Sortedness, sets, and maps *}
 
 theorem balanceR_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balanceR t) = rbt_in_traverse_pairs t"
-  by (tactic {* auto2s_tac @{context} balanceR_cases *})
+@proof
+  @case "t = Leaf" @then
+  @case "cl t = B" @with
+    @case "cl (rsub t) = R" @with
+      @case "cl (lsub (rsub t)) = R" @then @case "cl (rsub (rsub t)) = R" @end @end
+@qed
 
 declare [[max_ac = 30]]
 theorem balance_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t"
-  by (tactic {* auto2s_tac @{context} balance_cases *})
+@proof
+  @case "t = Leaf" @then
+  @case "cl t = B" @with
+    @case "cl (lsub t) = R" @with
+      @case "cl (lsub (lsub t)) = R" @then @case "cl (rsub (lsub t)) = R" @end @end
+@qed
 declare [[max_ac = 20]]
 
 theorem balance_inorder [rewrite]: "rbt_in_traverse (balance t) = rbt_in_traverse t"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t") *})
+@proof @have "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t" @qed
 
 theorem ins_inorder [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (ins x v t) = ordered_insert x (rbt_in_traverse t)" by auto2
+  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (ins x v t) = ordered_insert x (rbt_in_traverse t)"
+@proof @induct t @qed
 
 theorem ins_inorder_pairs [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)" by auto2
+  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
+@proof @induct t @qed
 
 theorem insert_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (rbt_insert x v t) = ordered_insert x (rbt_in_traverse t)"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "rbt_in_traverse (rbt_insert x v t) = rbt_in_traverse (ins x v t)") *})
+@proof @have "rbt_in_traverse (rbt_insert x v t) = rbt_in_traverse (ins x v t)" @qed
 
 theorem insert_inorder_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (rbt_insert x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "rbt_in_traverse_pairs (rbt_insert x v t) = rbt_in_traverse_pairs (ins x v t)") *})
+@proof @have "rbt_in_traverse_pairs (rbt_insert x v t) = rbt_in_traverse_pairs (ins x v t)" @qed
 
 theorem insert_rbt_set: "rbt_sorted t \<Longrightarrow> rbt_set (rbt_insert x v t) = {x} \<union> rbt_set t" by auto2
 
@@ -189,6 +195,7 @@ fun rbt_search :: "('a::ord, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b optio
    else rbt_search r x)"
 setup {* fold add_rewrite_rule @{thms rbt_search.simps} *}
 
-theorem rbt_search_correct: "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>" by auto2
+theorem rbt_search_correct: "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
+@proof @induct t @qed
 
 end

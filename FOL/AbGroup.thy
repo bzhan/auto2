@@ -33,7 +33,7 @@ setup {* del_prfstep_thm @{thm has_add_inverse_def} *}
 
 lemma has_add_inverse_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> has_add_inverse(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> has_add_inverse(H)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>x\<in>.H. x +\<^sub>H (SOME y\<in>.G. x +\<^sub>G y = \<zero>\<^sub>G) = \<zero>\<^sub>H") *})
+@proof @have "\<forall>x\<in>.H. x +\<^sub>H (SOME y\<in>.G. x +\<^sub>G y = \<zero>\<^sub>G) = \<zero>\<^sub>H" @qed
 
 definition is_abgroup :: "i \<Rightarrow> o" where [rewrite]:
   "is_abgroup(G) \<longleftrightarrow> (is_ab_monoid(G) \<and> has_add_inverse(G))"
@@ -53,12 +53,11 @@ setup {* fold add_rewrite_rule [@{thm plus_commD}, @{thm plus_assoc_left}] *}
 
 lemma has_left_inverse [backward]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> \<exists>y\<in>.G. y +\<^sub>G x = \<zero>\<^sub>G"
-  by (tactic {* auto2s_tac @{context} (CHOOSE "y\<in>.G, x +\<^sub>G y = \<zero>\<^sub>G") *})
+@proof @obtain "y\<in>.G" where "x +\<^sub>G y = \<zero>\<^sub>G" @qed
 
 lemma add_cancel_left [forward]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x +\<^sub>G y = x +\<^sub>G z \<Longrightarrow> y = z"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x'\<in>.G, x' +\<^sub>G x = \<zero>\<^sub>G" THEN HAVE "x' +\<^sub>G (x +\<^sub>G y) = y") *})
+@proof @obtain "x'\<in>.G" where "x' +\<^sub>G x = \<zero>\<^sub>G" @then @have "x' +\<^sub>G (x +\<^sub>G y) = y" @qed
       
 lemma add_cancel_right [forward]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> y +\<^sub>G x = z +\<^sub>G x \<Longrightarrow> y = z" by auto2
@@ -100,14 +99,14 @@ setup {* del_prfstep_thm @{thm neg_def} *}
 
 lemma abgroup_neg_distrib:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> -\<^sub>G (x +\<^sub>G y) = -\<^sub>G x +\<^sub>G -\<^sub>G y \<and> -\<^sub>G x \<in>. G \<and> -\<^sub>G y \<in>. G"
-  by (tactic {* auto2s_tac @{context} (HAVE "(x +\<^sub>G y) +\<^sub>G (-\<^sub>G x +\<^sub>G -\<^sub>G y) = \<zero>\<^sub>G") *})
+@proof @have "(x +\<^sub>G y) +\<^sub>G (-\<^sub>G x +\<^sub>G -\<^sub>G y) = \<zero>\<^sub>G" @qed
   
 lemma abgroup_neg_distrib':
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> -\<^sub>G x +\<^sub>G -\<^sub>G y = -\<^sub>G (x +\<^sub>G y) \<and> x +\<^sub>G y \<in>. G"
-  by (tactic {* auto2s_tac @{context} (HAVE "(x +\<^sub>G y) +\<^sub>G (-\<^sub>G x +\<^sub>G -\<^sub>G y) = \<zero>\<^sub>G") *})
+@proof @have "(x +\<^sub>G y) +\<^sub>G (-\<^sub>G x +\<^sub>G -\<^sub>G y) = \<zero>\<^sub>G" @qed
     
 lemma abgroup_neg_inj [forward]: "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> -\<^sub>G x = -\<^sub>G y \<Longrightarrow> x = y"
-  by (tactic {* auto2s_tac @{context} (HAVE "x = -\<^sub>G (-\<^sub>G x)") *})
+@proof @have "x = -\<^sub>G (-\<^sub>G x)" @qed
 
 definition minus :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "minus(G,x,y) = (THE z. z \<in>. G \<and> z +\<^sub>G y = x)"
@@ -119,7 +118,7 @@ lemma minusI:
 
 lemma minus_exist [backward2]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> \<exists>z\<in>.G. z +\<^sub>G y = x"
-  by (tactic {* auto2s_tac @{context} (HAVE "(x +\<^sub>G (-\<^sub>G y)) +\<^sub>G y = x") *})
+@proof @have "(x +\<^sub>G (-\<^sub>G y)) +\<^sub>G y = x" @qed
 
 lemma minus_type [typing]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x -\<^sub>G y \<in>. G" by auto2
@@ -131,7 +130,7 @@ setup {* del_prfstep_thm @{thm minus_def} *}
 lemma minus_abgroup_fun [rewrite]:
   "is_abgroup_raw(H) \<Longrightarrow> is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow>
    eq_str_abgroup(G,H) \<Longrightarrow> x -\<^sub>G y = x -\<^sub>H y"
-  by (tactic {* auto2s_tac @{context} (HAVE "x -\<^sub>G y = x +\<^sub>G -\<^sub>G y") *})
+@proof @have "x -\<^sub>G y = x +\<^sub>G -\<^sub>G y" @qed
 
 setup {* fold del_prfstep_thm [@{thm plus_commD}, @{thm plus_assoc_left}, @{thm minusD}] *}
 ML_file "alg_abgroup.ML"
@@ -143,7 +142,7 @@ lemma minus_same_eq_zero [rewrite]:
 
 lemma minus_eq_zero_same [forward]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x -\<^sub>G y = \<zero>\<^sub>G \<Longrightarrow> x = y"
-  by (tactic {* auto2s_tac @{context} (HAVE "x -\<^sub>G y = x +\<^sub>G -\<^sub>G y") *})
+@proof @have "x -\<^sub>G y = x +\<^sub>G -\<^sub>G y" @qed
 
 section {* Subset of an abelian group *}
   

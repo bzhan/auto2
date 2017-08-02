@@ -86,6 +86,7 @@ theorem nat_le_prod_with_same [backward]: "m \<noteq> 0 \<Longrightarrow> (n::na
 theorem nat_le_prod_with_le [backward1]: "k \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m \<Longrightarrow> (n::nat) \<le> k * m"
   using le_trans nat_le_prod_with_same by blast
 theorem nat_plus_le_to_less [backward1]: "b \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> a < c" by simp
+theorem nat_plus_le_to_less2 [backward1]: "a \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> b < c" by simp
 
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Nat.le_diff_conv}) [with_term "?i + ?k", with_cond "?k \<noteq> ?NUMC"] *}
 setup {* add_rewrite_rule_cond @{thm Nat.le_diff_conv2} [with_term "?i + ?k"] *}
@@ -219,18 +220,12 @@ setup {* add_backward1_prfstep @{thm dvd_fact} *}
 setup {* add_rewrite_rule @{thm Nat.Suc_eq_plus1} *}
 
 (* Induction. *)
-theorem nat_induct': "P 0 \<Longrightarrow> (\<forall>n. P (n-1) \<longrightarrow> P n) \<Longrightarrow> P (n::nat)"
+theorem nat_induct': "P 0 \<Longrightarrow> (\<forall>n. n \<noteq> 0 \<and> P (n-1) \<longrightarrow> P n) \<Longrightarrow> P (n::nat)"
   by (metis One_nat_def diff_Suc_Suc diff_zero nat_induct)
-
-theorem nat_upper_strong_induct:
-  "n < M \<Longrightarrow> (\<And>n. \<forall>m. m > n \<longrightarrow> m < M \<longrightarrow> P m \<Longrightarrow> P n) \<Longrightarrow> P (n::nat)"
-  apply (induct "M - n" arbitrary: n rule: nat_less_induct)
-  using diff_less_mono2 by blast
 
 setup {*
   add_prfstep_induction @{thm nat_induct'} #>
-  add_prfstep_strong_induction @{thm nat_less_induct} #>
-  add_prfstep_upper_strong_induction @{thm nat_upper_strong_induct}
+  add_prfstep_strong_induction @{thm nat_less_induct}
 *}
 
 end

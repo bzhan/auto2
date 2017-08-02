@@ -17,7 +17,7 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm is_normal_subgroup_set_def} *}
 
 lemma is_normal_subgroup_setD3 [typing]:
   "a \<in>. G \<Longrightarrow> is_normal_subgroup_set(G,H) \<Longrightarrow> h \<in> H \<Longrightarrow> inv(G,a) *\<^sub>G h *\<^sub>G a \<in> H"
-  by (tactic {* auto2s_tac @{context} (HAVE "a = inv(G, inv(G,a))") *})
+@proof @have "a = inv(G, inv(G,a))" @qed
 
 section {* Cosets as equivalence classes *}
   
@@ -38,31 +38,34 @@ setup {* del_prfstep_thm @{thm rcoset_equiv_def} *}
 
 lemma rcoset_equiv_is_equiv [typing]:
   "is_group(G) \<Longrightarrow> is_subgroup_set(G,H) \<Longrightarrow> rcoset_equiv(G,H) \<in> equiv_space(carrier(G))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "S = carrier(G)" THEN
-    LET "R = rcoset_equiv(G,H)" THEN
-    HAVE "\<forall>x\<in>.R. x \<sim>\<^sub>R x" WITH HAVE "x = \<one>\<^sub>G *\<^sub>G x" THEN
-    HAVE "\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x" WITH (
-      CHOOSE "h\<in>H, h *\<^sub>G x = y" THEN
-      HAVE "inv(G,h) *\<^sub>G y = x" WITH HAVE "h *\<^sub>G (inv(G,h) *\<^sub>G y) = h *\<^sub>G inv(G,h) *\<^sub>G y") THEN
-    HAVE "\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z" WITH (
-      CHOOSE "h1\<in>H, h1 *\<^sub>G x = y" THEN
-      CHOOSE "h2\<in>H, h2 *\<^sub>G y = z" THEN
-      HAVE "(h2 *\<^sub>G h1) *\<^sub>G x = z" WITH HAVE "(h2 *\<^sub>G h1) *\<^sub>G x = h2 *\<^sub>G (h1 *\<^sub>G x)")) *})
+@proof
+  @let "S = carrier(G)" @then
+  @let "R = rcoset_equiv(G,H)" @then
+  @have "\<forall>x\<in>.R. x \<sim>\<^sub>R x" @with @have "x = \<one>\<^sub>G *\<^sub>G x" @end
+  @have "\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x" @with
+    @obtain "h\<in>H" where "h *\<^sub>G x = y" @then
+    @have "inv(G,h) *\<^sub>G y = x" @with @have "h *\<^sub>G (inv(G,h) *\<^sub>G y) = h *\<^sub>G inv(G,h) *\<^sub>G y" @end @end
+  @have "\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z" @with
+    @obtain "h1\<in>H" where "h1 *\<^sub>G x = y" @then
+    @obtain "h2\<in>H" where "h2 *\<^sub>G y = z" @then
+    @have "(h2 *\<^sub>G h1) *\<^sub>G x = z" @with @have "(h2 *\<^sub>G h1) *\<^sub>G x = h2 *\<^sub>G (h1 *\<^sub>G x)" @end @end
+@qed
 
 lemma rcoset_mult_compat2 [backward]:
   "R = rcoset_equiv(G,H) \<Longrightarrow> x \<in>. G \<Longrightarrow>
    is_normal_subgroup_set(G,H) \<Longrightarrow> y \<sim>\<^sub>R z \<Longrightarrow> x *\<^sub>G y \<sim>\<^sub>R x *\<^sub>G z"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "h\<in>H, h *\<^sub>G y = z" THEN
-    HAVE "(x *\<^sub>G h *\<^sub>G inv(G,x)) *\<^sub>G (x *\<^sub>G y) = x *\<^sub>G (h *\<^sub>G (inv(G,x) *\<^sub>G x) *\<^sub>G y)") *})
+@proof
+  @obtain "h\<in>H" where "h *\<^sub>G y = z" @then
+  @have "(x *\<^sub>G h *\<^sub>G inv(G,x)) *\<^sub>G (x *\<^sub>G y) = x *\<^sub>G (h *\<^sub>G (inv(G,x) *\<^sub>G x) *\<^sub>G y)"
+@qed
 
 lemma rcoset_mult_compat1 [backward]:
   "R = rcoset_equiv(G,H) \<Longrightarrow> x \<in>. G \<Longrightarrow>
    is_subgroup_set(G,H) \<Longrightarrow> y \<sim>\<^sub>R z \<Longrightarrow> y *\<^sub>G x \<sim>\<^sub>R z *\<^sub>G x"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "h\<in>H, h *\<^sub>G y = z" THEN
-    HAVE "h *\<^sub>G (y *\<^sub>G x) = (h *\<^sub>G y) *\<^sub>G x") *})
+@proof
+  @obtain "h\<in>H" where "h *\<^sub>G y = z" @then
+  @have "h *\<^sub>G (y *\<^sub>G x) = (h *\<^sub>G y) *\<^sub>G x"
+@qed
 
 definition rcoset_quot :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "rcoset_quot(G,H) = carrier(rcoset_equiv(G,H)) // rcoset_equiv(G,H)"
@@ -79,9 +82,8 @@ lemma rcoset_mult_type [typing]:
 
 lemma rcoset_mult_eval [rewrite]:
   "R = rcoset_equiv(G,H) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_normal_subgroup_set(G,H) \<Longrightarrow>
-   rcoset_mult(G,H,equiv_class(R,x),equiv_class(R,y)) = equiv_class(R,x *\<^sub>G y)" 
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "compat_meta_bin(R, \<lambda>x y. x *\<^sub>G y)") *})
+   rcoset_mult(G,H,equiv_class(R,x),equiv_class(R,y)) = equiv_class(R,x *\<^sub>G y)"
+@proof @have "compat_meta_bin(R, \<lambda>x y. x *\<^sub>G y)" @qed
 
 lemma rcoset_mult_assoc [rewrite]:
   "S = rcoset_quot(G,H) \<Longrightarrow> x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> z \<in> S \<Longrightarrow>
@@ -134,10 +136,11 @@ lemma quotient_group_sel2 [rewrite]:
 
 lemma quotient_group_is_group:
   "is_normal_subgroup_set(G,H) \<Longrightarrow> is_group(G //\<^sub>G H)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "Q = G //\<^sub>G H" THEN
-    HAVE "is_monoid(Q)" THEN
-    HAVE "\<forall>x\<in>.Q. rcoset_inv(G,H,x) *\<^sub>Q x = \<one>\<^sub>Q") *})
+@proof
+  @let "Q = G //\<^sub>G H" @then
+  @have "is_monoid(Q)" @then
+  @have "\<forall>x\<in>.Q. rcoset_inv(G,H,x) *\<^sub>Q x = \<one>\<^sub>Q"
+@qed
 setup {* add_forward_prfstep_cond @{thm quotient_group_is_group} [with_term "?G //\<^sub>G ?H"] *}
 
 section {* Canonical surjection *}
@@ -151,9 +154,10 @@ lemma qsurj_group_is_morphism [typing]:
 
 lemma qsurj_group_is_surjective:
   "is_normal_subgroup_set(G,H) \<Longrightarrow> surjective(qsurj_group(G,H))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "R = rcoset_equiv(G,H)" THEN
-    HAVE_RULE "\<forall>x \<in>. G //\<^sub>G H. qsurj_group(G,H)`rep(R,x) = x") *})
+@proof
+  @let "R = rcoset_equiv(G,H)" @then
+  @have (@rule) "\<forall>x \<in>. G //\<^sub>G H. qsurj_group(G,H)`rep(R,x) = x"
+@qed
 setup {* add_forward_prfstep_cond @{thm qsurj_group_is_surjective} [with_term "qsurj_group(?G,?H)"] *}
   
 lemma qsurj_group_eval [rewrite]:
@@ -189,10 +193,11 @@ section {* First isomorphism theorem *}
 lemma exists_induced_group_mor [backward]:
   "is_normal_subgroup_set(G,K) \<Longrightarrow> f \<in> G \<rightharpoonup>\<^sub>G H \<Longrightarrow> K \<subseteq> kernel(f) \<Longrightarrow>
    \<exists>!h. h\<in>(G //\<^sub>G K)\<rightharpoonup>H \<and> f = h \<circ>\<^sub>m qsurj_group(G,K)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "p = qsurj_group(G,K)" THEN
-    HAVE "\<forall>x\<in>.G. \<forall>y\<in>.G. p`x = p`y \<longrightarrow> f`x = f`y" WITH (
-      CHOOSE "k \<in> K, k *\<^sub>G x = y")) *})
+@proof
+  @let "p = qsurj_group(G,K)" @then
+  @have "\<forall>x\<in>.G. \<forall>y\<in>.G. p`x = p`y \<longrightarrow> f`x = f`y" @with
+    @obtain "k \<in> K" where "k *\<^sub>G x = y" @end
+@qed
 
 (* Given f \<in> G \<rightharpoonup>\<^sub>G H and a normal subgroup K of G, obtain f' \<in> G//K \<rightharpoonup>\<^sub>G H
    (assuming various requirements hold. *)
@@ -223,16 +228,18 @@ setup {* add_forward_prfstep_cond @{thm induced_group_mor_is_hom} [with_term "in
 (* Canonical decomposition *)
 lemma injective_induced_group_mor:
   "mor_form(f) \<Longrightarrow> is_group_hom(f) \<Longrightarrow> injective(induced_group_mor(f,kernel(f)))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "h = induced_group_mor(f,kernel(f))" THEN
-    LET "G = source_str(f)" THEN
-    LET "p = qsurj_group(G,kernel(f))" THEN
-    HAVE "\<forall>x\<in>source(h). \<forall>y\<in>source(h). h`x = h`y \<longrightarrow> x = y" WITH (
-      CHOOSE "x'\<in>source(p), p`x' = x" THEN
-      CHOOSE "y'\<in>source(p), p`y' = y" THEN
-      HAVE "f`x' = f`y'" THEN
-      HAVE "y' *\<^sub>G inv(G,x') \<in> kernel(f)" THEN
-      HAVE "(y' *\<^sub>G inv(G,x')) *\<^sub>G x' = y'")) *})
+@proof
+  @let "h = induced_group_mor(f,kernel(f))" @then
+  @let "G = source_str(f)" @then
+  @let "p = qsurj_group(G,kernel(f))" @then
+  @have "\<forall>x\<in>source(h). \<forall>y\<in>source(h). h`x = h`y \<longrightarrow> x = y" @with
+    @obtain "x'\<in>source(p)" where "p`x' = x" @then
+    @obtain "y'\<in>source(p)" where "p`y' = y" @then
+    @have "f`x' = f`y'" @then
+    @have "y' *\<^sub>G inv(G,x') \<in> kernel(f)" @then
+    @have "(y' *\<^sub>G inv(G,x')) *\<^sub>G x' = y'"
+  @end
+@qed
 setup {* add_forward_prfstep_cond @{thm injective_induced_group_mor}
   [with_term "induced_group_mor(?f,kernel(?f))"] *}
 

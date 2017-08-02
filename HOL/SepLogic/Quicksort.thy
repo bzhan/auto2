@@ -23,32 +23,37 @@ theorem part1_induct': "(\<forall>a left right p.
      (\<not> right \<le> left \<longrightarrow> (\<forall>v. \<not>v \<le> p \<longrightarrow> P a left (right - 1) p))) \<longrightarrow> P a left right p) \<Longrightarrow>
     P (a::nat array) (left::nat) (right::nat) (p::nat)"
   apply (induct rule: part1.induct) by blast
-setup {* add_prfstep_imp_induction @{term_pat "part1 ?a ?l ?r ?p"} @{thm part1_induct'} *}
+setup {* add_hoare_induct_rule (@{term part1}, @{thm part1_induct'}) *}
 
 theorem part1_permutes [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(r < length xs)>
    part1 p l r a
-   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(mset xs' = mset xs)>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(mset xs' = mset xs)>"
+@proof @hoare_induct @qed
 
 theorem part1_returns_index_in_bounds' [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(r < length xs)>
    part1 p l r a
-   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(if r \<le> l then rs = r else l \<le> rs \<and> rs \<le> r)>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(if r \<le> l then rs = r else l \<le> rs \<and> rs \<le> r)>"
+@proof @hoare_induct @qed
 
 theorem part1_outer_remains [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(r < length xs)>
    part1 p l r a
-   <\<lambda>_. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(outer_remains xs xs' l r)>" by auto2
+   <\<lambda>_. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(outer_remains xs xs' l r)>"
+@proof @hoare_induct @qed
 
 theorem part1_partitions1 [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(r < length xs)>
    part1 p l r a
-   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(\<forall>i. l \<le> i \<longrightarrow> i < rs \<longrightarrow> xs' ! i \<le> a)>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(\<forall>i. l \<le> i \<longrightarrow> i < rs \<longrightarrow> xs' ! i \<le> a)>"
+@proof @hoare_induct @qed
 
 theorem part1_partitions2 [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(r < length xs)>
    part1 p l r a
-   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(\<forall>i. rs < i \<longrightarrow> i \<le> r \<longrightarrow> xs' ! i \<ge> a)>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(\<forall>i. rs < i \<longrightarrow> i \<le> r \<longrightarrow> xs' ! i \<ge> a)>"
+@proof @hoare_induct @qed
 
 declare part1.simps [sep_proc_defs del]
 
@@ -109,7 +114,7 @@ theorem quicksort_induct': "(\<forall>arr left right.
      (left < right \<longrightarrow> (\<forall>p. left \<le> p \<le> right \<longrightarrow> P arr (p + 1) right))) \<longrightarrow> P arr left right) \<Longrightarrow>
     P (arr::nat array) (left::nat) (right::nat)"
   apply (induct rule: quicksort.induct) by (metis closed_interval_def)
-setup {* add_prfstep_imp_induction @{term_pat "quicksort ?a ?left ?right"} @{thm quicksort_induct'} *}
+setup {* add_hoare_induct_rule (@{term quicksort}, @{thm quicksort_induct'}) *}
 
 theorem quicksort_trivial [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l \<ge> r)>
@@ -119,12 +124,14 @@ theorem quicksort_trivial [hoare_triple]:
 theorem quicksort_outer_remains [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
    quicksort a l r
-   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(outer_remains xs xs' l r)>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(outer_remains xs xs' l r)>"
+@proof @hoare_induct @qed
 
 theorem quicksort_permutes' [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
    quicksort a l r
-   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(mset xs' = mset xs)>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(mset xs' = mset xs)>"
+@proof @hoare_induct @qed
 
 declare quicksort.simps [sep_proc_defs del]
 theorem quicksort_permutes [hoare_triple]:
@@ -148,14 +155,19 @@ setup {* add_rewrite_rule @{thm sorted_append} *}
 theorem sorted_pivoted_list [forward]: "sorted (sublist' (pivot + 1) r xs) \<Longrightarrow> sorted (sublist' l pivot xs) \<Longrightarrow>
   \<forall>x\<in>set (sublist' l pivot xs). x \<le> xs ! pivot \<Longrightarrow> \<forall>y\<in>set (sublist' (pivot + 1) r xs). xs ! pivot \<le> y \<Longrightarrow>
   l \<le> pivot \<Longrightarrow> pivot < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' l r xs)"
-  by (tactic {* auto2s_tac @{context} (
-      HAVE "sublist' pivot r xs = xs ! pivot # sublist' (pivot + 1) r xs" THEN
-      CASE "pivot = 0" THEN HAVE "sublist' l r xs = sublist' l pivot xs @ sublist' pivot r xs") *})
+@proof
+  @have "sublist' pivot r xs = xs ! pivot # sublist' (pivot + 1) r xs" @then
+  @case "pivot = 0" @then
+  @have "sublist' l r xs = sublist' l pivot xs @ sublist' pivot r xs"
+@qed
 setup {* del_prfstep_thm @{thm sorted_append} *}
 
 theorem sorted_pivoted_list' [forward]: "sorted (sublist' 1 r xs) \<Longrightarrow>
   \<forall>y\<in>set (sublist' 1 r xs). xs ! 0 \<le> y \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' 0 r xs)"
-  by (tactic {* auto2s_tac @{context} (HAVE "sublist' 0 r xs = xs ! 0 # sublist' 1 r xs") *})
+@proof
+  @contradiction
+  @have "sublist' 0 r xs = xs ! 0 # sublist' 1 r xs"
+@qed
 
 declare quicksort.simps [sep_proc_defs]
 
@@ -165,13 +177,15 @@ setup {* add_gen_prfstep ("quicksort_case",
 
 theorem sorted_triv_list:
   "l \<ge> r \<Longrightarrow> sorted (sublist' l (r + 1) xs)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "l \<ge> length xs" THEN CASE "l = r" THEN HAVE "l > r") *})
+@proof
+  @case "l \<ge> length xs" @then @case "l = r" @then @have "l > r"
+@qed
 setup {* add_forward_prfstep_cond @{thm sorted_triv_list} [with_term "sublist' ?l (?r + 1) ?xs"] *}
 
 theorem quicksort_sorts:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
    quicksort a l r
-   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(sorted (sublist' l (r + 1) xs'))>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(sorted (sublist' l (r + 1) xs'))>"
+@proof @hoare_induct @qed
 
 end

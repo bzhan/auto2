@@ -29,32 +29,36 @@ lemma seq_has_incrementI [forward]:
     
 lemma seq_has_increment_zero [resolve]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> seq_has_increment(X,0\<^sub>R)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R 0\<^sub>R" WITH HAVE "X`k -\<^sub>R X`k \<ge>\<^sub>R 0\<^sub>R") *})
+@proof
+  @have "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R 0\<^sub>R" @with @have "X`k -\<^sub>R X`k \<ge>\<^sub>R 0\<^sub>R" @end
+@qed
 setup {* del_prfstep_thm @{thm seq_has_increment_def} *}
   
 lemma seq_has_increment_induct [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> N \<in> nat \<Longrightarrow> a >\<^sub>R \<zero>\<^sub>R \<Longrightarrow>
    seq_has_increment(X,a) \<Longrightarrow> seq_has_increment(X,of_nat(R,N) *\<^sub>R a)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "seq_has_increment(X,0\<^sub>R)" THEN
-    HAVE "\<forall>n\<in>nat. seq_has_increment(X,of_nat(R,n) *\<^sub>R a) \<longrightarrow> seq_has_increment(X,of_nat(R,n +\<^sub>\<nat> 1) *\<^sub>R a)" WITH (
-      HAVE "\<forall>k\<in>.\<nat>. \<exists>k'\<ge>\<^sub>\<nat>k. X`k' -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,n +\<^sub>\<nat> 1) *\<^sub>R a" WITH (
-        CHOOSE "k1\<ge>\<^sub>\<nat>k, X`k1 -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,n) *\<^sub>R a" THEN
-        CHOOSE "k2\<ge>\<^sub>\<nat>k1, X`k2 -\<^sub>R X`k1 \<ge>\<^sub>R a" THEN
-        HAVE "X`k2 -\<^sub>R X`k = (X`k2 -\<^sub>R X`k1) +\<^sub>R (X`k1 -\<^sub>R X`k)" THEN
-        HAVE "(of_nat(R,n) +\<^sub>R 1\<^sub>R) *\<^sub>R a = a +\<^sub>R of_nat(R,n) *\<^sub>R a")) THEN
-    INDUCT_ON "N \<in> nat" "seq_has_increment(X,of_nat(R,N) *\<^sub>R a)") *})
+@proof
+  @have "seq_has_increment(X,0\<^sub>R)" @then
+  @have (@rule) "\<forall>n\<in>nat. seq_has_increment(X,of_nat(R,n) *\<^sub>R a) \<longrightarrow> seq_has_increment(X,of_nat(R,n +\<^sub>\<nat> 1) *\<^sub>R a)" @with
+    @have "\<forall>k\<in>.\<nat>. \<exists>k'\<ge>\<^sub>\<nat>k. X`k' -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,n +\<^sub>\<nat> 1) *\<^sub>R a" @with
+      @obtain k1 where "k1\<ge>\<^sub>\<nat>k" "X`k1 -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,n) *\<^sub>R a" @then
+      @obtain k2 where "k2\<ge>\<^sub>\<nat>k1" "X`k2 -\<^sub>R X`k1 \<ge>\<^sub>R a" @then
+      @have "X`k2 -\<^sub>R X`k = (X`k2 -\<^sub>R X`k1) +\<^sub>R (X`k1 -\<^sub>R X`k)" @then
+      @have "(of_nat(R,n) +\<^sub>R 1\<^sub>R) *\<^sub>R a = a +\<^sub>R of_nat(R,n) *\<^sub>R a" @end @end
+  @induct "N \<in> nat" "seq_has_increment(X,of_nat(R,N) *\<^sub>R a)"
+@qed
    
 lemma monotone_cauchy [forward]:
   "ord_field_seq(X) \<Longrightarrow> seq_incr(X) \<Longrightarrow> upper_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow>
    is_archimedean(R) \<Longrightarrow> cauchy(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "a >\<^sub>R \<zero>\<^sub>R, \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R \<ge>\<^sub>R a" THEN
-    HAVE "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a" THEN
-    CHOOSE "M\<in>.R, \<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R M" THEN
-    CHOOSE "N\<in>nat, of_nat(R,N) *\<^sub>R a >\<^sub>R (M -\<^sub>R X`0)" THEN
-    CHOOSE "n \<ge>\<^sub>\<nat> 0, X`n -\<^sub>R X`0 \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a" THEN HAVE "X`n \<le>\<^sub>R M") *})
+@proof
+  @contradiction
+  @obtain a where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R \<ge>\<^sub>R a" @then
+  @have "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a" @then
+  @obtain "M\<in>.R" where "\<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R M" @then
+  @obtain "N\<in>nat" where "of_nat(R,N) *\<^sub>R a >\<^sub>R (M -\<^sub>R X`0)" @then
+  @obtain n where "n \<ge>\<^sub>\<nat> 0" "X`n -\<^sub>R X`0 \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a" @then @have "X`n \<le>\<^sub>R M"
+@qed
       
 lemma monotone_incr_converges [forward]:
   "is_sequence(X) \<Longrightarrow> seq_incr(X) \<Longrightarrow> upper_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow>
@@ -63,8 +67,7 @@ lemma monotone_incr_converges [forward]:
 lemma monotone_decr_converges [forward]:
   "is_sequence(X) \<Longrightarrow> seq_decr(X) \<Longrightarrow> lower_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow>
    cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> converges(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "upper_bounded(seq_neg(X))" THEN HAVE "seq_incr(seq_neg(X))") *})
+@proof @have "upper_bounded(seq_neg(X))" @then @have "seq_incr(seq_neg(X))" @qed
 
 section {* A simple test for vanishing of sequences *}
 
@@ -83,34 +86,35 @@ setup {* del_prfstep_thm @{thm half_seq_def} *}
 lemma ord_field_divide_le_trans1 [backward1]:
   "is_ord_field(R) \<Longrightarrow> d \<in>. R \<Longrightarrow> c >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> e >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> a \<le>\<^sub>R b /\<^sub>R c \<Longrightarrow>
    b \<le>\<^sub>R d /\<^sub>R e \<Longrightarrow> a \<le>\<^sub>R d /\<^sub>R (e *\<^sub>R c)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "a *\<^sub>R c \<le>\<^sub>R b" THEN HAVE "a \<le>\<^sub>R d /\<^sub>R e /\<^sub>R c") *})
+@proof @have "a *\<^sub>R c \<le>\<^sub>R b" @then @have "a \<le>\<^sub>R d /\<^sub>R e /\<^sub>R c" @qed
 
 lemma half_seq_induct [resolve]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> half_seq(X) \<Longrightarrow> n \<in> nat \<Longrightarrow>
    \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "n \<in> nat" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)") *})
+@proof
+  @induct "n \<in> nat" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)"
+@qed
 setup {* del_prfstep_thm @{thm ord_field_divide_le_trans1} *}
 
 lemma half_seq_abs_decr [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> half_seq(X) \<Longrightarrow> seq_abs_decr(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>n\<in>.\<nat>. \<bar>X`(n +\<^sub>\<nat> 1)\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R") *})
+@proof @have "\<forall>n\<in>.\<nat>. \<bar>X`(n +\<^sub>\<nat> 1)\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R" @qed
 
 lemma ord_field_divide_le_trans2 [forward]:
   "is_ord_field(R) \<Longrightarrow> b \<in>. R \<Longrightarrow> a >\<^sub>R b /\<^sub>R c \<Longrightarrow> d \<le>\<^sub>R b /\<^sub>R a \<Longrightarrow> a >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> c >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> c >\<^sub>R d"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "a *\<^sub>R c >\<^sub>R b" THEN HAVE "d *\<^sub>R a \<le>\<^sub>R b" THEN HAVE "a *\<^sub>R c >\<^sub>R a *\<^sub>R d") *})
+@proof
+  @have "a *\<^sub>R c >\<^sub>R b" @then @have "d *\<^sub>R a \<le>\<^sub>R b" @then @have "a *\<^sub>R c >\<^sub>R a *\<^sub>R d"
+@qed
 
 lemma half_seq_vanishes [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> half_seq(X) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> vanishes(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)" THEN
-    CHOOSE "k\<in>nat, 2\<^sub>R ^\<^sub>R k >\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R r" THEN
-    HAVE "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" WITH (
-      HAVE "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R k)" THEN
-      HAVE "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R")) *})
+@proof
+  @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)" @with
+    @obtain "k\<in>nat" where "2\<^sub>R ^\<^sub>R k >\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R r" @then
+    @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @with
+      @have "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R k)" @then
+      @have "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R" @end @end
+@qed
 setup {* del_prfstep_thm @{thm ord_field_divide_le_trans2} *}
   
 section {* Dedekind cut *}
@@ -154,61 +158,54 @@ setup {* del_prfstep_thm @{thm DCSeqs_def} *}
 lemma DCSeqs_le [backward]:
   "is_ord_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> A = fst(DCSeqs(R,U)) \<Longrightarrow> B = snd(DCSeqs(R,U)) \<Longrightarrow>
    n \<in> source(A) \<Longrightarrow> n \<in> source(B) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> A`n \<le>\<^sub>R B`n"
-  by (tactic {* auto2s_tac @{context} (INDUCT_ON "n \<in> nat" "A`n \<le>\<^sub>R B`n") *})
-
-definition dedekind_has_boundary :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "dedekind_has_boundary(R,U) \<longleftrightarrow> (\<exists>x\<in>.R. \<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U)"
-  
-lemma dedekind_has_boundaryE [resolve]:
-  "dedekind_has_boundary(R,U) \<Longrightarrow> \<exists>x\<in>.R. \<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" by auto2
-
-lemma dedekind_has_boundaryI [forward]:
-  "x \<in>. R \<Longrightarrow> \<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U \<Longrightarrow> dedekind_has_boundary(R,U)" by auto2
-setup {* del_prfstep_thm @{thm dedekind_has_boundary_def} *}
+@proof @induct "n \<in> nat" "A`n \<le>\<^sub>R B`n" @qed
 
 lemma dedekind_complete [resolve]:
-  "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> dedekind_has_boundary(R,U)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "A = fst(DCSeqs(R,U)), B = snd(DCSeqs(R,U))" THEN
-    HAVE "converges(A)" WITH (
-      HAVE "seq_incr(A)" WITH HAVE "\<forall>n\<in>.\<nat>. A`(n +\<^sub>\<nat> 1) \<ge>\<^sub>R A`n" THEN
-      HAVE "upper_bounded(A)" WITH
-        HAVE "\<forall>n\<in>.\<nat>. A`n \<le>\<^sub>R B`0" WITH INDUCT_ON "n \<in> nat" "A`n \<le>\<^sub>R B`0") THEN
-    HAVE "converges(B)" WITH (
-      HAVE "seq_decr(B)" WITH HAVE "\<forall>n\<in>.\<nat>. B`(n +\<^sub>\<nat> 1) \<le>\<^sub>R B`n" THEN
-      HAVE "lower_bounded(B)" WITH
-        HAVE "\<forall>n\<in>.\<nat>. B`n \<ge>\<^sub>R A`0" WITH INDUCT_ON "n \<in> nat" "B`n \<ge>\<^sub>R A`0") THEN
-    CHOOSE "x, converges_to(B,x)" THEN
-    LET "S = seq_ring(R)" THEN
-    HAVE "vanishes(B -\<^sub>S A)" WITH HAVE "half_seq(B -\<^sub>S A)" THEN
-    HAVE_RULE "\<forall>n\<in>nat. A`n \<in> U" WITH INDUCT_ON "n \<in> nat" "A`n \<in> U" THEN
-    HAVE_RULE "\<forall>n\<in>nat. B`n \<notin> U" WITH INDUCT_ON "n \<in> nat" "B`n \<notin> U" THEN
-    HAVE "\<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" WITH (
-      CASE "y <\<^sub>R x" WITH CHOOSE "n\<in>nat, y <\<^sub>R A`n" THEN
-      HAVE "x \<in> U" THEN CHOOSE "x' >\<^sub>R x, x' \<in> U" THEN
-      CHOOSE "n\<in>nat, x' >\<^sub>R B`n" THEN HAVE "B`n \<notin> U")) *})
+  "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> \<exists>x\<in>.R. \<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U"
+@proof
+  @let "A = fst(DCSeqs(R,U))" "B = snd(DCSeqs(R,U))" @then
+  @have "converges(A)" @with
+    @have "seq_incr(A)" @with @have "\<forall>n\<in>.\<nat>. A`(n +\<^sub>\<nat> 1) \<ge>\<^sub>R A`n" @end
+    @have "upper_bounded(A)" @with
+      @have "\<forall>n\<in>.\<nat>. A`n \<le>\<^sub>R B`0" @with @induct "n \<in> nat" "A`n \<le>\<^sub>R B`0" @end @end @end
+  @have "converges(B)" @with
+    @have "seq_decr(B)" @with @have "\<forall>n\<in>.\<nat>. B`(n +\<^sub>\<nat> 1) \<le>\<^sub>R B`n" @end
+    @have "lower_bounded(B)" @with
+      @have "\<forall>n\<in>.\<nat>. B`n \<ge>\<^sub>R A`0" @with @induct "n \<in> nat" "B`n \<ge>\<^sub>R A`0" @end @end @end
+  @obtain x where "converges_to(B,x)" @then
+  @let "S = seq_ring(R)" @then
+  @have "vanishes(B -\<^sub>S A)" @with @have "half_seq(B -\<^sub>S A)" @end
+  @have "\<forall>n\<in>nat. A`n \<in> U" @with @induct "n \<in> nat" "A`n \<in> U" @end
+  @have "\<forall>n\<in>nat. B`n \<notin> U" @with @induct "n \<in> nat" "B`n \<notin> U" @end
+  @have "\<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" @with
+    @case "y <\<^sub>R x" @with @obtain "n\<in>nat" where "y <\<^sub>R A`n" @end
+    @case "y \<in> U" @with
+      @have "x \<in> U" @then @obtain x' where "x' >\<^sub>R x" "x' \<in> U" @then
+      @obtain "n\<in>nat" where "x' >\<^sub>R B`n" @then @have "B`n \<notin> U"
+    @end
+  @end
+@qed
 
 section {* Least upper bound property *}
 
 lemma least_upper_bound_complete [forward]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<Longrightarrow> has_sup(R,S)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "U = carrier(R) \<midarrow> upper_bound(R,S)" THEN
-    HAVE "dedekind_cut(R,U)" WITH (
-      HAVE "U \<noteq> \<emptyset>" WITH (
-        CHOOSE "x, x \<in> S" THEN CHOOSE "y, y <\<^sub>R x" THEN HAVE "y \<in> U") THEN
-      HAVE "U \<noteq> carrier(R)" WITH (
-        CHOOSE "z, z \<in> upper_bound(R,S)" THEN HAVE "z \<notin> U") THEN
-      HAVE "\<forall>a\<in>U. \<exists>b >\<^sub>R a. b \<in> U" WITH (
-        CHOOSE "c \<in> S, a <\<^sub>R c" THEN CHOOSE "b, a <\<^sub>R b \<and> b <\<^sub>R c" THEN HAVE "b \<in> U")) THEN
-    HAVE "dedekind_has_boundary(R,U)" THEN
-    CHOOSE "y\<in>.R, \<forall>z\<in>.R. z <\<^sub>R y \<longleftrightarrow> z \<in> U" THEN
-    HAVE "y \<notin> U" THEN HAVE "y \<in> upper_bound(R,S)" THEN
-    HAVE "has_sup(R,S) \<and> sup(R,S) = y") *})
+@proof
+  @let "U = carrier(R) \<midarrow> upper_bound(R,S)" @then
+  @have "dedekind_cut(R,U)" @with
+    @have "U \<noteq> \<emptyset>" @with
+      @obtain "x \<in> S" @then @obtain y where "y <\<^sub>R x" @then @have "y \<in> U" @end
+    @have "U \<noteq> carrier(R)" @with
+      @obtain "z \<in> upper_bound(R,S)" @then @have "z \<notin> U" @end
+    @have "\<forall>a\<in>U. \<exists>b >\<^sub>R a. b \<in> U" @with
+      @obtain "c \<in> S" where "a <\<^sub>R c" @then @obtain b where "a <\<^sub>R b \<and> b <\<^sub>R c" @then @have "b \<in> U" @end @end
+  @obtain "y\<in>.R" where "\<forall>z\<in>.R. z <\<^sub>R y \<longleftrightarrow> z \<in> U" @then
+  @have "y \<notin> U" @then @have "y \<in> upper_bound(R,S)" @then
+  @have "has_sup(R,S) \<and> sup(R,S) = y"
+@qed  
 
 lemma complete_to_linear_continuum [forward]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> linear_continuum(R)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>S. S \<noteq> \<emptyset> \<longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<longrightarrow> has_sup(R,S)") *})
+@proof @have "\<forall>S. S \<noteq> \<emptyset> \<longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<longrightarrow> has_sup(R,S)" @qed
 
 end

@@ -82,26 +82,24 @@ lemma fundamental_group_mult_compat [resolve]:
 lemma fundamental_group_mult_eval [rewrite]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> G = \<pi>\<^sub>1(X,x) \<Longrightarrow> \<R> = loop_space_rel(X,x) \<Longrightarrow>
    f \<in>. \<R> \<Longrightarrow> g \<in>. \<R> \<Longrightarrow> equiv_class(\<R>,f) *\<^sub>G equiv_class(\<R>,g) = equiv_class(\<R>,f \<star> g)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "compat_meta_bin(loop_space_rel(X,x), \<lambda>f g. f \<star> g)") *})
+@proof @have "compat_meta_bin(loop_space_rel(X,x), \<lambda>f g. f \<star> g)" @qed
 setup {* del_prfstep_thm @{thm fundamental_group_mult_compat} *}
 setup {* del_prfstep_thm @{thm fundamental_group_evals(2)} *}
 
 lemma fundamental_group_mult_assoc [rewrite]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> G = \<pi>\<^sub>1(X,x) \<Longrightarrow> \<R> = loop_space_rel(X,x) \<Longrightarrow>
    f \<in>. G \<Longrightarrow> g \<in>. G \<Longrightarrow> h \<in>. G \<Longrightarrow> f *\<^sub>G g *\<^sub>G h = f *\<^sub>G (g *\<^sub>G h)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "f' = rep(\<R>,f), g' = rep(\<R>,g), h' = rep(\<R>,h)") *})
+@proof @let "f' = rep(\<R>,f)" "g' = rep(\<R>,g)" "h' = rep(\<R>,h)" @qed
 
 lemma fundamental_group_mult_id [rewrite]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> G = \<pi>\<^sub>1(X,x) \<Longrightarrow> \<R> = loop_space_rel(X,x) \<Longrightarrow>
    f \<in>. G \<Longrightarrow> f *\<^sub>G \<one>\<^sub>G = f"
-  by (tactic {* auto2s_tac @{context} (LET "f' = rep(\<R>,f)") *})
+@proof @let "f' = rep(\<R>,f)" @qed
 
 lemma fundamental_group_mult_id2 [rewrite]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> G = \<pi>\<^sub>1(X,x) \<Longrightarrow> \<R> = loop_space_rel(X,x) \<Longrightarrow>
    f \<in>. G \<Longrightarrow> \<one>\<^sub>G *\<^sub>G f = f"
-  by (tactic {* auto2s_tac @{context} (LET "f' = rep(\<R>,f)") *})
+@proof @let "f' = rep(\<R>,f)" @qed
   
 definition fundamental_group_inv :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "fundamental_group_inv(\<R>,f) = equiv_class(\<R>,inv_path(rep(\<R>,f)))"
@@ -116,10 +114,11 @@ lemma fundamental_group_inv2 [rewrite]:
 
 lemma fundamental_group_is_group:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> is_group(\<pi>\<^sub>1(X,x))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "G = \<pi>\<^sub>1(X,x), \<R> = loop_space_rel(X,x)" THEN
-    HAVE "is_monoid(G)" THEN
-    HAVE "\<forall>f\<in>.G. fundamental_group_inv(\<R>,f) *\<^sub>G f = \<one>\<^sub>G") *})
+@proof
+  @let "G = \<pi>\<^sub>1(X,x)" "\<R> = loop_space_rel(X,x)" @then
+  @have "is_monoid(G)" @then
+  @have "\<forall>f\<in>.G. fundamental_group_inv(\<R>,f) *\<^sub>G f = \<one>\<^sub>G"
+@qed
 setup {* add_forward_prfstep_cond @{thm fundamental_group_is_group} [with_term "\<pi>\<^sub>1(?X,?x)"] *}
 
 setup {* fold del_prfstep_thm [@{thm fundamental_group_mult_assoc},
@@ -150,17 +149,19 @@ lemma induced_mor_product [rewrite]:
   "continuous(k) \<Longrightarrow> X = source_str(k) \<Longrightarrow> Y = target_str(k) \<Longrightarrow> x \<in> source(k) \<Longrightarrow>
    G = \<pi>\<^sub>1(X,x) \<Longrightarrow> H = \<pi>\<^sub>1(Y,k`x) \<Longrightarrow> f \<in>. G \<Longrightarrow> g \<in>. G \<Longrightarrow>
    induced_mor(k,x)`(f *\<^sub>G g) = induced_mor(k,x)`f *\<^sub>H induced_mor(k,x)`g"
-  by (tactic {* auto2s_tac @{context} (
-    LET "\<R> = loop_space_rel(X,x)" THEN
-    LET "f' = rep(\<R>,f), g' = rep(\<R>,g)") *})
+@proof
+  @let "\<R> = loop_space_rel(X,x)" @then
+  @let "f' = rep(\<R>,f)" "g' = rep(\<R>,g)"
+@qed
 setup {* del_prfstep_thm_str "@sym" @{thm path_product_comp} *}
 
 lemma induced_mor_on_id [rewrite]:
   "continuous(k) \<Longrightarrow> X = source_str(k) \<Longrightarrow> Y = target_str(k) \<Longrightarrow> x \<in> source(k) \<Longrightarrow>
    G = \<pi>\<^sub>1(X,x) \<Longrightarrow> H = \<pi>\<^sub>1(Y,k`x) \<Longrightarrow> induced_mor(k,x)`(\<one>\<^sub>G) = \<one>\<^sub>H"
-  by (tactic {* auto2s_tac @{context} (
-    LET "\<R> = loop_space_rel(X,x)" THEN
-    HAVE "path_homotopic(k \<circ>\<^sub>m rep(\<R>,\<one>\<^sub>G), k \<circ>\<^sub>m const_mor(I,X,x))") *})
+@proof
+  @let "\<R> = loop_space_rel(X,x)" @then
+  @have "path_homotopic(k \<circ>\<^sub>m rep(\<R>,\<one>\<^sub>G), k \<circ>\<^sub>m const_mor(I,X,x))"
+@qed
 
 lemma induced_mor_is_homomorphism [typing]:
   "continuous(k) \<Longrightarrow> X = source_str(k) \<Longrightarrow> Y = target_str(k) \<Longrightarrow> x \<in> source(k) \<Longrightarrow>
@@ -168,17 +169,20 @@ lemma induced_mor_is_homomorphism [typing]:
 
 lemma induced_mor_id [rewrite]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> induced_mor(id_mor(X),x) = id_mor(\<pi>\<^sub>1(X,x))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "G = \<pi>\<^sub>1(X,x), \<R> = loop_space_rel(X,x)" THEN
-    HAVE_RULE "\<forall>f\<in>.G. induced_mor(id_mor(X),x)`f = f" WITH LET "f' = rep(\<R>,f)") *})
+@proof
+  @let "G = \<pi>\<^sub>1(X,x)" "\<R> = loop_space_rel(X,x)" @then
+  @have (@rule) "\<forall>f\<in>.G. induced_mor(id_mor(X),x)`f = f" @with
+    @let "f' = rep(\<R>,f)" @end
+@qed
 
 lemma induced_mor_comp' [rewrite]:
   "continuous(k) \<Longrightarrow> continuous(h) \<Longrightarrow> target_str(k) = source_str(h) \<Longrightarrow> x \<in> source(k) \<Longrightarrow>
    X = source_str(k) \<Longrightarrow> G = \<pi>\<^sub>1(X,x) \<Longrightarrow> f \<in>. G \<Longrightarrow> \<R> = loop_space_rel(X,x) \<Longrightarrow>
    induced_mor(h \<circ>\<^sub>m k, x) ` f = induced_mor(h,k`x) ` (induced_mor(k,x) ` f)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "f = equiv_class(\<R>,rep(\<R>,f))" THEN
-    HAVE "(h \<circ>\<^sub>m k) \<circ>\<^sub>m rep(\<R>,f) = h \<circ>\<^sub>m (k \<circ>\<^sub>m rep(\<R>,f))") *})
+@proof
+  @have "f = equiv_class(\<R>,rep(\<R>,f))" @then
+  @have "(h \<circ>\<^sub>m k) \<circ>\<^sub>m rep(\<R>,f) = h \<circ>\<^sub>m (k \<circ>\<^sub>m rep(\<R>,f))"
+@qed
 
 lemma induced_mor_comp [rewrite]:
   "continuous(k) \<Longrightarrow> continuous(h) \<Longrightarrow> target_str(k) = source_str(h) \<Longrightarrow> x \<in> source(k) \<Longrightarrow>

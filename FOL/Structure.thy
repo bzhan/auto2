@@ -157,8 +157,7 @@ definition Tup :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> i" where [r
   "Tup(I,f) = \<langle>I, \<emptyset>, {\<langle>a, f(a)\<rangle>. a \<in> I}, \<emptyset>\<rangle>"
 
 lemma TupD: "is_family(Tup(I,f)) \<and> source(Tup(I,f)) = I"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>a\<in>I. \<langle>a, f(a)\<rangle>\<in>graph(Tup(I,f))") *})
+@proof @have (@rule) "\<forall>a\<in>I. \<langle>a, f(a)\<rangle>\<in>graph(Tup(I,f))" @qed
 setup {* add_forward_prfstep_cond @{thm TupD} [with_term "Tup(?I,?f)"] *}
 
 (* Evaluation for families. *)
@@ -246,8 +245,7 @@ translations
 
 lemma lambda_is_function [backward]:
   "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> Fun(A,B,f) \<in> A \<rightarrow> B"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE_RULE "\<forall>x\<in>A. \<langle>x,f(x)\<rangle>\<in>graph(Fun(A,B,f))") *})
+@proof @have (@rule) "\<forall>x\<in>A. \<langle>x,f(x)\<rangle>\<in>graph(Fun(A,B,f))" @qed
 
 (* Function evaluation *)
 lemma beta [rewrite]:

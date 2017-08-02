@@ -67,17 +67,21 @@ setup {* add_var_induct_rule @{thm bexp.induct} *}
 
 (* Equivalence of definitions. *)
 theorem aeval_iff_aevalR [rewrite]: "a \<Down> n \<longleftrightarrow> aeval a = n"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "a \<Down> n" WITH PROP_INDUCT ("a \<Down> n", "aeval a = n") THEN
-    VAR_INDUCT ("a", "\<forall>n. aeval a = n \<longrightarrow> a \<Down> n")) *})
+@proof
+  @case "a \<Down> n" @with @prop_induct "a \<Down> n" "aeval a = n" @end
+  @case "aeval a = n" @with @var_induct a "\<forall>n. aeval a = n \<longrightarrow> a \<Down> n" @end
+@qed
+
 theorem aevalR_triv: "a \<Down> aeval a" by auto2
 setup {* add_forward_prfstep_cond @{thm aevalR_triv} [with_term "aeval ?a"] *}
 theorem test_aevalR1: "(APlus (ANum 2) (ANum 2)) \<Down> 4" by auto2
 
 theorem beval_iff_bevalR [rewrite]: "bevalR b v \<longleftrightarrow> beval b = v"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "bevalR b v" WITH PROP_INDUCT ("bevalR b v", "beval b = v") THEN
-    VAR_INDUCT ("b", "\<forall>v. beval b = v \<longrightarrow> bevalR b v")) *})
+@proof
+  @case "bevalR b v" @with @prop_induct "bevalR b v" "beval b = v" @end
+  @case "beval b = v" @with @var_induct b "\<forall>v. beval b = v \<longrightarrow> bevalR b v" @end
+@qed
+
 theorem bevalR_triv: "bevalR b (beval b)" by auto2
 theorem test_bevalR1: "bevalR (BEq (ANum 2) (ANum 3)) False" by auto2
 

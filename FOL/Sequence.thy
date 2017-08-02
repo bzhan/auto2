@@ -85,7 +85,7 @@ lemma upper_boundedD [resolve]:
 
 lemma upper_boundedI [forward]:
   "is_sequence(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R r \<Longrightarrow> upper_bounded(X)"
-  by (tactic {* auto2s_tac @{context} (HAVE "X`0 \<le>\<^sub>R r") *})
+@proof @have "X`0 \<le>\<^sub>R r" @qed
 setup {* del_prfstep_thm @{thm upper_bounded_def} *}
 
 definition lower_bounded :: "i \<Rightarrow> o" where [rewrite]:
@@ -97,16 +97,17 @@ lemma lower_boundedD [resolve]:
     
 lemma lower_boundedI [forward]:
   "is_sequence(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. X`n \<ge>\<^sub>R r \<Longrightarrow> lower_bounded(X)"
-  by (tactic {* auto2s_tac @{context} (HAVE "X`0 \<ge>\<^sub>R r") *})
+@proof @have "X`0 \<ge>\<^sub>R r" @qed
 setup {* del_prfstep_thm @{thm lower_bounded_def} *}
   
 lemma lower_bounded_is_neg_upper [rewrite]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> upper_bounded(seq_neg(X)) \<longleftrightarrow> lower_bounded(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "lower_bounded(X)" WITH (
-      CHOOSE "r\<in>.R, \<forall>n\<in>.\<nat>. r \<le>\<^sub>R X`n" THEN HAVE "\<forall>n\<in>.\<nat>. -\<^sub>R r \<ge>\<^sub>R (seq_neg(X))`n") THEN
-    CASE "upper_bounded(seq_neg(X))" WITH (
-      CHOOSE "r\<in>.R, \<forall>n\<in>.\<nat>. r \<ge>\<^sub>R seq_neg(X)`n" THEN HAVE "\<forall>n\<in>.\<nat>. -\<^sub>R r \<le>\<^sub>R X`n")) *})
+@proof
+  @case "lower_bounded(X)" @with
+    @obtain "r\<in>.R" where "\<forall>n\<in>.\<nat>. r \<le>\<^sub>R X`n" @then @have "\<forall>n\<in>.\<nat>. -\<^sub>R r \<ge>\<^sub>R (seq_neg(X))`n" @end
+  @case "upper_bounded(seq_neg(X))" @with
+    @obtain "r\<in>.R" where "\<forall>n\<in>.\<nat>. r \<ge>\<^sub>R seq_neg(X)`n" @then @have "\<forall>n\<in>.\<nat>. -\<^sub>R r \<le>\<^sub>R X`n" @end
+@qed
 
 section {* Boundedness on sequences *}
 
@@ -116,8 +117,9 @@ setup {* add_property_const @{term bounded} *}
   
 lemma boundedI [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r \<Longrightarrow> bounded(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R max(R,r,1\<^sub>R)" THEN HAVE "1\<^sub>R >\<^sub>R \<zero>\<^sub>R") *})
+@proof
+  @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R max(R,r,1\<^sub>R)" @then @have "1\<^sub>R >\<^sub>R \<zero>\<^sub>R"
+@qed
 
 lemma boundedD [resolve]:
   "bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" by auto2
@@ -125,27 +127,29 @@ setup {* del_prfstep_thm @{thm bounded_def} *}
   
 lemma boundedI_less [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r \<Longrightarrow> bounded(X)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r") *})
+@proof @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @qed
     
 lemma boundedD_less [resolve]:
   "ord_ring_seq(X) \<Longrightarrow> bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" THEN HAVE "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r +\<^sub>R \<one>\<^sub>R") *})
+@proof
+  @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @then @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r +\<^sub>R \<one>\<^sub>R"
+@qed
       
 lemma bounded_on_tail [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r \<Longrightarrow> bounded(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "r \<in>. R" WITH HAVE "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R r" THEN
-    CASE "k = 0" WITH HAVE "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" THEN
-    CHOOSE "S \<noteq> \<emptyset>, S = nat_less_range(k)" THEN
-    CHOOSE "f \<in> nat \<rightarrow> carrier(R), f = (\<lambda>i\<in>nat. \<bar>X`i\<bar>\<^sub>R \<in> carrier(R))" THEN
-    LET "m = max(R,r,greatest(R,f `` S))" THEN
-    HAVE "has_greatest(R,f``S)" THEN
-    HAVE "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R m" WITH HAVE "\<bar>X`n\<bar>\<^sub>R = f`n") *})
+@proof
+  @have "r \<in>. R" @with @have "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R r" @end
+  @case "k = 0" @with @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @end
+  @obtain S where "S \<noteq> \<emptyset>" "S = nat_less_range(k)" @then
+  @obtain "f \<in> nat \<rightarrow> carrier(R)" where "f = (\<lambda>i\<in>nat. \<bar>X`i\<bar>\<^sub>R \<in> carrier(R))" @then
+  @let "m = max(R,r,greatest(R,f `` S))" @then
+  @have "has_greatest(R,f``S)" @then
+  @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R m" @with @have "\<bar>X`n\<bar>\<^sub>R = f`n" @end
+@qed
 
 lemma bounded_less_on_tail [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r \<Longrightarrow> bounded(X)"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r") *})
+@proof @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @qed
 
 section {* Vanishes condition on sequences *}
   
@@ -163,13 +167,13 @@ setup {* del_prfstep_thm @{thm vanishes_def} *}
 lemma vanishesE_nat_ge [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> vanishes(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "j\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" THEN HAVE "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`n\<bar>\<^sub>R <\<^sub>R r") *})
+@proof
+  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @then @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
+@qed
 
 lemma not_vanishesD [backward]:
   "ord_ring_seq(X) \<Longrightarrow> \<not>vanishes(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. r \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)") *})
+@proof @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)" @qed
 
 section {* Cauchy condition on sequences *}
 
@@ -196,75 +200,78 @@ setup {* del_prfstep_thm @{thm cauchy_def} *}
 
 lemma cauchyI2 [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R r \<Longrightarrow> cauchy(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<not>(\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)" THEN
-    CHOOSE "s >\<^sub>R \<zero>\<^sub>R, r = s +\<^sub>R s" THEN
-    CHOOSE "k\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" THEN
-    HAVE "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r") *})
+@proof
+  @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)" @with
+    @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s" @then
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" @then
+    @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @end
+@qed
 
 lemma cauchyE_nat_ge [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "j\<in>.\<nat>, \<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" THEN
-    HAVE "\<forall>m \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r") *})
+@proof
+  @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @then
+  @have "\<forall>m \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r"
+@qed
 
 lemma cauchyE_le_nat_ge [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R \<le>\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "j\<ge>\<^sub>\<nat>i, \<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r") *})
+@proof @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @qed
 
 lemma not_cauchyD [backward]:
   "ord_field_seq(X) \<Longrightarrow> \<not>cauchy(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R \<ge>\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R r)") *})
+@proof @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R r)" @qed
 
 lemma cauchy_from_vanishes [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> vanishes(X) \<Longrightarrow> cauchy(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<not>(\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)" THEN
-    CHOOSE "s >\<^sub>R \<zero>\<^sub>R, r = s +\<^sub>R s" THEN
-    CHOOSE "i\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n\<bar>\<^sub>R <\<^sub>R s" THEN
-    HAVE "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" WITH (
-      HAVE "X`m -\<^sub>R X`n = X`m +\<^sub>R (-\<^sub>R X`n)")) *})
+@proof
+  @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)" @with
+    @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s" @then
+    @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n\<bar>\<^sub>R <\<^sub>R s" @then
+    @have "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @with
+      @have "X`m -\<^sub>R X`n = X`m +\<^sub>R (-\<^sub>R X`n)" @end
+  @end
+@qed
 
 lemma cauchy_imp_bounded [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> bounded(X)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "k\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R 1\<^sub>R" THEN
-    HAVE "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R \<bar>X`k\<bar>\<^sub>R +\<^sub>R 1\<^sub>R") *})
+@proof
+  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R 1\<^sub>R" @then
+  @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R \<bar>X`k\<bar>\<^sub>R +\<^sub>R 1\<^sub>R"
+@qed
 
 lemma abs_bound_one_side1 [forward]:
   "is_ord_ring(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> r \<in>. R \<Longrightarrow> s \<in>. R \<Longrightarrow>
    \<bar>a -\<^sub>R b\<bar>\<^sub>R <\<^sub>R s \<Longrightarrow> b \<ge>\<^sub>R r +\<^sub>R s \<Longrightarrow> a >\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(a -\<^sub>R b) +\<^sub>R b >\<^sub>R -\<^sub>R s +\<^sub>R (r +\<^sub>R s)") *})
+@proof @have "(a -\<^sub>R b) +\<^sub>R b >\<^sub>R -\<^sub>R s +\<^sub>R (r +\<^sub>R s)" @qed
 
 lemma abs_bound_one_side2 [forward]:
   "is_ord_ring(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> r \<in>. R \<Longrightarrow> s \<in>. R \<Longrightarrow>
    \<bar>a -\<^sub>R b\<bar>\<^sub>R <\<^sub>R s \<Longrightarrow> b \<le>\<^sub>R -\<^sub>R (r +\<^sub>R s) \<Longrightarrow> r <\<^sub>R -\<^sub>R a"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "(a -\<^sub>R b) +\<^sub>R b <\<^sub>R s +\<^sub>R -\<^sub>R (r +\<^sub>R s)") *})
+@proof @have "(a -\<^sub>R b) +\<^sub>R b <\<^sub>R s +\<^sub>R -\<^sub>R (r +\<^sub>R s)" @qed
 
 lemma cauchy_not_vanishes_cases [backward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> \<not>vanishes(X) \<Longrightarrow>
    \<exists>b>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. r \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R" THEN
-    CHOOSE "s >\<^sub>R \<zero>\<^sub>R, r = s +\<^sub>R s" THEN
-    CHOOSE "i\<in>.\<nat>, \<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s" THEN
-    CHOOSE "k\<ge>\<^sub>\<nat>i, r \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R" THEN
-    HAVE "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" THEN
-    CASE "X`k \<le>\<^sub>R -\<^sub>R r" WITH HAVE "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R -\<^sub>R X`n" THEN
-    CASE "X`k \<ge>\<^sub>R r" WITH HAVE "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R X`n") *})
+@proof
+  @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. r \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R" @then
+  @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s" @then
+  @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s" @then
+  @obtain k where "k\<ge>\<^sub>\<nat>i" "r \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R" @then
+  @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" @then
+  @case "X`k \<le>\<^sub>R -\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R -\<^sub>R X`n" @end
+  @case "X`k \<ge>\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R X`n" @end
+@qed
   
 lemma cauchy_not_vanishes [backward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> \<not>vanishes(X) \<Longrightarrow>
    \<exists>b>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "b >\<^sub>R \<zero>\<^sub>R, k\<in>.\<nat>, (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)" THEN
-    HAVE "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R") *})
+@proof
+  @obtain b "k\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "(\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)" @then
+  @have "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
+@qed
 
 section {* Convergence of sequences, limits *}
   
@@ -284,41 +291,48 @@ setup {* del_prfstep_thm @{thm converges_to_def} *}
 lemma converges_toE_nat_ge [backward2]:
   "converges_to(X,s) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "j\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r" THEN HAVE "max(\<nat>,i,j) \<ge>\<^sub>\<nat> i") *})
+@proof
+  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r" @then @have "max(\<nat>,i,j) \<ge>\<^sub>\<nat> i"
+@qed
 
 lemma converges_to_neg [backward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,s) \<Longrightarrow> converges_to(seq_neg(X), -\<^sub>R s)"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "r >\<^sub>R \<zero>\<^sub>R, \<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>seq_neg(X)`n -\<^sub>R (-\<^sub>R s)\<bar>\<^sub>R <\<^sub>R r)" THEN
-    CHOOSE "k\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r" THEN
-    HAVE "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>seq_neg(X)`n -\<^sub>R (-\<^sub>R s)\<bar>\<^sub>R <\<^sub>R r" WITH
-      HAVE "-\<^sub>R (X`n) -\<^sub>R (-\<^sub>R s) = -\<^sub>R (X`n -\<^sub>R s)") *})
+@proof
+  @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>seq_neg(X)`n -\<^sub>R (-\<^sub>R s)\<bar>\<^sub>R <\<^sub>R r)" @with
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r" @then
+    @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>seq_neg(X)`n -\<^sub>R (-\<^sub>R s)\<bar>\<^sub>R <\<^sub>R r" @with
+      @have "-\<^sub>R (X`n) -\<^sub>R (-\<^sub>R s) = -\<^sub>R (X`n -\<^sub>R s)" @end
+  @end
+@qed
 
 lemma converges_to_neg' [resolve]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(seq_neg(X),s) \<Longrightarrow> converges_to(X, -\<^sub>R s)"
-  by (tactic {* auto2s_tac @{context} (HAVE "seq_neg(seq_neg(X)) = X") *})
+@proof @have "seq_neg(seq_neg(X)) = X" @qed
 
 lemma lt_limit [backward2]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,x) \<Longrightarrow> y <\<^sub>R x \<Longrightarrow> \<exists>n\<in>.\<nat>. y <\<^sub>R X`n"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "k\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y" THEN
-    HAVE "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y" THEN HAVE "x -\<^sub>R X`k <\<^sub>R x -\<^sub>R y") *})
+@proof
+  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y" @then
+  @have "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y" @then @have "x -\<^sub>R X`k <\<^sub>R x -\<^sub>R y"
+@qed
 
 lemma gt_limit [backward2]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,x) \<Longrightarrow> y >\<^sub>R x \<Longrightarrow> \<exists>n\<in>.\<nat>. y >\<^sub>R X`n"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "k\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x" THEN
-    HAVE "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x" THEN HAVE "X`k -\<^sub>R x <\<^sub>R y -\<^sub>R x") *})
+@proof
+  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x" @then
+  @have "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x" @then @have "X`k -\<^sub>R x <\<^sub>R y -\<^sub>R x"
+@qed
 
 lemma limit_unique [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,x) \<Longrightarrow> converges_to(X,y) \<Longrightarrow> x = y"
-  by (tactic {* auto2s_tac @{context} (
-    LET "r = \<bar>x -\<^sub>R y\<bar>\<^sub>R" THEN
-    CHOOSE "s >\<^sub>R \<zero>\<^sub>R, t >\<^sub>R \<zero>\<^sub>R, r = s +\<^sub>R t" THEN
-    CHOOSE "i\<in>.\<nat>, \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R s" THEN
-    CHOOSE "j\<ge>\<^sub>\<nat>i, \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R y\<bar>\<^sub>R <\<^sub>R t" THEN
-    HAVE "\<bar>x -\<^sub>R y\<bar>\<^sub>R <\<^sub>R r") *})
+@proof
+  @contradiction
+  @let "r = \<bar>x -\<^sub>R y\<bar>\<^sub>R" @then
+  @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t" @then
+  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R s" @then
+  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R y\<bar>\<^sub>R <\<^sub>R t" @then
+  @have "\<bar>x -\<^sub>R y\<bar>\<^sub>R <\<^sub>R r"
+@qed
       
 definition converges :: "i \<Rightarrow> o" where [rewrite]:
   "converges(X) \<longleftrightarrow> (\<exists>s. converges_to(X,s))"
@@ -333,13 +347,14 @@ setup {* del_prfstep_thm @{thm converges_def} *}
   
 lemma converges_neg [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges(X) \<Longrightarrow> converges(seq_neg(X))"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "s, converges_to(X,s)" THEN
-    HAVE "converges_to(seq_neg(X), -\<^sub>R s)") *})
+@proof
+  @obtain s where "converges_to(X,s)" @then
+  @have "converges_to(seq_neg(X), -\<^sub>R s)"
+@qed
 
 lemma converges_neg' [forward]:
   "is_sequence(X) \<Longrightarrow> is_ord_ring(target_str(X)) \<Longrightarrow> converges(seq_neg(X)) \<Longrightarrow> converges(X)"
-  by (tactic {* auto2s_tac @{context} (HAVE "seq_neg(seq_neg(X)) = X") *})
+@proof @have "seq_neg(seq_neg(X)) = X" @qed
   
 section {* Constant sequences *}
   
@@ -389,13 +404,15 @@ setup {* fold del_prfstep_thm [@{thm seq_incr_def}, @{thm seq_decr_def}] *}
   
 lemma seq_incrI' [forward]:
   "R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. X`(n +\<^sub>\<nat> 1) \<ge>\<^sub>R X`n \<Longrightarrow> seq_incr(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<ge>\<^sub>R X`m" WITH INDUCT_ON "n \<ge>\<^sub>\<nat> m" "X`n \<ge>\<^sub>R X`m") *})
+@proof
+  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<ge>\<^sub>R X`m" @with @induct "n \<ge>\<^sub>\<nat> m" "X`n \<ge>\<^sub>R X`m" @end
+@qed
 
 lemma seq_decrI' [forward]:
   "R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. X`(n +\<^sub>\<nat> 1) \<le>\<^sub>R X`n \<Longrightarrow> seq_decr(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<le>\<^sub>R X`m" WITH INDUCT_ON "n \<ge>\<^sub>\<nat> m" "X`n \<le>\<^sub>R X`m") *})
+@proof
+  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<le>\<^sub>R X`m" @with @induct "n \<ge>\<^sub>\<nat> m" "X`n \<le>\<^sub>R X`m" @end
+@qed
 
 definition seq_abs_decr :: "i \<Rightarrow> o" where [rewrite]:
   "seq_abs_decr(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R)"
@@ -410,8 +427,9 @@ setup {* del_prfstep_thm @{thm seq_abs_decr_def} *}
   
 lemma seq_abs_decrI' [forward]:
   "R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. \<bar>X`(n +\<^sub>\<nat> 1)\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R \<Longrightarrow> seq_abs_decr(X)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" WITH INDUCT_ON "n \<ge>\<^sub>\<nat> m" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R") *})
+@proof
+  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" @with @induct "n \<ge>\<^sub>\<nat> m" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" @end
+@qed
 
 section {* Inductive definition of sequences *}
 
@@ -464,8 +482,7 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm rec2_type_cond_def} *}
 
 lemma nat_rec2_type [backward,typing]:
   "k \<in> nat \<Longrightarrow> rec2_type_cond(S,T,a,ai,b,bi) \<Longrightarrow> nat_rec2(a,ai,b,bi,k) \<in> S \<times> T"
-  by (tactic {* auto2s_tac @{context} (
-    INDUCT_ON "k \<in> nat" "nat_rec2(a,ai,b,bi,k) \<in> S \<times> T") *})
+@proof @induct "k \<in> nat" "nat_rec2(a,ai,b,bi,k) \<in> S \<times> T" @qed
 setup {* fold del_prfstep_thm @{thms rec2_type_condD} *}
 
 definition Seq_rec2 :: "[i, i, [i, i, i] \<Rightarrow> i, i, [i, i, i] \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:

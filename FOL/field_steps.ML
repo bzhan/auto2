@@ -21,6 +21,8 @@ end;
 structure FieldSteps : FIELD_STEPS =
 struct
 
+open NatArith
+
 type ord_field_info = {
   G: term,
   cG: cterm,
@@ -51,17 +53,6 @@ fun ord_field_alg_info ord_field_th =
        switch_le'   = ord_ring_th RS @{thm ord_ring_le_switch_left'},
        switch_less' = ord_ring_th RS @{thm ord_ring_less_switch_left'}
       }
-    end
-
-(* Product the theorem n ~= 0. *)
-fun nat_neq_zero n =
-    if n <= 0 then raise AUTO2 "nat_neq_zero"
-    else let
-      val nt = mk_nat (n - 1)
-      val inst = update_env (("n",0), nt) fo_init
-      val ctxt = @{context}
-    in
-      (subst_thm ctxt inst @{thm nat_Suc_not_zero}) RS @{thm not_sym}
     end
 
 (* Given integer n ~= 0, return the theorem of_nat(R,n) : units(R). *)

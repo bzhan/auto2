@@ -38,8 +38,7 @@ lemma fun_space_to_Pi_eval [rewrite]:
 setup {* del_prfstep_thm @{thm fun_space_to_Pi_def} *}
 
 lemma fun_space_Pi_bij: "fun_space_to_Pi(I,B) \<in> (I \<rightarrow> B) \<cong> Pi(I,\<lambda>_. B)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inverse_pair(fun_space_to_Pi(I,B), Pi_to_fun_space(I,B))") *})
+@proof @have "inverse_pair(fun_space_to_Pi(I,B), Pi_to_fun_space(I,B))" @qed
 
 (* Cases when the index contains one or two elements. *)
 definition singleton_prod_map :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
@@ -47,20 +46,22 @@ definition singleton_prod_map :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where 
 
 lemma singleton_prod_map_is_bijective [typing]:
   "singleton_prod_map(a,B) \<in> Pi({a},B) \<cong> B(a)"
-  by (tactic {* auto2s_tac @{context} (
-    LET "inv = (\<lambda>x\<in>B(a). Tup({a}, \<lambda>_. x)\<in>Pi({a},B))" THEN
-    HAVE "inverse_pair(singleton_prod_map(a,B), inv)") *})
+@proof
+  @let "inv = (\<lambda>x\<in>B(a). Tup({a}, \<lambda>_. x)\<in>Pi({a},B))" @then
+  @have "inverse_pair(singleton_prod_map(a,B), inv)"
+@qed
 
 definition doubleton_prod_map :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "doubleton_prod_map(a,b,B) = (\<lambda>f\<in>Pi({a,b},B). \<langle>f`a, f`b\<rangle> \<in> B(a)\<times>B(b))"
 
 lemma doubleton_prod_map_is_bijective:
   "a \<noteq> b \<Longrightarrow> doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<cong> B(a)\<times>B(b)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<rightarrow> B(a)\<times>B(b)" THEN
-    LET "inv = (\<lambda>p\<in>B(a)\<times>B(b). Tup({a,b}, \<lambda>c. if c = a then fst(p) else snd(p)) \<in> Pi({a,b},B))" THEN
-    HAVE "inv \<in> B(a)\<times>B(b) \<rightarrow> Pi({a,b},B)" THEN
-    HAVE "inverse_pair(doubleton_prod_map(a,b,B), inv)") *})
+@proof
+  @have "doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<rightarrow> B(a)\<times>B(b)" @then
+  @let "inv = (\<lambda>p\<in>B(a)\<times>B(b). Tup({a,b}, \<lambda>c. if c = a then fst(p) else snd(p)) \<in> Pi({a,b},B))" @then
+  @have "inv \<in> B(a)\<times>B(b) \<rightarrow> Pi({a,b},B)" @then
+  @have "inverse_pair(doubleton_prod_map(a,b,B), inv)"
+@qed
 
 (* Case when each set in the family contains a single element. *)
 lemma singleton_sets_prod:
@@ -82,8 +83,7 @@ definition set_to_diagonal :: "[i, i] \<Rightarrow> i" where [rewrite]:
 
 lemma set_to_diagonal_bijective:
   "I \<noteq> \<emptyset> \<Longrightarrow> set_to_diagonal(I,E) \<in> E \<cong> prod_diagonal(I,E)"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inverse_pair(diagonal_to_set(I,E), set_to_diagonal(I,E))") *})
+@proof @have "inverse_pair(diagonal_to_set(I,E), set_to_diagonal(I,E))" @qed
 
 (* Bijection on index sets. Here B maps from target(u). *)
 definition reindex_prod :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
@@ -106,8 +106,9 @@ lemma reindex_prod_id [rewrite]:
 
 lemma reindex_prod_is_bij:
   "bijective(u) \<Longrightarrow> reindex_prod(u, \<lambda>a. B`a) \<in> Pi(target(u), \<lambda>a. B`a) \<cong> Pi(source(u), \<lambda>a. B`(u`a))"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "inverse_pair(reindex_prod(u,\<lambda>a. B`a), reindex_prod(inverse(u), (\<lambda>a. B`(u`a))))") *})
+@proof
+  @have "inverse_pair(reindex_prod(u,\<lambda>a. B`a), reindex_prod(inverse(u), (\<lambda>a. B`(u`a))))"
+@qed
 
 section {* Partial products *}  (* Bourbaki II.5.4 *)
 
@@ -118,32 +119,37 @@ setup {* add_prfstep_check_req ("projf_set(I,J,B)", "J \<subseteq> I") *}
 
 lemma restrict_prod_is_surj [backward]:
   "J \<subseteq> I \<Longrightarrow> \<forall>a\<in>I. B(a) \<noteq> \<emptyset> \<Longrightarrow> surjective(projf_set(I,J,B))"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "\<forall>f\<in>Pi(J,B). \<exists>g\<in>Pi(I,B). projf_set(I,J,B)`g = f" WITH (
-      CHOOSE "g \<in> Pi(I,B), g = Tup(I, \<lambda>a. if a \<in> J then f`a else Choice(B(a)))")) *})
+@proof
+  @have "\<forall>f\<in>Pi(J,B). \<exists>g\<in>Pi(I,B). projf_set(I,J,B)`g = f" @with
+    @obtain "g \<in> Pi(I,B)" where "g = Tup(I, \<lambda>a. if a \<in> J then f`a else Choice(B(a)))" @end
+@qed
 
 lemma restrict_prod_is_proj [rewrite]:
   "{a} \<subseteq> I \<Longrightarrow> singleton_prod_map(a,B) \<circ> projf_set(I,{a},B) = projf(I,B,a)" by auto2
 
 lemma proj_is_surj [backward]:
   "a \<in> I \<Longrightarrow> \<forall>a\<in>I. B(a) \<noteq> \<emptyset> \<Longrightarrow> surjective(projf(I,B,a))"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "projf(I,B,a) = singleton_prod_map(a,B) \<circ> projf_set(I,{a},B)" THEN
-     HAVE "surjective(projf_set(I,{a},B))") *})
+@proof
+  @have "projf(I,B,a) = singleton_prod_map(a,B) \<circ> projf_set(I,{a},B)" @then
+  @have "surjective(projf_set(I,{a},B))"
+@qed
 
 lemma proj_is_surj' [backward]:
   "\<forall>a\<in>I. B(a) \<noteq> \<emptyset> \<Longrightarrow> a \<in> I \<Longrightarrow> b \<in> B(a) \<Longrightarrow> \<exists>f\<in>Pi(I,B). f`a = b"
-  by (tactic {* auto2s_tac @{context} (HAVE "surjective(projf(I,B,a))") *})
+@proof @have "surjective(projf(I,B,a))" @qed
 
 lemma prod_non_empty [rewrite]:
   "Pi(I,B) \<noteq> \<emptyset> \<longleftrightarrow> (\<forall>a\<in>I. B(a) \<noteq> \<emptyset>)"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "\<forall>a\<in>I. B(a) \<noteq> \<emptyset>" WITH (
-      HAVE "I \<noteq> \<emptyset>" THEN CHOOSE "a, a \<in> I" THEN
-      HAVE "surjective(projf(I,B,a))") THEN
-    (* Given Pi(I,B) \<noteq> \<emptyset> *)
-    HAVE "\<forall>a\<in>I. B(a) \<noteq> \<emptyset>" WITH (
-      CHOOSE "f, f \<in> Pi(I,B)" THEN HAVE "f`a \<in> B(a)")) *})
+@proof
+  @contradiction
+  @case "\<forall>a\<in>I. B(a) \<noteq> \<emptyset>" @with
+    @contradiction
+    @have "I \<noteq> \<emptyset>" @then @obtain "a \<in> I" @then
+    @have "surjective(projf(I,B,a))" @end
+  @case "Pi(I,B) \<noteq> \<emptyset>" @with
+    @obtain "f \<in> Pi(I,B)" @then
+    @have "\<forall>a\<in>I. B(a) \<noteq> \<emptyset>" @with @have "f`a \<in> B(a)" @end @end
+@qed
 
 lemma prod_is_empty [rewrite]: "B(a) = \<emptyset> \<Longrightarrow> a \<in> I \<Longrightarrow> Pi(I,B) = \<emptyset>" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm prod_non_empty} *}
@@ -153,7 +159,7 @@ lemma prod_subset1 [backward]:
 
 lemma prod_subset2:
   "Pi(I,X) \<subseteq> Pi(I,Y) \<Longrightarrow> \<forall>a\<in>I. X(a) \<noteq> \<emptyset> \<Longrightarrow> \<forall>a\<in>I. X(a) \<subseteq> Y(a)"
-  by (tactic {* auto2s_tac @{context} (HAVE_RULE "\<forall>a\<in>I. surjective(projf(I,X,a))") *})
+@proof @have (@rule) "\<forall>a\<in>I. surjective(projf(I,X,a))" @qed
 
 section {* Associativity of products *}  (* Bourbaki II.5.5 *)
 
@@ -210,18 +216,17 @@ setup {* del_prfstep_thm @{thm prod_assoc_fun_inv_def} *}
 lemma prod_assoc_fun_inv_pair1 [rewrite]:
   "is_function(J) \<Longrightarrow> target(J) = Pow(I) \<Longrightarrow> is_partition(I,J) \<Longrightarrow>
    x \<in> source(prod_assoc_fun(I,J,X)) \<Longrightarrow> prod_assoc_fun_inv(I,J,X) ` (prod_assoc_fun(I,J,X) ` x) = x"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>b\<in>I. \<exists>a\<in>source(J). b \<in> J`a") *})
+@proof @have "\<forall>b\<in>I. \<exists>a\<in>source(J). b \<in> J`a" @qed
 
 lemma prod_assoc_fun_inv_pair2 [rewrite]:
   "is_function(J) \<Longrightarrow> target(J) = Pow(I) \<Longrightarrow> is_partition(I,J) \<Longrightarrow>
    x \<in> source(prod_assoc_fun_inv(I,J,X)) \<Longrightarrow> prod_assoc_fun(I,J,X) ` (prod_assoc_fun_inv(I,J,X) ` x) = x"
-  by (tactic {* auto2s_tac @{context} (HAVE "\<forall>b\<in>I. \<exists>a\<in>source(J). b \<in> J`a") *})
+@proof @have "\<forall>b\<in>I. \<exists>a\<in>source(J). b \<in> J`a" @qed
 
 lemma prod_assoc_fun_bijective:
   "is_function(J) \<Longrightarrow> target(J) = Pow(I) \<Longrightarrow> is_partition(I,J) \<Longrightarrow>
    prod_assoc_fun(I,J,X) \<in> Pi(I,X) \<cong> Pi(source(J), \<lambda>a. Pi(J`a, X))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inverse_pair(prod_assoc_fun(I,J,X), prod_assoc_fun_inv(I,J,X))") *})
+@proof @have "inverse_pair(prod_assoc_fun(I,J,X), prod_assoc_fun_inv(I,J,X))" @qed
 
 section {* Distributivity formulae *}  (* Bourbaki II.5.6 *)
 
@@ -231,9 +236,11 @@ section {* Distributivity formulae *}  (* Bourbaki II.5.6 *)
 lemma distrib_Union_INT [rewrite_bidir]:
   "\<forall>b\<in>L. J(b) \<noteq> \<emptyset> \<Longrightarrow>
   (\<Union>b\<in>L. (\<Inter>a\<in>J(b). X(b)`a)) = (\<Inter>f\<in>Pi(L,J). (\<Union>b\<in>L. X(b)`(f`b)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>(\<Inter>f\<in>Pi(L,J). (\<Union>b\<in>L. X(b)`(f`b))). x\<in>(\<Union>b\<in>L. (\<Inter>a\<in>J(b). X(b)`a))" WITH (
-      CHOOSE "f \<in> Pi(L,J), f = Tup(L, \<lambda>b. SOME a\<in>J(b). x \<notin> X(b)`a)")) *})
+@proof
+  @have "\<forall>x\<in>(\<Inter>f\<in>Pi(L,J). (\<Union>b\<in>L. X(b)`(f`b))). x\<in>(\<Union>b\<in>L. (\<Inter>a\<in>J(b). X(b)`a))" @with
+    @contradiction
+    @obtain "f \<in> Pi(L,J)" where "f = Tup(L, \<lambda>b. SOME a\<in>J(b). x \<notin> X(b)`a)" @end
+@qed
 
 (* Corollary of above. More trouble to set up link. *)
 lemma distrib_Union_inter:
@@ -243,9 +250,10 @@ lemma distrib_Union_inter:
 lemma distrib_Inter_UN [rewrite_bidir]:
   "L \<noteq> \<emptyset> \<Longrightarrow> \<forall>b\<in>L. J(b) \<noteq> \<emptyset> \<Longrightarrow>
   (\<Inter>b\<in>L. (\<Union>a\<in>J(b). X(b)`a)) = (\<Union>f\<in>Pi(L,J). (\<Inter>b\<in>L. X(b)`(f`b)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>x\<in>(\<Inter>b\<in>L. (\<Union>a\<in>J(b). X(b)`a)). x\<in>(\<Union>f\<in>Pi(L,J). (\<Inter>b\<in>L. X(b)`(f`b)))" WITH (
-      CHOOSE "f \<in> Pi(L,J), f = Tup(L, \<lambda>b. SOME a\<in>J(b). x \<in> X(b)`a)")) *})
+@proof
+  @have "\<forall>x\<in>(\<Inter>b\<in>L. (\<Union>a\<in>J(b). X(b)`a)). x\<in>(\<Union>f\<in>Pi(L,J). (\<Inter>b\<in>L. X(b)`(f`b)))" @with
+    @obtain "f \<in> Pi(L,J)" where "f = Tup(L, \<lambda>b. SOME a\<in>J(b). x \<in> X(b)`a)" @end
+@qed
 
 (* Corollary of above. More trouble to set up link. *)
 lemma distrib_Inter_union:
@@ -254,17 +262,19 @@ lemma distrib_Inter_union:
 (* Distributivity of product over union. *)
 lemma distrib_prod_UN [rewrite_back]:
   "Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a)) = (\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>g\<in>Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a)). g\<in>(\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))" WITH (
-      CHOOSE "f \<in> Pi(L,J), f = Tup(L, \<lambda>b. SOME a\<in>J(b). g`b \<in> X(b)`a)")) *})
+@proof
+  @have "\<forall>g\<in>Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a)). g\<in>(\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))" @with
+    @obtain "f \<in> Pi(L,J)" where "f = Tup(L, \<lambda>b. SOME a\<in>J(b). g`b \<in> X(b)`a)" @end
+@qed
 
 lemma distrib_prod_INT:
   "L \<noteq> \<emptyset> \<Longrightarrow> \<forall>b\<in>L. J(b) \<noteq> \<emptyset> \<Longrightarrow>
    Pi(L, \<lambda>b. (\<Inter>a\<in>J(b). X(b)`a)) = (\<Inter>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "\<forall>g\<in>(\<Inter>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))). g\<in>Pi(L, \<lambda>b. (\<Inter>a\<in>J(b). X(b)`a))" WITH (
-      HAVE_RULE "\<forall>b\<in>L. \<forall>a\<in>J(b). g`b \<in> X(b)`a" WITH (
-        CHOOSE "f\<in>Pi(L,J), f`b = a"))) *})
+@proof
+  @have "\<forall>g\<in>(\<Inter>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))). g\<in>Pi(L, \<lambda>b. (\<Inter>a\<in>J(b). X(b)`a))" @with
+    @have (@rule) "\<forall>b\<in>L. \<forall>a\<in>J(b). g`b \<in> X(b)`a" @with
+      @obtain "f\<in>Pi(L,J)" where "f`b = a" @end @end
+@qed
 
 lemma distrib_prod_union:
   "(\<Union>a\<in>I. X(a)) \<times> (\<Union>b\<in>K. Y(b)) = (\<Union>p\<in>I\<times>K. X(fst(p))\<times>Y(snd(p)))" by auto2
@@ -284,8 +294,10 @@ lemma distrib_prod_inter_pair:
 (* Disjointness of product sets *)
 lemma prod_set_disjoint [backward1]:
   "a \<in> I \<Longrightarrow> X(a) \<inter> Y(a) = \<emptyset> \<Longrightarrow> Pi(I,X) \<inter> Pi(I,Y) = \<emptyset>"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "x, x \<in> Pi(I,X) \<inter> Pi(I,Y)" THEN HAVE "x`a \<in> X(a) \<inter> Y(a)") *})
+@proof
+  @contradiction
+  @obtain x where "x \<in> Pi(I,X) \<inter> Pi(I,Y)" @then @have "x`a \<in> X(a) \<inter> Y(a)"
+@qed
 
 lemma prod_mutually_disjoint:
   "\<forall>b\<in>L. mutually_disjoint(X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(F(b)) \<Longrightarrow>
@@ -294,10 +306,11 @@ lemma prod_mutually_disjoint:
 lemma prod_is_partition:
   "\<forall>b\<in>L. is_partition(S(b),X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(S(b)) \<Longrightarrow>
    is_partition(Pi(L,S), \<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))"  
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "Pi(L,S) = Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a))" THEN
-    LET "F = (\<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))" THEN
-    HAVE "(\<Union>f\<in>Pi(L,J). F`f) = (\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))") *})
+@proof
+  @have "Pi(L,S) = Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a))" @then
+  @let "F = (\<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))" @then
+  @have "(\<Union>f\<in>Pi(L,J). F`f) = (\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
+@qed
 
 section {* Extension of mappings to products *}  (* Bourbaki II.5.7 *)
 
@@ -324,16 +337,18 @@ lemma ext_prod_fun_id [rewrite]:
 
 lemma ext_prod_fun_inj:
   "F \<in> Pi(I,\<lambda>a. X(a)\<rightarrow>Y(a)) \<Longrightarrow> \<forall>a\<in>I. injective(F`a) \<Longrightarrow> injective(ext_prod_fun(I,X,Y,F))"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "\<forall>a\<in>I. X(a) \<noteq> \<emptyset>" WITH (
-      LET "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. left_inverse(F`a)))" THEN
-      HAVE "R \<circ> ext_prod_fun(I,X,Y,F) = id_fun(Pi(I,X))")) *})
+@proof
+  @case "\<forall>a\<in>I. X(a) \<noteq> \<emptyset>" @with
+    @let "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. left_inverse(F`a)))" @then
+    @have "R \<circ> ext_prod_fun(I,X,Y,F) = id_fun(Pi(I,X))" @end
+@qed
 
 lemma ext_prod_fun_surj:
   "F \<in> Pi(I,\<lambda>a. X(a)\<rightarrow>Y(a)) \<Longrightarrow> \<forall>a\<in>I. surjective(F`a) \<Longrightarrow> surjective(ext_prod_fun(I,X,Y,F))"
-  by (tactic {* auto2s_tac @{context} (
-    LET "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. right_inverse(F`a)))" THEN
-    HAVE "ext_prod_fun(I,X,Y,F) \<circ> R = id_fun(Pi(I,Y))") *})
+@proof
+  @let "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. right_inverse(F`a)))" @then
+  @have "ext_prod_fun(I,X,Y,F) \<circ> R = id_fun(Pi(I,Y))"
+@qed
 
 (* Canonical bijection coming from extension to products. *)
 
@@ -362,7 +377,8 @@ setup {* del_prfstep_thm @{thm map_family_to_map_to_prod_def} *}
 
 lemma map_to_prod_to_map_family_bij:
   "map_to_prod_to_map_family(E,I,X) \<in> (E\<rightarrow>Pi(I,X)) \<cong> Pi(I, \<lambda>a. E\<rightarrow>X(a))"
-  by (tactic {* auto2s_tac @{context} (
-    HAVE "inverse_pair(map_to_prod_to_map_family(E,I,X), map_family_to_map_to_prod(E,I,X))") *})
+@proof
+  @have "inverse_pair(map_to_prod_to_map_family(E,I,X), map_family_to_map_to_prod(E,I,X))"
+@qed
 
 end

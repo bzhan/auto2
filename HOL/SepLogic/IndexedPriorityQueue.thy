@@ -130,10 +130,12 @@ declare idx_pqueue_swap_def [sep_proc_defs]
 theorem index_of_pqueue_swap [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> i < length xs \<Longrightarrow> j < length xs \<Longrightarrow>
    index_of_pqueue (list_swap xs i j) (m {key (xs ! i) \<rightarrow> j} {key (xs ! j) \<rightarrow> i})"
-  by (tactic {* auto2s_tac @{context}
-    (LET "m' = m {key (xs ! i) \<rightarrow> j} {key (xs ! j) \<rightarrow> i}" THEN
-     HAVE_RULE "\<forall>k<length xs. m'\<langle>key (list_swap xs i j ! k)\<rangle> = Some k" WITH
-      (CASE "k = i" THEN CASE "k = j")) *})
+@proof
+  @let "m' = m {key (xs ! i) \<rightarrow> j} {key (xs ! j) \<rightarrow> i}" @then
+  @have (@rule) "\<forall>k<length xs. m'\<langle>key (list_swap xs i j ! k)\<rangle> = Some k" @with
+    @case "k = i" @then @case "k = j"
+  @end
+@qed
 
 theorem idx_pqueue_swap_rule [hoare_triple, hoare_create_case]:
   "<idx_pqueue xs p * \<up>(i < length xs) * \<up>(j < length xs)>
@@ -158,10 +160,11 @@ theorem not_has_key [forward, backward2]:
 
 theorem index_of_pqueue_push [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> \<not>has_key xs k \<Longrightarrow> index_of_pqueue (xs @ [KVPair k v]) (m{k \<rightarrow> length xs})"
-  by (tactic {* auto2s_tac @{context}
-    (LET "xs' = xs @ [KVPair k v]" THEN
-     LET "m' = m{k \<rightarrow> length xs}" THEN
-     HAVE "\<forall>j<length xs'. m'\<langle>key (xs' ! j)\<rangle> = Some j" WITH CASE "j = length xs") *})
+@proof
+  @let "xs' = xs @ [KVPair k v]" @then
+  @let "m' = m{k \<rightarrow> length xs}" @then
+  @have "\<forall>j<length xs'. m'\<langle>key (xs' ! j)\<rangle> = Some j" @with @case "j = length xs" @end
+@qed
 
 theorem idx_pqueue_push_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(k < alen (index p)) * \<up>(\<not>has_key xs k)>
@@ -183,17 +186,20 @@ theorem idx_pqueue_pop_rule [hoare_triple]:
 
 theorem index_of_pqueue_update:
   "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> index_of_pqueue (list_update xs i (KVPair k v)) m"
-  by (tactic {* auto2s_tac @{context}
-    (LET "xs' = list_update xs i (KVPair k v)" THEN
-     HAVE_RULE "\<forall>j<length xs'. m\<langle>key (xs' ! j)\<rangle> = Some j" WITH CASE "j = i") *})
+@proof
+  @let "xs' = list_update xs i (KVPair k v)" @then
+  @have (@rule) "\<forall>j<length xs'. m\<langle>key (xs' ! j)\<rangle> = Some j" @with @case "j = i" @end
+@qed
 setup {* add_forward_prfstep_cond @{thm index_of_pqueue_update} [with_term "list_update ?xs ?i (KVPair ?k ?v)"] *}
 
 theorem key_within_range_update [backward2]:
   "key_within_range xs n \<Longrightarrow> i < length xs \<Longrightarrow> k < n \<Longrightarrow> key_within_range (list_update xs i (KVPair k v)) n"
-  by (tactic {* auto2s_tac @{context}
-    (LET "xs' = list_update xs i (KVPair k v)" THEN
-     HAVE "\<forall>p. p \<in># mset xs' \<longrightarrow> key p < n" WITH
-      (CHOOSE "j, j < length xs' \<and> p = xs' ! j" THEN CASE "j = i")) *})
+@proof
+  @let "xs' = list_update xs i (KVPair k v)" @then
+  @have "\<forall>p. p \<in># mset xs' \<longrightarrow> key p < n" @with
+    @obtain j where "j < length xs' \<and> p = xs' ! j" @then @case "j = i"
+  @end
+@qed
 
 theorem array_upd_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(i < length xs) * \<up>(k = key (xs ! i))>
@@ -226,22 +232,25 @@ setup {* add_forward_prfstep_cond @{thm member_union_single} [with_term "?A \<un
 
 theorem map_of_kv_set_insert [rewrite]:
   "unique_keys_set T \<Longrightarrow> \<forall>v. KVPair k v \<notin> T \<Longrightarrow> map_of_kv_set (T \<union> { KVPair k v }) = (map_of_kv_set T) {k \<rightarrow> v}"
-  by (tactic {* auto2s_tac @{context}
-    (LET "S = T \<union> { KVPair k v }" THEN
-     HAVE "T \<subseteq> S" THEN HAVE "unique_keys_set S") *})
+@proof
+  @let "S = T \<union> { KVPair k v }" @then
+  @have "T \<subseteq> S" @then @have "unique_keys_set S"
+@qed
 
 theorem map_of_kv_set_delete [rewrite]:
   "unique_keys_set T \<Longrightarrow> KVPair k v \<in> T \<Longrightarrow> map_of_kv_set (T - { KVPair k v }) = delete_map k (map_of_kv_set T)"
-  by (tactic {* auto2s_tac @{context}
-     (LET "S = T - { KVPair k v }" THEN
-      HAVE "S \<subseteq> T" THEN HAVE "unique_keys_set S") *})
+@proof
+  @let "S = T - { KVPair k v }" @then
+  @have "S \<subseteq> T" @then @have "unique_keys_set S"
+@qed
 
 theorem map_of_kv_set_update [rewrite]:
   "unique_keys_set T \<Longrightarrow> KVPair k v \<in> T \<Longrightarrow>
    map_of_kv_set ((T - { KVPair k v }) \<union> { KVPair k v' }) = (map_of_kv_set T) {k \<rightarrow> v'}"
-  by (tactic {* auto2s_tac @{context}
-    (HAVE "unique_keys_set (T - { KVPair k v })" THEN
-     HAVE "\<forall>x. KVPair k x \<notin> T - { KVPair k v }") *})
+@proof
+  @have "unique_keys_set (T - { KVPair k v })" @then
+  @have "\<forall>x. KVPair k x \<notin> T - { KVPair k v }"
+@qed
 
 setup {* fold del_prfstep_thm [@{thm in_set_union_single}, @{thm member_union_single}] *}
 
@@ -287,8 +296,13 @@ theorem idx_bubble_down_rule [hoare_triple]:
   "<idx_pqueue xs a * \<up>(is_heap_partial1 xs k)>
    idx_bubble_down a k
    <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs) * \<up>(map_of_kv_list xs' = map_of_kv_list xs)>"
-  by (tactic {* auto2s_tac @{context} (
-    UPPER_STRONG_INDUCT ("k", "k < length xs", Arbitrary "xs" :: ApplyOns ["s1 k", "s2 k"])) *})
+@proof
+  @contradiction
+  @let "d = length xs - k"
+  @strong_induct d arbitrary k xs
+  @apply_induct "length xs - s1 k" @have "length xs - s1 k < length xs - k"
+  @apply_induct "length xs - s2 k" @have "length xs - s2 k < length xs - k"
+@qed
 
 partial_function (heap) idx_bubble_up :: "'a::{heap,linorder} indexed_pqueue \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "idx_bubble_up a k =
@@ -307,8 +321,10 @@ theorem idx_bubble_up_rule [hoare_triple]:
   "<idx_pqueue xs a * \<up>(is_heap_partial2 xs k)>
    idx_bubble_up a k
    <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs) * \<up>(map_of_kv_list xs' = map_of_kv_list xs)>"
-  by (tactic {* auto2s_tac @{context} (
-    STRONG_INDUCT ("k", [Arbitrary "xs", ApplyOn "par k"])) *})
+@proof
+  @strong_induct k arbitrary xs
+  @apply_induct "par k"
+@qed
 
 definition delete_min_idx_pqueue ::
   "'a::{heap,linorder} indexed_pqueue \<Rightarrow> ((nat, 'a) kv_pair \<times> 'a indexed_pqueue) Heap" where
@@ -373,9 +389,11 @@ theorem update_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(has_key xs k)>
    update_idx_pqueue k v p
    <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' p * \<up>(is_heap xs') * \<up>(map_of_kv_list xs' = map_of_kv_list xs {k \<rightarrow> v})>"
-   by (tactic {* auto2s_tac @{context}
-     (CHOOSE "v', KVPair k v' \<in># mset xs" THEN
-      CHOOSE "i, i < length xs \<and> KVPair k v' = xs ! i") *})
+@proof
+  @contradiction
+  @obtain v' where "KVPair k v' \<in># mset xs" @then
+  @obtain i where "i < length xs \<and> KVPair k v' = xs ! i"
+@qed
 setup {* del_prfstep_thm @{thm mset_update'} *}
 
 section {* Outer interface *}
@@ -386,9 +404,11 @@ setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
 
 theorem has_key_set [rewrite]:
   "has_key xs k \<longleftrightarrow> (\<exists>v. KVPair k v \<in> set xs)"
-  by (tactic {* auto2s_tac @{context}
-    (CASE "has_key xs k" WITH
-      (CHOOSE "v, KVPair k v \<in># mset xs" THEN HAVE "KVPair k v \<in> set xs")) *})
+@proof
+  @case "has_key xs k" @with
+    @obtain v where "KVPair k v \<in># mset xs" @then @have "KVPair k v \<in> set xs"
+  @end
+@qed
 
 theorem has_key_to_map_none [rewrite_bidir]:
   "unique_keys xs \<Longrightarrow> has_key xs k \<longleftrightarrow> (map_of_kv_list xs) \<langle>k\<rangle> \<noteq> None" by auto2
@@ -396,15 +416,18 @@ setup {* del_prfstep_thm @{thm has_key_set} *}
 
 theorem heap_implies_hd_min2 [backward1]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_kv_list xs)\<langle>k\<rangle> = Some v \<Longrightarrow> val (hd xs) \<le> v"
-  by (tactic {* auto2s_tac @{context}
-    (CHOOSE "i, i < length xs \<and> KVPair k v = xs ! i" WITH HAVE "KVPair k v \<in> set xs" THEN
-     HAVE "hd xs \<le> KVPair k v") *})
+@proof
+  @obtain i where "i < length xs \<and> KVPair k v = xs ! i" @with @have "KVPair k v \<in> set xs" @end
+  @have "hd xs \<le> KVPair k v"
+@qed
 
 theorem empty_list_to_empty_map [rewrite]:
   "map_of_kv_list ([]::('a, 'b) kv_pair list) = empty_map"
-  by (tactic {* auto2s_tac @{context}
-    (CHOOSE "x, (map_of_kv_list ([]::('a, 'b) kv_pair list))\<langle>x\<rangle> \<noteq> None" THEN
-     CHOOSE "v, KVPair x v \<in> set ([]::('a, 'b) kv_pair list)") *})
+@proof
+  @contradiction
+  @obtain x where "(map_of_kv_list ([]::('a, 'b) kv_pair list))\<langle>x\<rangle> \<noteq> None" @then
+  @obtain v where "KVPair x v \<in> set ([]::('a, 'b) kv_pair list)"
+@qed
 
 declare idx_pqueue_empty_def [sep_proc_defs del]
 theorem idx_pqueue_empty_map:

@@ -10,7 +10,7 @@ section {* Definition and basic properties of primes *}
 
 definition prime :: "nat \<Rightarrow> bool" where [rewrite]:
   "prime p = (1 < p \<and> (\<forall>m. m dvd p \<longrightarrow> m = 1 \<or> m = p))"
-  
+
 lemma primeD1 [forward]: "prime p \<Longrightarrow> 1 < p" by auto2
 lemma primeD2: "prime p \<Longrightarrow> m dvd p \<Longrightarrow> m = 1 \<or> m = p" by auto2
 setup {* add_forward_prfstep_cond @{thm primeD2} [with_cond "?m \<noteq> 1", with_cond "?m \<noteq> ?p"] *}
@@ -18,7 +18,7 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm prime_def} *}
 
 (* Exists a prime p. *)
 theorem exists_prime [resolve]: "\<exists>p. prime p"
-  by (tactic {* auto2s_tac @{context} (HAVE "prime 2") *})
+@proof @have "prime 2" @qed
 
 lemma prime_odd_nat: "prime p \<Longrightarrow> p > 2 \<Longrightarrow> odd p" by auto2
 
@@ -29,7 +29,7 @@ setup {* add_forward_prfstep_cond @{thm prime_dvd_mult_nat}
   (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
 
 theorem prime_dvd_intro: "prime p \<Longrightarrow> p * q = m * n \<Longrightarrow> p dvd m \<or> p dvd n"
-  by (tactic {* auto2s_tac @{context} (HAVE "p dvd m * n") *})
+@proof @have "p dvd m * n" @qed
 setup {* add_forward_prfstep_cond @{thm prime_dvd_intro}
   (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
 
@@ -46,72 +46,79 @@ lemma prime_dvd_power_nat_iff: "prime p \<Longrightarrow> n > 0 \<Longrightarrow
 lemma prime_nat_code: "prime p = (1 < p \<and> (\<forall>x. 1 < x \<and> x < p \<longrightarrow> \<not> x dvd p))" by auto2
 
 lemma prime_factor_nat [backward]: "n \<noteq> 1 \<Longrightarrow> \<exists>p. p dvd n \<and> prime p"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "prime n" THEN CHOOSE "k, k \<noteq> 1 \<and> k \<noteq> n \<and> k dvd n" THEN
-    STRONG_INDUCT ("n", [ApplyOn "k"])) *})
+@proof
+  @strong_induct n
+  @case "prime n" @then @case "n = 0" @then
+  @obtain k where "k \<noteq> 1" "k \<noteq> n" "k dvd n"
+@qed
 
 lemma prime_divprod_pow_nat:
   "prime p \<Longrightarrow> coprime a b \<Longrightarrow> p^n dvd a * b \<Longrightarrow> p^n dvd a \<or> p^n dvd b" by auto2
 
-lemma prime_product: "prime (p * q) \<Longrightarrow> p = 1 \<or> q = 1"
-  by (tactic {* auto2s_tac @{context} (HAVE "p dvd q * p") *})
-setup {* add_forward_prfstep @{thm prime_product} *}
+lemma prime_product [forward]: "prime (p * q) \<Longrightarrow> p = 1 \<or> q = 1"
+@proof @have "p dvd q * p" @qed
 
 lemma prime_exp: "prime (p ^ n) \<longleftrightarrow> n = 1 \<and> prime p" by auto2
 
 lemma prime_power_mult: "prime p \<Longrightarrow> x * y = p ^ k \<Longrightarrow> \<exists>i j. x = p ^ i \<and> y = p ^ j"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "k = 0" THEN INDUCT ("k", Arbitraries ["x", "y"]) THEN
-    CASE "p dvd x" WITH (
-      CHOOSE "x', x = p * x'" THEN HAVE "x * y = p * (x' * y)" THEN HAVE "x = x' * p") THEN
-    CASE "p dvd y" WITH (
-      CHOOSE "y', y = p * y'" THEN HAVE "x * y = p * (x * y')" THEN HAVE "y = y' * p")) *})
+@proof
+  @induct k arbitrary x y
+  @case "p dvd x" @with
+    @obtain x' where "x = p * x'" @then @have "x * y = p * (x' * y)" @then @have "x = x' * p" @end
+  @case "p dvd y" @with
+    @obtain y' where "y = p * y'" @then @have "x * y = p * (x * y')" @then @have "y = y' * p" @end
+@qed
 
 section {* Infinitude of primes *}
 
 theorem bigger_prime [resolve]: "\<exists>p. prime p \<and> n < p"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "p, prime p \<and> p dvd fact n + 1" THEN
-    CASE "p \<le> n" WITH HAVE "p dvd fact n") *})
+@proof
+  @obtain p where "prime p" "p dvd fact n + 1"
+  @case "n \<ge> p" @with @have "(p::nat) dvd fact n" @end
+@qed
 
 theorem primes_infinite: "\<not> finite {p. prime p}"
-  by (tactic {* auto2s_tac @{context} (
-    CHOOSE "b, prime b \<and> Max {p. prime p} < b") *})
+@proof
+  @obtain b where "prime b" "Max {p. prime p} < b"
+@qed
 
 section {* Existence and uniqueness of prime factorization *}
 
-theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<in>set_mset M. prime p) \<and> n = (\<Prod>i\<in>#M. i)"
-  by (tactic {* auto2s_tac @{context} (
-    STRONG_INDUCT ("n", []) THEN
-    CASE "n = 1" WITH HAVE "n = (\<Prod>i\<in># {#}. i)" THEN
-    CASE "prime n" WITH HAVE "n = (\<Prod>i\<in># {#n#}. i)" THEN
-    CHOOSES ["m, k, n = m * k \<and> 1 < m \<and> m < n \<and> 1 < k \<and> k < n",
-             "M, (\<forall>p\<in>set_mset M. prime p) \<and> m = (\<Prod>i\<in>#M. i)",
-             "K, (\<forall>p\<in>set_mset K. prime p) \<and> k = (\<Prod>i\<in>#K. i)"] THEN
-    HAVE "n = (\<Prod>i\<in>#(M+K). i)") *})
+theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<in>#M. prime p) \<and> n = (\<Prod>i\<in>#M. i)"
+@proof
+  @strong_induct n
+  @case "n = 1" @with @have "n = (\<Prod>i\<in># {#}. i)" @end
+  @case "prime n" @with @have "n = (\<Prod>i\<in># {#n#}. i)" @end
+  @obtain m k where "n = m * k" "1 < m" "m < n" "1 < k" "k < n"
+  @obtain M where "(\<forall>p\<in>#M. prime p)" "m = (\<Prod>i\<in>#M. i)"
+  @obtain K where "(\<forall>p\<in>#K. prime p)" "k = (\<Prod>i\<in>#K. i)"
+  @have "n = (\<Prod>i\<in>#(M+K). i)"
+@qed
 
 theorem prime_dvd_multiset [backward1]: "prime p \<Longrightarrow> p dvd (\<Prod>i\<in>#M. i) \<Longrightarrow> \<exists>n. n\<in>#M \<and> p dvd n"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "M = {#}" THEN
-    CHOOSE "M', m, M = M' + {#m#}" THEN
-    STRONG_INDUCT ("M", [ApplyOn "M'"])) *})
-
+@proof
+  @strong_induct M
+  @case "M = {#}" @then
+  @obtain M' m where "M = M' + {#m#}"
+@qed
+  
 theorem factorization_unique_aux:
-  "\<forall>p\<in>set_mset M. prime p \<Longrightarrow> \<forall>p\<in>set_mset N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) dvd (\<Prod>i\<in>#N. i) \<Longrightarrow> M \<subseteq># N"
-  by (tactic {* auto2s_tac @{context} (
-    CASE "M = {#}" THEN
-    CHOOSE "M', m, M = M' + {#m#}" THEN
-    HAVE "m dvd (\<Prod>i\<in>#N. i)" THEN
-    CHOOSES ["n, n\<in>#N \<and> m dvd n",
-             "N', N = N' + {#n#}"] THEN
-    HAVE "m = n" THEN
-    HAVE "(\<Prod>i\<in>#M'. i) dvd (\<Prod>i\<in>#N'. i)" THEN
-    STRONG_INDUCT ("M", [Arbitrary "N", ApplyOn "M'"])) *})
-
+  "\<forall>p\<in>#M. prime p \<Longrightarrow> \<forall>p\<in>#N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) dvd (\<Prod>i\<in>#N. i) \<Longrightarrow> M \<subseteq># N"
+@proof
+  @strong_induct M arbitrary N
+  @case "M = {#}" @then
+  @obtain M' m where "M = M' + {#m#}" @then
+  @have "m dvd (\<Prod>i\<in>#N. i)" @then
+  @obtain n where "n \<in># N" "m dvd n" @then
+  @obtain N' where "N = N' + {#n#}" @then
+  @have "m = n" @then
+  @have "(\<Prod>i\<in>#M'. i) dvd (\<Prod>i\<in>#N'. i)"
+@qed
 setup {* add_forward_prfstep_cond @{thm factorization_unique_aux} [with_cond "?M \<noteq> ?N"] *}
+
 theorem factorization_unique:
-  "\<forall>p\<in>set_mset M. prime p \<Longrightarrow> \<forall>p\<in>set_mset N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) = (\<Prod>i\<in>#N. i) \<Longrightarrow> M = N"
-  by (tactic {* auto2s_tac @{context} (HAVE "M \<subseteq># N") *})
+  "\<forall>p\<in>#M. prime p \<Longrightarrow> \<forall>p\<in>#N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) = (\<Prod>i\<in>#N. i) \<Longrightarrow> M = N"
+@proof @have "M \<subseteq># N" @qed
 setup {* del_prfstep_thm @{thm factorization_unique_aux} *}
 
 end
