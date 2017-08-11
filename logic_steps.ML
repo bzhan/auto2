@@ -866,7 +866,7 @@ fun disj_cancel_prop ctxt th prop =
 
 fun is_avoid_term t =
     is_mem t andalso Term.is_Var (dest_arg1 t) andalso
-    length (Term.add_frees (dest_arg t) []) = 0
+    null (Term.add_frees (dest_arg t) [])
 
 (* Reduce a disjunction p_1 | ... | t | ... | p_n by matching ~t with
    the second item. If the disjunction contains schematic variables, t

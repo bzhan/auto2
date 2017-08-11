@@ -424,7 +424,7 @@ fun mod_fact_ritems ctxt mod_th =
       val mod_th' = apply_to_thm' (normalize_mod_cv ctxt) mod_th
       val nms = Update.get_apply_exists_nms mod_th'
     in
-      if length nms = 0 then ([], mod_th')
+      if null nms then ([], mod_th')
       else Update.apply_exists_ritems mod_th' ctxt nms
     end
 
@@ -1010,7 +1010,7 @@ fun match_hoare_create_case_gen (nm, pat) =
                            |> ACUtil.dest_ac assn_ac_info
                            |> filter is_pure_assn
             in
-              if length ts = 0 then []
+              if null ts then []
               else let
                 val t = ts |> List.last |> dest_arg |> get_neg |> mk_Trueprop
               in

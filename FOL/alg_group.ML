@@ -125,11 +125,11 @@ fun group_alg_data group_th =
 
 (* Reduce a list of terms *)
 fun reduce_atom_list G l =
-    if length l = 0 then []
+    if null l then []
     else let
       val (head, rest) = (hd l, reduce_atom_list G (tl l))
     in
-      if length rest = 0 then [head]
+      if null rest then [head]
       else if is_inv_pair_l G (head, hd rest) orelse
               is_inv_pair_r G (head, hd rest) then tl rest
       else head :: rest

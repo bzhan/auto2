@@ -426,18 +426,18 @@ type monomial = term list * Rat.rat
    actual simplification.
  *)
 fun compare_monomial_t G ((l1, _), (l2, _)) =
-    if length l1 = 0 andalso length l2 = 0 then EQUAL
-    else if length l1 = 0 then GREATER
-    else if length l2 = 0 then LESS
+    if null l1 andalso null l2 then EQUAL
+    else if null l1 then GREATER
+    else if null l2 then LESS
     else Term_Ord.term_ord (list_times G l1, list_times G l2)
 
 (* Reducing a monomial: combine a with inv(a). *)
 fun reduce_atom_list G l =
-    if length l = 0 then []
+    if null l then []
     else let
       val (head, rest) = (hd l, reduce_atom_list G (tl l))
     in
-      if length rest = 0 then [head]
+      if null rest then [head]
       else if is_inv_pair_l G (head, hd rest) orelse
               is_inv_pair_r G (head, hd rest) then tl rest
       else head :: rest
@@ -449,11 +449,11 @@ fun mult_monomial G ((l1, c1), (l2, c2)) =
 
 (* Reduce a list of monomials: combine monomials of the same body. *)
 fun reduce_monomial_list G ls =
-    if length ls = 0 then []
+    if null ls then []
     else let
       val (head, rest) = (hd ls, reduce_monomial_list G (tl ls))
     in
-      if length rest = 0 then [head]
+      if null rest then [head]
       else let
         val (l1, c1) = head
         val (l2, c2) = hd rest
@@ -491,13 +491,13 @@ fun mult_polynomial_list G (ls1, ls2) =
 
 (* Translate (l, c) to a monomial. *)
 fun to_monomial G (l, c) =
-    if length l = 0 then mk_rat G c
+    if null l then mk_rat G c
     else if c = rat_one then list_times G l
     else times_t $ G $ list_times G l $ mk_rat G c
 
 (* Translate a list of (l, c) to a polynomial. *)
 fun to_polynomial G ls =
-    if length ls = 0 then mk_rat G rat_zero
+    if null ls then mk_rat G rat_zero
     else list_plus G (map (to_monomial G) ls)
 
 fun inv_polynomial_list G ls =

@@ -210,7 +210,7 @@ val test_disj_prop_no_match =
             val (cvar_u, cus) = (map Term.dest_Var var_u', map (cert ctxt) us')
             val res = Logic_ProofSteps.disj_prop_match tbl ([], fo_init) (t, (cvar_u, cus))
           in
-            if length res = 0 then ()
+            if null res then ()
             else let
               val _ = trace_t_ctxt ctxt "t" t
               val _ = trace_t_ctxt ctxt "u" u

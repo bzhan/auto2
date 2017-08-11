@@ -114,8 +114,8 @@ fun inst_eq_better {lat, ...} vars ((id, inst), _) ((id', inst'), _) =
 
 (* Matching an order list of patterns against terms. *)
 fun match_list tbl bd_vars (ts, cus) instsp =
-    if length ts = 0 andalso length cus = 0 then [(instsp, [])]
-    else if length ts = 0 orelse length cus = 0 then []
+    if null ts andalso null cus then [(instsp, [])]
+    else if null ts orelse null cus then []
     else let
       (* Two choices, one of which should always work (encounter no
          illegal higher-order patterns.

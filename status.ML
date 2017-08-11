@@ -714,7 +714,7 @@ fun string_of_init_info ctxt init =
    becomes ==>.
  *)
 fun get_neg_form inits =
-    if length inits = 0 then pFalse
+    if null inits then pFalse
     else let
       fun mk_all (nm, T) t = Logic.all_const T $ Term.absfree (nm, T) t
       val concl = inits |> List.last |> dest_init_assum |> the_single
@@ -739,7 +739,7 @@ fun get_neg_form_obj ctxt inits =
    same as that returned by get_neg_form.
  *)
 fun get_neg_form_thm ctxt inits th =
-    if length inits = 0 then th
+    if null inits then th
     else let
       val _ = assert (Thm.prop_of th aconv pFalse)
                      "get_neg_form_thm: input th should be a contradiction."
@@ -1319,7 +1319,7 @@ fun find_ritems_exact st id ritems =
       val (var_ritems, ritems') =
           ritems |> filter_split (BoxItem.match_ty_str_raw TY_VAR)
     in
-      if length var_ritems = 0 then
+      if null var_ritems then
         filter_split (find_ritem_exact st id) ritems
       else let
         val vars = maps BoxItem.get_tname_raw var_ritems
@@ -1351,7 +1351,7 @@ fun find_ritems_exact st id ritems =
 
         val inst = fold find_ritem ritems' [fo_init]
       in
-        if length inst = 0 then ([], ritems) else (ritems, [])
+        if null inst then ([], ritems) else (ritems, [])
       end
     end
 
@@ -1369,7 +1369,7 @@ fun invoke_handlers handlers th =
       val handlers' = handlers |> filter (
             fn (_, (t, _)) => member (op aconv) all_hyps t)
     in
-      if length handlers' = 0 then th
+      if null handlers' then th
       else let
         val to_invoke =
             find_index (fn (_, (t, (ready, _))) => ready (t, all_hyps))
@@ -1402,7 +1402,7 @@ fun get_on_resolve (st as {lat, ctxt, ...}) id i th =
       val inits = get_inits st [prim_id]
       val th'' = Update.get_neg_form_thm ctxt inits th'
       val _ = if prim_id = 0 then
-                assert (length (Thm.hyps_of th'') = 0)
+                assert (null (Thm.hyps_of th''))
                        "get_on_resolve: did not remove all hypothesis at box 0."
               else ()
       val _ = assert (Thm.prop_of th'' aconv Update.get_neg_form inits)

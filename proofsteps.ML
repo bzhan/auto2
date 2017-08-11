@@ -156,7 +156,7 @@ fun neq_filter cond tbl (id, inst) =
           cond |> dest_not |> dest_eq
           handle Fail "dest_not" => raise Fail "neq_filter: not an inequality."
                | Fail "dest_eq" => raise Fail "neq_filter: not an inequality."
-      val _ = assert (length (Term.add_frees cond []) = 0)
+      val _ = assert (null (Term.add_frees cond []))
                      "neq_filter: should not contain free variable."
 
       val {ctxt, ...} = tbl
@@ -274,7 +274,7 @@ fun has_shadows_desc descs = length (retrieve_shadows descs) > 0
    IDs.
  *)
 fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
-    if length side_args = 0 then
+    if null side_args then
       [(id, [])]
     else let
       val side_args' = map (ItemIO.subst_arg inst) side_args
@@ -288,7 +288,7 @@ fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
             | _ => raise Fail "get_side_ths: wrong kind of arg."
       val side_ths = map process_side_arg side_args'
     in
-      if exists (fn lst => length lst = 0) side_ths then []
+      if exists null side_ths then []
       else side_ths |> BoxID.get_all_merges_info lat
                     |> max_partial (BoxID.id_is_eq_ancestor lat)
     end
@@ -401,7 +401,7 @@ fun gen_prfstep name descs =
                      "gen_prfstep: new schematic variable in pats_r / cases."
 
       fun pats_r_to_update ctxt (inst_ths as ((id, _), _)) =
-          if length pats_r = 0 then [] else
+          if null pats_r then [] else
           let
             val ths = map (apply_pat_r ctxt inst_ths) pats_r
           in
@@ -678,7 +678,7 @@ fun del_prfstep_pred_gnrc pred =
            val to_delete = filter pred keys
            fun eq_name (key, {name, ...}) = (key = name)
          in
-           if length to_delete = 0 then
+           if null to_delete then
              error "Delete prfstep: not found"
            else let
              val _ = writeln (cat_lines (map (fn name => "Delete " ^ name)
@@ -759,7 +759,7 @@ type pre_prfstep_descriptor = Proof.context -> prfstep_descriptor
 fun with_term str ctxt =
     let
       val t = Proof_Context.read_term_pattern ctxt str
-      val _ = assert (length (Term.add_frees t []) = 0)
+      val _ = assert (null (Term.add_frees t []))
                      "with_term: should not contain free variable."
     in
       WithTerm t
@@ -841,14 +841,14 @@ fun get_side_prems thy mode ts th =
             case mode of
                 MODE_FORWARD => take (2 - length ts) prems'
               | MODE_FORWARD' =>
-                if length ts = 0 andalso length prems' >= 2 then
+                if null ts andalso length prems' >= 2 then
                   [hd prems', List.last prems']
                 else [List.last prems']
               | MODE_BACKWARD => [get_neg concl]
               | MODE_BACKWARD1 => [get_neg concl, List.last prems']
               | MODE_BACKWARD2 => [get_neg concl, hd prems']
               | MODE_RESOLVE =>
-                if length ts = 0 andalso length prems' > 0 then
+                if null ts andalso length prems' > 0 then
                   [get_neg concl, List.last prems']
                 else [get_neg concl]
           end
@@ -1033,7 +1033,7 @@ fun add_basic_prfstep_cond_gnrc th mode conds gnrc =
       val th = th_defs |> meta_use_vardefs
                        |> update_name_of_thm th ""
     in
-      if length conds = 0 andalso mode = MODE_FORWARD andalso
+      if null conds andalso mode = MODE_FORWARD andalso
          Property.can_add_property_update th thy then
         Property.add_property_update_gnrc th gnrc
       else let

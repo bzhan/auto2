@@ -94,7 +94,7 @@ fun check_hyps id th (st as {ctxt, ...}) =
       val handlers = map fst (Status.get_all_handlers st id)
       val extra = subtract (op aconv) (inits @ handlers) hyps
     in
-      if length extra = 0 then ()
+      if null extra then ()
       else let
         val _ = trace_tlist_ctxt ctxt "extra:" extra
       in
@@ -256,14 +256,14 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
             let
               val left' = filter (ItemIO.pre_match_arg tbl arg1) left
             in
-              if length left' = 0 then ([], [])
+              if null left' then ([], [])
               else (left', filter (ItemIO.pre_match_arg tbl arg2) right)
             end
           else
             let
               val right' = filter (ItemIO.pre_match_arg tbl arg2) right
             in
-              if length right' = 0 then ([], [])
+              if null right' then ([], [])
               else (filter (ItemIO.pre_match_arg tbl arg1) left, right')
             end
 
@@ -307,7 +307,7 @@ fun process_prfstep sc rtype items items' (prfstep as {args, ...}) st =
           fn item => Status.is_box_resolved st (#id item) orelse
                      Status.query_removed st item) items
     in
-      if length items = 0 then st
+      if null items then st
       else if is_rtype_resolved st rtype then st
       else if length (filter_out ItemIO.is_side_match args) = 1 then
         st |> process_step_single sc rtype items prfstep
@@ -375,7 +375,7 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
    WELLFORM), process relevant items with incremental rtype.
  *)
 fun process_fact_all items st =
-    if length items = 0 then st else
+    if null items then st else
     let
       val {tbl, ctxt, ...} = st
       val id = #id (hd items)
@@ -404,7 +404,7 @@ fun process_fact_all items st =
             fn id' => Status.is_box_unresolved
                           st (Status.merge_boxes st (id, id')))
       val incr_items =
-          if length ts = 0 then []
+          if null ts then []
           else (maps (Status.get_items false st) incr_ids)
                    |> subtract pointer_eq items
                    |> filter (fn {tname, ...} =>
@@ -447,7 +447,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
               if prfstep_name = "$SCRIPT" orelse sc = 0 then ([], ritems')
               else Status.find_ritems_exact st id ritems'
 
-          val _ = if length dup_ritems = 0 orelse
+          val _ = if null dup_ritems orelse
                      not (Config.get ctxt print_trace) orelse
                      not (Config.get ctxt print_intended) then () else
                   if prfstep_name = "$TERM" andalso
@@ -466,7 +466,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
                             (string_of_int sc) ^ ", "
                           else ""
 
-          val _ = if length new_ritems = 0 orelse
+          val _ = if null new_ritems orelse
                      not (Config.get ctxt print_trace) then () else
                   if prfstep_name = "$TERM" andalso
                      not (Config.get ctxt print_term) then ()
@@ -633,7 +633,7 @@ fun auto2_tac ctxt state =
       val subgoals = prop |> Logic.strip_imp_prems
       val steps = Config.get ctxt max_steps
     in
-      if length subgoals = 0 then Seq.empty else
+      if null subgoals then Seq.empty else
       let
         val subgoal = hd subgoals
         val _ = tracing (

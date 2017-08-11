@@ -236,7 +236,7 @@ fun is_rat_gen t =
     let
       val (_, args) = Term.strip_comb t
     in
-      if length args = 0 then false else is_rat (hd args) t
+      if null args then false else is_rat (hd args) t
     end
 
 datatype ord_type = LE | LT | NOT_LE | NOT_LT

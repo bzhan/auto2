@@ -62,7 +62,7 @@ fun get_ancestors_prim lat id =
                 (maps (get_parent_prim lat) cur_ids)
                     |> distinct (op =) |> subtract (op =) all_ids
           in
-            if length new_ids = 0 then all_ids
+            if null new_ids then all_ids
             else helper (all_ids @ new_ids) new_ids
           end
     in

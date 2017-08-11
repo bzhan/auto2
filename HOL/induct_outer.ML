@@ -406,7 +406,7 @@ fun induct_cmd (s, t, u) state =
           (* Create new block with stmt *)
           val neq0_goal = Thm.prems_of ind_th |> hd |> dest_Trueprop
           val (vars, (assums, concl)) = Auto2_Outer.strip_have_goal neq0_goal
-          val _ = assert (length vars = 0)
+          val _ = assert (null vars)
                          "induct: subgoal should declare no new variables"
           val stmt = Logic.list_implies (map mk_Trueprop assums,
                                          mk_Trueprop concl)

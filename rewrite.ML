@@ -302,7 +302,7 @@ fun map_lat f {lat, terms, equiv, all_equiv, head_equiv, contain, simp, subsimp,
           let
             val infos' = filter (BoxID.is_box_supported lat' o fst) infos
           in
-            if length infos' = 0 then [] else [(fhead, infos')]
+            if null infos' then [] else [(fhead, infos')]
           end
 
       fun clean_head_equiv tb =
@@ -583,7 +583,7 @@ fun get_subterm_rewrite_info tbl ct =
     let
       val (ct', subs) = Subterms.dest_subterms ct
     in
-      if length subs = 0 then [([], Thm.reflexive ct)] else
+      if null subs then [([], Thm.reflexive ct)] else
       (map (get_rewrite_info tbl) subs)
           |> merge_simp_infos tbl
           |> map (fn (id, equivs) => (id, Subterms.build_equiv equivs ct'))
@@ -755,7 +755,7 @@ and subterm_simplify_info tbl ct =
     let
       val (ct', subs) = Subterms.dest_subterms ct
     in
-      if length subs = 0 then [([], Thm.reflexive ct)] else
+      if null subs then [([], Thm.reflexive ct)] else
       (map (simplify_info tbl) subs)
           |> merge_simp_infos tbl
           |> map (fn (id, equivs) => (id, Subterms.build_equiv equivs ct'))
@@ -990,7 +990,7 @@ fun apply_property_update_rule (tbl as {lat, ...}) id th_opt =
         let
           val (cprems, _) = cstrip_horn' th
         in
-          if length cprems = 0 then [(id, th)]
+          if null cprems then [(id, th)]
           else let
             val p_ths = (map (get_property tbl) (map (pair id) cprems))
                             |> BoxID.get_all_merges_info lat
@@ -1187,7 +1187,7 @@ fun initialize_wellform_data t (tbl as {ctxt, ...}) =
       val thy = theory_of tbl
       val targets = map (cert ctxt) (WellForm.lookup_wellform_data thy t)
     in
-      if length targets = 0 then tbl
+      if null targets then tbl
       else tbl |> map_wellform (Termtab.update (t, map (rpair []) targets))
     end
 
