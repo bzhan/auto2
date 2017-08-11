@@ -561,7 +561,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         (* success_run item. *)
         val (modQ_th'', modQ_rest) =
             modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
-                     |> apfst (the_single)
+                     |> apfst the_single
             handle List.Empty => raise Fail "next_code_pos: modQ_th''"
         val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
                        else modQ_rest
@@ -609,7 +609,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val success_th = conj_right_th rest_th
         val (modQ_th'', modQ_rest) =
             modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
-                     |> apfst (the_single)
+                     |> apfst the_single
             handle List.Empty => raise Fail "next_code_pos: modQ_th''"
         val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
                        else modQ_rest

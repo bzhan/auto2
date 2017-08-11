@@ -98,9 +98,9 @@ fun add_prem_only stmt =
           prem_only = stmt :: prem_only, after_qed = after_qed})
 
 fun get_head ctxt =
-    hd (Auto2_Data.get ctxt)
-    handle List.Empty =>
-           raise Fail "Auto2 proof should start with @begin keyword"
+    case Auto2_Data.get ctxt of
+      [] => raise Fail "Auto2 proof should start with @begin keyword"
+    | st :: _ => st
 
 (* Given proof state of form A ==> C (with only one subgoal A), return A *)
 fun subgoal_of prop =
