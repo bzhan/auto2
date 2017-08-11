@@ -58,7 +58,10 @@ end;
 structure Nat_Order : NAT_ORDER =
 struct
 
-local open Nat_Arith in
+local
+  open UtilArith
+  open Nat_Arith
+in
 
 (* Fold one arithmetic operation on constants. *)
 

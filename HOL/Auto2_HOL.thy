@@ -33,7 +33,7 @@ ML_file "acdata.ML"
 ML_file "ac_steps.ML"
 ML_file "induct_outer.ML"
 
-method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o auto2_tac) *} "auto2 prover"
+method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac) *} "auto2 prover"
 
 attribute_setup forward = {* setup_attrib add_forward_prfstep_gnrc *}
 attribute_setup backward = {* setup_attrib add_backward_prfstep_gnrc *}

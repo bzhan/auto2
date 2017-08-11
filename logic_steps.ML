@@ -89,8 +89,6 @@ structure ProofStep = ProofStep(Base)
 structure ProofStep_Data = ProofStep_Data(Base)
 open Base
 open UtilLogic
-open ProofStep
-open ProofStep_Data
 
 fun boolVar s = Var ((s, 0), boolT)
 
@@ -153,7 +151,7 @@ val shadow_term_item =
 fun eq_elim_fn rtype _ (item1 as {id, prop, ...}) item2 =
     let
       val (A, B) = dest_eq (prop_of' prop)
-      fun inst_t t = get_insts (PropMatch t) item2 rtype (id, fo_init)
+      fun inst_t t = ProofStep.get_insts (PropMatch t) item2 rtype (id, fo_init)
       val (inst_A, inst_B) = (inst_t A, inst_t B)
       val (inst_nA, inst_nB) = (inst_t (get_neg A), inst_t (get_neg B))
 
@@ -285,7 +283,7 @@ val exists_elim_prfstep =
      func = OneStep exists_elim_fn}
 
 val add_logic_proofsteps =
-    fold add_prfstep [
+    fold ProofStep_Data.add_prfstep [
       shadow_prop_item, shadow_term_item, eq_elim_prfstep, cong_on_ineq_prfstep,
       exists_elim_prfstep
     ]
@@ -843,7 +841,7 @@ fun match_prop rtype (id, item2) pat =
             ((id, inst), patT)
           end
     in
-      get_insts (PropMatch pat) item2 rtype (id, fo_init) @
+      ProofStep.get_insts (PropMatch pat) item2 rtype (id, fo_init) @
       (if length disj_pats > 1 then
          map process_inst (maps (match_prop rtype (id, item2)) disj_pats)
        else [])
@@ -979,8 +977,8 @@ fun match_one_sch_fn rtype {tbl, ...} item1 item2 =
             if count_var (nth args i) < nvar then [] else
             let
               val arg = nth args i
-              val insts = get_insts (TypedMatch (TY_TERM, arg)) item2 rtype
-                                    (id, fo_init)
+              val insts = ProofStep.get_insts (TypedMatch (TY_TERM, arg)) item2 rtype
+                                              (id, fo_init)
               fun inst_to_updt ((id', inst), _) =
                   let
                     val th1' = subst_thm_thy thy inst th1
@@ -1093,7 +1091,7 @@ val add_disj_proofsteps =
     ] #> fold ItemIO.add_prop_matcher [
       (TY_DISJ, disj_prop_matcher)
 
-    ] #> fold add_prfstep [
+    ] #> fold ProofStep_Data.add_prfstep [
       match_update_prfstep, match_one_sch_prfstep, disj_match_iff_prfstep,
       disj_create_case_prfstep, disj_shadow_prfstep
     ]

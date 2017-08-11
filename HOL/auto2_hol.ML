@@ -163,10 +163,8 @@ structure Auto2 = Auto2(Base)
 structure Auto2_Outer = Auto2_Outer(Base)
 open Base
 open UtilLogic
-open Normalizer
 open ProofStep
 open ProofStep_Data
-open Auto2
 
 val _ = Theory.setup (ItemIO.add_basic_item_io)
 val _ = Theory.setup Logic_ProofSteps.add_logic_proofsteps

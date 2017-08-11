@@ -100,15 +100,12 @@ structure Scores = Scores(Base)
 structure Logic_ProofSteps = Logic_ProofSteps(Base)
 open Base
 open UtilLogic
-open BoxItem
-open ItemIO
-open Status
 
 fun check_hyps id th (st as {ctxt, ...}) =
     let
       val hyps = Thm.hyps_of th
-      val inits = get_all_init_assums st id
-      val handlers = map fst (get_all_handlers st id)
+      val inits = Status.get_all_init_assums st id
+      val handlers = map fst (Status.get_all_handlers st id)
       val extra = subtract (op aconv) (inits @ handlers) hyps
     in
       if length extra = 0 then ()
@@ -130,11 +127,11 @@ fun is_rtype_resolved {lat, ...} rtype =
 fun scoring {name, ...} sc items rtype (st as {ctxt, ...}) func =
     let
       val {lat, ...} = RewriteTable.table_of_rtype rtype
-      val merged_id = merged_id lat items
+      val merged_id = BoxItem.merged_id lat items
     in
-      if is_box_resolved st merged_id orelse
+      if Status.is_box_resolved st merged_id orelse
          is_rtype_resolved st rtype orelse
-         exists (query_shadowed st merged_id) items then []
+         exists (Status.query_shadowed st merged_id) items then []
       else
         let
           val scs = map #sc items
@@ -147,8 +144,8 @@ fun scoring {name, ...} sc items rtype (st as {ctxt, ...}) func =
                 (* Perform resolved and shadowed tests again since id
                    may be descendent of merged_id.
                  *)
-                if is_box_resolved st id then []
-                else if exists (query_shadowed st id) items then []
+                if Status.is_box_resolved st id then []
+                else if exists (Status.query_shadowed st id) items then []
                 else
                   let
                     val add_sc =
@@ -174,11 +171,12 @@ fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
                      not (Config.get ctxt print_shadow) then ()
                   else if ty_str = TY_TERM andalso
                           not (Config.get ctxt print_term) then ()
-                  else tracing ("Shadowing " ^ string_of_item ctxt item ^
+                  else tracing ("Shadowing " ^
+                                ItemIO.string_of_item ctxt item ^
                                 " at box " ^ string_of_box_id shadow_id ^
                                 " (" ^ Update.source_info updt ^ ")")
         in
-          st |> add_shadowed (shadow_id, item)
+          st |> Status.add_shadowed (shadow_id, item)
         end
       | _ => raise Fail "process_shadow: wrong type of update"
 
@@ -199,7 +197,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
           fun update_one i st =
               let
                 val cur_parent = BoxID.get_parent_at_i lat id i
-                val res_th = get_on_resolve st id i th
+                val res_th = Status.get_on_resolve st id i th
                 val _ = check_hyps cur_parent res_th st
 
                 val res_obj_th = apply_to_thm (to_obj_conv ctxt) res_th
@@ -207,17 +205,17 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
                             raw_updt = Logic_ProofSteps.logic_thm_update
                                            ctxt (cur_parent, res_obj_th)}
               in
-                st |> set_resolve_th id res_th
+                st |> Status.set_resolve_th id res_th
                    |> apply_update_instant updt
               end
         in
-          if is_box_resolved st id then st
+          if Status.is_box_resolved st id then st
           else if id = [0] then
-            st |> set_resolve_th id (get_on_resolve st id 0 th)
-               |> add_resolved id
+            st |> Status.set_resolve_th id (Status.get_on_resolve st id 0 th)
+               |> Status.add_resolved id
           else
             st |> fold update_one (0 upto (length id) - 1)
-               |> add_resolved id
+               |> Status.add_resolved id
         end
       | _ => raise Fail "process_resolve: wrong type of update"
 
@@ -227,21 +225,22 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
 and apply_update_instant (updt as {raw_updt, ...}) st =
     let
       val id = target_of_update raw_updt
-      val st' = if exist_box st id then st else Status.add_composite_box id st
+      val st' = if Status.exist_box st id then st
+                else Status.add_composite_box id st
     in
-      if is_box_resolved st id then st else
+      if Status.is_box_resolved st id then st else
       case raw_updt of
           ResolveBox _ => st' |> process_resolve updt
         | ShadowItem _ => st' |> process_shadow updt
-        | _ => st' |> add_to_queue updt
+        | _ => st' |> Status.add_to_queue updt
     end
 
 fun process_step_single sc rtype items (prfstep as {args, func, ...}) st =
     if is_rtype_resolved st rtype then st else
     let
-      val arg = the_single (filter_out is_side_match args)
+      val arg = the_single (filter_out ItemIO.is_side_match args)
       val tbl = RewriteTable.table_of_rtype rtype
-      val items' = filter (pre_match_arg tbl arg) items
+      val items' = filter (ItemIO.pre_match_arg tbl arg) items
       val f = case func of
                   OneStep f => f
                 | TwoStep _ =>
@@ -260,7 +259,7 @@ fun process_step_single sc rtype items (prfstep as {args, func, ...}) st =
 fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
     let
       val tbl = RewriteTable.table_of_rtype rtype
-      val (arg1, arg2) = the_pair (filter_out is_side_match args)
+      val (arg1, arg2) = the_pair (filter_out ItemIO.is_side_match args)
       val f = case func of
                   TwoStep f => f
                 | _ => raise Fail "process_step_pair: wrong type of func."
@@ -269,17 +268,17 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
       fun filter_pairs (left, right) =
           if length left < length right then
             let
-              val left' = filter (pre_match_arg tbl arg1) left
+              val left' = filter (ItemIO.pre_match_arg tbl arg1) left
             in
               if length left' = 0 then ([], [])
-              else (left', filter (pre_match_arg tbl arg2) right)
+              else (left', filter (ItemIO.pre_match_arg tbl arg2) right)
             end
           else
             let
-              val right' = filter (pre_match_arg tbl arg2) right
+              val right' = filter (ItemIO.pre_match_arg tbl arg2) right
             in
               if length right' = 0 then ([], [])
-              else (filter (pre_match_arg tbl arg1) left, right')
+              else (filter (ItemIO.pre_match_arg tbl arg1) left, right')
             end
 
       fun process_pairs (left, right) st =
@@ -318,12 +317,13 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
 
 fun process_prfstep sc rtype items items' (prfstep as {args, ...}) st =
     let
-      val items = filter_out (fn item => is_box_resolved st (#id item) orelse
-                                         query_removed st item) items
+      val items = filter_out (
+          fn item => Status.is_box_resolved st (#id item) orelse
+                     Status.query_removed st item) items
     in
       if length items = 0 then st
       else if is_rtype_resolved st rtype then st
-      else if length (filter_out is_side_match args) = 1 then
+      else if length (filter_out ItemIO.is_side_match args) = 1 then
         st |> process_step_single sc rtype items prfstep
       else
         st |> process_step_pair sc rtype items items' prfstep
@@ -338,7 +338,7 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
       fun qualify_term t =
           case t of Abs _ => false | _ => not (has_vars t)
 
-      val rewr_terms = rewr_terms_of_item ctxt (ty_str, ts)
+      val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
       val terms = rewr_terms |> map (cert ctxt)
                              |> maps Subterms.get_all_subterms
                              |> map Thm.term_of
@@ -355,15 +355,16 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
 
       val new_ts = map (Thm.term_of o snd)
                        (RewriteTable.get_new_terms (tbl, tbl'))
-      val all_items = (maps (get_items false st) (get_unresolved st))
-                          |> remove pointer_eq item
+      val all_items =
+          (maps (Status.get_items false st) (Status.get_unresolved st))
+              |> remove pointer_eq item
       val infos = map (fn {id, prop, ...} => (id, prop)) all_items
       val tbl'' =
           tbl' |> RewriteTable.complete_wellform_data_for_terms infos new_ts
 
       (* Add new terms as updates. *)
       fun exists_item t =
-          find_ritem_exact st id (Fact (TY_TERM, [t], true_th))
+          Status.find_ritem_exact st id (Fact (TY_TERM, [t], true_th))
 
       val terms2 = rewr_terms |> map (cert ctxt)
                               |> maps Subterms.get_all_subterms_skip_if
@@ -376,10 +377,10 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
       val updt =
           {sc = sc, prfstep_name = "$TERM", source = [item],
            raw_updt = AddItems {id = id, sc = NONE,
-                                raw_items = map term_to_fact terms2}}
+                                raw_items = map BoxItem.term_to_fact terms2}}
     in
-      st |> (if length terms2 > 0 then add_to_queue updt else I)
-         |> map_rewrites (K tbl'')
+      st |> (if length terms2 > 0 then Status.add_to_queue updt else I)
+         |> Status.map_rewrites (K tbl'')
     end
 
 (* Process the given item. This has two parts: first, if the item is
@@ -397,11 +398,11 @@ fun process_fact_all items st =
       (* Obtain initial and incremental rtype, and the list of
          relevant terms for that increment.
        *)
-      val items' = maps (get_items false st) (get_unresolved st)
+      val items' = maps (Status.get_items false st) (Status.get_unresolved st)
       val infos = (subtract pointer_eq items items')
                       |> map (fn {id, prop, ...} => (id, prop))
                       |> filter (is_Trueprop o Thm.prop_of o snd)
-      val props = items |> filter (match_ty_strs [TY_PROP, TY_EQ, TY_PROPERTY])
+      val props = items |> filter (BoxItem.match_ty_strs [TY_PROP, TY_EQ, TY_PROPERTY])
                         |> map #prop
       val tbl' = RewriteTable.add_infos infos (id, props) tbl
       val init_type = SINGLE tbl'
@@ -411,23 +412,24 @@ fun process_fact_all items st =
                  | _ => raise Fail "process_fact_all"
 
       (* List of items to consider for init and incr rounds. *)
-      val init_items = filter_out (match_ty_str TY_PROPERTY) items
+      val init_items = filter_out (BoxItem.match_ty_str TY_PROPERTY) items
 
-      val incr_ids = get_unresolved st |> filter (
-            fn id' => is_box_unresolved st (merge_boxes st (id, id')))
+      val incr_ids = Status.get_unresolved st |> filter (
+            fn id' => Status.is_box_unresolved
+                          st (Status.merge_boxes st (id, id')))
       val incr_items =
           if length ts = 0 then []
-          else (maps (get_items false st) incr_ids)
+          else (maps (Status.get_items false st) incr_ids)
                    |> subtract pointer_eq items
                    |> filter (fn {tname, ...} =>
                                  exists (has_subterm ts)
                                         (map Thm.term_of tname))
-                   |> cons null_item
+                   |> cons BoxItem.null_item
 
       (* List of proofsteps to consider for init and incr rounds. *)
       val prfsteps = ProofStep_Data.get_prfsteps ctxt
     in
-      st |> map_rewrites (K tbl')
+      st |> Status.map_rewrites (K tbl')
          |> fold (process_prfstep sc init_type init_items items') prfsteps
          |> fold (process_prfstep sc incr_type incr_items items') prfsteps
     end
@@ -445,19 +447,19 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
     case raw_updt of
         AddItems {id, raw_items = ritems, ...} =>
         if not (is_shadowing_prfstep prfstep_name tbl) andalso
-           exists (query_shadowed st id) source then st
+           exists (Status.query_shadowed st id) source then st
         else let
-          val (ctxt', subst) = obtain_variant_frees (ctxt, ritems)
+          val (ctxt', subst) = BoxItem.obtain_variant_frees (ctxt, ritems)
           val ritems' =
-              ritems |> map (instantiate subst)
+              ritems |> map (BoxItem.instantiate subst)
                      |> (if is_prefix_str "$" prfstep_name then
                            maps (Normalizer.normalize_keep ctxt')
                          else
                            maps (Normalizer.normalize ctxt'))
-                     |> distinct eq_ritem
+                     |> distinct BoxItem.eq_ritem
           val (dup_ritems, new_ritems) =
               if prfstep_name = "$SCRIPT" orelse sc = 0 then ([], ritems')
-              else find_ritems_exact st id ritems'
+              else Status.find_ritems_exact st id ritems'
 
           val _ = if length dup_ritems = 0 orelse
                      not (Config.get ctxt print_trace) orelse
@@ -468,7 +470,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
                                 Update.update_info ctxt' id dup_ritems ^
                                 " (" ^ Update.source_info updt ^ ")")
 
-          val (handlers, ritems') = filter_split is_handler_raw new_ritems
+          val (handlers, ritems') = filter_split BoxItem.is_handler_raw new_ritems
 
           val uid_incr = length ritems'
           val uid_string = if uid_incr = 1 then string_of_int uid_next
@@ -488,16 +490,16 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
 
           (* Produce the actual items. *)
           val items =
-              map (fn i => mk_box_item
+              map (fn i => BoxItem.mk_box_item
                                ctxt' (uid_next + i, id, sc, nth ritems' i))
                   (0 upto (length ritems' - 1))
         in
-          st |> map_context (K ctxt')
-             |> fold (add_handler id) (map dest_handler_raw handlers)
+          st |> Status.map_context (K ctxt')
+             |> fold (Status.add_handler id) (map BoxItem.dest_handler_raw handlers)
              |> fold process_add_terms items
-             |> fold add_item items
+             |> fold Status.add_item items
              |> process_fact_all items
-             |> incr_uid (length ritems')
+             |> Status.incr_uid (length ritems')
         end
       | _ => raise Fail "process_add_items: wrong type of update"
 
@@ -506,14 +508,14 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
     case raw_updt of
         AddBoxes {id, inits, ...} =>
         if not (is_shadowing_prfstep prfstep_name tbl) andalso
-           exists (query_shadowed st id) source then st
+           exists (Status.query_shadowed st id) source then st
         else let
           (* First form the raw items, possibly containing internal
              schematic variables.
            *)
           val vars = maps Update.dest_init_var inits
           val assums = maps Update.dest_init_assum inits
-          val ritems = map var_to_fact vars @
+          val ritems = map BoxItem.var_to_fact vars @
                        map (Update.thm_to_ritem o Thm.assume o cert ctxt)
                            assums
           val _ = assert (forall (fn t => fastype_of t = propT) assums)
@@ -522,8 +524,8 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
           (* Obtain the fresh variables, and replace into both the raw
              items and the initial facts.
            *)
-          val (ctxt', subst) = obtain_variant_frees (ctxt, ritems)
-          val ritems' = ritems |> map (instantiate subst)
+          val (ctxt', subst) = BoxItem.obtain_variant_frees (ctxt, ritems)
+          val ritems' = ritems |> map (BoxItem.instantiate subst)
                                |> maps (Normalizer.normalize_keep ctxt')
 
           val subst_fun = Term.subst_atomic (map (apply2 Thm.term_of) subst)
@@ -534,9 +536,9 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
           val inits' = map subst_init inits
 
           (* Find neg_form and check if already present. *)
-          val neg_form_opt = find_neg_form st id inits'
+          val neg_form_opt = Status.find_neg_form st id inits'
 
-          val prev_prim_box = find_prim_box st id inits'
+          val prev_prim_box = Status.find_prim_box st id inits'
         in
           (* Do nothing if there is already a box with the same
              assumptions and conclusions.
@@ -551,19 +553,20 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
                                Update.source_info updt ^ ")")
                     else ()
             val init_box = Box.init_box inits'
-            val (prim_id, st') = add_prim_box id init_box st
+            val (prim_id, st') = Status.add_prim_box id init_box st
             val new_id = [prim_id]
             val _ = if Config.get ctxt print_trace then
                       tracing (
                         (string_of_box_id new_id) ^ ": " ^
-                        (Box.short_string_of_box ctxt' (get_box st' new_id)))
+                        (Box.short_string_of_box
+                             ctxt' (Status.get_box st' new_id)))
                     else ()
 
             val item_updt = {
               sc = sc, prfstep_name = "$INIT_BOX", source = [],
               raw_updt = AddItems {id = new_id, sc = NONE, raw_items = ritems'}}
           in
-            st' |> map_context (K ctxt')
+            st' |> Status.map_context (K ctxt')
                 |> process_add_items item_updt
           end
         end
@@ -573,8 +576,8 @@ fun apply_update (updt as {raw_updt, ...}) st =
     let
       val id = target_of_update raw_updt
     in
-      if is_box_resolved st id then st else
-      st |> not (exist_box st id) ? Status.add_composite_box id
+      if Status.is_box_resolved st id then st else
+      st |> not (Status.exist_box st id) ? Status.add_composite_box id
          |> (case raw_updt of
                  AddItems _ => process_add_items updt
                | AddBoxes _ => process_add_boxes updt
@@ -601,8 +604,8 @@ fun init_status ctxt subgoal =
                   raw_updt = raw_updt}
     in
       ctxt |> fold declare_free_term new_vars
-           |> empty_status
-           |> add_composite_box [] |> add_item null_item
+           |> Status.empty_status
+           |> Status.add_composite_box [] |> Status.add_item BoxItem.null_item
            |> apply_update updt
     end
 
@@ -617,12 +620,12 @@ fun step_until cond (steps, (st as {queue, ...})) =
     else let
       val updt = Updates_Heap.min queue
                  handle List.Empty => error "No more moves"
-      val st' = st |> delmin_from_queue |> apply_update updt
+      val st' = st |> Status.delmin_from_queue |> apply_update updt
     in
       step_until cond (steps - 1, st')
     end
 
-val solve_root = step_until (fn st => is_box_resolved st [0])
+val solve_root = step_until (fn st => Status.is_box_resolved st [0])
 
 end  (* structure ProofStatus. *)
 

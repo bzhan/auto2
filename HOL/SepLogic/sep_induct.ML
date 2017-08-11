@@ -9,24 +9,22 @@ end;
 structure SepInduct : SEP_INDUCT =
 struct
 
-open Auto2_Outer
-
 fun add_hoare_induct_rule (t, ind_th) thy =
-    thy |> add_induct_data "hoare_induct" (t, ind_th)
+    thy |> Induct_ProofSteps.add_induct_data "hoare_induct" (t, ind_th)
 
 fun hoare_induct_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
 
-      val {prop, ...} = get_head ctxt
-      val subgoal = prop |> subgoal_of |> Thm.term_of |> dest_Trueprop
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val subgoal = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> dest_Trueprop
       val (_, c, _) = SepUtil.dest_hoare_triple subgoal
       val (c_head, vars) = Term.strip_comb c
       val arbitraries = (map Free (Term.add_frees subgoal []))
                             |> subtract (op aconv) vars
 
-      val ind_th = the (get_term_ind_th thy "hoare_induct" c_head)
+      val ind_th = the (Induct_ProofSteps.get_term_ind_th thy "hoare_induct" c_head)
 
       val P = subgoal |> fold mk_obj_all (rev arbitraries)
                       |> fold lambda_abstract (rev vars)
@@ -50,7 +48,7 @@ fun hoare_induct_cmd state =
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1
     in
-      state |> Proof.map_contexts (set_head_th ind_th)
+      state |> Proof.map_contexts (Auto2_Outer.set_head_th ind_th)
     end
 
 val _ =
@@ -60,4 +58,4 @@ val _ =
 
 end  (* structure SepInduct *)
 
-open SepInduct
+val add_hoare_induct_rule = SepInduct.add_hoare_induct_rule

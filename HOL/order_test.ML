@@ -2,7 +2,6 @@
 
 local
 
-  open Nat_Order
   val ctxt = @{context}
   val thy = @{theory}
 
@@ -34,7 +33,7 @@ fun convert_prop_to_nat_order prop =
       val item = mk_box_item (0, [], 0, Fact (TY_PROP, [prop], th))
 
       fun apply_prfsteps item =
-          maps (apply_prfstep rtype st [item]) to_nat_order_prfsteps
+          maps (apply_prfstep rtype st [item]) Nat_Order.to_nat_order_prfsteps
 
       fun process_raw_update updt =
           case updt of
@@ -52,7 +51,7 @@ val test_parse_prop =
 
       fun item_to_spec item =
           let
-            val (cx, cy, n, _) = get_nat_order_info item
+            val (cx, cy, n, _) = Nat_Order.get_nat_order_info item
           in
             (Thm.term_of cx, Thm.term_of cy, n)
           end
@@ -113,7 +112,7 @@ val test_nat_order_match_side =
             val pat = Proof_Context.read_term_pattern ctxt' pat_str
             val cx = cert ctxt' (Syntax.read_term ctxt' x_str)
             val res = Syntax.read_terms ctxt' res_strs
-            val res' = nat_order_match_side tbl (pat, cx) ([], fo_init)
+            val res' = Nat_Order.nat_order_match_side tbl (pat, cx) ([], fo_init)
             fun check_inst ((_, inst), _, eq_th) =
                 (subst_term_norm inst pat) aconv (lhs_of eq_th)
             fun eq_th_of (_, _, eq_th) = eq_th
@@ -204,7 +203,7 @@ val test_nat_order_match =
         ("~ min (?a::nat) ?b <= min ?c ?d", "min x y < min z w",
          ["~ min z w <= min x y"])
       ]
-      val _ = map (test nat_order_match) test_data
+      val _ = map (test Nat_Order.nat_order_match) test_data
 
       val test_noteq_data = [
         ("x ~= y", "x < y", ["x ~= y"]),
@@ -215,7 +214,7 @@ val test_nat_order_match =
         ("x ~= 0", "x > 3", ["x ~= 0"]),
         ("?a ~= y", "x < y", [])
       ]
-      val _ = map (test (#match nat_order_noteq_matcher)) test_noteq_data
+      val _ = map (test (#match Nat_Order.nat_order_noteq_matcher)) test_noteq_data
     in
       ()
     end
@@ -225,7 +224,7 @@ val test_nat_order_single_match =
       fun test ineq_str =
           let
             val ineq = Syntax.read_term ctxt' ineq_str
-            val res = nat_order_single_match
+            val res = Nat_Order.nat_order_single_match
                           ineq BoxItem.null_item tbl ([], fo_init)
           in
             if length res = 1 andalso

@@ -41,8 +41,6 @@ end;
 structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
 struct
 
-open Auto2_Outer
-
 fun add_induct_data str (t, ind_th) =
     InductData.map (Symtab.map_default (str, []) (cons (t, ind_th)))
 
@@ -267,8 +265,8 @@ fun strong_induct_cmd (s, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = get_head ctxt
-      val (vars, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val (vars, body) = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (assums, concl) = body |> Logic.strip_horn
                                  |> apfst (map dest_Trueprop)
                                  |> apsnd dest_Trueprop
@@ -302,13 +300,13 @@ fun strong_induct_cmd (s, t) state =
 
       val ind_th = ind_th |> Thm.renamed_prop t'
 
-      val prop = prop |> refine_subgoal_th ind_th
+      val prop = prop |> Auto2_Outer.refine_subgoal_th ind_th
 
-      val stmt = prop |> subgoal_of |> Thm.term_of |> strip_goal |> snd
+      val stmt = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal |> snd
                       |> Logic.dest_implies |> fst |> dest_Trueprop
     in
-      state |> Proof.map_contexts (set_head_th prop)
-            |> Proof.map_contexts (set_induct_stmt stmt)
+      state |> Proof.map_contexts (Auto2_Outer.set_head_th prop)
+            |> Proof.map_contexts (Auto2_Outer.set_induct_stmt stmt)
     end
 
 val arbitrary =
@@ -326,18 +324,18 @@ fun apply_induct_cmd s state =
 
       val tm = Syntax.read_term ctxt s
 
-      val {prop, induct_stmt, ...} = get_head ctxt
+      val {prop, induct_stmt, ...} = Auto2_Outer.get_head ctxt
       val induct_stmt =
           case induct_stmt of
               SOME (_ $ Abs (_, _, body)) => Term.subst_bound (tm, body)
             | _ => raise Fail "apply_induct_cmd"
 
-      val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (_, body) = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, _) = Logic.strip_horn body
       val goal = Logic.list_implies (As, mk_Trueprop induct_stmt)
-      val th = auto2_solve ctxt (cert ctxt goal)
+      val th = Auto2_Outer.auto2_solve ctxt (cert ctxt goal)
     in
-      state |> Proof.map_contexts (map_head_th (have_after_qed ctxt th))
+      state |> Proof.map_contexts (Auto2_Outer.map_head_th (Auto2_Outer.have_after_qed ctxt th))
     end
 
 val _ =
@@ -354,8 +352,8 @@ fun induct_cmd (s, t, u) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = get_head ctxt
-      val goal = prop |> subgoal_of |> Thm.term_of
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val goal = prop |> Auto2_Outer.subgoal_of |> Thm.term_of
       val (assums, concl) = goal |> Logic.strip_horn
                                  |> apfst (map dest_Trueprop)
                                  |> apsnd dest_Trueprop
@@ -398,16 +396,16 @@ fun induct_cmd (s, t, u) state =
       if is_none u orelse the u = "@then" then
         let
           val neq0_goal = Thm.cprem_of ind_th 1
-          val neq0_th = auto2_solve ctxt neq0_goal
+          val neq0_th = Auto2_Outer.auto2_solve ctxt neq0_goal
           val ind_th = induct_after_qed ctxt neq0_th prop
         in
-          state |> Proof.map_contexts (set_head_th ind_th)
+          state |> Proof.map_contexts (Auto2_Outer.set_head_th ind_th)
         end
       else
         let
           (* Create new block with stmt *)
           val neq0_goal = Thm.prems_of ind_th |> hd |> dest_Trueprop
-          val (vars, (assums, concl)) = strip_have_goal neq0_goal
+          val (vars, (assums, concl)) = Auto2_Outer.strip_have_goal neq0_goal
           val _ = assert (length vars = 0)
                          "induct: subgoal should declare no new variables"
           val stmt = Logic.list_implies (map mk_Trueprop assums,
@@ -443,8 +441,8 @@ fun double_induct_cmd (s1, s2, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = get_head ctxt
-      val goal = prop |> subgoal_of |> Thm.term_of
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val goal = prop |> Auto2_Outer.subgoal_of |> Thm.term_of
       val (assums, concl) = goal |> Logic.strip_horn
                                  |> apfst (map dest_Trueprop)
                                  |> apsnd dest_Trueprop
@@ -466,7 +464,7 @@ fun double_induct_cmd (s1, s2, t) state =
       val ind_th = ind_th |> subst_thm ctxt inst
 
       val neq0_goals = Drule.cprems_of ind_th |> take 2
-      val neq0_ths = map (auto2_solve ctxt) neq0_goals
+      val neq0_ths = map (Auto2_Outer.auto2_solve ctxt) neq0_goals
 
       val ind_th = ind_th |> fold Thm.elim_implies neq0_ths
                           |> apply_to_thm (Conv.binop_conv (
@@ -485,7 +483,7 @@ fun double_induct_cmd (s1, s2, t) state =
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1
     in
-      state |> Proof.map_contexts (set_head_th ind_th)
+      state |> Proof.map_contexts (Auto2_Outer.set_head_th ind_th)
     end
 
 val _ =
@@ -508,8 +506,8 @@ fun case_induct_cmd s state =
                           raise Fail "case_induct: cannot find theorem."
 
       (* Obtain list of assumptions *)
-      val {prop, ...} = get_head ctxt
-      val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val (_, body) = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, C) = Logic.strip_horn body
       val cAs = map (cert ctxt) As
 
@@ -525,15 +523,15 @@ fun case_induct_cmd s state =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
 
-      val ths = (map (auto2_solve ctxt o cert ctxt) ind_goals)
+      val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
                     |> map send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
                              |> fold Thm.implies_intr (rev cAs)
 
-      val after_qed = have_after_qed ctxt ind_concl
+      val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
     in
-      state |> Proof.map_contexts (map_head_th after_qed)
+      state |> Proof.map_contexts (Auto2_Outer.map_head_th after_qed)
     end
 
 val _ =
@@ -560,8 +558,8 @@ fun prop_induct_cmd (s, t) state =
       val ind_th = subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
-      val {prop, ...} = get_head ctxt
-      val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val (_, body) = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, _) = Logic.strip_horn body
       val cAs = map (cert ctxt) As
 
@@ -569,15 +567,15 @@ fun prop_induct_cmd (s, t) state =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
 
-      val ths = (map (auto2_solve ctxt o cert ctxt) ind_goals)
+      val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
                     |> map send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
                              |> fold Thm.implies_intr (rev cAs)
 
-      val after_qed = have_after_qed ctxt ind_concl
+      val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
     in
-      state |> Proof.map_contexts (map_head_th after_qed)
+      state |> Proof.map_contexts (Auto2_Outer.map_head_th after_qed)
     end
 
 val _ =
@@ -607,8 +605,8 @@ fun var_induct_cmd (s, t) state =
       val ind_th = subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
-      val {prop, ...} = get_head ctxt
-      val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val (_, body) = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, _) = Logic.strip_horn body
       val cAs = map (cert ctxt) As
 
@@ -616,15 +614,15 @@ fun var_induct_cmd (s, t) state =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
 
-      val ths = (map (auto2_solve ctxt o cert ctxt) ind_goals)
+      val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
                     |> map send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
                              |> fold Thm.implies_intr (rev cAs)
 
-      val after_qed = have_after_qed ctxt ind_concl
+      val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
     in
-      state |> Proof.map_contexts (map_head_th after_qed)
+      state |> Proof.map_contexts (Auto2_Outer.map_head_th after_qed)
     end
 
 val _ =
@@ -635,4 +633,9 @@ val _ =
 
 end  (* structure Induct_ProofSteps. *)
 
-open Induct_ProofSteps
+val add_prfstep_induction = Induct_ProofSteps.add_prfstep_induction
+val add_prfstep_strong_induction = Induct_ProofSteps.add_prfstep_strong_induction
+val add_case_induct_rule = Induct_ProofSteps.add_case_induct_rule
+val add_prop_induct_rule = Induct_ProofSteps.add_prop_induct_rule
+val add_var_induct_rule = Induct_ProofSteps.add_var_induct_rule
+val add_prfstep_double_induction = Induct_ProofSteps.add_prfstep_double_induction

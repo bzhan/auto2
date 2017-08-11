@@ -1,8 +1,6 @@
 local
 
   open SepUtil
-  open SepLogic
-  open AssnMatcher
 
   val ctxt = @{context}
   val ctxt' = ctxt |> fold Variable.auto_fixes [
@@ -78,7 +76,7 @@ val test_assn_term_matcher =
          [([], "os_list zs s1 * os_list ys p")])
       ]
     in
-      map (test assn_match_term "test_assn_term_matcher") test_data
+      map (test AssnMatcher.assn_match_term "test_assn_term_matcher") test_data
     end
 
 val test_list_prop_matcher =
@@ -108,7 +106,7 @@ val test_list_prop_matcher =
          [([], "sngr_assn a 1 * os_list ys q * os_list zs r")])
       ]
     in
-      map (test assn_match_all_strict "test_list_prop_matcher") test_data
+      map (test AssnMatcher.assn_match_all_strict "test_list_prop_matcher") test_data
     end
 
 end

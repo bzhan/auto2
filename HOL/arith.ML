@@ -30,7 +30,7 @@ end;
 structure Nat_Arith : NAT_ARITH =
 struct
 
-fun lookup_numc inst n = dest_numc (lookup_instn inst ("NUMC", n))
+fun lookup_numc inst n = UtilArith.dest_numc (lookup_instn inst ("NUMC", n))
 fun lookup_numc0 inst = lookup_numc inst 0
 fun lookup_numc1 inst = lookup_numc inst 1
 fun lookup_numc2 inst = lookup_numc inst 2
@@ -47,26 +47,26 @@ val cnat0 = cert ctxt nat0
 (* Obtain the theorem m <= n. *)
 fun nat_le_th m n =
     if m > n then raise Fail "nat_le_th: input"
-    else prove_by_arith ctxt [] (
+    else UtilArith.prove_by_arith ctxt [] (
         Const (@{const_name less_eq}, natT --> natT --> boolT)
               $ mk_nat m $ mk_nat n)
 
 (* Obtain the theorem m < n. *)
 fun nat_less_th m n =
     if m >= n then raise Fail "nat_less_th: input"
-    else prove_by_arith ctxt [] (
+    else UtilArith.prove_by_arith ctxt [] (
         Const (@{const_name less}, natT --> natT --> boolT)
               $ mk_nat m $ mk_nat n)
 
 (* Obtain the theorem m ~= n. *)
 fun nat_neq_th m n =
     if m = n orelse m < 0 orelse n < 0 then raise Fail "nat_neq_th: input"
-    else prove_by_arith ctxt [] (mk_not (mk_eq (mk_nat m, mk_nat n)))
+    else UtilArith.prove_by_arith ctxt [] (mk_not (mk_eq (mk_nat m, mk_nat n)))
 
 fun nat_fold_reduce t =
     if fastype_of t <> natT then t else
     let
-      val (f, (n1, n2)) = t |> dest_binop |> apsnd (apply2 dest_numc)
+      val (f, (n1, n2)) = t |> dest_binop |> apsnd (apply2 UtilArith.dest_numc)
     in
       case f of
           Const (@{const_name plus}, _) => mk_nat (n1 + n2)
@@ -82,7 +82,7 @@ fun nat_fold_conv ct =
       val t' = nat_fold_reduce t
     in
       if t aconv t' then Conv.all_conv ct
-      else to_meta_eq (prove_by_arith ctxt [] (mk_eq (t, t')))
+      else to_meta_eq (UtilArith.prove_by_arith ctxt [] (mk_eq (t, t')))
     end
 
 end  (* local ctxt = @{context}. *)
@@ -132,7 +132,7 @@ val add_arith_proofsteps =
                    lookup_numc1 inst <> lookup_numc2 inst)],
        PRIORITY_RESOLVE,
        fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
-          [Update.thm_update (id, contra_by_arith ctxt ths)])
+          [Update.thm_update (id, UtilArith.contra_by_arith ctxt ths)])
 
     ] #> fold add_prfstep_conv [
       ("eval_plus_consts",

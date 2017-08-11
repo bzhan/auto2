@@ -111,6 +111,6 @@ setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2"
 
 (* Quantifiers and other fundamental proofsteps. *)
 ML_file "util_arith.ML"
-setup {* Consts.add_const_data ("NUMC", is_numc) *}
+setup {* Consts.add_const_data ("NUMC", UtilArith.is_numc) *}
 
 end

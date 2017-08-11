@@ -37,8 +37,6 @@ end;
 structure ScriptInduct_Data : SCRIPT_INDUCT_DATA =
 struct
 
-open Auto2_Outer
-
 fun add_script_induct_data_gnrc th gnrc =
     let
       val nm = name_of_thm th
@@ -94,8 +92,8 @@ fun induct_cmd (s, t) state =
             val ind_th = subst_thm_thy thy inst th
 
             (* Obtain list of assumptions *)
-            val {prop, ...} = get_head ctxt
-            val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+            val {prop, ...} = Auto2_Outer.get_head ctxt
+            val (_, body) = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
             val (As, _) = Logic.strip_horn body
             val cAs = map (cert ctxt) As
 
@@ -103,15 +101,15 @@ fun induct_cmd (s, t) state =
                 ind_th |> Thm.prems_of
                        |> map (fn t => Logic.list_implies (As, t))
 
-            val ths = (map (auto2_solve ctxt o cert ctxt) ind_goals)
+            val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
                           |> map send_all_to_hyps
 
             val ind_concl = (ths MRS ind_th)
                                 |> fold Thm.implies_intr (rev cAs)
 
-            val after_qed = have_after_qed ctxt ind_concl
+            val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
           in
-            state |> Proof.map_contexts (map_head_th after_qed)
+            state |> Proof.map_contexts (Auto2_Outer.map_head_th after_qed)
           end
     end
 
@@ -158,8 +156,8 @@ fun strong_induct_cmd (s, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = get_head ctxt
-      val goal = prop |> subgoal_of |> Thm.term_of
+      val {prop, ...} = Auto2_Outer.get_head ctxt
+      val goal = prop |> Auto2_Outer.subgoal_of |> Thm.term_of
 
       val ind_th = the (lookup_strong_induct_data ctxt prem)
                    handle Option.Option =>
@@ -194,7 +192,7 @@ fun strong_induct_cmd (s, t) state =
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1
     in
-      state |> Proof.map_contexts (set_head_th ind_th)
+      state |> Proof.map_contexts (Auto2_Outer.set_head_th ind_th)
     end
 
 val arbitrary =

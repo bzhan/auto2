@@ -1,11 +1,8 @@
 (* Unit test for logic_steps.ML. *)
 
 local
-
-  open Logic_ProofSteps
   val ctxt = @{context}
   val thy = @{theory}
-
 in
 
 val test_norm_disj =
@@ -15,13 +12,13 @@ val test_norm_disj =
             val (t1, t2) = (Syntax.read_term ctxt str1,
                             Syntax.read_term ctxt str2)
             val ct1 = cert ctxt t1
-            val res_t = normalize_disj_t t1
-            val res_th = norm_disj ct1
+            val res_t = Logic_ProofSteps.normalize_disj_t t1
+            val res_th = Logic_ProofSteps.norm_disj ct1
           in
-            if not (mk_disjs res_t aconv t2) then
+            if not (Logic_ProofSteps.mk_disjs res_t aconv t2) then
               let
                 val _ = trace_t_ctxt ctxt "Input" t1
-                val _ = trace_t_ctxt ctxt "Output" (mk_disjs res_t)
+                val _ = trace_t_ctxt ctxt "Output" (Logic_ProofSteps.mk_disjs res_t)
                 val _ = trace_t_ctxt ctxt "Expected" t2
               in
                 raise Fail "test_norm_disj_t"
@@ -68,13 +65,13 @@ val test_norm_all_disj =
                             Proof_Context.read_term_pattern ctxt str2)
             val ct1 = cert ctxt t1
             val ctxt' = fold Variable.auto_fixes [t1, t2] ctxt
-            val (vars, ts) = normalize_all_disj_t ctxt' t1
-            val res_th = norm_all_disj ctxt ct1
+            val (vars, ts) = Logic_ProofSteps.normalize_all_disj_t ctxt' t1
+            val res_th = Logic_ProofSteps.norm_all_disj ctxt ct1
           in
-            if not (mk_all_disj (vars, ts) aconv t2) then
+            if not (Logic_ProofSteps.mk_all_disj (vars, ts) aconv t2) then
               let
                 val _ = trace_t_ctxt ctxt "Input" t1
-                val _ = trace_t_ctxt ctxt "Output" (mk_all_disj (vars, ts))
+                val _ = trace_t_ctxt ctxt "Output" (Logic_ProofSteps.mk_all_disj (vars, ts))
                 val _ = trace_t_ctxt ctxt "Expected" t2
               in
                 raise Fail "test_norm_all_disj_t"
@@ -136,12 +133,12 @@ val test_disj_prop_match =
           let
             val (t, u) = (Proof_Context.read_term_pattern ctxt str1,
                           Syntax.read_term ctxt str2)
-            val (var_u, us) = normalize_all_disj_t ctxt u
+            val (var_u, us) = Logic_ProofSteps.normalize_all_disj_t ctxt u
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
             val (cvar_u, cus) = (map Term.dest_Var var_u', map (cert ctxt) us')
-            val res = disj_prop_match tbl ([], fo_init) (t, (cvar_u, cus))
-            val u' = mk_all_disj (var_u, us)
+            val res = Logic_ProofSteps.disj_prop_match tbl ([], fo_init) (t, (cvar_u, cus))
+            val u' = Logic_ProofSteps.mk_all_disj (var_u, us)
           in
             case res of
                 [(([], instsp), eq)] =>
@@ -207,11 +204,11 @@ val test_disj_prop_no_match =
           let
             val (t, u) = (Proof_Context.read_term_pattern ctxt str1,
                           Syntax.read_term ctxt str2)
-            val (var_u, us) = normalize_all_disj_t ctxt u
+            val (var_u, us) = Logic_ProofSteps.normalize_all_disj_t ctxt u
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
             val (cvar_u, cus) = (map Term.dest_Var var_u', map (cert ctxt) us')
-            val res = disj_prop_match tbl ([], fo_init) (t, (cvar_u, cus))
+            val res = Logic_ProofSteps.disj_prop_match tbl ([], fo_init) (t, (cvar_u, cus))
           in
             if length res = 0 then ()
             else let
@@ -247,7 +244,7 @@ val test_match_update =
 
       fun disj_to_ritem th =
           let
-            val subs = dest_disj (prop_of' th)
+            val subs = Logic_ProofSteps.dest_disj (prop_of' th)
           in
             Fact (TY_DISJ, bFalse :: disj :: subs, th)
           end
@@ -269,7 +266,7 @@ val test_match_update =
             val mk_box_item = BoxItem.mk_box_item ctxt'
             val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),
                          mk_box_item (0, [], 0, Update.thm_to_ritem th)]
-            val updts = apply_prfstep rtype st items match_update_prfstep
+            val updts = apply_prfstep rtype st items Logic_ProofSteps.match_update_prfstep
             val res_ts' = maps updt_to_thm updts |> map Thm.prop_of
           in
             if eq_set (op aconv) (res_ts, res_ts') then ()

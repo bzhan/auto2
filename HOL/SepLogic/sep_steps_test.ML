@@ -1,11 +1,8 @@
 (* Unit test for sep_steps.ML. *)
 
 local
-
   open SepUtil
-  open SepLogic
   val ctxt = @{context}
-
 in
 
 val test_normalize_assn =
@@ -65,7 +62,7 @@ val test_use_prec_thms =
             val (th1, th2) =
                 apply2 (Thm.assume o cert ctxt' o mk_Trueprop) (t1, t2)
             (* Just run it to see that all asserts passed. *)
-            val _ = use_prec_thms tbl th1 th2
+            val _ = SepLogic.use_prec_thms tbl th1 th2
           in
             ()
           end

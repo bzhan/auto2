@@ -1,8 +1,6 @@
 (* Unit test for subterms.ML *)
 
 local
-
-  open Subterms
   val ctxt = @{context}
 in
 
@@ -16,7 +14,7 @@ val test_dest_subterms =
             val t = Syntax.read_term ctxt' str
             val t' = Proof_Context.read_term_pattern ctxt' str'
             val subs = map (Syntax.read_term ctxt') subs_str
-            val (ct'', subs') = (dest_subterms (cert ctxt' t))
+            val (ct'', subs') = (Subterms.dest_subterms (cert ctxt' t))
                                     |> apsnd (map Thm.term_of)
             val t'' = Thm.term_of ct''
           in
@@ -51,7 +49,7 @@ val test_get_all_subterms =
           let
             val t = Syntax.read_term ctxt' str
             val subs = map (Syntax.read_term ctxt') subs_str
-            val subs' = (get_all_subterms (cert ctxt' t))
+            val subs' = (Subterms.get_all_subterms (cert ctxt' t))
                             |> map Thm.term_of
           in
             if eq_list (op aconv) (subs, subs') then ()
@@ -69,12 +67,12 @@ val test_build_equiv =
     let
       fun test_raw (t, equivs) =
           let
-            val eq_th = build_equiv equivs (cert ctxt t)
+            val eq_th = Subterms.build_equiv equivs (cert ctxt t)
             val lsubs = map lhs_of equivs
             val rsubs = map rhs_of equivs
           in
-            if lhs_of eq_th aconv (subst_subterms (t, lsubs)) andalso
-               rhs_of eq_th aconv (subst_subterms (t, rsubs)) then ()
+            if lhs_of eq_th aconv (Subterms.subst_subterms (t, lsubs)) andalso
+               rhs_of eq_th aconv (Subterms.subst_subterms (t, rsubs)) then ()
             else
               raise Fail "test_build_equiv"
           end

@@ -32,7 +32,7 @@ ML_file "extra_fol.ML"
 ML_file "fol_induct.ML"
 ML_file "alg_assoc.ML"
 
-method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o auto2_tac) *} "auto2 prover"
+method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac) *} "auto2 prover"
 
 attribute_setup forward = {* setup_attrib add_forward_prfstep_gnrc *}
 attribute_setup backward = {* setup_attrib add_backward_prfstep_gnrc *}

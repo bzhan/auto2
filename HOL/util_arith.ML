@@ -93,4 +93,5 @@ val contra_by_arith = contra_by_tac Arith_Data.arith_tac
 
 end  (* structure UtilArith *)
 
-open UtilArith
+val natT = UtilArith.natT
+val intT = UtilArith.intT

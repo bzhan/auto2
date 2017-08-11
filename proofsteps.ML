@@ -78,7 +78,6 @@ structure Update = Update(Base)
 structure Status = Status(Base)
 open Base
 open UtilLogic
-open ItemIO
 
 fun apply_prfstep rtype st items {func, ...} =
     case func of
@@ -145,7 +144,7 @@ fun get_insts_filt arg item rtype (id, inst) filt =
     let
       val tbl = RewriteTable.table_of_rtype rtype
     in
-      (match_arg tbl arg item (id, inst))
+      (ItemIO.match_arg tbl arg item (id, inst))
           |> RewriteTable.filter_id_for_type rtype
           |> filter (filt tbl o fst)
           |> RewriteTable.replace_id_for_type rtype
@@ -285,7 +284,7 @@ fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
     if length side_args = 0 then
       [(id, [])]
     else let
-      val side_args' = map (subst_arg inst) side_args
+      val side_args' = map (ItemIO.subst_arg inst) side_args
       fun process_side_arg side_arg =
           case side_arg of
               PropertyMatch prop =>
@@ -307,7 +306,7 @@ fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
 fun prfstep_custom name descs priority updt_fn =
     let
       val args = retrieve_args descs
-      val (item_args, side_args) = filter_split is_ordinary_match args
+      val (item_args, side_args) = filter_split ItemIO.is_ordinary_match args
       val filt = retrieve_filts descs
       val shadows = retrieve_shadows descs
 
@@ -335,7 +334,7 @@ fun prfstep_custom name descs priority updt_fn =
           fun prfstep rtype st item =
               let
                 val tbl = RewriteTable.table_of_rtype rtype
-                val inst_ths = (match_arg tbl arg item ([], fo_init))
+                val inst_ths = (ItemIO.match_arg tbl arg item ([], fo_init))
                                 |> map (fn (inst, th) => (inst, [th]))
                                 |> maps (process_inst rtype)
 
@@ -355,13 +354,13 @@ fun prfstep_custom name descs priority updt_fn =
           fun prfstep1 rtype st item1 =
               let
                 val tbl = RewriteTable.table_of_rtype rtype
-                val inst_ths = match_arg tbl arg1 item1 ([], fo_init)
+                val inst_ths = ItemIO.match_arg tbl arg1 item1 ([], fo_init)
 
                 fun process_inst1 item2 ((id, inst), th) =
                     let
-                      val arg2' = subst_arg inst arg2
+                      val arg2' = ItemIO.subst_arg inst arg2
                       val inst_ths' =
-                          (match_arg tbl arg2' item2 (id, inst))
+                          (ItemIO.match_arg tbl arg2' item2 (id, inst))
                               |> map (fn (inst', th') => (inst', [th, th']))
                               |> maps (process_inst rtype)
 
@@ -399,7 +398,7 @@ fun gen_prfstep name descs =
       (* Verify that all schematic variables appearing in pats_r /
          cases appear in pats.
        *)
-      val pats = map pat_of_match_arg args
+      val pats = map ItemIO.pat_of_match_arg args
       val vars = map Var (fold Term.add_vars pats [])
       fun check_pat_r (pat_r, _) =
           subset (op aconv) (map Var (Term.add_vars pat_r []), vars)
@@ -660,15 +659,13 @@ structure Update = Update(Base)
 structure ProofStep = ProofStep(Base)
 open Base
 open UtilLogic
-open Property
-open ItemIO
 open ProofStep
 
 fun proofstep_data_of ctxt = ProofStepData.get (Context.Proof ctxt)
 
 fun add_prfstep_gnrc (prfstep as {args, ...}) =
-    if length (filter_out is_side_match args) >= 1 andalso
-       length (filter_out is_side_match args) <= 2 then
+    if length (filter_out ItemIO.is_side_match args) >= 1 andalso
+       length (filter_out ItemIO.is_side_match args) <= 2 then
       ProofStepData.map (
         fn ProofStepTable {
             prfsteps, sorted_prfsteps, fixed_sc} =>
@@ -877,7 +874,7 @@ fun get_side_prems thy mode ts th =
       fun to_side_prems ts' t =
           case WellForm.is_subterm_wellform_data thy t ts' of
               SOME (t, req) => SOME (WithWellForm (t, req))
-            | NONE => if is_property_prem thy t then SOME (WithProperty t)
+            | NONE => if Property.is_property_prem thy t then SOME (WithProperty t)
                       else NONE
 
       (* Attempt to convert the first n premises to side matchings. *)
@@ -1051,8 +1048,8 @@ fun add_basic_prfstep_cond_gnrc th mode conds gnrc =
                        |> update_name_of_thm th ""
     in
       if length conds = 0 andalso mode = MODE_FORWARD andalso
-         can_add_property_update th thy then
-        add_property_update_gnrc th gnrc
+         Property.can_add_property_update th thy then
+        Property.add_property_update_gnrc th gnrc
       else let
         fun is_term_cond cond =
             case cond of WithItem ("TERM", _) => true | _ => false

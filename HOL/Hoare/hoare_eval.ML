@@ -2,12 +2,12 @@
 
 fun is_const_ID t =
     case t of
-        Const ("Hoare_States.id.Id", _) $ n => is_numc n
+        Const ("Hoare_States.id.Id", _) $ n => UtilArith.is_numc n
       | _ => false
 
 fun dest_const_ID t =
     case t of
-        Const ("Hoare_States.id.Id", _) $ n => dest_numc n
+        Const ("Hoare_States.id.Id", _) $ n => UtilArith.dest_numc n
       | _ => raise Fail "dest_const_ID: not constant ID."
 
 (* Converts m = n to Id m = Id n. *)

@@ -9,7 +9,7 @@ val test_normalize =
             val ts = map (Syntax.read_term ctxt) strs
             val ritem =
                 Update.thm_to_ritem (assume_thm ctxt (mk_Trueprop t))
-            val ritems' = normalize ctxt ritem
+            val ritems' = Normalizer.normalize ctxt ritem
             val ts' = map (dest_Trueprop o Thm.prop_of o BoxItem.get_thm_raw)
                           ritems'
           in
