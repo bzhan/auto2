@@ -73,10 +73,9 @@ val test_parse_prop =
           in
             if eq_set eq_specs (specs, specs') then ()
             else let
-              val _ = tracing ("Expected:" ^
-                               (string_of_list string_of_spec specs))
-              val _ = tracing ("Actual:" ^
-                               (string_of_list string_of_spec specs'))
+              val _ = tracing (
+                    "Expected:" ^ (string_of_list string_of_spec specs) ^ "\n" ^
+                    "Actual:" ^ (string_of_list string_of_spec specs'))
             in
               raise Fail "test_parse_prop"
             end

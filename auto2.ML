@@ -48,7 +48,7 @@ end  (* structure SCORES. *)
 
 (* Flags specifying output options. *)
 val print_trace =
-    Attrib.setup_config_bool @{binding "print_trace"} (K true)
+    Attrib.setup_config_bool @{binding "print_trace"} (K false)
 val print_intended =
     Attrib.setup_config_bool @{binding "print_intended"} (K false)
 val print_term =

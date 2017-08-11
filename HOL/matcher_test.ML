@@ -27,8 +27,8 @@ fun print_term_infos ctxt lst =
 fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
     if eq_info_list (info, map to_term_info info') then tbl
     else let
-      val _ = tracing ("Expected: " ^ print_term_infos ctxt info)
-      val _ = tracing ("Actual: " ^ print_infos ctxt info')
+      val _ = tracing ("Expected: " ^ print_term_infos ctxt info ^ "\n" ^
+                       "Actual: " ^ print_infos ctxt info')
     in
       raise Fail txt
     end

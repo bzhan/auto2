@@ -35,8 +35,8 @@ fun done str _ = let val _ = tracing ("Finished " ^ str) in () end
 fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
     if eq_info_list (info, map to_term_info info') then tbl
     else let
-      val _ = tracing ("Expected: " ^ print_term_infos ctxt info)
-      val _ = tracing ("Actual: " ^ print_infos ctxt info')
+      val _ = tracing ("Expected: " ^ print_term_infos ctxt info ^ "\n" ^
+                       "Actual: " ^ print_infos ctxt info')
     in
       raise Fail txt
     end
@@ -165,8 +165,8 @@ fun assert_eq_edges (str1, str2) ids (tbl as {ctxt, ...}) =
       if eq_id_list (ids, ids') then tbl
       else let
         val _ = trace_tlist_ctxt ctxt "Input:" [t1, t2]
-        val _ = tracing ("Expected: " ^ (string_of_box_id_list ids))
-        val _ = tracing ("Actual: " ^ (string_of_box_id_list ids'))
+        val _ = tracing ("Expected: " ^ (string_of_box_id_list ids) ^ "\n" ^
+                         "Actual: " ^ (string_of_box_id_list ids'))
       in
         raise Fail "assert_eq_edges"
       end

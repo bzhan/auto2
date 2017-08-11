@@ -62,7 +62,6 @@ sig
   val prfstep_pre_conv: string -> prfstep_descriptor list ->
                         (Proof.context -> conv) -> proofstep
   val prfstep_conv: string -> prfstep_descriptor list -> conv -> proofstep
-  val name_of_eval_thm: thm -> string
   val prfsteps_eval_fun': thm list -> thm list -> proofstep list
   val prfsteps_eval_fun: thm list -> proofstep list
 end;
@@ -489,15 +488,13 @@ fun eval_fun_conv ths ctxt ct =
       Conv.top_conv (K eval_conv) ctxt ct
     end
 
-fun name_of_eval_thm th = (name_of_thm th) ^ "@eval"
-
 (* Match the left side of each desc_ths. On each match, fully expand
    using eval_fun_conv on the list of theorems ths.
  *)
 fun prfsteps_eval_fun' desc_ths ths =
     let
       fun get_prfstep th =
-          prfstep_pre_conv (name_of_eval_thm th)
+          prfstep_pre_conv ((name_of_thm th) ^ "@eval")
                            [WithTerm (th |> prop_of' |> dest_eq |> fst)]
                            (eval_fun_conv ths)
     in
@@ -701,7 +698,8 @@ fun del_prfstep_pred_gnrc pred =
            if length to_delete = 0 then
              error "Delete prfstep: not found"
            else let
-             val _ = map (fn name => tracing ("Delete " ^ name)) to_delete
+             val _ = writeln (cat_lines (map (fn name => "Delete " ^ name)
+                                             to_delete))
            in
              ProofStepTable {
                prfsteps = prfsteps |> fold Symtab.delete to_delete,
@@ -1252,10 +1250,10 @@ fun add_rewrite_iff_bidir_rule th = add_rewrite_iff_rule_bidir_cond th []
 
 fun add_eval_fun_prfsteps' desc_ths ths thy =
     let
-      fun write_eval_thm th =
-          writeln ((name_of_eval_thm th) ^ "\n" ^
-                   (th |> Thm.prop_of |> pretty_term_thy thy |> str))
-      val _ = map write_eval_thm desc_ths
+      fun eval_thm_to_str th =
+          (name_of_thm th) ^ ": " ^
+          (th |> Thm.prop_of |> pretty_term_thy thy |> str)
+      val _ = writeln (cat_lines (map eval_thm_to_str desc_ths))
     in
       fold add_prfstep (prfsteps_eval_fun' desc_ths ths) thy
     end
