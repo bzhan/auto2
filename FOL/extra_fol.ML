@@ -53,7 +53,7 @@ fun add_typing2_rule th = add_typing2_rule_cond th []
 
 fun add_backward_replace_cond_gnrc th conds gnrc =
     let
-      val ctxt = context_of_gnrc gnrc
+      val ctxt = Context.proof_of gnrc
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
       val nm = name_of_thm th
       val concl = concl_of' th

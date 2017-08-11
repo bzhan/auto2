@@ -12,7 +12,8 @@ val test_norm_disj =
     let
       fun test (str1, str2) =
           let
-            val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
+            val (t1, t2) = (Syntax.read_term ctxt str1,
+                            Syntax.read_term ctxt str2)
             val ct1 = cert ctxt t1
             val res_t = normalize_disj_t t1
             val res_th = norm_disj ct1
@@ -63,7 +64,8 @@ val test_norm_all_disj =
     let
       fun test (str1, str2) =
           let
-            val (t1, t2) = (read_pat ctxt str1, read_pat ctxt str2)
+            val (t1, t2) = (Proof_Context.read_term_pattern ctxt str1,
+                            Proof_Context.read_term_pattern ctxt str2)
             val ct1 = cert ctxt t1
             val ctxt' = fold Variable.auto_fixes [t1, t2] ctxt
             val (vars, ts) = normalize_all_disj_t ctxt' t1
@@ -132,7 +134,8 @@ val test_disj_prop_match =
 
       fun test (str1, str2) =
           let
-            val (t, u) = (read_pat ctxt str1, read_term ctxt str2)
+            val (t, u) = (Proof_Context.read_term_pattern ctxt str1,
+                          Syntax.read_term ctxt str2)
             val (var_u, us) = normalize_all_disj_t ctxt u
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
@@ -202,7 +205,8 @@ val test_disj_prop_no_match =
 
       fun test (str1, str2) =
           let
-            val (t, u) = (read_pat ctxt str1, read_term ctxt str2)
+            val (t, u) = (Proof_Context.read_term_pattern ctxt str1,
+                          Syntax.read_term ctxt str2)
             val (var_u, us) = normalize_all_disj_t ctxt u
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
@@ -248,7 +252,8 @@ val test_match_update =
             Fact (TY_DISJ, bFalse :: disj :: subs, th)
           end
 
-      fun read_prop str = str |> read_pat ctxt' |> mk_Trueprop
+      fun read_prop str =
+          str |> Proof_Context.read_term_pattern ctxt' |> mk_Trueprop
 
       fun updt_to_thm updt =
           case updt of

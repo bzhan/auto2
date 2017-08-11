@@ -21,9 +21,6 @@ local
                 |> RewriteTable.add_rewrite ([], assume_eq thy (x, x'))
   val rtype = SINGLE tbl
   val st = Status.empty_status ctxt'
-
-  (* Read strings as terms in ctxt'. *)
-  val read_as_term = read_pat ctxt'
 in
 
 (* Convert proposition to nat_order item, by applying one of the
@@ -65,9 +62,10 @@ val test_parse_prop =
 
       fun test (prop_str, specs_str) =
           let
-            val prop = read_as_term prop_str
+            val prop = Syntax.read_term ctxt' prop_str
             fun read_spec (x_str, y_str, diff) =
-                (read_as_term x_str, read_as_term y_str, diff)
+                (Syntax.read_term ctxt' x_str,
+                 Syntax.read_term ctxt' y_str, diff)
             val specs = map read_spec specs_str
             val specs' = convert_prop_to_nat_order prop |> map item_to_spec
           in
@@ -112,9 +110,9 @@ val test_nat_order_match_side =
     let
       fun test (pat_str, x_str, res_strs) =
           let
-            val pat = read_as_term pat_str
-            val cx = cert ctxt' (read_as_term x_str)
-            val res = map read_as_term res_strs
+            val pat = Proof_Context.read_term_pattern ctxt' pat_str
+            val cx = cert ctxt' (Syntax.read_term ctxt' x_str)
+            val res = Syntax.read_terms ctxt' res_strs
             val res' = nat_order_match_side tbl (pat, cx) ([], fo_init)
             fun check_inst ((_, inst), _, eq_th) =
                 (subst_term_norm inst pat) aconv (lhs_of eq_th)
@@ -153,12 +151,12 @@ val test_nat_order_match =
     let
       fun test match_fn (pat_str, prop_str, res_strs) =
           let
-            val pat = read_as_term pat_str
-            val prop = read_as_term prop_str
+            val pat = Proof_Context.read_term_pattern ctxt' pat_str
+            val prop = Syntax.read_term ctxt' prop_str
             val items = convert_prop_to_nat_order prop
             val item = the_single items
                        handle List.Empty => raise Fail "ambiguous input"
-            val res = map (mk_Trueprop o read_as_term) res_strs
+            val res = map (mk_Trueprop o Syntax.read_term ctxt') res_strs
             val res' = match_fn pat item tbl ([], fo_init)
             fun check_inst ((_, inst), th) =
                 (subst_term_norm inst pat) aconv (prop_of' th)
@@ -226,7 +224,7 @@ val test_nat_order_single_match =
     let
       fun test ineq_str =
           let
-            val ineq = ineq_str |> read_as_term
+            val ineq = Syntax.read_term ctxt' ineq_str
             val res = nat_order_single_match
                           ineq BoxItem.null_item tbl ([], fo_init)
           in

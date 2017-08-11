@@ -5,8 +5,8 @@ val test_normalize =
       val ctxt = @{context}
       fun test (str, strs) =
           let
-            val t = read_term ctxt str
-            val ts = map (read_term ctxt) strs
+            val t = Syntax.read_term ctxt str
+            val ts = map (Syntax.read_term ctxt) strs
             val ritem =
                 Update.thm_to_ritem (assume_thm ctxt (mk_Trueprop t))
             val ritems' = normalize ctxt ritem

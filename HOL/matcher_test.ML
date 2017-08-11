@@ -41,14 +41,16 @@ fun add_prim_id (prim_id, id) (tbl as {lat, ...}) =
     end
 
 fun declare_term str (tbl as {ctxt, ...}) =
-    tbl |> RewriteTable.map_context (Variable.auto_fixes (read_term ctxt str))
+    tbl |> RewriteTable.map_context (
+      Variable.auto_fixes (Syntax.read_term ctxt str))
 
 fun declare_pat str (tbl as {ctxt, ...}) =
-    tbl |> RewriteTable.map_context (Variable.auto_fixes (read_pat ctxt str))
+    tbl |> RewriteTable.map_context (
+      Variable.auto_fixes (Proof_Context.read_term_pattern ctxt str))
 
 fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
     let
-      val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
+      val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
       val th = assume_eq (RewriteTable.theory_of tbl) (t1, t2)
     in
       tbl |> RewriteTable.add_rewrite (id, th)
@@ -71,9 +73,10 @@ fun check_info (t, u) txt {ctxt, ...} ((_, inst), th) =
 
 fun assert_match_gen matcher ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
     let
-      val (t, u) = (read_pat ctxt str_t, read_term ctxt str_u)
+      val (t, u) = (Proof_Context.read_term_pattern ctxt str_t,
+                    Syntax.read_term ctxt str_u)
       val _ = trace_tlist_ctxt ctxt "Matching" [t, u]
-      val info = map (apsnd (read_term ctxt)) info_str
+      val info = map (apsnd (Syntax.read_term ctxt)) info_str
       val info' = matcher tbl [] (t, cert ctxt u) ([], fo_init)
       val _ = map (check_info (t, u) "assert_match" tbl) info'
       val info'' = map (fn ((id, _), th) => (id, meta_sym th)) info'
@@ -87,10 +90,10 @@ fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
     let
       val pairs =
           map (fn (is_head, (str_t, str_u)) =>
-                  (is_head, (read_pat ctxt str_t,
-                             cert ctxt (read_term ctxt str_u))))
+                  (is_head, (Proof_Context.read_term_pattern ctxt str_t,
+                             cert ctxt (Syntax.read_term ctxt str_u))))
               pairs_str
-      val info = map (apsnd (map (read_term ctxt))) info_str
+      val info = map (apsnd (map (Syntax.read_term ctxt))) info_str
       val info' = Matcher.rewrite_match_list tbl pairs ([], fo_init)
       fun check_info_list (instsp, ths) =
           let
@@ -219,7 +222,8 @@ val test_match_list =
 (* Test of pre-matcher. *)
 fun assert_pre_match_gen res at_head (str_t, str_u) (tbl as {ctxt, ...}) =
     let
-      val (t, cu) = (read_pat ctxt str_t, cert ctxt (read_term ctxt str_u))
+      val (t, cu) = (Proof_Context.read_term_pattern ctxt str_t,
+                     cert ctxt (Syntax.read_term ctxt str_u))
       val pre_match_fn = if at_head then Matcher.pre_match_head
                          else Matcher.pre_match
     in

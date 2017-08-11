@@ -38,7 +38,7 @@ in
  *)
 fun test_wfconv wfcv err_str (str1, str2) =
     let
-      val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
+      val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
       val wft = wfterm_of (cert_thy thy t1)
       val th = snd (wfcv wft)
                handle Fail err =>
@@ -118,7 +118,7 @@ val test_rat_divide =
 
 fun test_norm_term G (str1, str2) =
     let
-      val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
+      val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
       val t2' = AlgCommRing.norm_term G t1
     in
       if t2' aconv t2 then ()

@@ -200,7 +200,7 @@ fun can_add_property_update th thy =
 
 fun add_property_update_gnrc th gnrc =
     let
-      val thy = theory_of_gnrc gnrc
+      val thy = Context.theory_of gnrc
       val (prems, concl) = strip_horn' th
       val _ = assert (is_property_const thy concl)
                      "add_property_update: concl must be a property constant."

@@ -42,7 +42,7 @@ open Auto2_Outer
 fun add_script_induct_data_gnrc th gnrc =
     let
       val nm = name_of_thm th
-      val thy = theory_of_gnrc gnrc
+      val thy = Context.theory_of gnrc
       val t = Thm.prems_of th |> List.last |> dest_Trueprop
       val _ = writeln ("Add induction rule for premise " ^
                        (t |> pretty_term_thy thy |> str))
@@ -124,7 +124,7 @@ val _ =
 fun add_strong_induct_data_gnrc th gnrc =
     let
       val nm = name_of_thm th
-      val thy = theory_of_gnrc gnrc
+      val thy = Context.theory_of gnrc
       val t = Thm.prems_of th |> List.last |> dest_Trueprop
       val _ = writeln ("Add strong induction rule for premise " ^
                        (t |> pretty_term_thy thy |> str))

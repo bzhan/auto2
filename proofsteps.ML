@@ -775,7 +775,7 @@ type pre_prfstep_descriptor = Proof.context -> prfstep_descriptor
 
 fun with_term str ctxt =
     let
-      val t = read_pat ctxt str
+      val t = Proof_Context.read_term_pattern ctxt str
       val _ = assert (length (Term.add_frees t []) = 0)
                      "with_term: should not contain free variable."
     in
@@ -783,7 +783,7 @@ fun with_term str ctxt =
     end
 
 fun with_cond str ctxt =
-    Filter (neq_filter (read_pat ctxt str))
+    Filter (neq_filter (Proof_Context.read_term_pattern ctxt str))
 
 fun with_conds strs = map with_cond strs
 
@@ -794,7 +794,7 @@ fun with_filts filts = map with_filt filts
 
 fun add_and_print_prfstep_gnrc nm descs gnrc =
     let
-      val thy = theory_of_gnrc gnrc
+      val thy = Context.theory_of gnrc
       val _ = writeln (nm ^ "\n" ^ (string_of_descs thy descs))
     in
       add_gen_prfstep_gnrc (nm, descs) gnrc
@@ -803,15 +803,15 @@ fun add_and_print_prfstep_gnrc nm descs gnrc =
 (* Add a proofstep checking a requirement. *)
 fun add_prfstep_check_req_gnrc (t_str, req_str) gnrc =
     let
-      val ctxt = context_of_gnrc gnrc
-      val t = read_pat ctxt t_str
+      val ctxt = Context.proof_of gnrc
+      val t = Proof_Context.read_term_pattern ctxt t_str
       val f = Term.head_of t
       val vars = map Free (Term.add_frees t [])
       val _ = assert (Term.is_Const f)
                      "add_prfstep_check_req: head must be Const."
       val (nm, _) = Term.dest_Const f
       val ctxt' = fold declare_free_term vars ctxt
-      val req = read_pat ctxt' req_str
+      val req = Proof_Context.read_term_pattern ctxt' req_str
 
       fun get_subst var =
           case var of Free (nm, T) => (var, Var ((nm,0),T))
@@ -1024,8 +1024,8 @@ fun post_process_th ctxt mode side_count ts th =
 (* Add basic proofstep for the given theorem and mode. *)
 fun add_basic_prfstep_cond_gnrc th mode conds gnrc =
     let
-      val thy = theory_of_gnrc gnrc
-      val ctxt = context_of_gnrc gnrc
+      val thy = Context.theory_of gnrc
+      val ctxt = Context.proof_of gnrc
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
 
       (* Intermediate form, with definitional eqs in front. *)
@@ -1178,7 +1178,7 @@ fun add_rewrite_iff_rule_cond_gnrc th conds gnrc =
       val _ = assert (fastype_of lhs = boolT)
                      "add_rewrite_iff: argument not of type bool."
 
-      val ctxt = context_of_gnrc gnrc
+      val ctxt = Context.proof_of gnrc
       val forward_th = th |> equiv_forward_th
       val nforward_th = th |> inv_backward_th
                            |> apply_to_thm (horn_conv try_nn_cancel_cv)

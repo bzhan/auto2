@@ -60,7 +60,8 @@ val test_use_prec_thms =
 
       fun test (base_str, ex_str) =
           let
-            val (t1, t2) = (read_term ctxt' base_str, read_term ctxt' ex_str)
+            val (t1, t2) = (Syntax.read_term ctxt' base_str,
+                            Syntax.read_term ctxt' ex_str)
             val (th1, th2) =
                 apply2 (Thm.assume o cert ctxt' o mk_Trueprop) (t1, t2)
             (* Just run it to see that all asserts passed. *)

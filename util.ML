@@ -57,17 +57,10 @@ sig
   val str: Pretty.T -> string
   val pretty_terms: Proof.context -> term list -> Pretty.T
   val pretty_terms_thy: theory -> term list -> Pretty.T
-  val pretty_cterm: Proof.context -> cterm -> Pretty.T
-  val pretty_cterms: Proof.context -> cterm list -> Pretty.T
-  val pretty_typ: Proof.context -> typ -> Pretty.T
-  val pretty_typs: Proof.context -> typ list -> Pretty.T
-  val pretty_ctyp: Proof.context -> ctyp -> Pretty.T
-  val pretty_ctyps: Proof.context -> ctyp list -> Pretty.T
   val pretty_tyenv: Proof.context -> Type.tyenv -> string
   val pretty_env: Proof.context -> Envir.tenv -> string
   val string_of_list: ('a -> string) -> 'a list -> string
   val string_of_list': ('a -> string) -> 'a list -> string
-  val string_of_int_list: int list -> string
   val string_of_bool: bool -> string
 
   (* Tracing functions. *)
@@ -79,20 +72,12 @@ sig
   val trace_fullthm: string -> thm -> unit
   val check_MRS: thm list * thm -> thm
 
-  (* Generic context. *)
-  val theory_of_gnrc: Context.generic -> theory
-  val context_of_gnrc: Context.generic -> Proof.context
-
   (* Certifying terms and types. *)
   val cert: Proof.context -> term -> cterm
-  val tycert: Proof.context -> typ -> ctyp
   val cert_thy: theory -> term -> cterm
-  val tycert_thy: theory -> typ -> ctyp
 
   (* Managing context. *)
   val declare_free_term: term -> Proof.context -> Proof.context
-  val read_term: Proof.context -> string -> term
-  val read_pat: Proof.context -> string -> term
 
   (* Terms. *)
   val null_term: term
@@ -305,15 +290,6 @@ fun pretty_terms ctxt trms =
     Pretty.block (Pretty.commas (map (pretty_term ctxt) trms))
 fun pretty_terms_thy thy trms =
     Pretty.block (Pretty.commas (map (pretty_term_thy thy) trms))
-fun pretty_cterm ctxt ctrm = pretty_term ctxt (Thm.term_of ctrm)
-fun pretty_cterms ctxt ctrms =
-    Pretty.block (Pretty.commas (map (pretty_cterm ctxt) ctrms))
-fun pretty_typ ctxt ty = Syntax.pretty_typ ctxt ty
-fun pretty_typs ctxt tys =
-    Pretty.block (Pretty.commas (map (pretty_typ ctxt) tys))
-fun pretty_ctyp ctxt cty = pretty_typ ctxt (Thm.typ_of cty)
-fun pretty_ctyps ctxt ctys =
-    Pretty.block (Pretty.commas (map (pretty_ctyp ctxt) ctys))
 
 fun pretty_helper aux env =
     env |> Vartab.dest
@@ -325,7 +301,7 @@ fun pretty_helper aux env =
 fun pretty_tyenv ctxt tyenv =
     let
       fun get_typs (v, (s, T)) = (TVar (v, s), T)
-      val print = apply2 (pretty_typ ctxt)
+      val print = apply2 (Syntax.pretty_typ ctxt)
     in
       pretty_helper (print o get_typs) tyenv
     end
@@ -342,7 +318,6 @@ fun string_of_list func lst =
     Pretty.str_list "[" "]" (map func lst) |> str
 fun string_of_list' func lst =
     if length lst = 1 then func (the_single lst) else string_of_list func lst
-val string_of_int_list = string_of_list (string_of_int)
 fun string_of_bool b = if b then "true" else "false"
 
 fun trace_t_ctxt ctxt s trm =
@@ -380,20 +355,13 @@ fun ths check_MRS th =
       raise Fail "check_MRS"
     end
 
-val theory_of_gnrc = Context.cases I Proof_Context.theory_of
-val context_of_gnrc = Context.cases Proof_Context.init_global I
-
 fun cert ctxt t = Thm.cterm_of ctxt t
-fun tycert ctxt ty = Thm.ctyp_of ctxt ty
 fun cert_thy thy t = Thm.global_cterm_of thy t
-fun tycert_thy thy ty = Thm.global_ctyp_of thy ty
 
 fun declare_free_term t ctxt =
     if not (is_Free t) then raise Fail "declare_free_term: t not free."
     else ctxt |> Variable.add_fixes_direct [t |> Term.dest_Free |> fst]
               |> Variable.declare_term t
-val read_term = Syntax.read_term
-val read_pat = Proof_Context.read_term_pattern
 
 val null_term = Term.dummy
 fun is_null_term t = (t aconv null_term)
@@ -552,12 +520,15 @@ fun rename_abs_term vars t =
 
 fun print_term_detail ctxt t =
     case t of
-        Const (s, ty) => "Const (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str)
-      | Free (s, ty) => "Free (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str) ^ ")"
+        Const (s, ty) =>
+        "Const (" ^ s ^ ", " ^ (Syntax.pretty_typ ctxt ty |> str)
+      | Free (s, ty) =>
+        "Free (" ^ s ^ ", " ^ (Syntax.pretty_typ ctxt ty |> str) ^ ")"
       | Var ((nm, i), ty) => "Var ((" ^ nm ^ ", " ^ (string_of_int i) ^ "), " ^
-                             (pretty_typ ctxt ty |> str) ^ ")"
+                             (Syntax.pretty_typ ctxt ty |> str) ^ ")"
       | Bound n => "Bound " ^ (string_of_int n)
-      | Abs (s, ty, b) => "Abs (" ^ s ^ ", " ^ (pretty_typ ctxt ty |> str) ^
+      | Abs (s, ty, b) => "Abs (" ^ s ^ ", " ^
+                          (Syntax.pretty_typ ctxt ty |> str) ^
                           ", " ^ (print_term_detail ctxt b) ^ ")"
       | u $ v => "(" ^ print_term_detail ctxt u ^ ") $ (" ^
                  print_term_detail ctxt v ^ ")"
@@ -611,7 +582,7 @@ fun assume_thm ctxt t =
 fun subst_thm_thy thy (tyinsts, insts) th =
     let
       fun process_tyenv (v, (S, T)) =
-          ((v, S), tycert_thy thy T)
+          ((v, S), Thm.global_ctyp_of thy T)
       val tys = map process_tyenv (Vartab.dest tyinsts)
       fun process_tenv (v, (T, u)) =
           ((v, Envir.subst_type tyinsts T), cert_thy thy u)
@@ -834,7 +805,8 @@ fun repeat_n_conv n cv t =
 (* Generic function for testing a conv. *)
 fun test_conv ctxt cv err_str (str1, str2) =
     let
-      val (t1, t2) = (read_pat ctxt str1, read_pat ctxt str2)
+      val (t1, t2) = (Proof_Context.read_term_pattern ctxt str1,
+                      Proof_Context.read_term_pattern ctxt str2)
       val th = cv (cert ctxt t1)
     in
       if t1 aconv (lhs_of th) andalso t2 aconv (rhs_of th) then ()

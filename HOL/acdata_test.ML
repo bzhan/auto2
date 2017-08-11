@@ -33,7 +33,7 @@ val test_comb_ac_equiv =
 (* Generic function for testing conv with ac_info argument. *)
 fun test_ac_conv ctxt cv err_str (str1, str2) =
     let
-      val t1 = read_pat ctxt str1
+      val t1 = Proof_Context.read_term_pattern ctxt str1
     in
       case get_head_ac_info thy t1 of
           NONE =>
@@ -61,7 +61,8 @@ val test_move_outmost =
       val err_str = "test_move_outmost"
       fun test (stru, (str1, str2)) =
           let
-            val (t1, u) = (read_pat ctxt str1, read_pat ctxt stru)
+            val (t1, u) = (Proof_Context.read_term_pattern ctxt str1,
+                           Proof_Context.read_term_pattern ctxt stru)
             val ac_info =
                 the (get_head_ac_info thy t1)
                 handle Option.Option => raise Fail (err_str ^ ": ac_info")

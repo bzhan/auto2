@@ -13,9 +13,9 @@ val test_dest_subterms =
 
       fun test (str, str', subs_str) =
           let
-            val t = read_term ctxt' str
-            val t' = read_pat ctxt' str'
-            val subs = map (read_term ctxt') subs_str
+            val t = Syntax.read_term ctxt' str
+            val t' = Proof_Context.read_term_pattern ctxt' str'
+            val subs = map (Syntax.read_term ctxt') subs_str
             val (ct'', subs') = (dest_subterms (cert ctxt' t))
                                     |> apsnd (map Thm.term_of)
             val t'' = Thm.term_of ct''
@@ -49,8 +49,8 @@ val test_get_all_subterms =
 
       fun test (str, subs_str) =
           let
-            val t = read_term ctxt' str
-            val subs = map (read_term ctxt') subs_str
+            val t = Syntax.read_term ctxt' str
+            val subs = map (Syntax.read_term ctxt') subs_str
             val subs' = (get_all_subterms (cert ctxt' t))
                             |> map Thm.term_of
           in
@@ -82,8 +82,8 @@ val test_build_equiv =
       val ctxt' = ctxt |> Variable.auto_fixes @{term "[a::nat, b, c]"}
       fun test (str, equivs_str) =
           let
-            val t = read_pat ctxt' str
-            val equivs = map (Thm.assume o cert ctxt' o read_term ctxt')
+            val t = Proof_Context.read_term_pattern ctxt' str
+            val equivs = map (Thm.assume o cert ctxt' o Syntax.read_term ctxt')
                              equivs_str
           in
             test_raw (t, equivs)

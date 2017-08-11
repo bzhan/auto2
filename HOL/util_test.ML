@@ -31,7 +31,7 @@ val test_is_pattern =
     let
       fun test b str =
           let
-            val t = read_pat ctxt str
+            val t = Proof_Context.read_term_pattern ctxt str
           in
             if b = is_pattern t then ()
             else raise Fail "test_is_pattern"

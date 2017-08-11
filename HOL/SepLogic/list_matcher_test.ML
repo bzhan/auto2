@@ -24,7 +24,7 @@ local
 
   fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
       let
-        val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
+        val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
         val th = assume_eq (RewriteTable.theory_of tbl) (t1, t2)
       in
         tbl |> RewriteTable.add_rewrite (id, th)
@@ -40,10 +40,10 @@ in
 
 fun test test_fun str (pat_str, t_str, info_str) =
     let
-      val pat = read_pat ctxt' pat_str
-      val t = read_term ctxt' t_str
+      val pat = Proof_Context.read_term_pattern ctxt' pat_str
+      val t = Syntax.read_term ctxt' t_str
       val ct = cert ctxt t
-      val info = map (apsnd (read_term ctxt')) info_str
+      val info = map (apsnd (Syntax.read_term ctxt')) info_str
       val info' = (test_fun tbl (pat, ct) ([], fo_init)) |> map (apsnd prop_of')
       val infol = info' |> map snd |> map dest_arg1
       val infor = info' |> map (fn ((id, _), t) => (id, dest_arg t))

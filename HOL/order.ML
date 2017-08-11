@@ -300,7 +300,7 @@ fun to_nat_order_prfstep_templ ctxt (nm, pat_str, order_ty) =
     let
       val sch_xy = [@{term_pat "?x::nat"}, @{term_pat "?y::nat"}]
       val ctxt' = fold Variable.declare_term sch_xy ctxt
-      val pat = read_pat ctxt' pat_str
+      val pat = Proof_Context.read_term_pattern ctxt' pat_str
 
       fun filt tbl (id, inst) =
           not (simp_in_plus_form (id, tbl) (lookup_inst inst "x")) andalso
