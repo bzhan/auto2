@@ -65,15 +65,6 @@ sig
   val disj_shadow_prfstep: proofstep
   val add_disj_proofsteps: theory -> theory
 
-  (* HORN items. *)
-  val TY_HORN: string
-  val horn_to_ritem: thm -> raw_item
-  val apply_horn_clause: Proof.context -> box_id * thm -> raw_update list
-  val horn_update_prfstep: proofstep
-  val horn_create_case_prfstep: proofstep
-  val add_horn_clause_gnrc: thm -> Context.generic -> Context.generic
-  val add_horn_clause: thm -> theory -> theory
-
   (* Normalizers *)
   val split_conj_gen_th: Proof.context -> thm -> thm list
   val eq_normalizer: normalizer
@@ -1091,113 +1082,19 @@ val disj_shadow_prfstep =
      priority = PRIORITY_SHADOW,
      func = TwoStep disj_shadow_fn}
 
-(* HORN items. *)
-
-val TY_HORN = "HORN"
-
-fun output_horn_fn ctxt (ts, _) =
-    let
-      val _ = assert (length ts > 1) "output_horn_fn"
-      val concl = List.last ts
-    in
-      "Horn clause to show " ^ (concl |> pretty_term ctxt |> str) ^
-      " (" ^ string_of_int (length ts - 1) ^ " case remaining."
-    end
-
-fun horn_to_ritem th =
-    let
-      val (assums, concl) = strip_horn' th
-    in
-      Fact (TY_HORN, assums @ [concl], th)
-    end
-
-fun apply_horn_clause ctxt (id, th) =
-    let
-      val th' = th |> apply_to_thm (rewr_obj_eq_top ctxt all_trivial_th)
-    in
-      [AddItems {id = id, sc = NONE, raw_items = [horn_to_ritem th']}]
-    end
-
-fun horn_update_prfstep_fn rtype _ item1 item2 =
-    let
-      val {id, prop, tname, ...} = item1
-      val pat = Thm.term_of (hd tname)
-      val insts = get_insts (PropMatch pat) item2 rtype (id, fo_init)
-      fun process_inst ((id', _), th) =
-          if id <> id' then [] else
-          let
-            val th' = th RS prop
-            val new_item = if length tname > 2 then horn_to_ritem th'
-                           else Update.thm_to_ritem th'
-          in
-            [AddItems {id = id', sc = SOME 1, raw_items = [new_item]},
-             ShadowItem {id = id', item = item1}]
-          end
-    in
-      maps process_inst insts
-    end
-
-val horn_update_prfstep =
-    {name = "horn_update",
-     args = [TypedMatch (TY_HORN, boolVar "C"),
-             PropMatch (boolVar "A")],
-     priority = PRIORITY_SHADOW,
-     func = TwoStep horn_update_prfstep_fn}
-
-fun horn_create_case_prfstep_fn rtype _ {id, tname, ...} =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
-    let
-      val inits =
-          map (fn (is_var, t) => if is_var then InitVar t
-                                 else InitAssum (mk_Trueprop t))
-              (extract_init_infos true (Thm.term_of (hd tname)))
-    in
-      [AddBoxes {id = id, sc = SOME 1, inits = inits}]
-    end
-
-val horn_create_case_prfstep =
-    {name = "horn_create_case",
-     args = [TypedMatch (TY_HORN, boolVar "A")],
-     priority = PRIORITY_ADD,
-     func = OneStep horn_create_case_prfstep_fn}
-
-fun add_horn_clause_gnrc th gnrc =
-    let
-      val nm = name_of_thm th
-      val thy = theory_of_gnrc gnrc
-      fun prfstep_fn ((id, inst), _) _ {ctxt, ...} =
-          apply_horn_clause ctxt (id, subst_thm ctxt inst th)
-
-      val _ = writeln ("Add " ^ nm ^ " as horn clause")
-      val _ = writeln (
-            "Goal: " ^ (th |> concl_of' |> pretty_term_thy thy |> str))
-      val _ = writeln ("Subgoals: ")
-      val _ = map (fn t => writeln ("  " ^ (t |> pretty_term_thy thy |> str)))
-                  (Thm.prems_of th)
-    in
-      gnrc |> add_prfstep_custom_gnrc (
-        nm, [WithGoal (concl_of' th)], PRIORITY_ADD, prfstep_fn)
-           |> add_fixed_sc_gnrc (nm, 1)
-    end
-
-val add_horn_clause = Context.theory_map o add_horn_clause_gnrc
-
 val add_disj_proofsteps =
     fold ItemIO.add_item_type [
-      (TY_DISJ, SOME disj_rewr_terms, SOME output_disj_fn),
-      (TY_HORN, SOME (K []), SOME output_horn_fn)
+      (TY_DISJ, SOME disj_rewr_terms, SOME output_disj_fn)
 
     ] #> fold ItemIO.add_typed_matcher [
-      (TY_DISJ, ItemIO.univ_matcher),
-      (TY_HORN, ItemIO.univ_matcher)
+      (TY_DISJ, ItemIO.univ_matcher)
 
     ] #> fold ItemIO.add_prop_matcher [
       (TY_DISJ, disj_prop_matcher)
 
     ] #> fold add_prfstep [
       match_update_prfstep, match_one_sch_prfstep, disj_match_iff_prfstep,
-      disj_create_case_prfstep, disj_shadow_prfstep,
-      horn_update_prfstep, horn_create_case_prfstep
+      disj_create_case_prfstep, disj_shadow_prfstep
     ]
 
 (* Normalizers *)
