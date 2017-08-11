@@ -2,8 +2,7 @@
 
 local
 
-val thy = @{theory}
-val ctxt = Proof_Context.init_global thy
+val ctxt = @{context}
 val init = RewriteTable.empty ctxt
 
 (* Conversion between (id, th) used in rewrite.ML and (id, t) used in

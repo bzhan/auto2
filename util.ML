@@ -75,8 +75,6 @@ sig
   val trace_tlist_ctxt: Proof.context -> string -> term list -> unit
   val trace_thm_ctxt: Proof.context -> string -> thm -> unit
   val trace_fullthm_ctxt: Proof.context -> string -> thm -> unit
-  val trace_t: string -> term -> unit
-  val trace_tlist: string -> term list -> unit
   val trace_thm: string -> thm -> unit
   val trace_fullthm: string -> thm -> unit
   val check_MRS: thm list * thm -> thm
@@ -356,12 +354,21 @@ fun trace_thm_ctxt ctxt s th =
 fun trace_fullthm_ctxt ctxt s th =
     tracing (s ^ " [" ^ (Thm.hyps_of th |> pretty_terms ctxt |> str) ^
              "] ==> " ^ (Thm.prop_of th |> pretty_term ctxt |> str))
-val trace_t = trace_t_ctxt @{context}
-val trace_tlist = trace_tlist_ctxt @{context}
-fun trace_thm s th = trace_thm_ctxt (
-      Proof_Context.init_global (Thm.theory_of_thm th)) s th
-fun trace_fullthm s th = trace_fullthm_ctxt (
-      Proof_Context.init_global (Thm.theory_of_thm th)) s th
+fun trace_thm s th =
+    let
+      val thy = Thm.theory_of_thm th
+    in
+      tracing (s ^ " " ^ (th |> Thm.prop_of |> Syntax.pretty_term_global thy
+                             |> str))
+    end
+
+fun trace_fullthm s th =
+    let
+      val thy = Thm.theory_of_thm th
+    in
+      tracing (s ^ " [" ^ (Thm.hyps_of th |> pretty_terms_thy thy |> str) ^
+               "] ==> " ^ (Thm.prop_of th |> pretty_term_thy thy |> str))
+    end
 
 (* Debugging version of MRS. *)
 fun ths check_MRS th =

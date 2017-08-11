@@ -59,10 +59,14 @@ fun add_backward_replace_cond_gnrc th conds gnrc =
       val concl = concl_of' th
       val conds' = map (fn cond => cond ctxt') conds
       fun prfstep_fn ((id, _), ths) items _ =
-          [AddItems {
-              id = id, sc = SOME 1,
-              raw_items = [Update.thm_to_ritem (ths MRS (backward_th th))]},
-           ShadowItem {id = id, item = the_single items}]
+          let
+            val th' = th |> apply_to_thm (Conv.rewr_conv backward_conv_th)
+          in
+            [AddItems {
+                id = id, sc = SOME 1,
+                raw_items = [Update.thm_to_ritem (ths MRS th')]},
+             ShadowItem {id = id, item = the_single items}]
+          end
           handle THM _ => []
     in
       add_prfstep_custom_gnrc (

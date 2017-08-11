@@ -35,9 +35,8 @@ open UtilLogic
 fun register_wellform_data (t_str, req_strs) thy =
     let
       val ctxt = Proof_Context.init_global thy
-      val t = read_pat ctxt t_str
-      val ctxt' = fold declare_free_term (map Free (Term.add_frees t [])) ctxt
-      val reqs = map (read_pat ctxt') req_strs
+      val all_ts = Syntax.read_terms ctxt (t_str :: req_strs)
+      val (t, reqs) = (hd all_ts, tl all_ts)
 
       val (f, args) = Term.strip_comb t
       val _ = assert (Term.is_Const f)

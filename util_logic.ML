@@ -175,7 +175,6 @@ sig
   val rewrite_thm_from_contra_form: thm -> thm
   val to_obj_conv: Proof.context -> conv
   val to_obj_conv_on_horn: Proof.context -> conv
-  val to_obj_conv_on_horn_th: thm -> thm
   val to_meta_imp_conv: conv
   val to_meta_all_conv: Proof.context -> conv
   val to_meta_all_imp_conv: Proof.context -> conv
@@ -187,7 +186,6 @@ sig
   val to_obj_eq_th: thm -> thm
   val to_obj_eq_iff_th: thm -> thm
   val obj_sym_th: thm -> thm
-  val backward_th: thm -> thm
   val horn_conv: conv -> conv
   val split_conj_th: thm -> thm list
   val split_not_disj_th: thm -> thm list
@@ -577,13 +575,6 @@ fun to_obj_conv_on_horn ctxt ct =
                                (to_obj_conv_on_horn ctxt)
        | _ => Conv.all_conv) ct
 
-fun to_obj_conv_on_horn_th th =
-    let
-      val ctxt = Proof_Context.init_global (Thm.theory_of_thm th)
-    in
-      apply_to_thm (to_obj_conv_on_horn ctxt) th
-    end
-
 (* Converts A1 --> ... --> An to A1 ==> ... ==> An. *)
 fun to_meta_imp_conv ct =
     let
@@ -666,16 +657,6 @@ fun horn_conv cv ct =
          (Conv.arg1_conv (Trueprop_conv cv))
              then_conv (Conv.arg_conv (horn_conv cv))
        | _ => Trueprop_conv cv) ct
-
-(* From A ==> B, obtain ~B ==> ~A *)
-fun backward_th th =
-    let
-      val ctxt = Proof_Context.init_global (Thm.theory_of_thm th)
-    in
-      th |> apply_to_thm (Conv.rewr_conv backward_conv_th)
-         |> apply_to_thm (horn_conv try_nn_cancel_cv)
-         |> apply_to_thm (reduce_boolify ctxt)
-    end
 
 (* Given th of form (P ==>) A1 & ... & An, return theorems (P ==>) A1,
    ..., (P ==>) An, where there can be zero or more premises in front.

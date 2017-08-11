@@ -70,7 +70,11 @@ setup {* add_prfstep_custom ("ex_choice",
   [WithGoal @{term_pat "EX f. !x. ?Q f x"}],
   PRIORITY_ADD,
   (fn ((id, _), ths) => fn _ => fn _ =>
-    [Update.thm_update (id, (ths MRS (backward_th @{thm choice})))]
+    let
+      val choice = @{thm choice} |> apply_to_thm (Conv.rewr_conv backward_conv_th)
+    in
+      [Update.thm_update (id, (ths MRS choice))]
+    end
     handle THM _ => []))
 *}
 

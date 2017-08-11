@@ -174,8 +174,12 @@ setup {* add_prfstep_custom ("ex_fun",
   [WithGoal @{term_pat "\<exists>f\<in>?X\<rightarrow>?Y. \<forall>a\<in>?X. ?P(a,f)"}],
   PRIORITY_SHADOW,
   (fn ((id, _), ths) => fn items => fn _ =>
-    [AddItems {id = id, sc = SOME 1, raw_items = [Update.thm_to_ritem (ths MRS (backward_th @{thm ex_fun}))]},
-     ShadowItem {id = id, item = the_single items}]
+    let
+      val ex_fun' = @{thm ex_fun} |> apply_to_thm (Conv.rewr_conv backward_conv_th)
+    in
+      [AddItems {id = id, sc = SOME 1, raw_items = [Update.thm_to_ritem (ths MRS ex_fun')]},
+       ShadowItem {id = id, item = the_single items}]
+    end
     handle THM _ => []))
 *}
 

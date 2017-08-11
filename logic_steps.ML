@@ -221,7 +221,8 @@ fun cong_on_ineq_fn rtype _ {id, prop, ...} =
                             (eq_cong_th i tx A' ctxt)
                                 |> apply_to_thm (concl_conv cv)
                                 |> apply_to_thm (Conv.arg1_conv to_obj_eq_cv)
-                                |> backward_th
+                                |> apply_to_thm (Conv.rewr_conv
+                                                     backward_conv_th)
                       in
                         Update.thm_update (id'', prop RS cong_th)
                       end

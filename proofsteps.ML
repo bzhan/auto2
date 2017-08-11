@@ -1029,7 +1029,7 @@ fun add_basic_prfstep_cond_gnrc th mode conds gnrc =
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
 
       (* Intermediate form, with definitional eqs in front. *)
-      val th_defs = th |> to_obj_conv_on_horn_th
+      val th_defs = th |> apply_to_thm (to_obj_conv_on_horn ctxt')
                        |> apply_to_thm (Conv.repeat_conv swap_one_eq_to_front)
 
       (* List of definitions used. *)

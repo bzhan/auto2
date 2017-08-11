@@ -140,7 +140,6 @@ fun check_ind_th ind_th =
 fun add_prfstep_induction ind_th thy =
     let
       val (base, (pat_var, pat_subst)) = check_ind_th ind_th
-      val ctxt = Proof_Context.init_global thy
       val name = name_of_thm ind_th
 
       (* Automatic induction on unique free variables, generalizing no
@@ -152,7 +151,8 @@ fun add_prfstep_induction ind_th thy =
 
       val _ = writeln (
             name ^ "\n" ^ (string_of_descs thy descs) ^ "\n" ^
-            "Substitution: " ^ (pretty_terms ctxt [pat_var, pat_subst] |> str))
+            "Substitution: " ^
+            (pretty_terms_thy thy [pat_var, pat_subst] |> str))
 
       val ty_var = type_of pat_var
     in
@@ -169,7 +169,7 @@ fun add_prfstep_strong_induction ind_th thy =
           handle List.Empty => error "Strong induction: more than one var."
       val ty_var = type_of pat_var
       val _ = writeln (name ^ "\nSubstitution: " ^
-                       (pretty_terms ctxt [pat_var, pat_subst] |> str))
+                       (pretty_terms_thy thy [pat_var, pat_subst] |> str))
     in
       thy |> add_typed_induct_data "strong_induct" (ty_var, ind_th')
     end
@@ -239,7 +239,6 @@ fun check_double_ind_th ind_th =
 fun add_prfstep_double_induction ind_th thy =
     let
       val ((mb, nb), (pat_vars, pat_subst)) = check_double_ind_th ind_th
-      val ctxt = Proof_Context.init_global thy
       val name = name_of_thm ind_th
       val err = "Double induction: should have two vars."
       val (pat_var1, pat_var2) =
@@ -254,7 +253,7 @@ fun add_prfstep_double_induction ind_th thy =
       val _ = writeln (
             name ^ "\n" ^ (string_of_descs thy descs) ^ "\n" ^
             "Substitution: " ^
-            (pretty_terms ctxt [pat_var1, pat_var2, pat_subst] |> str))
+            (pretty_terms_thy thy [pat_var1, pat_var2, pat_subst] |> str))
       val ty = HOLogic.mk_prodT (ty_var1, ty_var2)
     in
       thy |> add_typed_induct_data "double_induct" (ty, ind_th)
