@@ -22,12 +22,9 @@ sig
   val normalize_keep: Proof.context -> raw_item -> raw_item list
 end;
 
-functor Normalizer(Base:UTIL_BASE) : NORMALIZER =
+structure Normalizer : NORMALIZER =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure BoxItem = BoxItem(Base)
-structure Update = Update(Base)
 open Base
 open UtilLogic
 

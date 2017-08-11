@@ -66,16 +66,9 @@ sig
   val prfsteps_eval_fun: thm list -> proofstep list
 end;
 
-functor ProofStep(Base:UTIL_BASE) : PROOFSTEP =
+structure ProofStep : PROOFSTEP =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure RewriteTable = RewriteTable(Base)
-structure Matcher = Matcher(Base)
-structure ItemIO = ItemIO(Base)
-structure Box = Box(Base)
-structure Update = Update(Base)
-structure Status = Status(Base)
 open Base
 open UtilLogic
 
@@ -647,16 +640,9 @@ sig
       (thm -> Context.generic -> Context.generic) -> attribute context_parser
 end;
 
-functor ProofStep_Data(Base:UTIL_BASE) : PROOFSTEP_DATA =
+structure ProofStep_Data : PROOFSTEP_DATA =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Property = Property(Base)
-structure WellForm = WellForm(Base)
-structure Matcher = Matcher(Base)
-structure ItemIO = ItemIO(Base)
-structure Update = Update(Base)
-structure ProofStep = ProofStep(Base)
 open Base
 open UtilLogic
 open ProofStep

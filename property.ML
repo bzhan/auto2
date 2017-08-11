@@ -60,10 +60,9 @@ sig
   val instantiate_property_update: Proof.context -> term -> thm -> thm option
 end;
 
-functor Property(Base:UTIL_BASE) : PROPERTY =
+structure Property : PROPERTY =
 struct
 
-structure UtilLogic = UtilLogic(Base)
 open Base
 open UtilLogic
 
@@ -271,3 +270,6 @@ fun instantiate_property_update ctxt t th =
     end
 
 end  (* structure Property. *)
+
+val add_property_const = Property.add_property_const
+val add_property_field_const = Property.add_property_field_const

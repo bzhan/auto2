@@ -10,10 +10,9 @@ sig
   val build_equiv: thm list -> cterm -> thm
 end;
 
-functor Subterms(Base:UTIL_BASE) : SUBTERMS =
+structure Subterms : SUBTERMS =
 struct
 
-structure UtilLogic = UtilLogic(Base)
 open Base
 open UtilLogic
 

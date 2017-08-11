@@ -44,11 +44,9 @@ sig
   val let_cmd: string list -> Proof.state -> Proof.state
 end;
 
-functor Auto2_Outer(Base:UTIL_BASE) : AUTO2_OUTER =
+structure Auto2_Outer : AUTO2_OUTER =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Auto2 = Auto2(Base)
 open Base
 open UtilLogic
 

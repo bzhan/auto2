@@ -22,7 +22,7 @@ sig
   val neq_const_ctxt: Proof.context -> term * term -> bool
 end;
 
-functor Consts(Base:UTIL_BASE) : CONSTS =
+structure Consts : CONSTS =
 struct
 
 fun add_const_data (str, f) =

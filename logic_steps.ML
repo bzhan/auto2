@@ -74,19 +74,9 @@ sig
   val add_disj_normalizers: theory -> theory
 end;
 
-functor Logic_ProofSteps(Base:UTIL_BASE) : LOGIC_PROOFSTEPS =
+structure Logic_ProofSteps : LOGIC_PROOFSTEPS =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Property = Property(Base)
-structure RewriteTable = RewriteTable(Base)
-structure Matcher = Matcher(Base)
-structure BoxItem = BoxItem(Base)
-structure ItemIO = ItemIO(Base)
-structure Update = Update(Base)
-structure Normalizer = Normalizer(Base)
-structure ProofStep = ProofStep(Base)
-structure ProofStep_Data = ProofStep_Data(Base)
 open Base
 open UtilLogic
 
@@ -1187,3 +1177,8 @@ val add_disj_normalizers =
     ]
 
 end  (* structure Logic_ProofSteps. *)
+
+val _ = Theory.setup Logic_ProofSteps.add_logic_proofsteps
+val _ = Theory.setup Logic_ProofSteps.add_disj_proofsteps
+val _ = Theory.setup Logic_ProofSteps.add_disj_normalizers
+val TY_DISJ = Logic_ProofSteps.TY_DISJ

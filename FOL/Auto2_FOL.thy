@@ -11,6 +11,8 @@ keywords "@proof" :: prf_block % "proof"
 begin
 
 ML_file "../util.ML"
+ML_file "../util_base.ML"
+ML_file "auto2_fol.ML"
 ML_file "../util_logic.ML"
 ML_file "../box_id.ML"
 ML_file "../consts.ML"
@@ -27,7 +29,13 @@ ML_file "../logic_steps.ML"
 ML_file "../auto2.ML"
 ML_file "../auto2_outer.ML"
 
-ML_file "auto2_fol.ML"
+ML {*
+open Base
+open UtilLogic
+open ProofStep
+open ProofStep_Data
+*}
+
 ML_file "extra_fol.ML"
 ML_file "fol_induct.ML"
 ML_file "alg_assoc.ML"

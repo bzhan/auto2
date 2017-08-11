@@ -8,10 +8,8 @@ sig
   val get_id_score: status -> raw_update -> int
 end;
 
-functor Scores(Base:UTIL_BASE) : SCORES =
+structure Scores : SCORES =
 struct
-
-structure Box = Box(Base)
 
 fun item_score ritem =
     case ritem of
@@ -83,21 +81,9 @@ sig
   val solve_root: int * status -> int * status
 end;
 
-functor ProofStatus(Base:UTIL_BASE) : PROOFSTATUS =
+structure ProofStatus : PROOFSTATUS =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Subterms = Subterms(Base)
-structure RewriteTable = RewriteTable(Base)
-structure BoxItem = BoxItem(Base)
-structure ItemIO = ItemIO(Base)
-structure Update = Update(Base)
-structure Box = Box(Base)
-structure Status = Status(Base)
-structure Normalizer = Normalizer(Base)
-structure ProofStep_Data = ProofStep_Data(Base)
-structure Scores = Scores(Base)
-structure Logic_ProofSteps = Logic_ProofSteps(Base)
 open Base
 open UtilLogic
 
@@ -636,12 +622,9 @@ sig
   val auto2_tac: Proof.context -> tactic
 end
 
-functor Auto2(Base:UTIL_BASE) : AUTO2 =
+structure Auto2 : AUTO2 =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Status = Status(Base)
-structure ProofStatus = ProofStatus(Base)
 open UtilLogic
 
 fun auto2_tac ctxt state =

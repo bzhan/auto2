@@ -138,38 +138,4 @@ val swap_ex_conj_th = @{thm swap_ex_conj}
 
 fun reduce_boolify _ = Conv.all_conv
 
-end  (* structure UtilBase_HOL *)
-
-structure UtilLogic = UtilLogic(Base)
-structure Consts = Consts(Base)
-structure Subterms = Subterms(Base)
-structure Property = Property(Base)
-structure WellForm = WellForm(Base)
-structure WfTerm = WfTerm(Base)
-structure RewriteTable = RewriteTable(Base)
-structure Matcher = Matcher(Base)
-structure BoxItem = BoxItem(Base)
-structure ItemIO = ItemIO(Base)
-structure Update = Update(Base)
-structure Box = Box(Base)
-structure Status = Status(Base)
-structure Normalizer = Normalizer(Base)
-structure ProofStep = ProofStep(Base)
-structure ProofStep_Data = ProofStep_Data(Base)
-structure Scores = Scores(Base)
-structure ProofStatus = ProofStatus(Base)
-structure Logic_ProofSteps = Logic_ProofSteps(Base)
-structure Auto2 = Auto2(Base)
-structure Auto2_Outer = Auto2_Outer(Base)
-open Base
-open UtilLogic
-open ProofStep
-open ProofStep_Data
-
-val _ = Theory.setup (ItemIO.add_basic_item_io)
-val _ = Theory.setup Logic_ProofSteps.add_logic_proofsteps
-val _ = Theory.setup Logic_ProofSteps.add_disj_proofsteps
-val _ = Theory.setup Logic_ProofSteps.add_disj_normalizers
-val TY_DISJ = Logic_ProofSteps.TY_DISJ
-val add_property_const = Property.add_property_const
-val register_wellform_data = WellForm.register_wellform_data
+end  (* structure Base *)

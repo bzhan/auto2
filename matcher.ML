@@ -42,12 +42,9 @@ sig
   val pre_match_head: rewrite_table -> term * cterm -> bool
 end;
 
-functor Matcher(Base:UTIL_BASE) : MATCHER =
+structure Matcher : MATCHER =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Consts = Consts(Base)
-structure RewriteTable = RewriteTable(Base)
 open Base
 open UtilLogic
 

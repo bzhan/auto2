@@ -43,11 +43,9 @@ sig
   val binop_conv: wfconv -> wfconv
 end;
 
-functor WfTerm(Base:UTIL_BASE) : WFTERM =
+structure WfTerm : WFTERM =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure WellForm = WellForm(Base)
 open Base
 open UtilLogic
 
@@ -242,3 +240,6 @@ fun every_conv wfcvs = fold_rev (curry op then_wfconv) wfcvs all_conv
 fun binop_conv wfcv = arg1_conv wfcv then_wfconv arg_conv wfcv
 
 end  (* structure WfTerm *)
+
+fun (wfcv1 then_wfconv wfcv2) = WfTerm.then_wfconv (wfcv1, wfcv2)
+fun (wfcv1 else_wfconv wfcv2) = WfTerm.else_wfconv (wfcv1, wfcv2)

@@ -46,7 +46,6 @@ end;
 structure ACUtil : ACUTIL =
 struct
 
-structure UtilLogic = UtilLogic(Base)
 open Base
 open UtilLogic
 

@@ -42,10 +42,9 @@ sig
   val mk_box_item: Proof.context -> int * box_id * int * raw_item -> box_item
 end;
 
-functor BoxItem(Base:UTIL_BASE) : BOXITEM =
+structure BoxItem : BOXITEM =
 struct
 
-structure UtilLogic = UtilLogic(Base)
 open Base
 open UtilLogic
 
@@ -248,13 +247,9 @@ sig
   val trace_items: Proof.context -> string -> box_item list -> unit
 end;
 
-functor ItemIO(Base:UTIL_BASE) : ITEM_IO =
+structure ItemIO : ITEM_IO =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Property = Property(Base)
-structure RewriteTable = RewriteTable(Base)
-structure Matcher = Matcher(Base)
 open Base
 open UtilLogic
 
@@ -698,12 +693,9 @@ sig
   val source_info: update -> string
 end;
 
-functor Update(Base:UTIL_BASE) : UPDATE =
+structure Update : UPDATE =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure BoxItem = BoxItem(Base)
-structure ItemIO = ItemIO(Base)
 open Base
 open UtilLogic
 
@@ -991,11 +983,8 @@ sig
   val short_string_of_box: Proof.context -> box -> string
 end;
 
-functor Box(Base:UTIL_BASE) : BOX =
+structure Box : BOX =
 struct
-
-structure BoxItem = BoxItem(Base)
-structure Update = Update(Base)
 
 fun init_box inits = {inits = inits, handlers = [], items = Inttab.empty,
                       resolve_th = NONE}
@@ -1120,14 +1109,9 @@ sig
   val delmin_from_queue: status -> status
 end;
 
-functor Status(Base:UTIL_BASE) : STATUS =
+structure Status : STATUS =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure RewriteTable = RewriteTable(Base)
-structure BoxItem = BoxItem(Base)
-structure Box = Box(Base)
-structure Update = Update(Base)
 open Base
 open UtilLogic
 
@@ -1462,3 +1446,5 @@ fun add_to_queue updt = map_queue (Updates_Heap.insert updt)
 val delmin_from_queue = map_queue Updates_Heap.delete_min
 
 end  (* structure Status *)
+
+val _ = Theory.setup (ItemIO.add_basic_item_io)

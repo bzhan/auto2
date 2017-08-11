@@ -228,13 +228,9 @@ sig
       rewrite_type -> (box_id * 'a) list -> (box_id * 'a) list
 end;
 
-functor RewriteTable(Base:UTIL_BASE) : REWRITE_TABLE =
+structure RewriteTable : REWRITE_TABLE =
 struct
 
-structure UtilLogic = UtilLogic(Base)
-structure Subterms = Subterms(Base)
-structure Property = Property(Base)
-structure WellForm = WellForm(Base)
 open Base
 open UtilLogic
 

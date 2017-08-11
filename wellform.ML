@@ -24,10 +24,9 @@ sig
   val lookup_wellform_pattern: theory -> term * term -> (term * term) option
 end;
 
-functor WellForm(Base:UTIL_BASE) : WELLFORM =
+structure WellForm : WELLFORM =
 struct
 
-structure UtilLogic = UtilLogic(Base)
 open Base
 open UtilLogic
 
@@ -132,3 +131,5 @@ fun lookup_wellform_pattern thy (t, wf_t) =
     end
 
 end  (* structure WellForm. *)
+
+val register_wellform_data = WellForm.register_wellform_data
