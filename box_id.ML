@@ -49,7 +49,7 @@ fun num_prim_id {parents, ...} = Vector.length parents
 fun get_parent_prim {parents, ...} prim_id =
     Vector.sub (parents, prim_id)
     handle Subscript =>
-           raise AUTO2 "get_parent_prim: prim_id out of bounds."
+           raise Fail "get_parent_prim: prim_id out of bounds."
 
 (* Returns the list of primitive ancestors of id. Result may not be in
    order.
@@ -69,7 +69,7 @@ fun get_ancestors_prim lat id =
       helper id id
     end
     handle Option.Option =>
-           raise AUTO2 "get_ancestors_prim: unexpected prim id."
+           raise Fail "get_ancestors_prim: unexpected prim id."
 
 (* For any {a, b} in ids where a is an ancestor of b, remove a from
    ids. Assume input is in order. Output is a valid box_id.

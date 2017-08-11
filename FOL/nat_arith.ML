@@ -53,7 +53,7 @@ fun dest_nat t =
     case t of
         Const ("Nat.Zero", _) => 0
       | Const ("Nat.Suc", _) $ t' => 1 + dest_nat t'
-      | _ => raise AUTO2 "dest_nat_const"
+      | _ => raise Fail "dest_nat_const"
 
 val NN = @{term nat_ring}
 val nat_Zero = @{term Zero}
@@ -63,12 +63,12 @@ val nat_Suc_ct = @{cterm Suc}
 
 (* Construct term for the given natural number n. *)
 fun mk_nat n =
-    if n < 0 then raise AUTO2 "mk_nat"
+    if n < 0 then raise Fail "mk_nat"
     else if n = 0 then nat_Zero
     else nat_Suc $ mk_nat (n - 1)
 
 fun mk_nat_ct n =
-    if n < 0 then raise AUTO2 "mk_nat_ct"
+    if n < 0 then raise Fail "mk_nat_ct"
     else if n = 0 then nat_Zero_ct
     else Thm.apply nat_Suc_ct (mk_nat_ct (n-1))
 
@@ -77,11 +77,11 @@ fun in_nat_raw t =
     case t of
         Const ("Nat.Zero", _) => @{thm nat_0I}
       | Const ("Nat.Suc", _) $ t' => (in_nat_raw t') RS @{thm nat_SucI}
-      | _ => raise AUTO2 "nat_type_th"
+      | _ => raise Fail "nat_type_th"
 
 (* Like above, except taking a number as input. *)
 fun in_nat_raw' n =
-    if n < 0 then raise AUTO2 "nat_type_th_n"
+    if n < 0 then raise Fail "nat_type_th_n"
     else if n = 0 then @{thm nat_0I}
     else (in_nat_raw' (n - 1)) RS @{thm nat_SucI}
 
@@ -92,7 +92,7 @@ fun nat_add_raw ct =
       | Const ("Nat.Suc", _) $ t' =>
         Conv.every_conv [rewr_obj_eq (in_nat_raw t' RS @{thm nat_add_Suc}),
                          Conv.arg_conv nat_add_raw] ct
-      | _ => raise AUTO2 "nat_add"
+      | _ => raise Fail "nat_add"
 
 (* Simplify nat_mult(m,n). *)
 fun nat_mult_raw ct =
@@ -101,12 +101,12 @@ fun nat_mult_raw ct =
       | Const ("Nat.Suc", _) $ t' =>
         Conv.every_conv [rewr_obj_eq (in_nat_raw t' RS @{thm nat_mult_Suc}),
                          Conv.arg_conv nat_mult_raw, nat_add_raw] ct
-      | _ => raise AUTO2 "nat_mult"
+      | _ => raise Fail "nat_mult"
 
 (* Return the theorem nat_le(m,n) (if valid). *)
 fun nat_le_raw (m, n) =
-    if m < 0 orelse n < 0 then raise AUTO2 "nat_le"
-    else if m > n then raise AUTO2 "nat_le"
+    if m < 0 orelse n < 0 then raise Fail "nat_le"
+    else if m > n then raise Fail "nat_le"
     else ([in_nat_raw' m, in_nat_raw' (n - m)] MRS @{thm nat_leI})
              |> apply_to_thm' (Conv.arg_conv nat_add_raw)
 
@@ -150,7 +150,7 @@ fun nat_sub ct =
       val (arg1, arg2) = dest_binop_args (Thm.term_of ct)
       val (x, y) = (dest_nat arg1, dest_nat arg2)
     in
-      if x < y then raise AUTO2 "nat_sub"
+      if x < y then raise Fail "nat_sub"
       else let
         val p = x - y
         val eq_th = to_obj_eq (mk_nat_add_th (p, y))
@@ -176,7 +176,7 @@ fun nat_neq_resolve th =
 
 (* Produce the theorem n ~= 0. *)
 fun nat_neq_zero n =
-    if n <= 0 then raise AUTO2 "nat_neq_zero"
+    if n <= 0 then raise Fail "nat_neq_zero"
     else let
       val nt = mk_nat (n - 1)
       val inst = update_env (("n",0), nt) fo_init
@@ -187,7 +187,7 @@ fun nat_neq_zero n =
 
 (* Produce the theorem m ~= n. *)
 fun nat_neq (m, n) =
-    if m = n then raise AUTO2 "nat_neq" else
+    if m = n then raise Fail "nat_neq" else
     let
       val m_eq_n = mk_eq (mk_nat m, mk_nat n) |> mk_Trueprop |> cert @{context}
     in
@@ -203,7 +203,7 @@ val nat_preorder_th = nat_order_th RS @{thm orderD(1)}
 
 (* Produce the theorem m < n. *)
 fun nat_less (m, n) =
-    if m >= n then raise AUTO2 "nat_less" else
+    if m >= n then raise Fail "nat_less" else
     let
       val le_th = nat_le (m, n)
       val neq_th = nat_neq (m, n)

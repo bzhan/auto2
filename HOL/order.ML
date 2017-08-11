@@ -204,7 +204,7 @@ fun get_nat_order_ritem (cx, cy, diff, th) =
         val _ = trace_t_ctxt ctxt "Expected:" prop
         val _ = trace_t_ctxt ctxt "Given:" (Thm.prop_of th)
       in
-        raise AUTO2 "get_nat_order_ritem: wrong form of theorem."
+        raise Fail "get_nat_order_ritem: wrong form of theorem."
       end
     end
 
@@ -693,7 +693,7 @@ fun nat_order_match' pat (cx, cy) (tbl as {ctxt, ...}) (id, inst) =
           case f of
               Const (@{const_name less}, _) => true
             | Const (@{const_name less_eq}, _) => false
-            | _ => raise AUTO2 "match_order: input should be inequality."
+            | _ => raise Fail "match_order: input should be inequality."
 
       (* Given nA and nB (the value of n on the two sides), return
          order_type. Assume at least one of nA and nB is zero.
@@ -823,8 +823,8 @@ val nat_order_noteq_matcher =
                   Matcher.rewrite_match_list
                       tbl [(false, (B, cx)), (false, (A, cy))] (id, inst))
           end
-          handle AUTO2T ("dest_not", _) => ([], [])
-               | AUTO2T ("dest_eq", _) => ([], [])
+          handle Fail "dest_not" => ([], [])
+               | Fail "dest_eq" => ([], [])
 
       fun pre_match pat item tbl =
           let
@@ -836,8 +836,8 @@ val nat_order_noteq_matcher =
                            (Matcher.pre_match tbl (A, cy) andalso
                             Matcher.pre_match tbl (A, cx)))
           end
-          handle AUTO2T ("dest_not", _) => false
-               | AUTO2T ("dest_eq", _) => false
+          handle Fail "dest_not" => false
+               | Fail "dest_eq" => false
 
       fun match pat item tbl (id, inst) =
           if has_vars pat then [] else

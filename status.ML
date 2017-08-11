@@ -59,15 +59,15 @@ fun match_ty_str_raw s ritem =
 fun match_ty_strs_raw slist ritem =
     case ritem of Fact (ty_str, _, _) => member (op =) slist ty_str | _ => false
 fun get_tname_raw ritem =
-    case ritem of Fact (_, ts, _) => ts | _ => raise AUTO2 "get_tname_raw"
+    case ritem of Fact (_, ts, _) => ts | _ => raise Fail "get_tname_raw"
 fun get_thm_raw ritem =
-    case ritem of Fact (_, _, th) => th | _ => raise AUTO2 "get_thm_raw"
+    case ritem of Fact (_, _, th) => th | _ => raise Fail "get_thm_raw"
 
 fun is_handler_raw ritem =
     case ritem of Handler _ => true | _ => false
 fun dest_handler_raw ritem =
     case ritem of Handler (t, handler) => (t, handler)
-                | _ => raise AUTO2 "dest_handler_raw: wrong type"
+                | _ => raise Fail "dest_handler_raw: wrong type"
 
 fun eq_ritem (ritem1, ritem2) =
     case ritem1 of
@@ -130,7 +130,7 @@ fun merged_id lat items =
 
 fun mk_box_item ctxt (uid, id, sc, ritem) =
     case ritem of
-        Handler _ => raise AUTO2 "mk_box_item: ritem must be Fact"
+        Handler _ => raise Fail "mk_box_item: ritem must be Fact"
       | Fact (ty_str, ts, prop) =>
         {uid = uid, id = id, sc = sc, ty_str = ty_str,
          tname = map (cert ctxt) ts, prop = prop}
@@ -191,9 +191,9 @@ fun join_infos (
     {prop_matchers = merge pointer_eq (pm1, pm2),
      typed_matchers = merge pointer_eq (tm1, tm2),
      term_fn = (if pointer_eq (tf1, tf2) then tf1
-                else raise AUTO2 "join_infos: term_fn non-equal"),
+                else raise Fail "join_infos: term_fn non-equal"),
      output_fn = (if pointer_eq (of1, of2) then of1
-                  else raise AUTO2 "join_infos: output_fn non-equal")}
+                  else raise Fail "join_infos: output_fn non-equal")}
 
 structure ItemIOData =
 Theory_Data (
@@ -315,7 +315,7 @@ fun add_typed_matcher (ty_str, it_match) = ItemIOData.map (
 
 fun get_io_info thy ty_str =
     the (Symtab.lookup (ItemIOData.get thy) ty_str)
-    handle Option.Option => raise AUTO2 ("get_io_info: not found " ^ ty_str)
+    handle Option.Option => raise Fail ("get_io_info: not found " ^ ty_str)
 
 fun get_prop_matchers thy ty_str = #prop_matchers (get_io_info thy ty_str)
 fun get_typed_matchers thy ty_str = #typed_matchers (get_io_info thy ty_str)
@@ -552,9 +552,9 @@ fun pre_match_arg tbl arg (item as {ty_str, ...}) =
         | (TypedMatch _, _) =>
           exists (fn f => f pat item tbl) (map #pre_match typed_matchers)
         | (PropertyMatch _, _) =>
-          raise AUTO2 "pre_match_arg: should not be called on PropertyMatch."
+          raise Fail "pre_match_arg: should not be called on PropertyMatch."
         | (WellFormMatch _, _) =>
-          raise AUTO2 "pre_match_arg: should not be called on WellFormMatch."
+          raise Fail "pre_match_arg: should not be called on WellFormMatch."
     end
 
 (* Generic matching function. Returns list of all matches (iterating
@@ -576,9 +576,9 @@ fun match_arg (tbl as {lat, ...}) arg (item as {id, ty_str, ...}) (id', inst) =
         | TypedMatch _ => maps (fn f => f pat item tbl (id'', inst))
                                (map #match typed_matchers)
         | PropertyMatch _ =>
-          raise AUTO2 "match_arg: should not be called on PropertyMatch."
+          raise Fail "match_arg: should not be called on PropertyMatch."
         | WellFormMatch _ =>
-          raise AUTO2 "match_arg: should not be called on WellFormMatch."
+          raise Fail "match_arg: should not be called on WellFormMatch."
     end
 
 val no_rewr_terms = K []
@@ -728,7 +728,7 @@ fun get_neg_form inits =
       val concl = inits |> List.last |> dest_init_assum |> the_single
                         |> get_neg'
                   handle List.Empty =>
-                         raise AUTO2 "get_neg_form: last init should be prop."
+                         raise Fail "get_neg_form: last init should be prop."
 
       fun fold_init init t =
           case init of
@@ -754,7 +754,7 @@ fun get_neg_form_thm ctxt inits th =
       val tl_assum =
           inits |> List.last |> dest_init_assum |> the_single
           handle List.Empty =>
-                 raise AUTO2 "get_neg_form_thm: last init should be prop."
+                 raise Fail "get_neg_form_thm: last init should be prop."
 
       fun fold_init init th =
           case init of
@@ -835,8 +835,8 @@ fun apply_exists_ritems ex_th ctxt nms =
                 in
                   ((nm, T), body')
                 end
-              else raise AUTO2 "apply_exists: not exists statement."
-            | _ => raise AUTO2 "apply_exists: not exists statement."
+              else raise Fail "apply_exists: not exists statement."
+            | _ => raise Fail "apply_exists: not exists statement."
 
       fun dest_all_abs nms t =
           case nms of
@@ -893,7 +893,7 @@ fun apply_exists_ritems ex_th ctxt nms =
                 if not (is_just_internal nm) then Free (nm, T) else
                 the (AList.lookup (op =) subst (nm, T))
                 handle Option.Option =>
-                       raise AUTO2 "get_freevars: cannot match new_prop' and t"
+                       raise Fail "get_freevars: cannot match new_prop' and t"
           in
             map get_freevar vars
           end
@@ -1014,7 +1014,7 @@ fun map_items f {inits, handlers, items, resolve_th} =
 
 fun add_item (item as {uid, ...}) box =
     map_items (Inttab.update_new (uid, (item, []))) box
-    handle Inttab.DUP _ => raise AUTO2 "add_item: item already exists."
+    handle Inttab.DUP _ => raise Fail "add_item: item already exists."
 
 fun is_item_removed ({id, ...}, shadow_ids) =
     member (op =) shadow_ids id
@@ -1032,7 +1032,7 @@ fun set_resolve_th th {inits, handlers, items, ...} =
 
 fun get_resolve_th {resolve_th, ...} =
     case resolve_th of
-        NONE => raise AUTO2 "get_resolve_th: box not resolved."
+        NONE => raise Fail "get_resolve_th: box not resolved."
       | SOME th => th
 
 fun short_string_of_box ctxt {inits, ...} =
@@ -1140,7 +1140,7 @@ fun theory_of {ctxt, ...} = Proof_Context.theory_of ctxt
 fun exist_box {boxes, ...} id = Boxidtab.defined boxes id
 fun get_box {boxes, ...} id =
     the (Boxidtab.lookup boxes id)
-    handle Option.Option => raise AUTO2 "get_box: id not found."
+    handle Option.Option => raise Fail "get_box: id not found."
 
 fun get_lattice {lat, ...} = lat
 val get_parent_prim = BoxID.get_parent_prim o get_lattice
@@ -1204,9 +1204,9 @@ fun get_eq_ancestors st id = filter (is_eq_descendent st id) (get_unresolved st)
  *)
 fun add_composite_box id (st as {uid_next, lat, boxes, queue, tbl, ctxt}) =
     if exist_box st id then
-      raise AUTO2 "Try to add a composite box that already exists"
+      raise Fail "Try to add a composite box that already exists"
     else if length id = 1 then
-      raise AUTO2 "Try to add a primitive box as a composite"
+      raise Fail "Try to add a primitive box as a composite"
     else
       {uid_next = uid_next, lat = lat,
        boxes = Boxidtab.update_new (id, Box.init_box []) boxes,
@@ -1237,7 +1237,7 @@ fun lookup_item_all st id uid =
 
 fun add_shadowed (shadow_id, {uid, id, ...}) (st as {lat, ...}) =
     case lookup_item st id uid of
-        NONE => raise AUTO2 "add_shadowed: item not found."
+        NONE => raise Fail "add_shadowed: item not found."
       | SOME (item, shadow_ids) =>
         let
           val shadow_ids' = (shadow_id :: shadow_ids)
@@ -1249,7 +1249,7 @@ fun add_shadowed (shadow_id, {uid, id, ...}) (st as {lat, ...}) =
 
 fun query_shadowed st shadow_id {uid, id, ...} =
     case lookup_item st id uid of
-        NONE => raise AUTO2 "query_shadowed: item not found."
+        NONE => raise Fail "query_shadowed: item not found."
       | SOME (_, shadow_ids) =>
         exists (is_eq_descendent st shadow_id) shadow_ids
 
@@ -1393,7 +1393,7 @@ fun invoke_handlers handlers th =
       in
         if to_invoke = ~1 then
           if forall (fn (req, _) => not req) handlers' then th
-          else raise AUTO2 "invoke_handlers: cannot find invokable handler."
+          else raise Fail "invoke_handlers: cannot find invokable handler."
         else
           th |> invoke_handler (snd (nth handlers' to_invoke))
              |> invoke_handlers handlers

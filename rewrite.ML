@@ -513,7 +513,7 @@ fun index_all_equiv ct tbl =
 
 fun get_all_equiv {all_equiv, ...} t =
     the (Termtab.lookup all_equiv t)
-    handle Option.Option => raise AUTO2 "all_equiv: not found"
+    handle Option.Option => raise Fail "all_equiv: not found"
 
 (*** Basic manipulation of simp table. ***)
 
@@ -808,7 +808,7 @@ fun compute_head_equiv tbl cu =
     let
       val u = Thm.term_of cu
       val _ = if Term.is_open u then
-                raise AUTO2 "get_all_head_equivs: u is open" else ()
+                raise Fail "get_all_head_equivs: u is open" else ()
       fun rep_eq_better (id1, th1) (id2, th2) =
           is_eq_ancestor tbl id1 id2 andalso
           is_equiv id2 tbl (Thm.rhs_of th1, Thm.rhs_of th2)
@@ -1284,7 +1284,7 @@ fun convert_wellform tbl (id', eq_th) (id, th) =
         val thy = theory_of tbl
       in
         case WellForm.lookup_wellform_pattern thy (lhs_of eq_th, prop_of' th) of
-            NONE => raise AUTO2 "convert_wellform: invalid input."
+            NONE => raise Fail "convert_wellform: invalid input."
           | SOME (pat, data_pat) =>
             let
               (* Cannot use eq_th directly. Rather, find all the
@@ -1404,7 +1404,7 @@ fun add_wellform_data_raw (t, (id, th)) tbl =
       val cprop = cprop_of' th
       val wellform_data = get_wellform_for_term tbl t
       val infos = the (AList.lookup (op aconvc) wellform_data cprop)
-                  handle Option.Option => raise AUTO2 "add_wellform_data_raw"
+                  handle Option.Option => raise Fail "add_wellform_data_raw"
     in
       if exists (fn info => property_eq_better tbl info (id, th)) infos then tbl
       else let
@@ -1543,7 +1543,7 @@ fun relevant_terms_single thy th =
  *)
 fun add_infos infos (id, new_infos) tbl =
     if exists (fn th => not (is_Trueprop (Thm.prop_of th))) new_infos then
-      raise AUTO2 "add_info"
+      raise Fail "add_info"
     else let
       val thy = theory_of tbl
 
@@ -1573,7 +1573,7 @@ fun add_infos infos (id, new_infos) tbl =
  *)
 fun get_incr_type (tbl as {lat, ctxt, ...}) infos (id, new_infos) =
     if exists (fn th => not (is_Trueprop (Thm.prop_of th))) new_infos then
-      raise AUTO2 "get_incr_type"
+      raise Fail "get_incr_type"
     else let
       val thy = theory_of tbl
 

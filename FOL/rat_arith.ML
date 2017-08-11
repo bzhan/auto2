@@ -158,7 +158,7 @@ fun is_of_nat G t =
 fun dest_of_nat t =
     case t of
         Const (@{const_name of_nat}, _) $ _ $ _ => dest_nat (dest_arg t)
-      | _ => raise AUTO2 "dest_of_nat"
+      | _ => raise Fail "dest_of_nat"
 
 (* Check if t is of the form of_nat n or -(of_nat n) *)
 fun is_int G t =
@@ -173,7 +173,7 @@ fun dest_int t =
     case t of
         Const (@{const_name of_nat}, _) $ _ $ _ => dest_of_nat t
       | Const (@{const_name neg}, _) $ _ $ t' => ~(dest_of_nat t')
-      | _ => raise AUTO2 "dest_int"
+      | _ => raise Fail "dest_int"
 
 (* Numbers are in one of the following standard forms: "n", "-n",
    "m/n", and "-(m/n)", where m and n are natural numbers.
@@ -195,7 +195,7 @@ fun dest_rat t =
         Rat.make (dest_int t1, dest_of_nat t2)
       | Const (@{const_name neg}, _) $ _ $ _ => Rat.make (dest_int t, 1)
       | Const (@{const_name of_nat}, _) $ _ $ _ => Rat.make (dest_of_nat t, 1)
-      | _ => raise AUTO2 "dest_rat"
+      | _ => raise Fail "dest_rat"
 
 (* Construct term for the given integer. *)
 fun mk_int G n =

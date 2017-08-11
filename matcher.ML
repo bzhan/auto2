@@ -148,7 +148,7 @@ fun match_list tbl bd_vars (ts, cus) instsp =
             maps process_inst_ts' insts_ts'
           end
     in
-      hd_first () handle AUTO2 "invalid pattern" => tl_first ()
+      hd_first () handle Fail "invalid pattern" => tl_first ()
     end
 
 (* Match a non-AC function. *)
@@ -184,7 +184,7 @@ and match_comb tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
                       (update_inst bd_vars ixn cu' instsp)
                 end
               else
-                raise AUTO2 "invalid pattern"
+                raise Fail "invalid pattern"
             | SOME (_, tf') =>
               let
                 val t' = Term.list_comb (tf', targs) |> Envir.beta_norm
@@ -327,10 +327,10 @@ fun rewrite_match_subset tbl bd_vars (ts, cus) instsp =
           (0 upto (length cus - 1))
               |> maps match_i |> maps process_match_i
         end
-        handle AUTO2 "invalid pattern" =>
+        handle Fail "invalid pattern" =>
                if length ts' > 0 andalso Term_Ord.termless (t, hd ts') then
                  rewrite_match_subset tbl bd_vars (ts' @ [t], cus) instsp
-               else raise AUTO2 "rewrite_match_subset: invalid pattern"
+               else raise Fail "rewrite_match_subset: invalid pattern"
 
 (* Fast function for determining whether there can be a match between
    t and u.

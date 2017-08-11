@@ -46,21 +46,21 @@ val cnat0 = cert ctxt nat0
 
 (* Obtain the theorem m <= n. *)
 fun nat_le_th m n =
-    if m > n then raise AUTO2 "nat_le_th: input"
+    if m > n then raise Fail "nat_le_th: input"
     else prove_by_arith ctxt [] (
         Const (@{const_name less_eq}, natT --> natT --> boolT)
               $ mk_nat m $ mk_nat n)
 
 (* Obtain the theorem m < n. *)
 fun nat_less_th m n =
-    if m >= n then raise AUTO2 "nat_less_th: input"
+    if m >= n then raise Fail "nat_less_th: input"
     else prove_by_arith ctxt [] (
         Const (@{const_name less}, natT --> natT --> boolT)
               $ mk_nat m $ mk_nat n)
 
 (* Obtain the theorem m ~= n. *)
 fun nat_neq_th m n =
-    if m = n orelse m < 0 orelse n < 0 then raise AUTO2 "nat_neq_th: input"
+    if m = n orelse m < 0 orelse n < 0 then raise Fail "nat_neq_th: input"
     else prove_by_arith ctxt [] (mk_not (mk_eq (mk_nat m, mk_nat n)))
 
 fun nat_fold_reduce t =
@@ -74,7 +74,7 @@ fun nat_fold_reduce t =
         | Const (@{const_name times}, _) => mk_nat (n1 * n2)
         | _ => t
     end
-    handle AUTO2 _ => t
+    handle Fail "dest_binop" => t | Fail "dest_numc" => t
 
 fun nat_fold_conv ct =
     let
@@ -117,11 +117,11 @@ val add_arith_ac_data =
 
 fun plus_ac_on_typ thy T =
     the (ACUtil.inst_ac_info thy T plus_ac)
-    handle Option.Option => raise AUTO2 "plus_ac_on_typ: cannot inst ac_info."
+    handle Option.Option => raise Fail "plus_ac_on_typ: cannot inst ac_info."
 
 fun times_ac_on_typ thy T =
     the (ACUtil.inst_ac_info thy T times_ac)
-    handle Option.Option => raise AUTO2 "times_ac_on_typ: cannot inst ac_info."
+    handle Option.Option => raise Fail "times_ac_on_typ: cannot inst ac_info."
 
 val add_arith_proofsteps =
     fold add_prfstep_custom [

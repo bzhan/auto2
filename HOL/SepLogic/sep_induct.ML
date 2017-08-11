@@ -46,7 +46,7 @@ fun hoare_induct_cmd state =
 
       val t' = case Thm.prop_of ind_th of
                    imp $ A $ B => imp $ rename_abs_term vars A $ B
-                 | _ => raise ERROR "hoare_induct_cmd"
+                 | _ => error "hoare_induct_cmd"
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1
     in

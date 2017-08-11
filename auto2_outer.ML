@@ -68,7 +68,7 @@ val pop_head =
     Auto2_Data.map (
       fn frames =>
          case frames of
-             [] => raise ERROR "pop_head"
+             [] => error "pop_head"
            | _ :: rest => rest)
 
 (* Change the proof state at the head of the auto2 state. *)
@@ -76,7 +76,7 @@ fun map_head f =
     Auto2_Data.map (
       fn frames =>
          case frames of
-             [] => raise ERROR "map_head"
+             [] => error "map_head"
            | frame :: rest => f frame :: rest)
 
 fun map_head_th f =
@@ -107,7 +107,7 @@ fun get_head ctxt =
 (* Given proof state of form A ==> C (with only one subgoal A), return A *)
 fun subgoal_of prop =
     prop |> Thm.cprop_of |> Drule.strip_imp_prems |> the_single
-    handle List.Empty => raise ERROR "subgoal_of"
+    handle List.Empty => error "subgoal_of"
 
 (* Use auto2 to solve the given statement *)
 fun auto2_solve ctxt stmt =
@@ -205,7 +205,7 @@ fun strip_have_goal t =
           in
             (var :: vars, (assum, concl))
           end
-        | _ => raise ERROR "strip_have_goal"
+        | _ => error "strip_have_goal"
     else if is_ball t then
       case t of
           _ $ S $ Abs (abs as (_, T, _)) =>
@@ -217,7 +217,7 @@ fun strip_have_goal t =
           in
             (var :: vars, (mem :: assum, concl))
           end
-        | _ => raise ERROR "strip_have_goal"
+        | _ => error "strip_have_goal"
     else if is_imp t then
       let
         val (vars, (assum, concl)) = strip_have_goal (dest_arg t)
@@ -352,7 +352,7 @@ fun strip_ex t =
           in
             (var :: vars, body')
           end
-        | _ => raise ERROR "strip_ex"
+        | _ => error "strip_ex"
     else
       ([], t)
 
@@ -596,13 +596,13 @@ fun let_resolve ctxt vars eq As C =
       val (lhs, rhs) = dest_eq eq
       val pat_a = case ex_vardef_th |> prop_of' |> dest_arg of
                       Abs (_, _, b) => dest_arg b
-                    | _ => raise AUTO2 "ex_vardef_th"
+                    | _ => raise Fail "ex_vardef_th"
       val nm = lhs |> Term.dest_Free |> fst
       val inst = pattern_fo_match ctxt (pat_a, rhs)
       val ex_th = subst_thm ctxt inst ex_vardef_th
       val t' = case Thm.prop_of ex_th of
                    A $ (B $ Abs (_, T, body)) => A $ (B $ Abs (nm, T, body))
-                 | _ => raise ERROR "let_resolve"
+                 | _ => error "let_resolve"
       val ex_th = ex_th |> Thm.renamed_prop t'
                         |> fold Thm.implies_intr (rev (map (cert ctxt) As))
     in

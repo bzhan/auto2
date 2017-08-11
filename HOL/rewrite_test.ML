@@ -38,7 +38,7 @@ fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
       val _ = tracing ("Expected: " ^ print_term_infos ctxt info)
       val _ = tracing ("Actual: " ^ print_infos ctxt info')
     in
-      raise AUTO2 txt
+      raise Fail txt
     end
 
 fun assert_rew_info str info_str (tbl as {ctxt, ...}) =
@@ -81,7 +81,7 @@ fun assert_equiv_gen exp_equiv id (str1, str2) (tbl as {ctxt, ...}) =
         val _ = tracing ("id: " ^ (string_of_box_id id))
         val _ = trace_tlist_ctxt ctxt "Input:" [t1, t2]
       in
-        raise AUTO2 (if exp_equiv then "assert_equiv" else "assert_not_equiv")
+        raise Fail (if exp_equiv then "assert_equiv" else "assert_not_equiv")
       end
     end
 
@@ -110,7 +110,7 @@ fun assert_simpl id (str, str') (tbl as {ctxt, ...}) =
         val _ = trace_t_ctxt ctxt "Expected:" t'
         val _ = trace_t_ctxt ctxt "Actual:" res
       in
-        raise AUTO2 "assert_simpl"
+        raise Fail "assert_simpl"
       end
     end
 
@@ -168,7 +168,7 @@ fun assert_eq_edges (str1, str2) ids (tbl as {ctxt, ...}) =
         val _ = tracing ("Expected: " ^ (string_of_box_id_list ids))
         val _ = tracing ("Actual: " ^ (string_of_box_id_list ids'))
       in
-        raise AUTO2 "assert_eq_edges"
+        raise Fail "assert_eq_edges"
       end
     end
 
@@ -191,7 +191,7 @@ fun assert_rewrite id (str, str') (tbl as {ctxt, ...}) =
         val _ = trace_t_ctxt ctxt "Expected:" t'
         val _ = trace_t_ctxt ctxt "Actual:" res
       in
-        raise AUTO2 "assert_rewrite"
+        raise Fail "assert_rewrite"
       end
     end
 

@@ -16,13 +16,13 @@ fun dest_eq t =
     case t of
         Const ("IFOL.eq", _) $ lhs $ rhs => (lhs, rhs)
       | Const ("IFOL.iff", _) $ lhs $ rhs => (lhs, rhs)
-      | _ => raise AUTO2T ("dest_eq", [t])
+      | _ => raise Fail "dest_eq"
 
 fun cdest_eq ct =
     case Thm.term_of ct of
         Const ("IFOL.eq", _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
       | Const ("IFOL.iff", _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
-      | _ => raise AUTO2T ("dest_eq", [Thm.term_of ct])
+      | _ => raise Fail "dest_eq"
 
 fun dest_eq_lhs t = fst (dest_eq t)
 fun dest_eq_rhs t = snd (dest_eq t)

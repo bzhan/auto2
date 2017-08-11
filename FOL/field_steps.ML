@@ -57,7 +57,7 @@ fun ord_field_alg_info ord_field_th =
 
 (* Given integer n ~= 0, return the theorem of_nat(R,n) : units(R). *)
 fun of_nat_unit_th info n =
-    if n <= 0 then raise AUTO2 "of_nat_unit_th"
+    if n <= 0 then raise Fail "of_nat_unit_th"
     else let
       val {of_nat_unit, ...} = info
       val in_nat_th = in_nat_raw' n

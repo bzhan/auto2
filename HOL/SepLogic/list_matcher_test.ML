@@ -54,7 +54,7 @@ fun test test_fun str (pat_str, t_str, info_str) =
         val _ = tracing ("Expected: " ^ print_term_infos ctxt' info)
         val _ = tracing ("Actual: " ^ print_term_infos ctxt' infor)
       in
-        raise AUTO2 str
+        raise Fail str
       end
     end
 

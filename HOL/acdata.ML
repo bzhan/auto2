@@ -99,9 +99,9 @@ fun add_ac_data info thy =
           in
             ACData.map (Symtab.update_new (nm, info)) thy
           end
-        | _ => raise AUTO2 "add_ac_data: invalid assoc_th"
+        | _ => error "Add AC data: invalid assoc_th"
     end
-    handle Symtab.DUP _ => raise AUTO2 "add_ac_data: info already exists."
+    handle Symtab.DUP _ => error "Add AC data: info already exists."
 
 fun get_head_ac_info thy t =
     case t of
@@ -156,7 +156,7 @@ fun comb_ac_equiv {cfhead, ...} ths =
       (* Combine in the reverse order. *)
       fun comb ths =
           case ths of
-              [] => raise AUTO2 "comb_ac_equiv: empty list"
+              [] => raise Fail "comb_ac_equiv: empty list"
             | [th] => th
             | [th1, th2] => binop_comb th2 th1
             | th :: ths' => binop_comb (comb ths') th
@@ -188,10 +188,10 @@ fun normalize_assoc ac_info ct =
  *)
 fun move_outmost (ac_info as {comm_th, ...}) u ct =
     if not (has_assoc_th ac_info andalso has_comm_th ac_info) then
-      raise AUTO2 "move_outmost: commutativity is not available."
+      raise Fail "move_outmost: commutativity is not available."
     else if u aconv (Thm.term_of ct) then Conv.all_conv ct else
     if not (head_agrees ac_info (Thm.term_of ct)) then
-      raise AUTO2 "move_outmost: u not found in ct."
+      raise Fail "move_outmost: u not found in ct."
     else let
       val (a, b) = dest_binop_args (Thm.term_of ct)
     in
@@ -202,7 +202,7 @@ fun move_outmost (ac_info as {comm_th, ...}) u ct =
       else if u aconv a then
         rewr_obj_eq comm_th ct
       else
-        raise AUTO2 "move_outmost: u not found in ct."
+        raise Fail "move_outmost: u not found in ct."
     end
 
 (* In a product of a_1, a_2, ..., remove any a_i that is a unit. *)

@@ -74,7 +74,7 @@ fun find_target_on_ths ths prop =
     in
       the (get_first get_on_th ths)
       handle Option.Option =>
-             raise AUTO2T ("find_target_on_ths: not found", [prop])
+             raise Fail "find_target_on_ths: not found"
     end
 
 (* Obtain a wellformed term from a cterm and a list of
@@ -96,8 +96,8 @@ fun cterm_to_wfterm_on_ths assum_ths fheads ct =
             val ths =
                 map (find_target_on_ths assum_ths)
                     (WellForm.lookup_wellform_data thy t)
-                handle AUTO2T (_, props) =>
-                       raise AUTO2T ("cterm_to_wfterm_on_ths", t :: props)
+                handle Fail "find_target_on_ths: not found" =>
+                       raise Fail "cterm_to_wfterm_on_ths"
             val wfargs = map (cterm_to_wfterm_on_ths assum_ths fheads) cargs
           in
             WfComb (cf, wfargs, ths)
@@ -134,14 +134,14 @@ fun all_conv wft =
     (wft, Thm.reflexive (cterm_of wft))
 
 fun no_conv _ =
-    raise AUTO2 "WfTerm.no_conv"
+    raise Fail "WfTerm.no_conv"
 
 (* Apply wfcv to the nth argument of wft (counting from the
    left). Remember to update the wellform data at head.
  *)
 fun argn_conv n wfcv wft =
     case wft of
-        WfTerm _ => raise AUTO2 "argn_conv: applied to atom."
+        WfTerm _ => raise Fail "argn_conv: applied to atom."
       | WfComb (cf, args, ths) =>
         let
           val _ = assert (n < length args) "argn_conv: n out of bounds."
@@ -161,7 +161,7 @@ fun argn_conv n wfcv wft =
                     the (WellForm.lookup_wellform_pattern
                              thy (term_of wft, prop_of' th))
                     handle Option.Option =>
-                           raise AUTO2 "convert_th: invalid input."
+                           raise Fail "convert_th: invalid input."
 
                 val pat_args = dest_args pat
               in
@@ -205,8 +205,8 @@ fun rewr_obj_eq fheads th wft =
       (* Second, find theorems justifying premises of th'. *)
       val prems = map dest_Trueprop (Thm.prems_of th')
       val prems_th = map (find_target_on_ths wf_ths) prems
-                     handle AUTO2T (_, props) =>
-                            raise AUTO2T ("WfTerm.rewr_obj_eq", t :: props)
+                     handle Fail "find_target_on_ths: not found" =>
+                            raise Fail "WfTerm.rewr_obj_eq"
       val th'' = prems_th MRS th'
 
       (* Finally, apply rewrite rule and fill in wellform data on rhs. *)
@@ -217,7 +217,7 @@ fun rewr_obj_eq fheads th wft =
     in
       (wf_rhs, to_meta_eq eq_th)
     end
-    handle Pattern.MATCH => raise AUTO2 "WfTerm.rewr_obj_eq failed"
+    handle Pattern.MATCH => raise Fail "WfTerm.rewr_obj_eq failed"
 
 fun (wfcv1 then_wfconv wfcv2) wft =
     let
@@ -233,7 +233,7 @@ fun (wfcv1 else_wfconv wfcv2) wft =
           | CTERM _ => wfcv2 wft
           | TERM _ => wfcv2 wft
           | TYPE _ => wfcv2 wft
-          | AUTO2 _ => wfcv2 wft)
+          | Fail _ => wfcv2 wft)
 
 fun try_conv wfcv = wfcv else_wfconv all_conv
 fun repeat_conv wfcv wft = try_conv (wfcv then_wfconv repeat_conv wfcv) wft

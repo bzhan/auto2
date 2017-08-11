@@ -14,7 +14,7 @@ val test_to_obj_conv =
       fun err n = "test_to_obj_conv: " ^ (string_of_int n)
       fun assert_eq th ct txt =
           let val ct' = Thm.rhs_of th
-          in if ct' aconvc ct then () else raise AUTO2CT (txt, [ct']) end
+          in if ct' aconvc ct then () else raise Fail txt end
       val ct1 = @{cprop "A ==> B ==> (!!(n::nat). C n) ==> D"}
       val ct2 = @{cprop "A --> B --> (!(n::nat). C n) --> D"}
       val ct3 = @{cprop "!(y::nat) (x::nat). P x y --> (!z. Q x y z)"}
@@ -34,7 +34,7 @@ val test_is_pattern =
             val t = read_pat ctxt str
           in
             if b = is_pattern t then ()
-            else raise AUTO2CT ("test_is_pattern", [cert ctxt t])
+            else raise Fail "test_is_pattern"
           end
 
       val test_positive = ["?f", "!n. ?f n", "!m n. ?f m n",

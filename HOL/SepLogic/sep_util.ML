@@ -59,13 +59,13 @@ fun is_entail t =
 fun dest_entail t =
     case t of
         Const (@{const_name entails}, _) $ A $ B => (A, B)
-      | _ => raise AUTO2T ("dest_entail: unexpected t.", [t])
+      | _ => raise Fail "dest_entail: unexpected t."
 
 fun cdest_entail ct =
     case Thm.term_of ct of
         Const (@{const_name entails}, _) $ _ $ _ =>
         (Thm.dest_arg1 ct, Thm.dest_arg ct)
-      | _ => raise AUTO2CT ("dest_entail: unexpected t.", [ct])
+      | _ => raise Fail "dest_entail: unexpected t."
 
 (* Given pair of assertions (A, B), form the assertion A * B. *)
 fun mk_star (A, B) =
@@ -80,13 +80,13 @@ fun is_mod t =
 fun dest_mod t =
     case t of
         Const (@{const_name models}, _) $ h $ P => (h, P)
-      | _ => raise AUTO2T ("dest_mod: unexpected t.", [t])
+      | _ => raise Fail "dest_mod: unexpected t."
 
 fun cdest_mod ct =
     case Thm.term_of ct of
         Const (@{const_name models}, _) $ _ $ _ =>
         (Thm.dest_arg1 ct, Thm.dest_arg ct)
-      | _ => raise AUTO2CT ("dest_mod: unexpected t.", [ct])
+      | _ => raise Fail "dest_mod: unexpected t."
 
 (* Given pheap h and assertion P, form the proposition h |= P. *)
 fun mk_mod (h, P) =
@@ -206,7 +206,7 @@ fun is_hoare_triple t =
 fun dest_hoare_triple t =
     case t of
         Const (@{const_name hoare_triple}, _) $ P $ c $ Q => (P, c, Q)
-      | _ => raise AUTO2 "dest_hoare_triple"
+      | _ => raise Fail "dest_hoare_triple"
 
 
 (* Convert A to emp * A *)

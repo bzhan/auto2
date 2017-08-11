@@ -112,7 +112,11 @@ fun check_hyps id th (st as {ctxt, ...}) =
       val extra = subtract (op aconv) (inits @ handlers) hyps
     in
       if length extra = 0 then ()
-      else raise AUTO2CT ("illegal hyp", map (cert ctxt) extra)
+      else let
+        val _ = trace_tlist_ctxt ctxt "extra:" extra
+      in
+        raise Fail "illegal hyp"
+      end
     end
 
 fun is_rtype_resolved {lat, ...} rtype =
@@ -176,7 +180,7 @@ fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
         in
           st |> add_shadowed (shadow_id, item)
         end
-      | _ => raise AUTO2 "process_shadow: wrong type of update"
+      | _ => raise Fail "process_shadow: wrong type of update"
 
 (* When a box, whether primitive or composite, is resolved, perform
    the following two actions: 1. Resolve current and all descendent
@@ -215,7 +219,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
             st |> fold update_one (0 upto (length id) - 1)
                |> add_resolved id
         end
-      | _ => raise AUTO2 "process_resolve: wrong type of update"
+      | _ => raise Fail "process_resolve: wrong type of update"
 
 (* Directly apply Shadow and Resolve updates. Put the remaining
    updates in queue.
@@ -241,7 +245,7 @@ fun process_step_single sc rtype items (prfstep as {args, func, ...}) st =
       val f = case func of
                   OneStep f => f
                 | TwoStep _ =>
-                  raise AUTO2 "process_step_single: wrong type of func."
+                  raise Fail "process_step_single: wrong type of func."
 
       fun process_one_item item st =
           let
@@ -259,7 +263,7 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
       val (arg1, arg2) = the_pair (filter_out is_side_match args)
       val f = case func of
                   TwoStep f => f
-                | _ => raise AUTO2 "process_step_pair: wrong type of func."
+                | _ => raise Fail "process_step_pair: wrong type of func."
 
       (* Filter the two lists of items using pre_match_arg. *)
       fun filter_pairs (left, right) =
@@ -404,7 +408,7 @@ fun process_fact_all items st =
       val incr_type = RewriteTable.get_incr_type tbl infos (id, props)
       val ts = case incr_type of
                    LAST (_, _, ts) => map Thm.term_of ts
-                 | _ => raise AUTO2 "process_fact_all"
+                 | _ => raise Fail "process_fact_all"
 
       (* List of items to consider for init and incr rounds. *)
       val init_items = filter_out (match_ty_str TY_PROPERTY) items
@@ -495,7 +499,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
              |> process_fact_all items
              |> incr_uid (length ritems')
         end
-      | _ => raise AUTO2 "process_add_items: wrong type of update"
+      | _ => raise Fail "process_add_items: wrong type of update"
 
 fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
                       (st as {tbl as {ctxt, ...}, ...}) =
@@ -563,7 +567,7 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
                 |> process_add_items item_updt
           end
         end
-      | _ => raise AUTO2 "process_add_boxes: wrong type of update"
+      | _ => raise Fail "process_add_boxes: wrong type of update"
 
 fun apply_update (updt as {raw_updt, ...}) st =
     let
@@ -609,10 +613,10 @@ fun step_until cond (steps, (st as {queue, ...})) =
     if cond st then
       (steps, st)
     else if steps = 0 then
-      raise AUTO2 "Maximum number of steps reached"
+      error "Maximum number of steps reached"
     else let
       val updt = Updates_Heap.min queue
-                 handle List.Empty => raise AUTO2 "No more moves"
+                 handle List.Empty => error "No more moves"
       val st' = st |> delmin_from_queue |> apply_update updt
     in
       step_until cond (steps - 1, st')
@@ -622,7 +626,7 @@ val solve_root = step_until (fn st => is_box_resolved st [0])
 
 end  (* structure ProofStatus. *)
 
-(* Definition of AUTO2. *)
+(* Definition of auto2. *)
 
 signature AUTO2 =
 sig

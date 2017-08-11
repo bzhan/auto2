@@ -98,7 +98,7 @@ fun assn_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
                 else if is_times rhs andalso dest_arg rhs aconv exp_rhs then
                   ((id, inst'), th |> apply_to_entail_r assn_comm_cv)
                 else
-                  raise AUTO2 "assn_match_term"
+                  raise Fail "assn_match_term"
               end
         in
           (maps apply_matcher (AssnMatchData.get thy))
@@ -388,7 +388,7 @@ fun assn_inv_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
                 else if is_times lhs andalso dest_arg lhs aconv exp_lhs then
                   ((id, inst'), th |> apply_to_entail_l assn_comm_cv)
                 else
-                  raise AUTO2 "assn_inv_match_term"
+                  raise Fail "assn_inv_match_term"
               end
         in
           (maps apply_matcher (AssnInvMatchData.get thy))

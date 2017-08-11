@@ -20,7 +20,7 @@ val test_normalize =
               val _ = trace_tlist_ctxt ctxt "Expected:" ts
               val _ = trace_tlist_ctxt ctxt "Actual:" ts'
             in
-              raise AUTO2 "test_normalize"
+              raise Fail "test_normalize"
             end
           end
 

@@ -43,7 +43,7 @@ fun convert_prop_to_nat_order prop =
           case updt of
               AddItems {raw_items, ...} =>
               map (fn ritem => mk_box_item (0, [], 0, ritem)) raw_items
-            | _ => raise AUTO2 (err_str ^ "unexpected update.")
+            | _ => raise Fail (err_str ^ "unexpected update.")
     in
       maps process_raw_update (apply_prfsteps item)
     end
@@ -78,7 +78,7 @@ val test_parse_prop =
               val _ = tracing ("Actual:" ^
                                (string_of_list string_of_spec specs'))
             in
-              raise AUTO2 "test_parse_prop"
+              raise Fail "test_parse_prop"
             end
           end
 
@@ -130,7 +130,7 @@ val test_nat_order_match_side =
               val _ = trace_tlist_ctxt ctxt' "Actual:"
                                        (map (Thm.prop_of o eq_th_of) res')
             in
-              raise AUTO2 "test_nat_order_match_side"
+              raise Fail "test_nat_order_match_side"
             end
           end
 
@@ -158,7 +158,7 @@ val test_nat_order_match =
             val prop = read_as_term prop_str
             val items = convert_prop_to_nat_order prop
             val item = the_single items
-                       handle List.Empty => raise AUTO2 "ambiguous input"
+                       handle List.Empty => raise Fail "ambiguous input"
             val res = map (mk_Trueprop o read_as_term) res_strs
             val res' = match_fn pat item tbl ([], fo_init)
             fun check_inst ((_, inst), th) =
@@ -173,7 +173,7 @@ val test_nat_order_match =
               val _ = trace_tlist_ctxt ctxt' "Actual:"
                                        (map (Thm.prop_of o snd) res')
             in
-              raise AUTO2 "test_nat_order_match"
+              raise Fail "test_nat_order_match"
             end
           end
 
@@ -238,7 +238,7 @@ val test_nat_order_single_match =
               val _ = trace_tlist_ctxt ctxt' "Output:"
                                        (map (Thm.prop_of o snd) res)
             in
-              raise AUTO2 "test_nat_order_single_match"
+              raise Fail "test_nat_order_single_match"
             end
           end
 

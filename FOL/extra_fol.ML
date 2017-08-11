@@ -29,7 +29,7 @@ fun add_typing_rule_cond_gnrc th conds gnrc =
              th ([K (WithTerm (dest_arg1 concl))] @ conds)
              |> add_fixed_sc_gnrc (nm, 1)
       else
-        raise AUTO2 "add_typing_rule: concl is not a membership."
+        error "Add typing rule: concl is not a membership."
     end
 
 fun add_typing_rule_gnrc th = add_typing_rule_cond_gnrc th []
@@ -44,7 +44,7 @@ fun add_typing2_rule_cond_gnrc th conds gnrc =
         gnrc |> add_forward_prfstep_cond_gnrc
              th ([K (WithTerm (dest_arg concl))] @ conds)
       else
-        raise AUTO2 "add_typing2_rule: concl is not a membership."
+        error "Add typing rule: concl is not a membership."
     end
 
 fun add_typing2_rule_gnrc th = add_typing2_rule_cond_gnrc th []

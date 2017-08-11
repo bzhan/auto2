@@ -23,7 +23,7 @@ val test_norm_disj =
                 val _ = trace_t_ctxt ctxt "Output" (mk_disjs res_t)
                 val _ = trace_t_ctxt ctxt "Expected" t2
               in
-                raise AUTO2 "test_norm_disj_t"
+                raise Fail "test_norm_disj_t"
               end
             else if not (rhs_of res_th aconv t2) then
               let
@@ -31,7 +31,7 @@ val test_norm_disj =
                 val _ = trace_t_ctxt ctxt "Output" (rhs_of res_th)
                 val _ = trace_t_ctxt ctxt "Expected" t2
               in
-                raise AUTO2 "test_norm_disj"
+                raise Fail "test_norm_disj"
               end
             else ()
           end
@@ -75,7 +75,7 @@ val test_norm_all_disj =
                 val _ = trace_t_ctxt ctxt "Output" (mk_all_disj (vars, ts))
                 val _ = trace_t_ctxt ctxt "Expected" t2
               in
-                raise AUTO2 "test_norm_all_disj_t"
+                raise Fail "test_norm_all_disj_t"
               end
             else if not (rhs_of res_th aconv t2) then
               let
@@ -83,7 +83,7 @@ val test_norm_all_disj =
                 val _ = trace_t_ctxt ctxt "Output" (rhs_of res_th)
                 val _ = trace_t_ctxt ctxt "Expected" t2
               in
-                raise AUTO2 "test_norm_all_disj"
+                raise Fail "test_norm_all_disj"
               end
             else ()
           end
@@ -124,7 +124,7 @@ val test_norm_all_disj =
 fun free_to_var t =
     case t of
         Free (nm, T) => Var ((nm, 0), T)
-      | _ => raise AUTO2 "free_to_var"
+      | _ => raise Fail "free_to_var"
 
 val test_disj_prop_match =
     let
@@ -149,7 +149,7 @@ val test_disj_prop_match =
                   val _ = trace_t_ctxt ctxt "u" u
                   val _ = trace_thm_ctxt ctxt "Output" eq
                 in
-                  raise AUTO2 "disj_prop_match: wrong equation"
+                  raise Fail "disj_prop_match: wrong equation"
                 end
               | _ =>
                 let
@@ -158,7 +158,7 @@ val test_disj_prop_match =
                   val _ = tracing ("Number of results: " ^
                                    (string_of_int (length res)))
                 in
-                  raise AUTO2 "disj_prop_match: wrong number of equations"
+                  raise Fail "disj_prop_match: wrong number of equations"
                 end
           end
 
@@ -214,7 +214,7 @@ val test_disj_prop_no_match =
               val _ = trace_t_ctxt ctxt "t" t
               val _ = trace_t_ctxt ctxt "u" u
             in
-              raise AUTO2 "disj_prop_no_match: expected no match"
+              raise Fail "disj_prop_no_match: expected no match"
             end
           end
 
@@ -274,7 +274,7 @@ val test_match_update =
               val _ = trace_tlist_ctxt ctxt' "Expected:" res_ts
               val _ = trace_tlist_ctxt ctxt' "Actual:" res_ts'
             in
-              raise AUTO2 "test_match_update"
+              raise Fail "test_match_update"
             end
           end
 

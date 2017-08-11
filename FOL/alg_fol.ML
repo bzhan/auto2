@@ -57,7 +57,7 @@ fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
                   val _ = trace_tlist_ctxt ctxt "" [t, rhs_of eq, t']
                   val nm = fst (Term.dest_Const pred_t)
                 in
-                  raise AUTO2 ("alg_norm1 for " ^ nm)
+                  raise Fail ("alg_norm1 for " ^ nm)
                 end
               end
 
@@ -75,7 +75,7 @@ fun alg_norm1_prfstep norm_info =
     let
       val {pred_t, ...} = norm_info
       val nm = fst (Term.dest_Const pred_t)
-               handle TERM _ => raise AUTO2 "alg_norm1_prfstep"
+               handle TERM _ => raise Fail "alg_norm1_prfstep"
     in
       {name = nm ^ "@norm1",
        args = [TypedMatch (TY_TERM, @{term_pat "?A"})],
@@ -128,7 +128,7 @@ fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
                   val _ = trace_tlist_ctxt ctxt "" [t2, rhs_of eq2, t2']
                   val nm = fst (Term.dest_Const pred_t)
                 in
-                  raise AUTO2 ("alg_norm2 for " ^ nm)
+                  raise Fail ("alg_norm2 for " ^ nm)
                 end
               end
 

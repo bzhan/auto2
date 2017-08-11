@@ -84,14 +84,14 @@ fun get_term_ind_th thy nm t =
  *)
 fun check_strong_ind_prop ind_prop =
     let
-      fun err str = "check_strong_ind_prop: " ^ str
+      fun err str = "Strong induction: " ^ str
       val (cond_ind, concl) =
           ind_prop |> Logic.dest_implies |> apply2 dest_Trueprop
 
       (* concl must be of form ?P [?vars]. *)
       val err_concl = err "concl of ind_th must be ?P [?vars]."
       val (P, pat_vars) = Term.strip_comb concl
-                          handle TERM _ => raise AUTO2 err_concl
+                          handle TERM _ => error err_concl
       val _ = assert (is_Var P andalso forall is_Var pat_vars andalso
                       (dest_Var P |> fst |> fst) = "P") err_concl
 
@@ -103,8 +103,8 @@ fun check_strong_ind_prop ind_prop =
           case body of
               Const (c, _) $ Abs (_, _, t) =>
               if c = All_name then subst_bound (var, t)
-              else raise AUTO2 err_ind_hyp
-            | _ => raise AUTO2 err_ind_hyp
+              else error err_ind_hyp
+            | _ => error err_ind_hyp
       val (pat_subst, P_vars) =
           cond_ind |> fold dest_one_all pat_vars |> dest_imp
       val _ = assert (P_vars aconv concl) err_ind_hyp
@@ -121,7 +121,7 @@ fun check_strong_ind_prop ind_prop =
  *)
 fun check_ind_th ind_th =
     let
-      fun err str = "check_ind_th: " ^ str
+      fun err str = "Induction: " ^ str
       val (cond_base, ind_th') =
           ind_th |> Thm.prop_of |> Logic.dest_implies
                  |> apfst dest_Trueprop
@@ -131,8 +131,8 @@ fun check_ind_th ind_th =
       val base =
           case cond_base of
               P $ b =>
-              if Term.is_Var P then b else raise AUTO2 err_base_hyp
-            | _ => raise AUTO2 err_base_hyp
+              if Term.is_Var P then b else error err_base_hyp
+            | _ => error err_base_hyp
     in
       (base, check_strong_ind_prop ind_th' |> apfst the_single)
     end
@@ -166,8 +166,7 @@ fun add_prfstep_strong_induction ind_th thy =
       val ind_th' = apply_to_thm (to_obj_conv_on_horn ctxt) ind_th
       val (pat_var, pat_subst) =
           check_strong_ind_prop (Thm.prop_of ind_th') |> apfst the_single
-          handle List.Empty =>
-                 raise AUTO2 "add_prfstep_strong_induction: more than one var."
+          handle List.Empty => error "Strong induction: more than one var."
       val ty_var = type_of pat_var
       val _ = writeln (name ^ "\nSubstitution: " ^
                        (pretty_terms ctxt [pat_var, pat_subst] |> str))
@@ -221,7 +220,7 @@ fun check_double_ind_th ind_th =
           err "First base assumption of ind_th must be !n. ?P mb n."
       val inst1 = pattern_fo_match_thy
                       thy (@{term_pat "!n. ?P ?mb n"}, cond_base1)
-                  handle Pattern.MATCH => raise AUTO2 err_base_hyp1
+                  handle Pattern.MATCH => error err_base_hyp1
       val mb = lookup_inst inst1 "mb"
 
       (* cond_base2 must be of form !m. ?P m nb, where nb is the base
@@ -231,7 +230,7 @@ fun check_double_ind_th ind_th =
           err "Second base assumption of ind_th must be !m. ?P m nb."
       val inst2 = pattern_fo_match_thy
                       thy (@{term_pat "!m. ?P m ?nb"}, cond_base2)
-                  handle Pattern.MATCH => raise AUTO2 err_base_hyp2
+                  handle Pattern.MATCH => error err_base_hyp2
       val nb = lookup_inst inst2 "nb"
     in
       ((mb, nb), check_strong_ind_prop ind_th')
@@ -242,9 +241,9 @@ fun add_prfstep_double_induction ind_th thy =
       val ((mb, nb), (pat_vars, pat_subst)) = check_double_ind_th ind_th
       val ctxt = Proof_Context.init_global thy
       val name = name_of_thm ind_th
-      val err = "add_prfstep_double_induction: should have two vars."
+      val err = "Double induction: should have two vars."
       val (pat_var1, pat_var2) =
-          the_pair pat_vars handle AUTO2 _ => raise AUTO2 err
+          the_pair pat_vars handle Fail "the_pair" => error err
 
       (* Add user invoked proofstep. *)
       val (ty_var1, ty_var2) = apply2 type_of (pat_var1, pat_var2)
@@ -282,7 +281,7 @@ fun strong_induct_cmd (s, t) state =
       val ty = type_of var
       val ind_th = the (get_typed_ind_th thy "strong_induct" ty)
                    handle Option.Option =>
-                          raise AUTO2 "strong_induct: ind_th not found."
+                          raise Fail "strong_induct: ind_th not found."
 
       val (var_P, var_n) = ind_th |> Thm.concl_of |> dest_Trueprop
                                   |> Term.dest_comb
@@ -300,7 +299,7 @@ fun strong_induct_cmd (s, t) state =
 
       val t' = case Thm.prop_of ind_th of
                    imp $ A $ B => imp $ rename_abs_term [var] A $ B
-                 | _ => raise ERROR "strong_induct_cmd"
+                 | _ => raise Fail "strong_induct_cmd"
 
       val ind_th = ind_th |> Thm.renamed_prop t'
 
@@ -332,7 +331,7 @@ fun apply_induct_cmd s state =
       val induct_stmt =
           case induct_stmt of
               SOME (_ $ Abs (_, _, body)) => Term.subst_bound (tm, body)
-            | _ => raise ERROR "apply_induct_cmd"
+            | _ => raise Fail "apply_induct_cmd"
 
       val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
       val (As, _) = Logic.strip_horn body
@@ -369,7 +368,7 @@ fun induct_cmd (s, t, u) state =
       val ty = type_of var
       val ind_th = the (get_typed_ind_th thy "induct" ty)
                    handle Option.Option =>
-                          raise AUTO2 "induct: ind_th not found."
+                          raise Fail "induct: ind_th not found."
 
       val (var_P, var_n) = ind_th |> Thm.concl_of |> dest_Trueprop
                                   |> Term.dest_comb
@@ -391,7 +390,7 @@ fun induct_cmd (s, t, u) state =
 
             val t' = case Thm.prop_of ind_th of
                          imp $ A $ B => imp $ rename_abs_term [var] A $ B
-                       | _ => raise ERROR "strong_induct_cmd"
+                       | _ => raise Fail "strong_induct_cmd"
           in
             ind_th |> Thm.renamed_prop t'
                    |> Goal.protect 1
@@ -458,7 +457,7 @@ fun double_induct_cmd (s1, s2, t) state =
       val ty = HOLogic.mk_prodT (type_of var1, type_of var2)
       val ind_th = the (get_typed_ind_th thy "double_induct" ty)
                    handle Option.Option =>
-                          raise AUTO2 "double_induct: ind_th not found."
+                          raise Fail "double_induct: ind_th not found."
 
       val (var_P, (var_n1, var_n2)) =
           ind_th |> Thm.concl_of |> dest_Trueprop
@@ -482,7 +481,7 @@ fun double_induct_cmd (s1, s2, t) state =
 
       val t' = case Thm.prop_of ind_th of
                    imp $ A $ B => imp $ rename_abs_term [var1, var2] A $ B
-                 | _ => raise ERROR "double_induct_cmd"
+                 | _ => raise Fail "double_induct_cmd"
 
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1
@@ -507,7 +506,7 @@ fun case_induct_cmd s state =
       val (f, args) = Term.strip_comb start
       val ind_th = the (get_term_ind_th thy "case_induct" f)
                    handle Option.Option =>
-                          raise AUTO2 "case_induct: cannot find theorem."
+                          raise Fail "case_induct: cannot find theorem."
 
       (* Obtain list of assumptions *)
       val {prop, ...} = get_head ctxt
@@ -553,7 +552,7 @@ fun prop_induct_cmd (s, t) state =
       val (f, args) = Term.strip_comb start
       val ind_th = the (get_term_ind_th thy "prop_induct" f)
                    handle Option.Option =>
-                          raise AUTO2 "prop_induct: cannot find theorem."
+                          raise Fail "prop_induct: cannot find theorem."
 
       (* Instantiate the induction theorem *)
       val P = fold lambda_abstract (rev args) stmt
@@ -597,7 +596,7 @@ fun var_induct_cmd (s, t) state =
 
       val ind_th = the (get_typed_ind_th thy "var_induct" ty)
                    handle Option.Option =>
-                          raise AUTO2 "var_induct: cannot find theorem."
+                          raise Fail "var_induct: cannot find theorem."
 
       (* Instantiate the induction theorem *)
       val concl = concl_of' ind_th

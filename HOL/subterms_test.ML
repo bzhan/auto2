@@ -3,8 +3,6 @@
 local
 
   open Subterms
-
-  val thy = @{theory}
   val ctxt = @{context}
 in
 
@@ -23,9 +21,7 @@ val test_dest_subterms =
             val t'' = Thm.term_of ct''
           in
             if t' aconv t'' andalso eq_list (op aconv) (subs, subs') then ()
-            else
-              raise AUTO2CT ("test_dest_subterms",
-                             map (cert_thy thy) (t'' :: subs'))
+            else raise Fail "test_dest_subterms"
           end
 
       val test_data = [
@@ -59,8 +55,7 @@ val test_get_all_subterms =
                             |> map Thm.term_of
           in
             if eq_list (op aconv) (subs, subs') then ()
-            else raise AUTO2CT ("test_get_all_subterms",
-                                map (cert_thy thy) subs')
+            else raise Fail "test_get_all_subterms"
           end
 
       val test_data = [
@@ -81,7 +76,7 @@ val test_build_equiv =
             if lhs_of eq_th aconv (subst_subterms (t, lsubs)) andalso
                rhs_of eq_th aconv (subst_subterms (t, rsubs)) then ()
             else
-              raise AUTO2CT ("test_build_equiv", [Thm.cprop_of eq_th])
+              raise Fail "test_build_equiv"
           end
 
       val ctxt' = ctxt |> Variable.auto_fixes @{term "[a::nat, b, c]"}

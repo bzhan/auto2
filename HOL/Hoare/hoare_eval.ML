@@ -8,7 +8,7 @@ fun is_const_ID t =
 fun dest_const_ID t =
     case t of
         Const ("Hoare_States.id.Id", _) $ n => dest_numc n
-      | _ => raise AUTO2 "dest_const_ID: not constant ID."
+      | _ => raise Fail "dest_const_ID: not constant ID."
 
 (* Converts m = n to Id m = Id n. *)
 val id_eq_cv = rewr_obj_eq (obj_sym @{thm id.simps(1)})
@@ -20,7 +20,7 @@ fun get_const_ID_eq ctxt t t' =
     else let
       val (n, n') = (dest_const_ID t, dest_const_ID t')
     in
-      if n = n' then raise AUTO2 "get_const_ID_eq"
+      if n = n' then raise Fail "get_const_ID_eq"
       else SOME ((Nat_Arith.nat_neq_th n n')
                      |> apply_to_thm' (Conv.arg_conv id_eq_cv))
     end

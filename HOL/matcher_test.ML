@@ -30,7 +30,7 @@ fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
       val _ = tracing ("Expected: " ^ print_term_infos ctxt info)
       val _ = tracing ("Actual: " ^ print_infos ctxt info')
     in
-      raise AUTO2 txt
+      raise Fail txt
     end
 
 fun add_prim_id (prim_id, id) (tbl as {lat, ...}) =
@@ -67,7 +67,7 @@ fun check_info (t, u) txt {ctxt, ...} ((_, inst), th) =
                          (pretty_terms ctxt [t', u] |> str) ^
                          "\nth = " ^
                          (pretty_term ctxt (Thm.prop_of th) |> str))
-      in raise AUTO2 txt end
+      in raise Fail txt end
     end
 
 fun assert_match_gen matcher ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
@@ -110,7 +110,7 @@ fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
       else let
         val _ = tracing ("got " ^ print_infos' ctxt info'')
       in
-        raise AUTO2 "assert_match_list"
+        raise Fail "assert_match_list"
       end
     end
 
@@ -228,7 +228,7 @@ fun assert_pre_match_gen res at_head (str_t, str_u) (tbl as {ctxt, ...}) =
       else let
         val _ = trace_tlist_ctxt ctxt "Pattern, term: " [t, Thm.term_of cu]
       in
-        raise AUTO2 ("assert_pre_match (expected " ^ (string_of_bool res) ^ ")")
+        raise Fail ("assert_pre_match (expected " ^ (string_of_bool res) ^ ")")
       end
     end
 

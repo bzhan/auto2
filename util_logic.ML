@@ -215,7 +215,7 @@ fun term_of_bool b = (if b then bTrue else bFalse)
 fun bool_of_term t =
     if t aconv bTrue then true
     else if t aconv bFalse then false
-    else raise AUTO2 "bool_of_term: unexpected t."
+    else raise Fail "bool_of_term: unexpected t."
 
 (* Trueprop *)
 
@@ -235,8 +235,8 @@ fun mk_Trueprop P = Trueprop $ P
 fun dest_Trueprop t =
     case t of
         Const (c, _) $ P =>
-        if c = Trueprop_name then P else raise AUTO2 "dest_Trueprop"
-      | _ => raise AUTO2 "dest_Trueprop"
+        if c = Trueprop_name then P else raise Fail "dest_Trueprop"
+      | _ => raise Fail "dest_Trueprop"
 
 fun Trueprop_conv cv ct =
     case Thm.term_of ct of
@@ -256,8 +256,8 @@ fun mk_not P = Not $ P
 fun dest_not t =
     case t of
         Const (c, _) $ P =>
-        if c = Not_name then P else raise AUTO2T ("dest_not", [t])
-      | _ => raise AUTO2T ("dest_not", [t])
+        if c = Not_name then P else raise Fail "dest_not"
+      | _ => raise Fail "dest_not"
 
 (* Returns whether the given term is in neg form. *)
 fun is_neg t =
@@ -307,7 +307,7 @@ fun strip_conj t =
       | _ => [t]
 fun list_conj ts =
     case ts of
-        [] => raise ERROR "list_conj"
+        [] => error "list_conj"
       | [t] => t
       | t :: rest => mk_conj (t, list_conj rest)
 
@@ -329,8 +329,8 @@ fun mk_imp (t, u) = imp $ t $ u
 fun dest_imp t =
     case t of
         Const (c, _) $ A $ B =>
-        if c = Imp_name then (A, B) else raise AUTO2T ("dest_imp", [t])
-      | _ => raise AUTO2T ("dest_imp", [t])
+        if c = Imp_name then (A, B) else raise Fail "dest_imp"
+      | _ => raise Fail "dest_imp"
 
 (* Given t of form A1 --> ... --> An, return ([A1, ..., A(n-1)], An). *)
 fun strip_obj_imp t =
@@ -421,7 +421,7 @@ fun extract_init_infos_aux bInt t nms =
           in
             extract_init_infos_aux bInt t' nms
           end
-        | _ => raise AUTO2 "extract_init_infos"
+        | _ => raise Fail "extract_init_infos"
     else if is_ball t then
       case t of
           _ $ S $ Abs (nm, T, b) =>
@@ -443,7 +443,7 @@ fun extract_init_infos_aux bInt t nms =
           in
             extract_init_infos_aux bInt t' nms
           end
-        | _ => raise AUTO2 "extract_init_infos"
+        | _ => raise Fail "extract_init_infos"
     else if is_imp t then
       (false, dest_arg1 t) :: extract_init_infos_aux bInt (dest_arg t) nms
     else if is_neg t then
@@ -459,8 +459,8 @@ fun cdest_Trueprop ct =
     case Thm.term_of ct of
         Const (c, _) $ _ =>
         if c = Trueprop_name then Thm.dest_arg ct else
-        raise AUTO2 "dest_Trueprop"
-      | _ => raise AUTO2 "dest_Trueprop"
+        raise Fail "dest_Trueprop"
+      | _ => raise Fail "dest_Trueprop"
 
 fun cstrip_horn' th =
     (map cdest_Trueprop (Drule.strip_imp_prems (Thm.cprop_of th)),
@@ -702,7 +702,7 @@ fun strip_horn' th = (Logic.strip_horn (Thm.prop_of th))
 
 fun mk_conjs_th ths =
     case ths of
-        [] => raise AUTO2 "mk_conjs_th"
+        [] => raise Fail "mk_conjs_th"
       | [th] => th
       | th :: rest => [th, mk_conjs_th rest] MRS conjI_th
 

@@ -163,7 +163,8 @@ fun neq_filter cond tbl (id, inst) =
     let
       val (lhs, rhs) =
           cond |> dest_not |> dest_eq
-          handle AUTO2T _ => raise AUTO2 "neq_filter: not an inequality."
+          handle Fail "dest_not" => raise Fail "neq_filter: not an inequality."
+               | Fail "dest_eq" => raise Fail "neq_filter: not an inequality."
       val _ = assert (length (Term.add_frees cond []) = 0)
                      "neq_filter: should not contain free variable."
 
@@ -226,8 +227,7 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
       val inst_new = subst_term_norm inst (mk_Trueprop pat_r)
       val th' = th |> subst_thm ctxt inst |> fold Thm.elim_implies ths'
       val _ = if inst_new aconv (Thm.prop_of th') then () else
-              raise AUTO2CT ("apply_pat_r: conclusion mismatch",
-                             map (cert ctxt) [inst_new, Thm.prop_of th'])
+              raise Fail "apply_pat_r: conclusion mismatch"
     in
       th' |> apply_to_thm (
         Conv.every_conv (map (fn eq => rewr_obj_eq_top ctxt eq) obj_eqs))
@@ -294,7 +294,7 @@ fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
             | WellFormMatch (t, req) =>
               (RewriteTable.get_wellform_t tbl (id, t))
                   |> filter (fn (_, th) => prop_of' th aconv req)
-            | _ => raise AUTO2 "get_side_ths: wrong kind of arg."
+            | _ => raise Fail "get_side_ths: wrong kind of arg."
       val side_ths = map process_side_arg side_args'
     in
       if exists (fn lst => length lst = 0) side_ths then []
@@ -380,7 +380,7 @@ fun prfstep_custom name descs priority updt_fn =
            func = TwoStep prfstep1}
         end
       else
-        raise AUTO2 "prfstep_custom: must have 1 or 2 patterns."
+        raise Fail "prfstep_custom: must have 1 or 2 patterns."
     end
 
 (* Create a proofstep from a list of proofstep descriptors. See
@@ -440,8 +440,8 @@ fun prfstep_pre_conv name descs pre_cv =
       val args = retrieve_args descs
       val _ = case args of
                   [TypedMatch ("TERM", _)] => ()
-                | _ => raise AUTO2 ("prfstep_conv: should have exactly one " ^
-                                    "term pattern.")
+                | _ => raise Fail ("prfstep_conv: should have exactly one " ^
+                                   "term pattern.")
       val filt = retrieve_filts descs
 
       fun prfstep rtype {ctxt, ...} item =
@@ -453,9 +453,9 @@ fun prfstep_pre_conv name descs pre_cv =
                 (* Here eq1 is meta_eq from pat(inst) to item. *)
                 let
                   val ct = Thm.lhs_of eq1
-                  val err = (name ^ ": cv failed.", [ct])
+                  val err = name ^ ": cv failed."
                   val eq_th = pre_cv ctxt ct
-                              handle CTERM _ => raise AUTO2CT err
+                              handle CTERM _ => raise Fail err
                 in
                   if Thm.is_reflexive eq_th then [] else
                   if RewriteTable.is_equiv
@@ -676,14 +676,14 @@ fun add_prfstep_gnrc (prfstep as {args, ...}) =
         fn ProofStepTable {
             prfsteps, sorted_prfsteps, fixed_sc} =>
            if is_prefix_str "$" (#name prfstep) then
-             raise AUTO2 ("add_prfstep: names beginning with $ is reserved.")
+             error "Add prfstep: names beginning with $ is reserved."
            else
              ProofStepTable {
                prfsteps = Symtab.update_new (#name prfstep, prfstep) prfsteps,
                sorted_prfsteps = sort prfstep_ord (sorted_prfsteps @ [prfstep]),
                fixed_sc = fixed_sc})
     else
-      raise AUTO2 "add_proofstep: need 1 or 2 patterns."
+      error "add_proofstep: need 1 or 2 patterns."
 
 val add_prfstep = Context.theory_map o add_prfstep_gnrc
 
@@ -698,7 +698,8 @@ fun del_prfstep_pred_gnrc pred =
            val to_delete = filter pred keys
            fun eq_name (key, {name, ...}) = (key = name)
          in
-           if length to_delete = 0 then raise AUTO2 "del_prfstep: not found"
+           if length to_delete = 0 then
+             error "Delete prfstep: not found"
            else let
              val _ = map (fn name => tracing ("Delete " ^ name)) to_delete
            in
@@ -730,7 +731,7 @@ fun add_fixed_sc_gnrc (nm, sc) =
     ProofStepData.map (
       fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
          case find_first (equal nm) (Symtab.keys prfsteps) of
-             NONE => raise AUTO2 ("add_fixed_sc: not found " ^ nm)
+             NONE => error ("Add fixed sc: not found " ^ nm)
            | _ => ProofStepTable {
                    prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
                    fixed_sc = fixed_sc |> Symtab.update_new (nm, sc)})
@@ -742,7 +743,7 @@ fun get_prfstep_by_name ctxt name =
       val ProofStepTable {prfsteps, ...} = proofstep_data_of ctxt
     in
       case Symtab.lookup prfsteps name of
-          NONE => raise AUTO2 ("get_prfstep_by_name: not found " ^ name)
+          NONE => raise Fail ("get_prfstep_by_name: not found " ^ name)
         | SOME prfstep => prfstep
     end
 
@@ -816,7 +817,7 @@ fun add_prfstep_check_req_gnrc (t_str, req_str) gnrc =
 
       fun get_subst var =
           case var of Free (nm, T) => (var, Var ((nm,0),T))
-                    | _ => raise AUTO2 "add_prfstep_check_req"
+                    | _ => raise Fail "add_prfstep_check_req"
       val subst = map get_subst vars
       val t' = Term.subst_atomic subst t
       val req' = Term.subst_atomic subst req
@@ -1013,7 +1014,7 @@ fun post_process_th ctxt mode side_count ts th =
                   0 => if is_neg (concl_of' th) then to_contra_form_th'
                        else to_contra_form_th
                 | 1 => resolve_conv_th
-                | _ => raise AUTO2 "resolve: too many hypothesis in th."
+                | _ => raise Fail "resolve: too many hypothesis in th."
           val cv = (Conv.rewr_conv rewr_th)
                        then_conv (horn_conv try_nn_cancel_cv)
                        then_conv (reduce_boolify ctxt)
@@ -1060,7 +1061,7 @@ fun add_basic_prfstep_cond_gnrc th mode conds gnrc =
 
         fun extract_term_cond cond =
             case cond of
-                WithItem ("TERM", t) => t | _ => raise AUTO2 "extract_term_cond"
+                WithItem ("TERM", t) => t | _ => raise Fail "extract_term_cond"
 
         (* Instantiate each element of conds with ctxt', then separate
            into term and other (filter and shadow) conds.
@@ -1267,6 +1268,6 @@ fun setup_attrib f =
             fn th => fn gnrc =>
                case gnrc of Context.Theory _ => f th gnrc | _ => gnrc))
         (Thm.declaration_attribute (
-            fn _ => fn _ => raise AUTO2 "del_step: not implemented."))
+            fn _ => fn _ => raise Fail "del_step: not implemented."))
 
 end  (* structure ProofStep_Data. *)

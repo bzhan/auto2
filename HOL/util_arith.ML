@@ -44,8 +44,7 @@ fun is_numc t =
 
 (* Deconstruct numerical constant. Discard type. *)
 fun dest_numc t = HOLogic.dest_number t |> snd
-                  handle TERM ("dest_number", _) =>
-                         raise AUTO2 "dest_numc: invalid term."
+                  handle TERM ("dest_number", _) => raise Fail "dest_numc"
 
 (* Rational numbers version of dest_numc. *)
 fun dest_numc_rat t =

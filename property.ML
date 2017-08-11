@@ -72,13 +72,13 @@ fun add_property_const t thy =
         Const (nm, T) =>
         let
           val (pTs, cT) = strip_type T
-          val _ = assert (cT = boolT andalso length pTs = 1)
-                         "add_property_const: input should be a predicate."
+          val _ = if cT = boolT andalso length pTs = 1 then ()
+                  else error "Add property: input should be a predicate."
           val _ = writeln ("Add predicate " ^ nm ^ " as property.")
         in
           thy |> PropertyData.map (Symtab.update_new (nm, ()))
         end
-      | _ => raise AUTO2 "add_property_const: input should be a constant."
+      | _ => error "Add property: input should be a constant."
 
 (* Whether the term is a property predicate applied to a term. *)
 fun is_property_const thy t =
@@ -95,13 +95,13 @@ fun add_property_field_const t thy =
         Const (nm, T) =>
         let
           val (pTs, _) = strip_type T
-          val _ = assert (length pTs = 1)
-                         "add_property_field_const: input should be a field."
+          val _ = if length pTs = 1 then ()
+                  else error "Add property field: input should be a field."
           val _ = writeln ("Add field " ^ nm ^ " as property field.")
         in
           thy |> PropertyFieldData.map (Symtab.update_new (nm, ()))
         end
-      | _ => raise AUTO2 "add_property_field_const: input should be a constant."
+      | _ => error "Add property field: input should be a constant."
 
 (* Whether the term is zero or more property field constants applied
    to a Var term.
@@ -137,18 +137,19 @@ fun is_property_prem_ctxt' ctxt t =
 fun get_property_name t =
     case Term.head_of t of
         Const (nm, _) => nm
-      | _ => raise AUTO2 "get_property_name: not a constant."
+      | _ => raise Fail "get_property_name: not a constant."
 
 fun get_property_names ts =
     ts |> map get_property_name |> distinct (op =)
 
 fun get_property_arg t =
     dest_arg t
-    handle AUTO2 _ => raise AUTO2 "get_property_arg: t in wrong form."
+    handle Fail "dest_arg" => raise Fail "get_property_arg: t in wrong form."
 
 fun get_property_arg_th th =
     Thm.dest_arg (cprop_of' th)
-    handle CTERM _ => raise AUTO2 "get_property_carg"
+    handle CTERM _ => raise Fail "get_property_carg"
+         | Fail "dest_Trueprop" => raise Fail "get_property_carg"
 
 fun cstrip_property_field thy ct =
     case Thm.term_of ct of
@@ -164,7 +165,8 @@ fun get_property_arg_th_gen th =
     in
       cstrip_property_field thy (Thm.dest_arg (cprop_of' th))
     end
-    handle CTERM _ => raise AUTO2 "get_property_carg_gen"
+    handle CTERM _ => raise Fail "get_property_carg_gen"
+         | Fail _ => raise Fail "get_property_carg_gen"
 
 (* Add the given rule as a property update. The requirements on th is
    as follows:
@@ -225,7 +227,7 @@ fun add_property_update_gnrc th gnrc =
           val nm =
               case f of
                   Const (nm, _) => nm
-                | _ => raise AUTO2 "add_property_update: f is not constant."
+                | _ => raise Fail "add_property_update: f is not constant."
           val _ = assert (forall is_Var args)
                          "add_property_update: all args of concl must be Vars."
           val _ = assert (subset (op aconv) (all_vars, args))
@@ -261,7 +263,7 @@ fun instantiate_property_update ctxt t th =
         let
           val inst = pattern_fo_match ctxt (concl_arg, t)
                      handle Pattern.MATCH =>
-                            raise AUTO2 "inst_property: cannot match with t."
+                            raise Fail "inst_property: cannot match with t."
         in
           SOME (subst_thm ctxt inst th)
         end

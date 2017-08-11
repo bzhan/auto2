@@ -15,7 +15,7 @@ val test_comb_ac_equiv =
           let
             val ac_info = the (get_head_ac_info thy t1)
                           handle Option.Option =>
-                                 raise AUTO2 "test_comb_ac_equiv: ac_info"
+                                 raise Fail "test_comb_ac_equiv: ac_info"
             val ts1 = dest_ac ac_info t1
             val ts2 = dest_ac ac_info t2
             fun eq (t1', t2') =
@@ -24,7 +24,7 @@ val test_comb_ac_equiv =
             val th = comb_ac_equiv ac_info eqs
           in
             if Thm.prop_of th aconv Logic.mk_equals (t1, t2) then ()
-            else raise AUTO2CT (err n, [Thm.cprop_of th])
+            else raise Fail (err n)
           end
       val _ = test 0 (@{term "(a::nat) + b + c"}, @{term "(d::nat) + e + f"})
       val _ = test 1 (@{term "A @ B @ C @ D"}, @{term "E @ F @ G @ H"})
@@ -40,7 +40,7 @@ fun test_ac_conv ctxt cv err_str (str1, str2) =
           let
             val _ = trace_t_ctxt ctxt "t1:" t1
           in
-            raise AUTO2 "test_ac_conv: ac_info"
+            raise Fail "test_ac_conv: ac_info"
           end
         | SOME ac_info => test_conv ctxt (cv ac_info) err_str (str1, str2)
     end
@@ -64,7 +64,7 @@ val test_move_outmost =
             val (t1, u) = (read_pat ctxt str1, read_pat ctxt stru)
             val ac_info =
                 the (get_head_ac_info thy t1)
-                handle Option.Option => raise AUTO2 (err_str ^ ": ac_info")
+                handle Option.Option => raise Fail (err_str ^ ": ac_info")
           in
             test_conv ctxt (move_outmost ac_info u) err_str (str1, str2)
           end

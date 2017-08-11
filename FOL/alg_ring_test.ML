@@ -41,9 +41,9 @@ fun test_wfconv wfcv err_str (str1, str2) =
       val (t1, t2) = (read_term ctxt str1, read_term ctxt str2)
       val wft = wfterm_of (cert_thy thy t1)
       val th = snd (wfcv wft)
-               handle AUTO2 err =>
+               handle Fail err =>
                       let val _ = trace_t_ctxt ctxt "Input:" t1 in
-                        raise AUTO2 (err ^ " -- " ^ err_str)
+                        raise Fail (err ^ " -- " ^ err_str)
                       end
     in
       if t1 aconv (lhs_of th) andalso t2 aconv (rhs_of th) then ()
@@ -52,7 +52,7 @@ fun test_wfconv wfcv err_str (str1, str2) =
         val _ = trace_t_ctxt ctxt "Expected:" t2
         val _ = trace_t_ctxt ctxt "Actual:" (Thm.prop_of th)
       in
-        raise AUTO2 err_str
+        raise Fail err_str
       end
     end
 
@@ -127,7 +127,7 @@ fun test_norm_term G (str1, str2) =
         val _ = trace_t_ctxt ctxt "Expected" t2
         val _ = trace_t_ctxt ctxt "Actual" t2'
       in
-        raise AUTO2 "test_norm_term"
+        raise Fail "test_norm_term"
       end
     end
 

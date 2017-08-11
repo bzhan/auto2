@@ -1,4 +1,4 @@
-(* Deconstruct a term into head and subterms, customized for AUTO2. *)
+(* Deconstruct a term into head and subterms, customized for auto2. *)
 
 signature SUBTERMS =
 sig

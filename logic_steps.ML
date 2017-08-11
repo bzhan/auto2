@@ -108,7 +108,7 @@ fun shadow_item_fn rtype _ item1 item2 =
                      "shadow_item_fn"
       val (tname1, tname2) =
           (the_single (#tname item1), the_single (#tname item2))
-          handle List.Empty => raise AUTO2 "shadow_item_fn"
+          handle List.Empty => raise Fail "shadow_item_fn"
       val (t1, t2) = (Thm.term_of tname1, Thm.term_of tname2)
 
       val equiv_ids =
@@ -291,7 +291,7 @@ val add_logic_proofsteps =
 
 fun mk_disjs ts =
     case ts of
-        [] => raise AUTO2 "mk_disjs"
+        [] => raise Fail "mk_disjs"
       | [t] => t
       | t :: ts' => mk_disj (t, mk_disjs ts')
 
@@ -502,7 +502,7 @@ fun norm_all_disj ctxt ct =
 
 fun mk_disj_eq eq_ths =
     case eq_ths of
-        [] => raise AUTO2 "mk_disj_eq"
+        [] => raise Fail "mk_disj_eq"
       | [eq] => eq
       | eq :: eqs' =>
         Drule.binop_cong_rule cDisj eq (mk_disj_eq eqs')
@@ -721,7 +721,7 @@ fun analyze_disj_th ctxt th =
 fun dest_tname_of_disj tname =
     case tname of
         _ :: disj_head :: rest => (Thm.term_of disj_head, rest)
-      | _ => raise AUTO2 "dest_tname_of_disj: too few terms in tname."
+      | _ => raise Fail "dest_tname_of_disj: too few terms in tname."
 
 (* Determine whether the item is for matching premises only (from the
    first entry in tname.
@@ -749,7 +749,7 @@ fun output_disj_fn ctxt (ts, _) =
                                        |> apsnd single |> (op @)))
                       |> pretty_term ctxt |> str)
       else
-        raise AUTO2 "output_disj_fn: unexpected disj_head."
+        raise Fail "output_disj_fn: unexpected disj_head."
     end
 
 val disj_prop_matcher =

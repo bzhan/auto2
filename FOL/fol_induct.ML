@@ -163,7 +163,7 @@ fun strong_induct_cmd (s, t) state =
 
       val ind_th = the (lookup_strong_induct_data ctxt prem)
                    handle Option.Option =>
-                          raise AUTO2 "STRONG_INDUCT: ind_th not found."
+                          error "Strong induction: ind_th not found."
 
       val (var_P, var) = ind_th |> Thm.concl_of |> dest_Trueprop
                                 |> Term.dest_comb
@@ -189,7 +189,7 @@ fun strong_induct_cmd (s, t) state =
 
       val t' = case Thm.prop_of ind_th of
                    imp $ A $ B => imp $ rename_abs_term [var] A $ B
-                 | _ => raise ERROR "strong_induct_cmd"
+                 | _ => error "strong_induct_cmd"
 
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1

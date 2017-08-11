@@ -5,9 +5,6 @@ infix andf2 orf2 check_MRS
 signature UTIL =
 sig
   (* Exceptions *)
-  exception AUTO2 of string
-  exception AUTO2T of string * term list
-  exception AUTO2CT of string * cterm list
   val assert: bool -> string -> unit
 
   (* Booleans *)
@@ -173,10 +170,7 @@ end;
 structure Util : UTIL =
 struct
 
-exception AUTO2 of string
-exception AUTO2T of string * term list
-exception AUTO2CT of string * cterm list
-fun assert b exn_str = if b then () else raise AUTO2 exn_str
+fun assert b exn_str = if b then () else raise Fail exn_str
 
 fun p andf2 q = fn x => fn y => p x y andalso q x y
 fun p orf2 q = fn x => fn y => p x y orelse q x y
@@ -191,7 +185,7 @@ fun max comp lst =
       fun max2 t1 t2 = if comp (t1, t2) = LESS then t2 else t1
     in
       case lst of
-          [] => raise AUTO2 "max: empty list"
+          [] => raise Fail "max: empty list"
         | l :: ls => fold max2 ls l
     end
 
@@ -230,12 +224,12 @@ fun all_permutes xs =
 (* Convert list to pair. List must consist of exactly two items. *)
 fun the_pair lst =
     case lst of [i1, i2] => (i1, i2)
-              | _ => raise AUTO2 "the_pair: list is not of length 2."
+              | _ => raise Fail "the_pair"
 
 (* Convert list to triple. List must consist of exactly three items. *)
 fun the_triple lst =
     case lst of [i1, i2, i3] => (i1, i2, i3)
-              | _ => raise AUTO2 "the_triple: list is not of length 3."
+              | _ => raise Fail "the_triple"
 
 (* Split list into (ins, outs), where ins satisfy f, and outs don't. *)
 fun filter_split _ [] = ([], [])
@@ -264,13 +258,13 @@ val fo_init = (Vartab.empty, Vartab.empty)
 fun defined_instn (_, inst) (str, n) = Vartab.defined inst (str, n)
 fun lookup_instn (_, inst) (str, n) =
     case Vartab.lookup inst (str, n) of
-        NONE => raise AUTO2 ("lookup_inst: not found " ^ str ^
-                             (if n = 0 then "" else string_of_int n))
+        NONE => raise Fail ("lookup_inst: not found " ^ str ^
+                            (if n = 0 then "" else string_of_int n))
       | SOME (_, u) => u
 fun lookup_inst (tyinst, inst) str = lookup_instn (tyinst, inst) (str, 0)
 fun lookup_tyinst (tyinst, _) str =
     case Vartab.lookup tyinst (str, 0) of
-        NONE => raise AUTO2 ("lookup_tyinst: not found " ^ str)
+        NONE => raise Fail ("lookup_tyinst: not found " ^ str)
       | SOME (_, T) => T
 
 fun update_env (idx, t) (tyenv, tenv) =
@@ -376,7 +370,7 @@ fun ths check_MRS th =
       val _ = trace_thm "Applying" th
       val _ = map (trace_thm "input") ths
     in
-      raise AUTO2 "check_MRS"
+      raise Fail "check_MRS"
     end
 
 val theory_of_gnrc = Context.cases I Proof_Context.theory_of
@@ -388,7 +382,7 @@ fun cert_thy thy t = Thm.global_cterm_of thy t
 fun tycert_thy thy ty = Thm.global_ctyp_of thy ty
 
 fun declare_free_term t ctxt =
-    if not (is_Free t) then raise AUTO2 "declare_free_term: t not free."
+    if not (is_Free t) then raise Fail "declare_free_term: t not free."
     else ctxt |> Variable.add_fixes_direct [t |> Term.dest_Free |> fst]
               |> Variable.declare_term t
 val read_term = Syntax.read_term
@@ -408,7 +402,7 @@ fun is_implies t =
 fun dest_binop t =
     case t of
         f $ a $ b => (f, (a, b))
-      | _ => raise AUTO2 "dest_binop: invalid input"
+      | _ => raise Fail "dest_binop"
 
 fun dest_binop_head t = fst (dest_binop t)
 fun dest_binop_args t = snd (dest_binop t)
@@ -417,11 +411,11 @@ fun dest_binop_args t = snd (dest_binop t)
    return the last argument.
  *)
 fun dest_arg t =
-    case t of _ $ arg => arg | _ => raise AUTO2 "dest_arg"
+    case t of _ $ arg => arg | _ => raise Fail "dest_arg"
 
 (* Return the first of two arguments of t. *)
 fun dest_arg1 t =
-    case t of _ $ arg1 $ _ => arg1 | _ => raise AUTO2 "dest_arg1"
+    case t of _ $ arg1 $ _ => arg1 | _ => raise Fail "dest_arg1"
 
 (* Return the list of all arguments of t. *)
 fun dest_args t = t |> Term.strip_comb |> snd
@@ -546,7 +540,7 @@ fun rename_abs_term vars t =
         in
           case t of A $ Abs (_, T1, body) =>
                     A $ Abs (nm, T1, rename_abs_term rest body)
-                  | _ => raise ERROR "rename_abs_term"
+                  | _ => error "rename_abs_term"
         end
 
 fun print_term_detail ctxt t =
@@ -588,7 +582,7 @@ fun comb_equiv (cf, arg_equivs) =
 
 (* Retrive name of theorem. *)
 fun name_of_thm th = if Thm.has_name_hint th then Thm.get_name_hint th
-                     else raise AUTO2 "name_of_thm: not found"
+                     else raise Fail "name_of_thm: not found"
 
 (* Set the name of th to the name of ori_th, followed by suffix. *)
 fun update_name_of_thm ori_th suffix th =
@@ -603,7 +597,7 @@ fun assume_meta_eq thy (t1, t2) =
     Thm.assume (cert_thy thy (Logic.mk_equals (t1, t2)))
 fun assume_thm ctxt t =
     if type_of t <> propT then
-      raise AUTO2CT ("assume_thm: t is not of type prop", [cert ctxt t])
+      raise Fail "assume_thm: t is not of type prop"
     else Thm.assume (cert ctxt t)
 
 (* Similar to Envir.subst_term. Apply an instantiation to a theorem. *)
@@ -678,7 +672,7 @@ fun meta_use_vardefs th =
         else th
       | _ => th
 
-(* Substitution into terms used in AUTO2. Substitute types first and
+(* Substitution into terms used in auto2. Substitute types first and
    instantiate the types in the table of term instantiations. Also
    perform beta_norm at the end.
  *)
@@ -741,8 +735,11 @@ fun transitive_list ths =
               else if b aconvc c then atob
               else Thm.transitive atob btoc
             else
-              raise AUTO2CT ("transitive_list: intermediate does not agree",
-                             map Thm.cprop_of ths)
+              let
+                val _ = map (trace_thm "ths:") ths
+              in
+                raise Fail "transitive_list: intermediate does not agree"
+              end
           end
     in
       fold rev_transitive (tl ths) (hd ths)
@@ -762,8 +759,8 @@ fun skip_n_conv n cv =
  *)
 fun pattern_rewr_conv t eq_ths ct =
     case t of
-        Bound _ => raise AUTO2 "pattern_rewr_conv: bound variable."
-      | Abs _ => raise AUTO2 "pattern_rewr_conv: abs not supported."
+        Bound _ => raise Fail "pattern_rewr_conv: bound variable."
+      | Abs _ => raise Fail "pattern_rewr_conv: abs not supported."
       | _ $ _ =>
         let
           val (f, arg) = Term.strip_comb t
@@ -839,7 +836,7 @@ fun test_conv ctxt cv err_str (str1, str2) =
         val _ = trace_t_ctxt ctxt "Expected:" t2
         val _ = trace_t_ctxt ctxt "Actual:" (Thm.prop_of th)
       in
-        raise AUTO2 err_str
+        raise Fail err_str
       end
     end
 

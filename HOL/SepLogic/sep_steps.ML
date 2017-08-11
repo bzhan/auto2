@@ -232,7 +232,7 @@ fun is_bind_cmd t =
 fun dest_bind t =
     case t of
         Const (@{const_name bind}, _) $ c1 $ rest => (c1, rest)
-      | _ => raise AUTO2 "dest_cmd"
+      | _ => raise Fail "dest_cmd"
 
 fun extract_return_nm t =
     case t of
@@ -562,7 +562,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val (modQ_th'', modQ_rest) =
             modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
                      |> apfst (the_single)
-            handle List.Empty => raise AUTO2 "next_code_pos: modQ_th''"
+            handle List.Empty => raise Fail "next_code_pos: modQ_th''"
         val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
                        else modQ_rest
         val prop_run = mk_conjs_th [mod_th', success_th, modQ_th'']
@@ -610,7 +610,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val (modQ_th'', modQ_rest) =
             modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
                      |> apfst (the_single)
-            handle List.Empty => raise AUTO2 "next_code_pos: modQ_th''"
+            handle List.Empty => raise Fail "next_code_pos: modQ_th''"
         val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
                        else modQ_rest
         val prop_run = mk_conjs_th [mod_th', success_th, modQ_th'']
@@ -804,7 +804,7 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
               in
                 ((nm, T), body')
               end
-            | _ => raise AUTO2 "use_prec_thms: not exists statement."
+            | _ => raise Fail "use_prec_thms: not exists statement."
 
       fun dest_all_abs nms t =
           case nms of
