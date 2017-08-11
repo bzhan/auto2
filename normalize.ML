@@ -2,15 +2,6 @@
 
 type normalizer = Proof.context -> raw_item -> raw_item list
 
-(* Keeps list of normalizers. *)
-structure NormData =
-Theory_Data (
-  type T = normalizer Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
-)
-
 signature NORMALIZER =
 sig
   val add_normalizer: string * normalizer -> theory -> theory
@@ -28,8 +19,16 @@ struct
 open Base
 open UtilLogic
 
+(* Keeps list of normalizers. *)
+structure Data = Theory_Data (
+  type T = normalizer Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge pointer_eq
+)
+
 fun add_normalizer (nm, norm_fun) =
-    NormData.map (Symtab.update_new (nm, norm_fun))
+    Data.map (Symtab.update_new (nm, norm_fun))
 
 (* Apply norm_fun: thm -> thm list to any PROP item. *)
 fun th_normalizer norm_fun ctxt ritem =
@@ -68,7 +67,7 @@ fun rewr_normalizer eq_th ctxt ritem =
 fun add_rewr_normalizer (nm, eq_th) =
     add_normalizer (nm, rewr_normalizer eq_th)
 
-fun get_normalizers thy = Symtab.dest (NormData.get thy)
+fun get_normalizers thy = Symtab.dest (Data.get thy)
 
 fun normalize ctxt ritem =
     let

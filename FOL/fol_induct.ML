@@ -1,24 +1,5 @@
 (* Specifying induction using scripts. *)
 
-(* Each induction rule is placed under the pattern for its
-   precondition.
- *)
-structure ScriptInductData =
-Generic_Data (
-  type T = (term * thm) Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge (op aconv o apply2 fst)
-)
-
-structure StrongInductData =
-Generic_Data (
-  type T = (term * thm) Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge (op aconv o apply2 fst)
-)
-
 signature SCRIPT_INDUCT_DATA =
 sig
   val add_script_induct_data_gnrc: thm -> Context.generic -> Context.generic
@@ -37,6 +18,23 @@ end;
 structure ScriptInduct_Data : SCRIPT_INDUCT_DATA =
 struct
 
+(* Each induction rule is placed under the pattern for its
+   precondition.
+ *)
+structure InductData = Generic_Data (
+  type T = (term * thm) Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge (op aconv o apply2 fst)
+)
+
+structure StrongInductData = Generic_Data (
+  type T = (term * thm) Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge (op aconv o apply2 fst)
+)
+
 fun add_script_induct_data_gnrc th gnrc =
     let
       val nm = name_of_thm th
@@ -45,21 +43,21 @@ fun add_script_induct_data_gnrc th gnrc =
       val _ = writeln ("Add induction rule for premise " ^
                        (t |> pretty_term_thy thy |> str))
     in
-      ScriptInductData.map (Symtab.update_new (nm, (t, th))) gnrc
+      InductData.map (Symtab.update_new (nm, (t, th))) gnrc
     end
 
 val add_script_induct_data =
     Context.theory_map o add_script_induct_data_gnrc
 
 fun delete_script_induct_data_gnrc th =
-    ScriptInductData.map (Symtab.delete (name_of_thm th))
+    InductData.map (Symtab.delete (name_of_thm th))
 
 val delete_script_induct_data =
     Context.theory_map o delete_script_induct_data_gnrc
 
 fun lookup_script_induct_data ctxt t =
     let
-      val data = Symtab.dest (ScriptInductData.get (Context.Proof ctxt))
+      val data = Symtab.dest (InductData.get (Context.Proof ctxt))
       val thy = Proof_Context.theory_of ctxt
       fun match_data (_, (pat, th)) =
           let

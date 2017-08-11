@@ -503,29 +503,8 @@ datatype proofstep_table
     {prfsteps: proofstep Symtab.table, sorted_prfsteps: proofstep list,
      fixed_sc: int Symtab.table}
 
-fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
-    int_ord (priority, priority')
-
-structure ProofStepData =
-Generic_Data (
-  type T = proofstep_table;
-  val empty = ProofStepTable {
-        prfsteps = Symtab.empty, sorted_prfsteps = [], fixed_sc = Symtab.empty};
-  val extend = I;
-  fun merge (
-    ProofStepTable {prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
-    ProofStepTable {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
-      ProofStepTable {
-        prfsteps = Symtab.merge (op pointer_eq) (p1, p2),
-        sorted_prfsteps = sort prfstep_ord (
-          Library.merge (op pointer_eq) (sp1, sp2)),
-        fixed_sc = Symtab.merge (op =) (sc1, sc2)}
-)
-
 signature PROOFSTEP_DATA =
 sig
-  val proofstep_data_of: Proof.context -> ProofStepData.T
-
   val add_prfstep_gnrc: proofstep -> Context.generic -> Context.generic
   val add_prfstep: proofstep -> theory -> theory
   val del_prfstep_pred_gnrc:
@@ -647,12 +626,30 @@ open Base
 open UtilLogic
 open ProofStep
 
-fun proofstep_data_of ctxt = ProofStepData.get (Context.Proof ctxt)
+fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
+    int_ord (priority, priority')
+
+structure Data = Generic_Data (
+  type T = proofstep_table;
+  val empty = ProofStepTable {
+        prfsteps = Symtab.empty, sorted_prfsteps = [], fixed_sc = Symtab.empty};
+  val extend = I;
+  fun merge (
+    ProofStepTable {prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
+    ProofStepTable {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
+      ProofStepTable {
+        prfsteps = Symtab.merge (op pointer_eq) (p1, p2),
+        sorted_prfsteps = sort prfstep_ord (
+          Library.merge (op pointer_eq) (sp1, sp2)),
+        fixed_sc = Symtab.merge (op =) (sc1, sc2)}
+)
+
+fun proofstep_data_of ctxt = Data.get (Context.Proof ctxt)
 
 fun add_prfstep_gnrc (prfstep as {args, ...}) =
     if length (filter_out ItemIO.is_side_match args) >= 1 andalso
        length (filter_out ItemIO.is_side_match args) <= 2 then
-      ProofStepData.map (
+      Data.map (
         fn ProofStepTable {
             prfsteps, sorted_prfsteps, fixed_sc} =>
            if is_prefix_str "$" (#name prfstep) then
@@ -671,7 +668,7 @@ val add_prfstep = Context.theory_map o add_prfstep_gnrc
    name. For theorem inputs, try all @-suffixes.
  *)
 fun del_prfstep_pred_gnrc pred =
-    ProofStepData.map (
+    Data.map (
       fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
          let
            val keys = Symtab.keys prfsteps
@@ -709,7 +706,7 @@ fun del_prfstep_thm_str str th =
     del_prfstep_pred (equal (name_of_thm th ^ str))
 
 fun add_fixed_sc_gnrc (nm, sc) =
-    ProofStepData.map (
+    Data.map (
       fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
          case find_first (equal nm) (Symtab.keys prfsteps) of
              NONE => error ("Add fixed sc: not found " ^ nm)

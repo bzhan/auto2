@@ -1,16 +1,5 @@
 (* Dealing with constants. *)
 
-(* Table of detectors for constants, each registered under a
-   descriptive name.
- *)
-structure ConstsData =
-Theory_Data (
-  type T = (term -> bool) Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
-)
-
 signature CONSTS =
 sig
   val add_const_data: string * (term -> bool) -> theory -> theory
@@ -25,12 +14,22 @@ end;
 structure Consts : CONSTS =
 struct
 
+(* Table of detectors for constants, each registered under a
+   descriptive name.
+ *)
+structure Data = Theory_Data (
+  type T = (term -> bool) Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge pointer_eq
+)
+
 fun add_const_data (str, f) =
-    ConstsData.map (Symtab.update_new (str, f))
+    Data.map (Symtab.update_new (str, f))
 
 fun detect_const thy t =
     let
-      val data = Symtab.dest (ConstsData.get thy)
+      val data = Symtab.dest (Data.get thy)
     in
       get_first (fn (str, f) => if f t then SOME str else NONE) data
     end

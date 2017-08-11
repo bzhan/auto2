@@ -1,13 +1,5 @@
 (* Outer syntax for induction *)
 
-structure InductData =
-Theory_Data (
-  type T = ((term * thm) list) Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge_list (eq_fst (op =))
-)
-
 signature INDUCT_PROOFSTEPS =
 sig
   val add_induct_data: string -> term * thm -> theory -> theory
@@ -41,15 +33,22 @@ end;
 structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
 struct
 
+structure Data = Theory_Data (
+  type T = ((term * thm) list) Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge_list (eq_fst (op =))
+)
+
 fun add_induct_data str (t, ind_th) =
-    InductData.map (Symtab.map_default (str, []) (cons (t, ind_th)))
+    Data.map (Symtab.map_default (str, []) (cons (t, ind_th)))
 
 fun add_typed_induct_data str (ty, ind_th) =
     add_induct_data str (Term.dummy_pattern ty, ind_th)
 
 fun get_typed_ind_th thy nm ty =
     let
-      val tab = InductData.get thy
+      val tab = Data.get thy
       fun typ_can_match t' =
           let val _ = typ_match thy (type_of t', ty) in true end
           handle Type.TYPE_MATCH => false
@@ -64,7 +63,7 @@ fun get_typed_ind_th thy nm ty =
 
 fun get_term_ind_th thy nm t =
     let
-      val tab = InductData.get thy
+      val tab = Data.get thy
       fun term_can_match t' =
           let val _ = pattern_fo_match_thy thy (t', t) in true end
           handle Pattern.MATCH => false

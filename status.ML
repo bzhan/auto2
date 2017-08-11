@@ -174,34 +174,6 @@ type item_io_info = {
   prop_matchers: item_matcher list, typed_matchers: item_matcher list,
   term_fn: (term list -> term list) option, output_fn: item_output option}
 
-fun add_prop_matcher_to_info
-        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
-    {prop_matchers = mtch :: prop_matchers, typed_matchers = typed_matchers,
-     term_fn = term_fn, output_fn = output_fn}
-
-fun add_typed_matcher_to_info
-        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
-    {prop_matchers = prop_matchers, typed_matchers = mtch :: typed_matchers,
-     term_fn = term_fn, output_fn = output_fn}
-
-fun join_infos (
-  {prop_matchers = pm1, typed_matchers = tm1, term_fn = tf1, output_fn = of1},
-  {prop_matchers = pm2, typed_matchers = tm2, term_fn = tf2, output_fn = of2}) =
-    {prop_matchers = merge pointer_eq (pm1, pm2),
-     typed_matchers = merge pointer_eq (tm1, tm2),
-     term_fn = (if pointer_eq (tf1, tf2) then tf1
-                else raise Fail "join_infos: term_fn non-equal"),
-     output_fn = (if pointer_eq (of1, of2) then of1
-                  else raise Fail "join_infos: output_fn non-equal")}
-
-structure ItemIOData =
-Theory_Data (
-  type T = item_io_info Symtab.table
-  val empty = Symtab.empty
-  val extend = I;
-  val merge = Symtab.join (fn _ => join_infos)
-)
-
 datatype match_arg = PropMatch of term
                    | TypedMatch of string * term
                    | PropertyMatch of term
@@ -253,6 +225,33 @@ struct
 open Base
 open UtilLogic
 
+fun add_prop_matcher_to_info
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
+    {prop_matchers = mtch :: prop_matchers, typed_matchers = typed_matchers,
+     term_fn = term_fn, output_fn = output_fn}
+
+fun add_typed_matcher_to_info
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
+    {prop_matchers = prop_matchers, typed_matchers = mtch :: typed_matchers,
+     term_fn = term_fn, output_fn = output_fn}
+
+fun join_infos (
+  {prop_matchers = pm1, typed_matchers = tm1, term_fn = tf1, output_fn = of1},
+  {prop_matchers = pm2, typed_matchers = tm2, term_fn = tf2, output_fn = of2}) =
+    {prop_matchers = merge pointer_eq (pm1, pm2),
+     typed_matchers = merge pointer_eq (tm1, tm2),
+     term_fn = (if pointer_eq (tf1, tf2) then tf1
+                else raise Fail "join_infos: term_fn non-equal"),
+     output_fn = (if pointer_eq (of1, of2) then of1
+                  else raise Fail "join_infos: output_fn non-equal")}
+
+structure Data = Theory_Data (
+  type T = item_io_info Symtab.table
+  val empty = Symtab.empty
+  val extend = I;
+  val merge = Symtab.join (fn _ => join_infos)
+)
+
 fun pat_of_match_arg arg =
     case arg of
         PropMatch pat => pat
@@ -298,18 +297,18 @@ fun is_side_match arg =
               | WellFormMatch _ => true
               | _ => false
 
-fun add_item_type (ty_str, term_fn, output_fn) = ItemIOData.map (
+fun add_item_type (ty_str, term_fn, output_fn) = Data.map (
       Symtab.update_new (ty_str, {prop_matchers = [], typed_matchers = [],
                                   term_fn = term_fn, output_fn = output_fn}))
 
-fun add_prop_matcher (ty_str, it_match) = ItemIOData.map (
+fun add_prop_matcher (ty_str, it_match) = Data.map (
       Symtab.map_entry ty_str (add_prop_matcher_to_info it_match))
 
-fun add_typed_matcher (ty_str, it_match) = ItemIOData.map (
+fun add_typed_matcher (ty_str, it_match) = Data.map (
       Symtab.map_entry ty_str (add_typed_matcher_to_info it_match))
 
 fun get_io_info thy ty_str =
-    the (Symtab.lookup (ItemIOData.get thy) ty_str)
+    the (Symtab.lookup (Data.get thy) ty_str)
     handle Option.Option => raise Fail ("get_io_info: not found " ^ ty_str)
 
 fun get_prop_matchers thy ty_str = #prop_matchers (get_io_info thy ty_str)

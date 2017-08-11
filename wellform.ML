@@ -1,18 +1,5 @@
 (* Wellformed-ness of terms. *)
 
-(* Each entry in the table consists of a term of the form f ?a_1
-   ... ?a_n, where f is a constant, and each ?a_i is a pure schematic
-   variable, paired with a list of requirements for the term to be
-   valid. It is indexed under the string of the constant f.
- *)
-structure WellFormData =
-Theory_Data (
-  type T = (term * term list) Symtab.table
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge (op =)
-)
-
 signature WELLFORM =
 sig
   val register_wellform_data: string * string list -> theory -> theory
@@ -30,6 +17,18 @@ struct
 open Base
 open UtilLogic
 
+(* Each entry in the table consists of a term of the form f ?a_1
+   ... ?a_n, where f is a constant, and each ?a_i is a pure schematic
+   variable, paired with a list of requirements for the term to be
+   valid. It is indexed under the string of the constant f.
+ *)
+structure Data = Theory_Data (
+  type T = (term * term list) Symtab.table
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge (op =)
+)
+
 (* Add a term with its requirements to the table. *)
 fun register_wellform_data (t_str, req_strs) thy =
     let
@@ -44,7 +43,7 @@ fun register_wellform_data (t_str, req_strs) thy =
                      "add_wellform_data: arguments must be Free."
       val (nm, _) = Term.dest_Const f
     in
-      thy |> WellFormData.map (Symtab.update_new (nm, (t, reqs)))
+      thy |> Data.map (Symtab.update_new (nm, (t, reqs)))
     end
 
 (* Lookup table for the given term t. If nothing is found, return the
@@ -53,7 +52,7 @@ fun register_wellform_data (t_str, req_strs) thy =
 fun lookup_wellform_data thy t =
     let
       val (f, args) = Term.strip_comb t
-      val data = WellFormData.get thy
+      val data = Data.get thy
     in
       case f of
           Const (nm, _) =>
@@ -101,7 +100,7 @@ fun is_subterm_wellform_data thy req ts =
 fun lookup_wellform_pattern thy (t, wf_t) =
     let
       val (f, args) = Term.strip_comb t
-      val data = WellFormData.get thy
+      val data = Data.get thy
     in
       case f of
           Const (nm, _) =>

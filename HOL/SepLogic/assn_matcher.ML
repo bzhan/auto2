@@ -7,22 +7,6 @@
  *)
 type assn_matcher = rewrite_table -> term * cterm -> id_inst -> id_inst_th list
 
-structure AssnMatchData =
-Theory_Data (
-  type T = assn_matcher list
-  val empty = []
-  val extend = I;
-  val merge = merge (op pointer_eq)
-)
-
-structure AssnInvMatchData =
-Theory_Data (
-  type T = assn_matcher list
-  val empty = []
-  val extend = I;
-  val merge = merge (op pointer_eq)
-)
-
 signature ASSN_MATCHER =
 sig
   val add_assn_matcher: assn_matcher -> theory -> theory
@@ -61,9 +45,23 @@ struct
 
 open SepUtil
 
+structure MatchData = Theory_Data (
+  type T = assn_matcher list
+  val empty = []
+  val extend = I;
+  val merge = merge (op pointer_eq)
+)
+
+structure InvMatchData = Theory_Data (
+  type T = assn_matcher list
+  val empty = []
+  val extend = I;
+  val merge = merge (op pointer_eq)
+)
+
 (* Matching in the forward direction *)
 
-fun add_assn_matcher matcher = AssnMatchData.map (cons matcher)
+fun add_assn_matcher matcher = MatchData.map (cons matcher)
 
 (* Assume pat is not in the form A * B. Match pat with one or more
    terms of t. Return theorem of form t ==> pat(s) * t'.
@@ -101,7 +99,7 @@ fun assn_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
                   raise Fail "assn_match_term"
               end
         in
-          (maps apply_matcher (AssnMatchData.get thy))
+          (maps apply_matcher (MatchData.get thy))
               |> map process_res
         end
 
@@ -353,7 +351,7 @@ fun add_entail_matcher th =
 
 (* Matching in the backward direction *)
 
-fun add_assn_inv_matcher matcher = AssnInvMatchData.map (cons matcher)
+fun add_assn_inv_matcher matcher = InvMatchData.map (cons matcher)
 
 (* Assume pat is not in the form A * B. Match pat with one or more
    terms of t. Return theorem of form pat(s) * t' ==> t.
@@ -391,7 +389,7 @@ fun assn_inv_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
                   raise Fail "assn_inv_match_term"
               end
         in
-          (maps apply_matcher (AssnInvMatchData.get thy))
+          (maps apply_matcher (InvMatchData.get thy))
               |> map process_res
         end
 

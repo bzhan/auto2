@@ -1,38 +1,3 @@
-(* Register for property predicates. *)
-
-structure PropertyData =
-Theory_Data (
-  type T = unit Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
-)
-
-(* Rules deriving new properties of t from other properties of t, or
-   properties of f x_1 ... x_n from properties of x_1, ... x_n. In the
-   first case, they are indexed under the names of the properties in
-   the premises. In the second case, they are indexed under the name
-   of the head function f.
- *)
-structure PropertyUpdateData =
-Generic_Data (
-  type T = (thm list) Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge_list (op pointer_eq)
-)
-
-(* Set of fields of a structure whose property can be considered as
-   properties of the structure itself. Relevant when checking
-   is_property_prem.
- *)
-structure PropertyFieldData =
-Theory_Data (
-  type T = unit Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
-)
 
 signature PROPERTY =
 sig
@@ -66,6 +31,39 @@ struct
 open Base
 open UtilLogic
 
+(* Register for property predicates. *)
+
+structure Data = Theory_Data (
+  type T = unit Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge pointer_eq
+)
+
+(* Rules deriving new properties of t from other properties of t, or
+   properties of f x_1 ... x_n from properties of x_1, ... x_n. In the
+   first case, they are indexed under the names of the properties in
+   the premises. In the second case, they are indexed under the name
+   of the head function f.
+ *)
+structure UpdateData = Generic_Data (
+  type T = (thm list) Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge_list (op pointer_eq)
+)
+
+(* Set of fields of a structure whose property can be considered as
+   properties of the structure itself. Relevant when checking
+   is_property_prem.
+ *)
+structure FieldData = Theory_Data (
+  type T = unit Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge pointer_eq
+)
+
 fun add_property_const t thy =
     case Term.head_of t of
         Const (nm, T) =>
@@ -75,7 +73,7 @@ fun add_property_const t thy =
                   else error "Add property: input should be a predicate."
           val _ = writeln ("Add predicate " ^ nm ^ " as property.")
         in
-          thy |> PropertyData.map (Symtab.update_new (nm, ()))
+          thy |> Data.map (Symtab.update_new (nm, ()))
         end
       | _ => error "Add property: input should be a constant."
 
@@ -85,7 +83,7 @@ fun is_property_const thy t =
       val _ = assert (fastype_of t = boolT) "is_property_const: wrong type"
     in
       case Term.head_of t of
-          Const (nm, _) => Symtab.defined (PropertyData.get thy) nm
+          Const (nm, _) => Symtab.defined (Data.get thy) nm
         | _ => false
     end
 
@@ -98,7 +96,7 @@ fun add_property_field_const t thy =
                   else error "Add property field: input should be a field."
           val _ = writeln ("Add field " ^ nm ^ " as property field.")
         in
-          thy |> PropertyFieldData.map (Symtab.update_new (nm, ()))
+          thy |> FieldData.map (Symtab.update_new (nm, ()))
         end
       | _ => error "Add property field: input should be a constant."
 
@@ -109,14 +107,14 @@ fun is_property_field thy t =
     case t of
         Var _ => true
       | Const (nm, _) $ t' =>
-        Symtab.defined (PropertyFieldData.get thy) nm andalso
+        Symtab.defined (FieldData.get thy) nm andalso
         is_property_field thy t'
       | _ => false
 
 fun strip_property_field thy t =
     case t of
         Const (nm, _) $ t' =>
-        if Symtab.defined (PropertyFieldData.get thy) nm then
+        if Symtab.defined (FieldData.get thy) nm then
           t :: strip_property_field thy t'
         else [t]
       | _ => [t]
@@ -153,7 +151,7 @@ fun get_property_arg_th th =
 fun cstrip_property_field thy ct =
     case Thm.term_of ct of
         Const (nm, _) $ _ =>
-        if Symtab.defined (PropertyFieldData.get thy) nm then
+        if Symtab.defined (FieldData.get thy) nm then
           ct :: cstrip_property_field thy (Thm.dest_arg ct)
         else [ct]
       | _ => [ct]
@@ -216,7 +214,7 @@ fun add_property_update_gnrc th gnrc =
           val names = get_property_names prems
           val _ = writeln ("Add property rule for " ^ (string_of_list I names))
         in
-          gnrc |> PropertyUpdateData.map (
+          gnrc |> UpdateData.map (
             fold (Symtab.update_list (op pointer_eq)) (map (rpair th) names))
         end
       else
@@ -233,7 +231,7 @@ fun add_property_update_gnrc th gnrc =
                          "add_property_update: extraneous Vars in th."
           val _ = writeln ("Add property rule for function " ^ nm)
         in
-          gnrc |> PropertyUpdateData.map (
+          gnrc |> UpdateData.map (
             Symtab.update_list (op pointer_eq) (nm, th))
         end
     end
@@ -243,7 +241,7 @@ val add_property_update = Context.theory_map o add_property_update_gnrc
 (* Find rules registered under the given name. *)
 fun lookup_property_update ctxt nm =
     let
-      val data = PropertyUpdateData.get (Context.Proof ctxt)
+      val data = UpdateData.get (Context.Proof ctxt)
     in
       Symtab.lookup_list data nm
     end

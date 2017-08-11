@@ -9,15 +9,6 @@ type ac_info = {
   unitr_th: thm   (* a . e = a *)
 }
 
-(* Register of generators of ac_inst_info. *)
-structure ACData =
-Theory_Data (
-  type T = ac_info Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
-)
-
 signature ACUTIL =
 sig
   val inst_ac_info: theory -> typ -> ac_info -> ac_info option
@@ -48,6 +39,14 @@ struct
 
 open Base
 open UtilLogic
+
+(* Register of generators of ac_inst_info. *)
+structure Data = Theory_Data (
+  type T = ac_info Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge pointer_eq
+)
 
 (* Instantiate an ac_info for a specific type T. *)
 fun inst_ac_info thy T {assoc_th, comm_th, unitl_th, unitr_th, ...} =
@@ -96,7 +95,7 @@ fun add_ac_data info thy =
           let
             val _ = tracing ("Add ac data for function " ^ nm)
           in
-            ACData.map (Symtab.update_new (nm, info)) thy
+            Data.map (Symtab.update_new (nm, info)) thy
           end
         | _ => error "Add AC data: invalid assoc_th"
     end
@@ -105,7 +104,7 @@ fun add_ac_data info thy =
 fun get_head_ac_info thy t =
     case t of
         Const (nm, _) $ _ $ _ =>
-        (case Symtab.lookup (ACData.get thy) nm of
+        (case Symtab.lookup (Data.get thy) nm of
              NONE => NONE
            | SOME ac_info => inst_ac_info thy (fastype_of t) ac_info)
       | _ => NONE
