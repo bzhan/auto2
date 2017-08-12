@@ -252,7 +252,7 @@ val exists_elim_prfstep =
      func = OneStep exists_elim_fn}
 
 val add_logic_proofsteps =
-    fold ProofStep_Data.add_prfstep [
+    fold add_prfstep [
       shadow_prop_item, shadow_term_item, eq_elim_prfstep, cong_on_ineq_prfstep,
       exists_elim_prfstep
     ]
@@ -1060,7 +1060,7 @@ val add_disj_proofsteps =
     ] #> fold ItemIO.add_prop_matcher [
       (TY_DISJ, disj_prop_matcher)
 
-    ] #> fold ProofStep_Data.add_prfstep [
+    ] #> fold add_prfstep [
       match_update_prfstep, match_one_sch_prfstep, disj_match_iff_prfstep,
       disj_create_case_prfstep, disj_shadow_prfstep
     ]

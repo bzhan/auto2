@@ -137,7 +137,7 @@ val ord_normalize_less =
      func = TwoStep ord_normalize_fn}
 
 val add_ord_ring_proofsteps =
-    fold ProofStep_Data.add_prfstep [
+    fold add_prfstep [
       ord_normalize_le, ord_normalize_less
     ]
 

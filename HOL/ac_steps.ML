@@ -188,7 +188,7 @@ val ac_expand_unit =
      func = OneStep ac_expand_unit_fn}
 
 val add_ac_proofsteps =
-    fold ProofStep_Data.add_prfstep [
+    fold add_prfstep [
       ac_expand_equiv, ac_expand_unit
 
     ] #> fold add_fixed_sc [

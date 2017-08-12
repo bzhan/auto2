@@ -34,7 +34,6 @@ ML_file "../auto2_outer.ML"
 ML {*
 open Base
 open UtilLogic
-open ProofStep_Data
 *}
 
 ML_file "acdata.ML"

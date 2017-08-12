@@ -630,12 +630,11 @@ sig
       (thm -> Context.generic -> Context.generic) -> attribute context_parser
 end;
 
-structure ProofStep_Data : PROOFSTEP_DATA =
+structure ProofStepData : PROOFSTEP_DATA =
 struct
 
 open Base
 open UtilLogic
-open ProofStep
 
 fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
     int_ord (priority, priority')
@@ -649,8 +648,8 @@ structure Data = Generic_Data (
     ProofStepTable {prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
     ProofStepTable {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
       ProofStepTable {
-        prfsteps = Symtab.merge eq_prfstep (p1, p2),
-        sorted_prfsteps = sort prfstep_ord (Library.merge eq_prfstep (sp1, sp2)),
+        prfsteps = Symtab.merge ProofStep.eq_prfstep (p1, p2),
+        sorted_prfsteps = sort prfstep_ord (Library.merge ProofStep.eq_prfstep (sp1, sp2)),
         fixed_sc = Symtab.merge (op =) (sc1, sc2)}
 )
 
@@ -748,16 +747,16 @@ fun get_fixed_sc ctxt prfstep_name =
     end
 
 fun add_prfstep_custom (name, descs, priority, updt_fn) =
-    add_prfstep (prfstep_custom name descs priority updt_fn)
+    add_prfstep (ProofStep.prfstep_custom name descs priority updt_fn)
 fun add_prfstep_custom_gnrc (name, descs, priority, updt_fn) =
-    add_prfstep_gnrc (prfstep_custom name descs priority updt_fn)
-fun add_gen_prfstep (name, descs) = add_prfstep (gen_prfstep name descs)
+    add_prfstep_gnrc (ProofStep.prfstep_custom name descs priority updt_fn)
+fun add_gen_prfstep (name, descs) = add_prfstep (ProofStep.gen_prfstep name descs)
 fun add_gen_prfstep_gnrc (name, descs) =
-    add_prfstep_gnrc (gen_prfstep name descs)
+    add_prfstep_gnrc (ProofStep.gen_prfstep name descs)
 fun add_prfstep_pre_conv (name, descs, pre_cv) =
-    add_prfstep (prfstep_pre_conv name descs pre_cv)
+    add_prfstep (ProofStep.prfstep_pre_conv name descs pre_cv)
 fun add_prfstep_conv (name, descs, cv) =
-    add_prfstep (prfstep_conv name descs cv)
+    add_prfstep (ProofStep.prfstep_conv name descs cv)
 
 (* Constructing conditional prfstep_descriptors. *)
 
@@ -785,7 +784,7 @@ fun with_filts filts = map with_filt filts
 fun add_and_print_prfstep_gnrc prfstep_name descs gnrc =
     let
       val thy = Context.theory_of gnrc
-      val _ = writeln (prfstep_name ^ "\n" ^ (string_of_descs thy descs))
+      val _ = writeln (prfstep_name ^ "\n" ^ (ProofStep.string_of_descs thy descs))
     in
       add_gen_prfstep_gnrc (prfstep_name, descs) gnrc
     end
@@ -1245,7 +1244,7 @@ fun add_eval_fun_prfsteps' desc_ths ths thy =
           (th |> Thm.prop_of |> Syntax.string_of_term_global thy)
       val _ = writeln (cat_lines (map eval_thm_to_str desc_ths))
     in
-      fold add_prfstep (prfsteps_eval_fun' desc_ths ths) thy
+      fold add_prfstep (ProofStep.prfsteps_eval_fun' desc_ths ths) thy
     end
 
 fun add_eval_fun_prfsteps ths = add_eval_fun_prfsteps' ths ths
@@ -1258,4 +1257,6 @@ fun setup_attrib f =
         (Thm.declaration_attribute (
             fn _ => fn _ => raise Fail "del_step: not implemented."))
 
-end  (* structure ProofStep_Data. *)
+end  (* structure ProofStepData. *)
+
+open ProofStepData

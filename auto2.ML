@@ -135,7 +135,7 @@ fun scoring {name, ...} sc items rtype (st as {ctxt, ...}) func =
                 else
                   let
                     val add_sc =
-                        case ProofStep_Data.get_fixed_sc ctxt name of
+                        case ProofStepData.get_fixed_sc ctxt name of
                             NONE => Scores.get_score raw_updt *
                                     Scores.get_id_score st raw_updt
                           | SOME v => v
@@ -413,7 +413,7 @@ fun process_fact_all items st =
                    |> cons BoxItem.null_item
 
       (* List of proofsteps to consider for init and incr rounds. *)
-      val prfsteps = ProofStep_Data.get_prfsteps ctxt
+      val prfsteps = ProofStepData.get_prfsteps ctxt
     in
       st |> Status.map_rewrites (K tbl')
          |> fold (process_prfstep sc init_type init_items items') prfsteps
@@ -423,7 +423,7 @@ fun process_fact_all items st =
 fun is_shadowing_prfstep prfstep_name {ctxt, ...} =
     if is_prefix_str "$" prfstep_name then false
     else let
-      val {priority, ...} = ProofStep_Data.get_prfstep_by_name ctxt prfstep_name
+      val {priority, ...} = ProofStepData.get_prfstep_by_name ctxt prfstep_name
     in
       priority <= PRIORITY_SHADOW
     end
