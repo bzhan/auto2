@@ -89,8 +89,8 @@ val test_build_equiv =
 
       (* Name conflict in abs. *)
       val dvd = Const ("Rings.dvd_class.dvd", @{typ "nat => nat => bool"})
-      val trm = Abs ("x", natT, Abs ("x", natT, dvd $ (Bound 0) $ (Bound 1)))
-      val _ = test_raw (trm, [])
+      val t = Abs ("x", natT, Abs ("x", natT, dvd $ (Bound 0) $ (Bound 1)))
+      val _ = test_raw (t, [])
 
       (* Other tests. *)
       val test_data = [

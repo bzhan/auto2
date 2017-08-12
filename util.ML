@@ -286,10 +286,10 @@ fun pattern_fo_match_list ctxt pairs inst =
 val pretty_term = Syntax.pretty_term
 val pretty_term_thy = Syntax.pretty_term_global
 val str = Pretty.string_of
-fun pretty_terms ctxt trms =
-    Pretty.block (Pretty.commas (map (pretty_term ctxt) trms))
-fun pretty_terms_thy thy trms =
-    Pretty.block (Pretty.commas (map (pretty_term_thy thy) trms))
+fun pretty_terms ctxt ts =
+    Pretty.block (Pretty.commas (map (pretty_term ctxt) ts))
+fun pretty_terms_thy thy ts =
+    Pretty.block (Pretty.commas (map (pretty_term_thy thy) ts))
 
 fun pretty_helper aux env =
     env |> Vartab.dest
@@ -308,10 +308,10 @@ fun pretty_tyenv ctxt tyenv =
 
 fun pretty_env ctxt env =
     let
-      fun get_trms (v, (T, t)) = (Var (v, T), t)
+      fun get_ts (v, (T, t)) = (Var (v, T), t)
       val print = apply2 (pretty_term ctxt)
     in
-      pretty_helper (print o get_trms) env
+      pretty_helper (print o get_ts) env
     end
 
 fun string_of_list func lst =
@@ -320,8 +320,8 @@ fun string_of_list' func lst =
     if length lst = 1 then func (the_single lst) else string_of_list func lst
 fun string_of_bool b = if b then "true" else "false"
 
-fun trace_t ctxt s trm =
-    tracing (s ^ " " ^ (trm |> pretty_term ctxt |> str))
+fun trace_t ctxt s t =
+    tracing (s ^ " " ^ (t |> pretty_term ctxt |> str))
 fun trace_tlist ctxt s tlist =
     tracing (s ^ " " ^ (tlist |> pretty_terms ctxt |> str))
 fun trace_thm ctxt s th =

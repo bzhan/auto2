@@ -737,15 +737,15 @@ fun simplify_info tbl ct =
     if in_table_raw tbl (Thm.term_of ct) then
       get_rewrite_info tbl ct else
     let
-      val subtrm_info = subterm_simplify_info tbl ct
+      val subterm_info = subterm_simplify_info tbl ct
       fun get_rewrite_with_id_th (id', th') =
           (get_rewrite_info tbl (Thm.rhs_of th'))
               |> map (merge_info tbl (id', th'))
-      val head_info = subtrm_info |> maps (get_head_rep_with_id_th tbl)
+      val head_info = subterm_info |> maps (get_head_rep_with_id_th tbl)
                                   |> max_partial (id_is_eq_ancestor tbl)
                                   |> maps get_rewrite_with_id_th
     in
-      subtrm_info @ head_info |> reduce_simp_info tbl
+      subterm_info @ head_info |> reduce_simp_info tbl
     end
 
 (* Note similarity with get_subterm_rewrite_info. *)
@@ -1200,8 +1200,8 @@ fun add_term' (id, ct) tbl =
     if in_table_raw_for_id tbl (id, Thm.term_of ct) then tbl
     else let
       (* First add subterms. *)
-      val imm_subtrms = Subterms.list_subterms ct
-      val id_subs = map (pair id) imm_subtrms
+      val imm_subterms = Subterms.list_subterms ct
+      val id_subs = map (pair id) imm_subterms
       val tbl' = tbl |> fold add_term' id_subs |> add_term_raw (id, ct)
       val t = Thm.term_of ct
     in
@@ -1217,7 +1217,7 @@ fun add_term' (id, ct) tbl =
         val simps = get_subterm_rewrite_info tbl' ct
         val imm_properties = apply_property_update_on_term tbl' [] t
       in
-        tbl' |> fold (add_contain ct) (map Thm.term_of imm_subtrms)
+        tbl' |> fold (add_contain ct) (map Thm.term_of imm_subterms)
              |> fold update_simp simps
              |> fold update_subsimp simps
              |> process_update_property imm_properties
