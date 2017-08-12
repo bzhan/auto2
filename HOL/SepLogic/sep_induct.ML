@@ -17,8 +17,8 @@ fun hoare_induct_cmd state =
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
 
-      val {prop, ...} = Auto2_Outer.get_head ctxt
-      val subgoal = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> dest_Trueprop
+      val {prop, ...} = Auto2_State.get_head ctxt
+      val subgoal = prop |> Auto2_State.subgoal_of |> Thm.term_of |> dest_Trueprop
       val (_, c, _) = SepUtil.dest_hoare_triple subgoal
       val (c_head, vars) = Term.strip_comb c
       val arbitraries = (map Free (Term.add_frees subgoal []))
@@ -48,7 +48,7 @@ fun hoare_induct_cmd state =
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1
     in
-      state |> Proof.map_contexts (Auto2_Outer.set_head_th ind_th)
+      state |> Proof.map_contexts (Auto2_State.set_head_th ind_th)
     end
 
 val _ =

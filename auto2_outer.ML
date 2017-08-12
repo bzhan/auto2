@@ -2,15 +2,6 @@
 
 signature AUTO2_OUTER =
 sig
-  val print_state: Proof.context -> unit
-  val pop_head: Proof.context -> Proof.context
-  val map_head: (auto2_frame -> auto2_frame) -> Proof.context -> Proof.context
-  val map_head_th: (thm -> thm) -> Proof.context -> Proof.context
-  val set_head_th: thm -> Proof.context -> Proof.context
-  val set_induct_stmt: term -> Proof.context -> Proof.context
-  val add_prem_only: term -> Proof.context -> Proof.context
-  val get_head: Proof.context -> auto2_frame
-  val subgoal_of: thm -> cterm
   val auto2_solve: Proof.context -> cterm -> thm
   val init_state: Proof.state -> Proof.state
 
@@ -50,63 +41,6 @@ struct
 open Base
 open UtilLogic
 
-(* Print the auto2 state. *)
-fun print_state ctxt =
-    let
-      val frames = Auto2_Data.get ctxt
-      val _ = tracing ("Auto2 state. Number of frames is " ^
-                       (string_of_int (length frames)))
-      val _ = map (trace_thm_ctxt ctxt "prop:") (map #prop frames)
-    in
-      ()
-    end
-
-(* Remove the head (innermost layer) of auto2 state. *)
-val pop_head =
-    Auto2_Data.map (
-      fn frames =>
-         case frames of
-             [] => error "pop_head"
-           | _ :: rest => rest)
-
-(* Change the proof state at the head of the auto2 state. *)
-fun map_head f =
-    Auto2_Data.map (
-      fn frames =>
-         case frames of
-             [] => error "map_head"
-           | frame :: rest => f frame :: rest)
-
-fun map_head_th f =
-    map_head (
-      fn {prop, induct_stmt, prem_only, after_qed} =>
-         {prop = f prop, induct_stmt = induct_stmt, prem_only = prem_only,
-          after_qed = after_qed})
-
-fun set_head_th th = map_head_th (K th)
-
-fun set_induct_stmt stmt =
-    map_head (
-      fn {prop, prem_only, after_qed, ...} =>
-         {prop = prop, induct_stmt = SOME stmt, prem_only = prem_only,
-          after_qed = after_qed})
-
-fun add_prem_only stmt =
-    map_head (
-      fn {prop, induct_stmt, prem_only, after_qed} =>
-         {prop = prop, induct_stmt = induct_stmt,
-          prem_only = stmt :: prem_only, after_qed = after_qed})
-
-fun get_head ctxt =
-    case Auto2_Data.get ctxt of
-      [] => raise Fail "Auto2 proof should start with @begin keyword"
-    | st :: _ => st
-
-(* Given proof state of form A ==> C (with only one subgoal A), return A *)
-fun subgoal_of prop =
-    prop |> Thm.cprop_of |> Drule.strip_imp_prems |> the_single
-    handle List.Empty => error "subgoal_of"
-
 (* Use auto2 to solve the given statement *)
 fun auto2_solve ctxt stmt =
     let
@@ -119,11 +53,13 @@ fun auto2_solve ctxt stmt =
 (* Initiate auto2 state, using goal from the Isar state. *)
 fun init_state state =
     let
-      val {goal, ...} = Proof.goal state
+      val {goal, context = ctxt, ...} = Proof.goal state
+      val _ = assert (Auto2_State.get_num_frame ctxt = 0)
+                     "init_state: state not empty."
       val init_frame = {prop = goal, induct_stmt = NONE, prem_only = [],
                         after_qed = NONE}
     in
-      state |> Proof.map_contexts (Auto2_Data.map (K [init_frame]))
+      state |> Proof.map_contexts (Auto2_State.push_head init_frame)
     end
 
 val _ =
@@ -184,7 +120,7 @@ fun refine_subgoal_th th prop =
  *)
 fun have_after_qed ctxt th prop =
     let
-      val (vars, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
 
       val concl = Logic.strip_imp_concl body
       val have_res = have_resolve ctxt vars th concl
@@ -232,8 +168,8 @@ fun have_cmd (s, r, t) state =
       val (vars, (assums, concl)) = s |> Syntax.read_term ctxt
                                       |> strip_have_goal
 
-      val {prop, ...} = get_head ctxt
-      val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val {prop, ...} = Auto2_State.get_head ctxt
+      val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val (As, _) = Logic.strip_horn body
 
       val stmt = Logic.list_implies (As @ map mk_Trueprop assums,
@@ -262,9 +198,9 @@ fun have_cmd (s, r, t) state =
           val ctxt' = ctxt |> fold declare_free_term new_vars
           val th = auto2_solve ctxt' (cert ctxt' stmt)
         in
-          state |> Proof.map_contexts (map_head_th (after_qed th))
+          state |> Proof.map_contexts (Auto2_State.map_head_th (after_qed th))
                 |> (if is_rule then I else
-                    Proof.map_contexts (add_prem_only stmt'))
+                    Proof.map_contexts (Auto2_State.add_prem_only stmt'))
         end
       else
         let
@@ -274,9 +210,9 @@ fun have_cmd (s, r, t) state =
                            after_qed = SOME ([], after_qed)}
         in
           state |> (if is_rule then I else
-                    Proof.map_contexts (add_prem_only stmt'))
+                    Proof.map_contexts (Auto2_State.add_prem_only stmt'))
                 |> Proof.map_contexts (fold declare_free_term new_vars)
-                |> Proof.map_contexts (Auto2_Data.map (cons new_block))
+                |> Proof.map_contexts (Auto2_State.push_head new_block)
         end
     end
 
@@ -293,9 +229,9 @@ val _ =
 fun end_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {prop, after_qed, ...} = get_head ctxt
+      val {prop, after_qed, ...} = Auto2_State.get_head ctxt
 
-      val (vars, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
 
       val th = (auto2_solve ctxt (cert ctxt body))
                    |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
@@ -303,8 +239,8 @@ fun end_cmd state =
       val new_prop = Goal.conclude (Thm.implies_elim prop th)
       val (new_vars, f) = (the after_qed)
     in
-      state |> Proof.map_contexts pop_head
-            |> Proof.map_contexts (map_head_th (f new_prop))
+      state |> Proof.map_contexts Auto2_State.pop_head
+            |> Proof.map_contexts (Auto2_State.map_head_th (f new_prop))
             |> Proof.map_contexts (fold declare_free_term new_vars)
     end
 
@@ -316,12 +252,11 @@ val _ =
 fun qed_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {prop, ...} =
-          the_single (Auto2_Data.get ctxt)
-          handle List.Empty =>
-                 raise Fail "Qed should be applied outside any with blocks"
+      val _ = assert (Auto2_State.get_num_frame ctxt = 1)
+                     "Qed should be applied outside any 'with' blocks"
+      val {prop, ...} = Auto2_State.get_head ctxt
 
-      val (vars, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
 
       val th = (auto2_solve ctxt (cert ctxt body))
                    |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
@@ -329,7 +264,7 @@ fun qed_cmd state =
 
       val method = K (Method.CONTEXT_TACTIC (PRIMITIVE (K new_prop)))
     in
-      state |> Proof.map_contexts (set_head_th new_prop)
+      state |> Proof.map_contexts (Auto2_State.set_head_th new_prop)
             |> Proof.refine_singleton (Method.Basic (K method))
             |> Proof.global_done_proof
     end
@@ -394,7 +329,7 @@ fun obtain_resolve ctxt vars th concl =
  *)
 fun obtain_after_qed ctxt th prop =
     let
-      val (vars, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
 
       val concl = Logic.strip_imp_concl body
       val obtain_res = obtain_resolve ctxt vars th concl
@@ -415,8 +350,8 @@ fun obtain_cmd (s, t, u) state =
 
       val C = conds |> list_conj |> fold mk_exists (rev vars) |> mk_Trueprop
 
-      val {prop, ...} = get_head ctxt
-      val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val {prop, ...} = Auto2_State.get_head ctxt
+      val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val (As, _) = Logic.strip_horn body
 
       val stmt = Logic.list_implies (As, C)
@@ -430,7 +365,7 @@ fun obtain_cmd (s, t, u) state =
           val th = auto2_solve ctxt (cert ctxt stmt)
         in
           state |> Proof.map_contexts (fold declare_free_term new_vars)
-                |> Proof.map_contexts (map_head_th (obtain_after_qed ctxt th))
+                |> Proof.map_contexts (Auto2_State.map_head_th (obtain_after_qed ctxt th))
         end
       else
         let
@@ -439,7 +374,7 @@ fun obtain_cmd (s, t, u) state =
           val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
                            after_qed = SOME (new_vars, obtain_after_qed ctxt)}
         in
-          state |> Proof.map_contexts (Auto2_Data.map (cons new_block))
+          state |> Proof.map_contexts (Auto2_State.push_head new_block)
         end
     end
 
@@ -492,7 +427,7 @@ fun case_resolve ctxt vars th =
  *)
 fun case_after_qed ctxt th prop =
     let
-      val (vars, _) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, _) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val case_res = case_resolve ctxt vars th
     in
       refine_subgoal_th case_res prop
@@ -503,8 +438,8 @@ fun case_cmd (s, t) state =
       val {context = ctxt, ...} = Proof.goal state
       val B = s |> Syntax.read_term ctxt |> mk_Trueprop
 
-      val {prop, ...} = get_head ctxt
-      val (_, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val {prop, ...} = Auto2_State.get_head ctxt
+      val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val (As, C) = Logic.strip_horn body
 
       val stmt = Logic.list_implies (As @ [B], C)
@@ -514,7 +449,7 @@ fun case_cmd (s, t) state =
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B ==> C *)
           val th = auto2_solve ctxt (cert ctxt stmt)
         in
-          state |> Proof.map_contexts (map_head_th (case_after_qed ctxt th))
+          state |> Proof.map_contexts (Auto2_State.map_head_th (case_after_qed ctxt th))
         end
       else
         let
@@ -523,7 +458,7 @@ fun case_cmd (s, t) state =
           val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
                            after_qed = SOME ([], case_after_qed ctxt)}
         in
-          state |> Proof.map_contexts (Auto2_Data.map (cons new_block))
+          state |> Proof.map_contexts (Auto2_State.push_head new_block)
         end
     end
 
@@ -561,7 +496,7 @@ fun contra_resolve ctxt vars As C =
  *)
 fun contra_after_qed ctxt prop =
     let
-      val (vars, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val (As, C) = Logic.strip_horn body
       val contra_res = contra_resolve ctxt vars As C
     in
@@ -575,7 +510,7 @@ fun contra_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
     in
-      state |> Proof.map_contexts (map_head_th (contra_after_qed ctxt))
+      state |> Proof.map_contexts (Auto2_State.map_head_th (contra_after_qed ctxt))
     end
 
 val _ =
@@ -613,7 +548,7 @@ fun let_resolve ctxt vars eq As C =
  *)
 fun let_after_qed_one ctxt eq prop =
     let
-      val (vars, body) = prop |> subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val (As, C) = Logic.strip_horn body
       val let_res = let_resolve ctxt vars eq As C
     in
@@ -634,7 +569,7 @@ fun let_cmd s state =
             fn v => Variable.is_fixed ctxt (fst (Term.dest_Free v))) vars
     in
       state |> Proof.map_context (fold declare_free_term new_vars)
-            |> Proof.map_contexts (map_head_th (let_after_qed ctxt eqs))
+            |> Proof.map_contexts (Auto2_State.map_head_th (let_after_qed ctxt eqs))
     end
 
 val _ =

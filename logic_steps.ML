@@ -1,26 +1,5 @@
 (* Core (logic) proofsteps. *)
 
-(* Current state, function for modifying the goal. *)
-type auto2_frame = {prop: thm,
-                    induct_stmt: term option,
-                    prem_only: term list,
-                    after_qed: (term list * (thm -> thm -> thm)) option}
-
-type auto2_state = auto2_frame list
-
-structure Auto2_Data = Proof_Data
-(
-  type T = auto2_state
-  fun init _ = []
-)
-
-fun lookup_prem_only ctxt t =
-    let
-      val prem_only = maps #prem_only (Auto2_Data.get ctxt)
-    in
-      member (op aconv) prem_only t
-    end
-
 signature LOGIC_PROOFSTEPS =
 sig
   (* General logic *)
@@ -1139,7 +1118,7 @@ fun disj_normalizer ctxt ritem =
           then
             let
               val (disj_head, disj_th) = analyze_disj_th ctxt th
-              val prem_only = lookup_prem_only ctxt t
+              val prem_only = Auto2_State.lookup_prem_only ctxt t
             in
               disj_to_ritems prem_only disj_head disj_th
             end

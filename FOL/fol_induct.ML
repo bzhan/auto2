@@ -90,8 +90,8 @@ fun induct_cmd (s, t) state =
             val ind_th = subst_thm_thy thy inst th
 
             (* Obtain list of assumptions *)
-            val {prop, ...} = Auto2_Outer.get_head ctxt
-            val (_, body) = prop |> Auto2_Outer.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
+            val {prop, ...} = Auto2_State.get_head ctxt
+            val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
             val (As, _) = Logic.strip_horn body
             val cAs = map (cert ctxt) As
 
@@ -107,7 +107,7 @@ fun induct_cmd (s, t) state =
 
             val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
           in
-            state |> Proof.map_contexts (Auto2_Outer.map_head_th after_qed)
+            state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
           end
     end
 
@@ -154,8 +154,8 @@ fun strong_induct_cmd (s, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = Auto2_Outer.get_head ctxt
-      val goal = prop |> Auto2_Outer.subgoal_of |> Thm.term_of
+      val {prop, ...} = Auto2_State.get_head ctxt
+      val goal = prop |> Auto2_State.subgoal_of |> Thm.term_of
 
       val ind_th = the (lookup_strong_induct_data ctxt prem)
                    handle Option.Option =>
@@ -190,7 +190,7 @@ fun strong_induct_cmd (s, t) state =
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1
     in
-      state |> Proof.map_contexts (Auto2_Outer.set_head_th ind_th)
+      state |> Proof.map_contexts (Auto2_State.set_head_th ind_th)
     end
 
 val arbitrary =
