@@ -33,7 +33,6 @@ ML_file "../auto2_outer.ML"
 ML {*
 open Base
 open UtilLogic
-open ProofStep
 open ProofStep_Data
 *}
 

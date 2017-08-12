@@ -266,7 +266,7 @@ val test_match_update =
             val mk_box_item = BoxItem.mk_box_item ctxt'
             val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),
                          mk_box_item (0, [], 0, Update.thm_to_ritem th)]
-            val updts = apply_prfstep rtype st items Logic_ProofSteps.match_update_prfstep
+            val updts = ProofStep.apply_prfstep rtype st items Logic_ProofSteps.match_update_prfstep
             val res_ts' = maps updt_to_thm updts |> map Thm.prop_of
           in
             if eq_set (op aconv) (res_ts, res_ts') then ()

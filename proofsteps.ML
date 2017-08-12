@@ -500,6 +500,15 @@ fun prfsteps_eval_fun ths = prfsteps_eval_fun' ths ths
 
 end  (* structure ProofStep *)
 
+val WithTerm = ProofStep.WithTerm
+val WithGoal = ProofStep.WithGoal
+val WithProp = ProofStep.WithProp
+val neq_filter = ProofStep.neq_filter
+val order_filter = ProofStep.order_filter
+val size1_filter = ProofStep.size1_filter
+val not_type_filter = ProofStep.not_type_filter
+val unique_free_filter = ProofStep.unique_free_filter
+
 (* Table of proofsteps, categorized by type. *)
 datatype proofstep_table
   = ProofStepTable of

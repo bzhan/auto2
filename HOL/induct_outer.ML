@@ -147,7 +147,7 @@ fun add_prfstep_induction ind_th thy =
                    Filter (unique_free_filter "FREE")]
 
       val _ = writeln (
-            name ^ "\n" ^ (string_of_descs thy descs) ^ "\n" ^
+            name ^ "\n" ^ (ProofStep.string_of_descs thy descs) ^ "\n" ^
             "Substitution: " ^
             (pretty_terms_thy thy [pat_var, pat_subst] |> str))
 
@@ -248,7 +248,7 @@ fun add_prfstep_double_induction ind_th thy =
       val descs = [WithFact (Not $ (mk_eq (var1, mb))),
                    WithFact (Not $ (mk_eq (var2, nb)))]
       val _ = writeln (
-            name ^ "\n" ^ (string_of_descs thy descs) ^ "\n" ^
+            name ^ "\n" ^ (ProofStep.string_of_descs thy descs) ^ "\n" ^
             "Substitution: " ^
             (pretty_terms_thy thy [pat_var1, pat_var2, pat_subst] |> str))
       val ty = HOLogic.mk_prodT (ty_var1, ty_var2)

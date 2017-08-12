@@ -60,7 +60,7 @@ fun rewr_obj_eq_bottom ctxt eq_th =
 
 (* Proofsteps normalizing assertions. *)
 fun normalize_mod_cv_prfstep (nm, pat) =
-    prfstep_custom
+    ProofStep.prfstep_custom
         nm [WithItem (TY_PROP, pat)] PRIORITY_URGENT
         (fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
             let
@@ -350,7 +350,7 @@ fun find_proc_def ctxt c =
    expand c, then use definition of heap_preserving.
  *)
 val heap_preservingI =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "heap_preservingI"
         [WithGoal @{term_pat "heap_preserving ?c"}, ShadowFirst]
         PRIORITY_SHADOW
@@ -391,7 +391,7 @@ fun heap_preserving_effectD presv_th =
             [Update.thm_update (id, res_th)]
           end
     in
-      prfstep_custom name [WithFact pat] PRIORITY_ADD prfstep_fn
+      ProofStep.prfstep_custom name [WithFact pat] PRIORITY_ADD prfstep_fn
     end
 
 (* Add the heap_preserving_effectD proofstep (for proving future
@@ -429,7 +429,7 @@ fun mod_fact_ritems ctxt mod_th =
     end
 
 val init_pos =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "sep.init_pos"
         [WithProp @{term_pat "~<?P> ?c <?Q>"}]
         PRIORITY_ADD
@@ -662,7 +662,7 @@ val match_assn1 =
    for if or case), update c to c1 and modify the prop accordingly.
  *)
 val rewrite_pos =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "sep.rewrite_pos"
         [WithItem (TY_CODE_POS, @{term_pat "(?h, bind ?c ?c')"}),
          ShadowFirst]
@@ -739,7 +739,7 @@ val match_hoare_disj =
    (similar to match_hoare_disj).
  *)
 val match_hoare_prop =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "sep.match_hoare_prop"
         [WithFact @{term_pat "<?P> ?c::?'a Heap <?Q>"},
          WithItem (TY_CODE_POS, @{term_pat "(?h, ?c::?'a Heap)"})]
@@ -764,7 +764,7 @@ val match_hoare_prop =
    the former item (this case to be implemented).
  *)
 val convert_match_pos =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "sep.convert_match_pos"
         [WithItem (TY_MATCH_POS, @{term_pat "(?h, ?c, False, ?P, ?Q)"}),
          WithItem (TY_SUCCESS_RUN, @{term_pat "(?h, ?c)"}),
@@ -937,7 +937,7 @@ fun match_assn_pure_fn ((id, inst), ths) items _ =
     end
 
 val match_assn_pure1 =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "sep.match_assn_pure1"
         [WithItem (TY_MATCH_POS,
                    @{term_pat "(?h, ?c, ?s, ?P * \<up>(?b), ?Q)"}),
@@ -946,7 +946,7 @@ val match_assn_pure1 =
         match_assn_pure_fn
 
 val match_assn_pure2 =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "sep.match_assn_pure2"
         [WithItem (TY_MATCH_POS, @{term_pat "(?h, ?c, ?s, \<up>(?b), ?Q)"}),
          WithFact @{term_pat "?b::bool"}]
@@ -1000,7 +1000,7 @@ val match_assn_spatial =
      func = TwoStep match_assn_spatial_fn}
 
 fun match_hoare_create_case_gen (nm, pat) =
-    prfstep_custom
+    ProofStep.prfstep_custom
         nm [WithItem (TY_MATCH_POS, pat)]
         PRIORITY_ADD
         (fn ((id, inst), _) => fn _ => fn _ =>
@@ -1053,7 +1053,7 @@ fun hoare_triple_prfstep hoare_th =
             [AddItems {id = id, sc = NONE, raw_items = [ritem]}]
           end
     in
-      prfstep_custom name descs PRIORITY_ADD prfstep_fn
+      ProofStep.prfstep_custom name descs PRIORITY_ADD prfstep_fn
     end
 
 (* Given hoare_th of the form <?P> ?c <?Q>, produce proofstep matching

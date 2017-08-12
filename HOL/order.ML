@@ -327,7 +327,7 @@ fun to_nat_order_prfstep_templ ctxt (nm, pat_str, order_ty) =
                        raw_items = [get_nat_order_ritem info]}]
           end
     in
-      prfstep_custom nm descs PRIORITY_ADD prfstep_fn
+      ProofStep.prfstep_custom nm descs PRIORITY_ADD prfstep_fn
     end
 
 val to_nat_order_prfsteps =
@@ -379,7 +379,7 @@ val nat_eq_diff_prfstep =
                        raw_items = map get_nat_order_ritem [info1, info2]}]
           end
     in
-      prfstep_custom "nat_eq_diff" descs PRIORITY_ADD prfstep_fn
+      ProofStep.prfstep_custom "nat_eq_diff" descs PRIORITY_ADD prfstep_fn
     end
 
 (* Obtain quadruple x, y, diff, and theorem from item. *)
@@ -428,7 +428,7 @@ val nat_order_typed_matcher =
    constant to a NAT_ORDER with one side zero.
  *)
 val convert_const_x_prfstep =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "nat_order_convert_const_x"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?NUMC, ?y, ?n)"})]
         PRIORITY_ADD
@@ -444,7 +444,7 @@ val convert_const_x_prfstep =
             end)
 
 val convert_const_y_prfstep =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "nat_order_convert_const_y"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?NUMC, ?n)"})]
         PRIORITY_ADD
@@ -478,7 +478,7 @@ fun trans d1 d2 th1 th2 =
 
 (* Apply transitivity to two NAT_ORDER infos. *)
 val transitive =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "nat_order_transitive"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?y, ?m)"}),
          WithItem (TY_NAT_ORDER, @{term_pat "(?y, ?z, ?n)"}),
@@ -510,7 +510,7 @@ fun trans_resolve d1 d2 th1 th2 =
 
 (* Try to derive a contradiction from two NAT_ORDER items. *)
 val transitive_resolve =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "nat_order_transitive_resolve"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?y, ?m)"}),
          WithItem (TY_NAT_ORDER, @{term_pat "(?y, ?x, ?n)"})]
@@ -542,7 +542,7 @@ val transitive_resolve =
    right side is zero (both with negative diff).
  *)
 val single_resolve =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "nat_order_single_resolve"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?x, ?n)"})]
         PRIORITY_RESOLVE
@@ -558,7 +558,7 @@ val single_resolve =
             end)
 
 val single_resolve_zero =
-    prfstep_custom
+    ProofStep.prfstep_custom
         "nat_order_single_resolve_zero"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, 0, ?n)"})]
         PRIORITY_RESOLVE
@@ -932,7 +932,7 @@ val nat_order_single_matcher =
    y, but larger diff.
  *)
 val shadow_nat_order =
-    gen_prfstep
+    ProofStep.gen_prfstep
         "shadow_nat_order"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?y, ?m)"}),
          WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?y, ?n)"}),
@@ -946,14 +946,14 @@ val shadow_nat_order =
    nonnegative diff).
  *)
 val shadow_nat_order_single =
-    gen_prfstep
+    ProofStep.gen_prfstep
         "shadow_nat_order_single"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?x, ?n)"}),
          Filter (fn _ => fn (_, inst) => dest_numc (lookup_inst inst "n") >= 0),
          ShadowFirst]
 
 val shadow_nat_order_single_zero =
-    gen_prfstep
+    ProofStep.gen_prfstep
         "shadow_nat_order_single_zero"
         [WithItem (TY_NAT_ORDER, @{term_pat "(0, ?x, ?n)"}),
          Filter (fn _ => fn (_, inst) => dest_numc (lookup_inst inst "n") >= 0),
