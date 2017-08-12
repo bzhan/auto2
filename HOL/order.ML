@@ -962,15 +962,15 @@ val shadow_nat_order_single_zero =
 fun string_of_nat_order ctxt (x, y, diff, th) =
     if x aconv nat0 andalso diff < 0 then  (* 0 + n <= y *)
       th |> apply_to_thm' (Conv.arg1_conv nat_fold_conv0_left)
-         |> Thm.prop_of |> pretty_term ctxt |> str
+         |> Thm.prop_of |> Syntax.string_of_term ctxt
     else if y aconv nat0 andalso diff >= 0 then  (* x <= 0 + n *)
       th |> apply_to_thm' (Conv.arg_conv nat_fold_conv0_left)
-         |> Thm.prop_of |> pretty_term ctxt |> str
+         |> Thm.prop_of |> Syntax.string_of_term ctxt
     else if diff = 0 then  (* x <= y + 0 *)
       th |> apply_to_thm' (Conv.arg_conv nat_fold_conv0_right)
-         |> Thm.prop_of |> pretty_term ctxt |> str
+         |> Thm.prop_of |> Syntax.string_of_term ctxt
     else
-      th |> Thm.prop_of |> pretty_term ctxt |> str
+      th |> Thm.prop_of |> Syntax.string_of_term ctxt
 
 fun output_nat_order ctxt (ts, th) =
     let

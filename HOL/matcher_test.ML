@@ -15,7 +15,7 @@ fun eq_info_list (l1, l2) =
     (length l1 = length l2) andalso eq_set (eq_pair (op =) (op aconv)) (l1, l2)
 
 fun print_term_info ctxt (id, t) =
-    "(" ^ (string_of_box_id id) ^ ", " ^ (pretty_term ctxt t |> str) ^ ")"
+    "(" ^ (string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
 
 fun print_term_infos ctxt lst =
     commas (map (print_term_info ctxt) lst)
@@ -65,9 +65,9 @@ fun check_info (t, u) txt {ctxt, ...} ((_, inst), th) =
       if lhs aconv t' andalso rhs aconv u then ()
       else let
         val _ = tracing ("inst does not match th.\nt', u' = " ^
-                         (pretty_terms ctxt [t', u] |> str) ^
+                         (Util.string_of_terms ctxt [t', u]) ^
                          "\nth = " ^
-                         (pretty_term ctxt (Thm.prop_of th) |> str))
+                         (Syntax.string_of_term ctxt (Thm.prop_of th)))
       in raise Fail txt end
     end
 

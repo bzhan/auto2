@@ -98,7 +98,7 @@ fun WithProp t =
 
 fun string_of_desc thy desc =
     let
-      val print = str o pretty_term_thy thy
+      val print = Syntax.string_of_term_global thy
     in
       case desc of
           WithFact t =>
@@ -1027,8 +1027,8 @@ fun add_basic_prfstep_cond_gnrc th mode conds gnrc =
       val def_subst = th_defs |> Thm.prems_of |> filter is_meta_eq
                               |> map Logic.dest_equals
       fun print_def_subst (lhs, rhs) =
-          writeln ("Apply def " ^ (lhs |> pretty_term ctxt' |> str) ^ " = " ^
-                   (rhs |> pretty_term ctxt' |> str))
+          writeln ("Apply def " ^ (Syntax.string_of_term ctxt' lhs) ^ " = " ^
+                   (Syntax.string_of_term ctxt' rhs))
       val _ = map print_def_subst def_subst
 
       fun def_subst_fun cond =
@@ -1243,7 +1243,7 @@ fun add_eval_fun_prfsteps' desc_ths ths thy =
     let
       fun eval_thm_to_str th =
           (name_of_thm th) ^ ": " ^
-          (th |> Thm.prop_of |> pretty_term_thy thy |> str)
+          (th |> Thm.prop_of |> Syntax.string_of_term_global thy)
       val _ = writeln (cat_lines (map eval_thm_to_str desc_ths))
     in
       fold add_prfstep (prfsteps_eval_fun' desc_ths ths) thy

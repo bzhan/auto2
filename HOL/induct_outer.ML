@@ -149,7 +149,7 @@ fun add_prfstep_induction ind_th thy =
       val _ = writeln (
             name ^ "\n" ^ (ProofStep.string_of_descs thy descs) ^ "\n" ^
             "Substitution: " ^
-            (pretty_terms_thy thy [pat_var, pat_subst] |> str))
+            (string_of_terms_global thy [pat_var, pat_subst]))
 
       val ty_var = type_of pat_var
     in
@@ -166,7 +166,7 @@ fun add_prfstep_strong_induction ind_th thy =
           handle List.Empty => error "Strong induction: more than one var."
       val ty_var = type_of pat_var
       val _ = writeln (name ^ "\nSubstitution: " ^
-                       (pretty_terms_thy thy [pat_var, pat_subst] |> str))
+                       (string_of_terms_global thy [pat_var, pat_subst]))
     in
       thy |> add_typed_induct_data "strong_induct" (ty_var, ind_th')
     end
@@ -250,7 +250,7 @@ fun add_prfstep_double_induction ind_th thy =
       val _ = writeln (
             name ^ "\n" ^ (ProofStep.string_of_descs thy descs) ^ "\n" ^
             "Substitution: " ^
-            (pretty_terms_thy thy [pat_var1, pat_var2, pat_subst] |> str))
+            (string_of_terms_global thy [pat_var1, pat_var2, pat_subst]))
       val ty = HOLogic.mk_prodT (ty_var1, ty_var2)
     in
       thy |> add_typed_induct_data "double_induct" (ty, ind_th)

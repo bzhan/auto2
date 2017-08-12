@@ -708,14 +708,14 @@ fun output_disj_fn ctxt (ts, _) =
       val prefix = if bool_of_term match_prem then "(match_prem) " else ""
     in
       if disj_head aconv disj then
-        prefix ^ ((foldr1 mk_disj subs) |> pretty_term ctxt |> str)
+        prefix ^ ((foldr1 mk_disj subs) |> Syntax.string_of_term ctxt)
       else if disj_head aconv conj then
         prefix ^ ((foldr1 mk_conj (map get_neg subs))
-                      |> get_neg |> pretty_term ctxt |> str)
+                      |> get_neg |> Syntax.string_of_term ctxt)
       else if disj_head aconv imp then
         prefix ^ ((foldr1 mk_imp (subs |> split_last |> apfst (map get_neg)
                                        |> apsnd single |> (op @)))
-                      |> pretty_term ctxt |> str)
+                      |> Syntax.string_of_term ctxt)
       else
         raise Fail "output_disj_fn: unexpected disj_head."
     end

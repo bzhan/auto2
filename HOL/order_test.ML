@@ -47,7 +47,7 @@ fun convert_prop_to_nat_order prop =
 val test_parse_prop =
     let
       fun string_of_spec (x, y, diff) =
-          "(" ^ ([x, y, mk_nat diff] |> pretty_terms ctxt' |> str) ^ ")"
+          "(" ^ (Util.string_of_terms ctxt [x, y, mk_nat diff]) ^ ")"
 
       fun item_to_spec item =
           let

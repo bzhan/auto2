@@ -599,7 +599,7 @@ fun rewr_terms_of_item ctxt (ty_str, tname) =
         | SOME f => f tname
     end
 
-fun output_prop_fn ctxt (_, th) = Thm.prop_of th |> pretty_term ctxt |> str
+fun output_prop_fn ctxt (_, th) = Thm.prop_of th |> Syntax.string_of_term ctxt
 
 fun string_of_item_info ctxt (ty_str, ts, th) =
     let
@@ -607,13 +607,13 @@ fun string_of_item_info ctxt (ty_str, ts, th) =
       val {output_fn, ...} = get_io_info thy ty_str
     in
       case output_fn of
-          NONE => ty_str ^ " " ^ (ts |> pretty_terms ctxt |> str)
+          NONE => ty_str ^ " " ^ (string_of_terms ctxt ts)
         | SOME f => f ctxt (ts, th)
     end
 
 fun string_of_raw_item ctxt ritem =
     case ritem of
-        Handler (t, _) => "Handler " ^ (t |> pretty_term ctxt |> str)
+        Handler (t, _) => "Handler " ^ (Syntax.string_of_term ctxt t)
       | Fact info => string_of_item_info ctxt info
 
 fun string_of_item ctxt {ty_str, tname, prop, ...} =
@@ -706,8 +706,8 @@ fun is_init_assum init = case init of InitAssum _ => true | _ => false
 fun build_init_infos (vars, assums) = map InitVar vars @ map InitAssum assums
 fun string_of_init_info ctxt init =
     case init of
-        InitVar t => ("Var " ^ (t |> pretty_term ctxt |> str))
-      | InitAssum assum => ("Assum " ^ (assum |> pretty_term ctxt |> str))
+        InitVar t => ("Var " ^ (Syntax.string_of_term ctxt t))
+      | InitAssum assum => ("Assum " ^ (Syntax.string_of_term ctxt assum))
 
 (* Given list of initial variables and assumptions, return the
    contradiction derived from them. Each initial variable becomes !!,
@@ -1026,7 +1026,7 @@ fun get_resolve_th {resolve_th, ...} =
       | SOME th => th
 
 fun short_string_of_box ctxt {inits, ...} =
-    Update.get_neg_form inits |> pretty_term ctxt |> str
+    Update.get_neg_form inits |> Syntax.string_of_term ctxt
 
 end  (* structure Box. *)
 

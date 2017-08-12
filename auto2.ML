@@ -638,7 +638,7 @@ fun auto2_tac ctxt state =
         val subgoal = hd subgoals
         val _ = tracing (
               "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
-              (subgoal |> pretty_term ctxt |> str) ^ "\n")
+              (Syntax.string_of_term ctxt subgoal) ^ "\n")
         val subgoal_eq = subgoal |> cert ctxt |> to_obj_conv_on_horn ctxt
         val st = ProofStatus.init_status ctxt (rhs_of subgoal_eq)
         val (_, st') =

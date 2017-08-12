@@ -18,11 +18,11 @@ fun eq_info ((id, th), (id', th')) =
 
 (* Debug functions. *)
 fun print_info ctxt (id, th) = "(" ^ (string_of_box_id id) ^ ", " ^
-                               (th |> rhs_of |> pretty_term ctxt |> str) ^ ")"
+                               (th |> rhs_of |> Syntax.string_of_term ctxt) ^ ")"
 fun print_infos ctxt lst = commas (map (print_info ctxt) lst)
 fun print_info' ctxt (id, ths) =
     "(" ^ (string_of_box_id id) ^ ", " ^
-    (ths |> map rhs_of |> pretty_terms ctxt |> str) ^ ")"
+    (ths |> map rhs_of |> string_of_terms ctxt) ^ ")"
 fun print_infos' ctxt lst = cat_lines (map (print_info' ctxt) lst)
 
 (* Data structure for rewrite table. *)
@@ -261,7 +261,7 @@ val id_is_eq_ancestor = BoxID.id_is_eq_ancestor o get_lattice
 fun to_string_table ctxt term_tbl print_val_fun =
     let
       fun print_lst (t, info_t) =
-          (t |> pretty_term ctxt |> str) ^ ": " ^ (print_val_fun info_t)
+          (Syntax.string_of_term ctxt t) ^ ": " ^ (print_val_fun info_t)
     in
       cat_lines (map print_lst (Termtab.dest term_tbl))
     end

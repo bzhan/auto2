@@ -22,7 +22,7 @@ val eq_id_list = eq_set (op =)
 val eq_info_list = eq_set (eq_pair (op =) (op aconv))
 
 fun print_term_info ctxt (id, t) =
-    "(" ^ (string_of_box_id id) ^ ", " ^ (pretty_term ctxt t |> str) ^ ")"
+    "(" ^ (string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
 fun print_term_infos ctxt lst =
     commas (map (print_term_info ctxt) lst)
 val string_of_box_id_list = string_of_list BoxID.string_of_box_id

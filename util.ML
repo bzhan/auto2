@@ -52,13 +52,10 @@ sig
       Type.tyenv * Envir.tenv
 
   (* Printing functions, mostly from Isabelle Cookbook. *)
-  val pretty_term: Proof.context -> term -> Pretty.T
-  val pretty_term_thy: theory -> term -> Pretty.T
-  val str: Pretty.T -> string
-  val pretty_terms: Proof.context -> term list -> Pretty.T
-  val pretty_terms_thy: theory -> term list -> Pretty.T
-  val pretty_tyenv: Proof.context -> Type.tyenv -> string
-  val pretty_env: Proof.context -> Envir.tenv -> string
+  val string_of_terms: Proof.context -> term list -> string
+  val string_of_terms_global: theory -> term list -> string
+  val string_of_tyenv: Proof.context -> Type.tyenv -> string
+  val string_of_env: Proof.context -> Envir.tenv -> string
   val string_of_list: ('a -> string) -> 'a list -> string
   val string_of_list': ('a -> string) -> 'a list -> string
   val string_of_bool: bool -> string
@@ -283,22 +280,21 @@ fun pattern_fo_match_list_thy thy pairs inst =
 fun pattern_fo_match_list ctxt pairs inst =
     pattern_fo_match_list_thy (Proof_Context.theory_of ctxt) pairs inst
 
-val pretty_term = Syntax.pretty_term
-val pretty_term_thy = Syntax.pretty_term_global
-val str = Pretty.string_of
-fun pretty_terms ctxt ts =
-    Pretty.block (Pretty.commas (map (pretty_term ctxt) ts))
-fun pretty_terms_thy thy ts =
-    Pretty.block (Pretty.commas (map (pretty_term_thy thy) ts))
+fun string_of_terms ctxt ts =
+    ts |> map (Syntax.pretty_term ctxt)
+       |> Pretty.commas |> Pretty.block |> Pretty.string_of
+fun string_of_terms_global thy ts =
+    ts |> map (Syntax.pretty_term_global thy)
+       |> Pretty.commas |> Pretty.block |> Pretty.string_of
 
 fun pretty_helper aux env =
     env |> Vartab.dest
         |> map aux
         |> map (fn (s1, s2) => Pretty.block [s1, Pretty.str " := ", s2])
         |> Pretty.enum "," "[" "]"
-        |> str
+        |> Pretty.string_of
 
-fun pretty_tyenv ctxt tyenv =
+fun string_of_tyenv ctxt tyenv =
     let
       fun get_typs (v, (s, T)) = (TVar (v, s), T)
       val print = apply2 (Syntax.pretty_typ ctxt)
@@ -306,43 +302,42 @@ fun pretty_tyenv ctxt tyenv =
       pretty_helper (print o get_typs) tyenv
     end
 
-fun pretty_env ctxt env =
+fun string_of_env ctxt env =
     let
       fun get_ts (v, (T, t)) = (Var (v, T), t)
-      val print = apply2 (pretty_term ctxt)
+      val print = apply2 (Syntax.pretty_term ctxt)
     in
       pretty_helper (print o get_ts) env
     end
 
 fun string_of_list func lst =
-    Pretty.str_list "[" "]" (map func lst) |> str
+    Pretty.str_list "[" "]" (map func lst) |> Pretty.string_of
 fun string_of_list' func lst =
     if length lst = 1 then func (the_single lst) else string_of_list func lst
 fun string_of_bool b = if b then "true" else "false"
 
 fun trace_t ctxt s t =
-    tracing (s ^ " " ^ (t |> pretty_term ctxt |> str))
-fun trace_tlist ctxt s tlist =
-    tracing (s ^ " " ^ (tlist |> pretty_terms ctxt |> str))
+    tracing (s ^ " " ^ (Syntax.string_of_term ctxt t))
+fun trace_tlist ctxt s ts =
+    tracing (s ^ " " ^ (string_of_terms ctxt ts))
 fun trace_thm ctxt s th =
-    tracing (s ^ " " ^ (th |> Thm.prop_of |> pretty_term ctxt |> str))
+    tracing (s ^ " " ^ (th |> Thm.prop_of |> Syntax.string_of_term ctxt))
 fun trace_fullthm ctxt s th =
-    tracing (s ^ " [" ^ (Thm.hyps_of th |> pretty_terms ctxt |> str) ^
-             "] ==> " ^ (Thm.prop_of th |> pretty_term ctxt |> str))
+    tracing (s ^ " [" ^ (Thm.hyps_of th |> string_of_terms ctxt) ^
+             "] ==> " ^ (Thm.prop_of th |> Syntax.string_of_term ctxt))
 fun trace_thm_global s th =
     let
       val thy = Thm.theory_of_thm th
     in
-      tracing (s ^ " " ^ (th |> Thm.prop_of |> Syntax.pretty_term_global thy
-                             |> str))
+      tracing (s ^ " " ^ (th |> Thm.prop_of |> Syntax.string_of_term_global thy))
     end
 
 fun trace_fullthm_global s th =
     let
       val thy = Thm.theory_of_thm th
     in
-      tracing (s ^ " [" ^ (Thm.hyps_of th |> pretty_terms_thy thy |> str) ^
-               "] ==> " ^ (Thm.prop_of th |> pretty_term_thy thy |> str))
+      tracing (s ^ " [" ^ (Thm.hyps_of th |> string_of_terms_global thy) ^
+               "] ==> " ^ (Thm.prop_of th |> Syntax.string_of_term_global thy))
     end
 
 (* Debugging version of MRS. *)
@@ -520,15 +515,12 @@ fun rename_abs_term vars t =
 
 fun print_term_detail ctxt t =
     case t of
-        Const (s, ty) =>
-        "Const (" ^ s ^ ", " ^ (Syntax.pretty_typ ctxt ty |> str)
-      | Free (s, ty) =>
-        "Free (" ^ s ^ ", " ^ (Syntax.pretty_typ ctxt ty |> str) ^ ")"
+        Const (s, ty) => "Const (" ^ s ^ ", " ^ (Syntax.string_of_typ ctxt ty)
+      | Free (s, ty) => "Free (" ^ s ^ ", " ^ (Syntax.string_of_typ ctxt ty) ^ ")"
       | Var ((x, i), ty) => "Var ((" ^ x ^ ", " ^ (string_of_int i) ^ "), " ^
-                             (Syntax.pretty_typ ctxt ty |> str) ^ ")"
+                             (Syntax.string_of_typ ctxt ty) ^ ")"
       | Bound n => "Bound " ^ (string_of_int n)
-      | Abs (s, ty, b) => "Abs (" ^ s ^ ", " ^
-                          (Syntax.pretty_typ ctxt ty |> str) ^
+      | Abs (s, ty, b) => "Abs (" ^ s ^ ", " ^ (Syntax.string_of_typ ctxt ty) ^
                           ", " ^ (print_term_detail ctxt b) ^ ")"
       | u $ v => "(" ^ print_term_detail ctxt u ^ ") $ (" ^
                  print_term_detail ctxt v ^ ")"

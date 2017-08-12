@@ -271,16 +271,16 @@ fun output_code_pos_fn ctxt (tname, th) =
                        |> is_bind_cmd
     in
       "CODE_POS " ^ (if is_bind then "" else "(last) ") ^
-      (tname |> pretty_terms ctxt |> str)
+      (Util.string_of_terms ctxt tname)
     end
 
 fun code_pos_match_rewr_terms ts = take 2 ts @ drop 3 ts
 
 fun output_code_pos_match_fn ctxt (tname, _) =
-    "MATCH_POS " ^ (tname |> pretty_terms ctxt |> str)
+    "MATCH_POS " ^ (Util.string_of_terms ctxt tname)
 
 fun output_success_run_fn ctxt (tname, _) =
-    "SUCCESS_RUN " ^ (tname |> pretty_terms ctxt |> str)
+    "SUCCESS_RUN " ^ (Util.string_of_terms ctxt tname)
 
 (* Common matcher for CODE_POS, MATCH_POS, and SUCCESS_RUN. When
    pattern is a tuple of n terms, match the first n terms of tname.
