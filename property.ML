@@ -66,14 +66,14 @@ structure FieldData = Theory_Data (
 
 fun add_property_const t thy =
     case Term.head_of t of
-        Const (nm, T) =>
+        Const (c, T) =>
         let
           val (pTs, cT) = strip_type T
           val _ = if cT = boolT andalso length pTs = 1 then ()
                   else error "Add property: input should be a predicate."
-          val _ = writeln ("Add predicate " ^ nm ^ " as property.")
+          val _ = writeln ("Add predicate " ^ c ^ " as property.")
         in
-          thy |> Data.map (Symtab.update_new (nm, ()))
+          thy |> Data.map (Symtab.update_new (c, ()))
         end
       | _ => error "Add property: input should be a constant."
 
@@ -83,20 +83,20 @@ fun is_property_const thy t =
       val _ = assert (fastype_of t = boolT) "is_property_const: wrong type"
     in
       case Term.head_of t of
-          Const (nm, _) => Symtab.defined (Data.get thy) nm
+          Const (c, _) => Symtab.defined (Data.get thy) c
         | _ => false
     end
 
 fun add_property_field_const t thy =
     case Term.head_of t of
-        Const (nm, T) =>
+        Const (c, T) =>
         let
           val (pTs, _) = strip_type T
           val _ = if length pTs = 1 then ()
                   else error "Add property field: input should be a field."
-          val _ = writeln ("Add field " ^ nm ^ " as property field.")
+          val _ = writeln ("Add field " ^ c ^ " as property field.")
         in
-          thy |> FieldData.map (Symtab.update_new (nm, ()))
+          thy |> FieldData.map (Symtab.update_new (c, ()))
         end
       | _ => error "Add property field: input should be a constant."
 
@@ -106,15 +106,15 @@ fun add_property_field_const t thy =
 fun is_property_field thy t =
     case t of
         Var _ => true
-      | Const (nm, _) $ t' =>
-        Symtab.defined (FieldData.get thy) nm andalso
+      | Const (c, _) $ t' =>
+        Symtab.defined (FieldData.get thy) c andalso
         is_property_field thy t'
       | _ => false
 
 fun strip_property_field thy t =
     case t of
-        Const (nm, _) $ t' =>
-        if Symtab.defined (FieldData.get thy) nm then
+        Const (c, _) $ t' =>
+        if Symtab.defined (FieldData.get thy) c then
           t :: strip_property_field thy t'
         else [t]
       | _ => [t]
@@ -133,7 +133,7 @@ fun is_property_prem_ctxt' ctxt t =
 
 fun get_property_name t =
     case Term.head_of t of
-        Const (nm, _) => nm
+        Const (c, _) => c
       | _ => raise Fail "get_property_name: not a constant."
 
 fun get_property_names ts =
@@ -150,8 +150,8 @@ fun get_property_arg_th th =
 
 fun cstrip_property_field thy ct =
     case Thm.term_of ct of
-        Const (nm, _) $ _ =>
-        if Symtab.defined (FieldData.get thy) nm then
+        Const (c, _) $ _ =>
+        if Symtab.defined (FieldData.get thy) c then
           ct :: cstrip_property_field thy (Thm.dest_arg ct)
         else [ct]
       | _ => [ct]
@@ -221,29 +221,29 @@ fun add_property_update_gnrc th gnrc =
         (* Second case. concl_arg in the form f ?x1 ... ?xn. *)
         let
           val (f, args) = Term.strip_comb concl_arg
-          val nm =
+          val c =
               case f of
-                  Const (nm, _) => nm
+                  Const (c, _) => c
                 | _ => raise Fail "add_property_update: f is not constant."
           val _ = assert (forall is_Var args)
                          "add_property_update: all args of concl must be Vars."
           val _ = assert (subset (op aconv) (all_vars, args))
                          "add_property_update: extraneous Vars in th."
-          val _ = writeln ("Add property rule for function " ^ nm)
+          val _ = writeln ("Add property rule for function " ^ c)
         in
           gnrc |> UpdateData.map (
-            Symtab.update_list Thm.eq_thm_prop (nm, th))
+            Symtab.update_list Thm.eq_thm_prop (c, th))
         end
     end
 
 val add_property_update = Context.theory_map o add_property_update_gnrc
 
 (* Find rules registered under the given name. *)
-fun lookup_property_update ctxt nm =
+fun lookup_property_update ctxt c =
     let
       val data = UpdateData.get (Context.Proof ctxt)
     in
-      Symtab.lookup_list data nm
+      Symtab.lookup_list data c
     end
 
 (* Instantiate th by matching t with the argument of the conclusion of

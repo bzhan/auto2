@@ -122,7 +122,7 @@ val test_norm_all_disj =
 
 fun free_to_var t =
     case t of
-        Free (nm, T) => Var ((nm, 0), T)
+        Free (x, T) => Var ((x, 0), T)
       | _ => raise Fail "free_to_var"
 
 val test_disj_prop_match =

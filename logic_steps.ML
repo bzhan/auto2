@@ -239,9 +239,9 @@ fun exists_elim_fn rtype {ctxt, ...} {id, prop, ...} =
               (is_neg t andalso is_ball (dest_not t))) then [] else
       let
         val th = prop |> apply_to_thm' (normalize_exs_conv (~1) ctxt)
-        val nms = Update.get_apply_exists_nms th
+        val xs = Update.get_apply_exists_names th
       in
-        Update.apply_exists (id, th) ctxt nms
+        Update.apply_exists (id, th) ctxt xs
       end
     end
 
@@ -275,11 +275,11 @@ fun mk_all_disj (vars, terms) =
         [] => mk_disjs terms
       | var :: vars' =>
         let
-          val (nm, T) = Term.dest_Free var
+          val (x, T) = Term.dest_Free var
           val body = mk_all_disj (vars', terms)
           val all_const = Const (All_name, (T --> boolT) --> boolT)
         in
-          all_const $ Abs (nm, T, Term.abstract_over (var, body))
+          all_const $ Abs (x, T, Term.abstract_over (var, body))
         end
 
 (* Normalize t into a disjunction of terms. *)
@@ -337,7 +337,7 @@ fun norm_disj ct =
 
 fun retrieve_abs_info t =
     case t of
-        Abs (nm, T, _) => (nm, T)
+        Abs (x, T, _) => (x, T)
       | _ => ("x", domain_type (fastype_of t))
 
 (* Normalize a term into the form !x_1 ... x_n. A_1 | ... | A_n *)
@@ -348,45 +348,45 @@ fun normalize_all_disj_t ctxt t =
       if is_all t then
         let
           val body = dest_arg t
-          val (nm, T) = retrieve_abs_info body
-          val (nm', ctxt') = yield_singleton Variable.variant_fixes nm ctxt
-          val body' = Term.betapply (body, Free (nm', T))
+          val (x, T) = retrieve_abs_info body
+          val (x', ctxt') = yield_singleton Variable.variant_fixes x ctxt
+          val body' = Term.betapply (body, Free (x', T))
           val (vars, disjs) = normalize_all_disj_t ctxt' body'
         in
-          if exists (occurs_free (Free (nm', T))) disjs then
-            (Free (nm', T) :: vars, disjs)
+          if exists (occurs_free (Free (x', T))) disjs then
+            (Free (x', T) :: vars, disjs)
           else (vars, disjs)
         end
       else if is_ball t then
         let
           val (S, body) = dest_binop_args t
-          val (nm, T) = retrieve_abs_info body
+          val (x, T) = retrieve_abs_info body
           val all_const = Const (All_name, (T --> boolT) --> boolT)
           val mem_const = Const (Mem_name, T --> mk_setT T --> boolT)
           val body' =
               mk_imp (mem_const $ Bound 0 $ S, Term.betapply (body, Bound 0))
         in
-          normalize_all_disj_t ctxt (all_const $ Abs (nm, T, body'))
+          normalize_all_disj_t ctxt (all_const $ Abs (x, T, body'))
         end
       else if is_neg t andalso is_ex (dest_not t) then
         let
           val body = t |> dest_not |> dest_arg
-          val (nm, T) = retrieve_abs_info body
+          val (x, T) = retrieve_abs_info body
           val all_const = Const (All_name, (T --> boolT) --> boolT)
           val body' = get_neg (Term.betapply (body, Bound 0))
         in
-          normalize_all_disj_t ctxt (all_const $ Abs (nm, T, body'))
+          normalize_all_disj_t ctxt (all_const $ Abs (x, T, body'))
         end
       else if is_neg t andalso is_bex (dest_not t) then
         let
           val (S, body) = t |> dest_not |> dest_binop_args
-          val (nm, T) = retrieve_abs_info body
+          val (x, T) = retrieve_abs_info body
           val ex_const = Const (Ex_name, (T --> boolT) --> boolT)
           val mem_const = Const (Mem_name, T --> mk_setT T --> boolT)
           val body' =
               mk_conj (mem_const $ Bound 0 $ S, Term.betapply (body, Bound 0))
         in
-          normalize_all_disj_t ctxt (get_neg (ex_const $ Abs (nm, T, body')))
+          normalize_all_disj_t ctxt (get_neg (ex_const $ Abs (x, T, body')))
         end
       else if is_disj t then
         let
@@ -515,11 +515,11 @@ fun norm_all_disj_sorted ctxt ct =
 
 fun abstract_eq ctxt var eq =
     let
-      val (nm, T) = Term.dest_Free var
+      val (x, T) = Term.dest_Free var
       val all_const = Const (All_name, (T --> boolT) --> boolT)
     in
       Drule.arg_cong_rule (cert ctxt all_const)
-                          (Thm.abstract_rule nm (cert ctxt var) eq)
+                          (Thm.abstract_rule x (cert ctxt var) eq)
     end
 
 (* Matching for all-disj propositions *)
@@ -657,14 +657,14 @@ fun forall_elim_sch th =
       val thy = Thm.theory_of_thm th
     in
       case Thm.prop_of th of
-          Const (@{const_name Pure.all}, _) $ Abs (nm, T, _) =>
+          Const (@{const_name Pure.all}, _) $ Abs (x, T, _) =>
           let
-            val var_nms = map fst (Term.add_var_names (Thm.prop_of th) [])
-            val nm' = if member (op =) var_nms nm then
-                        singleton (Name.variant_list var_nms) nm
-                      else nm
+            val var_xs = map fst (Term.add_var_names (Thm.prop_of th) [])
+            val x' = if member (op =) var_xs x then
+                        singleton (Name.variant_list var_xs) x
+                     else x
           in
-            th |> Thm.forall_elim (cert_thy thy (Var ((nm', 0), T)))
+            th |> Thm.forall_elim (cert_thy thy (Var ((x', 0), T)))
                |> forall_elim_sch
           end
         | _ => th

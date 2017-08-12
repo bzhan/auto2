@@ -98,7 +98,7 @@ fun obtain_variant_frees (ctxt, ritems) =
                  |> filter (is_just_internal o fst)
       (* New names for these variables. *)
       val all_vars' =
-          all_vars |> map (fn (nm, T) => (Name.dest_internal nm, T))
+          all_vars |> map (fn (x, T) => (Name.dest_internal x, T))
                    |> Variable.variant_frees ctxt []
       val subst = map (apply2 (cert ctxt o Free)) (all_vars ~~ all_vars')
     in
@@ -689,7 +689,7 @@ sig
                            raw_item list * thm
   val apply_exists: box_id * thm -> Proof.context -> string list ->
                     raw_update list
-  val get_apply_exists_nms: thm -> string list
+  val get_apply_exists_names: thm -> string list
   val update_info: Proof.context -> box_id -> raw_item list -> string
   val source_info: update -> string
 end;
@@ -717,7 +717,7 @@ fun string_of_init_info ctxt init =
 fun get_neg_form inits =
     if null inits then pFalse
     else let
-      fun mk_all (nm, T) t = Logic.all_const T $ Term.absfree (nm, T) t
+      fun mk_all (x, T) t = Logic.all_const T $ Term.absfree (x, T) t
       val concl = inits |> List.last |> dest_init_assum |> the_single
                         |> get_neg'
                   handle List.Empty =>
@@ -811,39 +811,39 @@ fun handler_ritems ctxt t handler =
       [Handler (t, handler), thm_to_ritem (assume_thm ctxt t)]
     end
 
-(* nms specify the names of free variables, either internal (use
+(* xs specify the names of free variables, either internal (use
    obtain_variant_frees to fix) or otherwise (will be put into context
    as is). This function returns the list of VAR items and handlers,
    paired with the theorem produced.
  *)
-fun apply_exists_ritems ex_th ctxt nms =
+fun apply_exists_ritems ex_th ctxt xs =
     let
-      fun dest_one_abs nm t =
+      fun dest_one_abs x t =
           case t of
               Const (c, _) $ Abs (_, T, body) =>
               if c = Ex_name then
                 let
-                  val (nm', body') = Term.dest_abs (nm, T, body)
-                  val _ = assert (nm = nm') "apply_exists: name clash"
+                  val (x', body') = Term.dest_abs (x, T, body)
+                  val _ = assert (x = x') "apply_exists: name clash"
                 in
-                  ((nm, T), body')
+                  ((x, T), body')
                 end
               else raise Fail "apply_exists: not exists statement."
             | _ => raise Fail "apply_exists: not exists statement."
 
-      fun dest_all_abs nms t =
-          case nms of
+      fun dest_all_abs xs t =
+          case xs of
               [] => ([], t)
-            | nm :: rest =>
+            | x :: rest =>
               let
-                val (var, t') = dest_one_abs nm t
+                val (var, t') = dest_one_abs x t
                 val (vars, t'') = dest_all_abs rest t'
               in
                 (var :: vars, t'')
               end
 
-      val ex_th' = apply_to_thm' (normalize_exs_conv (length nms) ctxt) ex_th
-      val (vars, new_prop) = ex_th' |> prop_of' |> dest_all_abs nms
+      val ex_th' = apply_to_thm' (normalize_exs_conv (length xs) ctxt) ex_th
+      val (vars, new_prop) = ex_th' |> prop_of' |> dest_all_abs xs
       val new_prop' = mk_Trueprop new_prop
       val new_th = new_prop' |> cert ctxt |> Thm.assume
 
@@ -856,14 +856,14 @@ fun apply_exists_ritems ex_th ctxt nms =
           let
             val all_internal_vars =
                 (Term.add_frees t [])
-                    |> filter (fn (nm, _) => is_just_internal nm)
-            fun subst_for_var (nm, T) =
-                [(Free (nm, T), Var ((nm, 0), T))]
+                    |> filter (fn (x, _) => is_just_internal x)
+            fun subst_for_var (x, T) =
+                [(Free (x, T), Var ((x, 0), T))]
             val subst = maps subst_for_var all_internal_vars
 
             val pat = Term.subst_atomic subst t
             val inst = pattern_fo_match ctxt (pat, u)
-            fun get_freevar (nm, T) = ((nm, T), lookup_inst inst nm)
+            fun get_freevar (x, T) = ((x, T), lookup_inst inst x)
           in
             map get_freevar all_internal_vars
           end
@@ -882,9 +882,9 @@ fun apply_exists_ritems ex_th ctxt nms =
       fun get_freevars t =
           let
             val subst = match_vars_one (new_prop', t)
-            fun get_freevar (nm, T) =
-                if not (is_just_internal nm) then Free (nm, T) else
-                the (AList.lookup (op =) subst (nm, T))
+            fun get_freevar (x, T) =
+                if not (is_just_internal x) then Free (x, T) else
+                the (AList.lookup (op =) subst (x, T))
                 handle Option.Option =>
                        raise Fail "get_freevars: cannot match new_prop' and t"
           in
@@ -901,8 +901,8 @@ fun apply_exists_ritems ex_th ctxt nms =
       fun handler (t, th) =
           let
             val subst = (match_vars (Thm.hyps_of ex_th', Thm.hyps_of th))
-                            |> map (fn ((nm, T), t) =>
-                                       (cert ctxt (Free (nm, T)), cert ctxt t))
+                            |> map (fn ((x, T), t) =>
+                                       (cert ctxt (Free (x, T)), cert ctxt t))
             val fvars = get_freevars t
           in
             th |> Thm.implies_intr (cert ctxt t)
@@ -917,9 +917,9 @@ fun apply_exists_ritems ex_th ctxt nms =
     end
 
 (* Calls the previous function, and directly produces the update. *)
-fun apply_exists (id, ex_th) ctxt nms =
+fun apply_exists (id, ex_th) ctxt xs =
     let
-      val (ritems, new_th) = apply_exists_ritems ex_th ctxt nms
+      val (ritems, new_th) = apply_exists_ritems ex_th ctxt xs
     in
       [AddItems {id = id, sc = NONE,
                  raw_items = ritems @ [thm_to_ritem new_th]}]
@@ -928,14 +928,14 @@ fun apply_exists (id, ex_th) ctxt nms =
 (* Given existence theorem, return list of suggested names of new
    variables, obtained from name hints of EX quantifiers.
  *)
-fun get_apply_exists_nms th =
+fun get_apply_exists_names th =
     let
       fun helper t =
           case t of
-              Const (c, _) $ Abs (abs as (nm, _, _)) =>
+              Const (c, _) $ Abs (abs as (x, _, _)) =>
               if c = Ex_name then
                 let val (_, body) = Term.dest_abs abs in
-                  nm :: helper body
+                  x :: helper body
                 end
               else []
             | _ => []
@@ -1325,7 +1325,7 @@ fun find_ritems_exact st id ritems =
       else let
         val vars = maps BoxItem.get_tname_raw var_ritems
         val sch_vars = vars |> map dest_Free
-                            |> map (fn (nm, T) => Var ((nm, 0), T))
+                            |> map (fn (x, T) => Var ((x, 0), T))
         val subst = vars ~~ sch_vars
         val items = get_all_items true st id
 

@@ -200,12 +200,12 @@ and match_head tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
     in
       if fastype_of t <> fastype_of u then [] else
       case (t, u) of
-          (Var ((nm, i), _), _) =>
-          (case Vartab.lookup inst (nm, i) of
-               NONE => if nm = "NUMC" andalso
+          (Var ((x, i), _), _) =>
+          (case Vartab.lookup inst (x, i) of
+               NONE => if x = "NUMC" andalso
                           not (Consts.is_const_ctxt ctxt u) then []
-                       else if nm = "FREE" andalso not (Term.is_Free u) then []
-                       else update_inst bd_vars (nm, i) cu instsp
+                       else if x = "FREE" andalso not (Term.is_Free u) then []
+                       else update_inst bd_vars (x, i) cu instsp
              | SOME (_, u') => match_head tbl bd_vars (u', cu) instsp)
         | (Free (a, _), Free (b, _)) =>
           if a = b then [(instsp, Thm.reflexive cu)] else []
@@ -243,14 +243,14 @@ and match tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
         NONE => []
       | SOME (instsp', t') =>
         case (t', Thm.term_of cu) of
-            (Var ((nm, i), _), _) =>
-            (case Vartab.lookup inst (nm, i) of
-                 NONE => if member (op =) ["NUMC", "FREE"] nm then
+            (Var ((x, i), _), _) =>
+            (case Vartab.lookup inst (x, i) of
+                 NONE => if member (op =) ["NUMC", "FREE"] x then
                            match_all_head tbl bd_vars (t', cu) instsp'
                          else
-                           update_inst bd_vars (nm, i) cu instsp'
+                           update_inst bd_vars (x, i) cu instsp'
                | SOME (_, u') => match tbl bd_vars (u', cu) instsp')
-          | (Abs (_, T, t'), Abs (nm, U, _)) => (
+          | (Abs (_, T, t'), Abs (x, U, _)) => (
             case check_type tbl (T, U) instsp' of
                 NONE => []
               | SOME (instsp'' as (_, (tyinst', _))) =>
@@ -261,7 +261,7 @@ and match tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
                   val t_free = Term.subst_bound (v, t'')
                   val insts' = match tbl (v :: bd_vars) (t_free, cu') instsp''
                   fun process_inst (inst', th') =
-                      (inst', Thm.abstract_rule nm cv th')
+                      (inst', Thm.abstract_rule x cv th')
                 in
                   map process_inst insts'
                 end)
@@ -357,11 +357,11 @@ and pre_match_head' (tbl as {ctxt, ...}) (t, cu) =
       val u = Thm.term_of cu
     in
       case (t, u) of
-          (Var ((nm, _), T), _) =>
+          (Var ((x, _), T), _) =>
           if Term.is_open u then false
           else if not (pre_match_type tbl (T, fastype_of u)) then false
-          else if nm = "NUMC" then Consts.is_const_ctxt ctxt u
-          else if nm = "FREE" then Term.is_Free u
+          else if x = "NUMC" then Consts.is_const_ctxt ctxt u
+          else if x = "FREE" then Term.is_Free u
           else true
         | (Free (a, T), Free (b, U)) =>
           (a = b andalso pre_match_type tbl (T, U))
@@ -394,10 +394,10 @@ and pre_match tbl (t, cu) =
       val u = Thm.term_of cu
     in
       case (t, u) of
-          (Var ((nm, _), T), _) =>
+          (Var ((x, _), T), _) =>
           if Term.is_open u then false
           else if not (pre_match_type tbl (T, fastype_of u)) then false
-          else if member (op =) ["NUMC", "FREE"] nm then
+          else if member (op =) ["NUMC", "FREE"] x then
             pre_match_all_head tbl (t, cu)
           else true
         | (Abs (_, T, t'), Abs (_, U, _)) =>

@@ -289,52 +289,52 @@ fun mk_mem (x, A) =
    argument must be in Abs form (to provide a name for the new
    variable).
  *)
-fun extract_init_infos_aux bInt t nms =
+fun extract_init_infos_aux bInt t xs =
     if is_all t then
       case t of
-          _ $ Abs (nm, T, b) =>
+          _ $ Abs (x, T, b) =>
           let
-            val nm' = if bInt andalso member (op =) nms nm then
-                        singleton (Name.variant_list nms) nm
-                      else nm
-            val int_nm' = if bInt then Name.internal nm' else nm'
+            val x' = if bInt andalso member (op =) xs x then
+                        singleton (Name.variant_list xs) x
+                      else x
+            val int_x' = if bInt then Name.internal x' else x'
           in
-            (true, (Free (int_nm', T))) ::
+            (true, (Free (int_x', T))) ::
             extract_init_infos_aux
-                bInt (Term.subst_bound (Free (int_nm', T), b)) (nm' :: nms)
+                bInt (Term.subst_bound (Free (int_x', T), b)) (x' :: xs)
           end
         | f $ arg =>
           let
             val T = fastype_of f |> domain_type |> domain_type
             val t' = f $ Abs ("x", T, arg $ Bound 0)
           in
-            extract_init_infos_aux bInt t' nms
+            extract_init_infos_aux bInt t' xs
           end
         | _ => raise Fail "extract_init_infos"
     else if is_ball t then
       case t of
-          _ $ S $ Abs (nm, T, b) =>
+          _ $ S $ Abs (x, T, b) =>
           let
-            val nm' = if bInt andalso member (op =) nms nm then
-                        singleton (Name.variant_list nms) nm
-                      else nm
-            val int_nm' = if bInt then Name.internal nm' else nm'
+            val x' = if bInt andalso member (op =) xs x then
+                        singleton (Name.variant_list xs) x
+                      else x
+            val int_x' = if bInt then Name.internal x' else x'
           in
-            (true, (Free (int_nm', T))) ::
-            (false, mk_mem (Free (int_nm', T), S)) ::
+            (true, (Free (int_x', T))) ::
+            (false, mk_mem (Free (int_x', T), S)) ::
             extract_init_infos_aux
-                bInt (Term.subst_bound (Free (int_nm', T), b)) (nm' :: nms)
+                bInt (Term.subst_bound (Free (int_x', T), b)) (x' :: xs)
           end
         | f $ S $ arg =>
           let
             val T = fastype_of f |> domain_type |> dest_Type |> snd |> hd
             val t' = f $ S $ Abs ("x", T, arg $ Bound 0)
           in
-            extract_init_infos_aux bInt t' nms
+            extract_init_infos_aux bInt t' xs
           end
         | _ => raise Fail "extract_init_infos"
     else if is_imp t then
-      (false, dest_arg1 t) :: extract_init_infos_aux bInt (dest_arg t) nms
+      (false, dest_arg1 t) :: extract_init_infos_aux bInt (dest_arg t) xs
     else if is_neg t then
       [(false, dest_not t)]
     else

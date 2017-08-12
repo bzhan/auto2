@@ -701,29 +701,29 @@ fun del_prfstep_pred_gnrc pred =
 
 val del_prfstep_pred = Context.theory_map o del_prfstep_pred_gnrc
 
-fun del_prfstep nm thy =
-    del_prfstep_pred (equal nm) thy
+fun del_prfstep prfstep_name thy =
+    del_prfstep_pred (equal prfstep_name) thy
 
 (* Delete all proofsteps for a given theorem. *)
 fun del_prfstep_thm th =
     let
-      val nm = name_of_thm th
+      val th_name = name_of_thm th
     in
-      del_prfstep_pred (equal nm orf is_prefix_str (nm ^ "@"))
+      del_prfstep_pred (equal th_name orf is_prefix_str (th_name ^ "@"))
     end
 
 (* Delete proofsteps for a given theorem, with the given postfix. *)
 fun del_prfstep_thm_str str th =
     del_prfstep_pred (equal (name_of_thm th ^ str))
 
-fun add_fixed_sc_gnrc (nm, sc) =
+fun add_fixed_sc_gnrc (prfstep_name, sc) =
     Data.map (
       fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
-         case find_first (equal nm) (Symtab.keys prfsteps) of
-             NONE => error ("Add fixed sc: not found " ^ nm)
+         case find_first (equal prfstep_name) (Symtab.keys prfsteps) of
+             NONE => error ("Add fixed sc: not found " ^ prfstep_name)
            | _ => ProofStepTable {
                    prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
-                   fixed_sc = fixed_sc |> Symtab.update_new (nm, sc)})
+                   fixed_sc = fixed_sc |> Symtab.update_new (prfstep_name, sc)})
 
 val add_fixed_sc = Context.theory_map o add_fixed_sc_gnrc
 
@@ -743,9 +743,9 @@ fun get_prfsteps ctxt =
       sorted_prfsteps
     end
 
-fun get_fixed_sc ctxt nm =
+fun get_fixed_sc ctxt prfstep_name =
     let val ProofStepTable {fixed_sc, ...} = proofstep_data_of ctxt in
-      Symtab.lookup fixed_sc nm
+      Symtab.lookup fixed_sc prfstep_name
     end
 
 fun add_prfstep_custom (name, descs, priority, updt_fn) =
@@ -783,12 +783,12 @@ fun with_filts filts = map with_filt filts
 
 (* Second level proofstep writing functions. *)
 
-fun add_and_print_prfstep_gnrc nm descs gnrc =
+fun add_and_print_prfstep_gnrc prfstep_name descs gnrc =
     let
       val thy = Context.theory_of gnrc
-      val _ = writeln (nm ^ "\n" ^ (string_of_descs thy descs))
+      val _ = writeln (prfstep_name ^ "\n" ^ (string_of_descs thy descs))
     in
-      add_gen_prfstep_gnrc (nm, descs) gnrc
+      add_gen_prfstep_gnrc (prfstep_name, descs) gnrc
     end
 
 (* Add a proofstep checking a requirement. *)
@@ -800,19 +800,19 @@ fun add_prfstep_check_req_gnrc (t_str, req_str) gnrc =
       val vars = map Free (Term.add_frees t [])
       val _ = assert (Term.is_Const f)
                      "add_prfstep_check_req: head must be Const."
-      val (nm, _) = Term.dest_Const f
+      val (c, _) = Term.dest_Const f
       val ctxt' = fold declare_free_term vars ctxt
       val req = Proof_Context.read_term_pattern ctxt' req_str
 
       fun get_subst var =
-          case var of Free (nm, T) => (var, Var ((nm,0),T))
+          case var of Free (x, T) => (var, Var ((x, 0), T))
                     | _ => raise Fail "add_prfstep_check_req"
       val subst = map get_subst vars
       val t' = Term.subst_atomic subst t
       val req' = Term.subst_atomic subst req
     in
       add_and_print_prfstep_gnrc
-          (nm ^ "_case") [WithTerm t', CreateConcl req'] gnrc
+          (c ^ "_case") [WithTerm t', CreateConcl req'] gnrc
     end
 
 val add_prfstep_check_req = Context.theory_map o add_prfstep_check_req_gnrc

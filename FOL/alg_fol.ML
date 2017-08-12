@@ -55,9 +55,9 @@ fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
                             raw_items = [Update.thm_to_ritem (to_obj_eq eq)]}
                 else let
                   val _ = trace_tlist ctxt "" [t, rhs_of eq, t']
-                  val nm = fst (Term.dest_Const pred_t)
+                  val (c, _) = Term.dest_Const pred_t
                 in
-                  raise Fail ("alg_norm1 for " ^ nm)
+                  raise Fail ("alg_norm1 for " ^ c)
                 end
               end
 
@@ -74,10 +74,10 @@ fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
 fun alg_norm1_prfstep norm_info =
     let
       val {pred_t, ...} = norm_info
-      val nm = fst (Term.dest_Const pred_t)
-               handle TERM _ => raise Fail "alg_norm1_prfstep"
+      val (c, _) = Term.dest_Const pred_t
+                   handle TERM _ => raise Fail "alg_norm1_prfstep"
     in
-      {name = nm ^ "@norm1",
+      {name = c ^ "@norm1",
        args = [TypedMatch (TY_TERM, @{term_pat "?A"})],
        priority = PRIORITY_ADD,
        func = OneStep (alg_norm1_prfstep_fn norm_info)}
@@ -126,9 +126,9 @@ fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
                 else let
                   val _ = trace_tlist ctxt "" [t1, rhs_of eq1, t1']
                   val _ = trace_tlist ctxt "" [t2, rhs_of eq2, t2']
-                  val nm = fst (Term.dest_Const pred_t)
+                  val (c, _) = Term.dest_Const pred_t
                 in
-                  raise Fail ("alg_norm2 for " ^ nm)
+                  raise Fail ("alg_norm2 for " ^ c)
                 end
               end
 
@@ -154,9 +154,9 @@ fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
 fun alg_norm2_prfstep norm_info =
     let
       val {pred_t, ...} = norm_info
-      val nm = fst (Term.dest_Const pred_t)
+      val (c, _) = Term.dest_Const pred_t
     in
-      {name = nm ^ "@norm2",
+      {name = c ^ "@norm2",
        args = [TypedMatch (TY_TERM, @{term_pat "?A"}),
                TypedMatch (TY_TERM, @{term_pat "?B"})],
        priority = PRIORITY_ADD,

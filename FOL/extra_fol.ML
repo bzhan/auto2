@@ -22,12 +22,12 @@ struct
 fun add_typing_rule_cond_gnrc th conds gnrc =
     let
       val concl = th |> concl_of' |> strip_conj |> hd
-      val nm = name_of_thm th
+      val th_name = name_of_thm th
     in
       if is_mem concl then
         gnrc |> add_forward_prfstep_cond_gnrc
              th ([K (WithTerm (dest_arg1 concl))] @ conds)
-             |> add_fixed_sc_gnrc (nm, 1)
+             |> add_fixed_sc_gnrc (th_name, 1)
       else
         error "Add typing rule: concl is not a membership."
     end
@@ -55,7 +55,7 @@ fun add_backward_replace_cond_gnrc th conds gnrc =
     let
       val ctxt = Context.proof_of gnrc
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
-      val nm = name_of_thm th
+      val th_name = name_of_thm th
       val concl = concl_of' th
       val conds' = map (fn cond => cond ctxt') conds
       fun prfstep_fn ((id, _), ths) items _ =
@@ -70,7 +70,7 @@ fun add_backward_replace_cond_gnrc th conds gnrc =
           handle THM _ => []
     in
       add_prfstep_custom_gnrc (
-        nm, ([WithGoal concl] @ conds'), PRIORITY_SHADOW, prfstep_fn) gnrc
+        th_name, ([WithGoal concl] @ conds'), PRIORITY_SHADOW, prfstep_fn) gnrc
     end
 
 fun add_backward_replace_gnrc th = add_backward_replace_cond_gnrc th []

@@ -1007,9 +1007,9 @@ fun apply_property_update_rule (tbl as {lat, ...}) id th_opt =
 fun apply_property_update_on_term (tbl as {ctxt, ...}) id t =
     if fastype_of t = boolT then [] else
     case head_of t of
-        Const (nm, _) =>
+        Const (c, _) =>
         let
-          val updt_rules = Property.lookup_property_update ctxt nm
+          val updt_rules = Property.lookup_property_update ctxt c
           fun process_updt_rule th =
               th |> Property.instantiate_property_update ctxt t
                  |> apply_property_update_rule tbl id
@@ -1056,8 +1056,8 @@ fun process_update_property inits (tbl as {ctxt, ...}) =
 
                 (* Derived properties of t. *)
                 val ts = Property.strip_property_field thy t
-                val nm = Property.get_property_name (prop_of' th)
-                val updt_rules = Property.lookup_property_update ctxt nm
+                val c = Property.get_property_name (prop_of' th)
+                val updt_rules = Property.lookup_property_update ctxt c
                 fun process_updt_rule (t, th) =
                     th |> Property.instantiate_property_update ctxt t
                        |> apply_property_update_rule tbl id

@@ -299,7 +299,7 @@ fun rewrite_info_y eq_y (cx, cy, diff, th) =
    result is a comparison with a constant, it is converted to a
    comparison with zero.
  *)
-fun to_nat_order_prfstep_templ ctxt (nm, pat_str, order_ty) =
+fun to_nat_order_prfstep_templ ctxt (prfstep_name, pat_str, order_ty) =
     let
       val sch_xy = [@{term_pat "?x::nat"}, @{term_pat "?y::nat"}]
       val ctxt' = fold Variable.declare_term sch_xy ctxt
@@ -327,7 +327,7 @@ fun to_nat_order_prfstep_templ ctxt (nm, pat_str, order_ty) =
                        raw_items = [get_nat_order_ritem info]}]
           end
     in
-      ProofStep.prfstep_custom nm descs PRIORITY_ADD prfstep_fn
+      ProofStep.prfstep_custom prfstep_name descs PRIORITY_ADD prfstep_fn
     end
 
 val to_nat_order_prfsteps =

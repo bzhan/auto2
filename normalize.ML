@@ -27,8 +27,8 @@ structure Data = Theory_Data (
   val merge = Symtab.merge pointer_eq
 )
 
-fun add_normalizer (nm, norm_fun) =
-    Data.map (Symtab.update_new (nm, norm_fun))
+fun add_normalizer (norm_name, norm_fun) =
+    Data.map (Symtab.update_new (norm_name, norm_fun))
 
 (* Apply norm_fun: thm -> thm list to any PROP item. *)
 fun th_normalizer norm_fun ctxt ritem =
@@ -39,8 +39,8 @@ fun th_normalizer norm_fun ctxt ritem =
           map Update.thm_to_ritem (norm_fun ctxt th)
         else [ritem]
 
-fun add_th_normalizer (nm, norm_fun) =
-    add_normalizer (nm, th_normalizer norm_fun)
+fun add_th_normalizer (norm_name, norm_fun) =
+    add_normalizer (norm_name, th_normalizer norm_fun)
 
 (* eq_th is a meta equality. *)
 fun rewr_normalizer eq_th ctxt ritem =
@@ -64,8 +64,8 @@ fun rewr_normalizer eq_th ctxt ritem =
           else [ritem]
     end
 
-fun add_rewr_normalizer (nm, eq_th) =
-    add_normalizer (nm, rewr_normalizer eq_th)
+fun add_rewr_normalizer (norm_name, eq_th) =
+    add_normalizer (norm_name, rewr_normalizer eq_th)
 
 fun get_normalizers thy = Symtab.dest (Data.get thy)
 

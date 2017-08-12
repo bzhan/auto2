@@ -46,14 +46,14 @@ fun add_induct_data str (t, ind_th) =
 fun add_typed_induct_data str (ty, ind_th) =
     add_induct_data str (Term.dummy_pattern ty, ind_th)
 
-fun get_typed_ind_th thy nm ty =
+fun get_typed_ind_th thy ind_type ty =
     let
       val tab = Data.get thy
       fun typ_can_match t' =
           let val _ = typ_match thy (type_of t', ty) in true end
           handle Type.TYPE_MATCH => false
     in
-      case Symtab.lookup tab nm of
+      case Symtab.lookup tab ind_type of
           NONE => NONE
         | SOME lst =>
           case find_first (fn (t', _) => typ_can_match t') lst of
@@ -61,14 +61,14 @@ fun get_typed_ind_th thy nm ty =
             | SOME (_, ind_th) => SOME ind_th
     end
 
-fun get_term_ind_th thy nm t =
+fun get_term_ind_th thy ind_type t =
     let
       val tab = Data.get thy
       fun term_can_match t' =
           let val _ = pattern_fo_match_thy thy (t', t) in true end
           handle Pattern.MATCH => false
     in
-      case Symtab.lookup tab nm of
+      case Symtab.lookup tab ind_type of
           NONE => NONE
         | SOME lst =>
           case find_first (fn (t', _) => term_can_match t') lst of

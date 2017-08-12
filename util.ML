@@ -231,9 +231,9 @@ fun all_pairs (l1, l2) =
 fun is_prefix_str pre str =
     is_prefix (op =) (String.explode pre) (String.explode str)
 
-(* Test whether nm is followed by exactly one _. *)
-fun is_just_internal nm =
-    Name.is_internal nm andalso not (Name.is_skolem nm)
+(* Test whether x is followed by exactly one _. *)
+fun is_just_internal x =
+    Name.is_internal x andalso not (Name.is_skolem x)
 
 val fo_init = (Vartab.empty, Vartab.empty)
 
@@ -258,8 +258,8 @@ fun eq_env ((_, inst1), (_, inst2)) =
     let
       val data1 = Vartab.dest inst1
       val data2 = Vartab.dest inst2
-      fun compare_data (((nm, i), (ty, t)), ((nm', i'), (ty', t'))) =
-          nm = nm' andalso i = i' andalso ty = ty' andalso t aconv t'
+      fun compare_data (((x, i), (ty, t)), ((x', i'), (ty', t'))) =
+          x = x' andalso i = i' andalso ty = ty' andalso t aconv t'
     in
       eq_set compare_data (data1, data2)
     end
@@ -487,11 +487,11 @@ fun strip_pure_goal_aux ctxt prevs t =
     case t of
         Const (@{const_name Pure.all}, _) $ Abs (abs as (_, T, _)) =>
         let
-          val (nm, body) = Term.dest_abs abs
-          val (nm', _) = singleton (Variable.variant_frees ctxt prevs) (nm, T)
-          val bd_var = Free (nm', T)
-          val body' = if nm = nm' then body
-                      else Term.subst_atomic [(Free (nm, T), bd_var)] body
+          val (x, body) = Term.dest_abs abs
+          val (x', _) = singleton (Variable.variant_frees ctxt prevs) (x, T)
+          val bd_var = Free (x', T)
+          val body' = if x = x' then body
+                      else Term.subst_atomic [(Free (x, T), bd_var)] body
           val (assums, concl) = strip_pure_goal_aux ctxt (bd_var :: prevs) body'
         in
           ((true, bd_var) :: assums, concl)
@@ -511,10 +511,10 @@ fun rename_abs_term vars t =
         [] => t
       | var :: rest =>
         let
-          val (nm, _) = Term.dest_Free var
+          val (x, _) = Term.dest_Free var
         in
           case t of A $ Abs (_, T1, body) =>
-                    A $ Abs (nm, T1, rename_abs_term rest body)
+                    A $ Abs (x, T1, rename_abs_term rest body)
                   | _ => error "rename_abs_term"
         end
 
@@ -524,7 +524,7 @@ fun print_term_detail ctxt t =
         "Const (" ^ s ^ ", " ^ (Syntax.pretty_typ ctxt ty |> str)
       | Free (s, ty) =>
         "Free (" ^ s ^ ", " ^ (Syntax.pretty_typ ctxt ty |> str) ^ ")"
-      | Var ((nm, i), ty) => "Var ((" ^ nm ^ ", " ^ (string_of_int i) ^ "), " ^
+      | Var ((x, i), ty) => "Var ((" ^ x ^ ", " ^ (string_of_int i) ^ "), " ^
                              (Syntax.pretty_typ ctxt ty |> str) ^ ")"
       | Bound n => "Bound " ^ (string_of_int n)
       | Abs (s, ty, b) => "Abs (" ^ s ^ ", " ^

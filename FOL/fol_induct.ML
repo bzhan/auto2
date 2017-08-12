@@ -37,13 +37,13 @@ structure StrongInductData = Generic_Data (
 
 fun add_script_induct_data_gnrc th gnrc =
     let
-      val nm = name_of_thm th
+      val th_name = name_of_thm th
       val thy = Context.theory_of gnrc
       val t = Thm.prems_of th |> List.last |> dest_Trueprop
       val _ = writeln ("Add induction rule for premise " ^
                        (t |> pretty_term_thy thy |> str))
     in
-      InductData.map (Symtab.update_new (nm, (t, th))) gnrc
+      InductData.map (Symtab.update_new (th_name, (t, th))) gnrc
     end
 
 val add_script_induct_data =
@@ -119,13 +119,13 @@ val _ =
 
 fun add_strong_induct_data_gnrc th gnrc =
     let
-      val nm = name_of_thm th
+      val th_name = name_of_thm th
       val thy = Context.theory_of gnrc
       val t = Thm.prems_of th |> List.last |> dest_Trueprop
       val _ = writeln ("Add strong induction rule for premise " ^
                        (t |> pretty_term_thy thy |> str))
     in
-      StrongInductData.map (Symtab.update_new (nm, (t, th))) gnrc
+      StrongInductData.map (Symtab.update_new (th_name, (t, th))) gnrc
     end
 
 val add_strong_induct_data =

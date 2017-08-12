@@ -140,11 +140,11 @@ fun build_equiv equivs ct =
           case Thm.term_of ct of
               _ $ _ => Thm.combination (build (Thm.dest_fun ct))
                                        (build (Thm.dest_arg ct))
-            | Abs (nm, _, _) =>
+            | Abs (x, _, _) =>
               let
                 val (cv, ct') = Thm.dest_abs (SOME Name.uu) ct
               in
-                Thm.abstract_rule nm cv (build ct')
+                Thm.abstract_rule x cv (build ct')
               end
             | Var (("SUB", i), _) => nth equivs i
             | _ => Thm.reflexive ct

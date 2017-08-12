@@ -66,9 +66,9 @@ fun alg_assoc_prfstep_fn (fhead, assoc_l) rtype _ item1 item2 =
 
 fun alg_assoc_prfstep (fhead, assoc_l) =
     let
-      val nm = fst (Term.dest_Const fhead)
+      val (c, _) = Term.dest_Const fhead
     in
-      {name = nm ^ "@assoc",
+      {name = c ^ "@assoc",
        args = [TypedMatch (TY_TERM, @{term_pat "?A"}),
                TypedMatch (TY_TERM, @{term_pat "?B"})],
        priority = PRIORITY_ADD,

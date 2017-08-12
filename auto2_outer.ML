@@ -97,8 +97,8 @@ fun strip_goal t =
     case t of
         Const (@{const_name Pure.all}, _) $ Abs (abs as (_, T, _)) =>
         let
-          val (nm, body) = Term.dest_abs abs
-          val var = Free (nm, T)
+          val (x, body) = Term.dest_abs abs
+          val var = Free (x, T)
           val (vars, body') = strip_goal body
         in
           (var :: vars, body')
@@ -133,8 +133,8 @@ fun strip_have_goal t =
       case t of
           _ $ Abs (abs as (_, T, _)) =>
           let
-            val (nm, body) = Term.dest_abs abs
-            val var = Free (nm, T)
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
             val (vars, (assum, concl)) = strip_have_goal body
           in
             (var :: vars, (assum, concl))
@@ -144,8 +144,8 @@ fun strip_have_goal t =
       case t of
           _ $ S $ Abs (abs as (_, T, _)) =>
           let
-            val (nm, body) = Term.dest_abs abs
-            val var = Free (nm, T)
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
             val mem = mk_mem (var, S)
             val (vars, (assum, concl)) = strip_have_goal body
           in
@@ -279,8 +279,8 @@ fun strip_ex t =
       case t of
           _ $ Abs (abs as (_, T, _)) =>
           let
-            val (nm, body) = Term.dest_abs abs
-            val var = Free (nm, T)
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
             val (vars, body') = strip_ex body
           in
             (var :: vars, body')
@@ -530,11 +530,11 @@ fun let_resolve ctxt vars eq As C =
       val pat_a = case ex_vardef_th |> prop_of' |> dest_arg of
                       Abs (_, _, b) => dest_arg b
                     | _ => raise Fail "ex_vardef_th"
-      val nm = lhs |> Term.dest_Free |> fst
+      val (x, _) = Term.dest_Free lhs
       val inst = pattern_fo_match ctxt (pat_a, rhs)
       val ex_th = subst_thm ctxt inst ex_vardef_th
       val t' = case Thm.prop_of ex_th of
-                   A $ (B $ Abs (_, T, body)) => A $ (B $ Abs (nm, T, body))
+                   A $ (B $ Abs (_, T, body)) => A $ (B $ Abs (x, T, body))
                  | _ => error "let_resolve"
       val ex_th = ex_th |> Thm.renamed_prop t'
                         |> fold Thm.implies_intr (rev (map (cert ctxt) As))

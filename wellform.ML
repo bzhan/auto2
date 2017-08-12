@@ -41,9 +41,9 @@ fun register_wellform_data (t_str, req_strs) thy =
                      "add_wellform_data: head must be Const."
       val _ = assert (forall Term.is_Free args)
                      "add_wellform_data: arguments must be Free."
-      val (nm, _) = Term.dest_Const f
+      val (c, _) = Term.dest_Const f
     in
-      thy |> Data.map (Symtab.update_new (nm, (t, reqs)))
+      thy |> Data.map (Symtab.update_new (c, (t, reqs)))
     end
 
 (* Lookup table for the given term t. If nothing is found, return the
@@ -55,8 +55,8 @@ fun lookup_wellform_data thy t =
       val data = Data.get thy
     in
       case f of
-          Const (nm, _) =>
-          (case Symtab.lookup data nm of
+          Const (c, _) =>
+          (case Symtab.lookup data c of
                NONE => []
              | SOME (t', reqs) =>
                let
@@ -103,8 +103,8 @@ fun lookup_wellform_pattern thy (t, wf_t) =
       val data = Data.get thy
     in
       case f of
-          Const (nm, _) =>
-          (case Symtab.lookup data nm of
+          Const (c, _) =>
+          (case Symtab.lookup data c of
                NONE => NONE
              | SOME (t', reqs) =>
                let

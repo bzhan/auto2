@@ -59,9 +59,9 @@ fun rewr_obj_eq_bottom ctxt eq_th =
     Conv.bottom_conv (K (Conv.try_conv (rewr_obj_eq eq_th))) ctxt
 
 (* Proofsteps normalizing assertions. *)
-fun normalize_mod_cv_prfstep (nm, pat) =
+fun normalize_mod_cv_prfstep (prfstep_name, pat) =
     ProofStep.prfstep_custom
-        nm [WithItem (TY_PROP, pat)] PRIORITY_URGENT
+        prfstep_name [WithItem (TY_PROP, pat)] PRIORITY_URGENT
         (fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
             let
               val th = the_single ths
@@ -234,11 +234,11 @@ fun dest_bind t =
         Const (@{const_name bind}, _) $ c1 $ rest => (c1, rest)
       | _ => raise Fail "dest_cmd"
 
-fun extract_return_nm t =
+fun extract_return_name t =
     case t of
-        Const (@{const_name bind}, _) $ _ $ Abs (nm, _, _) =>
-        if nm = "uu_" then "u"  (* no assigned name *)
-        else nm  (* regular assigned name *)
+        Const (@{const_name bind}, _) $ _ $ Abs (x, _, _) =>
+        if x = "uu_" then "u"  (* no assigned name *)
+        else x  (* regular assigned name *)
       | _ => "r"  (* invalid input, return is a pair, etc. *)
 
 (* CODE_POS items indicate current position in the program. Here tname
@@ -422,10 +422,10 @@ fun rewrite_hoare_triple_goal ctxt th =
 fun mod_fact_ritems ctxt mod_th =
     let
       val mod_th' = apply_to_thm' (normalize_mod_cv ctxt) mod_th
-      val nms = Update.get_apply_exists_nms mod_th'
+      val xs = Update.get_apply_exists_names mod_th'
     in
-      if null nms then ([], mod_th')
-      else Update.apply_exists_ritems mod_th' ctxt nms
+      if null xs then ([], mod_th')
+      else Update.apply_exists_ritems mod_th' ctxt xs
     end
 
 val init_pos =
@@ -439,8 +439,8 @@ val init_pos =
               val th = rewrite_hoare_triple_goal ctxt (the_single ths)
 
               val ex_th = th RS @{thm hoare_tripleI}
-              val nms = map Name.internal ["h", "\<sigma>", "r"]
-              val (ritems, res_th) = Update.apply_exists_ritems ex_th ctxt nms
+              val xs = map Name.internal ["h", "\<sigma>", "r"]
+              val (ritems, res_th) = Update.apply_exists_ritems ex_th ctxt xs
 
               (* The pair is h_ |= P and what is to be placed into the
                  CODE_POS item.
@@ -522,10 +522,10 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
                               MRS @{thm hoare_tripleE''_preserve}
 
         (* Below we will use r_ and h_ to denote the new variables. *)
-        val nm_r = extract_return_nm cur_cmd
-        val nms = if is_some heap_preserve_opt then [Name.internal nm_r]
-                  else map Name.internal [nm_r, "h"]
-        val (ritems, res_th) = Update.apply_exists_ritems ex_th' ctxt nms
+        val x_r = extract_return_name cur_cmd
+        val xs = if is_some heap_preserve_opt then [Name.internal x_r]
+                 else map Name.internal [x_r, "h"]
+        val (ritems, res_th) = Update.apply_exists_ritems ex_th' ctxt xs
 
         (* Output res_th has three parts:
 
@@ -579,9 +579,9 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
                               MRS @{thm hoare_tripleE'_preserve}
 
         (* Below we will use h_ to denote the new variables. *)
-        val nms = if is_some heap_preserve_opt then []
-                  else [Name.internal "h"]
-        val (ritems, res_th) = Update.apply_exists_ritems ex_th' ctxt nms
+        val xs = if is_some heap_preserve_opt then []
+                 else [Name.internal "h"]
+        val (ritems, res_th) = Update.apply_exists_ritems ex_th' ctxt xs
 
         (* The pair is:
 
@@ -792,32 +792,32 @@ val convert_match_pos =
  *)
 fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
     let
-      val nms = Update.get_apply_exists_nms ex_th
+      val xs = Update.get_apply_exists_names ex_th
 
       (* Find body of existence theorem, same code as in apply_exists. *)
-      fun dest_one_abs nm t =
+      fun dest_one_abs x t =
           case t of
               Const(@{const_name HOL.Ex}, _) $ Abs (_, T, body) =>
               let
-                val (nm', body') = Term.dest_abs (nm, T, body)
-                val _ = assert (nm = nm') "use_prec_thms: name clash"
+                val (x', body') = Term.dest_abs (x, T, body)
+                val _ = assert (x = x') "use_prec_thms: name clash"
               in
-                ((nm, T), body')
+                ((x, T), body')
               end
             | _ => raise Fail "use_prec_thms: not exists statement."
 
-      fun dest_all_abs nms t =
-          case nms of
+      fun dest_all_abs xs t =
+          case xs of
               [] => ([], t)
-            | nm :: rest =>
+            | x :: rest =>
               let
-                val (var, t') = dest_one_abs nm t
+                val (var, t') = dest_one_abs x t
                 val (vars, t'') = dest_all_abs rest t'
               in
                 (var :: vars, t'')
               end
 
-      val (vars, new_prop) = ex_th |> prop_of' |> dest_all_abs nms
+      val (vars, new_prop) = ex_th |> prop_of' |> dest_all_abs xs
                                    |> apsnd mk_Trueprop
       val new_th = new_prop |> cert ctxt |> Thm.assume
       val base_th' = base_th RS @{thm mod_star_trueI}
@@ -999,9 +999,9 @@ val match_assn_spatial =
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_spatial_fn}
 
-fun match_hoare_create_case_gen (nm, pat) =
+fun match_hoare_create_case_gen (prfstep_name, pat) =
     ProofStep.prfstep_custom
-        nm [WithItem (TY_MATCH_POS, pat)]
+        prfstep_name [WithItem (TY_MATCH_POS, pat)]
         PRIORITY_ADD
         (fn ((id, inst), _) => fn _ => fn _ =>
             if has_vars (lookup_inst inst "P") then [] else

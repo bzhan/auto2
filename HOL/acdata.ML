@@ -91,11 +91,11 @@ fun add_ac_data info thy =
       val f = assoc_th |> prop_of' |> dest_eq_rhs |> Term.head_of
     in
       case f of
-          Const (nm, _) =>
+          Const (c, _) =>
           let
-            val _ = tracing ("Add ac data for function " ^ nm)
+            val _ = tracing ("Add ac data for function " ^ c)
           in
-            Data.map (Symtab.update_new (nm, info)) thy
+            Data.map (Symtab.update_new (c, info)) thy
           end
         | _ => error "Add AC data: invalid assoc_th"
     end
@@ -103,8 +103,8 @@ fun add_ac_data info thy =
 
 fun get_head_ac_info thy t =
     case t of
-        Const (nm, _) $ _ $ _ =>
-        (case Symtab.lookup (Data.get thy) nm of
+        Const (c, _) $ _ $ _ =>
+        (case Symtab.lookup (Data.get thy) c of
              NONE => NONE
            | SOME ac_info => inst_ac_info thy (fastype_of t) ac_info)
       | _ => NONE
