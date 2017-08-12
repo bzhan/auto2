@@ -275,7 +275,7 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
                items. Do not match item with itself.
              *)
             fun process_pair left_item func right_item st =
-                if pointer_eq (left_item, right_item) then st else
+                if BoxItem.eq_item (left_item, right_item) then st else
                 let
                   val updts =
                       scoring prfstep sc [left_item, right_item] rtype st func
@@ -298,7 +298,7 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
          match with the extra elements in items' on the left.
        *)
       st |> process_pairs (items, items')
-         |> process_pairs (subtract pointer_eq items items', items)
+         |> process_pairs (subtract BoxItem.eq_item items items', items)
     end
 
 fun process_prfstep sc rtype items items' (prfstep as {args, ...}) st =
@@ -343,7 +343,7 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
                        (RewriteTable.get_new_terms (tbl, tbl'))
       val all_items =
           (maps (Status.get_items false st) (Status.get_unresolved st))
-              |> remove pointer_eq item
+              |> remove BoxItem.eq_item item
       val infos = map (fn {id, prop, ...} => (id, prop)) all_items
       val tbl'' =
           tbl' |> RewriteTable.complete_wellform_data_for_terms infos new_ts
@@ -385,7 +385,7 @@ fun process_fact_all items st =
          relevant terms for that increment.
        *)
       val items' = maps (Status.get_items false st) (Status.get_unresolved st)
-      val infos = (subtract pointer_eq items items')
+      val infos = (subtract BoxItem.eq_item items items')
                       |> map (fn {id, prop, ...} => (id, prop))
                       |> filter (is_Trueprop o Thm.prop_of o snd)
       val props = items |> filter (BoxItem.match_ty_strs [TY_PROP, TY_EQ, TY_PROPERTY])
@@ -406,7 +406,7 @@ fun process_fact_all items st =
       val incr_items =
           if null ts then []
           else (maps (Status.get_items false st) incr_ids)
-                   |> subtract pointer_eq items
+                   |> subtract BoxItem.eq_item items
                    |> filter (fn {tname, ...} =>
                                  exists (has_subterm ts)
                                         (map Thm.term_of tname))

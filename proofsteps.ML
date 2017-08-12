@@ -25,6 +25,7 @@ datatype prfstep_descriptor = WithFact of term
 
 signature PROOFSTEP =
 sig
+  val eq_prfstep: proofstep * proofstep -> bool
   val apply_prfstep: rewrite_type -> status -> box_item list -> proofstep ->
                      raw_update list
   val WithGoal: term -> prfstep_descriptor
@@ -71,6 +72,8 @@ struct
 
 open Base
 open UtilLogic
+
+fun eq_prfstep (prfstep1, prfstep2) = (#name prfstep1 = #name prfstep2)
 
 fun apply_prfstep rtype st items {func, ...} =
     case func of
@@ -638,9 +641,8 @@ structure Data = Generic_Data (
     ProofStepTable {prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
     ProofStepTable {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
       ProofStepTable {
-        prfsteps = Symtab.merge (op pointer_eq) (p1, p2),
-        sorted_prfsteps = sort prfstep_ord (
-          Library.merge (op pointer_eq) (sp1, sp2)),
+        prfsteps = Symtab.merge eq_prfstep (p1, p2),
+        sorted_prfsteps = sort prfstep_ord (Library.merge eq_prfstep (sp1, sp2)),
         fixed_sc = Symtab.merge (op =) (sc1, sc2)}
 )
 

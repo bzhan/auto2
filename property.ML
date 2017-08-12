@@ -37,7 +37,7 @@ structure Data = Theory_Data (
   type T = unit Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
-  val merge = Symtab.merge pointer_eq
+  val merge = Symtab.merge (K true)
 )
 
 (* Rules deriving new properties of t from other properties of t, or
@@ -50,7 +50,7 @@ structure UpdateData = Generic_Data (
   type T = (thm list) Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
-  val merge = Symtab.merge_list (op pointer_eq)
+  val merge = Symtab.merge_list Thm.eq_thm_prop
 )
 
 (* Set of fields of a structure whose property can be considered as
@@ -61,7 +61,7 @@ structure FieldData = Theory_Data (
   type T = unit Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
-  val merge = Symtab.merge pointer_eq
+  val merge = Symtab.merge (K true)
 )
 
 fun add_property_const t thy =
@@ -215,7 +215,7 @@ fun add_property_update_gnrc th gnrc =
           val _ = writeln ("Add property rule for " ^ (string_of_list I names))
         in
           gnrc |> UpdateData.map (
-            fold (Symtab.update_list (op pointer_eq)) (map (rpair th) names))
+            fold (Symtab.update_list Thm.eq_thm_prop) (map (rpair th) names))
         end
       else
         (* Second case. concl_arg in the form f ?x1 ... ?xn. *)
@@ -232,7 +232,7 @@ fun add_property_update_gnrc th gnrc =
           val _ = writeln ("Add property rule for function " ^ nm)
         in
           gnrc |> UpdateData.map (
-            Symtab.update_list (op pointer_eq) (nm, th))
+            Symtab.update_list Thm.eq_thm_prop (nm, th))
         end
     end
 

@@ -35,6 +35,7 @@ sig
       Proof.context * raw_item list -> Proof.context * (cterm * cterm) list
 
   val null_item: box_item
+  val eq_item: box_item * box_item -> bool
   val match_ty_str: string -> box_item -> bool
   val match_ty_strs: string list -> box_item -> bool
   (* Misc. functions. *)
@@ -119,6 +120,7 @@ fun instantiate subst ritem =
 
 val null_item = {uid = 0, id = [], sc = 0, ty_str = TY_NULL,
                  tname = [], prop = true_th}
+fun eq_item (item1, item2) = (#uid item1 = #uid item2)
 fun match_ty_str s {ty_str, ...} = (s = "" orelse s = ty_str)
 fun match_ty_strs slist {ty_str, ...} = member (op =) slist ty_str
 

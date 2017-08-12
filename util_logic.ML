@@ -368,7 +368,7 @@ fun get_cneg ct =
 
 (* Theorems *)
 
-fun is_true_th th = pointer_eq (th, true_th)
+fun is_true_th th = Thm.eq_thm_prop (th, true_th)
 fun prop_of' th = dest_Trueprop (Thm.prop_of th)
 fun cprop_of' th = cdest_Trueprop (Thm.cprop_of th)
 fun concl_of' th = dest_Trueprop (Thm.concl_of th)

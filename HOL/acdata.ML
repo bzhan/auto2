@@ -45,7 +45,7 @@ structure Data = Theory_Data (
   type T = ac_info Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
-  val merge = Symtab.merge pointer_eq
+  val merge = Symtab.merge (fn (info1, info2) => #cfhead info1 aconvc #cfhead info2)
 )
 
 (* Instantiate an ac_info for a specific type T. *)
@@ -109,9 +109,9 @@ fun get_head_ac_info thy t =
            | SOME ac_info => inst_ac_info thy (fastype_of t) ac_info)
       | _ => NONE
 
-fun has_assoc_th {assoc_th, ...} = not (pointer_eq (assoc_th, true_th))
-fun has_comm_th {comm_th, ...} = not (pointer_eq (comm_th, true_th))
-fun has_unit_th {unitl_th, ...} = not (pointer_eq (unitl_th, true_th))
+fun has_assoc_th {assoc_th, ...} = not (is_true_th assoc_th)
+fun has_comm_th {comm_th, ...} = not (is_true_th comm_th)
+fun has_unit_th {unitl_th, ...} = not (is_true_th unitl_th)
 
 (* (a . b) . c = (a . c) . b *)
 fun swap_cv (ac_info as {assoc_th, comm_th, ...}) ct =
