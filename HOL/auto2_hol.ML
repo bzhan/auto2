@@ -13,12 +13,12 @@ val mk_setT = HOLogic.mk_setT
 
 fun dest_eq t =
     case t of
-        Const ("HOL.eq", _) $ lhs $ rhs => (lhs, rhs)
+        Const (@{const_name HOL.eq}, _) $ lhs $ rhs => (lhs, rhs)
       | _ => raise Fail "dest_eq"
 
 fun cdest_eq ct =
     case Thm.term_of ct of
-        Const ("HOL.eq", _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
+        Const (@{const_name HOL.eq}, _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
       | _ => raise Fail "dest_eq"
 
 fun dest_eq_lhs t = fst (dest_eq t)
@@ -28,7 +28,7 @@ fun mk_eq (t, u) =
     let
       val T = fastype_of t
     in
-      Const ("HOL.eq", T --> T --> boolT) $ t $ u
+      Const (@{const_name HOL.eq}, T --> T --> boolT) $ t $ u
     end
 
 val mk_bool_eq = mk_eq
@@ -37,7 +37,7 @@ fun is_eq_term t =
     let
       val _ = assert (fastype_of t = boolT) "is_eq_term: wrong type"
     in
-      case t of Const ("HOL.eq", _) $ _ $ _ => true
+      case t of Const (@{const_name HOL.eq}, _) $ _ $ _ => true
               | _ => false
     end
 
@@ -51,13 +51,13 @@ fun is_eq_term_non_iff t =
 
 val bTrue = @{term True}
 val bFalse = @{term False}
-val Trueprop_name = "HOL.Trueprop"
-val Not_name = "HOL.Not"
-val Conj_name = "HOL.conj"
-val Disj_name = "HOL.disj"
-val Imp_name = "HOL.implies"
-val All_name = "HOL.All"
-val Ex_name = "HOL.Ex"
+val Trueprop_name = @{const_name HOL.Trueprop}
+val Not_name = @{const_name HOL.Not}
+val Conj_name = @{const_name HOL.conj}
+val Disj_name = @{const_name HOL.disj}
+val Imp_name = @{const_name HOL.implies}
+val All_name = @{const_name HOL.All}
+val Ex_name = @{const_name HOL.Ex}
 
 (* If expressions are treated differently. In a term "if a then b else
    c", only terms in "a" are considered in the proof state.

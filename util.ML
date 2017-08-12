@@ -369,7 +369,7 @@ fun is_null_term t = (t aconv null_term)
 (* Whether a given term is of the form A ==> B. *)
 fun is_implies t =
     let val _ = assert (fastype_of t = propT) "is_implies: wrong type"
-    in case t of Const ("Pure.imp", _) $ _ $ _ => true
+    in case t of @{const Pure.imp} $ _ $ _ => true
                | _ => false
     end
 
@@ -401,7 +401,7 @@ fun dest_argn n t = nth (dest_args t) n
 (* Whether the term is of the form A == B. *)
 fun is_meta_eq t =
     let val _ = assert (fastype_of t = propT) "is_meta_eq_term: wrong type"
-    in case t of Const ("Pure.eq", _) $ _ $ _ => true
+    in case t of Const (@{const_name Pure.eq}, _) $ _ $ _ => true
                | _ => false
     end
 
@@ -485,7 +485,7 @@ fun is_pattern t = is_pattern_list [t]
  *)
 fun strip_pure_goal_aux ctxt prevs t =
     case t of
-        Const ("Pure.all", _) $ Abs (abs as (_, T, _)) =>
+        Const (@{const_name Pure.all}, _) $ Abs (abs as (_, T, _)) =>
         let
           val (nm, body) = Term.dest_abs abs
           val (nm', _) = singleton (Variable.variant_frees ctxt prevs) (nm, T)
@@ -496,7 +496,7 @@ fun strip_pure_goal_aux ctxt prevs t =
         in
           ((true, bd_var) :: assums, concl)
         end
-      | Const ("Pure.imp", _) $ P $ Q =>
+      | @{const Pure.imp} $ P $ Q =>
         let
           val (assums, concl) = strip_pure_goal_aux ctxt prevs Q
         in
@@ -644,7 +644,7 @@ fun meta_use_vardef th =
 
 fun meta_use_vardefs th =
     case Thm.prop_of th of
-        Const ("Pure.imp", _) $ A $ _ =>
+        @{const Pure.imp} $ A $ _ =>
         if is_meta_eq A andalso Term.is_Var (fst (Logic.dest_equals A)) then
           th |> meta_use_vardef |> meta_use_vardefs
         else th
@@ -695,7 +695,7 @@ fun concl_conv_n i cv ct =
 (* Rewrite part of ct after stripping all premises. *)
 fun concl_conv cv ct =
     case Thm.term_of ct of
-        Const ("Pure.imp", _) $ _ $ _ => Conv.arg_conv (concl_conv cv) ct
+        @{const Pure.imp} $ _ $ _ => Conv.arg_conv (concl_conv cv) ct
       | _ => cv ct
 
 (* Given a list of theorems A = B, B = C, etc., apply

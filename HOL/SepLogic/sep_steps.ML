@@ -503,7 +503,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
       fun split_conj_all_th th =
           case prop_of' th of
-              Const ("HOL.conj", _) $ _ $ _ =>
+              Const (@{const_name HOL.conj}, _) $ _ $ _ =>
               maps split_conj_all_th [conj_left_th th, conj_right_th th]
             | _ => [th]
 
@@ -797,7 +797,7 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
       (* Find body of existence theorem, same code as in apply_exists. *)
       fun dest_one_abs nm t =
           case t of
-              Const("HOL.Ex", _) $ Abs (_, T, body) =>
+              Const(@{const_name HOL.Ex}, _) $ Abs (_, T, body) =>
               let
                 val (nm', body') = Term.dest_abs (nm, T, body)
                 val _ = assert (nm = nm') "use_prec_thms: name clash"

@@ -95,7 +95,7 @@ fun have_resolve ctxt vars th concl =
 
 fun strip_goal t =
     case t of
-        Const ("Pure.all", _) $ Abs (abs as (_, T, _)) =>
+        Const (@{const_name Pure.all}, _) $ Abs (abs as (_, T, _)) =>
         let
           val (nm, body) = Term.dest_abs abs
           val var = Free (nm, T)

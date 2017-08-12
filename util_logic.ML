@@ -448,10 +448,10 @@ val rewrite_thm_from_contra_form = apply_to_thm rewrite_from_contra_form
 (* Converts ==> to --> and !! to !. *)
 fun to_obj_conv ctxt ct =
     (case Thm.term_of ct of
-         Const ("Pure.imp", _) $ _ $ _ =>
+         @{const Pure.imp} $ _ $ _ =>
          (Conv.binop_conv (to_obj_conv ctxt))
              then_conv (Conv.rewr_conv atomize_imp_th)
-       | Const ("Pure.all", _) $ Abs _ =>
+       | Const (@{const_name Pure.all}, _) $ Abs _ =>
          (Conv.binder_conv (to_obj_conv o snd) ctxt)
              then_conv (Conv.rewr_conv atomize_all_th)
              then_conv (Trueprop_conv (
@@ -461,7 +461,7 @@ fun to_obj_conv ctxt ct =
 (* When ct is of form A1 ==> ... ==> An, apply to_obj_conv to each Ai. *)
 fun to_obj_conv_on_horn ctxt ct =
     (case Thm.term_of ct of
-         Const ("Pure.imp", _) $ _ $ _ =>
+         @{const Pure.imp} $ _ $ _ =>
          Conv.combination_conv (Conv.arg_conv (to_obj_conv ctxt))
                                (to_obj_conv_on_horn ctxt)
        | _ => Conv.all_conv) ct

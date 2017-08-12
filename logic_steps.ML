@@ -657,7 +657,7 @@ fun forall_elim_sch th =
       val thy = Thm.theory_of_thm th
     in
       case Thm.prop_of th of
-          Const ("Pure.all", _) $ Abs (nm, T, _) =>
+          Const (@{const_name Pure.all}, _) $ Abs (nm, T, _) =>
           let
             val var_nms = map fst (Term.add_var_names (Thm.prop_of th) [])
             val nm' = if member (op =) var_nms nm then

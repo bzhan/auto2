@@ -14,14 +14,14 @@ val mk_setT = K setT
 
 fun dest_eq t =
     case t of
-        Const ("IFOL.eq", _) $ lhs $ rhs => (lhs, rhs)
-      | Const ("IFOL.iff", _) $ lhs $ rhs => (lhs, rhs)
+        Const (@{const_name IFOL.eq}, _) $ lhs $ rhs => (lhs, rhs)
+      | Const (@{const_name IFOL.iff}, _) $ lhs $ rhs => (lhs, rhs)
       | _ => raise Fail "dest_eq"
 
 fun cdest_eq ct =
     case Thm.term_of ct of
-        Const ("IFOL.eq", _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
-      | Const ("IFOL.iff", _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
+        Const (@{const_name IFOL.eq}, _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
+      | Const (@{const_name IFOL.iff}, _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
       | _ => raise Fail "dest_eq"
 
 fun dest_eq_lhs t = fst (dest_eq t)
@@ -31,21 +31,21 @@ fun mk_eq (t, u) =
     let
       val T = fastype_of t
     in
-      Const ("IFOL.eq", T --> T --> boolT) $ t $ u
+      Const (@{const_name IFOL.eq}, T --> T --> boolT) $ t $ u
     end
 
 fun mk_bool_eq (t, u) =
     let
       val _ = assert (fastype_of t = boolT) "mk_bool_eq"
     in
-      Const ("IFOL.iff", boolT --> boolT --> boolT) $ t $ u
+      Const (@{const_name IFOL.iff}, boolT --> boolT --> boolT) $ t $ u
     end
 
 fun is_eq_term_iff t =
     let
       val _ = assert (fastype_of t = boolT) "is_eq_term: wrong type"
     in
-      case t of Const ("IFOL.iff", _) $ _ $ _ => true
+      case t of Const (@{const_name IFOL.iff}, _) $ _ $ _ => true
               | _ => false
     end
 
@@ -53,7 +53,7 @@ fun is_eq_term_non_iff t =
     let
       val _ = assert (fastype_of t = boolT) "is_eq_term: wrong type"
     in
-      case t of Const ("IFOL.eq", _) $ _ $ _ => true
+      case t of Const (@{const_name IFOL.eq}, _) $ _ $ _ => true
               | _ => false
     end
 
@@ -61,13 +61,13 @@ fun is_eq_term t = is_eq_term_iff t orelse is_eq_term_non_iff t
 
 val bTrue = @{term True}
 val bFalse = @{term False}
-val Trueprop_name = "IFOL.Trueprop"
-val Not_name = "IFOL.Not"
-val Conj_name = "IFOL.conj"
-val Disj_name = "IFOL.disj"
-val Imp_name = "IFOL.imp"
-val All_name = "IFOL.All"
-val Ex_name = "IFOL.Ex"
+val Trueprop_name = @{const_name IFOL.Trueprop}
+val Not_name = @{const_name IFOL.Not}
+val Conj_name = @{const_name IFOL.conj}
+val Disj_name = @{const_name IFOL.disj}
+val Imp_name = @{const_name IFOL.imp}
+val All_name = @{const_name IFOL.All}
+val Ex_name = @{const_name IFOL.Ex}
 
 (* If expressions are treated differently. In a term "if a then b else
    c", only terms in "a" are considered in the proof state.

@@ -939,7 +939,7 @@ fun is_def_eq t =
 
 fun swap_one_eq_to_front ct =
     case Thm.term_of ct of
-        Const ("Pure.imp", _) $ A $ _ =>
+        @{const Pure.imp} $ A $ _ =>
         if is_eq_term' A andalso is_def_eq (dest_Trueprop A) then
           Conv.arg1_conv to_meta_eq_cv ct
         else
