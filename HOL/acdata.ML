@@ -65,7 +65,7 @@ fun inst_ac_info thy T {assoc_th, comm_th, unitl_th, unitr_th, ...} =
           in
             if arg_type = T then th else
             let
-              val tenv = typ_match thy (arg_type, T)
+              val tenv = Sign.typ_match thy (arg_type, T) Vartab.empty
             in
               subst_thm_thy thy (tenv, Vartab.empty) th
             end

@@ -61,7 +61,7 @@ fun lookup_script_induct_data ctxt t =
       val thy = Proof_Context.theory_of ctxt
       fun match_data (_, (pat, th)) =
           let
-            val inst = pattern_fo_match_thy thy (pat, t)
+            val inst = Pattern.first_order_match thy (pat, t) fo_init
           in
             SOME (subst_thm_thy thy inst th)
           end
@@ -137,7 +137,7 @@ fun lookup_strong_induct_data ctxt t =
       val thy = Proof_Context.theory_of ctxt
       fun match_data (_, (pat, th)) =
           let
-            val inst = pattern_fo_match_thy thy (pat, t)
+            val inst = Pattern.first_order_match thy (pat, t) fo_init
           in
             SOME (subst_thm_thy thy inst th)
           end

@@ -221,7 +221,8 @@ val reduce_emp_right = rewr_obj_eq @{thm mult_1_right}
 (* Given A of type assnT, return the theorem A ==> A. *)
 fun entail_triv_th ctxt A =
     let
-      val inst = pattern_fo_match ctxt (Var (("A", 0), assnT), A)
+      val thy = Proof_Context.theory_of ctxt
+      val inst = Pattern.first_order_match thy (Var (("A", 0), assnT), A) fo_init
     in
       subst_thm ctxt inst @{thm entails_triv}
     end
@@ -229,7 +230,8 @@ fun entail_triv_th ctxt A =
 (* Given A of type assnT, return the theorem A ==> true. *)
 fun entail_true_th ctxt A =
     let
-      val inst = pattern_fo_match ctxt (Var (("A", 0), assnT), A)
+      val thy = Proof_Context.theory_of ctxt
+      val inst = Pattern.first_order_match thy (Var (("A", 0), assnT), A) fo_init
     in
       subst_thm ctxt inst @{thm entails_true}
     end

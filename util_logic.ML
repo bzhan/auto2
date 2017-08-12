@@ -586,9 +586,10 @@ fun mk_conjs_th ths =
  *)
 fun ex_elim ctxt freevar th =
     let
+      val thy = Proof_Context.theory_of ctxt
       val th' = th |> Thm.forall_intr (cert ctxt freevar)
       val head_prem = hd (Thm.prems_of exE_th')
-      val inst = pattern_match ctxt (head_prem, Thm.prop_of th')
+      val inst = Pattern.match thy (head_prem, Thm.prop_of th') fo_init
       val exE_inst = subst_thm ctxt inst exE_th'
     in
       Thm.elim_implies th' exE_inst

@@ -447,8 +447,9 @@ val eq_tname_typed_matcher =
     let
       fun pre_match pat {tname, ...} {ctxt, ...} =
           let
+            val thy = Proof_Context.theory_of ctxt
             val (lhs, rhs) = the_pair (map Thm.term_of tname)
-            val _ = pattern_fo_match ctxt (pat, mk_eq (lhs, rhs))
+            val _ = Pattern.first_order_match thy (pat, mk_eq (lhs, rhs)) fo_init
           in
             true
           end
@@ -818,6 +819,8 @@ fun handler_ritems ctxt t handler =
  *)
 fun apply_exists_ritems ex_th ctxt xs =
     let
+      val thy = Proof_Context.theory_of ctxt
+
       fun dest_one_abs x t =
           case t of
               Const (c, _) $ Abs (_, T, body) =>
@@ -862,7 +865,7 @@ fun apply_exists_ritems ex_th ctxt xs =
             val subst = maps subst_for_var all_internal_vars
 
             val pat = Term.subst_atomic subst t
-            val inst = pattern_fo_match ctxt (pat, u)
+            val inst = Pattern.first_order_match thy (pat, u) fo_init
             fun get_freevar (x, T) = ((x, T), lookup_inst inst x)
           in
             map get_freevar all_internal_vars
@@ -1317,6 +1320,7 @@ fun find_ritem_exact (st as {tbl, ...}) id ritem =
 fun find_ritems_exact st id ritems =
     let
       val {ctxt, ...} = st
+      val thy = Proof_Context.theory_of ctxt
       val (var_ritems, ritems') =
           ritems |> filter_split (BoxItem.match_ty_str_raw TY_VAR)
     in
@@ -1338,8 +1342,8 @@ fun find_ritems_exact st id ritems =
                   val tname' = map (Term.subst_atomic subst) tname
 
                   fun process_inst cts inst =
-                      [pattern_fo_match_list
-                           ctxt (tname' ~~ map Thm.term_of cts) inst]
+                      [Util.first_order_match_list
+                           thy (tname' ~~ map Thm.term_of cts) inst]
                       handle Pattern.MATCH => []
 
                   fun match_item {ty_str = ty2, tname = ts2, ...} =

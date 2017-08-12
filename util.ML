@@ -39,16 +39,9 @@ sig
                   Type.tyenv * Envir.tenv
   val eq_env: (Type.tyenv * Envir.tenv) * (Type.tyenv * Envir.tenv) -> bool
 
-  (* Wrapper around matching functions in pattern. *)
-  val pattern_fo_match_thy: theory -> term * term -> Type.tyenv * Envir.tenv
-  val pattern_fo_match: Proof.context -> term * term -> Type.tyenv * Envir.tenv
-  val pattern_match: Proof.context -> term * term -> Type.tyenv * Envir.tenv
-  val typ_match: theory -> typ * typ -> Type.tyenv
-  val pattern_fo_match_list_thy:
+  (* Matching. *)
+  val first_order_match_list:
       theory -> (term * term) list -> Type.tyenv * Envir.tenv ->
-      Type.tyenv * Envir.tenv
-  val pattern_fo_match_list:
-      Proof.context -> (term * term) list -> Type.tyenv * Envir.tenv ->
       Type.tyenv * Envir.tenv
 
   (* Printing functions, mostly from Isabelle Cookbook. *)
@@ -261,24 +254,15 @@ fun eq_env ((_, inst1), (_, inst2)) =
       eq_set compare_data (data1, data2)
     end
 
-fun pattern_fo_match_thy thy (t, u) =
-    Pattern.first_order_match thy (t, u) fo_init
-fun pattern_fo_match ctxt (t, u) =
-    Pattern.first_order_match (Proof_Context.theory_of ctxt) (t, u) fo_init
-fun pattern_match ctxt (t, u) =
-    Pattern.match (Proof_Context.theory_of ctxt) (t, u) fo_init
-fun typ_match thy (T, U) = Sign.typ_match thy (T, U) Vartab.empty
-fun pattern_fo_match_list_thy thy pairs inst =
+fun first_order_match_list thy pairs inst =
     case pairs of
         [] => inst
       | (t, u) :: rest =>
         let
           val inst' = Pattern.first_order_match thy (t, u) inst
         in
-          pattern_fo_match_list_thy thy rest inst'
+          first_order_match_list thy rest inst'
         end
-fun pattern_fo_match_list ctxt pairs inst =
-    pattern_fo_match_list_thy (Proof_Context.theory_of ctxt) pairs inst
 
 fun string_of_terms ctxt ts =
     ts |> map (Syntax.pretty_term ctxt)

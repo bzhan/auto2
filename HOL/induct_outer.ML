@@ -50,7 +50,7 @@ fun get_typed_ind_th thy ind_type ty =
     let
       val tab = Data.get thy
       fun typ_can_match t' =
-          let val _ = typ_match thy (type_of t', ty) in true end
+          let val _ = Sign.typ_match thy (type_of t', ty) Vartab.empty in true end
           handle Type.TYPE_MATCH => false
     in
       case Symtab.lookup tab ind_type of
@@ -65,7 +65,7 @@ fun get_term_ind_th thy ind_type t =
     let
       val tab = Data.get thy
       fun term_can_match t' =
-          let val _ = pattern_fo_match_thy thy (t', t) in true end
+          let val _ = Pattern.first_order_match thy (t', t) fo_init in true end
           handle Pattern.MATCH => false
     in
       case Symtab.lookup tab ind_type of
@@ -215,8 +215,8 @@ fun check_double_ind_th ind_th =
        *)
       val err_base_hyp1 =
           err "First base assumption of ind_th must be !n. ?P mb n."
-      val inst1 = pattern_fo_match_thy
-                      thy (@{term_pat "!n. ?P ?mb n"}, cond_base1)
+      val inst1 = Pattern.first_order_match
+                      thy (@{term_pat "!n. ?P ?mb n"}, cond_base1) fo_init
                   handle Pattern.MATCH => error err_base_hyp1
       val mb = lookup_inst inst1 "mb"
 
@@ -225,8 +225,8 @@ fun check_double_ind_th ind_th =
        *)
       val err_base_hyp2 =
           err "Second base assumption of ind_th must be !m. ?P m nb."
-      val inst2 = pattern_fo_match_thy
-                      thy (@{term_pat "!m. ?P m ?nb"}, cond_base2)
+      val inst2 = Pattern.first_order_match
+                      thy (@{term_pat "!m. ?P m ?nb"}, cond_base2) fo_init
                   handle Pattern.MATCH => error err_base_hyp2
       val nb = lookup_inst inst2 "nb"
     in

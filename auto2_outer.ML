@@ -525,13 +525,15 @@ val _ =
  *)
 fun let_resolve ctxt vars eq As C =
     let
+      val thy = Proof_Context.theory_of ctxt
+
       (* Call obtain_resolve with th as A_i ==> EX y. y = t. *)
       val (lhs, rhs) = dest_eq eq
       val pat_a = case ex_vardef_th |> prop_of' |> dest_arg of
                       Abs (_, _, b) => dest_arg b
                     | _ => raise Fail "ex_vardef_th"
       val (x, _) = Term.dest_Free lhs
-      val inst = pattern_fo_match ctxt (pat_a, rhs)
+      val inst = Pattern.first_order_match thy (pat_a, rhs) fo_init
       val ex_th = subst_thm ctxt inst ex_vardef_th
       val t' = case Thm.prop_of ex_th of
                    A $ (B $ Abs (_, T, body)) => A $ (B $ Abs (x, T, body))

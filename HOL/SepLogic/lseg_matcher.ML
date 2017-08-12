@@ -4,9 +4,10 @@ open SepUtil
 (* Given term t, form the assertion emp ==> lseg [] t t *)
 fun lseg_triv_th ctxt t =
     let
+      val thy = Proof_Context.theory_of ctxt
       val th = @{thm lseg_empty}
       val p = th |> prop_of' |> dest_entail |> snd |> dest_arg
-      val inst = pattern_fo_match ctxt (p, t)
+      val inst = Pattern.first_order_match thy (p, t) fo_init
     in
       subst_thm ctxt inst th
     end

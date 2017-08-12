@@ -467,11 +467,12 @@ val init_pos =
  *)
 fun find_heap_preserving_th ctxt c =
     let
+      val thy = Proof_Context.theory_of ctxt
       val ths = Named_Theorems.get ctxt @{named_theorems sep_heap_presv_thms}
       fun process_th th =
           let
             val pat = th |> prop_of' |> dest_arg
-            val inst = pattern_fo_match ctxt (pat, c)
+            val inst = Pattern.first_order_match thy (pat, c) fo_init
           in
             SOME (th |> subst_thm ctxt inst)
           end

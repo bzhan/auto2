@@ -258,7 +258,7 @@ fun instantiate_property_update ctxt t th =
     in
       if Sign.typ_instance thy (fastype_of t, fastype_of concl_arg) then
         let
-          val inst = pattern_fo_match ctxt (concl_arg, t)
+          val inst = Pattern.first_order_match thy (concl_arg, t) fo_init
                      handle Pattern.MATCH =>
                             raise Fail "inst_property: cannot match with t."
         in
