@@ -265,7 +265,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r ct id =
     let
       (* Match pat_r with r. *)
       val pat_r = entail_th |> prop_of' |> dest_entail |> snd |> dest_arg
-      val inst_r = Matcher.rewrite_match tbl (pat_r, cert ctxt r) (id, fo_init)
+      val inst_r = Matcher.rewrite_match tbl (pat_r, Thm.cterm_of ctxt r) (id, fo_init)
 
       (* For each match, recursively match the instantiated version of
          A (named pat here) with t.

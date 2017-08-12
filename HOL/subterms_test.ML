@@ -14,7 +14,7 @@ val test_dest_subterms =
             val t = Syntax.read_term ctxt' str
             val t' = Proof_Context.read_term_pattern ctxt' str'
             val subs = map (Syntax.read_term ctxt') subs_str
-            val (ct'', subs') = (Subterms.dest_subterms (cert ctxt' t))
+            val (ct'', subs') = (Subterms.dest_subterms (Thm.cterm_of ctxt' t))
                                     |> apsnd (map Thm.term_of)
             val t'' = Thm.term_of ct''
           in
@@ -49,7 +49,7 @@ val test_get_all_subterms =
           let
             val t = Syntax.read_term ctxt' str
             val subs = map (Syntax.read_term ctxt') subs_str
-            val subs' = (Subterms.get_all_subterms (cert ctxt' t))
+            val subs' = (Subterms.get_all_subterms (Thm.cterm_of ctxt' t))
                             |> map Thm.term_of
           in
             if eq_list (op aconv) (subs, subs') then ()
@@ -67,7 +67,7 @@ val test_build_equiv =
     let
       fun test_raw (t, equivs) =
           let
-            val eq_th = Subterms.build_equiv equivs (cert ctxt t)
+            val eq_th = Subterms.build_equiv equivs (Thm.cterm_of ctxt t)
             val lsubs = map lhs_of equivs
             val rsubs = map rhs_of equivs
           in
@@ -81,7 +81,7 @@ val test_build_equiv =
       fun test (str, equivs_str) =
           let
             val t = Proof_Context.read_term_pattern ctxt' str
-            val equivs = map (Thm.assume o cert ctxt' o Syntax.read_term ctxt')
+            val equivs = map (Thm.assume o Thm.cterm_of ctxt' o Syntax.read_term ctxt')
                              equivs_str
           in
             test_raw (t, equivs)

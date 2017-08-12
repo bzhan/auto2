@@ -110,7 +110,7 @@ val test_nat_order_match_side =
       fun test (pat_str, x_str, res_strs) =
           let
             val pat = Proof_Context.read_term_pattern ctxt' pat_str
-            val cx = cert ctxt' (Syntax.read_term ctxt' x_str)
+            val cx = Thm.cterm_of ctxt' (Syntax.read_term ctxt' x_str)
             val res = Syntax.read_terms ctxt' res_strs
             val res' = Nat_Order.nat_order_match_side tbl (pat, cx) ([], fo_init)
             fun check_inst ((_, inst), _, eq_th) =

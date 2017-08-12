@@ -730,7 +730,7 @@ and subterm_simplify id tbl ct =
 fun simp_val id tbl ct = Thm.rhs_of (simplify id tbl ct)
 
 fun simp_val_t id (tbl as {ctxt, ...}) t =
-    rhs_of (simplify id tbl (cert ctxt t))
+    rhs_of (simplify id tbl (Thm.cterm_of ctxt t))
 
 (* Get all simplifications and subterm-simplifications. *)
 fun simplify_info tbl ct =
@@ -767,7 +767,7 @@ fun is_equiv id tbl (ct1, ct2) =
     ct1 aconvc ct2 orelse simp_val id tbl ct1 aconvc simp_val id tbl ct2
 
 fun is_equiv_t id (tbl as {ctxt, ...}) (t1, t2) =
-    t1 aconv t2 orelse is_equiv id tbl (cert ctxt t1, cert ctxt t2)
+    t1 aconv t2 orelse is_equiv id tbl (Thm.cterm_of ctxt t1, Thm.cterm_of ctxt t2)
 
 fun is_subequiv id tbl (ct1, ct2) =
     if ct1 aconvc ct2 then true
@@ -928,7 +928,7 @@ fun equiv_info tbl id (ct1, ct2) =
     end
 
 fun equiv_info_t (tbl as {ctxt, ...}) id (t1, t2) =
-    equiv_info tbl id (cert ctxt t1, cert ctxt t2)
+    equiv_info tbl id (Thm.cterm_of ctxt t1, Thm.cterm_of ctxt t2)
 
 (* Return list of ids that are descendents of id at which t1 and t2
    are subterm equiv.
@@ -977,7 +977,7 @@ fun get_property tbl (id, cprop) =
     end
 
 fun get_property_t (tbl as {ctxt, ...}) (id, prop) =
-    get_property tbl (id, cert ctxt prop)
+    get_property tbl (id, Thm.cterm_of ctxt prop)
 
 (* th is an instantiated property update rule (without schematic
    variables). All premises and conclusions of th should be
@@ -1185,7 +1185,7 @@ fun complete_table_with_edges prev_edges tbl =
 fun initialize_wellform_data t (tbl as {ctxt, ...}) =
     let
       val thy = theory_of tbl
-      val targets = map (cert ctxt) (WellForm.lookup_wellform_data thy t)
+      val targets = map (Thm.cterm_of ctxt) (WellForm.lookup_wellform_data thy t)
     in
       if null targets then tbl
       else tbl |> map_wellform (Termtab.update (t, map (rpair []) targets))
@@ -1338,7 +1338,7 @@ fun get_wellform tbl (id, ct) =
     end
 
 fun get_wellform_t (tbl as {ctxt, ...}) (id, t) =
-    get_wellform tbl (id, cert ctxt t)
+    get_wellform tbl (id, Thm.cterm_of ctxt t)
 
 (* Retrieve the complete set of wellform data for term t, indexed by
    box id.
@@ -1392,7 +1392,7 @@ fun term_to_wfterm_on_tbl (tbl as {lat, ...}) fheads (id, ct) =
       | _ => [(id, WfTerm ct)]
 
 fun term_to_wfterm_on_tbl_t (tbl as {ctxt, ...}) fheads (id, t) =
-    term_to_wfterm_on_tbl tbl fheads (id, cert ctxt t)
+    term_to_wfterm_on_tbl tbl fheads (id, Thm.cterm_of ctxt t)
 
 (* Add the given wellform data (id, th) for the term t to the table. *)
 fun add_wellform_data_raw (t, (id, th)) tbl =
@@ -1598,7 +1598,7 @@ fun get_incr_type (tbl as {lat, ctxt, ...}) infos (id, new_infos) =
       val new_ts = (maps (relevant_terms_single thy) new_infos @
                     maps (Property.get_property_arg_th_gen o snd o snd)
                          (get_new_property prim_id tbl') @
-                    map (cert ctxt o fst) (get_new_wellform_data prim_id tbl'))
+                    map (Thm.cterm_of ctxt o fst) (get_new_wellform_data prim_id tbl'))
                        |> distinct (op aconvc)
     in
       LAST (tbl', id, get_reachable_terms true tbl new_ts)

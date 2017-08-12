@@ -381,7 +381,7 @@ fun make_trueprop_eq th =
 
 (* Assumed theorems. *)
 fun assume_eq thy (t1, t2) =
-    Thm.assume (cert_thy thy (mk_Trueprop (mk_eq (t1, t2))))
+    Thm.assume (Thm.global_cterm_of thy (mk_Trueprop (mk_eq (t1, t2))))
 
 (* Apply cv to the statement of th, skipping Trueprop. *)
 fun apply_to_thm' cv th = apply_to_thm (Trueprop_conv cv) th
@@ -587,7 +587,7 @@ fun mk_conjs_th ths =
 fun ex_elim ctxt freevar th =
     let
       val thy = Proof_Context.theory_of ctxt
-      val th' = th |> Thm.forall_intr (cert ctxt freevar)
+      val th' = th |> Thm.forall_intr (Thm.cterm_of ctxt freevar)
       val head_prem = hd (Thm.prems_of exE_th')
       val inst = Pattern.match thy (head_prem, Thm.prop_of th') fo_init
       val exE_inst = subst_thm ctxt inst exE_th'

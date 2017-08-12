@@ -39,7 +39,7 @@ fun hoare_induct_cmd state =
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
           ind_th |> send_first_to_hyps
-                 |> fold Thm.forall_elim (map (cert ctxt) arbitraries)
+                 |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
                  |> Thm.implies_intr assum
 
       val t' = case Thm.prop_of ind_th of

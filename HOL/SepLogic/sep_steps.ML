@@ -342,7 +342,7 @@ fun find_proc_def ctxt c =
       fun rewr_cv th = if is_meta_eq (Thm.prop_of th) then Conv.rewr_conv th
                        else rewr_obj_eq th
     in
-      SOME (Conv.first_conv (map rewr_cv ths) (cert ctxt c))
+      SOME (Conv.first_conv (map rewr_cv ths) (Thm.cterm_of ctxt c))
       handle CTERM _ => NONE
     end
 
@@ -597,7 +597,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         (* \sigma = Some (fst h_) & success_run c h h_ r ==> ... *)
         val vars = [Var (("h_", 0), pheapT)]
         val all_th' = all_th |> apply_to_thm (to_meta_all_conv ctxt)
-                             |> fold Thm.forall_elim (map (cert ctxt) vars)
+                             |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)
                              |> apply_to_thm to_meta_imp_conv
         val Q_goal =
             (rest_th RS all_th')
@@ -705,7 +705,7 @@ fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
         val (h_t, c1) = the_pair (map Thm.term_of tname2)
         val id'' = BoxID.merge_boxes lat (id, id')
         val insts =
-            (Matcher.rewrite_match tbl (c, cert ctxt c1) (id'', fo_init))
+            (Matcher.rewrite_match tbl (c, Thm.cterm_of ctxt c1) (id'', fo_init))
                 |> RewriteTable.replace_id_for_type rtype
         fun process_inst ((id''', inst), eq_th) =
             let
@@ -820,7 +820,7 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
 
       val (vars, new_prop) = ex_th |> prop_of' |> dest_all_abs xs
                                    |> apsnd mk_Trueprop
-      val new_th = new_prop |> cert ctxt |> Thm.assume
+      val new_th = new_prop |> Thm.cterm_of ctxt |> Thm.assume
       val base_th' = base_th RS @{thm mod_star_trueI}
 
       (* Use precision theorem prec_th to generate equalities between
@@ -854,7 +854,7 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
       (* Remove assumptions involving original variables. Similar to
          handler for apply_exists.
        *)
-      new_th' |> Thm.implies_intr (cert ctxt new_prop)
+      new_th' |> Thm.implies_intr (Thm.cterm_of ctxt new_prop)
               |> fold (ex_elim ctxt) (rev (map Free vars))
               |> Thm.elim_implies ex_th
     end

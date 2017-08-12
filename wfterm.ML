@@ -114,7 +114,7 @@ fun cterm_to_wfterm_assume fheads ct =
           if forall (fn fhead => not (is_head fhead t)) fheads then
             WfTerm ct
           else let
-            val ths = map (Thm.assume o cert_thy thy o mk_Trueprop)
+            val ths = map (Thm.assume o Thm.global_cterm_of thy o mk_Trueprop)
                           (WellForm.lookup_wellform_data thy t)
             val wfargs = map (cterm_to_wfterm_assume fheads) cargs
           in

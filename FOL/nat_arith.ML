@@ -142,10 +142,10 @@ fun nat_le (m, n) =
     end
 
 fun mk_nat_add_th (m, n) =
-    nat_add (cert ctxt (plus_t $ NN $ mk_nat m $ mk_nat n))
+    nat_add (Thm.cterm_of ctxt (plus_t $ NN $ mk_nat m $ mk_nat n))
 
 fun mk_nat_mult_th (m, n) =
-    nat_mult (cert ctxt (times_t $ NN $ mk_nat m $ mk_nat n))
+    nat_mult (Thm.cterm_of ctxt (times_t $ NN $ mk_nat m $ mk_nat n))
 
 fun nat_sub ct =
     let
@@ -190,7 +190,7 @@ fun nat_neq_zero n =
 fun nat_neq (m, n) =
     if m = n then raise Fail "nat_neq" else
     let
-      val m_eq_n = mk_eq (mk_nat m, mk_nat n) |> mk_Trueprop |> cert ctxt
+      val m_eq_n = mk_eq (mk_nat m, mk_nat n) |> mk_Trueprop |> Thm.cterm_of ctxt
     in
       m_eq_n |> Thm.assume
              |> nat_neq_resolve

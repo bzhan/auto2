@@ -168,11 +168,11 @@ fun neq_filter cond tbl (id, inst) =
     in
       if has_vars t1 andalso has_vars t2 then true
       else if has_vars t1 then
-        (Matcher.rewrite_match tbl (t1, cert ctxt t2) (id, fo_init))
+        (Matcher.rewrite_match tbl (t1, Thm.cterm_of ctxt t2) (id, fo_init))
             |> filter (fn ((id', _), _) => id = id')
             |> length |> equal 0
       else if has_vars t2 then
-        (Matcher.rewrite_match tbl (t2, cert ctxt t1) (id, fo_init))
+        (Matcher.rewrite_match tbl (t2, Thm.cterm_of ctxt t1) (id, fo_init))
             |> filter (fn ((id', _), _) => id = id')
             |> length |> equal 0
       else

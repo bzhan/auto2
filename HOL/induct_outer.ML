@@ -289,8 +289,8 @@ fun strong_induct_cmd (s, t) state =
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
           ind_th |> send_first_to_hyps
-                 |> fold Thm.forall_elim (map (cert ctxt) arbitraries)
-                 |> fold Thm.forall_intr (map (cert ctxt) vars)
+                 |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
+                 |> fold Thm.forall_intr (map (Thm.cterm_of ctxt) vars)
                  |> Thm.implies_intr assum
 
       val t' = case Thm.prop_of ind_th of
@@ -332,7 +332,7 @@ fun apply_induct_cmd s state =
       val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, _) = Logic.strip_horn body
       val goal = Logic.list_implies (As, mk_Trueprop induct_stmt)
-      val th = Auto2_Outer.auto2_solve ctxt (cert ctxt goal)
+      val th = Auto2_Outer.auto2_solve ctxt (Thm.cterm_of ctxt goal)
     in
       state |> Proof.map_contexts (Auto2_State.map_head_th (Auto2_Outer.have_after_qed ctxt th))
     end
@@ -381,7 +381,7 @@ fun induct_cmd (s, t, u) state =
             val assum = hd (Drule.cprems_of ind_th)
             val ind_th =
                 ind_th |> send_first_to_hyps
-                       |> fold Thm.forall_elim (map (cert ctxt) arbitraries)
+                       |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
                        |> Thm.implies_intr assum
 
             val t' = case Thm.prop_of ind_th of
@@ -410,7 +410,7 @@ fun induct_cmd (s, t, u) state =
           val stmt = Logic.list_implies (map mk_Trueprop assums,
                                          mk_Trueprop concl)
 
-          val goal = Thm.trivial (cert ctxt stmt) |> Goal.protect 1
+          val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
           fun after_qed th prop =
               let
                 val th' = apply_to_thm (to_obj_conv ctxt) th
@@ -472,7 +472,7 @@ fun double_induct_cmd (s1, s2, t) state =
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
           ind_th |> send_first_to_hyps
-                 |> fold Thm.forall_elim (map (cert ctxt) arbitraries)
+                 |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
                  |> Thm.implies_intr assum
 
       val t' = case Thm.prop_of ind_th of
@@ -508,7 +508,7 @@ fun case_induct_cmd s state =
       val {prop, ...} = Auto2_State.get_head ctxt
       val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, C) = Logic.strip_horn body
-      val cAs = map (cert ctxt) As
+      val cAs = map (Thm.cterm_of ctxt) As
 
       (* Instantiate the induction theorem *)
       val (_, vars) = ind_th |> Thm.prems_of |> hd |> dest_Trueprop
@@ -521,7 +521,7 @@ fun case_induct_cmd s state =
       val ind_goals =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
-                 |> map (cert ctxt)
+                 |> map (Thm.cterm_of ctxt)
 
       val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
                     |> map send_all_to_hyps
@@ -561,12 +561,12 @@ fun prop_induct_cmd (s, t) state =
       val {prop, ...} = Auto2_State.get_head ctxt
       val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, _) = Logic.strip_horn body
-      val cAs = map (cert ctxt) As
+      val cAs = map (Thm.cterm_of ctxt) As
 
       val ind_goals =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
-                 |> map (cert ctxt)
+                 |> map (Thm.cterm_of ctxt)
 
       val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
                     |> map send_all_to_hyps
@@ -609,12 +609,12 @@ fun var_induct_cmd (s, t) state =
       val {prop, ...} = Auto2_State.get_head ctxt
       val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
       val (As, _) = Logic.strip_horn body
-      val cAs = map (cert ctxt) As
+      val cAs = map (Thm.cterm_of ctxt) As
 
       val ind_goals =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
-                 |> map (cert ctxt)
+                 |> map (Thm.cterm_of ctxt)
 
       val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
                     |> map send_all_to_hyps

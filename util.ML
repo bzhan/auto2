@@ -53,10 +53,6 @@ sig
   val trace_thm_global: string -> thm -> unit
   val trace_fullthm_global: string -> thm -> unit
 
-  (* Certifying terms and types. *)
-  val cert: Proof.context -> term -> cterm
-  val cert_thy: theory -> term -> cterm
-
   (* Managing context. *)
   val declare_free_term: term -> Proof.context -> Proof.context
 
@@ -307,9 +303,6 @@ fun trace_fullthm_global s th =
                "] ==> " ^ (Thm.prop_of th |> Syntax.string_of_term_global thy))
     end
 
-fun cert ctxt t = Thm.cterm_of ctxt t
-fun cert_thy thy t = Thm.global_cterm_of thy t
-
 fun declare_free_term t ctxt =
     if not (is_Free t) then raise Fail "declare_free_term: t not free."
     else ctxt |> Variable.add_fixes_direct [t |> Term.dest_Free |> fst]
@@ -518,11 +511,11 @@ val lhs_of = Thm.term_of o Thm.lhs_of
 val rhs_of = Thm.term_of o Thm.rhs_of
 
 fun assume_meta_eq thy (t1, t2) =
-    Thm.assume (cert_thy thy (Logic.mk_equals (t1, t2)))
+    Thm.assume (Thm.global_cterm_of thy (Logic.mk_equals (t1, t2)))
 fun assume_thm ctxt t =
     if type_of t <> propT then
       raise Fail "assume_thm: t is not of type prop"
-    else Thm.assume (cert ctxt t)
+    else Thm.assume (Thm.cterm_of ctxt t)
 
 (* Similar to Envir.subst_term. Apply an instantiation to a theorem. *)
 fun subst_thm_thy thy (tyinsts, insts) th =
@@ -531,7 +524,7 @@ fun subst_thm_thy thy (tyinsts, insts) th =
           ((v, S), Thm.global_ctyp_of thy T)
       val tys = map process_tyenv (Vartab.dest tyinsts)
       fun process_tenv (v, (T, u)) =
-          ((v, Envir.subst_type tyinsts T), cert_thy thy u)
+          ((v, Envir.subst_type tyinsts T), Thm.global_cterm_of thy u)
       val ts = map process_tenv (Vartab.dest insts)
     in
       th |> Drule.instantiate_normalize (tys, ts)
@@ -583,7 +576,7 @@ fun meta_use_vardef th =
       val thy = Thm.theory_of_thm th
       val ((ix, T), ct) =
           th |> Thm.prems_of |> hd |> Logic.dest_equals
-             |> apfst Term.dest_Var |> apsnd (cert_thy thy)
+             |> apfst Term.dest_Var |> apsnd (Thm.global_cterm_of thy)
     in
       (Thm.reflexive ct) RS (Thm.instantiate ([], [((ix, T), ct)]) th)
     end
@@ -720,7 +713,7 @@ fun pattern_rewr_conv t eq_ths ct =
 fun eq_cong_th i bi A ctxt =
     let
       val thy = Proof_Context.theory_of ctxt
-      val (cf, cargs) = Drule.strip_comb (cert ctxt A)
+      val (cf, cargs) = Drule.strip_comb (Thm.cterm_of ctxt A)
       val _ = assert (i < length cargs) "eq_cong_th: i out of bounds."
       val ai = Thm.term_of (nth cargs i)
       val eq_i = assume_meta_eq thy (ai, bi)
@@ -738,7 +731,7 @@ fun reverse_eta_conv ctxt ct =
       val argT = Term.domain_type (fastype_of t)
                  handle Match => raise CTERM ("reverse_eta_conv", [ct])
       val rhs = Abs ("x", argT, t $ Bound 0)
-      val eq_th = Thm.eta_conversion (cert ctxt rhs)
+      val eq_th = Thm.eta_conversion (Thm.cterm_of ctxt rhs)
     in
       meta_sym eq_th
     end
@@ -753,7 +746,7 @@ fun test_conv ctxt cv err_str (str1, str2) =
     let
       val (t1, t2) = (Proof_Context.read_term_pattern ctxt str1,
                       Proof_Context.read_term_pattern ctxt str2)
-      val th = cv (cert ctxt t1)
+      val th = cv (Thm.cterm_of ctxt t1)
     in
       if t1 aconv (lhs_of th) andalso t2 aconv (rhs_of th) then ()
       else let

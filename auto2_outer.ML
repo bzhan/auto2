@@ -74,10 +74,10 @@ fun have_resolve ctxt vars th concl =
     let
       val prop = Thm.prop_of th
       val (As, B) = Logic.strip_horn prop
-      val cAs = map (cert ctxt) As
-      val c_vars = map (cert ctxt) vars
+      val cAs = map (Thm.cterm_of ctxt) As
+      val c_vars = map (Thm.cterm_of ctxt) vars
       val stmt = (Logic.list_implies (As @ [B], concl))
-                     |> fold Logic.all (rev vars) |> cert ctxt
+                     |> fold Logic.all (rev vars) |> Thm.cterm_of ctxt
 
       val thAs = map Thm.assume cAs
       val th_bc =
@@ -179,9 +179,9 @@ fun have_cmd (s, r, t) state =
       fun after_qed th prop =
           let
             val th' = th |> funpow (length As) send_first_to_hyps
-                         |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
+                         |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
                          |> apply_to_thm (to_obj_conv ctxt)
-                         |> fold Thm.implies_intr (rev (map (cert ctxt) As))
+                         |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
           in
             have_after_qed ctxt th' prop
           end
@@ -197,7 +197,7 @@ fun have_cmd (s, r, t) state =
         let
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B. *)
           val ctxt' = ctxt |> fold declare_free_term new_vars
-          val th = auto2_solve ctxt' (cert ctxt' stmt)
+          val th = auto2_solve ctxt' (Thm.cterm_of ctxt' stmt)
         in
           state |> Proof.map_contexts (Auto2_State.map_head_th (after_qed th))
                 |> (if is_rule then I else
@@ -206,7 +206,7 @@ fun have_cmd (s, r, t) state =
       else
         let
           (* Create new block with stmt *)
-          val goal = Thm.trivial (cert ctxt stmt) |> Goal.protect 1
+          val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
           val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
                            after_qed = SOME ([], after_qed)}
         in
@@ -234,8 +234,8 @@ fun end_cmd state =
 
       val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
 
-      val th = (auto2_solve ctxt (cert ctxt body))
-                   |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
+      val th = (auto2_solve ctxt (Thm.cterm_of ctxt body))
+                   |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
 
       val new_prop = Goal.conclude (Thm.implies_elim prop th)
       val (new_vars, f) = (the after_qed)
@@ -259,8 +259,8 @@ fun qed_cmd state =
 
       val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
 
-      val th = (auto2_solve ctxt (cert ctxt body))
-                   |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
+      val th = (auto2_solve ctxt (Thm.cterm_of ctxt body))
+                   |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
       val new_prop = Thm.implies_elim prop th
 
       val method = K (Method.CONTEXT_TACTIC (PRIMITIVE (K new_prop)))
@@ -300,15 +300,15 @@ fun obtain_resolve ctxt vars th concl =
 
       (* B is EX x. P(x) *)
       val (As, B) = Logic.strip_horn prop
-      val cAs = map (cert ctxt) As
-      val c_vars = map (cert ctxt) vars
+      val cAs = map (Thm.cterm_of ctxt) As
+      val c_vars = map (Thm.cterm_of ctxt) vars
 
       val (new_vars, body) = strip_ex (dest_Trueprop B)
 
       val stmt = (Logic.list_implies (As @ [mk_Trueprop body], concl))
                      |> fold Logic.all (rev new_vars)
                      |> fold Logic.all (rev vars)
-                     |> cert ctxt
+                     |> Thm.cterm_of ctxt
 
       val thAs = map Thm.assume cAs
       val th_b = th |> fold Thm.elim_implies thAs
@@ -316,7 +316,7 @@ fun obtain_resolve ctxt vars th concl =
       (* P(x) ==> C *)
       val th_bc = stmt |> Thm.assume
                        |> fold Thm.forall_elim c_vars
-                       |> fold Thm.forall_elim (map (cert ctxt) new_vars)
+                       |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) new_vars)
                        |> fold Thm.elim_implies thAs
       val th_c = (fold (ex_elim ctxt) (rev new_vars) th_bc)
                      |> Thm.elim_implies th_b
@@ -365,7 +365,7 @@ fun obtain_cmd (s, t, u) state =
       if is_none u orelse the u = "@then" then
         let
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B. *)
-          val th = auto2_solve ctxt (cert ctxt stmt)
+          val th = auto2_solve ctxt (Thm.cterm_of ctxt stmt)
         in
           state |> Proof.map_contexts (fold declare_free_term new_vars)
                 |> Proof.map_contexts (Auto2_State.map_head_th (obtain_after_qed ctxt th))
@@ -373,7 +373,7 @@ fun obtain_cmd (s, t, u) state =
       else
         let
           (* Create new block with stmt *)
-          val goal = Thm.trivial (cert ctxt stmt) |> Goal.protect 1
+          val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
           val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
                            after_qed = SOME (new_vars, obtain_after_qed ctxt)}
         in
@@ -401,11 +401,11 @@ fun case_resolve ctxt vars th =
       val prop = Thm.prop_of th
 
       val ((As, B), C) = prop |> Logic.strip_horn |> apfst split_last
-      val cAs = map (cert ctxt) As
-      val c_vars = map (cert ctxt) vars
+      val cAs = map (Thm.cterm_of ctxt) As
+      val c_vars = map (Thm.cterm_of ctxt) vars
       val nB = mk_Trueprop (Not $ (dest_Trueprop B))
       val stmt = (Logic.list_implies (As @ [nB], C))
-                     |> fold Logic.all (rev vars) |> cert ctxt
+                     |> fold Logic.all (rev vars) |> Thm.cterm_of ctxt
 
       val thAs = map Thm.assume cAs
       val th_nbc =
@@ -446,7 +446,7 @@ fun case_cmd (s, t) state =
       val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val (As, C) = Logic.strip_horn body
 
-      val stmt = Logic.list_implies (As @ [B], C) |> cert ctxt
+      val stmt = Logic.list_implies (As @ [B], C) |> Thm.cterm_of ctxt
     in
       if is_none t orelse the t = "@then" then
         let
@@ -479,9 +479,9 @@ val _ =
 fun contra_resolve ctxt vars As C =
     let
       val stmt = (Logic.list_implies (As @ [get_neg' C], pFalse))
-                     |> fold Logic.all (rev vars) |> cert ctxt
-      val cAs = map (cert ctxt) As
-      val c_vars = map (cert ctxt) vars
+                     |> fold Logic.all (rev vars) |> Thm.cterm_of ctxt
+      val cAs = map (Thm.cterm_of ctxt) As
+      val c_vars = map (Thm.cterm_of ctxt) vars
 
       val thAs = map Thm.assume cAs
       val th_c =
@@ -544,7 +544,7 @@ fun let_resolve ctxt vars eq As C =
                    A $ (B $ Abs (_, T, body)) => A $ (B $ Abs (x, T, body))
                  | _ => error "let_resolve"
       val ex_th = ex_th |> Thm.renamed_prop t'
-                        |> fold Thm.implies_intr (rev (map (cert ctxt) As))
+                        |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
     in
       obtain_resolve ctxt vars ex_th C
     end

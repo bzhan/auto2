@@ -60,7 +60,7 @@ val test_use_prec_thms =
             val (t1, t2) = (Syntax.read_term ctxt' base_str,
                             Syntax.read_term ctxt' ex_str)
             val (th1, th2) =
-                apply2 (Thm.assume o cert ctxt' o mk_Trueprop) (t1, t2)
+                apply2 (Thm.assume o Thm.cterm_of ctxt' o mk_Trueprop) (t1, t2)
             (* Just run it to see that all asserts passed. *)
             val _ = SepLogic.use_prec_thms tbl th1 th2
           in

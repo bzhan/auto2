@@ -93,13 +93,13 @@ fun induct_cmd (s, t) state =
             val {prop, ...} = Auto2_State.get_head ctxt
             val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
             val (As, _) = Logic.strip_horn body
-            val cAs = map (cert ctxt) As
+            val cAs = map (Thm.cterm_of ctxt) As
 
             val ind_goals =
                 ind_th |> Thm.prems_of
                        |> map (fn t => Logic.list_implies (As, t))
 
-            val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
+            val ths = (map (Auto2_Outer.auto2_solve ctxt o Thm.cterm_of ctxt) ind_goals)
                           |> map send_all_to_hyps
 
             val ind_concl = (ths MRS ind_th)
@@ -180,7 +180,7 @@ fun strong_induct_cmd (s, t) state =
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
           ind_th |> send_first_to_hyps
-                 |> fold Thm.forall_elim (map (cert ctxt) arbitraries)
+                 |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
                  |> Thm.implies_intr assum
 
       val t' = case Thm.prop_of ind_th of

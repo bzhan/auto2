@@ -100,7 +100,7 @@ fun obtain_variant_frees (ctxt, ritems) =
       val all_vars' =
           all_vars |> map (fn (x, T) => (Name.dest_internal x, T))
                    |> Variable.variant_frees ctxt []
-      val subst = map (apply2 (cert ctxt o Free)) (all_vars ~~ all_vars')
+      val subst = map (apply2 (Thm.cterm_of ctxt o Free)) (all_vars ~~ all_vars')
     in
       (fold declare_free_term (map Free all_vars') ctxt, subst)
     end
@@ -134,7 +134,7 @@ fun mk_box_item ctxt (uid, id, sc, ritem) =
         Handler _ => raise Fail "mk_box_item: ritem must be Fact"
       | Fact (ty_str, ts, prop) =>
         {uid = uid, id = id, sc = sc, ty_str = ty_str,
-         tname = map (cert ctxt) ts, prop = prop}
+         tname = map (Thm.cterm_of ctxt) ts, prop = prop}
 
 end  (* structure BoxItem. *)
 
@@ -733,7 +733,7 @@ fun get_neg_form inits =
     end
 
 fun get_neg_form_obj ctxt inits =
-    inits |> get_neg_form |> cert ctxt
+    inits |> get_neg_form |> Thm.cterm_of ctxt
           |> to_obj_conv ctxt |> rhs_of
 
 (* Given a contradiction th, returns a new theorem with assumptions
@@ -752,10 +752,10 @@ fun get_neg_form_thm ctxt inits th =
 
       fun fold_init init th =
           case init of
-              InitVar v => Thm.forall_intr (cert ctxt v) th
-            | InitAssum assum => th |> Thm.implies_intr (cert ctxt assum)
+              InitVar v => Thm.forall_intr (Thm.cterm_of ctxt v) th
+            | InitAssum assum => th |> Thm.implies_intr (Thm.cterm_of ctxt assum)
     in
-      th |> Thm.implies_intr (cert ctxt tl_assum)
+      th |> Thm.implies_intr (Thm.cterm_of ctxt tl_assum)
          |> rewrite_thm_from_contra_form
          |> fold fold_init (tl (rev inits))
     end
@@ -848,7 +848,7 @@ fun apply_exists_ritems ex_th ctxt xs =
       val ex_th' = apply_to_thm' (normalize_exs_conv (length xs) ctxt) ex_th
       val (vars, new_prop) = ex_th' |> prop_of' |> dest_all_abs xs
       val new_prop' = mk_Trueprop new_prop
-      val new_th = new_prop' |> cert ctxt |> Thm.assume
+      val new_th = new_prop' |> Thm.cterm_of ctxt |> Thm.assume
 
       (* Given two terms t and u, where t may contain internal
          variables, find replacements for those internal variables so
@@ -905,10 +905,10 @@ fun apply_exists_ritems ex_th ctxt xs =
           let
             val subst = (match_vars (Thm.hyps_of ex_th', Thm.hyps_of th))
                             |> map (fn ((x, T), t) =>
-                                       (cert ctxt (Free (x, T)), cert ctxt t))
+                                       (Thm.cterm_of ctxt (Free (x, T)), Thm.cterm_of ctxt t))
             val fvars = get_freevars t
           in
-            th |> Thm.implies_intr (cert ctxt t)
+            th |> Thm.implies_intr (Thm.cterm_of ctxt t)
                |> fold (ex_elim ctxt) (rev fvars)
                |> Thm.elim_implies (subst_thm_atomic subst ex_th')
           end
@@ -1253,7 +1253,7 @@ fun find_fact (st as {tbl, ctxt, ...}) id t =
     let
       val infos = (get_all_items false st id)
                       |> map (fn {id, prop, ...} => (id, prop))
-      val res = (RewriteTable.rewrite_find_fact tbl infos (id, cert ctxt t))
+      val res = (RewriteTable.rewrite_find_fact tbl infos (id, Thm.cterm_of ctxt t))
                     |> filter (fn (id', _) => id' = id)
     in
       case res of

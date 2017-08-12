@@ -16,7 +16,7 @@ val test_comb_ac_equiv =
             val ts1 = ACUtil.dest_ac ac_info t1
             val ts2 = ACUtil.dest_ac ac_info t2
             fun eq (t1', t2') =
-                Thm.assume (cert_thy thy (Logic.mk_equals (t1', t2')))
+                Thm.assume (Thm.global_cterm_of thy (Logic.mk_equals (t1', t2')))
             val eqs = map eq (ts1 ~~ ts2)
             val th = ACUtil.comb_ac_equiv ac_info eqs
           in

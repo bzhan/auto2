@@ -15,7 +15,7 @@ val id_eq_cv = rewr_obj_eq (obj_sym @{thm id.simps(1)})
 
 fun get_const_ID_eq ctxt t t' =
     if t aconv t' then
-      SOME (Thm.reflexive (cert ctxt t) |> to_obj_eq)
+      SOME (Thm.reflexive (Thm.cterm_of ctxt t) |> to_obj_eq)
     else if not (is_const_ID t andalso is_const_ID t') then NONE
     else let
       val (n, n') = (dest_const_ID t, dest_const_ID t')

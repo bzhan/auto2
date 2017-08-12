@@ -12,7 +12,7 @@ fun term_to_wfterm_assum thy fheads ct =
             WfTerm ct
           else let
             val ths = (WellForm.lookup_wellform_data thy t)
-                          |> map (Thm.assume o cert_thy thy o mk_Trueprop)
+                          |> map (Thm.assume o Thm.global_cterm_of thy o mk_Trueprop)
             val args' = map (term_to_wfterm_assum thy fheads) cargs
           in
             WfComb (cf, args', ths)
@@ -39,7 +39,7 @@ in
 fun test_wfconv wfcv err_str (str1, str2) =
     let
       val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
-      val wft = wfterm_of (cert_thy thy t1)
+      val wft = wfterm_of (Thm.global_cterm_of thy t1)
       val th = snd (wfcv wft)
                handle Fail err =>
                       let val _ = trace_t ctxt "Input:" t1 in

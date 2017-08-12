@@ -77,7 +77,7 @@ fun assert_match_gen matcher ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
                     Syntax.read_term ctxt str_u)
       val _ = trace_tlist ctxt "Matching" [t, u]
       val info = map (apsnd (Syntax.read_term ctxt)) info_str
-      val info' = matcher tbl [] (t, cert ctxt u) ([], fo_init)
+      val info' = matcher tbl [] (t, Thm.cterm_of ctxt u) ([], fo_init)
       val _ = map (check_info (t, u) "assert_match" tbl) info'
       val info'' = map (fn ((id, _), th) => (id, meta_sym th)) info'
     in
@@ -91,7 +91,7 @@ fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
       val pairs =
           map (fn (is_head, (str_t, str_u)) =>
                   (is_head, (Proof_Context.read_term_pattern ctxt str_t,
-                             cert ctxt (Syntax.read_term ctxt str_u))))
+                             Thm.cterm_of ctxt (Syntax.read_term ctxt str_u))))
               pairs_str
       val info = map (apsnd (map (Syntax.read_term ctxt))) info_str
       val info' = Matcher.rewrite_match_list tbl pairs ([], fo_init)
@@ -223,7 +223,7 @@ val test_match_list =
 fun assert_pre_match_gen res at_head (str_t, str_u) (tbl as {ctxt, ...}) =
     let
       val (t, cu) = (Proof_Context.read_term_pattern ctxt str_t,
-                     cert ctxt (Syntax.read_term ctxt str_u))
+                     Thm.cterm_of ctxt (Syntax.read_term ctxt str_u))
       val pre_match_fn = if at_head then Matcher.pre_match_head
                          else Matcher.pre_match
     in

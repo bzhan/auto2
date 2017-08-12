@@ -175,7 +175,7 @@ and match_comb tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
                 let
                   val cu' = cu |> Thm.term_of
                                |> fold lambda_abstract (rev targs)
-                               |> cert ctxt
+                               |> Thm.cterm_of ctxt
                 in
                   map (fn (instsp', _) => (instsp', Thm.reflexive cu))
                       (update_inst bd_vars ixn cu' instsp)

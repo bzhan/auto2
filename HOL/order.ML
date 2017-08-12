@@ -309,9 +309,9 @@ fun to_nat_order_prfstep_templ (prfstep_name, pat, order_ty) =
       fun prfstep_fn ((id, inst), ths) _ {tbl, ctxt, ...} =
           let
             val (x, y) = apply2 (lookup_inst inst) ("x", "y")
-            val (cx, cy) = (cert ctxt x, cert ctxt y)
+            val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
             val (simpx, simpy) =
-                apply2 (RewriteTable.simplify id tbl) (cert ctxt x, cert ctxt y)
+                apply2 (RewriteTable.simplify id tbl) (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
             val diff = order_diffs_inst order_ty inst
             val th' = to_normal_th order_ty (the_single ths)
             val info = (cx, cy, diff, th') |> rewrite_info_x simpx
@@ -361,7 +361,7 @@ val nat_eq_diff_prfstep =
       fun prfstep_fn ((id, inst), ths) _ {tbl, ctxt, ...} =
           let
             val (x, y) = (lookup_inst inst "x", lookup_inst inst "y")
-            val (cx, cy) = (cert ctxt x, cert ctxt y)
+            val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
             val (simpx, simpy) = apply2 (RewriteTable.simplify id tbl) (cx, cy)
             val diff = lookup_numc0 inst
             val th' = ths MRS @{thm nat_eq_to_ineqs}
@@ -389,7 +389,7 @@ val nat_order_typed_matcher =
     let
       fun pre_match pat {tname, ...} (tbl as {ctxt, ...}) =
           Matcher.pre_match_head
-              tbl (pat, cert ctxt (HOLogic.mk_tuple (map Thm.term_of tname)))
+              tbl (pat, Thm.cterm_of ctxt (HOLogic.mk_tuple (map Thm.term_of tname)))
 
       fun match pat (item as {tname = cts, ...}) tbl (id, inst) =
           let
@@ -429,8 +429,8 @@ val convert_const_x_prfstep =
         PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn {ctxt, ...} =>
             let
-              val cx = cert ctxt (lookup_inst inst "NUMC")
-              val cy = cert ctxt (lookup_inst inst "y")
+              val cx = Thm.cterm_of ctxt (lookup_inst inst "NUMC")
+              val cy = Thm.cterm_of ctxt (lookup_inst inst "y")
               val n = dest_numc (lookup_inst inst "n")
               val info = convert_const_x (cx, cy, n, the_single ths)
             in
@@ -445,8 +445,8 @@ val convert_const_y_prfstep =
         PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn {ctxt, ...} =>
             let
-              val cx = cert ctxt (lookup_inst inst "x")
-              val cy = cert ctxt (lookup_inst inst "NUMC")
+              val cx = Thm.cterm_of ctxt (lookup_inst inst "x")
+              val cy = Thm.cterm_of ctxt (lookup_inst inst "NUMC")
               val n = dest_numc (lookup_inst inst "n")
               val info = convert_const_y (cx, cy, n, the_single ths)
             in
@@ -483,8 +483,8 @@ val transitive =
         PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn {ctxt, ...} =>
             let
-              val (cx, cz) = (cert ctxt (lookup_inst inst "x"),
-                            cert ctxt (lookup_inst inst "z"))
+              val (cx, cz) = (Thm.cterm_of ctxt (lookup_inst inst "x"),
+                            Thm.cterm_of ctxt (lookup_inst inst "z"))
               val m = dest_numc (lookup_inst inst "m")
               val n = dest_numc (lookup_inst inst "n")
               val (th1, th2) = the_pair ths
@@ -581,7 +581,7 @@ val plus_nat_ct = @{cterm "op +::nat=>nat=>nat"}
 val minus_nat_ct = @{cterm "op -::nat=>nat=>nat"}
 
 (* From n, get n = n. *)
-fun nat_n_refl n = Thm.reflexive (cert @{context} (mk_nat n))
+fun nat_n_refl n = Thm.reflexive (Thm.cterm_of @{context} (mk_nat n))
 
 (* From a == b, get a + n == b + n. *)
 fun plus_n_eq eq n = comb_equiv (plus_nat_ct, [eq, nat_n_refl n])
@@ -631,7 +631,7 @@ fun nat_order_match_side (tbl as {ctxt, ...}) (pat, cx) (id, inst) =
         val numc_insts =
             if has_vars pat orelse not (cx aconvc cnat0) then [] else
             let
-              val cpat = cert ctxt pat
+              val cpat = Thm.cterm_of ctxt pat
               val insts = Matcher.rewrite_match
                               tbl (@{term_pat "?NUMC::nat"}, cpat) (id, fo_init)
               fun process_inst ((id', inst'), eq_th) =
@@ -713,7 +713,7 @@ fun nat_order_match' pat (cx, cy) (tbl as {ctxt, ...}) (id, inst) =
                 let
                   (* n is the Abs of either nA or nB. *)
                   val n = if nA = 0 then Int.abs nB else Int.abs nA
-                  val cf = f |> subst_term_norm inst'' |> cert ctxt
+                  val cf = f |> subst_term_norm inst'' |> Thm.cterm_of ctxt
                   val eq_th = comb_equiv (cf, [eqA, eqB])
                   val order_ty = order_info (nA, nB)
                   val diff = order_diffs order_ty n
@@ -761,9 +761,9 @@ fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
       val (x, y, diff1, th1) = get_nat_order_info item
 
       (* Obtain ~pat in non-negated form. *)
-      val neg_t = get_neg pat |> cert ctxt |> neg_ineq_cv |> rhs_of
+      val neg_t = get_neg pat |> Thm.cterm_of ctxt |> neg_ineq_cv |> rhs_of
       val neg_tp = mk_Trueprop neg_t
-      val negt_th = neg_tp |> cert ctxt |> Thm.trivial
+      val negt_th = neg_tp |> Thm.cterm_of ctxt |> Thm.trivial
 
       (* Match ~pat against inequality with (y, x) on the two
          sides. If diff1 + diff2 < 0, obtain a contradiction from th1
@@ -787,7 +787,7 @@ fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
             val contra_th = trans_resolve diff1 diff2 th1 th2
             val neg_tp' = subst_term_norm inst' neg_tp
             val pat_th =
-                contra_th |> Thm.implies_intr (cert ctxt neg_tp')
+                contra_th |> Thm.implies_intr (Thm.cterm_of ctxt neg_tp')
                           |> rewrite_thm_from_contra_form
                           |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
           in
@@ -868,15 +868,15 @@ fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
     if has_vars pat then [] else
     let
       val is_neg = is_neg pat
-      val neg_ct = get_neg pat |> cert ctxt |> neg_ineq_cv |> Thm.rhs_of
+      val neg_ct = get_neg pat |> Thm.cterm_of ctxt |> neg_ineq_cv |> Thm.rhs_of
       val neg_t = Thm.term_of neg_ct
       val neg_tp = neg_t |> mk_Trueprop
-      val negt_th = neg_tp |> cert ctxt |> Thm.trivial
+      val negt_th = neg_tp |> Thm.cterm_of ctxt |> Thm.trivial
       val (cA, cB) = dest_binop_cargs neg_ct
       val (f, (A, B)) = dest_binop neg_t
 
       fun contra_to_pat_th assum contra_th =
-          contra_th |> Thm.implies_intr (cert ctxt assum)
+          contra_th |> Thm.implies_intr (Thm.cterm_of ctxt assum)
                     |> rewrite_thm_from_contra_form
                     |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
 

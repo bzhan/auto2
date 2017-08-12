@@ -39,7 +39,7 @@ fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
         val t' = norm_t G t
       in
         if member (op aconv) op_heads (head_of t') orelse
-           RewriteTable.is_equiv id tbl (ct, cert ctxt t') orelse
+           RewriteTable.is_equiv id tbl (ct, Thm.cterm_of ctxt t') orelse
            exists (fn f => f G t aconv t') excl_norm_t then []
         else let
           val fheads = map (fn t => t $ G) op_heads

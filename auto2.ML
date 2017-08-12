@@ -325,7 +325,7 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
           case t of Abs _ => false | _ => not (has_vars t)
 
       val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
-      val terms = rewr_terms |> map (cert ctxt)
+      val terms = rewr_terms |> map (Thm.cterm_of ctxt)
                              |> maps Subterms.get_all_subterms
                              |> map Thm.term_of
                              |> distinct (op aconv)
@@ -337,7 +337,7 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
                   else []
       val tbl' =
           tbl |> fold RewriteTable.add_term
-              (map (pair id o cert ctxt) (headt @ terms))
+              (map (pair id o Thm.cterm_of ctxt) (headt @ terms))
 
       val new_ts = map (Thm.term_of o snd)
                        (RewriteTable.get_new_terms (tbl, tbl'))
@@ -352,7 +352,7 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
       fun exists_item t =
           Status.find_ritem_exact st id (Fact (TY_TERM, [t], true_th))
 
-      val terms2 = rewr_terms |> map (cert ctxt)
+      val terms2 = rewr_terms |> map (Thm.cterm_of ctxt)
                               |> maps Subterms.get_all_subterms_skip_if
                               |> map Thm.term_of
                               |> distinct (op aconv)
@@ -502,7 +502,7 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
           val vars = maps Update.dest_init_var inits
           val assums = maps Update.dest_init_assum inits
           val ritems = map BoxItem.var_to_fact vars @
-                       map (Update.thm_to_ritem o Thm.assume o cert ctxt)
+                       map (Update.thm_to_ritem o Thm.assume o Thm.cterm_of ctxt)
                            assums
           val _ = assert (forall (fn t => fastype_of t = propT) assums)
                          "process_add_boxes: assumption is not of type prop."
@@ -639,14 +639,14 @@ fun auto2_tac ctxt state =
         val _ = tracing (
               "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
               (Syntax.string_of_term ctxt subgoal) ^ "\n")
-        val subgoal_eq = subgoal |> cert ctxt |> to_obj_conv_on_horn ctxt
+        val subgoal_eq = subgoal |> Thm.cterm_of ctxt |> to_obj_conv_on_horn ctxt
         val st = ProofStatus.init_status ctxt (rhs_of subgoal_eq)
         val (_, st') =
             timer ("Total time: ",
                    fn _ => ProofStatus.solve_root (steps, st))
         val th = Status.get_resolve_th st' [0]
         val vars = map Free (Term.add_frees subgoal [])
-        val th' = th |> fold Thm.forall_elim (map (cert ctxt) vars)
+        val th' = th |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)
                      |> Thm.equal_elim (meta_sym subgoal_eq)
       in
         Seq.single (Thm.implies_elim state th')

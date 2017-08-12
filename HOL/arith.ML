@@ -42,7 +42,7 @@ local
   val ctxt = @{context}
 in
 
-val cnat0 = cert ctxt nat0
+val cnat0 = Thm.cterm_of ctxt nat0
 
 (* Obtain the theorem m <= n. *)
 fun nat_le_th m n =

@@ -518,8 +518,8 @@ fun abstract_eq ctxt var eq =
       val (x, T) = Term.dest_Free var
       val all_const = Const (All_name, (T --> boolT) --> boolT)
     in
-      Drule.arg_cong_rule (cert ctxt all_const)
-                          (Thm.abstract_rule x (cert ctxt var) eq)
+      Drule.arg_cong_rule (Thm.cterm_of ctxt all_const)
+                          (Thm.abstract_rule x (Thm.cterm_of ctxt var) eq)
     end
 
 (* Matching for all-disj propositions *)
@@ -539,7 +539,7 @@ fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
         val tyinst' = fold (Sign.typ_match thy) (tys_t ~~ tys_u) tyinst
         val var_t' = map (Envir.subst_term_types tyinst') var_t
         val ts' = ts |> map (Envir.subst_term_types tyinst')
-        val var_ct' = map (cert ctxt) var_t'
+        val var_ct' = map (Thm.cterm_of ctxt) var_t'
         val cus' = cus |> map (Thm.instantiate_cterm ([], var_u ~~ var_ct'))
 
         (* Match the type-instantiated pattern with term. *)
@@ -556,8 +556,8 @@ fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
 
               (* Equality between un-normalized t and u *)
               val t' = subst_term_norm instsp' t
-              val norm1 = norm_all_disj_sorted ctxt (cert ctxt t')
-              val cu = cert ctxt (mk_all_disj (var_t', map Thm.term_of cus'))
+              val norm1 = norm_all_disj_sorted ctxt (Thm.cterm_of ctxt t')
+              val cu = Thm.cterm_of ctxt (mk_all_disj (var_t', map Thm.term_of cus'))
               val norm2 = norm_all_disj_sorted ctxt cu
               val eq_th' = transitive_list [norm1, eq_th, meta_sym norm2]
             in
@@ -664,7 +664,7 @@ fun forall_elim_sch th =
                         singleton (Name.variant_list var_xs) x
                      else x
           in
-            th |> Thm.forall_elim (cert_thy thy (Var ((x', 0), T)))
+            th |> Thm.forall_elim (Thm.global_cterm_of thy (Var ((x', 0), T)))
                |> forall_elim_sch
           end
         | _ => th
@@ -748,7 +748,7 @@ val disj_prop_matcher =
                 let
                   val eq_th' = make_trueprop_eq (meta_sym eq_th)
                   val forall_th =
-                      th |> fold Thm.forall_intr (rev (map (cert ctxt) var_u))
+                      th |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) var_u))
                          |> apply_to_thm (to_obj_conv ctxt)
                 in
                   ((id', instsp'), Thm.equal_elim eq_th' forall_th)
@@ -799,7 +799,7 @@ fun match_prop rtype (id, item2) pat =
 
             (* Rewrite pat(inst) using the above, then rewrite to True. *)
             val pat_eqT =
-                pat |> cert ctxt |> norm_disj
+                pat |> Thm.cterm_of ctxt |> norm_disj
                     |> subst_thm ctxt inst
                     |> apply_to_thm (reduce_boolify ctxt)
                     |> apply_to_rhs (ac_disj_conv to_eqT_cv)

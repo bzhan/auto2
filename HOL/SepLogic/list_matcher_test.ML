@@ -29,7 +29,7 @@ local
       end
 
   val tbl = (RewriteTable.empty ctxt')
-                |> RewriteTable.add_term ([], cert ctxt' (Free ("P", assnT)))
+                |> RewriteTable.add_term ([], Thm.cterm_of ctxt' (Free ("P", assnT)))
                 |> add_rewrite [] ("n1", "None::nat node ref option")
                 |> add_rewrite [] ("s1", "Some pp")
                 |> add_rewrite [] ("s2", "Some pp'")
@@ -40,7 +40,7 @@ fun test test_fun str (pat_str, t_str, info_str) =
     let
       val pat = Proof_Context.read_term_pattern ctxt' pat_str
       val t = Syntax.read_term ctxt' t_str
-      val ct = cert ctxt t
+      val ct = Thm.cterm_of ctxt t
       val info = map (apsnd (Syntax.read_term ctxt')) info_str
       val info' = (test_fun tbl (pat, ct) ([], fo_init)) |> map (apsnd prop_of')
       val infol = info' |> map snd |> map dest_arg1
