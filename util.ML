@@ -1,19 +1,12 @@
 (* Utility functions. *)
 
-infix andf2 orf2 check_MRS
-
 signature UTIL =
 sig
   (* Exceptions *)
   val assert: bool -> string -> unit
 
-  (* Booleans *)
-  val andf2: ('a -> 'b -> bool) * ('a -> 'b -> bool) -> 'a -> 'b -> bool
-  val orf2: ('a -> 'b -> bool) * ('a -> 'b -> bool) -> 'a -> 'b -> bool
-
   (* Types *)
   val propT: typ
-  val get_arg_type: term -> typ
 
   (* Lists *)
   val max: ('a * 'a -> order) -> 'a list -> 'a
@@ -41,8 +34,7 @@ sig
 
   (* Matching. *)
   val first_order_match_list:
-      theory -> (term * term) list -> Type.tyenv * Envir.tenv ->
-      Type.tyenv * Envir.tenv
+      theory -> (term * term) list -> Type.tyenv * Envir.tenv -> Type.tyenv * Envir.tenv
 
   (* Printing functions, mostly from Isabelle Cookbook. *)
   val string_of_terms: Proof.context -> term list -> string
@@ -60,7 +52,6 @@ sig
   val trace_fullthm: Proof.context -> string -> thm -> unit
   val trace_thm_global: string -> thm -> unit
   val trace_fullthm_global: string -> thm -> unit
-  val check_MRS: thm list * thm -> thm
 
   (* Certifying terms and types. *)
   val cert: Proof.context -> term -> cterm
@@ -70,8 +61,6 @@ sig
   val declare_free_term: term -> Proof.context -> Proof.context
 
   (* Terms. *)
-  val null_term: term
-  val is_null_term: term -> bool
   val is_implies: term -> bool
   val dest_binop: term -> term * (term * term)
   val dest_binop_head: term -> term
@@ -145,13 +134,7 @@ struct
 
 fun assert b exn_str = if b then () else raise Fail exn_str
 
-fun p andf2 q = fn x => fn y => p x y andalso q x y
-fun p orf2 q = fn x => fn y => p x y orelse q x y
-
 val propT = @{typ prop}
-
-(* Given t in inequality form, return the type of the argument. *)
-fun get_arg_type t = t |> strip_comb |> snd |> hd |> Term.type_of
 
 fun max comp lst =
     let
@@ -324,16 +307,6 @@ fun trace_fullthm_global s th =
                "] ==> " ^ (Thm.prop_of th |> Syntax.string_of_term_global thy))
     end
 
-(* Debugging version of MRS. *)
-fun ths check_MRS th =
-    ths MRS th
-    handle THM _ => let
-      val _ = trace_thm_global "Applying" th
-      val _ = map (trace_thm_global "input") ths
-    in
-      raise Fail "check_MRS"
-    end
-
 fun cert ctxt t = Thm.cterm_of ctxt t
 fun cert_thy thy t = Thm.global_cterm_of thy t
 
@@ -341,9 +314,6 @@ fun declare_free_term t ctxt =
     if not (is_Free t) then raise Fail "declare_free_term: t not free."
     else ctxt |> Variable.add_fixes_direct [t |> Term.dest_Free |> fst]
               |> Variable.declare_term t
-
-val null_term = Term.dummy
-fun is_null_term t = (t aconv null_term)
 
 (* Whether a given term is of the form A ==> B. *)
 fun is_implies t =

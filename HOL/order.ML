@@ -745,7 +745,7 @@ fun valid_type ctxt ty =
    is appropriate for nat_order_match: that is, either natT or a
    schematic type of sort linorder.
  *)
-fun valid_arg_type ctxt t = valid_type ctxt (get_arg_type t)
+fun valid_arg_type ctxt t = valid_type ctxt (fastype_of (dest_arg t))
 
 (* Main matching function: pat is a pattern of form either A (</<=) B
    or ~ A (</<=) B, where A and B can possibly contain schematic
@@ -867,8 +867,8 @@ val nat_order_noteq_matcher =
    n >= 0. This follows the same general outline as nat_order_match.
  *)
 fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
-    if not ((is_order pat andalso get_arg_type pat = natT) orelse
-            (is_order (get_neg pat) andalso get_arg_type (get_neg pat) = natT))
+    if not ((is_order pat andalso fastype_of (dest_arg pat) = natT) orelse
+            (is_order (get_neg pat) andalso fastype_of (dest_arg (get_neg pat)) = natT))
     then [] else
     if has_vars pat then [] else
     let

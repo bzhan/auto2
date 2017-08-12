@@ -73,8 +73,12 @@ fun is_order t =
     end
 
 fun is_linorder ctxt t =
-    is_order t andalso Sign.of_sort (Proof_Context.theory_of ctxt)
-                                    (get_arg_type t, ["Orderings.linorder"])
+    let
+      val T = fastype_of (dest_arg t)
+      val thy = Proof_Context.theory_of ctxt
+    in
+      is_order t andalso Sign.of_sort thy (T, ["Orderings.linorder"])
+    end
 
 (* Convert ~ x < y to y <= x, and ~ x <= y to y < x. *)
 val neg_ineq_cv =

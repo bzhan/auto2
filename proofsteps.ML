@@ -242,12 +242,11 @@ fun retrieve_pats_r descs =
                        | _ => [])
          descs
 
-fun retrieve_filts descs =
+fun retrieve_filts descs tbl inst =
     let
-      fun retrieve_filt desc =
-          case desc of Filter filt => [filt] | _ => []
+      val filts = maps (fn Filter filt => [filt] | _ => []) descs
     in
-      fold (curry (op andf2)) (maps retrieve_filt descs) all_insts
+      forall (fn f => f tbl inst) filts
     end
 
 fun retrieve_cases descs =
