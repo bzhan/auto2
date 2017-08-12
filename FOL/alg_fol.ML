@@ -54,7 +54,7 @@ fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
                   AddItems {id = id', sc = SOME 1,
                             raw_items = [Update.thm_to_ritem (to_obj_eq eq)]}
                 else let
-                  val _ = trace_tlist_ctxt ctxt "" [t, rhs_of eq, t']
+                  val _ = trace_tlist ctxt "" [t, rhs_of eq, t']
                   val nm = fst (Term.dest_Const pred_t)
                 in
                   raise Fail ("alg_norm1 for " ^ nm)
@@ -124,8 +124,8 @@ fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
                               raw_items = [Update.thm_to_ritem th]}
                   end
                 else let
-                  val _ = trace_tlist_ctxt ctxt "" [t1, rhs_of eq1, t1']
-                  val _ = trace_tlist_ctxt ctxt "" [t2, rhs_of eq2, t2']
+                  val _ = trace_tlist ctxt "" [t1, rhs_of eq1, t1']
+                  val _ = trace_tlist ctxt "" [t2, rhs_of eq2, t2']
                   val nm = fst (Term.dest_Const pred_t)
                 in
                   raise Fail ("alg_norm2 for " ^ nm)

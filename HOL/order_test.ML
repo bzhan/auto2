@@ -121,9 +121,9 @@ val test_nat_order_match_side =
           in
             if forall check_inst res' andalso check_res then ()
             else let
-              val _ = trace_tlist_ctxt ctxt' "pat, x:" [pat, x]
-              val _ = trace_tlist_ctxt ctxt' "Expected:" res
-              val _ = trace_tlist_ctxt ctxt' "Actual:"
+              val _ = trace_tlist ctxt' "pat, x:" [pat, x]
+              val _ = trace_tlist ctxt' "Expected:" res
+              val _ = trace_tlist ctxt' "Actual:"
                                        (map (Thm.prop_of o eq_th_of) res')
             in
               raise Fail "test_nat_order_match_side"
@@ -164,10 +164,9 @@ val test_nat_order_match =
           in
             if forall check_inst res' andalso check_res then ()
             else let
-              val _ = trace_tlist_ctxt ctxt' "pat, prop:" [pat, prop]
-              val _ = trace_tlist_ctxt ctxt' "Expected:" res
-              val _ = trace_tlist_ctxt ctxt' "Actual:"
-                                       (map (Thm.prop_of o snd) res')
+              val _ = trace_tlist ctxt' "pat, prop:" [pat, prop]
+              val _ = trace_tlist ctxt' "Expected:" res
+              val _ = trace_tlist ctxt' "Actual:" (map (Thm.prop_of o snd) res')
             in
               raise Fail "test_nat_order_match"
             end
@@ -230,8 +229,8 @@ val test_nat_order_single_match =
             if length res = 1 andalso
                res |> the_single |> snd |> prop_of' aconv ineq then ()
             else let
-              val _ = trace_t_ctxt ctxt' "ineq:" ineq
-              val _ = trace_tlist_ctxt ctxt' "Output:"
+              val _ = trace_t ctxt' "ineq:" ineq
+              val _ = trace_tlist ctxt' "Output:"
                                        (map (Thm.prop_of o snd) res)
             in
               raise Fail "test_nat_order_single_match"

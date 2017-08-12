@@ -203,7 +203,7 @@ fun get_nat_order_ritem (cx, cy, diff, th) =
       if prop aconv Thm.prop_of th then
         Fact (TY_NAT_ORDER, [x, y, mk_int diff], th)
       else let
-        val _ = trace_thm "Given:" th
+        val _ = trace_thm_global "Given:" th
       in
         raise Fail "get_nat_order_ritem: wrong form of theorem."
       end

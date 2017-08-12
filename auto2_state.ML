@@ -38,7 +38,7 @@ fun print_state ctxt =
       val frames = Data.get ctxt
       val _ = tracing ("Auto2 state. Number of frames is " ^
                        (string_of_int (length frames)))
-      val _ = map (trace_thm_ctxt ctxt "prop:") (map #prop frames)
+      val _ = map (trace_thm ctxt "prop:") (map #prop frames)
     in
       ()
     end

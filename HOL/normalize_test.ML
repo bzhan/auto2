@@ -16,9 +16,9 @@ val test_normalize =
             if length ts = length ts' andalso
                eq_set (op aconv) (ts, ts') then ()
             else let
-              val _ = trace_t_ctxt ctxt "Input:" t
-              val _ = trace_tlist_ctxt ctxt "Expected:" ts
-              val _ = trace_tlist_ctxt ctxt "Actual:" ts'
+              val _ = trace_t ctxt "Input:" t
+              val _ = trace_tlist ctxt "Expected:" ts
+              val _ = trace_tlist ctxt "Actual:" ts'
             in
               raise Fail "test_normalize"
             end

@@ -35,7 +35,7 @@ fun test_ac_conv ctxt cv err_str (str1, str2) =
       case ACUtil.get_head_ac_info thy t1 of
           NONE =>
           let
-            val _ = trace_t_ctxt ctxt "t1:" t1
+            val _ = trace_t ctxt "t1:" t1
           in
             raise Fail "test_ac_conv: ac_info"
           end

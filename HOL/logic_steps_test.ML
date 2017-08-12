@@ -17,17 +17,17 @@ val test_norm_disj =
           in
             if not (Logic_ProofSteps.mk_disjs res_t aconv t2) then
               let
-                val _ = trace_t_ctxt ctxt "Input" t1
-                val _ = trace_t_ctxt ctxt "Output" (Logic_ProofSteps.mk_disjs res_t)
-                val _ = trace_t_ctxt ctxt "Expected" t2
+                val _ = trace_t ctxt "Input" t1
+                val _ = trace_t ctxt "Output" (Logic_ProofSteps.mk_disjs res_t)
+                val _ = trace_t ctxt "Expected" t2
               in
                 raise Fail "test_norm_disj_t"
               end
             else if not (rhs_of res_th aconv t2) then
               let
-                val _ = trace_t_ctxt ctxt "Input" t1
-                val _ = trace_t_ctxt ctxt "Output" (rhs_of res_th)
-                val _ = trace_t_ctxt ctxt "Expected" t2
+                val _ = trace_t ctxt "Input" t1
+                val _ = trace_t ctxt "Output" (rhs_of res_th)
+                val _ = trace_t ctxt "Expected" t2
               in
                 raise Fail "test_norm_disj"
               end
@@ -70,17 +70,17 @@ val test_norm_all_disj =
           in
             if not (Logic_ProofSteps.mk_all_disj (vars, ts) aconv t2) then
               let
-                val _ = trace_t_ctxt ctxt "Input" t1
-                val _ = trace_t_ctxt ctxt "Output" (Logic_ProofSteps.mk_all_disj (vars, ts))
-                val _ = trace_t_ctxt ctxt "Expected" t2
+                val _ = trace_t ctxt "Input" t1
+                val _ = trace_t ctxt "Output" (Logic_ProofSteps.mk_all_disj (vars, ts))
+                val _ = trace_t ctxt "Expected" t2
               in
                 raise Fail "test_norm_all_disj_t"
               end
             else if not (rhs_of res_th aconv t2) then
               let
-                val _ = trace_t_ctxt ctxt "Input" t1
-                val _ = trace_t_ctxt ctxt "Output" (rhs_of res_th)
-                val _ = trace_t_ctxt ctxt "Expected" t2
+                val _ = trace_t ctxt "Input" t1
+                val _ = trace_t ctxt "Output" (rhs_of res_th)
+                val _ = trace_t ctxt "Expected" t2
               in
                 raise Fail "test_norm_all_disj"
               end
@@ -145,16 +145,16 @@ val test_disj_prop_match =
                 if lhs_of eq aconv (subst_term_norm instsp t) andalso
                    rhs_of eq aconv u' then () else
                 let
-                  val _ = trace_t_ctxt ctxt "t" t
-                  val _ = trace_t_ctxt ctxt "u" u
-                  val _ = trace_thm_ctxt ctxt "Output" eq
+                  val _ = trace_t ctxt "t" t
+                  val _ = trace_t ctxt "u" u
+                  val _ = trace_thm ctxt "Output" eq
                 in
                   raise Fail "disj_prop_match: wrong equation"
                 end
               | _ =>
                 let
-                  val _ = trace_t_ctxt ctxt "t" t
-                  val _ = trace_t_ctxt ctxt "u" u
+                  val _ = trace_t ctxt "t" t
+                  val _ = trace_t ctxt "u" u
                   val _ = tracing ("Number of results: " ^
                                    (string_of_int (length res)))
                 in
@@ -212,8 +212,8 @@ val test_disj_prop_no_match =
           in
             if null res then ()
             else let
-              val _ = trace_t_ctxt ctxt "t" t
-              val _ = trace_t_ctxt ctxt "u" u
+              val _ = trace_t ctxt "t" t
+              val _ = trace_t ctxt "u" u
             in
               raise Fail "disj_prop_no_match: expected no match"
             end
@@ -271,10 +271,10 @@ val test_match_update =
           in
             if eq_set (op aconv) (res_ts, res_ts') then ()
             else let
-              val _ = trace_t_ctxt ctxt' "Input disj:" (prop_of' disj_th)
-              val _ = trace_t_ctxt ctxt' "Input t:" (prop_of' th)
-              val _ = trace_tlist_ctxt ctxt' "Expected:" res_ts
-              val _ = trace_tlist_ctxt ctxt' "Actual:" res_ts'
+              val _ = trace_t ctxt' "Input disj:" (prop_of' disj_th)
+              val _ = trace_t ctxt' "Input t:" (prop_of' th)
+              val _ = trace_tlist ctxt' "Expected:" res_ts
+              val _ = trace_tlist ctxt' "Actual:" res_ts'
             in
               raise Fail "test_match_update"
             end

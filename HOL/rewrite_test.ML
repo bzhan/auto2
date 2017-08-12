@@ -79,7 +79,7 @@ fun assert_equiv_gen exp_equiv id (str1, str2) (tbl as {ctxt, ...}) =
       if exp_equiv = RewriteTable.is_equiv_t id tbl (t1, t2) then tbl
       else let
         val _ = tracing ("id: " ^ (string_of_box_id id))
-        val _ = trace_tlist_ctxt ctxt "Input:" [t1, t2]
+        val _ = trace_tlist ctxt "Input:" [t1, t2]
       in
         raise Fail (if exp_equiv then "assert_equiv" else "assert_not_equiv")
       end
@@ -106,9 +106,9 @@ fun assert_simpl id (str, str') (tbl as {ctxt, ...}) =
     in
       if res aconv t' then tbl
       else let
-        val _ = trace_t_ctxt ctxt "Input:" t
-        val _ = trace_t_ctxt ctxt "Expected:" t'
-        val _ = trace_t_ctxt ctxt "Actual:" res
+        val _ = trace_t ctxt "Input:" t
+        val _ = trace_t ctxt "Expected:" t'
+        val _ = trace_t ctxt "Actual:" res
       in
         raise Fail "assert_simpl"
       end
@@ -165,7 +165,7 @@ fun assert_eq_edges (str1, str2) ids (tbl as {ctxt, ...}) =
     in
       if eq_id_list (ids, ids') then tbl
       else let
-        val _ = trace_tlist_ctxt ctxt "Input:" [t1, t2]
+        val _ = trace_tlist ctxt "Input:" [t1, t2]
         val _ = tracing ("Expected: " ^ (string_of_box_id_list ids) ^ "\n" ^
                          "Actual: " ^ (string_of_box_id_list ids'))
       in
@@ -188,9 +188,9 @@ fun assert_rewrite id (str, str') (tbl as {ctxt, ...}) =
     in
       if res aconv t' then tbl
       else let
-        val _ = trace_t_ctxt ctxt "Input:" t
-        val _ = trace_t_ctxt ctxt "Expected:" t'
-        val _ = trace_t_ctxt ctxt "Actual:" res
+        val _ = trace_t ctxt "Input:" t
+        val _ = trace_t ctxt "Expected:" t'
+        val _ = trace_t ctxt "Actual:" res
       in
         raise Fail "assert_rewrite"
       end

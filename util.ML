@@ -64,12 +64,12 @@ sig
   val string_of_bool: bool -> string
 
   (* Tracing functions. *)
-  val trace_t_ctxt: Proof.context -> string -> term -> unit
-  val trace_tlist_ctxt: Proof.context -> string -> term list -> unit
-  val trace_thm_ctxt: Proof.context -> string -> thm -> unit
-  val trace_fullthm_ctxt: Proof.context -> string -> thm -> unit
-  val trace_thm: string -> thm -> unit
-  val trace_fullthm: string -> thm -> unit
+  val trace_t: Proof.context -> string -> term -> unit
+  val trace_tlist: Proof.context -> string -> term list -> unit
+  val trace_thm: Proof.context -> string -> thm -> unit
+  val trace_fullthm: Proof.context -> string -> thm -> unit
+  val trace_thm_global: string -> thm -> unit
+  val trace_fullthm_global: string -> thm -> unit
   val check_MRS: thm list * thm -> thm
 
   (* Certifying terms and types. *)
@@ -320,16 +320,16 @@ fun string_of_list' func lst =
     if length lst = 1 then func (the_single lst) else string_of_list func lst
 fun string_of_bool b = if b then "true" else "false"
 
-fun trace_t_ctxt ctxt s trm =
+fun trace_t ctxt s trm =
     tracing (s ^ " " ^ (trm |> pretty_term ctxt |> str))
-fun trace_tlist_ctxt ctxt s tlist =
+fun trace_tlist ctxt s tlist =
     tracing (s ^ " " ^ (tlist |> pretty_terms ctxt |> str))
-fun trace_thm_ctxt ctxt s th =
+fun trace_thm ctxt s th =
     tracing (s ^ " " ^ (th |> Thm.prop_of |> pretty_term ctxt |> str))
-fun trace_fullthm_ctxt ctxt s th =
+fun trace_fullthm ctxt s th =
     tracing (s ^ " [" ^ (Thm.hyps_of th |> pretty_terms ctxt |> str) ^
              "] ==> " ^ (Thm.prop_of th |> pretty_term ctxt |> str))
-fun trace_thm s th =
+fun trace_thm_global s th =
     let
       val thy = Thm.theory_of_thm th
     in
@@ -337,7 +337,7 @@ fun trace_thm s th =
                              |> str))
     end
 
-fun trace_fullthm s th =
+fun trace_fullthm_global s th =
     let
       val thy = Thm.theory_of_thm th
     in
@@ -349,8 +349,8 @@ fun trace_fullthm s th =
 fun ths check_MRS th =
     ths MRS th
     handle THM _ => let
-      val _ = trace_thm "Applying" th
-      val _ = map (trace_thm "input") ths
+      val _ = trace_thm_global "Applying" th
+      val _ = map (trace_thm_global "input") ths
     in
       raise Fail "check_MRS"
     end
@@ -714,7 +714,7 @@ fun transitive_list ths =
               else Thm.transitive atob btoc
             else
               let
-                val _ = map (trace_thm "ths:") ths
+                val _ = map (trace_thm_global "ths:") ths
               in
                 raise Fail "transitive_list: intermediate does not agree"
               end
@@ -811,9 +811,9 @@ fun test_conv ctxt cv err_str (str1, str2) =
     in
       if t1 aconv (lhs_of th) andalso t2 aconv (rhs_of th) then ()
       else let
-        val _ = trace_t_ctxt ctxt "Input:" t1
-        val _ = trace_t_ctxt ctxt "Expected:" t2
-        val _ = trace_t_ctxt ctxt "Actual:" (Thm.prop_of th)
+        val _ = trace_t ctxt "Input:" t1
+        val _ = trace_t ctxt "Expected:" t2
+        val _ = trace_t ctxt "Actual:" (Thm.prop_of th)
       in
         raise Fail err_str
       end

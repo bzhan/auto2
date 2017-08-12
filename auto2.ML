@@ -96,7 +96,7 @@ fun check_hyps id th (st as {ctxt, ...}) =
     in
       if null extra then ()
       else let
-        val _ = trace_tlist_ctxt ctxt "extra:" extra
+        val _ = trace_tlist ctxt "extra:" extra
       in
         raise Fail "illegal hyp"
       end

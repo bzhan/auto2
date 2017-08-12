@@ -75,7 +75,7 @@ fun assert_match_gen matcher ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
     let
       val (t, u) = (Proof_Context.read_term_pattern ctxt str_t,
                     Syntax.read_term ctxt str_u)
-      val _ = trace_tlist_ctxt ctxt "Matching" [t, u]
+      val _ = trace_tlist ctxt "Matching" [t, u]
       val info = map (apsnd (Syntax.read_term ctxt)) info_str
       val info' = matcher tbl [] (t, cert ctxt u) ([], fo_init)
       val _ = map (check_info (t, u) "assert_match" tbl) info'
@@ -229,7 +229,7 @@ fun assert_pre_match_gen res at_head (str_t, str_u) (tbl as {ctxt, ...}) =
     in
       if pre_match_fn tbl (t, cu) = res then tbl
       else let
-        val _ = trace_tlist_ctxt ctxt "Pattern, term: " [t, Thm.term_of cu]
+        val _ = trace_tlist ctxt "Pattern, term: " [t, Thm.term_of cu]
       in
         raise Fail ("assert_pre_match (expected " ^ (string_of_bool res) ^ ")")
       end

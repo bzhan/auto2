@@ -42,15 +42,15 @@ fun test_wfconv wfcv err_str (str1, str2) =
       val wft = wfterm_of (cert_thy thy t1)
       val th = snd (wfcv wft)
                handle Fail err =>
-                      let val _ = trace_t_ctxt ctxt "Input:" t1 in
+                      let val _ = trace_t ctxt "Input:" t1 in
                         raise Fail (err ^ " -- " ^ err_str)
                       end
     in
       if t1 aconv (lhs_of th) andalso t2 aconv (rhs_of th) then ()
       else let
-        val _ = trace_t_ctxt ctxt "Input:" t1
-        val _ = trace_t_ctxt ctxt "Expected:" t2
-        val _ = trace_t_ctxt ctxt "Actual:" (Thm.prop_of th)
+        val _ = trace_t ctxt "Input:" t1
+        val _ = trace_t ctxt "Expected:" t2
+        val _ = trace_t ctxt "Actual:" (Thm.prop_of th)
       in
         raise Fail err_str
       end
@@ -123,9 +123,9 @@ fun test_norm_term G (str1, str2) =
     in
       if t2' aconv t2 then ()
       else let
-        val _ = trace_t_ctxt ctxt "Input" t1
-        val _ = trace_t_ctxt ctxt "Expected" t2
-        val _ = trace_t_ctxt ctxt "Actual" t2'
+        val _ = trace_t ctxt "Input" t1
+        val _ = trace_t ctxt "Expected" t2
+        val _ = trace_t ctxt "Actual" t2'
       in
         raise Fail "test_norm_term"
       end
