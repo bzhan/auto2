@@ -41,17 +41,17 @@ ML_file "alg_assoc.ML"
 
 method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac) *} "auto2 prover"
 
-attribute_setup forward = {* setup_attrib add_forward_prfstep_gnrc *}
-attribute_setup backward = {* setup_attrib add_backward_prfstep_gnrc *}
-attribute_setup backward1 = {* setup_attrib add_backward1_prfstep_gnrc *}
-attribute_setup backward2 = {* setup_attrib add_backward2_prfstep_gnrc *}
-attribute_setup resolve = {* setup_attrib add_resolve_prfstep_gnrc *}
-attribute_setup rewrite = {* setup_attrib add_rewrite_rule_gnrc *}
-attribute_setup rewrite_back = {* setup_attrib add_rewrite_rule_back_gnrc *}
-attribute_setup rewrite_bidir = {* setup_attrib add_rewrite_rule_bidir_gnrc *}
-attribute_setup typing = {* setup_attrib add_typing_rule_gnrc *}
-attribute_setup typing2 = {* setup_attrib add_typing2_rule_gnrc *}
-attribute_setup backward_replace = {* setup_attrib add_backward_replace_gnrc *}
-attribute_setup script_induct = {* setup_attrib add_script_induct_data_gnrc *}
+attribute_setup forward = {* setup_attrib add_forward_prfstep *}
+attribute_setup backward = {* setup_attrib add_backward_prfstep *}
+attribute_setup backward1 = {* setup_attrib add_backward1_prfstep *}
+attribute_setup backward2 = {* setup_attrib add_backward2_prfstep *}
+attribute_setup resolve = {* setup_attrib add_resolve_prfstep *}
+attribute_setup rewrite = {* setup_attrib add_rewrite_rule *}
+attribute_setup rewrite_back = {* setup_attrib add_rewrite_rule_back *}
+attribute_setup rewrite_bidir = {* setup_attrib add_rewrite_rule_bidir *}
+attribute_setup typing = {* setup_attrib add_typing_rule *}
+attribute_setup typing2 = {* setup_attrib add_typing2_rule *}
+attribute_setup backward_replace = {* setup_attrib add_backward_replace *}
+attribute_setup script_induct = {* setup_attrib add_script_induct_data *}
 
 end

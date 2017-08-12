@@ -2,13 +2,11 @@
 
 signature SEP_LOGIC =
 sig
-  val add_forward_ent_prfstep_gnrc: thm -> Context.generic -> Context.generic
-  val add_forward_ent_shadowing_prfstep_gnrc:
-      thm -> Context.generic -> Context.generic
-  val add_backward_ent_prfstep_gnrc: thm -> Context.generic -> Context.generic
+  val add_forward_ent_prfstep: thm -> theory -> theory
+  val add_forward_ent_shadowing_prfstep: thm -> theory -> theory
+  val add_backward_ent_prfstep: thm -> theory -> theory
   val entail_equiv_forward_th: thm -> thm
   val entail_equiv_backward_th: thm -> thm
-  val add_rewrite_ent_rule_gnrc: thm -> Context.generic -> Context.generic
   val add_rewrite_ent_rule: thm -> theory -> theory
   val frame_entail: proofstep
 
@@ -24,7 +22,7 @@ sig
   val find_proc_def: Proof.context -> term -> thm option
   val heap_preservingI: proofstep
   val heap_preserving_effectD: thm -> proofstep
-  val add_heap_preserving_thm_gnrc: thm -> Context.generic -> Context.generic
+  val add_heap_preserving_thm: thm -> theory -> theory
   val init_pos: proofstep
   val find_heap_preserving_th: Proof.context -> term -> thm option
   val next_code_pos_ritems:
@@ -38,13 +36,11 @@ sig
   val match_assn_pure1: proofstep
   val match_assn_pure2: proofstep
   val match_hoare_create_case_gen: string * term -> proofstep
-  val add_match_hoare_create_case_gnrc:
-      thm -> Context.generic -> Context.generic
+  val add_match_hoare_create_case: thm -> theory -> theory
   val match_assn_spatial: proofstep
   val hoare_triple_prfstep: thm -> proofstep
-  val add_hoare_triple_prfstep_gnrc: thm -> Context.generic -> Context.generic
-  val add_hoare_triple_direct_prfstep_gnrc:
-      thm -> Context.generic -> Context.generic
+  val add_hoare_triple_prfstep: thm -> theory -> theory
+  val add_hoare_triple_direct_prfstep: thm -> theory -> theory
 
   val add_sep_logic_proofsteps: theory -> theory
 end;
@@ -135,11 +131,11 @@ fun forward_ent_shadowing_prfstep ent_th =
      priority = PRIORITY_SHADOW,
      func = OneStep (forward_ent_prfstep_fn true ent_th)}
 
-fun add_forward_ent_prfstep_gnrc ent_th gnrc =
-    add_prfstep_gnrc (forward_ent_prfstep ent_th) gnrc
+fun add_forward_ent_prfstep ent_th =
+    add_prfstep (forward_ent_prfstep ent_th)
 
-fun add_forward_ent_shadowing_prfstep_gnrc ent_th gnrc =
-    add_prfstep_gnrc (forward_ent_shadowing_prfstep ent_th) gnrc
+fun add_forward_ent_shadowing_prfstep ent_th =
+    add_prfstep (forward_ent_shadowing_prfstep ent_th)
 
 fun backward_ent_prfstep_fn ent_th rtype {ctxt, ...} item =
     let
@@ -168,8 +164,8 @@ fun backward_ent_prfstep ent_th =
      priority = PRIORITY_ADD,
      func = OneStep (backward_ent_prfstep_fn ent_th)}
 
-fun add_backward_ent_prfstep_gnrc ent_th gnrc =
-    add_prfstep_gnrc (backward_ent_prfstep ent_th) gnrc
+fun add_backward_ent_prfstep ent_th =
+    add_prfstep (backward_ent_prfstep ent_th)
 
 fun entail_equiv_forward_th th =
     (th RS @{thm entail_equiv_forward})
@@ -181,12 +177,9 @@ fun entail_equiv_backward_th th =
         |> Drule.zero_var_indexes
         |> update_name_of_thm th "@ent_eqbackward"
 
-fun add_rewrite_ent_rule_gnrc eq_th gnrc =
-    gnrc |> add_forward_ent_prfstep_gnrc (entail_equiv_forward_th eq_th)
-         |> add_backward_ent_prfstep_gnrc (entail_equiv_backward_th eq_th)
-
-val add_rewrite_ent_rule =
-    Context.theory_map o add_rewrite_ent_rule_gnrc
+fun add_rewrite_ent_rule eq_th thy =
+    thy |> add_forward_ent_prfstep (entail_equiv_forward_th eq_th)
+        |> add_backward_ent_prfstep (entail_equiv_backward_th eq_th)
 
 (* Here item1 is a DISJ item of form A ==>_A B, where A and B may
    contain schematic variables. Match pattern h |= A * Ru with item2,
@@ -397,10 +390,10 @@ fun heap_preserving_effectD presv_th =
 (* Add the heap_preserving_effectD proofstep (for proving future
    heap_preserving results).
  *)
-fun add_heap_preserving_thm_gnrc presv_th gnrc =
-    gnrc |> add_prfstep_gnrc (heap_preserving_effectD presv_th)
-         |> Named_Theorems.add_thm @{named_theorems sep_heap_presv_thms}
-                                        presv_th
+fun add_heap_preserving_thm presv_th thy =
+    thy |> add_prfstep (heap_preserving_effectD presv_th)
+        |> Context.theory_map (
+              Named_Theorems.add_thm @{named_theorems sep_heap_presv_thms} presv_th)
 
 (* Given theorem of form ~<P> c <Q>, attempt to expand the definition
    of c, using find_proc_def to lookup definitions.
@@ -1019,7 +1012,7 @@ fun match_hoare_create_case_gen (prfstep_name, pat) =
               end
             end)
 
-fun add_match_hoare_create_case_gnrc hoare_th gnrc =
+fun add_match_hoare_create_case hoare_th =
     let
       val name = (name_of_thm hoare_th) ^ "@hoare_case"
       val (_, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
@@ -1027,7 +1020,7 @@ fun add_match_hoare_create_case_gnrc hoare_th gnrc =
                                   Var (("s", 0), boolT), Var (("P", 0), assnT)]
       val prfstep = match_hoare_create_case_gen (name, pat)
     in
-      gnrc |> add_prfstep_gnrc prfstep
+      add_prfstep prfstep
     end
 
 (* Given hoare triple theorem <P> c <Q>, match with CODE_POS item (h,
@@ -1062,8 +1055,7 @@ fun hoare_triple_prfstep hoare_th =
    ?Ru. Also, if the command is not heap preserving, produce proofstep
    matching with SUCCESS_RUN (?h, ?c) and ?h |= ?P * ?ru.
  *)
-val add_hoare_triple_prfstep_gnrc =
-    add_prfstep_gnrc o hoare_triple_prfstep
+val add_hoare_triple_prfstep = add_prfstep o hoare_triple_prfstep
 
 (* Proofstep for moving to next code position. Here hoare_th is the
    hoare triple <P> c <Q>, item1 is the CODE_POS item with parameters
@@ -1110,8 +1102,8 @@ fun hoare_triple_direct_prfstep hoare_th =
      priority = PRIORITY_SHADOW,
      func = TwoStep (hoare_triple_direct_prfstep_fn hoare_th)}
 
-fun add_hoare_triple_direct_prfstep_gnrc hoare_th gnrc =
-    add_prfstep_gnrc (hoare_triple_direct_prfstep hoare_th) gnrc
+fun add_hoare_triple_direct_prfstep hoare_th =
+    add_prfstep (hoare_triple_direct_prfstep hoare_th)
 
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
@@ -1136,4 +1128,10 @@ val add_sep_logic_proofsteps =
 end  (* structure SepLogic *)
 
 val _ = Theory.setup SepLogic.add_sep_logic_proofsteps
+val add_heap_preserving_thm = SepLogic.add_heap_preserving_thm
+val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
 val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
+val add_forward_ent_shadowing_prfstep = SepLogic.add_forward_ent_shadowing_prfstep
+val add_match_hoare_create_case = SepLogic.add_match_hoare_create_case
+val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep
+val add_hoare_triple_direct_prfstep = SepLogic.add_hoare_triple_direct_prfstep

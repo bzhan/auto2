@@ -1009,7 +1009,8 @@ fun apply_property_update_on_term (tbl as {ctxt, ...}) id t =
     case head_of t of
         Const (c, _) =>
         let
-          val updt_rules = Property.lookup_property_update ctxt c
+          val thy = Proof_Context.theory_of ctxt
+          val updt_rules = Property.lookup_property_update thy c
           fun process_updt_rule th =
               th |> Property.instantiate_property_update ctxt t
                  |> apply_property_update_rule tbl id
@@ -1057,7 +1058,7 @@ fun process_update_property inits (tbl as {ctxt, ...}) =
                 (* Derived properties of t. *)
                 val ts = Property.strip_property_field thy t
                 val c = Property.get_property_name (prop_of' th)
-                val updt_rules = Property.lookup_property_update ctxt c
+                val updt_rules = Property.lookup_property_update thy c
                 fun process_updt_rule (t, th) =
                     th |> Property.instantiate_property_update ctxt t
                        |> apply_property_update_rule tbl id

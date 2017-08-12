@@ -19,9 +19,8 @@ sig
 
   (* About the PropertyUpdateData table.*)
   val can_add_property_update: thm -> theory -> bool
-  val add_property_update_gnrc: thm -> Context.generic -> Context.generic
   val add_property_update: thm -> theory -> theory
-  val lookup_property_update: Proof.context -> string -> thm list
+  val lookup_property_update: theory -> string -> thm list
   val instantiate_property_update: Proof.context -> term -> thm -> thm option
 end;
 
@@ -46,7 +45,7 @@ structure Data = Theory_Data (
    the premises. In the second case, they are indexed under the name
    of the head function f.
  *)
-structure UpdateData = Generic_Data (
+structure UpdateData = Theory_Data (
   type T = (thm list) Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
@@ -195,9 +194,8 @@ fun can_add_property_update th thy =
       else false
     end
 
-fun add_property_update_gnrc th gnrc =
+fun add_property_update th thy =
     let
-      val thy = Context.theory_of gnrc
       val (prems, concl) = strip_horn' th
       val _ = assert (is_property_const thy concl)
                      "add_property_update: concl must be a property constant."
@@ -214,7 +212,7 @@ fun add_property_update_gnrc th gnrc =
           val names = get_property_names prems
           val _ = writeln ("Add property rule for " ^ (string_of_list I names))
         in
-          gnrc |> UpdateData.map (
+          thy |> UpdateData.map (
             fold (Symtab.update_list Thm.eq_thm_prop) (map (rpair th) names))
         end
       else
@@ -231,17 +229,15 @@ fun add_property_update_gnrc th gnrc =
                          "add_property_update: extraneous Vars in th."
           val _ = writeln ("Add property rule for function " ^ c)
         in
-          gnrc |> UpdateData.map (
+          thy |> UpdateData.map (
             Symtab.update_list Thm.eq_thm_prop (c, th))
         end
     end
 
-val add_property_update = Context.theory_map o add_property_update_gnrc
-
 (* Find rules registered under the given name. *)
-fun lookup_property_update ctxt c =
+fun lookup_property_update thy c =
     let
-      val data = UpdateData.get (Context.Proof ctxt)
+      val data = UpdateData.get thy
     in
       Symtab.lookup_list data c
     end

@@ -59,13 +59,13 @@ ML_file "sep_steps.ML"
 ML_file "sep_steps_test.ML"
 ML_file "sep_induct.ML"
 
-attribute_setup heap_presv_thms = {* setup_attrib SepLogic.add_heap_preserving_thm_gnrc *}
-attribute_setup forward_ent = {* setup_attrib SepLogic.add_forward_ent_prfstep_gnrc *}
-attribute_setup forward_ent_shadow = {* setup_attrib SepLogic.add_forward_ent_shadowing_prfstep_gnrc *}
-attribute_setup rewrite_ent = {* setup_attrib SepLogic.add_rewrite_ent_rule_gnrc *}
-attribute_setup hoare_create_case = {* setup_attrib SepLogic.add_match_hoare_create_case_gnrc *}
-attribute_setup hoare_triple = {* setup_attrib SepLogic.add_hoare_triple_prfstep_gnrc *}
-attribute_setup hoare_triple_direct = {* setup_attrib SepLogic.add_hoare_triple_direct_prfstep_gnrc *}
+attribute_setup heap_presv_thms = {* setup_attrib add_heap_preserving_thm *}
+attribute_setup forward_ent = {* setup_attrib add_forward_ent_prfstep *}
+attribute_setup forward_ent_shadow = {* setup_attrib add_forward_ent_shadowing_prfstep *}
+attribute_setup rewrite_ent = {* setup_attrib add_rewrite_ent_rule *}
+attribute_setup hoare_create_case = {* setup_attrib add_match_hoare_create_case *}
+attribute_setup hoare_triple = {* setup_attrib add_hoare_triple_prfstep *}
+attribute_setup hoare_triple_direct = {* setup_attrib add_hoare_triple_direct_prfstep *}
 
 theorem basic_heap_preserving_thms [heap_presv_thms]:
   "heap_preserving (!p)"
@@ -80,17 +80,15 @@ theorem heap_preserve_comment [heap_presv_thms]: "heap_preserving (comment P)"
 theorem heap_preserve_assert [heap_presv_thms]: "heap_preserving (assert P x)"
   using effect_assertE heap_preserving_def by fastforce
 
-declare comment_rule [hoare_triple]
-declare comment_rule2 [hoare_triple, hoare_create_case]
-declare assert_rule [hoare_triple, hoare_create_case]
-declare return_rule [hoare_triple_direct]
-declare ref_rule [hoare_triple_direct]
-declare lookup_rule [hoare_triple_direct]
-declare update_rule [hoare_triple]
-declare new_rule [hoare_triple_direct]
-declare nth_rule [hoare_triple, hoare_create_case]
-declare upd_rule [hoare_triple, hoare_create_case]
-declare length_rule [hoare_triple_direct]
+setup {* fold add_hoare_triple_prfstep [
+  @{thm comment_rule}, @{thm comment_rule2}, @{thm assert_rule}, @{thm update_rule},
+  @{thm nth_rule}, @{thm upd_rule}] *}
+
+setup {* fold add_match_hoare_create_case [
+  @{thm comment_rule2}, @{thm assert_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
+
+setup {* fold add_hoare_triple_direct_prfstep [
+  @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule}, @{thm length_rule}] *}
 
 (* Some simple tests *)
 
