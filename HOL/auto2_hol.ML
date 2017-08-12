@@ -67,10 +67,10 @@ fun is_if t =
         Const (@{const_name If}, _) $ _ $ _ $ _ => true
       | _ => false
 
-val cTrueprop = cert @{context} HOLogic.Trueprop
-val cNot = cert @{context} HOLogic.Not
-val cConj = cert @{context} HOLogic.conj
-val cDisj = cert @{context} HOLogic.disj
+val cTrueprop = @{cterm Trueprop}
+val cNot = @{cterm Not}
+val cConj = @{cterm conj}
+val cDisj = @{cterm disj}
 
 (* Theorems for equality *)
 val to_meta_eq_cv = Conv.rewr_conv @{thm to_meta_eq}

@@ -521,8 +521,9 @@ fun case_induct_cmd s state =
       val ind_goals =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
+                 |> map (cert ctxt)
 
-      val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
+      val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
                     |> map send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
@@ -565,8 +566,9 @@ fun prop_induct_cmd (s, t) state =
       val ind_goals =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
+                 |> map (cert ctxt)
 
-      val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
+      val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
                     |> map send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
@@ -612,8 +614,9 @@ fun var_induct_cmd (s, t) state =
       val ind_goals =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
+                 |> map (cert ctxt)
 
-      val ths = (map (Auto2_Outer.auto2_solve ctxt o cert ctxt) ind_goals)
+      val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
                     |> map send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths

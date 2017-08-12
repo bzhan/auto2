@@ -38,6 +38,8 @@ end;
 structure NatArith : NAT_ARITH =
 struct
 
+val ctxt = @{context}
+
 fun is_Suc t =
     case t of
         Const ("Nat.Suc", _) $ _ => true
@@ -140,10 +142,10 @@ fun nat_le (m, n) =
     end
 
 fun mk_nat_add_th (m, n) =
-    nat_add (cert_thy @{theory} (plus_t $ NN $ mk_nat m $ mk_nat n))
+    nat_add (cert ctxt (plus_t $ NN $ mk_nat m $ mk_nat n))
 
 fun mk_nat_mult_th (m, n) =
-    nat_mult (cert_thy @{theory} (times_t $ NN $ mk_nat m $ mk_nat n))
+    nat_mult (cert ctxt (times_t $ NN $ mk_nat m $ mk_nat n))
 
 fun nat_sub ct =
     let
@@ -180,7 +182,6 @@ fun nat_neq_zero n =
     else let
       val nt = mk_nat (n - 1)
       val inst = update_env (("n",0), nt) fo_init
-      val ctxt = @{context}
     in
       (subst_thm ctxt inst @{thm nat_Suc_not_zero}) RS @{thm not_sym}
     end
@@ -189,7 +190,7 @@ fun nat_neq_zero n =
 fun nat_neq (m, n) =
     if m = n then raise Fail "nat_neq" else
     let
-      val m_eq_n = mk_eq (mk_nat m, mk_nat n) |> mk_Trueprop |> cert @{context}
+      val m_eq_n = mk_eq (mk_nat m, mk_nat n) |> mk_Trueprop |> cert ctxt
     in
       m_eq_n |> Thm.assume
              |> nat_neq_resolve

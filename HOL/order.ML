@@ -20,8 +20,7 @@ sig
   val convert_const_x: order_info -> order_info
   val convert_const_y: order_info -> order_info
   val convert_const: order_info -> order_info
-  val to_nat_order_prfstep_templ:
-      Proof.context -> string * string * order_type -> proofstep
+  val to_nat_order_prfstep_templ: string * term * order_type -> proofstep
   val to_nat_order_prfsteps: proofstep list
   val nat_eq_diff_prfstep: proofstep
 
@@ -299,12 +298,8 @@ fun rewrite_info_y eq_y (cx, cy, diff, th) =
    result is a comparison with a constant, it is converted to a
    comparison with zero.
  *)
-fun to_nat_order_prfstep_templ ctxt (prfstep_name, pat_str, order_ty) =
+fun to_nat_order_prfstep_templ (prfstep_name, pat, order_ty) =
     let
-      val sch_xy = [@{term_pat "?x::nat"}, @{term_pat "?y::nat"}]
-      val ctxt' = fold Variable.declare_term sch_xy ctxt
-      val pat = Proof_Context.read_term_pattern ctxt' pat_str
-
       fun filt tbl (id, inst) =
           not (simp_in_plus_form (id, tbl) (lookup_inst inst "x")) andalso
           not (simp_in_plus_form (id, tbl) (lookup_inst inst "y")) andalso
@@ -331,17 +326,17 @@ fun to_nat_order_prfstep_templ ctxt (prfstep_name, pat_str, order_ty) =
     end
 
 val to_nat_order_prfsteps =
-    map (to_nat_order_prfstep_templ @{context}) [
-      ("cv_nat_less_lminus", "?x - ?NUMC < ?y", LESS_LMINUS),
-      ("cv_nat_less_lplus", "?x + ?NUMC < ?y", LESS_LPLUS),
-      ("cv_nat_less_rminus", "?x < ?y - ?NUMC", LESS_RMINUS),
-      ("cv_nat_less_rplus", "?x < ?y + ?NUMC", LESS_RPLUS),
-      ("cv_nat_less", "?x < ?y", LESS),
-      ("cv_nat_le_lminus", "?x - ?NUMC <= ?y", LE_LMINUS),
-      ("cv_nat_le_lplus", "?x + ?NUMC <= ?y", LE_LPLUS),
-      ("cv_nat_le_rminus", "?x <= ?y - ?NUMC", LE_RMINUS),
-      ("cv_nat_le_rplus", "?x <= ?y + ?NUMC", LE_RPLUS),
-      ("cv_nat_le", "?x <= ?y", LE)
+    map to_nat_order_prfstep_templ [
+      ("cv_nat_less_lminus", @{term_pat "(?x::nat) - ?NUMC < ?y"}, LESS_LMINUS),
+      ("cv_nat_less_lplus", @{term_pat "(?x::nat) + ?NUMC < ?y"}, LESS_LPLUS),
+      ("cv_nat_less_rminus", @{term_pat "(?x::nat) < ?y - ?NUMC"}, LESS_RMINUS),
+      ("cv_nat_less_rplus", @{term_pat "(?x::nat) < ?y + ?NUMC"}, LESS_RPLUS),
+      ("cv_nat_less", @{term_pat "(?x::nat) < ?y"}, LESS),
+      ("cv_nat_le_lminus", @{term_pat "(?x::nat) - ?NUMC <= ?y"}, LE_LMINUS),
+      ("cv_nat_le_lplus", @{term_pat "(?x::nat) + ?NUMC <= ?y"}, LE_LPLUS),
+      ("cv_nat_le_rminus", @{term_pat "(?x::nat) <= ?y - ?NUMC"}, LE_RMINUS),
+      ("cv_nat_le_rplus", @{term_pat "(?x::nat) <= ?y + ?NUMC"}, LE_RPLUS),
+      ("cv_nat_le", @{term_pat "(?x::nat) <= ?y"}, LE)
     ]
 
 (* Proofstep creating x <= y + n and x >= y + n from x = y +

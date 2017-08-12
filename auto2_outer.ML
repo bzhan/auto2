@@ -74,23 +74,24 @@ fun have_resolve ctxt vars th concl =
     let
       val prop = Thm.prop_of th
       val (As, B) = Logic.strip_horn prop
+      val cAs = map (cert ctxt) As
+      val c_vars = map (cert ctxt) vars
       val stmt = (Logic.list_implies (As @ [B], concl))
-                     |> fold Logic.all (rev vars)
+                     |> fold Logic.all (rev vars) |> cert ctxt
 
-      val thAs = map Thm.assume (map (cert ctxt) As)
+      val thAs = map Thm.assume cAs
       val th_bc =
-          stmt |> cert ctxt
-               |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> B ==> C *)
-               |> fold Thm.forall_elim (map (cert ctxt) vars)
+          stmt |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> B ==> C *)
+               |> fold Thm.forall_elim c_vars
                |> fold Thm.elim_implies thAs  (* B ==> C *)
 
       val th_b = th |> fold Thm.elim_implies thAs  (* B *)
 
       val th_c = Thm.implies_elim th_bc th_b  (* C *)
     in
-      th_c |> fold Thm.implies_intr (rev (map (cert ctxt) As))
-           |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
-           |> Thm.implies_intr (cert ctxt stmt)
+      th_c |> fold Thm.implies_intr (rev cAs)
+           |> fold Thm.forall_intr (rev c_vars)
+           |> Thm.implies_intr stmt
     end
 
 fun strip_goal t =
@@ -299,6 +300,8 @@ fun obtain_resolve ctxt vars th concl =
 
       (* B is EX x. P(x) *)
       val (As, B) = Logic.strip_horn prop
+      val cAs = map (cert ctxt) As
+      val c_vars = map (cert ctxt) vars
 
       val (new_vars, body) = strip_ex (dest_Trueprop B)
 
@@ -307,19 +310,19 @@ fun obtain_resolve ctxt vars th concl =
                      |> fold Logic.all (rev vars)
                      |> cert ctxt
 
-      val thAs = map Thm.assume (map (cert ctxt) As)
+      val thAs = map Thm.assume cAs
       val th_b = th |> fold Thm.elim_implies thAs
 
       (* P(x) ==> C *)
       val th_bc = stmt |> Thm.assume
-                       |> fold Thm.forall_elim (map (cert ctxt) vars)
+                       |> fold Thm.forall_elim c_vars
                        |> fold Thm.forall_elim (map (cert ctxt) new_vars)
                        |> fold Thm.elim_implies thAs
       val th_c = (fold (ex_elim ctxt) (rev new_vars) th_bc)
                      |> Thm.elim_implies th_b
     in
-      th_c |> fold Thm.implies_intr (rev (map (cert ctxt) As))
-           |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
+      th_c |> fold Thm.implies_intr (rev cAs)
+           |> fold Thm.forall_intr (rev c_vars)
            |> Thm.implies_intr stmt
     end
 
@@ -398,15 +401,16 @@ fun case_resolve ctxt vars th =
       val prop = Thm.prop_of th
 
       val ((As, B), C) = prop |> Logic.strip_horn |> apfst split_last
+      val cAs = map (cert ctxt) As
+      val c_vars = map (cert ctxt) vars
       val nB = mk_Trueprop (Not $ (dest_Trueprop B))
       val stmt = (Logic.list_implies (As @ [nB], C))
-                     |> fold Logic.all (rev vars)
+                     |> fold Logic.all (rev vars) |> cert ctxt
 
-      val thAs = map Thm.assume (map (cert ctxt) As)
+      val thAs = map Thm.assume cAs
       val th_nbc =
-          stmt |> cert ctxt
-               |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> ~B ==> C *)
-               |> fold Thm.forall_elim (map (cert ctxt) vars)
+          stmt |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> ~B ==> C *)
+               |> fold Thm.forall_elim c_vars
                |> fold Thm.elim_implies thAs  (* ~B ==> C *)
 
       val th_bc = th |> fold Thm.elim_implies thAs
@@ -416,9 +420,9 @@ fun case_resolve ctxt vars th =
       val th_c = case_split_th |> subst_thm ctxt inst
                                |> fold Thm.elim_implies [th_bc, th_nbc]
     in
-      th_c |> fold Thm.implies_intr (rev (map (cert ctxt) As))
-           |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
-           |> Thm.implies_intr (cert ctxt stmt)
+      th_c |> fold Thm.implies_intr (rev cAs)
+           |> fold Thm.forall_intr (rev c_vars)
+           |> Thm.implies_intr stmt
     end
 
 (* Given prop in the form (!!x. A_1 ==> ... ==> A_n ==> C) ==> D, and
@@ -442,19 +446,19 @@ fun case_cmd (s, t) state =
       val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
       val (As, C) = Logic.strip_horn body
 
-      val stmt = Logic.list_implies (As @ [B], C)
+      val stmt = Logic.list_implies (As @ [B], C) |> cert ctxt
     in
       if is_none t orelse the t = "@then" then
         let
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B ==> C *)
-          val th = auto2_solve ctxt (cert ctxt stmt)
+          val th = auto2_solve ctxt stmt
         in
           state |> Proof.map_contexts (Auto2_State.map_head_th (case_after_qed ctxt th))
         end
       else
         let
           (* Create new block with stmt *)
-          val goal = Thm.trivial (cert ctxt stmt) |> Goal.protect 1
+          val goal = Thm.trivial stmt |> Goal.protect 1
           val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
                            after_qed = SOME ([], case_after_qed ctxt)}
         in
@@ -475,19 +479,20 @@ val _ =
 fun contra_resolve ctxt vars As C =
     let
       val stmt = (Logic.list_implies (As @ [get_neg' C], pFalse))
-                     |> fold Logic.all (rev vars)
+                     |> fold Logic.all (rev vars) |> cert ctxt
+      val cAs = map (cert ctxt) As
+      val c_vars = map (cert ctxt) vars
 
-      val thAs = map Thm.assume (map (cert ctxt) As)
+      val thAs = map Thm.assume cAs
       val th_c =
-          stmt |> cert ctxt
-               |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> ~C ==> False *)
-               |> fold Thm.forall_elim (map (cert ctxt) vars)
+          stmt |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> ~C ==> False *)
+               |> fold Thm.forall_elim c_vars
                |> fold Thm.elim_implies thAs  (* ~C ==> False *)
                |> rewrite_thm_from_contra_form  (* C *)
     in
-      th_c |> fold Thm.implies_intr (rev (map (cert ctxt) As))
-           |> fold Thm.forall_intr (rev (map (cert ctxt) vars))
-           |> Thm.implies_intr (cert ctxt stmt)
+      th_c |> fold Thm.implies_intr (rev cAs)
+           |> fold Thm.forall_intr (rev c_vars)
+           |> Thm.implies_intr stmt
     end
 
 (* Given prop in the form (!!x. A_1 ==> ... ==> A_n ==> C) ==> D,

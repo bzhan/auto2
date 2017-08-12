@@ -78,10 +78,10 @@ fun is_if t =
       | Const ("Set.Ifb", _) $ _ $ _ $ _ => true
       | _ => false
 
-val cTrueprop = cert @{context} @{term Trueprop}
-val cNot = cert @{context} @{term Not}
-val cConj = cert @{context} FOLogic.conj
-val cDisj = cert @{context} FOLogic.disj
+val cTrueprop = @{cterm Trueprop}
+val cNot = @{cterm Not}
+val cConj = @{cterm conj}
+val cDisj = @{cterm disj}
 
 (* Theorems for equality *)
 val to_meta_eq_cv =
