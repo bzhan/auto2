@@ -49,7 +49,7 @@ setup {* add_prfstep_check_req ("Mor(S,T,b)", "Mor(S,T,b) \<in> S \<rightharpoon
 
 lemma Mor_is_morphism [backward]:
   "\<forall>x\<in>.S. f(x)\<in>.T \<Longrightarrow> Mor(S,T,f) \<in> S \<rightharpoonup> T"
-@proof @have "\<forall>x\<in>.S. \<langle>x,f(x)\<rangle>\<in>graph(Mor(S,T,f))" @qed
+@proof @have (@rule) "\<forall>x\<in>.S. \<langle>x,f(x)\<rangle>\<in>graph(Mor(S,T,f))" @qed
 
 setup {* add_rewrite_rule @{thm feval_def} *}
 lemma Mor_eval [rewrite]:
@@ -170,7 +170,7 @@ setup {* del_prfstep_thm @{thm inverse_mor_def} *}
   
 lemma inv_mor_bijective [forward]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> bijective(inverse_mor(f))"
-@proof @have "\<forall>x\<in>source(f). inverse_mor(f)`(f`x) = x" @qed
+@proof @have (@rule) "\<forall>x\<in>source(f). inverse_mor(f)`(f`x) = x" @qed
 
 lemma inverse_is_left_inv [rewrite]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> inverse_mor(f) \<circ>\<^sub>m f = id_mor(source_str(f))" by auto2

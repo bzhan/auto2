@@ -175,8 +175,8 @@ lemma dedekind_complete [resolve]:
   @obtain x where "converges_to(B,x)" @then
   @let "S = seq_ring(R)" @then
   @have "vanishes(B -\<^sub>S A)" @with @have "half_seq(B -\<^sub>S A)" @end
-  @have "\<forall>n\<in>nat. A`n \<in> U" @with @induct "n \<in> nat" "A`n \<in> U" @end
-  @have "\<forall>n\<in>nat. B`n \<notin> U" @with @induct "n \<in> nat" "B`n \<notin> U" @end
+  @have (@rule) "\<forall>n\<in>nat. A`n \<in> U" @with @induct "n \<in> nat" "A`n \<in> U" @end
+  @have (@rule) "\<forall>n\<in>nat. B`n \<notin> U" @with @induct "n \<in> nat" "B`n \<notin> U" @end
   @have "\<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" @with
     @case "y <\<^sub>R x" @with @obtain "n\<in>nat" where "y <\<^sub>R A`n" @end
     @case "y \<in> U" @with

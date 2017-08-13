@@ -190,7 +190,7 @@ definition qsurj :: "i \<Rightarrow> i" where [rewrite]:
 lemma qsurj_is_fun [typing]: "qsurj(R) \<in> carrier(R) \<rightarrow> carrier(R)//R" by auto2
 
 lemma qsurj_is_surj [forward]: "equiv(R) \<Longrightarrow> surjective(qsurj(R))"
-@proof @have "\<forall>x\<in>carrier(R)//R. qsurj(R)`rep(R,x) = x" @qed
+@proof @have (@rule) "\<forall>x\<in>carrier(R)//R. qsurj(R)`rep(R,x) = x" @qed
 
 lemma qsurj_eval [rewrite]:
   "x \<in> source(qsurj(R)) \<Longrightarrow> qsurj(R)`x = equiv_class(R,x)" by auto2
@@ -229,7 +229,7 @@ lemma qsurj_proj_is_inj:
   "F \<noteq> \<emptyset> \<Longrightarrow> R = eq_fst_rel(E,F) \<Longrightarrow> f = (\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)//R)) \<Longrightarrow> bijective(f)"
 @proof
   @have "f \<in> E \<rightarrow> (E\<times>F) // R" @with
-    @obtain "a \<in> F" @then @have "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)" @end
+    @obtain "a \<in> F" @then @have (@rule) "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)" @end
   @have "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" @with
     @contradiction @have "f`rep(R,S) = S" @end
 @qed
@@ -241,7 +241,7 @@ lemma equiv_class_disjoint [backward]:
 
 lemma equiv_classes_is_partition:
   "equiv(R) \<Longrightarrow> is_partition_sets(carrier(R),carrier(R)//R)"
-@proof @have "\<forall>x\<in>carrier(R)//R. x = equiv_class(R,rep(R,x))" @qed
+@proof @have (@rule) "\<forall>x\<in>carrier(R)//R. x = equiv_class(R,rep(R,x))" @qed
 
 lemma partition_mem_unique [backward]:
   "mutually_disjoint_sets(X) \<Longrightarrow> a \<in> \<Union>X \<Longrightarrow> \<exists>!x. x \<in> X \<and> a \<in> x" by auto2

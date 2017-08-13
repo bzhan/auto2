@@ -460,8 +460,6 @@ fun to_obj_conv ctxt ct =
        | Const (@{const_name Pure.all}, _) $ Abs _ =>
          (Conv.binder_conv (to_obj_conv o snd) ctxt)
              then_conv (Conv.rewr_conv atomize_all_th)
-             then_conv (Trueprop_conv (
-                           Conv.try_conv (rewr_obj_eq (obj_sym Ball_def_th))))
        | _ => Conv.all_conv) ct
 
 (* When ct is of form A1 ==> ... ==> An, apply to_obj_conv to each Ai. *)

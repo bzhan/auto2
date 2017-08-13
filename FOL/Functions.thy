@@ -289,7 +289,7 @@ setup {* del_prfstep_thm @{thm inverse_def} *}
 
 lemma inv_bijective [typing]:
   "bijective(f) \<Longrightarrow> inverse(f) \<in> target(f) \<cong> source(f)"
-  @proof @have "\<forall>x\<in>source(f). inverse(f)`(f`x) = x" @qed
+  @proof @have (@rule) "\<forall>x\<in>source(f). inverse(f)`(f`x) = x" @qed
 
 lemma inverse_of_inj [rewrite]:
   "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f -`` (f `` X) = X" by auto2
@@ -410,7 +410,7 @@ lemma exists_left_inverse [backward]:
 @proof
   @obtain "a \<in> A" @then
   @let "r = (\<lambda>y\<in>B. (if (\<exists>x\<in>A. f`x=y) then (SOME x\<in>A. f`x=y) else a)\<in>A)" @then
-  @have "\<forall>x\<in>A. r`(f`x) = x" @with @have "\<exists>x'\<in>A. f`x' = f`x" @end
+  @have (@rule) "\<forall>x\<in>A. r`(f`x) = x" @with @have "\<exists>x'\<in>A. f`x' = f`x" @end
 @qed
 
 definition left_inverse :: "i \<Rightarrow> i" where [rewrite]:
@@ -442,7 +442,7 @@ lemma exists_pullback_inj:
   @have "\<exists>h\<in>G\<rightarrow>F. f = g \<circ> h" @with
     @obtain "r \<in> E \<rightarrow> F" where "r \<circ> g = id_fun(F)" @then
     @obtain "h \<in> G \<rightarrow> F" where "h = r \<circ> f" @end
-  @contradiction @have "\<forall>x\<in>G. f`x \<subseteq> g``F"
+  @contradiction @have (@rule) "\<forall>x\<in>G. f`x \<subseteq> g``F"
 @qed
 
 section {* Function of two arguments *}  (* Bourbaki II.3.9 *)
