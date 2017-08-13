@@ -11,8 +11,6 @@ sig
   val exists_elim_prfstep: proofstep
   val add_logic_proofsteps: theory -> theory
 
-  val mk_disjs: term list -> term
-  val dest_disj: term -> term list
   val mk_all_disj: term list * term list -> term
   val normalize_disj_t: term -> term list
   val norm_disj_clauses: conv
@@ -257,30 +255,13 @@ val add_logic_proofsteps =
       exists_elim_prfstep
     ]
 
-fun mk_disjs ts =
-    case ts of
-        [] => raise Fail "mk_disjs"
-      | [t] => t
-      | t :: ts' => mk_disj (t, mk_disjs ts')
-
-fun dest_disj t =
-    if is_disj t then dest_arg1 t :: dest_disj (dest_arg t)
-    else [t]
-
 (* Given (x_1 ... x_n, A_1 ... A_n), create the corresponding
    forall-disj term.
  *)
 fun mk_all_disj (vars, terms) =
     case vars of
-        [] => mk_disjs terms
-      | var :: vars' =>
-        let
-          val (x, T) = Term.dest_Free var
-          val body = mk_all_disj (vars', terms)
-          val all_const = Const (All_name, (T --> boolT) --> boolT)
-        in
-          all_const $ Abs (x, T, Term.abstract_over (var, body))
-        end
+        [] => list_disj terms
+      | var :: vars' => mk_obj_all var (mk_all_disj (vars', terms))
 
 (* Normalize t into a disjunction of terms. *)
 fun normalize_disj_t t =
@@ -604,14 +585,14 @@ val TY_DISJ = "DISJ"
  *)
 fun disj_to_ritems prem_only disj_head th =
     let
-      val subs = dest_disj (prop_of' th)
+      val subs = strip_disj (prop_of' th)
     in
       if length subs = 1 then
         if has_vars (Thm.prop_of th) then
           let
             fun th_to_ritem th =
                 Fact (TY_DISJ,
-                      term_of_bool prem_only :: disj :: dest_disj (prop_of' th),
+                      term_of_bool prem_only :: disj :: strip_disj (prop_of' th),
                       th)
           in
             map th_to_ritem (th |> apply_to_thm' norm_conj |> split_conj_th)

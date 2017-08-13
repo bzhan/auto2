@@ -25,6 +25,7 @@ sig
   val is_disj: term -> bool
   val mk_disj: term * term -> term
   val strip_disj: term -> term list
+  val list_disj: term list -> term
   val imp: term
   val is_imp: term -> bool
   val mk_imp: term * term -> term
@@ -208,6 +209,11 @@ fun strip_disj t =
         Const (c, _) $ A $ B =>
         if c = Disj_name then A :: strip_disj B else [t]
       | _ => [t]
+fun list_disj ts =
+    case ts of
+        [] => raise Fail "list_disj"
+      | [t] => t
+      | t :: ts' => mk_disj (t, list_disj ts')
 
 (* Object implication *)
 

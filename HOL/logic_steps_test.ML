@@ -15,10 +15,10 @@ val test_norm_disj =
             val res_t = Logic_ProofSteps.normalize_disj_t t1
             val res_th = Logic_ProofSteps.norm_disj ct1
           in
-            if not (Logic_ProofSteps.mk_disjs res_t aconv t2) then
+            if not (list_disj res_t aconv t2) then
               let
                 val _ = trace_t ctxt "Input" t1
-                val _ = trace_t ctxt "Output" (Logic_ProofSteps.mk_disjs res_t)
+                val _ = trace_t ctxt "Output" (list_disj res_t)
                 val _ = trace_t ctxt "Expected" t2
               in
                 raise Fail "test_norm_disj_t"
@@ -244,7 +244,7 @@ val test_match_update =
 
       fun disj_to_ritem th =
           let
-            val subs = Logic_ProofSteps.dest_disj (prop_of' th)
+            val subs = strip_disj (prop_of' th)
           in
             Fact (TY_DISJ, bFalse :: disj :: subs, th)
           end
