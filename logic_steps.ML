@@ -430,8 +430,7 @@ fun norm_all_disj ctxt ct =
           Conv.every_conv [rewr_obj_eq all_trivial_th,
                            norm_all_disj ctxt] ct
         else
-          Conv.every_conv [Conv.binder_conv (norm_all_disj o snd) ctxt,
-                           reduce_boolify ctxt] ct
+          Conv.every_conv [Conv.binder_conv (norm_all_disj o snd) ctxt] ct
       else if is_ball t then
         Conv.every_conv [rewr_obj_eq Ball_def_th, norm_all_disj ctxt] ct
       else if is_neg t andalso is_ex (dest_not t) then
@@ -454,9 +453,7 @@ fun norm_all_disj ctxt ct =
                              rewr_obj_eq swap_all_disj_th,
                              norm_all_disj ctxt] ct
           else
-            Conv.every_conv [Conv.rewr_conv eq1,
-                             reduce_boolify ctxt,
-                             norm_disj_clauses] ct
+            Conv.every_conv [Conv.rewr_conv eq1, norm_disj_clauses] ct
         end
       else if is_imp t then
         Conv.every_conv [rewr_obj_eq imp_conv_disj_th, norm_all_disj ctxt] ct
@@ -801,7 +798,6 @@ fun match_prop rtype (id, item2) pat =
             val pat_eqT =
                 pat |> Thm.cterm_of ctxt |> norm_disj
                     |> subst_thm ctxt inst
-                    |> apply_to_thm (reduce_boolify ctxt)
                     |> apply_to_rhs (ac_disj_conv to_eqT_cv)
                     |> apply_to_rhs reduce_disj_True
                     |> to_obj_eq
@@ -822,7 +818,6 @@ fun match_prop rtype (id, item2) pat =
 fun disj_cancel_cv ctxt th ct =
     if is_disj (Thm.term_of ct) then
       Conv.every_conv [Conv.arg_conv (disj_cancel_cv ctxt th),
-                       reduce_boolify ctxt,
                        Conv.try_conv (rewr_obj_eq (th RS or_cancel1_th)),
                        Conv.try_conv (rewr_obj_eq (th RS or_cancel2_th))] ct
     else
@@ -835,7 +830,6 @@ fun disj_cancel_cv ctxt th ct =
 fun disj_cancel_prop ctxt th prop =
     let
       val prop' = prop |> apply_to_thm' (disj_cancel_cv ctxt th)
-                       |> apply_to_thm (reduce_boolify ctxt)
       val P = th |> prop_of' |> dest_not
     in
       if prop_of' prop' aconv P then
@@ -1070,9 +1064,8 @@ val add_disj_proofsteps =
 (* Generalized form of splitting A & B. Also deal with cases ~(A | B)
    and ~(A --> B).
  *)
-fun split_conj_gen_th ctxt th =
+fun split_conj_gen_th _ th =
     th |> apply_to_thm' norm_conj
-       |> apply_to_thm (reduce_boolify ctxt)
        |> split_conj_th
 
 fun eq_normalizer _ ritem =

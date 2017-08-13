@@ -2,7 +2,6 @@ signature UTIL_BASE =
 sig
   (* Types *)
   val boolT: typ
-  val unique_bool: bool
   val mk_setT: typ -> typ
 
   (* Equality *)
@@ -102,7 +101,4 @@ sig
   val Bex_def_th: thm
   val Ball_def_th: thm
   val swap_ex_conj_th: thm
-
-  (* In logics such as TLA, deal with boolify. *)
-  val reduce_boolify: Proof.context -> conv
 end

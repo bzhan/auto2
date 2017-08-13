@@ -6,7 +6,6 @@ struct
 (* Types *)
 
 val boolT = @{typ bool}
-val unique_bool = false
 val mk_setT = HOLogic.mk_setT
 
 (* Equality *)
@@ -135,7 +134,5 @@ val Bex_name = "Set.Bex"
 val Bex_def_th = @{thm Bex_def'}
 val Ball_def_th = @{thm Ball_def'}
 val swap_ex_conj_th = @{thm swap_ex_conj}
-
-fun reduce_boolify _ = Conv.all_conv
 
 end  (* structure Base *)

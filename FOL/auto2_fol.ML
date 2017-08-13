@@ -6,7 +6,6 @@ struct
 (* Types *)
 
 val boolT = @{typ "o"}
-val unique_bool = false
 val setT = @{typ "i"}
 val mk_setT = K setT
 
@@ -159,7 +158,5 @@ val Bex_name = "FOL_Base.Bex"
 val Bex_def_th = @{thm Bex_def'}
 val Ball_def_th = @{thm Ball_def'}
 val swap_ex_conj_th = @{thm swap_ex_conj}
-
-fun reduce_boolify _ = Conv.all_conv
 
 end  (* structure Base *)

@@ -574,19 +574,10 @@ sig
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_rewrite_rule_bidir_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_rewrite_iff_rule_cond:
-      thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_rewrite_iff_rule_back_cond:
-      thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_rewrite_iff_rule_bidir_cond:
-      thm -> pre_prfstep_descriptor list -> theory -> theory
 
   val add_rewrite_rule: thm -> theory -> theory
   val add_rewrite_rule_back: thm -> theory -> theory
   val add_rewrite_rule_bidir: thm -> theory -> theory
-  val add_rewrite_iff_rule: thm -> theory -> theory
-  val add_rewrite_iff_back_rule: thm -> theory -> theory
-  val add_rewrite_iff_bidir_rule: thm -> theory -> theory
 
   val add_eval_fun_prfsteps': thm list -> thm list -> theory -> theory
   val add_eval_fun_prfsteps: thm list -> theory -> theory
@@ -920,7 +911,6 @@ fun post_process_th ctxt mode side_count ts th =
           val cv = (atomize_conj_cv false)
                        then_conv (Conv.rewr_conv backward_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
-                       then_conv (reduce_boolify ctxt)
         in
           th |> apply_to_thm (skip_n_conv side_count cv)
              |> update_name_of_thm th "@back"
@@ -930,7 +920,6 @@ fun post_process_th ctxt mode side_count ts th =
           val cv = (atomize_conj_cv true)
                        then_conv (Conv.rewr_conv backward1_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
-                       then_conv (reduce_boolify ctxt)
         in
           th |> apply_to_thm (skip_n_conv side_count cv)
              |> update_name_of_thm th "@back1"
@@ -940,7 +929,6 @@ fun post_process_th ctxt mode side_count ts th =
           val cv = (Conv.arg_conv (atomize_conj_cv false))
                        then_conv (Conv.rewr_conv backward2_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
-                       then_conv (reduce_boolify ctxt)
         in
           th |> apply_to_thm (skip_n_conv side_count cv)
              |> update_name_of_thm th "@back2"
@@ -955,7 +943,6 @@ fun post_process_th ctxt mode side_count ts th =
                 | _ => raise Fail "resolve: too many hypothesis in th."
           val cv = (Conv.rewr_conv rewr_th)
                        then_conv (horn_conv try_nn_cancel_cv)
-                       then_conv (reduce_boolify ctxt)
         in
           th |> apply_to_thm (skip_n_conv side_count cv)
              |> update_name_of_thm th "@res"
@@ -1081,11 +1068,9 @@ fun add_rewrite_iff_rule_cond th conds thy =
       val _ = assert (fastype_of lhs = boolT)
                      "add_rewrite_iff: argument not of type bool."
 
-      val ctxt = Proof_Context.init_global thy
       val forward_th = th |> equiv_forward_th
       val nforward_th = th |> inv_backward_th
                            |> apply_to_thm (horn_conv try_nn_cancel_cv)
-                           |> apply_to_thm (reduce_boolify ctxt)
                            |> update_name_of_thm th "@invbackward"
     in
       thy |> add_basic_prfstep_cond forward_th MODE_FORWARD' conds
@@ -1097,7 +1082,7 @@ fun add_rewrite_rule_cond th conds thy =
       val th = if is_meta_eq (Thm.concl_of th) then to_obj_eq_th th else th
       val (lhs, _) = th |> concl_of' |> strip_conj |> hd |> dest_eq
     in
-      if not unique_bool andalso fastype_of lhs = boolT then
+      if fastype_of lhs = boolT then
         add_rewrite_iff_rule_cond th conds thy
       else
         add_rewrite_eq_rule_cond th conds thy
@@ -1110,19 +1095,9 @@ fun add_rewrite_rule_bidir_cond th conds =
     (add_rewrite_rule_cond th conds)
         #> add_rewrite_rule_back_cond th conds
 
-fun add_rewrite_iff_rule_back_cond th conds =
-    add_rewrite_iff_rule_cond (obj_sym_th th) conds
-
-fun add_rewrite_iff_rule_bidir_cond th conds =
-    (add_rewrite_iff_rule_cond th conds)
-        #> add_rewrite_iff_rule_back_cond th conds
-
 fun add_rewrite_rule th = add_rewrite_rule_cond th []
 fun add_rewrite_rule_back th = add_rewrite_rule_back_cond th []
 fun add_rewrite_rule_bidir th = add_rewrite_rule th #> add_rewrite_rule_back th
-fun add_rewrite_iff_rule th = add_rewrite_iff_rule_cond th []
-fun add_rewrite_iff_back_rule th = add_rewrite_iff_rule_back_cond th []
-fun add_rewrite_iff_bidir_rule th = add_rewrite_iff_rule_bidir_cond th []
 
 fun add_eval_fun_prfsteps' desc_ths ths thy =
     let
