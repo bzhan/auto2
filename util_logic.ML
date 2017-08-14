@@ -82,7 +82,9 @@ sig
   val ex_elim: Proof.context -> term -> thm -> thm
   val strip_obj_horn: term -> term list * (term list * term)
   val list_obj_horn: term list * (term list * term) -> term
-  val normalize_exs_conv: int -> Proof.context -> conv
+  val is_ex_form_gen: term -> bool
+  val normalize_exists: Proof.context -> conv
+  val strip_exists: term -> term list * term
 
   (* Wrapper around common tactics. *)
   val prove_by_tac: (Proof.context -> int -> tactic) -> Proof.context ->
@@ -541,49 +543,66 @@ fun strip_obj_horn t =
 fun list_obj_horn (vars, (As, B)) =
     (list_obj_imp (As, B)) |> fold mk_obj_all (rev vars)
 
-(* Normalize a single existence quantifier. Attempt to rewrite ct into
-   the form Ex x. P x. This includes:
+(* Whether t can be immediately rewritten into EX form. *)
+fun is_ex_form_gen t =
+    is_ex t orelse is_bex t orelse
+    (is_neg t andalso is_obj_all (dest_not t)) orelse
+    (is_neg t andalso is_ball (dest_not t)) orelse
+    (is_conj t andalso is_ex_form_gen (dest_arg t))
 
-   - Ex x : S. P x to Ex x. x : S & P x.
+(* Rewrite A & EX v_i. B to EX v_i. A & B. *)
+fun swap_conj_exists ctxt ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_conj t andalso is_ex (dest_arg t) then
+        Conv.every_conv [rewr_obj_eq swap_ex_conj_th,
+                         Conv.binder_conv (swap_conj_exists o snd) ctxt] ct
+      else
+        Conv.all_conv ct
+    end
 
-   - A & Ex x. P x to Ex x. A & P x.
+(* Normalize existence statement into EX v_i. A_1 & ... & A_n. This
+   includes moving as many existence quantifiers to the left as
+   possible.
  *)
-fun normalize_ex_conv ctxt ct =
+fun normalize_exists ctxt ct =
     let
       val t = Thm.term_of ct
     in
       if is_ex t then
-        Conv.all_conv ct
+        Conv.binder_conv (normalize_exists o snd) ctxt ct
       else if is_bex t then
-        rewr_obj_eq Bex_def_th ct
+        Conv.every_conv [rewr_obj_eq Bex_def_th, normalize_exists ctxt] ct
       else if is_neg t andalso is_obj_all (dest_not t) then
-        rewr_obj_eq not_all_th ct
+        Conv.every_conv [rewr_obj_eq not_all_th, normalize_exists ctxt] ct
       else if is_neg t andalso is_ball (dest_not t) then
-        ((Conv.arg_conv (rewr_obj_eq Ball_def_th))
-             then_conv (rewr_obj_eq not_all_th)
-             then_conv (Conv.binder_conv
-                            (K (rewr_obj_eq not_imp_th)) ctxt)) ct
+        Conv.every_conv [Conv.arg_conv (rewr_obj_eq Ball_def_th),
+                         rewr_obj_eq not_all_th,
+                         Conv.binder_conv (K (rewr_obj_eq not_imp_th)) ctxt,
+                         normalize_exists ctxt] ct
       else if is_conj t then
-        ((Conv.arg_conv (normalize_ex_conv ctxt))
-             then_conv (rewr_obj_eq swap_ex_conj_th)) ct
+        Conv.every_conv [Conv.arg_conv (normalize_exists ctxt),
+                         swap_conj_exists ctxt] ct
       else
-        Conv.no_conv ct
+        Conv.all_conv ct
     end
 
-(* Move existence quantifiers to the left of ct. If the integer
-   argument n is at least 0, move exactly n existence quantifiers to
-   the left (throwing an error if it is not possible). Otherwise, move
-   as many existence quantifiers to the left as possible.
- *)
-fun normalize_exs_conv n ctxt ct =
-    if n = 0 then
-      Conv.all_conv ct
+(* Assume t is in normal form. *)
+fun strip_exists t =
+    if is_ex t then
+      case t of
+          _ $ Abs (abs as (_, T, _)) =>
+          let
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
+            val (vars, body') = strip_exists body
+          in
+            (var :: vars, body')
+          end
+        | _ => raise Fail "strip_exists"
     else
-      ((normalize_ex_conv ctxt) then_conv (
-         Conv.binder_conv ((normalize_exs_conv (n-1)) o snd) ctxt)) ct
-      handle CTERM _ =>
-             if n > 0 then raise CTERM ("normalize_exs_conv", [ct])
-             else Conv.all_conv ct
+      ([], t)
 
 (* Generic wrapper function. tac can be arith_tac, simp_tac, etc. *)
 fun prove_by_tac tac ctxt ths goal =

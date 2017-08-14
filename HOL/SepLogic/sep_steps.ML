@@ -415,10 +415,13 @@ fun rewrite_hoare_triple_goal ctxt th =
 fun mod_fact_ritems ctxt mod_th =
     let
       val mod_th' = apply_to_thm' (normalize_mod_cv ctxt) mod_th
-      val xs = Update.get_apply_exists_names mod_th'
+      val (vars, _) = (strip_exists (prop_of' mod_th'))
+                          |> replace_vars ctxt
+                          |> replace_internal_vars
+      val xs = map (fst o Term.dest_Free) vars
     in
       if null xs then ([], mod_th')
-      else Update.apply_exists_ritems mod_th' ctxt xs
+      else Update.apply_exists_ritems ctxt xs mod_th'
     end
 
 val init_pos =
@@ -433,7 +436,7 @@ val init_pos =
 
               val ex_th = th RS @{thm hoare_tripleI}
               val xs = map Name.internal ["h", "\<sigma>", "r"]
-              val (ritems, res_th) = Update.apply_exists_ritems ex_th ctxt xs
+              val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th
 
               (* The pair is h_ |= P and what is to be placed into the
                  CODE_POS item.
@@ -519,7 +522,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val x_r = extract_return_name cur_cmd
         val xs = if is_some heap_preserve_opt then [Name.internal x_r]
                  else map Name.internal [x_r, "h"]
-        val (ritems, res_th) = Update.apply_exists_ritems ex_th' ctxt xs
+        val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th'
 
         (* Output res_th has three parts:
 
@@ -575,7 +578,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         (* Below we will use h_ to denote the new variables. *)
         val xs = if is_some heap_preserve_opt then []
                  else [Name.internal "h"]
-        val (ritems, res_th) = Update.apply_exists_ritems ex_th' ctxt xs
+        val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th'
 
         (* The pair is:
 
@@ -785,32 +788,9 @@ val convert_match_pos =
  *)
 fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
     let
-      val xs = Update.get_apply_exists_names ex_th
-
-      (* Find body of existence theorem, same code as in apply_exists. *)
-      fun dest_one_abs x t =
-          case t of
-              Const(@{const_name HOL.Ex}, _) $ Abs (_, T, body) =>
-              let
-                val (x', body') = Term.dest_abs (x, T, body)
-                val _ = assert (x = x') "use_prec_thms: name clash"
-              in
-                ((x, T), body')
-              end
-            | _ => raise Fail "use_prec_thms: not exists statement."
-
-      fun dest_all_abs xs t =
-          case xs of
-              [] => ([], t)
-            | x :: rest =>
-              let
-                val (var, t') = dest_one_abs x t
-                val (vars, t'') = dest_all_abs rest t'
-              in
-                (var :: vars, t'')
-              end
-
-      val (vars, new_prop) = ex_th |> prop_of' |> dest_all_abs xs
+      val (vars, new_prop) = ex_th |> prop_of' |> strip_exists
+                                   |> replace_vars ctxt
+                                   |> replace_internal_vars
                                    |> apsnd mk_Trueprop
       val new_th = new_prop |> Thm.cterm_of ctxt |> Thm.assume
       val base_th' = base_th RS @{thm mod_star_trueI}
@@ -840,14 +820,14 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
       val new_th' = fold apply_prec_thm sep_prec_thms new_th
 
       (* Check that all new variables in new_th' are replaced. *)
-      val _ = assert (not (occurs_frees (map Free vars) (Thm.prop_of new_th')))
+      val _ = assert (not (occurs_frees vars (Thm.prop_of new_th')))
                      "use_prec_thms: failed to remove all new vars."
     in
       (* Remove assumptions involving original variables. Similar to
          handler for apply_exists.
        *)
       new_th' |> Thm.implies_intr (Thm.cterm_of ctxt new_prop)
-              |> fold (ex_elim ctxt) (rev (map Free vars))
+              |> fold (ex_elim ctxt) (rev vars)
               |> Thm.elim_implies ex_th
     end
 

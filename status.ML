@@ -686,11 +686,10 @@ sig
   val thm_update: box_id * thm -> raw_update
 
   val handler_ritems: Proof.context -> term -> retro_handler -> raw_item list
-  val apply_exists_ritems: thm -> Proof.context -> string list ->
+  val apply_exists_ritems: Proof.context -> string list -> thm ->
                            raw_item list * thm
-  val apply_exists: box_id * thm -> Proof.context -> string list ->
+  val apply_exists: Proof.context -> string list -> box_id * thm ->
                     raw_update list
-  val get_apply_exists_names: thm -> string list
   val update_info: Proof.context -> box_id -> raw_item list -> string
   val source_info: update -> string
 end;
@@ -812,43 +811,18 @@ fun handler_ritems ctxt t handler =
       [Handler (t, handler), thm_to_ritem (assume_thm ctxt t)]
     end
 
-(* xs specify the names of free variables, either internal (use
-   obtain_variant_frees to fix) or otherwise (will be put into context
-   as is). This function returns the list of VAR items and handlers,
-   paired with the theorem produced.
+(* Apply the given existence theorem and return the list of resulting ritems.
  *)
-fun apply_exists_ritems ex_th ctxt xs =
+fun apply_exists_ritems ctxt xs ex_th =
     let
       val thy = Proof_Context.theory_of ctxt
 
-      fun dest_one_abs x t =
-          case t of
-              Const (c, _) $ Abs (_, T, body) =>
-              if c = Ex_name then
-                let
-                  val (x', body') = Term.dest_abs (x, T, body)
-                  val _ = assert (x = x') "apply_exists: name clash"
-                in
-                  ((x, T), body')
-                end
-              else raise Fail "apply_exists: not exists statement."
-            | _ => raise Fail "apply_exists: not exists statement."
+      val ex_th' = ex_th |> apply_to_thm' (normalize_exists ctxt)
+      val (vars, body) = ex_th' |> prop_of' |> strip_exists
+                                |> apsnd mk_Trueprop
+                                |> replace_names xs
 
-      fun dest_all_abs xs t =
-          case xs of
-              [] => ([], t)
-            | x :: rest =>
-              let
-                val (var, t') = dest_one_abs x t
-                val (vars, t'') = dest_all_abs rest t'
-              in
-                (var :: vars, t'')
-              end
-
-      val ex_th' = apply_to_thm' (normalize_exs_conv (length xs) ctxt) ex_th
-      val (vars, new_prop) = ex_th' |> prop_of' |> dest_all_abs xs
-      val new_prop' = mk_Trueprop new_prop
-      val new_th = new_prop' |> Thm.cterm_of ctxt |> Thm.assume
+      val new_th = body |> Thm.cterm_of ctxt |> Thm.assume
 
       (* Given two terms t and u, where t may contain internal
          variables, find replacements for those internal variables so
@@ -866,7 +840,7 @@ fun apply_exists_ritems ex_th ctxt xs =
 
             val pat = Term.subst_atomic subst t
             val inst = Pattern.first_order_match thy (pat, u) fo_init
-            fun get_freevar (x, T) = ((x, T), lookup_inst inst x)
+            fun get_freevar (x, T) = (Free (x, T), lookup_inst inst x)
           in
             map get_freevar all_internal_vars
           end
@@ -879,17 +853,21 @@ fun apply_exists_ritems ex_th ctxt xs =
        *)
       fun match_vars (ts, us) =
           (maps match_vars_one (all_pairs (ts, us)))
-              |> distinct (eq_pair (op =) (op aconv))
+              |> distinct (eq_pair (op aconv) (op aconv))
 
-      (* Find new versions of vars by matching new_prop' and t. *)
+      (* Find new versions of vars by matching body and t. *)
       fun get_freevars t =
           let
-            val subst = match_vars_one (new_prop', t)
-            fun get_freevar (x, T) =
-                if not (is_just_internal x) then Free (x, T) else
-                the (AList.lookup (op =) subst (x, T))
-                handle Option.Option =>
-                       raise Fail "get_freevars: cannot match new_prop' and t"
+            val subst = match_vars_one (body, t)
+            fun get_freevar v =
+                let
+                  val (x, _) = Term.dest_Free v
+                in
+                  if not (is_just_internal x) then v
+                  else the (AList.lookup (op aconv) subst v)
+                  handle Option.Option =>
+                         raise Fail "get_freevars: cannot match body and t"
+                end
           in
             map get_freevar vars
           end
@@ -904,8 +882,7 @@ fun apply_exists_ritems ex_th ctxt xs =
       fun handler (t, th) =
           let
             val subst = (match_vars (Thm.hyps_of ex_th', Thm.hyps_of th))
-                            |> map (fn ((x, T), t) =>
-                                       (Thm.cterm_of ctxt (Free (x, T)), Thm.cterm_of ctxt t))
+                            |> map (apply2 (Thm.cterm_of ctxt))
             val fvars = get_freevars t
           in
             th |> Thm.implies_intr (Thm.cterm_of ctxt t)
@@ -913,38 +890,19 @@ fun apply_exists_ritems ex_th ctxt xs =
                |> Thm.elim_implies (subst_thm_atomic subst ex_th')
           end
 
-      val ritems = (map (BoxItem.var_to_fact o Free) vars) @
-                   [Handler (new_prop', (ready, handler))]
+      val ritems = (map (BoxItem.var_to_fact) vars) @
+                   [Handler (body, (ready, handler))]
     in
       (ritems, new_th)
     end
 
 (* Calls the previous function, and directly produces the update. *)
-fun apply_exists (id, ex_th) ctxt xs =
+fun apply_exists ctxt xs (id, ex_th) =
     let
-      val (ritems, new_th) = apply_exists_ritems ex_th ctxt xs
+      val (ritems, new_th) = apply_exists_ritems ctxt xs ex_th
     in
       [AddItems {id = id, sc = NONE,
                  raw_items = ritems @ [thm_to_ritem new_th]}]
-    end
-
-(* Given existence theorem, return list of suggested names of new
-   variables, obtained from name hints of EX quantifiers.
- *)
-fun get_apply_exists_names th =
-    let
-      fun helper t =
-          case t of
-              Const (c, _) $ Abs (abs as (x, _, _)) =>
-              if c = Ex_name then
-                let val (_, body) = Term.dest_abs abs in
-                  x :: helper body
-                end
-              else []
-            | _ => []
-    in
-      (Name.variant_list [] (helper (prop_of' th)))
-          |> map Name.internal
     end
 
 fun update_info ctxt id ritems =

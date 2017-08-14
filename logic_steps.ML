@@ -228,19 +228,23 @@ val cong_on_ineq_prfstep =
    time.
  *)
 fun exists_elim_fn rtype {ctxt, ...} {id, prop, ...} =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
-    let
+    if not (RewriteTable.is_single_rtype rtype) then []
+    else let
       val t = prop_of' prop
     in
-      if not (is_ex t orelse is_bex t orelse
-              (is_neg t andalso is_obj_all (dest_not t)) orelse
-              (is_neg t andalso is_ball (dest_not t))) then [] else
-      let
-        val th = prop |> apply_to_thm' (normalize_exs_conv (~1) ctxt)
-        val xs = Update.get_apply_exists_names th
-      in
-        Update.apply_exists (id, th) ctxt xs
-      end
+      if is_ex t orelse is_bex t orelse
+         (is_neg t andalso is_obj_all (dest_not t)) orelse
+         (is_neg t andalso is_ball (dest_not t)) then
+        let
+          val th = prop |> apply_to_thm' (normalize_exists ctxt)
+          val (vars, _) = (strip_exists (prop_of' th))
+                              |> replace_vars ctxt
+                              |> replace_internal_vars
+          val xs = map (fst o Term.dest_Free) vars
+        in
+          Update.apply_exists ctxt xs (id, th)
+        end
+      else []
     end
 
 val exists_elim_prfstep =
@@ -985,7 +989,7 @@ fun disj_create_case_fn rtype {ctxt, ...} {id, tname, ...} =
         val goal = get_neg (hd subs)
         val (vars, (As, C)) = (strip_obj_horn goal)
                                   |> replace_horn_vars ctxt
-                                  |> replace_internal_vars
+                                  |> replace_horn_internal_vars
         val inits =
             map InitVar vars @ map (InitAssum o mk_Trueprop) As @
             [InitAssum (mk_Trueprop (get_neg C))]
