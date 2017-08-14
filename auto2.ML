@@ -577,19 +577,14 @@ fun init_status ctxt subgoal =
       (* Free variables are implicitly quantified over at the front. *)
       val vars = map Free (Term.add_frees subgoal [])
 
-      val (assums, concl) = strip_pure_goal ctxt subgoal
-      val assum_inits =
-          map (fn (is_var, t) => if is_var then InitVar t else InitAssum t)
-              assums
-      val new_vars =
-          maps (fn init => case init of InitVar t => [t] | _ => [])
-               assum_inits
-      val inits = map InitVar vars @ assum_inits @ [InitAssum (get_neg' concl)]
+      val (vars2, (assums, concl)) =
+        (strip_meta_horn subgoal) |> Util.replace_horn_vars ctxt
+      val inits = map InitVar (vars @ vars2) @ map InitAssum assums @ [InitAssum (get_neg' concl)]
       val raw_updt = AddBoxes {id = [], sc = NONE, inits = inits}
       val updt = {sc = 0, prfstep_name = "$INIT", source = [],
                   raw_updt = raw_updt}
     in
-      ctxt |> fold declare_free_term new_vars
+      ctxt |> fold declare_free_term vars2
            |> Status.empty_status
            |> Status.add_composite_box [] |> Status.add_item BoxItem.null_item
            |> apply_update updt
@@ -629,25 +624,26 @@ open UtilLogic
 
 fun auto2_tac ctxt state =
     let
-      val prop = Thm.prop_of state
-      val subgoals = prop |> Logic.strip_imp_prems
+      val subgoals = state |> Thm.cprop_of |> Drule.strip_imp_prems
       val steps = Config.get ctxt max_steps
     in
       if null subgoals then Seq.empty else
       let
-        val subgoal = hd subgoals
+        val c_subgoal = hd subgoals
+        val subgoal = Thm.term_of c_subgoal
         val _ = tracing (
               "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
               (Syntax.string_of_term ctxt subgoal) ^ "\n")
-        val subgoal_eq = subgoal |> Thm.cterm_of ctxt |> to_obj_conv_on_horn ctxt
-        val st = ProofStatus.init_status ctxt (rhs_of subgoal_eq)
+        val subgoal_norm = Conv.every_conv [
+            normalize_meta_horn ctxt, to_obj_conv_on_horn ctxt] c_subgoal
+        val st = ProofStatus.init_status ctxt (rhs_of subgoal_norm)
         val (_, st') =
             timer ("Total time: ",
                    fn _ => ProofStatus.solve_root (steps, st))
         val th = Status.get_resolve_th st' [0]
         val vars = map Free (Term.add_frees subgoal [])
         val th' = th |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)
-                     |> Thm.equal_elim (meta_sym subgoal_eq)
+                     |> Thm.equal_elim (meta_sym subgoal_norm)
       in
         Seq.single (Thm.implies_elim state th')
       end

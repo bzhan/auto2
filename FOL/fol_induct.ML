@@ -80,8 +80,8 @@ fun induct_cmd (s, t) state =
 
             (* Obtain list of assumptions *)
             val {prop, ...} = Auto2_State.get_head ctxt
-            val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Auto2_Outer.strip_goal
-            val (As, _) = Logic.strip_horn body
+            val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                                    |> Util.strip_meta_horn
             val cAs = map (Thm.cterm_of ctxt) As
 
             val ind_goals =

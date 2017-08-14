@@ -75,7 +75,12 @@ sig
   val lambda_abstract: term -> term -> term
   val is_pattern_list: term list -> bool
   val is_pattern: term -> bool
-  val strip_pure_goal: Proof.context -> term -> (bool * term) list * term
+  val swap_meta_imp_alls: Proof.context -> conv
+  val normalize_meta_horn: Proof.context -> conv
+  val strip_meta_horn: term -> term list * (term list * term)
+  val list_meta_horn: term list * (term list * term) -> term
+  val replace_horn_vars: Proof.context -> term list * (term list * term) ->
+                         term list * (term list * term)
   val rename_abs_term: term list -> term -> term
   val print_term_detail: Proof.context -> term -> string
 
@@ -416,37 +421,63 @@ fun is_pattern_list ts =
 
 fun is_pattern t = is_pattern_list [t]
 
-(* Given a term t in pure logic form, strip out !! and ==>, and return
-   the list of variables, assumptions, and conclusion.
+(* Rewrite A ==> !!v_i. B to !!v_i. A ==> B. *)
+fun swap_meta_imp_alls ctxt ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_implies t andalso Logic.is_all (dest_arg t) then
+        Conv.every_conv [Conv.rewr_conv @{thm Pure.norm_hhf_eq},
+                         Conv.binder_conv (swap_meta_imp_alls o snd) ctxt] ct
+      else
+        Conv.all_conv ct
+    end
 
-   For example:
+(* Normalize a horn clause into standard form !!v_i. A_i ==> B. *)
+fun normalize_meta_horn ctxt ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if Logic.is_all t then
+        Conv.binder_conv (normalize_meta_horn o snd) ctxt ct
+      else if is_implies t then
+        Conv.every_conv [Conv.arg_conv (normalize_meta_horn ctxt),
+                         swap_meta_imp_alls ctxt] ct
+      else
+        Conv.all_conv ct
+    end
 
-   !!a b. P ==> Q gives ([(true, a), (true, b), (false, P)], Q)
-
-   P ==> !!a b. Q gives ([(false, P), (true, a), (true, b)], Q)
- *)
-fun strip_pure_goal_aux ctxt prevs t =
+(* Deconstruct a horn clause !!v_i. A_i ==> B into (v_i, (A_i, B)). *)
+fun strip_meta_horn t =
     case t of
         Const (@{const_name Pure.all}, _) $ Abs (abs as (_, T, _)) =>
         let
           val (x, body) = Term.dest_abs abs
-          val (x', _) = singleton (Variable.variant_frees ctxt prevs) (x, T)
-          val bd_var = Free (x', T)
-          val body' = if x = x' then body
-                      else Term.subst_atomic [(Free (x, T), bd_var)] body
-          val (assums, concl) = strip_pure_goal_aux ctxt (bd_var :: prevs) body'
+          val var = Free (x, T)
+          val (vars, (assums, concl)) = strip_meta_horn body
         in
-          ((true, bd_var) :: assums, concl)
+          (var :: vars, (assums, concl))
         end
       | @{const Pure.imp} $ P $ Q =>
         let
-          val (assums, concl) = strip_pure_goal_aux ctxt prevs Q
+          val (vars, (assums, concl)) = strip_meta_horn Q
         in
-          ((false, P) :: assums, concl)
+          (vars, (P :: assums, concl))
         end
-      | _ => ([], t)
+      | _ => ([], ([], t))
 
-fun strip_pure_goal ctxt t = strip_pure_goal_aux ctxt [] t
+fun list_meta_horn (vars, (As, B)) =
+    (Logic.list_implies (As, B)) |> fold Logic.all (rev vars)
+
+fun replace_horn_vars ctxt (vars, (As, B)) =
+    let
+      val vars' = vars |> map Term.dest_Free
+                       |> Variable.variant_frees ctxt []
+                       |> map Free
+      val subst = vars ~~ vars'
+    in
+      (vars', (map (subst_atomic subst) As, subst_atomic subst B))
+    end
 
 fun rename_abs_term vars t =
     case vars of

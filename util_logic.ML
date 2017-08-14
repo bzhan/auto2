@@ -464,11 +464,11 @@ fun to_obj_conv ctxt ct =
 
 (* When ct is of form A1 ==> ... ==> An, apply to_obj_conv to each Ai. *)
 fun to_obj_conv_on_horn ctxt ct =
-    (case Thm.term_of ct of
-         @{const Pure.imp} $ _ $ _ =>
-         Conv.combination_conv (Conv.arg_conv (to_obj_conv ctxt))
-                               (to_obj_conv_on_horn ctxt)
-       | _ => Conv.all_conv) ct
+    case Thm.term_of ct of
+        @{const Pure.imp} $ _ $ _ =>
+        Conv.every_conv [Conv.arg1_conv (to_obj_conv ctxt),
+                         Conv.arg_conv (to_obj_conv_on_horn ctxt)] ct
+      | _ => Conv.all_conv ct
 
 (* Converts A1 --> ... --> An to A1 ==> ... ==> An. *)
 fun to_meta_imp_conv ct =
@@ -494,17 +494,6 @@ fun to_meta_all_conv ctxt ct =
         Conv.all_conv ct
     end
 
-fun norm_hhf_cv ctxt ct =
-    let
-      val t = Thm.term_of ct
-    in
-      if is_implies t andalso Logic.is_all (dest_arg t) then
-        Conv.every_conv [Conv.rewr_conv @{thm Pure.norm_hhf_eq},
-                         Conv.binder_conv (norm_hhf_cv o snd) ctxt] ct
-      else
-        Conv.all_conv ct
-    end
-
 (* Convert !! and ==> on the outermost level. Pull all !! to the front. *)
 fun to_meta_all_imp_conv ctxt ct =
     let
@@ -516,7 +505,7 @@ fun to_meta_all_imp_conv ctxt ct =
       else if is_Trueprop t andalso is_imp (dest_Trueprop t) then
         Conv.every_conv [Conv.rewr_conv (meta_sym atomize_imp_th),
                          Conv.arg_conv (to_meta_all_imp_conv ctxt),
-                         norm_hhf_cv ctxt] ct
+                         swap_meta_imp_alls ctxt] ct
       else if is_implies t then
         Conv.arg_conv (to_meta_all_imp_conv ctxt) ct
       else

@@ -6,7 +6,6 @@ sig
   val init_state: Proof.state -> Proof.state
 
   val have_resolve: Proof.context -> term list -> thm -> term -> thm
-  val strip_goal: term -> term list * term
   val refine_subgoal_th: thm -> thm -> thm
   val have_after_qed: Proof.context -> thm -> thm -> thm
   val strip_have_goal: term -> term list * (term list * term)
@@ -76,8 +75,7 @@ fun have_resolve ctxt vars th concl =
       val (As, B) = Logic.strip_horn prop
       val cAs = map (Thm.cterm_of ctxt) As
       val c_vars = map (Thm.cterm_of ctxt) vars
-      val stmt = (Logic.list_implies (As @ [B], concl))
-                     |> fold Logic.all (rev vars) |> Thm.cterm_of ctxt
+      val stmt = Util.list_meta_horn (vars, (As @ [B], concl)) |> Thm.cterm_of ctxt
 
       val thAs = map Thm.assume cAs
       val th_bc =
@@ -94,18 +92,6 @@ fun have_resolve ctxt vars th concl =
            |> Thm.implies_intr stmt
     end
 
-fun strip_goal t =
-    case t of
-        Const (@{const_name Pure.all}, _) $ Abs (abs as (_, T, _)) =>
-        let
-          val (x, body) = Term.dest_abs abs
-          val var = Free (x, T)
-          val (vars, body') = strip_goal body
-        in
-          (var :: vars, body')
-        end
-      | _ => ([], t)
-
 fun refine_subgoal_th th prop =
     let
       val assum = hd (Drule.cprems_of th)
@@ -121,9 +107,8 @@ fun refine_subgoal_th th prop =
  *)
 fun have_after_qed ctxt th prop =
     let
-      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
-
-      val concl = Logic.strip_imp_concl body
+      val (vars, (_, concl)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                                    |> strip_meta_horn
       val have_res = have_resolve ctxt vars th concl
     in
       refine_subgoal_th have_res prop
@@ -170,8 +155,8 @@ fun have_cmd (s, r, t) state =
                                       |> strip_have_goal
 
       val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
-      val (As, _) = Logic.strip_horn body
+      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                              |> strip_meta_horn
 
       val stmt = Logic.list_implies (As @ map mk_Trueprop assums,
                                      mk_Trueprop concl)
@@ -232,8 +217,9 @@ fun end_cmd state =
       val {context = ctxt, ...} = Proof.goal state
       val {prop, after_qed, ...} = Auto2_State.get_head ctxt
 
-      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
-
+      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                                 |> strip_meta_horn
+      val body = Util.list_meta_horn ([], (As, C))
       val th = (auto2_solve ctxt (Thm.cterm_of ctxt body))
                    |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
 
@@ -257,7 +243,9 @@ fun qed_cmd state =
                      "Qed should be applied outside any 'with' blocks"
       val {prop, ...} = Auto2_State.get_head ctxt
 
-      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                                 |> strip_meta_horn
+      val body = Util.list_meta_horn ([], (As, C))
 
       val th = (auto2_solve ctxt (Thm.cterm_of ctxt body))
                    |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
@@ -305,9 +293,7 @@ fun obtain_resolve ctxt vars th concl =
 
       val (new_vars, body) = strip_ex (dest_Trueprop B)
 
-      val stmt = (Logic.list_implies (As @ [mk_Trueprop body], concl))
-                     |> fold Logic.all (rev new_vars)
-                     |> fold Logic.all (rev vars)
+      val stmt = (Util.list_meta_horn (vars @ new_vars, (As @ [mk_Trueprop body], concl)))
                      |> Thm.cterm_of ctxt
 
       val thAs = map Thm.assume cAs
@@ -332,7 +318,9 @@ fun obtain_resolve ctxt vars th concl =
  *)
 fun obtain_after_qed ctxt th prop =
     let
-      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                                 |> strip_meta_horn
+      val body = Util.list_meta_horn ([], (As, C))
 
       val concl = Logic.strip_imp_concl body
       val obtain_res = obtain_resolve ctxt vars th concl
@@ -354,8 +342,8 @@ fun obtain_cmd (s, t, u) state =
       val C = conds |> list_conj |> fold mk_exists (rev vars) |> mk_Trueprop
 
       val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
-      val (As, _) = Logic.strip_horn body
+      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                              |> strip_meta_horn
 
       val stmt = Logic.list_implies (As, C)
       val new_vars =
@@ -404,8 +392,7 @@ fun case_resolve ctxt vars th =
       val cAs = map (Thm.cterm_of ctxt) As
       val c_vars = map (Thm.cterm_of ctxt) vars
       val nB = mk_Trueprop (Not $ (dest_Trueprop B))
-      val stmt = (Logic.list_implies (As @ [nB], C))
-                     |> fold Logic.all (rev vars) |> Thm.cterm_of ctxt
+      val stmt = (Util.list_meta_horn (vars, (As @ [nB], C))) |> Thm.cterm_of ctxt
 
       val thAs = map Thm.assume cAs
       val th_nbc =
@@ -431,7 +418,8 @@ fun case_resolve ctxt vars th =
  *)
 fun case_after_qed ctxt th prop =
     let
-      val (vars, _) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
+      val (vars, _) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                           |> strip_meta_horn
       val case_res = case_resolve ctxt vars th
     in
       refine_subgoal_th case_res prop
@@ -443,8 +431,8 @@ fun case_cmd (s, t) state =
       val B = s |> Syntax.read_term ctxt |> mk_Trueprop
 
       val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
-      val (As, C) = Logic.strip_horn body
+      val (_, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                              |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As @ [B], C) |> Thm.cterm_of ctxt
     in
@@ -478,8 +466,8 @@ val _ =
  *)
 fun contra_resolve ctxt vars As C =
     let
-      val stmt = (Logic.list_implies (As @ [get_neg' C], pFalse))
-                     |> fold Logic.all (rev vars) |> Thm.cterm_of ctxt
+      val stmt = (Util.list_meta_horn (vars, (As @ [get_neg' C], pFalse)))
+                     |> Thm.cterm_of ctxt
       val cAs = map (Thm.cterm_of ctxt) As
       val c_vars = map (Thm.cterm_of ctxt) vars
 
@@ -501,8 +489,8 @@ fun contra_resolve ctxt vars As C =
  *)
 fun contra_after_qed ctxt prop =
     let
-      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
-      val (As, C) = Logic.strip_horn body
+      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                                 |> strip_meta_horn
       val contra_res = contra_resolve ctxt vars As C
     in
       refine_subgoal_th contra_res prop
@@ -555,8 +543,8 @@ fun let_resolve ctxt vars eq As C =
  *)
 fun let_after_qed_one ctxt eq prop =
     let
-      val (vars, body) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_goal
-      val (As, C) = Logic.strip_horn body
+      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+                                 |> strip_meta_horn
       val let_res = let_resolve ctxt vars eq As C
     in
       refine_subgoal_th let_res prop
