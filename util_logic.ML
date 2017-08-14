@@ -33,7 +33,6 @@ sig
   val strip_obj_imp: term -> term list * term
   val list_obj_imp: term list * term -> term
   val is_obj_all: term -> bool
-  val is_all: term -> bool
   val is_ball: term -> bool
   val mk_obj_all: term -> term -> term
   val is_ex: term -> bool
@@ -41,7 +40,6 @@ sig
   val mk_exists: term -> term -> term
   val is_mem: term -> bool
   val mk_mem: term * term -> term
-  val extract_init_infos: bool -> term -> (bool * term) list
 
   (* cterms *)
   val cdest_Trueprop: cterm -> cterm
@@ -82,6 +80,8 @@ sig
   val strip_horn': thm -> term list * term
   val mk_conjs_th: thm list -> thm
   val ex_elim: Proof.context -> term -> thm -> thm
+  val strip_obj_horn: term -> term list * (term list * term)
+  val list_obj_horn: term list * (term list * term) -> term
   val normalize_exs_conv: int -> Proof.context -> conv
 
   (* Wrapper around common tactics. *)
@@ -244,10 +244,6 @@ fun is_obj_all t =
         Const (c, _) $ Abs _ => c = All_name
       | _ => false
 
-fun is_all t =
-    case t of Const (c, _) $ Abs _ => (c = All_name)
-            | _ => false
-
 fun is_ball t =
     case t of Const (c, _) $ _ $ _ => (c = Ball_name)
             | _ => false
@@ -284,67 +280,6 @@ fun mk_mem (x, A) =
     in
       Const (Mem_name, T --> mk_setT T --> boolT) $ x $ A
     end
-
-(* Given a term of form !x_1 ... x_k. P_1 --> ... --> P_n --> Q,
-   extract the variables x_1 to x_k and the assumptions P_1 to P_n and
-   ~Q. Return the results as a list of pairs (is_var, t).
-
-   Used when creating a new box. In All and Ball bindings, the
-   argument must be in Abs form (to provide a name for the new
-   variable).
- *)
-fun extract_init_infos_aux bInt t xs =
-    if is_all t then
-      case t of
-          _ $ Abs (x, T, b) =>
-          let
-            val x' = if bInt andalso member (op =) xs x then
-                        singleton (Name.variant_list xs) x
-                      else x
-            val int_x' = if bInt then Name.internal x' else x'
-          in
-            (true, (Free (int_x', T))) ::
-            extract_init_infos_aux
-                bInt (Term.subst_bound (Free (int_x', T), b)) (x' :: xs)
-          end
-        | f $ arg =>
-          let
-            val T = fastype_of f |> domain_type |> domain_type
-            val t' = f $ Abs ("x", T, arg $ Bound 0)
-          in
-            extract_init_infos_aux bInt t' xs
-          end
-        | _ => raise Fail "extract_init_infos"
-    else if is_ball t then
-      case t of
-          _ $ S $ Abs (x, T, b) =>
-          let
-            val x' = if bInt andalso member (op =) xs x then
-                        singleton (Name.variant_list xs) x
-                      else x
-            val int_x' = if bInt then Name.internal x' else x'
-          in
-            (true, (Free (int_x', T))) ::
-            (false, mk_mem (Free (int_x', T), S)) ::
-            extract_init_infos_aux
-                bInt (Term.subst_bound (Free (int_x', T), b)) (x' :: xs)
-          end
-        | f $ S $ arg =>
-          let
-            val T = fastype_of f |> domain_type |> dest_Type |> snd |> hd
-            val t' = f $ S $ Abs ("x", T, arg $ Bound 0)
-          in
-            extract_init_infos_aux bInt t' xs
-          end
-        | _ => raise Fail "extract_init_infos"
-    else if is_imp t then
-      (false, dest_arg1 t) :: extract_init_infos_aux bInt (dest_arg t) xs
-    else if is_neg t then
-      [(false, dest_not t)]
-    else
-      [(false, mk_not t)]
-
-fun extract_init_infos bInt t = extract_init_infos_aux bInt t []
 
 (* cterms *)
 
@@ -562,6 +497,50 @@ fun ex_elim ctxt freevar th =
       Thm.elim_implies th' exE_inst
     end
 
+fun force_abs_form t =
+    case t of
+        Abs _ => t
+      | _ => Abs ("x", domain_type (fastype_of t), t $ Bound 0)
+
+(* Normalization of object forall expressions in horn-clause form. *)
+fun strip_obj_horn t =
+    if is_obj_all t then
+      case t of
+          _ $ Abs (abs as (_, T, _)) =>
+          let
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
+            val (vars, (assum, concl)) = strip_obj_horn body
+          in
+            (var :: vars, (assum, concl))
+          end
+        | f $ arg => strip_obj_horn (f $ force_abs_form arg)
+        | _ => raise Fail "strip_obj_horn"
+    else if is_ball t then
+      case t of
+          _ $ S $ Abs (abs as (_, T, _)) =>
+          let
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
+            val mem = mk_mem (var, S)
+            val (vars, (assum, concl)) = strip_obj_horn body
+          in
+            (var :: vars, (mem :: assum, concl))
+          end
+        | f $ S $ arg => strip_obj_horn (f $ S $ force_abs_form arg)
+        | _ => raise Fail "strip_obj_horn"
+    else if is_imp t then
+      let
+        val (vars, (assum, concl)) = strip_obj_horn (dest_arg t)
+      in
+        (vars, (dest_arg1 t :: assum, concl))
+      end
+    else
+      ([], ([], t))
+
+fun list_obj_horn (vars, (As, B)) =
+    (list_obj_imp (As, B)) |> fold mk_obj_all (rev vars)
+
 (* Normalize a single existence quantifier. Attempt to rewrite ct into
    the form Ex x. P x. This includes:
 
@@ -577,7 +556,7 @@ fun normalize_ex_conv ctxt ct =
         Conv.all_conv ct
       else if is_bex t then
         rewr_obj_eq Bex_def_th ct
-      else if is_neg t andalso is_all (dest_not t) then
+      else if is_neg t andalso is_obj_all (dest_not t) then
         rewr_obj_eq not_all_th ct
       else if is_neg t andalso is_ball (dest_not t) then
         ((Conv.arg_conv (rewr_obj_eq Ball_def_th))

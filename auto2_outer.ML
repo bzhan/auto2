@@ -8,7 +8,6 @@ sig
   val have_resolve: Proof.context -> term list -> thm -> term -> thm
   val refine_subgoal_th: thm -> thm -> thm
   val have_after_qed: Proof.context -> thm -> thm -> thm
-  val strip_have_goal: term -> term list * (term list * term)
   val have_cmd: string * 'a option * string option -> Proof.state -> Proof.state
 
   val end_cmd: Proof.state -> Proof.state
@@ -114,45 +113,12 @@ fun have_after_qed ctxt th prop =
       refine_subgoal_th have_res prop
     end
 
-fun strip_have_goal t =
-    if is_all t then
-      case t of
-          _ $ Abs (abs as (_, T, _)) =>
-          let
-            val (x, body) = Term.dest_abs abs
-            val var = Free (x, T)
-            val (vars, (assum, concl)) = strip_have_goal body
-          in
-            (var :: vars, (assum, concl))
-          end
-        | _ => error "strip_have_goal"
-    else if is_ball t then
-      case t of
-          _ $ S $ Abs (abs as (_, T, _)) =>
-          let
-            val (x, body) = Term.dest_abs abs
-            val var = Free (x, T)
-            val mem = mk_mem (var, S)
-            val (vars, (assum, concl)) = strip_have_goal body
-          in
-            (var :: vars, (mem :: assum, concl))
-          end
-        | _ => error "strip_have_goal"
-    else if is_imp t then
-      let
-        val (vars, (assum, concl)) = strip_have_goal (dest_arg t)
-      in
-        (vars, (dest_arg1 t :: assum, concl))
-      end
-    else
-      ([], ([], t))
-
 fun have_cmd (s, r, t) state =
     let
       val {context = ctxt, ...} = Proof.goal state
 
       val (vars, (assums, concl)) = s |> Syntax.read_term ctxt
-                                      |> strip_have_goal
+                                      |> strip_obj_horn
 
       val {prop, ...} = Auto2_State.get_head ctxt
       val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
@@ -171,7 +137,7 @@ fun have_cmd (s, r, t) state =
             have_after_qed ctxt th' prop
           end
 
-      val stmt' = fold mk_obj_all (rev vars) (list_obj_imp (assums, concl))
+      val stmt' = list_obj_horn (vars, (assums, concl))
 
       val is_rule = is_some r
       val new_vars =

@@ -268,8 +268,7 @@ fun strong_induct_cmd (s, t) state =
       val (vars, (assums, concl)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
                                          |> Util.strip_meta_horn
 
-      val P = (list_obj_imp (map dest_Trueprop assums, dest_Trueprop concl))
-                  |> fold mk_obj_all (rev arbitraries)
+      val P = (list_obj_horn (arbitraries, (map dest_Trueprop assums, dest_Trueprop concl)))
                   |> lambda_abstract var
 
       val ty = type_of var
@@ -354,8 +353,7 @@ fun induct_cmd (s, t, u) state =
                                  |> apfst (map dest_Trueprop)
                                  |> apsnd dest_Trueprop
 
-      val P = (list_obj_imp (assums, concl))
-                  |> fold mk_obj_all (rev arbitraries)
+      val P = (list_obj_horn (arbitraries, (assums, concl)))
                   |> lambda_abstract var
 
       val ty = type_of var
@@ -400,7 +398,7 @@ fun induct_cmd (s, t, u) state =
         let
           (* Create new block with stmt *)
           val neq0_goal = Thm.prems_of ind_th |> hd |> dest_Trueprop
-          val (vars, (assums, concl)) = Auto2_Outer.strip_have_goal neq0_goal
+          val (vars, (assums, concl)) = strip_obj_horn neq0_goal
           val _ = assert (null vars)
                          "induct: subgoal should declare no new variables"
           val stmt = Logic.list_implies (map mk_Trueprop assums,
@@ -442,8 +440,7 @@ fun double_induct_cmd (s1, s2, t) state =
                                  |> apfst (map dest_Trueprop)
                                  |> apsnd dest_Trueprop
 
-      val P = (list_obj_imp (assums, concl))
-                  |> fold mk_obj_all (rev arbitraries)
+      val P = (list_obj_horn (arbitraries, (assums, concl)))
                   |> fold lambda_abstract [var2, var1]  (* Note reversed *)
 
       val ty = HOLogic.mk_prodT (type_of var1, type_of var2)

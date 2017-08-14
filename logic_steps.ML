@@ -233,7 +233,7 @@ fun exists_elim_fn rtype {ctxt, ...} {id, prop, ...} =
       val t = prop_of' prop
     in
       if not (is_ex t orelse is_bex t orelse
-              (is_neg t andalso is_all (dest_not t)) orelse
+              (is_neg t andalso is_obj_all (dest_not t)) orelse
               (is_neg t andalso is_ball (dest_not t))) then [] else
       let
         val th = prop |> apply_to_thm' (normalize_exs_conv (~1) ctxt)
@@ -326,7 +326,7 @@ fun normalize_all_disj_t ctxt t =
     let
       val _ = assert (fastype_of t = boolT) "normalize_all_disj_t: wrong type"
     in
-      if is_all t then
+      if is_obj_all t then
         let
           val body = dest_arg t
           val (x, T) = retrieve_abs_info body
@@ -406,7 +406,7 @@ fun norm_all_disj ctxt ct =
     let
       val t = Thm.term_of ct
     in
-      if is_all t then
+      if is_obj_all t then
         if not (is_subterm (Bound 0) (dest_arg t)) then
           Conv.every_conv [rewr_obj_eq all_trivial_th,
                            norm_all_disj ctxt] ct
@@ -424,12 +424,12 @@ fun norm_all_disj ctxt ct =
           val eq1 = Conv.binop_conv (norm_all_disj ctxt) ct
           val rhs = rhs_of eq1
         in
-          if is_all (dest_arg1 rhs) then
+          if is_obj_all (dest_arg1 rhs) then
             Conv.every_conv [Conv.rewr_conv eq1,
                              rewr_obj_eq disj_commute_th,
                              rewr_obj_eq swap_all_disj_th,
                              norm_all_disj ctxt] ct
-          else if is_all (dest_arg rhs) then
+          else if is_obj_all (dest_arg rhs) then
             Conv.every_conv [Conv.rewr_conv eq1,
                              rewr_obj_eq swap_all_disj_th,
                              norm_all_disj ctxt] ct
@@ -482,7 +482,7 @@ fun sort_disj_clause ct =
 
 (* Apply cv on the body of !x y z. ... .*)
 fun forall_body_conv cv ctxt ct =
-    if is_all (Thm.term_of ct) then
+    if is_obj_all (Thm.term_of ct) then
       Conv.binder_conv (fn (_, ctxt) => forall_body_conv cv ctxt) ctxt ct
     else
       cv ct
@@ -619,7 +619,7 @@ fun get_disj_head t =
     else if is_neg t andalso is_neg (dest_not t) then
       get_disj_head (dest_not (dest_not t))
     else if is_neg t andalso is_conj (dest_not t) then conj
-    else if is_all t orelse is_ball t then
+    else if is_obj_all t orelse is_ball t then
       case dest_arg t of
           Abs (x, T, body) => get_disj_head (snd (Term.dest_abs (x, T, body)))
         | _ => imp
@@ -743,7 +743,7 @@ fun is_priority_term t =
     if is_neg t then
       exists (is_ex orf is_bex) (strip_conj (dest_not t))
     else
-      exists (is_all orf is_ball) (strip_disj t)
+      exists (is_obj_all orf is_ball) (strip_disj t)
 
 (* Given ct in the form p_1 | ... | p_n, apply cv to each of p_i. *)
 fun ac_disj_conv cv ct =
@@ -972,7 +972,7 @@ val disj_match_iff_prfstep =
      func = OneStep disj_match_iff_fn}
 
 (* For active case, create box checking the next case. *)
-fun disj_create_case_fn rtype _ {id, tname, ...} =
+fun disj_create_case_fn rtype {ctxt, ...} {id, tname, ...} =
     if not (RewriteTable.is_single_rtype rtype) then [] else
     if exists has_vars (map Thm.term_of tname) then [] else
     let
@@ -982,10 +982,13 @@ fun disj_create_case_fn rtype _ {id, tname, ...} =
       else if length csubs = 1 then []
       else let
         val subs = map Thm.term_of csubs
+        val goal = get_neg (hd subs)
+        val (vars, (As, C)) = (strip_obj_horn goal)
+                                  |> replace_horn_vars ctxt
+                                  |> replace_internal_vars
         val inits =
-            map (fn (is_var, t) => if is_var then InitVar t
-                                   else InitAssum (mk_Trueprop t))
-                (extract_init_infos true (get_neg (hd subs)))
+            map InitVar vars @ map (InitAssum o mk_Trueprop) As @
+            [InitAssum (mk_Trueprop (get_neg C))]
       in
         [AddBoxes {id = id, sc = NONE, inits = inits}]
       end
@@ -1086,7 +1089,7 @@ fun disj_normalizer ctxt ritem =
         in
           if is_neg t andalso is_conj (dest_not t) orelse
              is_disj t orelse is_imp t orelse
-             is_all t orelse is_ball t orelse
+             is_obj_all t orelse is_ball t orelse
              is_neg t andalso is_ex (dest_not t) orelse
              is_neg t andalso is_bex (dest_not t)
           then
@@ -1103,7 +1106,7 @@ fun logic_thm_update ctxt (id, th) =
     let
       val t = prop_of' th
     in
-      if is_all t orelse is_ball t orelse
+      if is_obj_all t orelse is_ball t orelse
          is_neg t andalso is_ex (dest_not t) orelse
          is_neg t andalso is_bex (dest_not t) orelse
          is_disj t orelse is_imp t orelse

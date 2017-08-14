@@ -152,8 +152,7 @@ fun strong_induct_cmd (s, t) state =
                                  |> apfst (map dest_Trueprop)
                                  |> apfst (remove (op aconv) prem)
                                  |> apsnd dest_Trueprop
-      val P = (list_obj_imp (assums, concl))
-                  |> fold mk_obj_all (rev arbitraries)
+      val P = (list_obj_horn (arbitraries, (assums, concl)))
                   |> lambda_abstract var
 
       val inst = Pattern.match thy (var_P, P) fo_init

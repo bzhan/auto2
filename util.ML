@@ -81,6 +81,8 @@ sig
   val list_meta_horn: term list * (term list * term) -> term
   val replace_horn_vars: Proof.context -> term list * (term list * term) ->
                          term list * (term list * term)
+  val replace_internal_vars: term list * (term list * term) ->
+                             term list * (term list * term)
   val rename_abs_term: term list -> term -> term
   val print_term_detail: Proof.context -> term -> string
 
@@ -473,6 +475,15 @@ fun replace_horn_vars ctxt (vars, (As, B)) =
     let
       val vars' = vars |> map Term.dest_Free
                        |> Variable.variant_frees ctxt []
+                       |> map Free
+      val subst = vars ~~ vars'
+    in
+      (vars', (map (subst_atomic subst) As, subst_atomic subst B))
+    end
+
+fun replace_internal_vars (vars, (As, B)) =
+    let
+      val vars' = vars |> map Term.dest_Free |> map (apfst Name.internal)
                        |> map Free
       val subst = vars ~~ vars'
     in
