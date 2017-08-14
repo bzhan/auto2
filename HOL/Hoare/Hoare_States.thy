@@ -177,8 +177,12 @@ setup {* add_rewrite_rule @{thm pup_to_n_def} *}
 theorem pup_to_2_ceval: "ceval pup_to_n (ES { X \<rightarrow> 2 })
   (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"
 @proof
-  @have "ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1)) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0}) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})"
-  @have "ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1)) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1}) (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"
+  @have "ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))
+         (ES {X \<rightarrow> 2} {Y \<rightarrow> 0})
+         (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})"
+  @have "ceval (Y := APlus (AId Y) (AId X); X := AMinus (AId X) (ANum 1))
+         (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1})
+         (ES {X \<rightarrow> 2} {Y \<rightarrow> 0} {Y \<rightarrow> 2} {X \<rightarrow> 1} {Y \<rightarrow> 3} {X \<rightarrow> 0})"
 @qed
 
 (* Inversion rules. *)

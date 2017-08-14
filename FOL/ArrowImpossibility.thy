@@ -261,8 +261,10 @@ lemma Arrow: "finite(I) \<Longrightarrow> card_ge3(Cs) \<Longrightarrow> arrow_c
   @have "dictator(I,Cs,F, inverse(h)`n)" @with
     @have "\<forall>P'\<in>Prof(I,Cs). \<forall>a' b'. prefer(P'`(inverse(h)`n),a',b') \<longrightarrow> prefer(F`P',a',b')" @with
       @obtain "c'\<in>Cs" where "distinct3(Cs,a',b',c')" @then
-      @obtain "P''\<in>Prof(I,Cs)" where
-          "\<forall>i\<in>I. (ifb h`i <\<^sub>\<nat> n then eq_prefer(P'`i,a',b', P''`i,a',b') \<and> prefer(P''`i,a',c') \<and> prefer(P''`i,b',c') else ifb h`i >\<^sub>\<nat> n then eq_prefer(P'`i,a',b', P''`i,a',b') \<and> prefer(P''`i,c',a') \<and> prefer(P''`i,c',b') else prefer3(P''`i,a',c',b'))" @then
+      @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (
+        ifb h`i <\<^sub>\<nat> n then eq_prefer(P'`i,a',b', P''`i,a',b') \<and> prefer(P''`i,a',c') \<and> prefer(P''`i,b',c') else
+        ifb h`i >\<^sub>\<nat> n then eq_prefer(P'`i,a',b', P''`i,a',b') \<and> prefer(P''`i,c',a') \<and> prefer(P''`i,c',b') else
+        prefer3(P''`i,a',c',b'))" @then
       @have "eq_prefer(F`P',a',b', F`P'',a',b')" @with
         @have "\<forall>i\<in>I. eq_prefer(P'`i,a',b', P''`i,a',b')" @end
       @have "eq_prefer(F`P'',c',b', F`(P`n),a,b)" @with
