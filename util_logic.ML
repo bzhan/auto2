@@ -80,6 +80,7 @@ sig
   val strip_horn': thm -> term list * term
   val mk_conjs_th: thm list -> thm
   val ex_elim: Proof.context -> term -> thm -> thm
+  val force_abs_form: term -> term
   val strip_obj_horn: term -> term list * (term list * term)
   val list_obj_horn: term list * (term list * term) -> term
   val is_ex_form_gen: term -> bool

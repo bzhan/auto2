@@ -12,10 +12,7 @@ sig
   val add_logic_proofsteps: theory -> theory
 
   val mk_all_disj: term list * term list -> term
-  val normalize_disj_t: term -> term list
-  val norm_disj_clauses: conv
-  val norm_disj: conv
-  val normalize_all_disj_t: Proof.context -> term -> term list * term list
+  val strip_all_disj: term -> term list * term list
   val norm_all_disj: Proof.context -> conv
   val disj_prop_match: rewrite_table -> id_inst ->
                        term * ((indexname * typ) list * cterm list) ->
@@ -268,27 +265,105 @@ fun mk_all_disj (vars, terms) =
       | var :: vars' => mk_obj_all var (mk_all_disj (vars', terms))
 
 (* Normalize t into a disjunction of terms. *)
-fun normalize_disj_t t =
-    let
-      val _ = assert (fastype_of t = boolT) "normalize_disj_t: wrong type"
-    in
-      if is_disj t then
-        maps normalize_disj_t [dest_arg1 t, dest_arg t]
-      else if is_imp t then
-        maps normalize_disj_t [get_neg (dest_arg1 t), dest_arg t]
-      else if is_neg t then
-        let
-          val t' = dest_not t
-        in
-          if is_neg t' then
-            normalize_disj_t (dest_not t')
-          else if is_conj t' then
-            maps normalize_disj_t [
-              get_neg (dest_arg1 t'), get_neg (dest_arg t')]
-          else [t]
-        end
-      else [t]
-    end
+fun strip_disj t =
+    if is_disj t then
+      maps strip_disj [dest_arg1 t, dest_arg t]
+    else if is_imp t then
+      maps strip_disj [get_neg (dest_arg1 t), dest_arg t]
+    else if is_neg t then
+      let
+        val t' = dest_not t
+      in
+        if is_neg t' then strip_disj (dest_not t')
+        else if is_conj t' then
+          maps strip_disj [get_neg (dest_arg1 t'), get_neg (dest_arg t')]
+        else [t]
+      end
+    else [t]
+
+(* Normalize a term into the form !x_1 ... x_n. A_1 | ... | A_n *)
+fun strip_all_disj t =
+    if is_obj_all t then
+      case t of
+          _ $ Abs (abs as (_, T, _)) =>
+          let
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
+            val (vars, disjs) = strip_all_disj body
+          in
+            if exists (occurs_free var) disjs then (var :: vars, disjs)
+            else (vars, disjs)
+          end
+        | f $ arg => strip_all_disj (f $ force_abs_form arg)
+        | _ => raise Fail "strip_all_disj"
+    else if is_ball t then
+      case t of
+          _ $ S $ Abs (abs as (_, T, _)) =>
+          let
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
+            val mem = mk_mem (var, S)
+            val (vars, disjs) = strip_all_disj body
+          in
+            (var :: vars, get_neg mem :: disjs)
+          end
+        | f $ S $ arg => strip_all_disj (f $ S $ force_abs_form arg)
+        | _ => raise Fail "strip_all_disj"
+    else if is_neg t andalso is_ex (dest_not t) then
+      case dest_not t of
+          _ $ Abs (abs as (_, T, _)) =>
+          let
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
+            val (vars, disjs) = strip_all_disj (get_neg body)
+          in
+            if exists (occurs_free var) disjs then (var :: vars, disjs)
+            else (vars, disjs)
+          end
+        | f $ arg => strip_all_disj (get_neg (f $ force_abs_form arg))
+        | _ => raise Fail "strip_all_disj"
+    else if is_neg t andalso is_bex (dest_not t) then
+      case dest_not t of
+          _ $ S $ Abs (abs as (_, T, _)) =>
+          let
+            val (x, body) = Term.dest_abs abs
+            val var = Free (x, T)
+            val mem = mk_mem (var, S)
+            val (vars, disjs) = strip_all_disj (get_neg body)
+          in
+            (var :: vars, get_neg mem :: disjs)
+          end
+        | f $ S $ arg => strip_all_disj (get_neg (f $ S $ force_abs_form arg))
+        | _ => raise Fail "strip_all_disj"
+    else if is_disj t then
+      let
+        val (v1, ts1) = strip_all_disj (dest_arg1 t)
+        val (v2, ts2) = strip_all_disj (dest_arg t)
+      in
+        (v1 @ v2, ts1 @ ts2)
+      end
+    else if is_imp t then
+      let
+        val (v1, ts1) = strip_all_disj (get_neg (dest_arg1 t))
+        val (v2, ts2) = strip_all_disj (dest_arg t)
+      in
+        (v1 @ v2, ts1 @ ts2)
+      end
+    else if is_neg t then
+      let
+        val t' = dest_not t
+      in
+        if is_neg t' then strip_all_disj (dest_not t')
+        else if is_conj t' then
+          let
+            val (v1, ts1) = strip_all_disj (get_neg (dest_arg1 t'))
+            val (v2, ts2) = strip_all_disj (get_neg (dest_arg t'))
+          in
+            (v1 @ v2, ts1 @ ts2)
+          end
+        else ([], [t])
+      end
+    else ([], [t])
 
 (* Normalize (A_1 | A_2 | ... | A_m) | (B_1 | B_2 | ... | B_n) *)
 fun norm_disj_clauses ct =
@@ -318,91 +393,6 @@ fun norm_disj ct =
         Conv.every_conv [rewr_obj_eq de_Morgan_conj_th, norm_disj] ct
       else
         Conv.all_conv ct
-    end
-
-fun retrieve_abs_info t =
-    case t of
-        Abs (x, T, _) => (x, T)
-      | _ => ("x", domain_type (fastype_of t))
-
-(* Normalize a term into the form !x_1 ... x_n. A_1 | ... | A_n *)
-fun normalize_all_disj_t ctxt t =
-    let
-      val _ = assert (fastype_of t = boolT) "normalize_all_disj_t: wrong type"
-    in
-      if is_obj_all t then
-        let
-          val body = dest_arg t
-          val (x, T) = retrieve_abs_info body
-          val (x', ctxt') = yield_singleton Variable.variant_fixes x ctxt
-          val body' = Term.betapply (body, Free (x', T))
-          val (vars, disjs) = normalize_all_disj_t ctxt' body'
-        in
-          if exists (occurs_free (Free (x', T))) disjs then
-            (Free (x', T) :: vars, disjs)
-          else (vars, disjs)
-        end
-      else if is_ball t then
-        let
-          val (S, body) = dest_binop_args t
-          val (x, T) = retrieve_abs_info body
-          val all_const = Const (All_name, (T --> boolT) --> boolT)
-          val mem_const = Const (Mem_name, T --> mk_setT T --> boolT)
-          val body' =
-              mk_imp (mem_const $ Bound 0 $ S, Term.betapply (body, Bound 0))
-        in
-          normalize_all_disj_t ctxt (all_const $ Abs (x, T, body'))
-        end
-      else if is_neg t andalso is_ex (dest_not t) then
-        let
-          val body = t |> dest_not |> dest_arg
-          val (x, T) = retrieve_abs_info body
-          val all_const = Const (All_name, (T --> boolT) --> boolT)
-          val body' = get_neg (Term.betapply (body, Bound 0))
-        in
-          normalize_all_disj_t ctxt (all_const $ Abs (x, T, body'))
-        end
-      else if is_neg t andalso is_bex (dest_not t) then
-        let
-          val (S, body) = t |> dest_not |> dest_binop_args
-          val (x, T) = retrieve_abs_info body
-          val ex_const = Const (Ex_name, (T --> boolT) --> boolT)
-          val mem_const = Const (Mem_name, T --> mk_setT T --> boolT)
-          val body' =
-              mk_conj (mem_const $ Bound 0 $ S, Term.betapply (body, Bound 0))
-        in
-          normalize_all_disj_t ctxt (get_neg (ex_const $ Abs (x, T, body')))
-        end
-      else if is_disj t then
-        let
-          val (v1, ts1) = normalize_all_disj_t ctxt (dest_arg1 t)
-          val (v2, ts2) = normalize_all_disj_t ctxt (dest_arg t)
-        in
-          (v1 @ v2, ts1 @ ts2)
-        end
-      else if is_imp t then
-        let
-          val (v1, ts1) = normalize_all_disj_t ctxt (get_neg (dest_arg1 t))
-          val (v2, ts2) = normalize_all_disj_t ctxt (dest_arg t)
-        in
-          (v1 @ v2, ts1 @ ts2)
-        end
-      else if is_neg t then
-        let
-          val t' = dest_not t
-        in
-          if is_neg t' then
-            normalize_all_disj_t ctxt (dest_not t')
-          else if is_conj t' then
-            let
-              val (v1, ts1) = normalize_all_disj_t ctxt (get_neg (dest_arg1 t'))
-              val (v2, ts2) = normalize_all_disj_t ctxt (get_neg (dest_arg t'))
-            in
-              (v1 @ v2, ts1 @ ts2)
-            end
-          else ([], [t])
-        end
-      else ([], normalize_disj_t t)
     end
 
 (* Normalize to forall at the top-level *)
@@ -454,8 +444,7 @@ fun mk_disj_eq eq_ths =
     case eq_ths of
         [] => raise Fail "mk_disj_eq"
       | [eq] => eq
-      | eq :: eqs' =>
-        Drule.binop_cong_rule cDisj eq (mk_disj_eq eqs')
+      | eq :: eqs' => Drule.binop_cong_rule cDisj eq (mk_disj_eq eqs')
 
 (* Sort A | (B_1 | B_2 | ... | B_n), assuming the right side is sorted. *)
 fun sort_disj_clause_aux ct =
@@ -504,6 +493,16 @@ fun abstract_eq ctxt var eq =
                           (Thm.abstract_rule x (Thm.cterm_of ctxt var) eq)
     end
 
+fun replace_disj_vars ctxt (vars, disjs) =
+    let
+      val vars' = vars |> map Term.dest_Free
+                       |> Variable.variant_frees ctxt []
+                       |> map Free
+      val subst = vars ~~ vars'
+    in
+      (vars', map (subst_atomic subst) disjs)
+    end
+
 (* Matching for all-disj propositions *)
 fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
     let
@@ -511,7 +510,7 @@ fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
       val {ctxt, ...} = tbl
 
       val us = map Thm.term_of cus
-      val (var_t, ts) = normalize_all_disj_t ctxt t
+      val (var_t, ts) = (strip_all_disj t) |> replace_disj_vars ctxt
     in
       if length var_t <> length var_u orelse length ts <> length us then [] else
       let
@@ -706,7 +705,7 @@ val disj_prop_matcher =
     let
       fun pre_match pat {tname, ...} {ctxt, ...} =
           let
-            val (var_t, ts) = normalize_all_disj_t ctxt pat
+            val (var_t, ts) = (strip_all_disj pat) |> replace_disj_vars ctxt
             val (_, cus) = dest_tname_of_disj tname
             val us = map Thm.term_of cus
             val var_u = fold Term.add_vars us []
@@ -768,7 +767,7 @@ fun reduce_disj_True ct =
 (* Handles also the case where pat is in not-conj or imp form. *)
 fun match_prop rtype (id, item2) pat =
     let
-      val disj_pats = normalize_disj_t pat
+      val disj_pats = strip_disj pat
 
       (* th is pat'(inst), where pat' is one of the disjunctive terms
          of pat.

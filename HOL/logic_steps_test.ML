@@ -5,23 +5,23 @@ local
   val thy = @{theory}
 in
 
-val test_norm_disj =
+val test_norm_all_disj =
     let
       fun test (str1, str2) =
           let
-            val (t1, t2) = (Syntax.read_term ctxt str1,
-                            Syntax.read_term ctxt str2)
+            val (t1, t2) = (Proof_Context.read_term_pattern ctxt str1,
+                            Proof_Context.read_term_pattern ctxt str2)
             val ct1 = Thm.cterm_of ctxt t1
-            val res_t = Logic_ProofSteps.normalize_disj_t t1
-            val res_th = Logic_ProofSteps.norm_disj ct1
+            val (vars, ts) = Logic_ProofSteps.strip_all_disj t1
+            val res_th = Logic_ProofSteps.norm_all_disj ctxt ct1
           in
-            if not (list_disj res_t aconv t2) then
+            if not (Logic_ProofSteps.mk_all_disj (vars, ts) aconv t2) then
               let
                 val _ = trace_t ctxt "Input" t1
-                val _ = trace_t ctxt "Output" (list_disj res_t)
+                val _ = trace_t ctxt "Output" (Logic_ProofSteps.mk_all_disj (vars, ts))
                 val _ = trace_t ctxt "Expected" t2
               in
-                raise Fail "test_norm_disj_t"
+                raise Fail "test_strip_all_disj"
               end
             else if not (rhs_of res_th aconv t2) then
               let
@@ -29,7 +29,7 @@ val test_norm_disj =
                 val _ = trace_t ctxt "Output" (rhs_of res_th)
                 val _ = trace_t ctxt "Expected" t2
               in
-                raise Fail "test_norm_disj"
+                raise Fail "test_norm_all_disj"
               end
             else ()
           end
@@ -51,45 +51,8 @@ val test_norm_disj =
         ("A --> B | C", "~A | B | C"),
 
         ("p & (q --> r) --> s", "~p | ~(q --> r) | s"),
-        ("~ (p & (q --> r)) | s", "~p | ~(q --> r) | s")
-      ]
-    in
-      map test test_data
-    end
+        ("~ (p & (q --> r)) | s", "~p | ~(q --> r) | s"),
 
-val test_norm_all_disj =
-    let
-      fun test (str1, str2) =
-          let
-            val (t1, t2) = (Proof_Context.read_term_pattern ctxt str1,
-                            Proof_Context.read_term_pattern ctxt str2)
-            val ct1 = Thm.cterm_of ctxt t1
-            val ctxt' = fold Variable.auto_fixes [t1, t2] ctxt
-            val (vars, ts) = Logic_ProofSteps.normalize_all_disj_t ctxt' t1
-            val res_th = Logic_ProofSteps.norm_all_disj ctxt ct1
-          in
-            if not (Logic_ProofSteps.mk_all_disj (vars, ts) aconv t2) then
-              let
-                val _ = trace_t ctxt "Input" t1
-                val _ = trace_t ctxt "Output" (Logic_ProofSteps.mk_all_disj (vars, ts))
-                val _ = trace_t ctxt "Expected" t2
-              in
-                raise Fail "test_norm_all_disj_t"
-              end
-            else if not (rhs_of res_th aconv t2) then
-              let
-                val _ = trace_t ctxt "Input" t1
-                val _ = trace_t ctxt "Output" (rhs_of res_th)
-                val _ = trace_t ctxt "Expected" t2
-              in
-                raise Fail "test_norm_all_disj"
-              end
-            else ()
-          end
-
-      val test_data = [
-        ("A::bool", "A::bool"),
-        ("A --> B --> C", "~A | ~B | C"),
         ("!x. A x", "!x. A x"),
         ("!x y z. P x y z", "!x y z. P x y z"),
         ("!x:S. A x", "!x. x ~: S | A x"),
@@ -133,7 +96,7 @@ val test_disj_prop_match =
           let
             val (t, u) = (Proof_Context.read_term_pattern ctxt str1,
                           Syntax.read_term ctxt str2)
-            val (var_u, us) = Logic_ProofSteps.normalize_all_disj_t ctxt u
+            val (var_u, us) = Logic_ProofSteps.strip_all_disj u
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
             val (cvar_u, cus) = (map Term.dest_Var var_u', map (Thm.cterm_of ctxt) us')
@@ -204,7 +167,7 @@ val test_disj_prop_no_match =
           let
             val (t, u) = (Proof_Context.read_term_pattern ctxt str1,
                           Syntax.read_term ctxt str2)
-            val (var_u, us) = Logic_ProofSteps.normalize_all_disj_t ctxt u
+            val (var_u, us) = Logic_ProofSteps.strip_all_disj u
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
             val (cvar_u, cus) = (map Term.dest_Var var_u', map (Thm.cterm_of ctxt) us')
