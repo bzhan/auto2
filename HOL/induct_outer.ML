@@ -282,7 +282,7 @@ fun strong_induct_cmd (s, t) state =
       val inst = fold (Pattern.match thy) [(var_P, P), (var_n, var)] fo_init
       val ind_th =
           ind_th |> subst_thm ctxt inst
-                 |> apply_to_thm (Conv.binop_conv (to_meta_all_imp_conv ctxt))
+                 |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
 
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
@@ -372,8 +372,7 @@ fun induct_cmd (s, t, u) state =
           let
             val ind_th =
                 ind_th |> Thm.elim_implies neq0_th
-                       |> apply_to_thm (Conv.binop_conv (
-                                           to_meta_all_imp_conv ctxt))
+                       |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
 
             val assum = hd (Drule.cprems_of ind_th)
             val ind_th =
@@ -463,8 +462,7 @@ fun double_induct_cmd (s1, s2, t) state =
       val neq0_ths = map (Auto2_Outer.auto2_solve ctxt) neq0_goals
 
       val ind_th = ind_th |> fold Thm.elim_implies neq0_ths
-                          |> apply_to_thm (Conv.binop_conv (
-                                              to_meta_all_imp_conv ctxt))
+                          |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
 
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =

@@ -589,9 +589,8 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
         (* \sigma = Some (fst h_) & success_run c h h_ r ==> ... *)
         val vars = [Var (("h_", 0), pheapT)]
-        val all_th' = all_th |> apply_to_thm (to_meta_all_conv ctxt)
+        val all_th' = all_th |> apply_to_thm (to_meta_conv ctxt)
                              |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)
-                             |> apply_to_thm to_meta_imp_conv
         val Q_goal =
             (rest_th RS all_th')
                 |> apply_to_thm' (Conv.arg_conv (normalize_mod_cv ctxt))
@@ -908,7 +907,7 @@ val match_assn2 =
    original one) with hoare triple <P> c <Q>. Only work in the case
    where there are no schematic variables in b.
  *)
-fun match_assn_pure_fn ((id, inst), ths) items _ =
+fun match_assn_pure_fn ((id, inst), ths) items {ctxt, ...} =
     if has_vars (lookup_inst inst "b") then []
     else let
       val (th1, th2) = the_pair ths
@@ -919,7 +918,7 @@ fun match_assn_pure_fn ((id, inst), ths) items _ =
       val success_ths = conj_right_th th1
       val norm_th = @{thm norm_pre_pure_iff}
       val hoare_th' = hoare_th |> apply_to_thm' (rewr_obj_eq norm_th)
-                               |> apply_to_thm to_meta_imp_conv
+                               |> apply_to_thm (to_meta_conv ctxt)
                                |> Thm.elim_implies th2
       val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
       val tname = map (lookup_inst inst) ["h", "c", "s"] @ [P', Q']

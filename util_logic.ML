@@ -67,9 +67,7 @@ sig
   val rewrite_thm_from_contra_form: thm -> thm
   val to_obj_conv: Proof.context -> conv
   val to_obj_conv_on_horn: Proof.context -> conv
-  val to_meta_imp_conv: conv
-  val to_meta_all_conv: Proof.context -> conv
-  val to_meta_all_imp_conv: Proof.context -> conv
+  val to_meta_conv: Proof.context -> conv
   val conj_left_th: thm -> thm
   val conj_right_th: thm -> thm
   val equiv_forward_th: thm -> thm
@@ -453,14 +451,14 @@ val rewrite_thm_from_contra_form = apply_to_thm rewrite_from_contra_form
 
 (* Converts ==> to --> and !! to !. *)
 fun to_obj_conv ctxt ct =
-    (case Thm.term_of ct of
-         @{const Pure.imp} $ _ $ _ =>
-         (Conv.binop_conv (to_obj_conv ctxt))
-             then_conv (Conv.rewr_conv atomize_imp_th)
-       | Const (@{const_name Pure.all}, _) $ Abs _ =>
-         (Conv.binder_conv (to_obj_conv o snd) ctxt)
-             then_conv (Conv.rewr_conv atomize_all_th)
-       | _ => Conv.all_conv) ct
+    case Thm.term_of ct of
+        @{const Pure.imp} $ _ $ _ =>
+        Conv.every_conv [Conv.binop_conv (to_obj_conv ctxt),
+                         Conv.rewr_conv atomize_imp_th] ct
+      | Const (@{const_name Pure.all}, _) $ Abs _ =>
+        Conv.every_conv [Conv.binder_conv (to_obj_conv o snd) ctxt,
+                         Conv.rewr_conv atomize_all_th] ct
+      | _ => Conv.all_conv ct
 
 (* When ct is of form A1 ==> ... ==> An, apply to_obj_conv to each Ai. *)
 fun to_obj_conv_on_horn ctxt ct =
@@ -470,44 +468,20 @@ fun to_obj_conv_on_horn ctxt ct =
                          Conv.arg_conv (to_obj_conv_on_horn ctxt)] ct
       | _ => Conv.all_conv ct
 
-(* Converts A1 --> ... --> An to A1 ==> ... ==> An. *)
-fun to_meta_imp_conv ct =
-    let
-      val t = Thm.term_of ct
-    in
-      if is_Trueprop t andalso is_imp (dest_Trueprop t) then
-        ((Conv.rewr_conv (meta_sym atomize_imp_th))
-             then_conv (Conv.arg_conv to_meta_imp_conv)) ct
-      else
-        Conv.all_conv ct
-    end
-
-(* Converts ! to !! on the outermost level. *)
-fun to_meta_all_conv ctxt ct =
-    let
-      val t = Thm.term_of ct
-    in
-      if is_Trueprop t andalso is_obj_all (dest_Trueprop t) then
-        ((Conv.rewr_conv (meta_sym atomize_all_th))
-             then_conv (Conv.binder_conv (to_meta_all_conv o snd) ctxt)) ct
-      else
-        Conv.all_conv ct
-    end
-
 (* Convert !! and ==> on the outermost level. Pull all !! to the front. *)
-fun to_meta_all_imp_conv ctxt ct =
+fun to_meta_conv ctxt ct =
     let
       val t = Thm.term_of ct
     in
       if is_Trueprop t andalso is_obj_all (dest_Trueprop t) then
         Conv.every_conv [Conv.rewr_conv (meta_sym atomize_all_th),
-                         Conv.binder_conv (to_meta_all_imp_conv o snd) ctxt] ct
+                         Conv.binder_conv (to_meta_conv o snd) ctxt] ct
       else if is_Trueprop t andalso is_imp (dest_Trueprop t) then
         Conv.every_conv [Conv.rewr_conv (meta_sym atomize_imp_th),
-                         Conv.arg_conv (to_meta_all_imp_conv ctxt),
+                         Conv.arg_conv (to_meta_conv ctxt),
                          swap_meta_imp_alls ctxt] ct
       else if is_implies t then
-        Conv.arg_conv (to_meta_all_imp_conv ctxt) ct
+        Conv.arg_conv (to_meta_conv ctxt) ct
       else
         Conv.all_conv ct
     end

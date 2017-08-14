@@ -159,7 +159,7 @@ fun strong_induct_cmd (s, t) state =
       val inst = Pattern.match thy (var_P, P) fo_init
       val ind_th =
           ind_th |> subst_thm ctxt inst
-                 |> apply_to_thm (Conv.binop_conv (to_meta_all_imp_conv ctxt))
+                 |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
 
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =

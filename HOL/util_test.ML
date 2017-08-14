@@ -19,10 +19,10 @@ val test_to_obj_conv =
       val ct2 = @{cprop "A --> B --> (!(n::nat). C n) --> D"}
       val ct3 = @{cprop "!(y::nat) (x::nat). P x y --> (!z. Q x y z)"}
       val _ = assert_eq (to_obj_conv ctxt ct1) ct2 (err 0)
-      val _ = assert_eq (to_meta_imp_conv ct2)
+      val _ = assert_eq (to_meta_conv ctxt ct2)
               @{cprop "A ==> B ==> (!(n::nat). C n) ==> D"} (err 1)
-      val _ = assert_eq (to_meta_all_conv ctxt ct3)
-              @{cprop "!!(y::nat) (x::nat). (P x y --> (!z. Q x y z))"} (err 2)
+      val _ = assert_eq (to_meta_conv ctxt ct3)
+              @{cprop "!!(y::nat) (x::nat) z. P x y ==> Q x y z"} (err 2)
       val _ = assert_eq (to_obj_conv_on_horn ctxt ct1)
               @{cprop "A ==> B ==> (!(n::nat). C n) ==> D"} (err 4)
     in () end

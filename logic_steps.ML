@@ -657,7 +657,7 @@ fun analyze_disj_th ctxt th =
     let
       val head = get_disj_head (prop_of' th)
       val th' = th |> apply_to_thm' (norm_all_disj ctxt)
-                   |> apply_to_thm (to_meta_all_conv ctxt)
+                   |> apply_to_thm (to_meta_conv ctxt)
                    |> forall_elim_sch
     in
       (head, th')
