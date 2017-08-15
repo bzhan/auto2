@@ -10,6 +10,9 @@ sig
   val have_after_qed: Proof.context -> thm -> thm -> thm
   val have_cmd: string * 'a option * string option -> Proof.state -> Proof.state
 
+  val subgoal_cmd: int * string list -> Proof.state -> Proof.state
+  val endgoal_cmd: Proof.state -> Proof.state
+
   val end_cmd: Proof.state -> Proof.state
   val qed_cmd: Proof.state -> Proof.context
 
@@ -178,7 +181,29 @@ val _ =
            Toplevel.proof (fn state => have_cmd (r, s, t) state)))
 
 fun is_goal_resolved th = not (Util.is_head (Logic.protectC) (Thm.concl_of th))
-    
+
+fun subgoal_cmd (i, ts) state =
+    let
+      val {context = ctxt, ...} = Proof.goal state
+      val {props, selected, ...} = Auto2_State.get_head ctxt
+      val _ = assert (selected = NONE) "@subgoal: already selected a subgoal."
+      val prop = nth props i
+      val _ = assert (not (is_goal_resolved prop))
+                     "@subgoal: goal already resolved."
+
+      val vars = map (Syntax.read_term ctxt) ts
+
+      val prop = prop |> apply_to_thm (Conv.arg1_conv (Util.normalize_meta_horn ctxt))
+      val t' = case Thm.prop_of prop of
+                  imp $ A $ B => imp $ rename_abs_term vars A $ B
+                | _ => raise Fail "subgoal_cmd"
+      val prop = prop |> Thm.renamed_prop t'
+    in
+      state |> Proof.map_contexts (Auto2_State.set_selected (SOME i))
+            |> Proof.map_contexts (Auto2_State.map_head_th (K prop))
+            |> Proof.map_contexts (fold declare_free_term vars)
+    end
+
 (* Use auto2 to resolve one of the goals. *)
 fun auto2_solve_goal ctxt prop =
     if is_goal_resolved prop then prop
@@ -192,6 +217,32 @@ fun auto2_solve_goal ctxt prop =
          |> Thm.implies_elim prop
          |> Goal.conclude
     end
+
+val _ =
+  Outer_Syntax.command @{command_keyword "@subgoal"} "endgoal of with block"
+    ((Parse.nat -- Scan.repeat Parse.term) >>
+       (fn (i, ts) => Toplevel.proof (fn state => subgoal_cmd (i, ts) state)))
+
+(* @endgoal command: there should be more than one goal in the current frame,
+   and one of the goals is selected. Use auto2 to finish the selected goal.
+ *)
+fun endgoal_cmd state =
+    let
+      val {context = ctxt, ...} = Proof.goal state
+      val {props, selected, ...} = Auto2_State.get_head ctxt
+      val _ = assert (length props > 1 andalso is_some selected)
+                     "@endgoal: called without a selection"
+      val prop = nth props (the selected)
+      val solved_prop = auto2_solve_goal ctxt prop
+    in
+      state |> Proof.map_contexts (Auto2_State.map_head_th (K solved_prop))
+            |> Proof.map_contexts (Auto2_State.set_selected NONE)
+    end
+
+val _ =
+  Outer_Syntax.command @{command_keyword "@endgoal"} "endgoal of with block"
+    (Scan.succeed (
+       Toplevel.proof (fn state => endgoal_cmd state)))
 
 (* @end command: if there is exactly one goal in the current frame, that goal
    should be selected and unresolved. Use auto2 to resolve that goal. If there

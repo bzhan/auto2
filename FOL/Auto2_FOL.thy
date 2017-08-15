@@ -4,7 +4,7 @@ theory Auto2_FOL
 imports FOL_Base
 keywords "@proof" :: prf_block % "proof"
   and "@have" "@case" "@obtain" "@let" "@contradiction" :: prf_decl % "proof"
-  and "@end" :: prf_decl % "proof"
+  and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
   and "@qed" :: prf_decl % "proof"
   and "@induct" "@strong_induct" :: prf_decl % "proof"
   and "@with" "@then" "where" "arbitrary" "@rule" :: quasi_command

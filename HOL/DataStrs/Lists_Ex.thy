@@ -23,10 +23,12 @@ theorem list_double_induct:
   "\<forall>ys. P [] ys \<Longrightarrow> \<forall>xs. P xs [] \<Longrightarrow>
    \<forall>xs ys. xs \<noteq> [] \<and> ys \<noteq> [] \<and> P (tl xs) ys \<and> P xs (tl ys) \<longrightarrow> P xs ys \<Longrightarrow> P xs ys"
 @proof
-  @have (@rule) "\<forall>x1 x2. (\<forall>ys. P x2 ys) \<longrightarrow> (\<forall>ys. P (x1 # x2) ys)" @with
-    @var_induct ys "ys \<noteq> [] \<longrightarrow> P (x1 # x2) ys"
+  @var_induct xs "\<forall>ys. P xs ys" @with
+    @subgoal 1 "(x::'b)" "(xs'::'b list)"
+    @have "\<forall>ys. P (x # xs') ys" @with
+      @var_induct ys "ys \<noteq> [] \<longrightarrow> P (x # xs') ys" @end
+    @endgoal
   @end
-  @var_induct xs "\<forall>ys. P xs ys"
 @qed
 setup {* add_prfstep_double_induction @{thm list_double_induct} *}
 

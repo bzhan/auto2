@@ -20,6 +20,7 @@ sig
       thm list * (term list * (thm list -> thm -> thm)) option -> auto2_frame
   val map_head_th: (thm -> thm) -> Proof.context -> Proof.context
   val set_head_th: thm -> Proof.context -> Proof.context
+  val set_selected: int option -> Proof.context -> Proof.context
   val set_induct_stmt: term -> Proof.context -> Proof.context
   val add_prem_only: term -> Proof.context -> Proof.context
   val lookup_prem_only: Proof.context -> term -> bool
@@ -107,6 +108,12 @@ fun map_frame_th f frame =
 fun map_head_th f = map_head (map_frame_th f)
 
 fun set_head_th th = map_head_th (K th)
+
+fun set_selected sel =
+    map_head (
+      fn {props, induct_stmt, prem_only, after_qed, ...} =>
+         {props = props, selected = sel, induct_stmt = induct_stmt,
+          prem_only = prem_only, after_qed = after_qed})
 
 fun set_induct_stmt stmt =
     map_head (

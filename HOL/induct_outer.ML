@@ -27,7 +27,7 @@ sig
       string * string * string list -> Proof.state -> Proof.state
   val case_induct_cmd: string -> Proof.state -> Proof.state
   val prop_induct_cmd: string * string -> Proof.state -> Proof.state
-  val var_induct_cmd: string * string -> Proof.state -> Proof.state
+  val var_induct_cmd: string * string * string option -> Proof.state -> Proof.state
 end;
 
 structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
@@ -574,7 +574,7 @@ val _ =
         (fn (s, t) =>
             Toplevel.proof (fn state => prop_induct_cmd (s, t) state)))
 
-fun var_induct_cmd (s, t) state =
+fun var_induct_cmd (s, t, u) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
@@ -603,23 +603,41 @@ fun var_induct_cmd (s, t) state =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
                  |> map (Thm.cterm_of ctxt)
-
-      val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
-                    |> map send_all_to_hyps
-
-      val ind_concl = ind_th |> fold Thm.elim_implies ths
-                             |> fold Thm.implies_intr (rev cAs)
-
-      val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
     in
-      state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+      if is_none u then
+        let
+          val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
+                        |> map send_all_to_hyps
+          val ind_concl = ind_th |> fold Thm.elim_implies ths
+                                 |> fold Thm.implies_intr (rev cAs)
+          val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+        in
+          state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+        end
+      else
+        let
+          val ind_goals_th = ind_goals |> map (Goal.protect 1 o Thm.trivial)
+          (* Create new block with the subgoals *)
+          fun after_qed ths prop =
+              let
+                val ths' = ths |> map send_all_to_hyps
+                val ind_concl = ind_th |> fold Thm.elim_implies ths'
+                                       |> fold Thm.implies_intr (rev cAs)
+              in
+                Auto2_Outer.have_after_qed ctxt ind_concl prop
+              end
+
+          val new_frame = Auto2_State.multiple_frame (ind_goals_th, SOME ([], after_qed))
+        in
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
+        end
     end
 
 val _ =
   Outer_Syntax.command @{command_keyword "@var_induct"} "apply induction"
-    ((Parse.term -- Parse.term) >>
-        (fn (s, t) =>
-            Toplevel.proof (fn state => var_induct_cmd (s, t) state)))
+    ((Parse.term -- Parse.term) -- Scan.option @{keyword "@with"} >>
+        (fn ((s, t), u) =>
+            Toplevel.proof (fn state => var_induct_cmd (s, t, u) state)))
 
 end  (* structure Induct_ProofSteps. *)
 
