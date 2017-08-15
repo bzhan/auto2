@@ -10,7 +10,7 @@ sig
   val have_after_qed: Proof.context -> thm -> thm -> thm
   val have_cmd: string * 'a option * string option -> Proof.state -> Proof.state
 
-  val subgoal_cmd: int * string list -> Proof.state -> Proof.state
+  val subgoal_cmd: string -> Proof.state -> Proof.state
   val endgoal_cmd: Proof.state -> Proof.state
 
   val end_cmd: Proof.state -> Proof.state
@@ -183,26 +183,45 @@ val _ =
 
 fun is_goal_resolved th = not (Util.is_head (Logic.protectC) (Thm.concl_of th))
 
-fun subgoal_cmd (i, ts) state =
+fun match_subgoal_pat thy t (i, pat) =
+    let
+      val inst = Pattern.first_order_match thy (pat, t) fo_init
+      val vars = rev (map Var (Term.add_vars pat []))
+      val ts = map (subst_term_norm inst) vars
+    in
+      SOME (i, ts)
+    end
+    handle Pattern.MATCH => NONE
+      
+fun subgoal_cmd s state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {props, selected, ...} = Auto2_State.get_head ctxt
+      val {goals, selected, ...} = Auto2_State.get_head ctxt
       val _ = assert (selected = NONE) "@subgoal: already selected a subgoal."
-      val prop = nth props i
-      val _ = assert (not (is_goal_resolved prop))
-                     "@subgoal: goal already resolved."
 
-      val vars = map (Syntax.read_term ctxt) ts
-
-      val prop = prop |> apply_to_thm (Conv.arg1_conv (Util.normalize_meta_horn ctxt))
-      val t' = case Thm.prop_of prop of
-                  imp $ A $ B => imp $ rename_abs_term vars A $ B
-                | _ => raise Fail "subgoal_cmd"
-      val prop = prop |> Thm.renamed_prop t'
+      (* Figure out which subgoal to select by matching *)
+      val thy = Proof_Context.theory_of ctxt
+      val t = Syntax.read_term ctxt s
+      val res = get_first (match_subgoal_pat thy t) (tag_list 0 (map fst goals))
     in
-      state |> Proof.map_contexts (Auto2_State.set_selected (SOME i))
-            |> Proof.map_contexts (Auto2_State.map_head_th (K prop))
-            |> Proof.map_contexts (fold declare_free_term vars)
+      case res of
+          NONE => error "@subgoal: pattern not found"
+        | SOME (i, ts) =>
+          let
+            val prop = snd (nth goals i)
+            val _ = assert (not (is_goal_resolved prop))
+                           "@subgoal: goal already resolved."
+      
+            val prop = prop |> apply_to_thm (Conv.arg1_conv (Util.normalize_meta_horn ctxt))
+            val t' = case Thm.prop_of prop of
+                        imp $ A $ B => imp $ rename_abs_term ts A $ B
+                      | _ => raise Fail "subgoal_cmd"
+            val prop = prop |> Thm.renamed_prop t'
+          in
+            state |> Proof.map_contexts (Auto2_State.set_selected (SOME i))
+                  |> Proof.map_contexts (Auto2_State.map_head_th (K prop))
+                  |> Proof.map_contexts (fold declare_free_term ts)
+          end
     end
 
 (* Use auto2 to resolve one of the goals. *)
@@ -221,8 +240,8 @@ fun auto2_solve_goal ctxt prop =
 
 val _ =
   Outer_Syntax.command @{command_keyword "@subgoal"} "endgoal of with block"
-    ((Parse.nat -- Scan.repeat Parse.term) >>
-       (fn (i, ts) => Toplevel.proof (fn state => subgoal_cmd (i, ts) state)))
+    (Parse.term >>
+       (fn s => Toplevel.proof (fn state => subgoal_cmd s state)))
 
 (* @endgoal command: there should be more than one goal in the current frame,
    and one of the goals is selected. Use auto2 to finish the selected goal.
@@ -230,10 +249,10 @@ val _ =
 fun endgoal_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {props, selected, ...} = Auto2_State.get_head ctxt
-      val _ = assert (length props > 1 andalso is_some selected)
+      val {goals, selected, ...} = Auto2_State.get_head ctxt
+      val _ = assert (length goals > 1 andalso is_some selected)
                      "@endgoal: called without a selection"
-      val prop = nth props (the selected)
+      val prop = snd (nth goals (the selected))
       val solved_prop = auto2_solve_goal ctxt prop
     in
       state |> Proof.map_contexts (Auto2_State.map_head_th (K solved_prop))
@@ -253,11 +272,11 @@ val _ =
 fun end_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {props, selected, after_qed, ...} = Auto2_State.get_head ctxt
-      val _ = assert ((length props = 1 andalso selected = SOME 0) orelse
-                      (length props > 1 andalso selected = NONE))
+      val {goals, selected, after_qed, ...} = Auto2_State.get_head ctxt
+      val _ = assert ((length goals = 1 andalso selected = SOME 0) orelse
+                      (length goals > 1 andalso selected = NONE))
                 "@end: cannot call within an selection."
-      val solved_props = map (auto2_solve_goal ctxt) props
+      val solved_props = map (auto2_solve_goal ctxt o snd) goals
       val _ = assert (forall is_goal_resolved solved_props)
                 "@end: failed to resolve all goals"
       val (new_vars, f) = (the after_qed)

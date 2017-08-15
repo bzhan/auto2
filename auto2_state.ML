@@ -1,6 +1,6 @@
 (* Current state, function for modifying the goal. *)
 
-type auto2_frame = {props: thm list,
+type auto2_frame = {goals: (term * thm) list,
                     selected: int option,
                     induct_stmt: term option,
                     prem_only: term list,
@@ -17,7 +17,7 @@ sig
   val simple_frame:
       cterm * (term list * (thm list -> thm -> thm)) option -> auto2_frame
   val multiple_frame:
-      cterm list * (term list * (thm list -> thm -> thm)) option -> auto2_frame
+      (term * cterm) list * (term list * (thm list -> thm -> thm)) option -> auto2_frame
   val map_head_th: (thm -> thm) -> Proof.context -> Proof.context
   val set_head_th: thm -> Proof.context -> Proof.context
   val set_selected: int option -> Proof.context -> Proof.context
@@ -41,14 +41,16 @@ structure Data = Proof_Data
 (* Print the auto2 state. *)
 fun string_of_frame ctxt frame =
     let
-      val {props, selected, ...} = frame
-      val n = length props
-      fun print_i (i, th) =
+      val {goals, selected, ...} = frame
+      val n = length goals
+      fun print_i (i, (pat, th)) =
           (if selected = SOME i then "*" else " ") ^
-          (string_of_int i) ^ ": " ^
+          (pat |> Syntax.string_of_term ctxt) ^ ": " ^
           (th |> Thm.prop_of |> Syntax.string_of_term ctxt)
     in
-      cat_lines (map print_i (0 upto (n - 1) ~~ props))
+      if n = 1 then
+        goals |> the_single |> snd |> Thm.prop_of |> Syntax.string_of_term ctxt
+      else cat_lines (map print_i (0 upto (n - 1) ~~ goals))
     end
 
 fun string_of_state ctxt =
@@ -76,12 +78,13 @@ fun push_head frame =
     Data.map (cons frame)
 
 fun simple_frame (ct, after_qed) =
-    {props = [Goal.protect 1 (Thm.trivial ct)], selected = SOME 0,
-     induct_stmt = NONE, prem_only = [], after_qed = after_qed}
+    {goals = [(Thm.term_of ct, Goal.protect 1 (Thm.trivial ct))],
+     selected = SOME 0, induct_stmt = NONE, prem_only = [],
+     after_qed = after_qed}
 
-fun multiple_frame (cts, after_qed) =
-    {props = map (Goal.protect 1 o Thm.trivial) cts, selected = NONE,
-     induct_stmt = NONE, prem_only = [], after_qed = after_qed}
+fun multiple_frame (goals, after_qed) =
+    {goals = map (apsnd (Goal.protect 1 o Thm.trivial)) goals,
+     selected = NONE, induct_stmt = NONE, prem_only = [], after_qed = after_qed}
 
 (* Change the proof state at the head of the auto2 state. *)
 fun map_head f =
@@ -92,15 +95,15 @@ fun map_head f =
   
 fun map_frame_th f frame =
   let
-    val {props, selected, induct_stmt, prem_only, after_qed} = frame
+    val {goals, selected, induct_stmt, prem_only, after_qed} = frame
   in
     case selected of
       NONE => raise Fail "map_frame_th: no proposition selected"
     | SOME i =>
-      if i < 0 orelse i >= length props then
+      if i < 0 orelse i >= length goals then
         raise Fail "map_frame_th: unexpected selected"
       else
-        {props = nth_map i f props,
+        {goals = nth_map i (apsnd f) goals,
          selected = selected, induct_stmt = induct_stmt, prem_only = prem_only,
          after_qed = after_qed}
   end
@@ -111,20 +114,20 @@ fun set_head_th th = map_head_th (K th)
 
 fun set_selected sel =
     map_head (
-      fn {props, induct_stmt, prem_only, after_qed, ...} =>
-         {props = props, selected = sel, induct_stmt = induct_stmt,
+      fn {goals, induct_stmt, prem_only, after_qed, ...} =>
+         {goals = goals, selected = sel, induct_stmt = induct_stmt,
           prem_only = prem_only, after_qed = after_qed})
 
 fun set_induct_stmt stmt =
     map_head (
-      fn {props, selected, prem_only, after_qed, ...} =>
-         {props = props, selected = selected, induct_stmt = SOME stmt,
+      fn {goals, selected, prem_only, after_qed, ...} =>
+         {goals = goals, selected = selected, induct_stmt = SOME stmt,
           prem_only = prem_only, after_qed = after_qed})
 
 fun add_prem_only stmt =
     map_head (
-      fn {props, selected, induct_stmt, prem_only, after_qed} =>
-         {props = props, selected = selected, induct_stmt = induct_stmt,
+      fn {goals, selected, induct_stmt, prem_only, after_qed} =>
+         {goals = goals, selected = selected, induct_stmt = induct_stmt,
           prem_only = stmt :: prem_only, after_qed = after_qed})
 
 fun lookup_prem_only ctxt t =
@@ -142,11 +145,11 @@ fun get_head ctxt =
 (* Given proof state of form A ==> C (with only one subgoal A), return A *)
 fun get_selected ctxt =
     let
-      val {props, selected, ...} = get_head ctxt
+      val {goals, selected, ...} = get_head ctxt
     in
       case selected of
           NONE => raise Fail "get_selected: no goal is selected."
-        | SOME i => nth props i
+        | SOME i => snd (nth goals i)
     end
 
 fun subgoal_of prop =
