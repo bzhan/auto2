@@ -15,9 +15,9 @@ sig
   val pop_head: Proof.context -> Proof.context
   val push_head: auto2_frame -> Proof.context -> Proof.context
   val simple_frame:
-      thm * (term list * (thm list -> thm -> thm)) option -> auto2_frame
+      cterm * (term list * (thm list -> thm -> thm)) option -> auto2_frame
   val multiple_frame:
-      thm list * (term list * (thm list -> thm -> thm)) option -> auto2_frame
+      cterm list * (term list * (thm list -> thm -> thm)) option -> auto2_frame
   val map_head_th: (thm -> thm) -> Proof.context -> Proof.context
   val set_head_th: thm -> Proof.context -> Proof.context
   val set_selected: int option -> Proof.context -> Proof.context
@@ -75,13 +75,13 @@ val pop_head =
 fun push_head frame =
     Data.map (cons frame)
 
-fun simple_frame (prop, after_qed) =
-    {props = [prop], selected = SOME 0, induct_stmt = NONE, prem_only = [],
-     after_qed = after_qed}
+fun simple_frame (ct, after_qed) =
+    {props = [Goal.protect 1 (Thm.trivial ct)], selected = SOME 0,
+     induct_stmt = NONE, prem_only = [], after_qed = after_qed}
 
-fun multiple_frame (props, after_qed) =
-    {props = props, selected = NONE, induct_stmt = NONE, prem_only = [],
-     after_qed = after_qed}
+fun multiple_frame (cts, after_qed) =
+    {props = map (Goal.protect 1 o Thm.trivial) cts, selected = NONE,
+     induct_stmt = NONE, prem_only = [], after_qed = after_qed}
 
 (* Change the proof state at the head of the auto2 state. *)
 fun map_head f =

@@ -402,9 +402,8 @@ fun induct_cmd (s, t, u) state =
           val _ = assert (null vars)
                          "induct: subgoal should declare no new variables"
           val stmt = Logic.list_implies (map mk_Trueprop assums,
-                                         mk_Trueprop concl)
+                                         mk_Trueprop concl) |> Thm.cterm_of ctxt
 
-          val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
           fun after_qed ths prop =
               let
                 val th = the_single ths
@@ -412,7 +411,7 @@ fun induct_cmd (s, t, u) state =
               in
                 induct_after_qed ctxt th' prop
               end
-          val new_frame = Auto2_State.simple_frame (goal, SOME ([], after_qed))
+          val new_frame = Auto2_State.simple_frame (stmt, SOME ([], after_qed))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
@@ -616,7 +615,6 @@ fun var_induct_cmd (s, t, u) state =
         end
       else
         let
-          val ind_goals_th = ind_goals |> map (Goal.protect 1 o Thm.trivial)
           (* Create new block with the subgoals *)
           fun after_qed ths prop =
               let
@@ -627,7 +625,7 @@ fun var_induct_cmd (s, t, u) state =
                 Auto2_Outer.have_after_qed ctxt ind_concl prop
               end
 
-          val new_frame = Auto2_State.multiple_frame (ind_goals_th, SOME ([], after_qed))
+          val new_frame = Auto2_State.multiple_frame (ind_goals, SOME ([], after_qed))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end

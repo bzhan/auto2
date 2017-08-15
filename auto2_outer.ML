@@ -57,7 +57,8 @@ fun init_state state =
       val {goal, context = ctxt, ...} = Proof.goal state
       val _ = assert (Auto2_State.get_num_frame ctxt = 0)
                      "init_state: state not empty."
-      val init_frame = Auto2_State.simple_frame (goal, NONE)
+      val subgoals = goal |> Thm.cprop_of |> Drule.strip_imp_prems
+      val init_frame = Auto2_State.simple_frame (hd subgoals, NONE)
     in
       state |> Proof.map_contexts (Auto2_State.push_head init_frame)
     end
@@ -160,8 +161,8 @@ fun have_cmd (s, r, t) state =
       else
         let
           (* Create new block with stmt *)
-          val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
-          val new_block = Auto2_State.simple_frame (goal, SOME ([], after_qed))
+          val new_block = Auto2_State.simple_frame (
+              Thm.cterm_of ctxt stmt, SOME ([], after_qed))
         in
           state |> (if is_rule then I else
                     Proof.map_contexts (Auto2_State.add_prem_only stmt'))
@@ -397,9 +398,8 @@ fun obtain_cmd (s, t, u) state =
       else
         let
           (* Create new block with stmt *)
-          val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
           val new_frame = Auto2_State.simple_frame (
-              goal, SOME (new_vars, obtain_after_qed ctxt))
+              Thm.cterm_of ctxt stmt, SOME (new_vars, obtain_after_qed ctxt))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
@@ -483,9 +483,8 @@ fun case_cmd (s, t) state =
       else
         let
           (* Create new block with stmt *)
-          val goal = Thm.trivial stmt |> Goal.protect 1
           val new_frame =
-              Auto2_State.simple_frame (goal, SOME ([], case_after_qed ctxt))
+              Auto2_State.simple_frame (stmt, SOME ([], case_after_qed ctxt))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
