@@ -79,9 +79,8 @@ fun induct_cmd (s, t) state =
             val ind_th = subst_thm_thy thy inst th
 
             (* Obtain list of assumptions *)
-            val {prop, ...} = Auto2_State.get_head ctxt
-            val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                    |> Util.strip_meta_horn
+            val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                                    |> Thm.term_of |> Util.strip_meta_horn
             val cAs = map (Thm.cterm_of ctxt) As
 
             val ind_goals =
@@ -138,8 +137,8 @@ fun strong_induct_cmd (s, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val goal = prop |> Auto2_State.subgoal_of |> Thm.term_of
+      val goal = ctxt |> Auto2_State.get_selected
+                      |> Auto2_State.subgoal_of |> Thm.term_of
 
       val ind_th = the (lookup_strong_induct_data thy prem)
                    handle Option.Option =>

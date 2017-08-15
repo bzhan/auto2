@@ -15,12 +15,12 @@ sig
 
   val strip_ex: term -> term list * term
   val obtain_resolve: Proof.context -> term list -> thm -> term -> thm
-  val obtain_after_qed: Proof.context -> thm -> thm -> thm
+  val obtain_after_qed: Proof.context -> thm list -> thm -> thm
   val obtain_cmd:
       string list * string list * string option -> Proof.state -> Proof.state
 
   val case_resolve: Proof.context -> term list -> thm -> thm
-  val case_after_qed: Proof.context -> thm -> thm -> thm
+  val case_after_qed: Proof.context -> thm list -> thm -> thm
   val case_cmd: string * string option -> Proof.state -> Proof.state
 
   val contra_resolve: Proof.context -> term list -> term list -> term -> thm
@@ -54,8 +54,7 @@ fun init_state state =
       val {goal, context = ctxt, ...} = Proof.goal state
       val _ = assert (Auto2_State.get_num_frame ctxt = 0)
                      "init_state: state not empty."
-      val init_frame = {prop = goal, induct_stmt = NONE, prem_only = [],
-                        after_qed = NONE}
+      val init_frame = Auto2_State.simple_frame (goal, NONE)
     in
       state |> Proof.map_contexts (Auto2_State.push_head init_frame)
     end
@@ -120,19 +119,20 @@ fun have_cmd (s, r, t) state =
       val (vars, (assums, concl)) = s |> Syntax.read_term ctxt
                                       |> strip_obj_horn
 
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
+                              |> Auto2_State.subgoal_of |> Thm.term_of
                               |> strip_meta_horn
 
       val stmt = Logic.list_implies (As @ map mk_Trueprop assums,
                                      mk_Trueprop concl)
 
-      fun after_qed th prop =
+      fun after_qed ths prop =
           let
-            val th' = th |> funpow (length As) send_first_to_hyps
-                         |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
-                         |> apply_to_thm (to_obj_conv ctxt)
-                         |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
+            val th' = ths |> the_single
+                          |> funpow (length As) send_first_to_hyps
+                          |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
+                          |> apply_to_thm (to_obj_conv ctxt)
+                          |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
           in
             have_after_qed ctxt th' prop
           end
@@ -150,7 +150,7 @@ fun have_cmd (s, r, t) state =
           val ctxt' = ctxt |> fold declare_free_term new_vars
           val th = auto2_solve ctxt' (Thm.cterm_of ctxt' stmt)
         in
-          state |> Proof.map_contexts (Auto2_State.map_head_th (after_qed th))
+          state |> Proof.map_contexts (Auto2_State.map_head_th (after_qed [th]))
                 |> (if is_rule then I else
                     Proof.map_contexts (Auto2_State.add_prem_only stmt'))
         end
@@ -158,8 +158,7 @@ fun have_cmd (s, r, t) state =
         let
           (* Create new block with stmt *)
           val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
-          val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
-                           after_qed = SOME ([], after_qed)}
+          val new_block = Auto2_State.simple_frame (goal, SOME ([], after_qed))
         in
           state |> (if is_rule then I else
                     Proof.map_contexts (Auto2_State.add_prem_only stmt'))
@@ -178,22 +177,41 @@ val _ =
         (fn ((s, r), t) =>
            Toplevel.proof (fn state => have_cmd (r, s, t) state)))
 
+fun is_goal_resolved th = not (Util.is_head (Logic.protectC) (Thm.concl_of th))
+    
+(* Use auto2 to resolve one of the goals. *)
+fun auto2_solve_goal ctxt prop =
+    if is_goal_resolved prop then prop
+    else let
+      val (vars, (As, C)) =
+          prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_meta_horn
+      val body = Util.list_meta_horn ([], (As, C))
+      val th = auto2_solve ctxt (Thm.cterm_of ctxt body)
+    in
+      th |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
+         |> Thm.implies_elim prop
+         |> Goal.conclude
+    end
+
+(* @end command: if there is exactly one goal in the current frame, that goal
+   should be selected and unresolved. Use auto2 to resolve that goal. If there
+   are multiple goals in the current frame, use auto2 to finish all unresolved
+   goals.
+ *)
 fun end_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {prop, after_qed, ...} = Auto2_State.get_head ctxt
-
-      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                 |> strip_meta_horn
-      val body = Util.list_meta_horn ([], (As, C))
-      val th = (auto2_solve ctxt (Thm.cterm_of ctxt body))
-                   |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
-
-      val new_prop = Goal.conclude (Thm.implies_elim prop th)
+      val {props, selected, after_qed, ...} = Auto2_State.get_head ctxt
+      val _ = assert ((length props = 1 andalso selected = SOME 0) orelse
+                      (length props > 1 andalso selected = NONE))
+                "@end: cannot call within an selection."
+      val solved_props = map (auto2_solve_goal ctxt) props
+      val _ = assert (forall is_goal_resolved solved_props)
+                "@end: failed to resolve all goals"
       val (new_vars, f) = (the after_qed)
     in
       state |> Proof.map_contexts Auto2_State.pop_head
-            |> Proof.map_contexts (Auto2_State.map_head_th (f new_prop))
+            |> Proof.map_contexts (Auto2_State.map_head_th (f solved_props))
             |> Proof.map_contexts (fold declare_free_term new_vars)
     end
 
@@ -207,8 +225,8 @@ fun qed_cmd state =
       val {context = ctxt, ...} = Proof.goal state
       val _ = assert (Auto2_State.get_num_frame ctxt = 1)
                      "Qed should be applied outside any 'with' blocks"
-      val {prop, ...} = Auto2_State.get_head ctxt
 
+      val prop = Auto2_State.get_selected ctxt
       val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
                                  |> strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
@@ -282,8 +300,9 @@ fun obtain_resolve ctxt vars th concl =
    the form A_1 ==> ... ==> A_n ==> EX x. P(x), return the theorem
    (!!x. A_1 ==> ... ==> A_n ==> P(x) ==> C) ==> D
  *)
-fun obtain_after_qed ctxt th prop =
+fun obtain_after_qed ctxt ths prop =
     let
+      val th = the_single ths
       val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
                                  |> strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
@@ -307,8 +326,8 @@ fun obtain_cmd (s, t, u) state =
 
       val C = conds |> list_conj |> fold mk_exists (rev vars) |> mk_Trueprop
 
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
+                              |> Auto2_State.subgoal_of |> Thm.term_of
                               |> strip_meta_horn
 
       val stmt = Logic.list_implies (As, C)
@@ -322,16 +341,16 @@ fun obtain_cmd (s, t, u) state =
           val th = auto2_solve ctxt (Thm.cterm_of ctxt stmt)
         in
           state |> Proof.map_contexts (fold declare_free_term new_vars)
-                |> Proof.map_contexts (Auto2_State.map_head_th (obtain_after_qed ctxt th))
+                |> Proof.map_contexts (Auto2_State.map_head_th (obtain_after_qed ctxt [th]))
         end
       else
         let
           (* Create new block with stmt *)
           val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
-          val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
-                           after_qed = SOME (new_vars, obtain_after_qed ctxt)}
+          val new_frame = Auto2_State.simple_frame (
+              goal, SOME (new_vars, obtain_after_qed ctxt))
         in
-          state |> Proof.map_contexts (Auto2_State.push_head new_block)
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
     end
 
@@ -382,8 +401,9 @@ fun case_resolve ctxt vars th =
    th in the form A_1 ==> ... ==> A_n ==> B ==> C, return the theorem
    (!!x. A_1 ==> ... ==> A_n ==> ~B ==> C) ==> D.
  *)
-fun case_after_qed ctxt th prop =
+fun case_after_qed ctxt ths prop =
     let
+      val th = the_single ths
       val (vars, _) = prop |> Auto2_State.subgoal_of |> Thm.term_of
                            |> strip_meta_horn
       val case_res = case_resolve ctxt vars th
@@ -396,8 +416,8 @@ fun case_cmd (s, t) state =
       val {context = ctxt, ...} = Proof.goal state
       val B = s |> Syntax.read_term ctxt |> mk_Trueprop
 
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
+      val (_, (As, C)) = ctxt |> Auto2_State.get_selected
+                              |> Auto2_State.subgoal_of |> Thm.term_of
                               |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As @ [B], C) |> Thm.cterm_of ctxt
@@ -407,16 +427,16 @@ fun case_cmd (s, t) state =
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B ==> C *)
           val th = auto2_solve ctxt stmt
         in
-          state |> Proof.map_contexts (Auto2_State.map_head_th (case_after_qed ctxt th))
+          state |> Proof.map_contexts (Auto2_State.map_head_th (case_after_qed ctxt [th]))
         end
       else
         let
           (* Create new block with stmt *)
           val goal = Thm.trivial stmt |> Goal.protect 1
-          val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
-                           after_qed = SOME ([], case_after_qed ctxt)}
+          val new_frame =
+              Auto2_State.simple_frame (goal, SOME ([], case_after_qed ctxt))
         in
-          state |> Proof.map_contexts (Auto2_State.push_head new_block)
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
     end
 

@@ -264,7 +264,7 @@ fun strong_induct_cmd (s, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = Auto2_State.get_head ctxt
+      val prop = Auto2_State.get_selected ctxt
       val (vars, (assums, concl)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
                                          |> Util.strip_meta_horn
 
@@ -320,7 +320,8 @@ fun apply_induct_cmd s state =
 
       val tm = Syntax.read_term ctxt s
 
-      val {prop, induct_stmt, ...} = Auto2_State.get_head ctxt
+      val prop = Auto2_State.get_selected ctxt
+      val {induct_stmt, ...} = Auto2_State.get_head ctxt
       val induct_stmt =
           case induct_stmt of
               SOME (_ $ Abs (_, _, body)) => Term.subst_bound (tm, body)
@@ -347,8 +348,7 @@ fun induct_cmd (s, t, u) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val goal = prop |> Auto2_State.subgoal_of |> Thm.term_of
+      val goal = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of |> Thm.term_of
       val (assums, concl) = goal |> Logic.strip_horn
                                  |> apfst (map dest_Trueprop)
                                  |> apsnd dest_Trueprop
@@ -390,9 +390,9 @@ fun induct_cmd (s, t, u) state =
         let
           val neq0_goal = Thm.cprem_of ind_th 1
           val neq0_th = Auto2_Outer.auto2_solve ctxt neq0_goal
-          val ind_th = induct_after_qed ctxt neq0_th prop
         in
-          state |> Proof.map_contexts (Auto2_State.set_head_th ind_th)
+          state |> Proof.map_contexts (
+            Auto2_State.map_head_th (induct_after_qed ctxt neq0_th))
         end
       else
         let
@@ -405,16 +405,16 @@ fun induct_cmd (s, t, u) state =
                                          mk_Trueprop concl)
 
           val goal = Thm.trivial (Thm.cterm_of ctxt stmt) |> Goal.protect 1
-          fun after_qed th prop =
+          fun after_qed ths prop =
               let
+                val th = the_single ths
                 val th' = apply_to_thm (to_obj_conv ctxt) th
               in
                 induct_after_qed ctxt th' prop
               end
-          val new_block = {prop = goal, induct_stmt = NONE, prem_only = [],
-                           after_qed = SOME ([], after_qed)}
+          val new_frame = Auto2_State.simple_frame (goal, SOME ([], after_qed))
         in
-          state |> Proof.map_contexts (Auto2_State.push_head new_block)
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
     end
 
@@ -434,8 +434,7 @@ fun double_induct_cmd (s1, s2, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val goal = prop |> Auto2_State.subgoal_of |> Thm.term_of
+      val goal = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of |> Thm.term_of
       val (assums, concl) = goal |> Logic.strip_horn
                                  |> apfst (map dest_Trueprop)
                                  |> apsnd dest_Trueprop
@@ -497,8 +496,8 @@ fun case_induct_cmd s state =
                           raise Fail "case_induct: cannot find theorem."
 
       (* Obtain list of assumptions *)
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn
+      val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                              |> Thm.term_of |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
 
       (* Instantiate the induction theorem *)
@@ -549,8 +548,8 @@ fun prop_induct_cmd (s, t) state =
       val ind_th = subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                              |> Thm.term_of |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
 
       val ind_goals =
@@ -596,8 +595,8 @@ fun var_induct_cmd (s, t) state =
       val ind_th = subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
-      val {prop, ...} = Auto2_State.get_head ctxt
-      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                              |> Thm.term_of |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
 
       val ind_goals =
