@@ -579,6 +579,7 @@ fun var_induct_cmd (s, t, u) state =
       val thy = Proof_Context.theory_of ctxt
       val (var, stmt) = the_pair (Syntax.read_terms ctxt [s, t])
       val ty = type_of var
+      val (arbitraries, _) = UtilLogic.strip_obj_horn stmt
 
       val ind_th = the (get_typed_ind_th thy "var_induct" ty)
                    handle Option.Option =>
@@ -596,6 +597,7 @@ fun var_induct_cmd (s, t, u) state =
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
                               |> Thm.term_of |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
+      val use_As = As |> filter_out (occurs_frees (var :: arbitraries))
 
       fun retrieve_pat t =
           let
@@ -608,7 +610,7 @@ fun var_induct_cmd (s, t, u) state =
       val pats = ind_th |> Thm.prems_of |> map retrieve_pat
 
       val ind_goals = ind_th' |> Thm.prems_of
-                              |> map (fn t => Logic.list_implies (As, t))
+                              |> map (fn t => Logic.list_implies (use_As, t))
                               |> map (Thm.cterm_of ctxt)
       val _ = assert (length pats = length ind_goals)
                      "var_induct: unexpected number of patterns"
