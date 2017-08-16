@@ -304,8 +304,8 @@ theorem idx_bubble_down_rule [hoare_triple]:
   @contradiction
   @let "d = length xs - k"
   @strong_induct d arbitrary k xs
-  @apply_induct "length xs - s1 k" @have "length xs - s1 k < length xs - k"
-  @apply_induct "length xs - s2 k" @have "length xs - s2 k < length xs - k"
+  @apply_induct_hyp "length xs - s1 k" @have "length xs - s1 k < length xs - k"
+  @apply_induct_hyp "length xs - s2 k" @have "length xs - s2 k < length xs - k"
 @qed
 
 partial_function (heap) idx_bubble_up :: "'a::{heap,linorder} indexed_pqueue \<Rightarrow> nat \<Rightarrow> unit Heap" where
@@ -327,7 +327,7 @@ theorem idx_bubble_up_rule [hoare_triple]:
    <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs) * \<up>(map_of_kv_list xs' = map_of_kv_list xs)>"
 @proof
   @strong_induct k arbitrary xs
-  @apply_induct "par k"
+  @apply_induct_hyp "par k"
 @qed
 
 definition delete_min_idx_pqueue ::

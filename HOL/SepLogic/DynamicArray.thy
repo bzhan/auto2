@@ -42,7 +42,7 @@ theorem array_copy_rule [hoare_triple, hoare_create_case]:
   "<src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a ldst * \<up>(si + len \<le> length lsrc) * \<up>(di + len \<le> length ldst)>
     array_copy src si dst di len
    <\<lambda>_. src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a list_update_range ldst di (take len (drop si lsrc))>"
-@proof @var_induct len arbitrary si di ldst @qed
+@proof @induct len arbitrary si di ldst @qed
 
 definition ensure_length :: "nat \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where
   "ensure_length nl d = (case d of

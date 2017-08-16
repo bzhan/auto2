@@ -139,6 +139,6 @@ subsection {* swap *}
 setup {* add_backward2_prfstep @{thm mset_swap} *}
 
 subsection {* induction *}
-setup {* add_prfstep_strong_induction @{thm full_multiset_induct} *}
+setup {* add_strong_induct_rule @{thm full_multiset_induct} *}
 
 end

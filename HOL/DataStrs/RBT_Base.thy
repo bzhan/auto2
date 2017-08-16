@@ -86,7 +86,7 @@ section {* Balancedness of is_rbt *}
 
 theorem depth_min: "is_rbt t \<Longrightarrow> black_depth t \<le> min_depth t"
 @proof
-  @var_induct t @with
+  @induct t @with
     @subgoal "t = Node l c k v r"
       @case "c = R" @with
       @have "black_depth (Node l c k v r) \<le> min (min_depth l) (min_depth r)" @end
@@ -98,7 +98,7 @@ theorem two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 theorem depth_max: "is_rbt t \<Longrightarrow> if cl t = R then max_depth t \<le> 2 * black_depth t + 1
                                  else max_depth t \<le> 2 * black_depth t"
 @proof
-  @var_induct t @with
+  @induct t @with
     @subgoal "t = Node l c k v r"
       @case "c = R" @then
       @have "max_depth l \<le> 2 * black_depth l + 1" @then
@@ -156,7 +156,7 @@ setup {* fold add_rewrite_rule @{thms rbt_in_traverse_pairs.simps} *}
 
 theorem rbt_in_traverse_fst:
   "map fst (rbt_in_traverse_pairs t) = rbt_in_traverse t"
-@proof @var_induct t @qed
+@proof @induct t @qed
 setup {* add_forward_prfstep_cond @{thm rbt_in_traverse_fst} [with_term "rbt_in_traverse_pairs ?t"] *}
 
 definition rbt_map :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) map" where
@@ -182,11 +182,11 @@ theorem rbt_sorted_lr [forward]:
 
 theorem rbt_inorder_preserve_set [rewrite_back]:
   "set (rbt_in_traverse t) = rbt_set t"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 theorem rbt_inorder_sorted [rewrite_back]:
   "strict_sorted (rbt_in_traverse t) = rbt_sorted t"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 setup {* fold del_prfstep_thm (@{thms rbt_set.simps} @ @{thms rbt_sorted.simps}) *}
 

@@ -221,7 +221,7 @@ setup {* add_rewrite_rule @{thm Nat.Suc_eq_plus1} *}
 (* Induction. *)
 setup {*
   add_var_induct_rule @{thm nat_induct} #>
-  add_prfstep_strong_induction @{thm nat_less_induct}
+  add_strong_induct_rule @{thm nat_less_induct}
 *}
 
 end

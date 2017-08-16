@@ -8,17 +8,16 @@ sig
   val get_term_ind_th: theory -> string -> term -> thm option
 
   val check_strong_ind_prop: term -> term list * term
-
-  val add_prfstep_strong_induction: thm -> theory -> theory
+  val add_strong_induct_rule: thm -> theory -> theory
   val add_case_induct_rule: thm -> theory -> theory
   val add_prop_induct_rule: thm -> theory -> theory
   val add_var_induct_rule: thm -> theory -> theory
 
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
-  val apply_induct_cmd: string -> Proof.state -> Proof.state
+  val apply_induct_hyp_cmd: string -> Proof.state -> Proof.state
   val case_induct_cmd: string -> Proof.state -> Proof.state
   val prop_induct_cmd: string * string -> Proof.state -> Proof.state
-  val var_induct_cmd: string * string option * string list * string option -> Proof.state -> Proof.state
+  val induct_cmd: string * string option * string list * string option -> Proof.state -> Proof.state
 end;
 
 structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
@@ -100,7 +99,7 @@ fun check_strong_ind_prop ind_prop =
       (pat_vars, pat_subst)
     end
 
-fun add_prfstep_strong_induction ind_th thy =
+fun add_strong_induct_rule ind_th thy =
     let
       val name = name_of_thm ind_th
       val ctxt = Proof_Context.init_global thy
@@ -202,7 +201,7 @@ val _ =
     ((Parse.term -- arbitrary) >> (fn (s, t) =>
          Toplevel.proof (fn state => strong_induct_cmd (s, these t) state)))
 
-fun apply_induct_cmd s state =
+fun apply_induct_hyp_cmd s state =
     let
       val {context = ctxt, ...} = Proof.goal state
 
@@ -213,7 +212,7 @@ fun apply_induct_cmd s state =
       val induct_stmt =
           case induct_stmt of
               SOME (_ $ Abs (_, _, body)) => Term.subst_bound (tm, body)
-            | _ => raise Fail "apply_induct_cmd"
+            | _ => raise Fail "apply_induct_hyp_cmd"
 
       val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn
       val goal = Logic.list_implies (As, mk_Trueprop induct_stmt)
@@ -223,10 +222,10 @@ fun apply_induct_cmd s state =
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@apply_induct"}
+  Outer_Syntax.command @{command_keyword "@apply_induct_hyp"}
     "apply induction hypothesis"
     (Parse.term >> (fn s =>
-         Toplevel.proof (fn state => apply_induct_cmd s state)))
+         Toplevel.proof (fn state => apply_induct_hyp_cmd s state)))
 
 fun case_induct_cmd s state =
     let
@@ -333,7 +332,7 @@ fun get_induct_stmt ctxt (var, stmt, arbitrary) =
         UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
       end
 
-fun var_induct_cmd (s, t, u, v) state =
+fun induct_cmd (s, t, u, v) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
@@ -421,14 +420,14 @@ val for_stmt =
     Scan.option (@{keyword "for"} |-- Parse.term)
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@var_induct"} "apply induction"
+  Outer_Syntax.command @{command_keyword "@induct"} "apply induction"
     (Parse.term -- for_stmt -- arbitrary -- Scan.option @{keyword "@with"} >>
         (fn (((s, t), u), v) =>
-            Toplevel.proof (fn state => var_induct_cmd (s, t, these u, v) state)))
+            Toplevel.proof (fn state => induct_cmd (s, t, these u, v) state)))
 
 end  (* structure Induct_ProofSteps. *)
 
-val add_prfstep_strong_induction = Induct_ProofSteps.add_prfstep_strong_induction
+val add_strong_induct_rule = Induct_ProofSteps.add_strong_induct_rule
 val add_case_induct_rule = Induct_ProofSteps.add_case_induct_rule
 val add_prop_induct_rule = Induct_ProofSteps.add_prop_induct_rule
 val add_var_induct_rule = Induct_ProofSteps.add_var_induct_rule

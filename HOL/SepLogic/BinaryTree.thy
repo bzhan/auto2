@@ -48,7 +48,7 @@ setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
 lemma btree_prec [sep_prec_thms]:
   "h \<Turnstile> btree t p * F1 \<Longrightarrow> h \<Turnstile> btree t' p * F2 \<Longrightarrow> t = t'"
 @proof
-  @var_induct t arbitrary p t' F1 F2 @with
+  @induct t arbitrary p t' F1 F2 @with
     @subgoal "t = tree.Node l x v r" @case "t' = Tip" @endgoal
   @end
 @qed
@@ -107,13 +107,13 @@ lemma btree_insert_in_traverse [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_insert k v b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(in_traverse t' = ordered_insert k (in_traverse t))>"
-@proof @var_induct t arbitrary b @qed
+@proof @induct t arbitrary b @qed
 
 lemma btree_insert_in_traverse_pairs [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_insert k v b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(in_traverse_pairs t' = ordered_insert_pairs k v (in_traverse_pairs t))>"
-@proof @var_induct t arbitrary b @qed
+@proof @induct t arbitrary b @qed
 
 declare btree_insert.simps [sep_proc_defs del]
 lemma btree_insert_sorted_rule [hoare_triple]:
@@ -149,7 +149,7 @@ lemma btree_del_min_in_traverse [hoare_triple]:
    btree_del_min b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' (snd r) * true * \<up>(fst (fst r) # in_traverse t' = in_traverse t)>"
 @proof
-  @var_induct t arbitrary b @with
+  @induct t arbitrary b @with
     @subgoal "t = tree.Node l x v r" @case "l = Tip" @endgoal
   @end
 @qed
@@ -159,7 +159,7 @@ lemma btree_del_min_in_traverse_pairs [hoare_triple]:
    btree_del_min b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' (snd r) * true * \<up>(fst r # in_traverse_pairs t' = in_traverse_pairs t)>"
 @proof
-  @var_induct t arbitrary b @with
+  @induct t arbitrary b @with
     @subgoal "t = tree.Node l x v r" @case "l = Tip" @endgoal
   @end
 @qed
@@ -212,13 +212,13 @@ lemma btree_delete_in_traverse [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_delete x b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse t' = remove_elt_list x (in_traverse t))>"
-@proof @var_induct t arbitrary b @qed
+@proof @induct t arbitrary b @qed
 
 lemma btree_delete_in_traverse_pairs [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_delete x b
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * true * \<up>(in_traverse_pairs t' = remove_elt_pairs x (in_traverse_pairs t))>"
-@proof @var_induct t arbitrary b @qed
+@proof @induct t arbitrary b @qed
 
 declare btree_delete.simps [sep_proc_defs del]
 lemma btree_delete_sorted_rule [hoare_triple]:
@@ -251,7 +251,7 @@ lemma btree_search_correct [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>
    btree_search x b
    <\<lambda>r. btree t b * \<up>(r = (tree_map t)\<langle>x\<rangle>)>"
-@proof @var_induct t arbitrary b @qed
+@proof @induct t arbitrary b @qed
 declare btree_search.simps [sep_proc_defs del]
 
 section {* Outer interface *}

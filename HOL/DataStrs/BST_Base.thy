@@ -35,7 +35,7 @@ setup {* fold add_rewrite_rule @{thms in_traverse_pairs.simps} *}
 
 theorem in_traverse_fst [rewrite]:
   "map fst (in_traverse_pairs t) = in_traverse t"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 definition tree_map :: "('a, 'b) tree \<Rightarrow> ('a, 'b) map" where
   "tree_map t = map_of_alist (in_traverse_pairs t)"
@@ -62,11 +62,11 @@ theorem tree_sorted_lr [forward]:
 
 theorem inorder_preserve_set [rewrite_back]:
   "set (in_traverse t) = tree_set t"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 theorem inorder_sorted [rewrite_back]:
   "strict_sorted (in_traverse t) = tree_sorted t"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 theorem inorder_pairs_sorted:
   "tree_sorted t \<Longrightarrow> strict_sorted (map fst (in_traverse_pairs t))" by auto2

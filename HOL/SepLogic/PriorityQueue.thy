@@ -193,8 +193,8 @@ theorem bubble_down_rule [hoare_triple]:
   @contradiction
   @let "d = length xs - k"
   @strong_induct d arbitrary k xs
-  @apply_induct "length xs - s1 k" @have "length xs - s1 k < length xs - k"
-  @apply_induct "length xs - s2 k" @have "length xs - s2 k < length xs - k"
+  @apply_induct_hyp "length xs - s1 k" @have "length xs - s1 k < length xs - k"
+  @apply_induct_hyp "length xs - s2 k" @have "length xs - s2 k < length xs - k"
 @qed
 
 section {* Bubble-up *}
@@ -222,7 +222,7 @@ theorem heap_implies_hd_min [backward2]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> i < length xs \<Longrightarrow> hd xs \<le> xs ! i"
 @proof
   @strong_induct i
-  @case "i = 0" @then @apply_induct "par i"
+  @case "i = 0" @then @apply_induct_hyp "par i"
 @qed
 
 (* The corresponding tree is a heap, except k is not necessarily greater than its ancestors. *)
@@ -288,7 +288,7 @@ theorem bubble_up_rule [hoare_triple]:
    <\<lambda>_. \<exists>\<^sub>Axs'. dyn_array xs' a * \<up>(is_heap xs') * \<up>(length xs' = length xs) * \<up>(mset xs' = mset xs)>"
 @proof
   @strong_induct k arbitrary xs
-  @apply_induct "par k"
+  @apply_induct_hyp "par k"
 @qed
 
 section {* Insertion *}

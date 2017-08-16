@@ -58,7 +58,7 @@ setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
 
 lemma btree_prec [sep_prec_thms]:
   "h \<Turnstile> btree t p * F1 \<Longrightarrow> h \<Turnstile> btree t' p * F2 \<Longrightarrow> t = t'"
-@proof @var_induct t arbitrary p t' F1 F2 @qed
+@proof @induct t arbitrary p t' F1 F2 @qed
 
 setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
@@ -103,7 +103,7 @@ declare extract_tree.simps [sep_proc_defs]
 
 theorem extract_tree_rule [hoare_triple_direct]:
   "<btree t p> extract_tree p <\<lambda>r. btree t p * \<up>(r = t)>"
-@proof @var_induct t arbitrary p @qed
+@proof @induct t arbitrary p @qed
 
 definition set_color :: "color \<Rightarrow> ('a::heap, 'b::heap) btree \<Rightarrow> unit Heap" where
   "set_color c p = (case p of
@@ -280,7 +280,7 @@ theorem ins_bd [hoare_triple]:
    rbt_ins k v p
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(bd_inv t') * \<up>(black_depth t' = black_depth t)>"
 @proof
-  @var_induct t arbitrary p @with
+  @induct t arbitrary p @with
     @subgoal "t = pre_rbt.Node lt c x w rt" @case "c = R" @endgoal
   @end
 @qed
@@ -326,13 +326,13 @@ theorem balance_on_R [hoare_triple]:
 
 theorem ins_non_leaf [hoare_triple]:
   "<btree t p> rbt_ins k v p <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(t' \<noteq> Leaf)>"
-@proof @var_induct t arbitrary p @qed
+@proof @induct t arbitrary p @qed
 
 theorem ins_cl [hoare_triple]:
   "<btree t p * \<up>(cl_inv t)>
    rbt_ins k v p
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(if pre_rbt.cl t = B then cl_inv t' else pre_rbt.cl t' = R \<and> cl_inv' t')>"
-@proof @var_induct t arbitrary p @qed
+@proof @induct t arbitrary p @qed
 
 section {* Insert function *}
 
@@ -365,7 +365,7 @@ theorem ins_inorder_pairs [hoare_triple]:
   "<btree t p * \<up>(rbt_sorted t)>
    rbt_ins k v p
    <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_in_traverse_pairs t' = ordered_insert_pairs k v (rbt_in_traverse_pairs t))>"
-@proof @var_induct t arbitrary p @qed
+@proof @induct t arbitrary p @qed
 
 theorem insert_inorder_pairs [hoare_triple]:
   "<btree t p * \<up>(rbt_sorted t)>
@@ -402,7 +402,7 @@ lemma btree_search_correct [hoare_triple]:
   "<btree t b * \<up>(rbt_sorted t)>
    rbt_search x b
    <\<lambda>r. btree t b * \<up>(r = (rbt_map t)\<langle>x\<rangle>)>"
-@proof @var_induct t arbitrary b @qed
+@proof @induct t arbitrary b @qed
 declare rbt_search.simps [sep_proc_defs del]
 
 section {* Outer interface *}

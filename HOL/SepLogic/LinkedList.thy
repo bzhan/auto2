@@ -40,20 +40,20 @@ lemma lseg_prepend [forward_ent]:
 (* Several examples for using induction. *)
 lemma lseg_append [forward_ent]:
   "lseg l p (Some s) * s \<mapsto>\<^sub>r Node x q \<Longrightarrow>\<^sub>A lseg (l @ [x]) p q"
-@proof @var_induct l arbitrary p @qed
+@proof @induct l arbitrary p @qed
 
 lemma lseg_conc [forward_ent]:
   "lseg l1 p q * lseg l2 q r \<Longrightarrow>\<^sub>A lseg (l1 @ l2) p r"
-@proof @var_induct l1 arbitrary p @qed
+@proof @induct l1 arbitrary p @qed
 
 lemma lseg_split:
   "lseg (l1 @ l2) p r \<Longrightarrow>\<^sub>A \<exists>\<^sub>Aq. lseg l1 p q * lseg l2 q r"
-@proof @var_induct l1 arbitrary p @qed
+@proof @induct l1 arbitrary p @qed
 
 lemma lseg_prec [forward]:
   "h \<Turnstile> lseg l p None * F1 \<Longrightarrow> h \<Turnstile> lseg l' p None * F2 \<Longrightarrow> l = l'"
 @proof
-  @var_induct l arbitrary p l' F1 F2 @with
+  @induct l arbitrary p l' F1 F2 @with
     @subgoal "l = a # b" @case "l' = []" @endgoal
   @end
 @qed
@@ -186,7 +186,7 @@ lemma os_sum'_rule [hoare_triple]:
   "<os_is_it l p l' it>
     os_sum' it s
   <\<lambda>r. os_list l p * \<up>(r = s + sum_list l')>"
-@proof @var_induct l' arbitrary it s @qed
+@proof @induct l' arbitrary it s @qed
 
 definition os_sum :: "int node ref option \<Rightarrow> int Heap" where
   "os_sum p \<equiv> do {
@@ -215,7 +215,7 @@ lemma os_reverse_aux_rule [hoare_triple]:
     os_reverse_aux q p 
   <os_list ((rev xs) @ ys)>"
 @proof
-  @var_induct xs arbitrary p q ys @with
+  @induct xs arbitrary p q ys @with
     @subgoal "xs = x # xs'" @have "[x] @ ys = x # ys" @endgoal
   @end
 @qed
@@ -245,7 +245,7 @@ declare os_rem.simps [sep_proc_defs]
 
 lemma os_rem_rule [hoare_triple]:
   "<os_list xs b> os_rem x b <\<lambda>r. os_list (removeAll x xs) r>\<^sub>t"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 subsubsection {* Insert in order *}
 
@@ -264,15 +264,15 @@ declare os_insert.simps [sep_proc_defs]
 
 lemma os_insert_mset_rule [hoare_triple]:
   "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = {#x#} + mset xs)>"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 lemma os_insert_set_rule [hoare_triple]:
   "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(set xs' = {x} \<union> set xs)>"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 lemma os_insert_sorted [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 subsection {* Application: insertion sort *}
 
@@ -288,7 +288,7 @@ declare extract_list.simps [sep_proc_defs]
 
 theorem extract_list_rule [hoare_triple_direct]:
   "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
-@proof @var_induct l arbitrary p @qed
+@proof @induct l arbitrary p @qed
 
 fun os_insert_list :: "'a::{ord,heap} list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "os_insert_list xs b = (
@@ -302,11 +302,11 @@ declare os_insert_list.simps [sep_proc_defs]
 
 lemma os_insert_list_sorted [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
-@proof @var_induct ys arbitrary b xs @qed
+@proof @induct ys arbitrary b xs @qed
 
 lemma os_insert_list_mset [hoare_triple]:
   "<os_list xs b> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = mset ys + mset xs)>"
-@proof @var_induct ys arbitrary b xs @qed
+@proof @induct ys arbitrary b xs @qed
 
 definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where
   "insertion_sort xs = do {
@@ -348,8 +348,8 @@ lemma merge_list_keys [hoare_triple]:
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(set zs = set xs \<union> set ys)>"
 @proof
-  @var_induct xs arbitrary ys p q @with
-    @subgoal "xs = x # xs'" @var_induct ys arbitrary p q @endgoal
+  @induct xs arbitrary ys p q @with
+    @subgoal "xs = x # xs'" @induct ys arbitrary p q @endgoal
   @end
 @qed
 
@@ -358,8 +358,8 @@ lemma merge_list_sorted [hoare_triple]:
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(sorted zs)>"
 @proof
-  @var_induct xs arbitrary ys p q @with
-    @subgoal "xs = x # xs'" @var_induct ys arbitrary p q @endgoal
+  @induct xs arbitrary ys p q @with
+    @subgoal "xs = x # xs'" @induct ys arbitrary p q @endgoal
   @end
 @qed
 
@@ -376,7 +376,7 @@ declare copy_os_list.simps [sep_proc_defs]
 
 lemma copy_os_list_rule [hoare_triple]:
   "<os_list xs b> copy_os_list b <\<lambda>r. os_list xs b * os_list xs r>"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 subsection {* Higher-order functions *}
 
@@ -393,7 +393,7 @@ declare map_os_list.simps [sep_proc_defs]
 
 lemma map_os_list_rule [hoare_triple]:
   "<os_list xs b> map_os_list f b <os_list (map f xs)>"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 partial_function (heap) filter_os_list ::
   "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
@@ -410,7 +410,7 @@ declare filter_os_list.simps [sep_proc_defs]
 
 lemma filter_os_list_rule [hoare_triple]:
   "<os_list xs b> filter_os_list f b <\<lambda>r. os_list (filter f xs) r * true>"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 partial_function (heap) filter_os_list2 ::
   "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
@@ -425,7 +425,7 @@ declare filter_os_list2.simps [sep_proc_defs]
 
 lemma filter_os_list2_rule [hoare_triple]:
   "<os_list xs b> filter_os_list2 f b <\<lambda>r. os_list xs b * os_list (filter f xs) r>"
-@proof @var_induct xs arbitrary b @qed
+@proof @induct xs arbitrary b @qed
 
 partial_function (heap) fold_os_list ::
   "('a::heap \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a os_list \<Rightarrow> 'b \<Rightarrow> 'b Heap" where
@@ -439,6 +439,6 @@ declare fold_os_list.simps [sep_proc_defs]
 
 theorem fold_os_list_rule [hoare_triple]:
   "<os_list xs b> fold_os_list f b x <\<lambda>r. os_list xs b * \<up>(r = fold f xs x)>"
-@proof @var_induct xs arbitrary b x @qed
+@proof @induct xs arbitrary b x @qed
 
 end

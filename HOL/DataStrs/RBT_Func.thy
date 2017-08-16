@@ -110,7 +110,7 @@ subsection {* Properties of ins function on cl_inv, bd_inv, and set of keys *}
 
 theorem cl_inv_ins:
   "cl_inv t \<Longrightarrow> if cl t = B then cl_inv (ins x v t) else cl (ins x v t) = R \<and> cl_inv' (ins x v t)"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 setup {* add_forward_prfstep_cond @{thm cl_inv_ins} [with_term "ins ?x ?v ?t"] *}
 theorem cl_inv_ins_l [backward]: "cl_inv t \<Longrightarrow> cl_inv (lsub (ins x v t))" by auto2
@@ -120,7 +120,7 @@ setup {* del_prfstep_thm @{thm cl_inv_ins} *}
 theorem bd_inv_ins:
   "bd_inv t \<Longrightarrow> bd_inv (ins x v t) \<and> black_depth t = black_depth (ins x v t)"
 @proof
-  @var_induct t @with
+  @induct t @with
     @subgoal "t = Node l c y w r" @case "c = R" @endgoal
   @end
 @qed
@@ -172,11 +172,11 @@ theorem balance_inorder [rewrite]: "rbt_in_traverse (balance t) = rbt_in_travers
 
 theorem ins_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (ins x v t) = ordered_insert x (rbt_in_traverse t)"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 theorem ins_inorder_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 theorem insert_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (rbt_insert x v t) = ordered_insert x (rbt_in_traverse t)"
@@ -203,6 +203,6 @@ fun rbt_search :: "('a::ord, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b optio
 setup {* fold add_rewrite_rule @{thms rbt_search.simps} *}
 
 theorem rbt_search_correct: "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
-@proof @var_induct t @qed
+@proof @induct t @qed
 
 end
