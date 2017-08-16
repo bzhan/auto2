@@ -25,8 +25,7 @@ theorem list_double_induct:
 @proof
   @var_induct xs "\<forall>ys. P xs ys" @with
     @subgoal "xs = x # xs'"
-    @have "\<forall>ys. P (x # xs') ys" @with
-      @var_induct ys "ys \<noteq> [] \<longrightarrow> P (x # xs') ys" @end
+      @var_induct ys "ys \<noteq> [] \<longrightarrow> P (x # xs') ys"
     @endgoal
   @end
 @qed

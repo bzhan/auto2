@@ -413,13 +413,15 @@ fun to_meta_conv ctxt ct =
     in
       if is_Trueprop t andalso is_obj_all (dest_Trueprop t) then
         Conv.every_conv [Conv.rewr_conv (meta_sym atomize_all_th),
-                         Conv.binder_conv (to_meta_conv o snd) ctxt] ct
+                         to_meta_conv ctxt] ct
       else if is_Trueprop t andalso is_imp (dest_Trueprop t) then
         Conv.every_conv [Conv.rewr_conv (meta_sym atomize_imp_th),
-                         Conv.arg_conv (to_meta_conv ctxt),
-                         swap_meta_imp_alls ctxt] ct
+                         to_meta_conv ctxt] ct
+      else if Logic.is_all t then
+        Conv.binder_conv (to_meta_conv o snd) ctxt ct
       else if is_implies t then
-        Conv.arg_conv (to_meta_conv ctxt) ct
+        Conv.every_conv [Conv.arg_conv (to_meta_conv ctxt),
+                         swap_meta_imp_alls ctxt] ct
       else
         Conv.all_conv ct
     end

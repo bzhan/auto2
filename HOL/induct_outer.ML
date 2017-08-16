@@ -609,36 +609,47 @@ fun var_induct_cmd (s, t, u) state =
           end
       val pats = ind_th |> Thm.prems_of |> map retrieve_pat
 
-      val ind_goals = ind_th' |> Thm.prems_of
-                              |> map (fn t => Logic.list_implies (use_As, t))
-                              |> map (Thm.cterm_of ctxt)
+      val ind_goals =
+          ind_th' |> Thm.prems_of
+                  |> map (fn t => Logic.list_implies (use_As, t))
+                  |> map (Thm.cterm_of ctxt)
+                  |> map (UtilLogic.to_meta_conv ctxt)
+
+      fun solve_eq eq =
+          let
+            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
+          in
+            Thm.equal_elim (meta_sym eq) th
+          end
+
       val _ = assert (length pats = length ind_goals)
                      "var_induct: unexpected number of patterns"
-    in
-      if is_none u then
-        let
-          val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
-                        |> map send_all_to_hyps
-          val ind_concl = ind_th' |> fold Thm.elim_implies ths
-                                  |> fold Thm.implies_intr (rev cAs)
-          val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
-        in
-          state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
-        end
-      else
-        let
-          (* Create new block with the subgoals *)
-          fun after_qed ths prop =
-              let
-                val ths' = ths |> map send_all_to_hyps
-                val ind_concl = ind_th' |> fold Thm.elim_implies ths'
-                                        |> fold Thm.implies_intr (rev cAs)
-              in
-                Auto2_Outer.have_after_qed ctxt ind_concl prop
-              end
+  in
+    if is_none u then
+      let
+        val ths = (map solve_eq ind_goals) |> map send_all_to_hyps
+        val ind_concl = ind_th' |> fold Thm.elim_implies ths
+                                |> fold Thm.implies_intr (rev cAs)
+        val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+      in
+        state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+      end
+    else
+      let
+        (* Create new block with the subgoals *)
+        fun after_qed ths prop =
+            let
+              val ths' = (ind_goals ~~ ths)
+                            |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
+                            |> map send_all_to_hyps
+              val ind_concl = ind_th' |> fold Thm.elim_implies ths'
+                                      |> fold Thm.implies_intr (rev cAs)
+            in
+              Auto2_Outer.have_after_qed ctxt ind_concl prop
+            end
 
           val new_frame =
-              Auto2_State.multiple_frame (pats ~~ ind_goals, SOME ([], after_qed))
+              Auto2_State.multiple_frame (pats ~~ map Thm.rhs_of ind_goals, SOME ([], after_qed))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end

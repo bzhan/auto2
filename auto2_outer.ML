@@ -144,9 +144,7 @@ fun have_cmd (s, r, t) state =
       val stmt' = list_obj_horn (vars, (assums, concl))
 
       val is_rule = is_some r
-      val new_vars =
-          filter_out (
-            fn v => Variable.is_fixed ctxt (fst (Term.dest_Free v))) vars
+      val new_vars = filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) vars
     in
       if is_none t orelse the t = "@then" then
         let
@@ -211,16 +209,15 @@ fun subgoal_cmd s state =
             val prop = snd (nth goals i)
             val _ = assert (not (is_goal_resolved prop))
                            "@subgoal: goal already resolved."
-      
-            val prop = prop |> apply_to_thm (Conv.arg1_conv (Util.normalize_meta_horn ctxt))
             val t' = case Thm.prop_of prop of
                         imp $ A $ B => imp $ rename_abs_term ts A $ B
                       | _ => raise Fail "subgoal_cmd"
             val prop = prop |> Thm.renamed_prop t'
+            val new_ts = filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) ts
           in
             state |> Proof.map_contexts (Auto2_State.set_selected (SOME i))
                   |> Proof.map_contexts (Auto2_State.map_head_th (K prop))
-                  |> Proof.map_contexts (fold declare_free_term ts)
+                  |> Proof.map_contexts (fold declare_free_term new_ts)
           end
     end
 
