@@ -8,23 +8,14 @@ sig
   val get_term_ind_th: theory -> string -> term -> thm option
 
   val check_strong_ind_prop: term -> term list * term
-  val check_ind_th: thm -> term * (term * term)
 
-  val add_prfstep_induction: thm -> theory -> theory
   val add_prfstep_strong_induction: thm -> theory -> theory
   val add_case_induct_rule: thm -> theory -> theory
   val add_prop_induct_rule: thm -> theory -> theory
   val add_var_induct_rule: thm -> theory -> theory
 
-  val check_double_ind_th: thm -> (term * term) * (term list * term)
-  val add_prfstep_double_induction: thm -> theory -> theory
-
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
   val apply_induct_cmd: string -> Proof.state -> Proof.state
-  val induct_cmd:
-      string * string list * string option -> Proof.state -> Proof.state
-  val double_induct_cmd:
-      string * string * string list -> Proof.state -> Proof.state
   val case_induct_cmd: string -> Proof.state -> Proof.state
   val prop_induct_cmd: string * string -> Proof.state -> Proof.state
   val var_induct_cmd: string * string option * string list * string option -> Proof.state -> Proof.state
@@ -109,53 +100,6 @@ fun check_strong_ind_prop ind_prop =
       (pat_vars, pat_subst)
     end
 
-(* Check ind_th for simple induction is in the right form, and extract
-   induction variable and hypothesis from ind_th.
-
-   Returns (base, (pat_var, pat_subst)), where base is the base case
-   of induction, pat_var is the induction variable ?n, and pat_subst
-   is the inductive hypothesis P' ?n.
- *)
-fun check_ind_th ind_th =
-    let
-      fun err str = "Induction: " ^ str
-      val (cond_base, ind_th') =
-          ind_th |> Thm.prop_of |> Logic.dest_implies
-                 |> apfst dest_Trueprop
-
-      (* cond_base must be of form ?P b, where b is base case for ?n. *)
-      val err_base_hyp = err "Base assumption of ind_th must be ?P base."
-      val base =
-          case cond_base of
-              P $ b =>
-              if Term.is_Var P then b else error err_base_hyp
-            | _ => error err_base_hyp
-    in
-      (base, check_strong_ind_prop ind_th' |> apfst the_single)
-    end
-
-fun add_prfstep_induction ind_th thy =
-    let
-      val (base, (pat_var, pat_subst)) = check_ind_th ind_th
-      val name = name_of_thm ind_th
-
-      (* Automatic induction on unique free variables, generalizing no
-         other variables.
-       *)
-      val var = Var (("FREE", 0), type_of pat_var)
-      val descs = [WithFact (Not $ (mk_eq (var, base))),
-                   Filter (unique_free_filter "FREE")]
-
-      val _ = writeln (
-            name ^ "\n" ^ (ProofStep.string_of_descs thy descs) ^ "\n" ^
-            "Substitution: " ^
-            (string_of_terms_global thy [pat_var, pat_subst]))
-
-      val ty_var = type_of pat_var
-    in
-      thy |> add_typed_induct_data "induct" (ty_var, ind_th)
-    end
-
 fun add_prfstep_strong_induction ind_th thy =
     let
       val name = name_of_thm ind_th
@@ -198,62 +142,6 @@ fun add_var_induct_rule ind_th thy =
                      "add_var_induct_rule: concl of ind_th must be ?P ?var"
     in
       thy |> add_typed_induct_data "var_induct" (type_of n, ind_th)
-    end
-
-(* Check ind_th for a double induction is in the right form. *)
-fun check_double_ind_th ind_th =
-    let
-      val thy = Thm.theory_of_thm ind_th
-      fun err str = "check_double_ind_th: " ^ str
-      val (cond_base1, (cond_base2, ind_th')) =
-          ind_th |> Thm.prop_of |> Logic.dest_implies
-                 |> apfst dest_Trueprop
-                 |> apsnd (Logic.dest_implies #> apfst dest_Trueprop)
-
-      (* cond_base1 must be of form !n. ?P mb n, where mb is the base
-         case for ?m.
-       *)
-      val err_base_hyp1 =
-          err "First base assumption of ind_th must be !n. ?P mb n."
-      val inst1 = Pattern.first_order_match
-                      thy (@{term_pat "!n. ?P ?mb n"}, cond_base1) fo_init
-                  handle Pattern.MATCH => error err_base_hyp1
-      val mb = lookup_inst inst1 "mb"
-
-      (* cond_base2 must be of form !m. ?P m nb, where nb is the base
-         case for ?n.
-       *)
-      val err_base_hyp2 =
-          err "Second base assumption of ind_th must be !m. ?P m nb."
-      val inst2 = Pattern.first_order_match
-                      thy (@{term_pat "!m. ?P m ?nb"}, cond_base2) fo_init
-                  handle Pattern.MATCH => error err_base_hyp2
-      val nb = lookup_inst inst2 "nb"
-    in
-      ((mb, nb), check_strong_ind_prop ind_th')
-    end
-
-fun add_prfstep_double_induction ind_th thy =
-    let
-      val ((mb, nb), (pat_vars, pat_subst)) = check_double_ind_th ind_th
-      val name = name_of_thm ind_th
-      val err = "Double induction: should have two vars."
-      val (pat_var1, pat_var2) =
-          the_pair pat_vars handle Fail "the_pair" => error err
-
-      (* Add user invoked proofstep. *)
-      val (ty_var1, ty_var2) = apply2 type_of (pat_var1, pat_var2)
-      val var1 = Var (("m", 0), ty_var1)
-      val var2 = Var (("n", 0), ty_var2)
-      val descs = [WithFact (Not $ (mk_eq (var1, mb))),
-                   WithFact (Not $ (mk_eq (var2, nb)))]
-      val _ = writeln (
-            name ^ "\n" ^ (ProofStep.string_of_descs thy descs) ^ "\n" ^
-            "Substitution: " ^
-            (string_of_terms_global thy [pat_var1, pat_var2, pat_subst]))
-      val ty = HOLogic.mk_prodT (ty_var1, ty_var2)
-    in
-      thy |> add_typed_induct_data "double_induct" (ty, ind_th)
     end
 
 fun strong_induct_cmd (s, t) state =
@@ -339,149 +227,6 @@ val _ =
     "apply induction hypothesis"
     (Parse.term >> (fn s =>
          Toplevel.proof (fn state => apply_induct_cmd s state)))
-
-fun induct_cmd (s, t, u) state =
-    let
-      val {context = ctxt, ...} = Proof.goal state
-      val thy = Proof_Context.theory_of ctxt
-      val var = s |> Syntax.read_term ctxt
-
-      val arbitraries = map (Syntax.read_term ctxt) t
-
-      val goal = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of |> Thm.term_of
-      val (assums, concl) = goal |> Logic.strip_horn
-                                 |> apfst (map dest_Trueprop)
-                                 |> apsnd dest_Trueprop
-
-      val P = (list_obj_horn (arbitraries, (assums, concl)))
-                  |> lambda_abstract var
-
-      val ty = type_of var
-      val ind_th = the (get_typed_ind_th thy "induct" ty)
-                   handle Option.Option =>
-                          raise Fail "induct: ind_th not found."
-
-      val (var_P, var_n) = ind_th |> Thm.concl_of |> dest_Trueprop
-                                  |> Term.dest_comb
-      val inst = fold (Pattern.match thy) [(var_P, P), (var_n, var)] fo_init
-      val ind_th = ind_th |> subst_thm ctxt inst
-
-      fun induct_after_qed ctxt neq0_th _ =
-          let
-            val ind_th =
-                ind_th |> Thm.elim_implies neq0_th
-                       |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
-
-            val assum = hd (Drule.cprems_of ind_th)
-            val ind_th =
-                ind_th |> send_first_to_hyps
-                       |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
-                       |> Thm.implies_intr assum
-
-            val t' = case Thm.prop_of ind_th of
-                         imp $ A $ B => imp $ rename_abs_term [var] A $ B
-                       | _ => raise Fail "strong_induct_cmd"
-          in
-            ind_th |> Thm.renamed_prop t'
-                   |> Goal.protect 1
-          end
-    in
-      if is_none u orelse the u = "@then" then
-        let
-          val neq0_goal = Thm.cprem_of ind_th 1
-          val neq0_th = Auto2_Outer.auto2_solve ctxt neq0_goal
-        in
-          state |> Proof.map_contexts (
-            Auto2_State.map_head_th (induct_after_qed ctxt neq0_th))
-        end
-      else
-        let
-          (* Create new block with stmt *)
-          val neq0_goal = Thm.prems_of ind_th |> hd |> dest_Trueprop
-          val (vars, (assums, concl)) = strip_obj_horn neq0_goal
-          val _ = assert (null vars)
-                         "induct: subgoal should declare no new variables"
-          val stmt = Logic.list_implies (map mk_Trueprop assums,
-                                         mk_Trueprop concl) |> Thm.cterm_of ctxt
-
-          fun after_qed ths prop =
-              let
-                val th = the_single ths
-                val th' = apply_to_thm (to_obj_conv ctxt) th
-              in
-                induct_after_qed ctxt th' prop
-              end
-          val new_frame = Auto2_State.simple_frame (stmt, SOME ([], after_qed))
-        in
-          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
-        end
-    end
-
-val _ =
-  Outer_Syntax.command @{command_keyword "@induct"}
-    "apply induction"
-    ((Parse.term -- arbitrary) --
-      Scan.option (@{keyword "@with"} || @{keyword "@then"}) >>
-      (fn ((s, t), u) =>
-         Toplevel.proof (fn state => induct_cmd (s, these t, u) state)))
-
-fun double_induct_cmd (s1, s2, t) state =
-    let
-      val {context = ctxt, ...} = Proof.goal state
-      val thy = Proof_Context.theory_of ctxt
-      val (var1, var2) = apply2 (Syntax.read_term ctxt) (s1, s2)
-
-      val arbitraries = map (Syntax.read_term ctxt) t
-
-      val goal = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of |> Thm.term_of
-      val (assums, concl) = goal |> Logic.strip_horn
-                                 |> apfst (map dest_Trueprop)
-                                 |> apsnd dest_Trueprop
-
-      val P = (list_obj_horn (arbitraries, (assums, concl)))
-                  |> fold lambda_abstract [var2, var1]  (* Note reversed *)
-
-      val ty = HOLogic.mk_prodT (type_of var1, type_of var2)
-      val ind_th = the (get_typed_ind_th thy "double_induct" ty)
-                   handle Option.Option =>
-                          raise Fail "double_induct: ind_th not found."
-
-      val (var_P, (var_n1, var_n2)) =
-          ind_th |> Thm.concl_of |> dest_Trueprop
-                 |> Term.strip_comb |> apsnd (the_pair)
-      val inst = fold (Pattern.match thy)
-                      [(var_P, P), (var_n1, var1), (var_n2, var2)] fo_init
-      val ind_th = ind_th |> subst_thm ctxt inst
-
-      val neq0_goals = Drule.cprems_of ind_th |> take 2
-      val neq0_ths = map (Auto2_Outer.auto2_solve ctxt) neq0_goals
-
-      val ind_th = ind_th |> fold Thm.elim_implies neq0_ths
-                          |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
-
-      val assum = hd (Drule.cprems_of ind_th)
-      val ind_th =
-          ind_th |> send_first_to_hyps
-                 |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
-                 |> Thm.implies_intr assum
-
-      val t' = case Thm.prop_of ind_th of
-                   imp $ A $ B => imp $ rename_abs_term [var1, var2] A $ B
-                 | _ => raise Fail "double_induct_cmd"
-
-      val ind_th = ind_th |> Thm.renamed_prop t'
-                          |> Goal.protect 1
-    in
-      state |> Proof.map_contexts (Auto2_State.set_head_th ind_th)
-    end
-
-val _ =
-  Outer_Syntax.command @{command_keyword "@double_induct"}
-    "apply double induction"
-    (((Parse.term -- Parse.term) -- arbitrary) >>
-       (fn ((s1, s2), t) =>
-           Toplevel.proof (
-             fn state => double_induct_cmd (s1, s2, these t) state)))
 
 fun case_induct_cmd s state =
     let
@@ -683,9 +428,7 @@ val _ =
 
 end  (* structure Induct_ProofSteps. *)
 
-val add_prfstep_induction = Induct_ProofSteps.add_prfstep_induction
 val add_prfstep_strong_induction = Induct_ProofSteps.add_prfstep_strong_induction
 val add_case_induct_rule = Induct_ProofSteps.add_case_induct_rule
 val add_prop_induct_rule = Induct_ProofSteps.add_prop_induct_rule
 val add_var_induct_rule = Induct_ProofSteps.add_var_induct_rule
-val add_prfstep_double_induction = Induct_ProofSteps.add_prfstep_double_induction
