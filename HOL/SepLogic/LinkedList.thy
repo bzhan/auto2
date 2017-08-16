@@ -347,13 +347,21 @@ lemma merge_list_keys [hoare_triple]:
   "<os_list xs p * os_list ys q>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(set zs = set xs \<union> set ys)>"
-@proof @double_induct xs ys arbitrary p q @qed
+@proof
+  @var_induct xs arbitrary ys p q @with
+    @subgoal "xs = x # xs'" @var_induct ys arbitrary p q @endgoal
+  @end
+@qed
 
 lemma merge_list_sorted [hoare_triple]:
   "<os_list xs p * os_list ys q * \<up>(sorted xs) * \<up>(sorted ys)>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(sorted zs)>"
-@proof @double_induct xs ys arbitrary p q @qed
+@proof
+  @var_induct xs arbitrary ys p q @with
+    @subgoal "xs = x # xs'" @var_induct ys arbitrary p q @endgoal
+  @end
+@qed
 
 subsection {* List copy *}
 

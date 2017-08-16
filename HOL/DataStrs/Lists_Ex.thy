@@ -11,22 +11,6 @@ theory Lists_Ex
 imports "../Auto2_Main" Mapping
 begin
 
-section {* Induction on two lists. *}
-
-theorem list_double_induct:
-  "\<forall>ys. P [] ys \<Longrightarrow> \<forall>xs. P xs [] \<Longrightarrow>
-   \<forall>xs ys. xs \<noteq> [] \<and> ys \<noteq> [] \<and> P (tl xs) ys \<and> P xs (tl ys) \<longrightarrow> P xs ys \<Longrightarrow> P xs ys"
-@proof
-  @var_induct xs arbitrary ys @with
-    @subgoal "xs = x # xs'"
-      @var_induct ys for "ys \<noteq> [] \<longrightarrow> P (x # xs') ys" @with
-        @subgoal "ys = y # ys'" @case "ys' = []" @endgoal
-      @end
-    @endgoal
-  @end
-@qed
-setup {* add_prfstep_double_induction @{thm list_double_induct} *}
-
 section {* Linear time version of rev *}
 
 fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
@@ -227,9 +211,13 @@ theorem merge_list_simp2' [rewrite]: "merge_list [] ys = ys" @proof @case "ys = 
 setup {* del_prfstep_thm @{thm merge_list.simps(2)} *}
 
 theorem merge_list_correct [rewrite]: "set (merge_list xs ys) = set xs \<union> set ys"
-  @proof @double_induct xs ys @qed
+@proof
+  @var_induct xs arbitrary ys @with @subgoal "xs = x # xs'" @var_induct ys @endgoal @end
+@qed
 
 theorem merge_list_sorted [backward2]: "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> sorted (merge_list xs ys)"
-  @proof @double_induct xs ys @qed
+@proof
+  @var_induct xs arbitrary ys @with @subgoal "xs = x # xs'" @var_induct ys @endgoal @end
+@qed
 
 end
