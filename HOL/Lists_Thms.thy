@@ -12,13 +12,6 @@ theorem list_eq_hd [backward]: "xs = ys \<Longrightarrow> x # xs = x # ys" by si
 theorem list_eq_tl [backward]: "x = y \<Longrightarrow> x # xs = y # xs" by simp
 setup {* fold add_rewrite_rule @{thms List.list.sel(1,3)} *}
 setup {* add_rewrite_rule @{thm List.hd_append2} *}
-
-text {* Case checking for lists: first verify the [] case, then split into hd :: tl. *}
-
-setup {* add_gen_prfstep ("list_case_intro",
-  [WithTerm @{term_pat "?x::?'a list"},
-   Filter (unique_free_filter "x"),
-   CreateCase @{term_pat "(?x::?'a list) = []"}]) *}
 setup {* add_forward_prfstep @{thm list.collapse} *}
 
 text {* Induction. After proving a property P holds for [], can assume P holds
@@ -41,7 +34,7 @@ setup {* ACUtil.add_ac_data {
 
 subsection {* length *}
 
-theorem length_non_empty [resolve]: "length (x # xs) > 0" by simp
+theorem length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
 setup {* add_rewrite_rule @{thm length_replicate} *}
 setup {* add_rewrite_rule @{thm List.list.size(3)} *}
 setup {* add_rewrite_rule @{thm List.length_append} *}

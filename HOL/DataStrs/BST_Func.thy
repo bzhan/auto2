@@ -16,11 +16,11 @@ setup {* fold add_rewrite_rule @{thms tree_insert.simps} *}
 
 theorem insert_in_traverse [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse (tree_insert x v t) = ordered_insert x (in_traverse t)"
-@proof @induct t @qed
-
+@proof @var_induct t @qed
+ 
 theorem insert_in_traverse_pairs [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse_pairs (tree_insert x v t) = ordered_insert_pairs x v (in_traverse_pairs t)"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 theorem insert_on_set [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_set (tree_insert x v t) = {x} \<union> tree_set t" by auto2
@@ -41,11 +41,19 @@ setup {* fold add_rewrite_rule @{thms del_min.simps(2-3)} *}
 
 theorem delete_min_del_hd [rewrite]:
   "t \<noteq> Tip \<Longrightarrow> fst (fst (del_min t)) # in_traverse (snd (del_min t)) = in_traverse t"
-@proof @induct t @case "lsub t = Tip" @qed
+@proof
+  @var_induct t @with
+    @subgoal "t = Node l x v r" @case "l = Tip" @endgoal
+  @end
+@qed
 
 theorem delete_min_del_hd_pairs [rewrite]:
   "t \<noteq> Tip \<Longrightarrow> fst (del_min t) # in_traverse_pairs (snd (del_min t)) = in_traverse_pairs t"
-@proof @induct t @case "lsub t = Tip" @qed
+@proof
+  @var_induct t @with
+    @subgoal "t = Node l x v r" @case "l = Tip" @endgoal
+  @end
+@qed
 
 fun delete_elt_tree :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where
   "delete_elt_tree Tip = undefined"
@@ -72,11 +80,11 @@ setup {* fold add_rewrite_rule @{thms tree_delete.simps} *}
 
 theorem tree_delete_in_traverse [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse (tree_delete x t) = remove_elt_list x (in_traverse t)"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 theorem tree_delete_in_traverse_pairs [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse_pairs (tree_delete x t) = remove_elt_pairs x (in_traverse_pairs t)"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 theorem tree_delete_sorted [backward]:
   "tree_sorted t \<Longrightarrow> tree_sorted (tree_delete x t)" by auto2
@@ -96,6 +104,6 @@ setup {* fold add_rewrite_rule @{thms tree_search.simps} *}
 
 theorem tree_search_correct:
   "tree_sorted t \<Longrightarrow> tree_search t x = (tree_map t)\<langle>x\<rangle>"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 end

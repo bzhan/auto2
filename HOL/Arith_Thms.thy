@@ -202,8 +202,7 @@ setup {* add_gen_prfstep ("power_case_intro",
 theorem one_is_power_of_any: "\<exists>i. (1::nat) = a ^ i" by (metis power.simps(1))
 setup {* add_resolve_prfstep @{thm one_is_power_of_any} *}
 
-theorem power_add_one: "(p::nat) ^ i * p = p ^ (i + 1)" by (metis Suc_eq_plus1 mult.commute power_Suc)
-setup {* add_rewrite_rule_cond @{thm power_add_one} [with_filt (size1_filter "i")] *}
+setup {* add_rewrite_rule @{thm power_Suc} *}
 
 theorem power_dvd [forward]: "(p::nat)^n dvd a \<Longrightarrow> n \<noteq> 0 \<Longrightarrow> p dvd a" using dvd_power dvd_trans by blast
 
@@ -220,11 +219,8 @@ setup {* add_backward1_prfstep @{thm dvd_fact} *}
 setup {* add_rewrite_rule @{thm Nat.Suc_eq_plus1} *}
 
 (* Induction. *)
-theorem nat_induct': "P 0 \<Longrightarrow> (\<forall>n. n \<noteq> 0 \<and> P (n-1) \<longrightarrow> P n) \<Longrightarrow> P (n::nat)"
-  by (metis One_nat_def diff_Suc_Suc diff_zero nat_induct)
-
 setup {*
-  add_prfstep_induction @{thm nat_induct'} #>
+  add_var_induct_rule @{thm nat_induct} #>
   add_prfstep_strong_induction @{thm nat_less_induct}
 *}
 

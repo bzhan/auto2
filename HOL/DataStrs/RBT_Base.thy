@@ -23,22 +23,8 @@ setup {* add_resolve_prfstep @{thm color.distinct(1)} *}
 setup {* add_resolve_prfstep @{thm pre_rbt.distinct(2)} *}
 setup {* fold add_rewrite_rule @{thms pre_rbt.sel} *}
 setup {* add_forward_prfstep (equiv_forward_th (@{thm pre_rbt.simps(1)})) *}
-
-text {* Case checking: after checking the Leaf case, can assume t is in the
-  form Node l c n r. *}
-
-setup {* add_gen_prfstep ("rbt_case_intro",
-     [WithTerm @{term_pat "?t::(?'a, ?'b) pre_rbt"},
-      Filter (unique_free_filter "t"),
-      CreateCase @{term_pat "(?t::(?'a, ?'b) pre_rbt) = Leaf"}]) *}
 setup {* add_forward_prfstep @{thm pre_rbt.collapse} *}
-
-text {* Induction: after checking the Leaf case, can assume P (lsub t) and
-  P (rsub t) holds when proving P t. *}
-
-theorem pre_rbt_induct': "P Leaf \<Longrightarrow> (\<forall>t. P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
-  apply (induction t) apply blast by (metis pre_rbt.sel(1) pre_rbt.sel(6))
-setup {* add_prfstep_induction @{thm pre_rbt_induct'} *}
+setup {* add_var_induct_rule @{thm pre_rbt.induct} *}
 
 subsection {* Some trivial lemmas *}
 
@@ -100,20 +86,25 @@ section {* Balancedness of is_rbt *}
 
 theorem depth_min: "is_rbt t \<Longrightarrow> black_depth t \<le> min_depth t"
 @proof
-  @induct t
-  @case "t = Leaf" @then
-  @case "cl t = R" @with
-    @have "black_depth t \<le> min (min_depth (lsub t)) (min_depth (rsub t))" @end
+  @var_induct t @with
+    @subgoal "t = Node l c k v r"
+      @case "c = R" @with
+      @have "black_depth (Node l c k v r) \<le> min (min_depth l) (min_depth r)" @end
+    @endgoal
+  @end
 @qed
 
 theorem two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 theorem depth_max: "is_rbt t \<Longrightarrow> if cl t = R then max_depth t \<le> 2 * black_depth t + 1
                                  else max_depth t \<le> 2 * black_depth t"
 @proof
-  @induct t
-  @case "t = Leaf" @then @case "cl t = R" @then
-  @have "max_depth (lsub t) \<le> 2 * black_depth (lsub t) + 1" @then
-  @have "max_depth (rsub t) \<le> 2 * black_depth (rsub t) + 1"
+  @var_induct t @with
+    @subgoal "t = Node l c k v r"
+      @case "c = R" @then
+      @have "max_depth l \<le> 2 * black_depth l + 1" @then
+      @have "max_depth r \<le> 2 * black_depth r + 1"
+    @endgoal
+  @end
 @qed
 
 setup {* fold add_forward_prfstep [@{thm depth_min}, @{thm depth_max}] *}
@@ -133,10 +124,16 @@ fun cl_inv' :: "('a, 'b) pre_rbt \<Rightarrow> bool" where
 setup {* fold add_rewrite_rule @{thms cl_inv'.simps} *}
 setup {* add_property_const @{term cl_inv'} *}
 
-theorem cl_inv_B [forward, backward1]: "cl_inv' t \<Longrightarrow> cl t = B \<Longrightarrow> cl_inv t" by auto2
-theorem cl_inv_R [forward]: "cl_inv' (Node l R k v r) \<Longrightarrow> cl l = B \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (Node l R k v r)" by auto2
+theorem cl_inv_B [forward, backward1]:
+  "cl_inv' t \<Longrightarrow> cl t = B \<Longrightarrow> cl_inv t"
+@proof @case "t = Leaf" @qed
+
+theorem cl_inv_R [forward]:
+  "cl_inv' (Node l R k v r) \<Longrightarrow> cl l = B \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (Node l R k v r)" by auto2
+
 theorem cl_inv_imp [forward]: "cl_inv t \<Longrightarrow> cl_inv' t"
-  @proof @case "cl t = R" @qed
+@proof @case "t = Leaf" @then @case "cl t = R" @qed
+
 theorem cl_inv'I: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (Node l c k v r)" by auto
 setup {* add_forward_prfstep_cond @{thm cl_inv'I} [with_term "cl_inv' (Node ?l ?c ?k ?v ?r)"] *}
 
@@ -157,10 +154,10 @@ fun rbt_in_traverse_pairs :: "('a, 'b) pre_rbt \<Rightarrow> ('a \<times> 'b) li
 | "rbt_in_traverse_pairs (Node l c k v r) = (rbt_in_traverse_pairs l) @ [(k, v)] @ (rbt_in_traverse_pairs r)"
 setup {* fold add_rewrite_rule @{thms rbt_in_traverse_pairs.simps} *}
 
-theorem rbt_in_traverse_fst [rewrite]:
+theorem rbt_in_traverse_fst:
   "map fst (rbt_in_traverse_pairs t) = rbt_in_traverse t"
-@proof @induct t @qed
-setup {* add_rewrite_rule_back_cond @{thm rbt_in_traverse_fst} [with_filt (size1_filter "t")] *}
+@proof @var_induct t @qed
+setup {* add_forward_prfstep_cond @{thm rbt_in_traverse_fst} [with_term "rbt_in_traverse_pairs ?t"] *}
 
 definition rbt_map :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) map" where
   "rbt_map t = map_of_alist (rbt_in_traverse_pairs t)"
@@ -185,11 +182,11 @@ theorem rbt_sorted_lr [forward]:
 
 theorem rbt_inorder_preserve_set [rewrite_back]:
   "set (rbt_in_traverse t) = rbt_set t"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 theorem rbt_inorder_sorted [rewrite_back]:
   "strict_sorted (rbt_in_traverse t) = rbt_sorted t"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 setup {* fold del_prfstep_thm (@{thms rbt_set.simps} @ @{thms rbt_sorted.simps}) *}
 

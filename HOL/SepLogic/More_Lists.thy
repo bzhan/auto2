@@ -43,16 +43,19 @@ setup {* add_rewrite_rule_back @{thm list_update_range.simps(2)} *}
 
 theorem length_list_update_range [rewrite]:
   "length (list_update_range l i l') = length l"
-@proof @induct l' arbitrary i l @qed
+@proof @var_induct l' arbitrary i l @qed
 
 theorem list_update_range_rule:
   "length l' + i \<le> length l \<Longrightarrow> list_update_range l i l' = take i l @ l' @ drop (i + length l') l"
 @proof
-  @induct l' arbitrary i l
-  @have "length (tl l') + 1 + i \<le> length l" @then
-  @have "i < length l" @then
-  @have "take (1 + i) (l[i := hd l']) = (take (1 + i) l)[i := hd l']" @then
-  @have "take i l @ [hd l'] @ tl l' @ drop (1 + i + length (tl l')) (l[i := hd l']) = take (1 + i) l[i := hd l'] @ tl l' @ drop (1 + i + length (tl l')) (l[i := hd l'])"
+  @var_induct l' arbitrary i l @with
+    @subgoal "l' = a # as"
+      @have "i < length l" @then
+      @have "take (1 + i) (l[i := a]) = (take (1 + i) l)[i := a]" @then
+      @have "take i l @ [a]           @ as @ drop (1 + i + length as) (l[i := a]) = 
+             (take (1 + i) l)[i := a] @ as @ drop (1 + i + length as) (l[i := a])"
+    @endgoal
+  @end
 @qed
 
 theorem list_update_range_rule_zero [rewrite]:

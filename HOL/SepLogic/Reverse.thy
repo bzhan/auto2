@@ -52,6 +52,6 @@ lemma rev_rule [hoare_triple]:
 declare rev.simps [sep_proc_defs del]
 lemma rev_is_rev:
   "<p \<mapsto>\<^sub>a xs * \<up>(length xs > 0)> rev p 0 (length xs - 1) <\<lambda>_. p \<mapsto>\<^sub>a List.rev xs>"
-@proof @have "length xs = length (List.rev xs)" @qed
+@proof @case "xs = []" @have "length xs = length (List.rev xs)" @qed
 
 end

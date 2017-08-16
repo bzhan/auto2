@@ -13,23 +13,8 @@ datatype ('a, 'b) tree =
 setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
 setup {* add_forward_prfstep (equiv_forward_th (@{thm tree.simps(1)})) *}
 setup {* fold add_rewrite_rule @{thms tree.sel} *}
-
-text {* Case checking for trees: first verify the Tip case, then can assume t is
-  in the form Node l n r. *}
-
-setup {* add_gen_prfstep ("tree_case_intro",
-  [WithTerm @{term_pat "?t::(?'a, ?'b) tree"},
-   Filter (unique_free_filter "t"),
-   CreateCase @{term_pat "(?t::(?'a, ?'b) tree) = Tip"}]) *}
 setup {* add_forward_prfstep_cond @{thm tree.collapse} [with_cond "?tree \<noteq> Node ?l ?k ?v ?r"] *}
-
-text {* Induction on trees: after checking Tip case, can assume P (lsub t)
-  and P (rsub t) holds when trying to prove P t. *}
-
 setup {* add_var_induct_rule @{thm tree.induct} *}
-theorem tree_induct': "P Tip \<Longrightarrow> (\<forall>t. t \<noteq> Tip \<and> P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
-  @proof @var_induct t @qed
-setup {* add_prfstep_induction @{thm tree_induct'} *}
 
 section {* Inorder traversal, and set of elements of a tree *}
 
@@ -50,8 +35,7 @@ setup {* fold add_rewrite_rule @{thms in_traverse_pairs.simps} *}
 
 theorem in_traverse_fst [rewrite]:
   "map fst (in_traverse_pairs t) = in_traverse t"
-@proof @induct t @qed
-setup {* add_rewrite_rule_back_cond @{thm in_traverse_fst} [with_filt (size1_filter "t")] *}
+@proof @var_induct t @qed
 
 definition tree_map :: "('a, 'b) tree \<Rightarrow> ('a, 'b) map" where
   "tree_map t = map_of_alist (in_traverse_pairs t)"
@@ -78,11 +62,15 @@ theorem tree_sorted_lr [forward]:
 
 theorem inorder_preserve_set [rewrite_back]:
   "set (in_traverse t) = tree_set t"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 theorem inorder_sorted [rewrite_back]:
   "strict_sorted (in_traverse t) = tree_sorted t"
-@proof @induct t @qed
+@proof @var_induct t @qed
+
+theorem inorder_pairs_sorted:
+  "tree_sorted t \<Longrightarrow> strict_sorted (map fst (in_traverse_pairs t))" by auto2
+setup {* add_forward_prfstep_cond @{thm inorder_pairs_sorted} [with_term "in_traverse_pairs ?t"] *}
 
 (* Use definition in terms of in_traverse from now on. *)
 setup {* fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps}) *}

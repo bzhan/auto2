@@ -79,9 +79,10 @@ val normalize_mod_cv_prfsteps =
 fun mod_match_item rtype (pat, item) (id, inst) =
     let
       val tbl = RewriteTable.table_of_rtype rtype
-      val {prop, ...} = item
+      val {id = id', prop, ...} = item
+      val id'' = RewriteTable.merge_boxes tbl (id, id')
     in
-      (AssnMatcher.mod_match tbl (pat, prop) (id, inst))
+      (AssnMatcher.mod_match tbl (pat, prop) (id'', inst))
           |> RewriteTable.replace_id_for_type rtype
     end
 

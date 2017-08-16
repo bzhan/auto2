@@ -103,14 +103,14 @@ setup {* fold add_rewrite_rule @{thms ins.simps} *}
 
 subsection {* ins function takes non-leaf to non-leafs *}
 
-theorem ins_non_Leaf: "ins x v t \<noteq> Leaf" by auto2
+theorem ins_non_Leaf: "ins x v t \<noteq> Leaf" @proof @case "t = Leaf" @qed
 setup {* add_forward_prfstep_cond @{thm ins_non_Leaf} [with_term "ins ?x ?v ?t"] *}
 
 subsection {* Properties of ins function on cl_inv, bd_inv, and set of keys *}
 
 theorem cl_inv_ins:
   "cl_inv t \<Longrightarrow> if cl t = B then cl_inv (ins x v t) else cl (ins x v t) = R \<and> cl_inv' (ins x v t)"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 setup {* add_forward_prfstep_cond @{thm cl_inv_ins} [with_term "ins ?x ?v ?t"] *}
 theorem cl_inv_ins_l [backward]: "cl_inv t \<Longrightarrow> cl_inv (lsub (ins x v t))" by auto2
@@ -119,7 +119,11 @@ setup {* del_prfstep_thm @{thm cl_inv_ins} *}
 
 theorem bd_inv_ins:
   "bd_inv t \<Longrightarrow> bd_inv (ins x v t) \<and> black_depth t = black_depth (ins x v t)"
-@proof @induct t @case "cl t = R" @qed
+@proof
+  @var_induct t @with
+    @subgoal "t = Node l c y w r" @case "c = R" @endgoal
+  @end
+@qed
 setup {* add_forward_prfstep_cond (conj_left_th @{thm bd_inv_ins}) [with_term "ins ?x ?v ?t"] *}
 
 section {* Insert function *}
@@ -133,7 +137,8 @@ definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_
 
 setup {* fold add_rewrite_rule (@{thms makeBlack.simps} @ [@{thm rbt_insert_def}]) *}
 
-theorem rbt_set_makeBlack [rewrite]: "rbt_set (makeBlack t) = rbt_set t" by auto2
+theorem rbt_set_makeBlack [rewrite]: "rbt_set (makeBlack t) = rbt_set t"
+  @proof @case "t = Leaf" @qed
 
 theorem cl_inv_insert [backward]: "cl_inv t \<Longrightarrow> cl_inv (rbt_insert x v t)" by auto2
 theorem bd_inv_insert [backward]: "bd_inv t \<Longrightarrow> bd_inv (rbt_insert x v t)" by auto2
@@ -161,15 +166,17 @@ theorem balance_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balance t) = rb
 declare [[max_ac = 20]]
 
 theorem balance_inorder [rewrite]: "rbt_in_traverse (balance t) = rbt_in_traverse t"
-@proof @have "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t" @qed
+@proof
+  @have "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t" @then
+@qed
 
 theorem ins_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (ins x v t) = ordered_insert x (rbt_in_traverse t)"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 theorem ins_inorder_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 theorem insert_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (rbt_insert x v t) = ordered_insert x (rbt_in_traverse t)"
@@ -196,6 +203,6 @@ fun rbt_search :: "('a::ord, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b optio
 setup {* fold add_rewrite_rule @{thms rbt_search.simps} *}
 
 theorem rbt_search_correct: "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
-@proof @induct t @qed
+@proof @var_induct t @qed
 
 end

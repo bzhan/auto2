@@ -11,12 +11,6 @@ theory Lists_Ex
 imports "../Auto2_Main" Mapping
 begin
 
-section {* Backward induction *}
-
-theorem list_induct': "P [] \<Longrightarrow> (\<forall>l. l \<noteq> [] \<and> P (tl l) \<longrightarrow> P l) \<Longrightarrow> P l"
-  @proof @var_induct l @qed
-setup {* add_prfstep_induction @{thm list_induct'} *}
-
 section {* Induction on two lists. *}
 
 theorem list_double_induct:
@@ -25,7 +19,9 @@ theorem list_double_induct:
 @proof
   @var_induct xs arbitrary ys @with
     @subgoal "xs = x # xs'"
-      @var_induct ys for "ys \<noteq> [] \<longrightarrow> P (x # xs') ys"
+      @var_induct ys for "ys \<noteq> [] \<longrightarrow> P (x # xs') ys" @with
+        @subgoal "ys = y # ys'" @case "ys' = []" @endgoal
+      @end
     @endgoal
   @end
 @qed
@@ -40,8 +36,9 @@ setup {* fold add_rewrite_rule @{thms itrev.simps} *}
 
 lemma itrev_prop [rewrite]: "itrev x y = rev x @ y"
 @proof
-  @induct x arbitrary y
-  @have "hd x # y = [hd x] @ y"
+  @var_induct x arbitrary y @with
+    @subgoal "x = a # b" @have "a # y = [a] @ y" @endgoal
+  @end
 @qed
 
 lemma itrev_eq_rev: "itrev x [] = rev x" by auto2
@@ -60,13 +57,13 @@ setup {* del_prfstep_thm @{thm strict_sorted.simps(2)} #>
 theorem strict_sorted_append [rewrite]:
   "strict_sorted (xs @ ys) =
     ((\<forall>x y. x \<in> set xs \<longrightarrow> y \<in> set ys \<longrightarrow> x < y) \<and> strict_sorted xs \<and> strict_sorted ys)"
-@proof @induct xs @qed
+@proof @var_induct xs @qed
 
 theorem strict_sorted_append_one:
   "strict_sorted (xs @ [y]) = ((\<forall>x\<in>set xs. x < y) \<and> strict_sorted xs)" by auto2
 
 theorem strict_sorted_distinct [resolve]: "strict_sorted l \<Longrightarrow> distinct l"
-@proof @induct l @qed
+@proof @var_induct l @qed
 
 theorem strict_sorted_min [rewrite]: "strict_sorted (x # xs) \<Longrightarrow> Min (set (x # xs)) = x" by auto2
 
@@ -79,7 +76,9 @@ theorem map_of_alist_binary [rewrite]:
    (if x < fst a then (map_of_alist xs)\<langle>x\<rangle>
     else if x > fst a then (map_of_alist ys)\<langle>x\<rangle> else Some (snd a))"
 @proof
-  @induct xs @with @case "x \<notin> set (map fst ys)" @end
+  @var_induct xs @with
+    @subgoal "xs = []" @case "x \<notin> set (map fst ys)" @endgoal
+  @end
 @qed
 
 section {* Ordered insert *}
@@ -94,21 +93,18 @@ setup {* fold add_rewrite_rule @{thms ordered_insert.simps} *}
 
 theorem ordered_insert_set [rewrite]:
   "set (ordered_insert x ys) = {x} \<union> set ys"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem ordered_insert_sorted [backward]:
   "strict_sorted ys \<Longrightarrow> strict_sorted (ordered_insert x ys)"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem ordered_insert_binary [rewrite]:
   "strict_sorted (xs @ a # ys) \<Longrightarrow> ordered_insert x (xs @ a # ys) =
     (if x < a then (ordered_insert x xs) @ a # ys
      else if x > a then xs @ a # ordered_insert x ys
      else xs @ a # ys)"
-@proof
-  @induct xs
-  @case "x < a" @then @have "a > hd xs"
-@qed
+@proof @var_induct xs @qed
 
 section {* Ordered insertion into list of pairs *}
 
@@ -122,15 +118,15 @@ setup {* fold add_rewrite_rule @{thms ordered_insert_pairs.simps} *}
 
 theorem ordered_insert_pairs_map [rewrite]:
   "map_of_alist (ordered_insert_pairs x v ys) = update_map (map_of_alist ys) x v"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem ordered_insert_pairs_set [rewrite]:
   "set (map fst (ordered_insert_pairs x v ys)) = {x} \<union> set (map fst ys)"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem ordered_insert_pairs_sorted [backward]:
   "strict_sorted (map fst ys) \<Longrightarrow> strict_sorted (map fst (ordered_insert_pairs x v ys))"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem ordered_insert_pairs_binary [rewrite]:
   "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> ordered_insert_pairs x v (xs @ a # ys) =
@@ -138,8 +134,11 @@ theorem ordered_insert_pairs_binary [rewrite]:
      else if x > fst a then xs @ a # ordered_insert_pairs x v ys
      else xs @ (x, v) # ys)"
 @proof
-  @induct xs
-  @case "x < fst a" @then @have "fst a > fst (hd xs)"
+  @var_induct xs @with
+    @subgoal "xs = x' # xs'"
+      @case "x < fst a" @then @have "fst a > fst x'"
+    @endgoal
+  @end   
 @qed
 
 section {* Deleting an element *}
@@ -151,23 +150,25 @@ setup {* fold add_rewrite_rule @{thms remove_elt_list.simps} *}
 
 theorem remove_elt_list_set [rewrite]:
   "set (remove_elt_list x ys) = set ys - {x}"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem remove_elt_list_sorted [backward]:
   "strict_sorted ys \<Longrightarrow> strict_sorted (remove_elt_list x ys)"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem remove_elt_idem [rewrite]:
   "x \<notin> set xs \<Longrightarrow> remove_elt_list x xs = xs"
-@proof @induct xs @qed
+@proof @var_induct xs @qed
 
 theorem remove_elt_list_binary [rewrite]:
   "strict_sorted (xs @ a # ys) \<Longrightarrow> remove_elt_list x (xs @ a # ys) =
     (if x < a then (remove_elt_list x xs) @ a # ys
      else if x > a then xs @ a # remove_elt_list x ys else xs @ ys)"
 @proof
-  @induct xs @with
-    @case "x < a" @with @have "x \<notin> set ys" @end
+  @var_induct xs @with
+    @subgoal "xs = []"
+      @case "x < a" @with @have "x \<notin> set ys" @end
+    @endgoal
   @end
 @qed
 
@@ -181,29 +182,34 @@ setup {* fold add_rewrite_rule @{thms remove_elt_pairs.simps} *}
 theorem remove_elt_pairs_map [rewrite]:
   "strict_sorted (map fst ys) \<Longrightarrow> map_of_alist (remove_elt_pairs x ys) = delete_map x (map_of_alist ys)"
 @proof
-  @induct ys
-  @case "fst (hd ys) = x" @with @have "x \<notin> set (map fst (tl ys))" @end
+  @var_induct ys @with
+    @subgoal "ys = y # ys'"
+      @case "fst y = x" @with @have "x \<notin> set (map fst ys')" @end
+    @endgoal
+  @end
 @qed
 
 theorem remove_elt_pairs_on_set [rewrite]:
   "strict_sorted (map fst ys) \<Longrightarrow> set (map fst (remove_elt_pairs x ys)) = set (map fst ys) - {x}"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem remove_elt_pairs_sorted [backward]:
   "strict_sorted (map fst ys) \<Longrightarrow> strict_sorted (map fst (remove_elt_pairs x ys))"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem remove_elt_pairs_idem [rewrite]:
   "x \<notin> set (map fst ys) \<Longrightarrow> remove_elt_pairs x ys = ys"
-@proof @induct ys @qed
+@proof @var_induct ys @qed
 
 theorem remove_elt_pairs_binary [rewrite]:
   "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> remove_elt_pairs x (xs @ a # ys) =
     (if x < fst a then (remove_elt_pairs x xs) @ a # ys
      else if x > fst a then xs @ a # remove_elt_pairs x ys else xs @ ys)"
 @proof
-  @induct xs @with
-    @case "x < fst a" @with @have "x \<notin> set (map fst ys)" @end
+  @var_induct xs @with
+    @subgoal "xs = []"
+      @case "x < fst a" @with @have "x \<notin> set (map fst ys)" @end
+    @endgoal
   @end
 @qed
 
@@ -217,7 +223,7 @@ fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" w
     else y # (merge_list (x # xs) ys))"
 setup {* fold add_rewrite_rule @{thms merge_list.simps} *}
 
-theorem merge_list_simp2' [rewrite]: "merge_list [] ys = ys" by auto2
+theorem merge_list_simp2' [rewrite]: "merge_list [] ys = ys" @proof @case "ys = []" @qed
 setup {* del_prfstep_thm @{thm merge_list.simps(2)} *}
 
 theorem merge_list_correct [rewrite]: "set (merge_list xs ys) = set xs \<union> set ys"

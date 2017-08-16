@@ -62,11 +62,16 @@ lemma prime_exp: "prime (p ^ n) \<longleftrightarrow> n = 1 \<and> prime p" by a
 
 lemma prime_power_mult: "prime p \<Longrightarrow> x * y = p ^ k \<Longrightarrow> \<exists>i j. x = p ^ i \<and> y = p ^ j"
 @proof
-  @induct k arbitrary x y
-  @case "p dvd x" @with
-    @obtain x' where "x = p * x'" @then @have "x * y = p * (x' * y)" @then @have "x = x' * p" @end
-  @case "p dvd y" @with
-    @obtain y' where "y = p * y'" @then @have "x * y = p * (x * y')" @then @have "y = y' * p" @end
+  @var_induct k arbitrary x y @with
+    @subgoal "k = Suc k'"
+      @case "p dvd x" @with
+        @obtain x' where "x = p * x'" @then @have "x * y = p * (x' * y)" @then
+        @obtain i j where "x' = p ^ i" "y = p ^ j" @then @have "x = p ^ Suc i" @end
+      @case "p dvd y" @with
+        @obtain y' where "y = p * y'" @then @have "x * y = p * (x * y')" @then
+        @obtain i j where "x = p ^ i" "y' = p ^ j" @then @have "y = p ^ Suc j" @end
+    @endgoal
+  @end
 @qed
 
 section {* Infinitude of primes *}

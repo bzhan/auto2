@@ -182,7 +182,8 @@ declare idx_pqueue_pop_def [sep_proc_defs]
 theorem idx_pqueue_pop_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(length xs > 0)>
    idx_pqueue_pop p
-   <\<lambda>(x, r). idx_pqueue (butlast xs) r * \<up>(x = last xs)>" by auto2
+   <\<lambda>(x, r). idx_pqueue (butlast xs) r * \<up>(x = last xs)>"
+@proof @case "xs = []" @qed
 
 theorem index_of_pqueue_update:
   "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> index_of_pqueue (list_update xs i (KVPair k v)) m"
@@ -264,6 +265,9 @@ setup {* del_prfstep_thm_str "" @{thm in_set_conv_nth'} *}
 
 theorem unique_key_to_distinct [forward]: "unique_keys xs \<Longrightarrow> distinct xs"
   using distinct_conv_nth unique_keys_def by fastforce
+
+lemma map_of_kv_list_empty [backward]:
+  "[] = xs \<Longrightarrow> map_of_kv_list xs = empty_map" by auto2
 
 section {* Heap operations on indexed_queue *}
 
@@ -435,6 +439,7 @@ theorem idx_pqueue_empty_map:
   by auto2
 
 declare delete_min_idx_pqueue_def [sep_proc_defs del]
+
 theorem delete_min_idx_pqueue_map:
   "<idx_pqueue_map M p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
