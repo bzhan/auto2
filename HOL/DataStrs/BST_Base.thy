@@ -28,7 +28,7 @@ text {* Induction on trees: after checking Tip case, can assume P (lsub t)
 
 setup {* add_var_induct_rule @{thm tree.induct} *}
 theorem tree_induct': "P Tip \<Longrightarrow> (\<forall>t. t \<noteq> Tip \<and> P (lsub t) \<and> P (rsub t) \<longrightarrow> P t) \<Longrightarrow> P t"
-  @proof @var_induct t "P t" @qed
+  @proof @var_induct t @qed
 setup {* add_prfstep_induction @{thm tree_induct'} *}
 
 section {* Inorder traversal, and set of elements of a tree *}

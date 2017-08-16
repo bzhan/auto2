@@ -12,9 +12,9 @@ imports "../Auto2_Main" Mapping
 begin
 
 section {* Backward induction *}
-  
+
 theorem list_induct': "P [] \<Longrightarrow> (\<forall>l. l \<noteq> [] \<and> P (tl l) \<longrightarrow> P l) \<Longrightarrow> P l"
-  @proof @var_induct l "P l" @qed
+  @proof @var_induct l @qed
 setup {* add_prfstep_induction @{thm list_induct'} *}
 
 section {* Induction on two lists. *}
@@ -23,9 +23,9 @@ theorem list_double_induct:
   "\<forall>ys. P [] ys \<Longrightarrow> \<forall>xs. P xs [] \<Longrightarrow>
    \<forall>xs ys. xs \<noteq> [] \<and> ys \<noteq> [] \<and> P (tl xs) ys \<and> P xs (tl ys) \<longrightarrow> P xs ys \<Longrightarrow> P xs ys"
 @proof
-  @var_induct xs "\<forall>ys. P xs ys" @with
+  @var_induct xs arbitrary ys @with
     @subgoal "xs = x # xs'"
-      @var_induct ys "ys \<noteq> [] \<longrightarrow> P (x # xs') ys"
+      @var_induct ys for "ys \<noteq> [] \<longrightarrow> P (x # xs') ys"
     @endgoal
   @end
 @qed

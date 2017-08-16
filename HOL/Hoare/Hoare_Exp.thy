@@ -69,7 +69,7 @@ setup {* add_var_induct_rule @{thm bexp.induct} *}
 theorem aeval_iff_aevalR [rewrite]: "a \<Down> n \<longleftrightarrow> aeval a = n"
 @proof
   @case "a \<Down> n" @with @prop_induct "a \<Down> n" "aeval a = n" @end
-  @case "aeval a = n" @with @var_induct a "\<forall>n. aeval a = n \<longrightarrow> a \<Down> n" @end
+  @case "aeval a = n" @with @var_induct a for "aeval a = n \<longrightarrow> a \<Down> n" arbitrary n @end
 @qed
 
 theorem aevalR_triv: "a \<Down> aeval a" by auto2
@@ -79,7 +79,7 @@ theorem test_aevalR1: "(APlus (ANum 2) (ANum 2)) \<Down> 4" by auto2
 theorem beval_iff_bevalR [rewrite]: "bevalR b v \<longleftrightarrow> beval b = v"
 @proof
   @case "bevalR b v" @with @prop_induct "bevalR b v" "beval b = v" @end
-  @case "beval b = v" @with @var_induct b "\<forall>v. beval b = v \<longrightarrow> bevalR b v" @end
+  @case "beval b = v" @with @var_induct b for "beval b = v \<longrightarrow> bevalR b v" arbitrary v @end
 @qed
 
 theorem bevalR_triv: "bevalR b (beval b)" by auto2

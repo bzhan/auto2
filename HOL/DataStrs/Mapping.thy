@@ -37,8 +37,6 @@ setup {* del_prfstep_thm @{thm map_of_alist_def} *}
 
 theorem map_of_alist_nil [rewrite]:
   "x \<notin> set (map fst ys) \<Longrightarrow> (map_of_alist ys)\<langle>x\<rangle> = None"
-@proof
-  @var_induct ys "x \<notin> set (map fst ys) \<longrightarrow> (map_of_alist ys)\<langle>x\<rangle> = None"
-@qed
+@proof @var_induct ys @qed
 
 end

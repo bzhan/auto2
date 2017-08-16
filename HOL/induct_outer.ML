@@ -27,7 +27,7 @@ sig
       string * string * string list -> Proof.state -> Proof.state
   val case_induct_cmd: string -> Proof.state -> Proof.state
   val prop_induct_cmd: string * string -> Proof.state -> Proof.state
-  val var_induct_cmd: string * string * string option -> Proof.state -> Proof.state
+  val var_induct_cmd: string * string option * string list * string option -> Proof.state -> Proof.state
 end;
 
 structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
@@ -573,11 +573,28 @@ val _ =
         (fn (s, t) =>
             Toplevel.proof (fn state => prop_induct_cmd (s, t) state)))
 
-fun var_induct_cmd (s, t, u) state =
+(* Obtain the induction statement. *)
+fun get_induct_stmt ctxt (var, stmt, arbitrary) =
+    if is_some stmt then
+      UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt (the stmt)))
+    else
+      let
+        val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                                |> Thm.term_of |> Util.strip_meta_horn
+        val all_vars = var :: arbitrary
+        val obj_As = map dest_Trueprop (filter (occurs_frees all_vars) As)
+        val obj_C = dest_Trueprop C
+      in
+        UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
+      end
+
+fun var_induct_cmd (s, t, u, v) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
-      val (var, stmt) = the_pair (Syntax.read_terms ctxt [s, t])
+      val var = Syntax.read_term ctxt s
+      val arbitraries = map (Syntax.read_term ctxt) u
+      val stmt = get_induct_stmt ctxt (var, t, arbitraries)
       val ty = type_of var
       val (arbitraries, _) = UtilLogic.strip_obj_horn stmt
 
@@ -625,7 +642,7 @@ fun var_induct_cmd (s, t, u) state =
       val _ = assert (length pats = length ind_goals)
                      "var_induct: unexpected number of patterns"
   in
-    if is_none u then
+    if is_none v then
       let
         val ths = (map solve_eq ind_goals) |> map send_all_to_hyps
         val ind_concl = ind_th' |> fold Thm.elim_implies ths
@@ -655,11 +672,14 @@ fun var_induct_cmd (s, t, u) state =
         end
     end
 
+val for_stmt =
+    Scan.option (@{keyword "for"} |-- Parse.term)
+
 val _ =
   Outer_Syntax.command @{command_keyword "@var_induct"} "apply induction"
-    ((Parse.term -- Parse.term) -- Scan.option @{keyword "@with"} >>
-        (fn ((s, t), u) =>
-            Toplevel.proof (fn state => var_induct_cmd (s, t, u) state)))
+    (Parse.term -- for_stmt -- arbitrary -- Scan.option @{keyword "@with"} >>
+        (fn (((s, t), u), v) =>
+            Toplevel.proof (fn state => var_induct_cmd (s, t, these u, v) state)))
 
 end  (* structure Induct_ProofSteps. *)
 

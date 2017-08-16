@@ -154,7 +154,7 @@ setup {* add_backward1_prfstep @{thm hoare_seq} *}
 setup {* add_backward1_prfstep @{thm hoare_if} *}
 setup {* add_backward_prfstep @{thm hoare_while} *}
 theorem vcond_correct: "vcond P d \<Longrightarrow> {{ P }} (extract_dcom d) {{ post d }}"
-  @proof @var_induct d "\<forall>P. vcond P d \<longrightarrow> {{ P }} (extract_dcom d) {{ post d }}" @qed
+  @proof @var_induct d arbitrary P @qed
 
 setup {* add_backward_prfstep @{thm vcond_correct} *}
 setup {* fold del_prfstep_thm @{thms extract_dcom.simps} *}
