@@ -385,10 +385,11 @@ setup {* fold del_prfstep_thm [@{thm nat_Suc_not_zero}, @{thm nat_case_split},
   @{thm nat_le_Suc}, @{thm nat_le_to_less_Suc},
   @{thm nat_less_to_Suc_le}, @{thm nat_le_to_Suc_le}] *}
 
-lemma nat_induct' [script_induct]:
+lemma nat_induct':
   "P(0) \<Longrightarrow> \<forall>x\<in>nat. P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> n \<in> nat \<Longrightarrow> P(n)"
 @proof @induct "n \<in> nat" "P(n)" @qed
 setup {* delete_script_induct_data @{thm nat_induct} *}
+setup {* add_script_induct_data @{thm nat_induct'} *}
 setup {* del_prfstep_thm @{thm nat_add_1} *}
 
 section {* Other induction principles *}
