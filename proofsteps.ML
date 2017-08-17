@@ -44,7 +44,6 @@ sig
   val order_filter: string -> string -> prfstep_filter
   val size1_filter: string -> prfstep_filter
   val not_type_filter: string -> typ -> prfstep_filter
-  val unique_free_filter: string -> prfstep_filter
 
   (* First level proofstep writing functions. *)
   val apply_pat_r: Proof.context -> id_inst_ths -> term * thm -> thm
@@ -187,22 +186,6 @@ fun size1_filter s1 tbl (id, inst) =
 
 fun not_type_filter s ty _ (_, inst) =
     not (Term.fastype_of (lookup_inst inst s) = ty)
-
-fun unique_free_filter s tbl (_, inst) =
-    let
-      val s_val = lookup_inst inst s
-    in
-      if not (is_Free s_val) then false else
-      let
-        fun is_same_type_free t =
-            is_Free t andalso fastype_of t = fastype_of s_val
-        val same_type_frees =
-            filter is_same_type_free
-                   (map Thm.term_of (RewriteTable.get_all_terms tbl))
-      in
-        length same_type_frees = 1
-      end
-    end
 
 (* First level proofstep writing functions. *)
 fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
@@ -506,7 +489,6 @@ val neq_filter = ProofStep.neq_filter
 val order_filter = ProofStep.order_filter
 val size1_filter = ProofStep.size1_filter
 val not_type_filter = ProofStep.not_type_filter
-val unique_free_filter = ProofStep.unique_free_filter
 
 (* Table of proofsteps, categorized by type. *)
 datatype proofstep_table
