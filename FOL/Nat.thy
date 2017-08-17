@@ -79,9 +79,7 @@ setup {* del_prfstep_thm @{thm nat_rec_def} *}
 
 lemma nat_rec_type [backward]:
   "k \<in> nat \<Longrightarrow> a \<in> T \<Longrightarrow> \<forall>m\<in>nat. \<forall>p\<in>T. b(m,p)\<in>T \<Longrightarrow> nat_rec(a,b,k) \<in> T"
-@proof
-  @var_induct "k \<in> nat" "nat_rec(a,b,k) \<in> T"
-@qed
+@proof @var_induct "k \<in> nat" @qed
 
 setup {* fold del_prfstep_thm [@{thm Zero_def}, @{thm Suc_def}] *}
 
@@ -131,6 +129,7 @@ lemma nat_evals:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x \<le>\<^sub>\<nat> y \<longleftrightarrow> nat_le(x,y)" by auto2+
 setup {* fold add_rewrite_rule @{thms nat_evals(1,2)} *}
 setup {* del_prfstep_thm @{thm nat_ring_def} *}
+setup {* add_var_induct_data_with_prem (@{term_pat "?n \<in>. \<nat>"}, @{thm nat_induct}) *}
 
 section {* Addition on natural numbers *}
 
@@ -140,18 +139,18 @@ lemma nat_add_Suc' [rewrite]: "x \<in> nat \<Longrightarrow> y \<in>. \<nat> \<L
 setup {* fold del_prfstep_thm [@{thm nat_add_0}, @{thm nat_add_Suc}, @{thm nat_add_type}, @{thm nat_evals(3)}] *}
 
 lemma nat_add_0_right [rewrite]: "x \<in>. \<nat> \<Longrightarrow> x +\<^sub>\<nat> 0 = x"
-@proof @var_induct "x \<in> nat" "x +\<^sub>\<nat> 0 = x" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_add_assoc [rewrite_bidir]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> (x +\<^sub>\<nat> y) +\<^sub>\<nat> z = x +\<^sub>\<nat> (y +\<^sub>\<nat> z)"
-@proof @var_induct "x \<in> nat" "(x +\<^sub>\<nat> y) +\<^sub>\<nat> z = x +\<^sub>\<nat> (y +\<^sub>\<nat> z)" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_add_1 [rewrite_bidir]:
   "x \<in>. \<nat> \<Longrightarrow> Suc(x) = x +\<^sub>\<nat> 1"
-@proof @var_induct "x \<in> nat" "Suc(x) = x +\<^sub>\<nat> 1" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_add_comm [rewrite]: "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x +\<^sub>\<nat> y = y +\<^sub>\<nat> x"
-@proof @var_induct "x \<in> nat" "x +\<^sub>\<nat> y = y +\<^sub>\<nat> x" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 section {* Multiplication on natural numbers *}
 
@@ -162,31 +161,31 @@ setup {* fold del_prfstep_thm [@{thm nat_mult_0}, @{thm nat_mult_Suc}, @{thm nat
 setup {* fold del_prfstep_thm @{thms nat_evals(3,4)} *}
 
 lemma nat_mult_0_right [rewrite]: "x \<in>. \<nat> \<Longrightarrow> x *\<^sub>\<nat> 0 = 0"
-@proof @var_induct "x \<in> nat" "x *\<^sub>\<nat> 0 = 0" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_mult_1 [rewrite]: "x \<in>. \<nat> \<Longrightarrow> 1 *\<^sub>\<nat> x = x" by auto2
 lemma nat_mult_1_right [rewrite]: "x \<in>. \<nat> \<Longrightarrow> x *\<^sub>\<nat> 1 = x"
-@proof @var_induct "x \<in> nat" "x *\<^sub>\<nat> 1 = x" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_distrib_l [rewrite]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> x *\<^sub>\<nat> (y +\<^sub>\<nat> z) = x *\<^sub>\<nat> y +\<^sub>\<nat> x *\<^sub>\<nat> z"
-@proof @var_induct "x \<in> nat" "x *\<^sub>\<nat> (y +\<^sub>\<nat> z) = x *\<^sub>\<nat> y +\<^sub>\<nat> x *\<^sub>\<nat> z" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
   
 lemma nat_distrib_r [rewrite]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> (x +\<^sub>\<nat> y) *\<^sub>\<nat> z = x *\<^sub>\<nat> z +\<^sub>\<nat> y *\<^sub>\<nat> z"
-@proof @var_induct "x \<in> nat" "(x +\<^sub>\<nat> y) *\<^sub>\<nat> z = x *\<^sub>\<nat> z +\<^sub>\<nat> y *\<^sub>\<nat> z" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_mult_assoc [rewrite_bidir]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> (x *\<^sub>\<nat> y) *\<^sub>\<nat> z = x *\<^sub>\<nat> (y *\<^sub>\<nat> z)"
-@proof @var_induct "x \<in> nat" "(x *\<^sub>\<nat> y) *\<^sub>\<nat> z = x *\<^sub>\<nat> (y *\<^sub>\<nat> z)" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_mult_Suc_right [rewrite]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in> nat \<Longrightarrow> x *\<^sub>\<nat> Suc(y) = x +\<^sub>\<nat> (x *\<^sub>\<nat> y)"
-@proof @var_induct "x \<in> nat" "x *\<^sub>\<nat> Suc(y) = x +\<^sub>\<nat> (x *\<^sub>\<nat> y)" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_mult_comm [rewrite]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x *\<^sub>\<nat> y = y *\<^sub>\<nat> x"
-@proof @var_induct "x \<in> nat" "x *\<^sub>\<nat> y = y *\<^sub>\<nat> x" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_is_semiring [forward]: "is_semiring(\<nat>)" by auto2
 
@@ -196,7 +195,7 @@ setup {* fold del_prfstep_thm [@{thm nat_distrib_l}, @{thm nat_distrib_r}] *}
 
 lemma nat_add_cancel_left [forward]:
   "a \<in>. \<nat> \<Longrightarrow> b \<in>. \<nat> \<Longrightarrow> c \<in>. \<nat> \<Longrightarrow> c +\<^sub>\<nat> a = c +\<^sub>\<nat> b \<Longrightarrow> a = b"
-@proof @var_induct "c \<in> nat" "c +\<^sub>\<nat> a = c +\<^sub>\<nat> b \<longrightarrow> a = b" @qed
+@proof @var_induct "c \<in>. \<nat>" @qed
 
 lemma nat_add_cancel_right [forward]:
   "a \<in>. \<nat> \<Longrightarrow> b \<in>. \<nat> \<Longrightarrow> c \<in>. \<nat> \<Longrightarrow> a +\<^sub>\<nat> c = b +\<^sub>\<nat> c \<Longrightarrow> a = b"
@@ -204,7 +203,7 @@ lemma nat_add_cancel_right [forward]:
 
 lemma nat_add_right_eq_zero [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x +\<^sub>\<nat> y = x \<Longrightarrow> y = 0"
-@proof @var_induct "x \<in> nat" "x +\<^sub>\<nat> y = x \<longrightarrow> y = 0" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_add_left_eq_zero [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x +\<^sub>\<nat> y = y \<Longrightarrow> x = 0"
@@ -212,14 +211,11 @@ lemma nat_add_left_eq_zero [forward]:
 
 lemma nat_add_is_zero [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x +\<^sub>\<nat> y = 0 \<Longrightarrow> x = 0 \<and> y = 0"
-@proof @var_induct "x \<in> nat" "x +\<^sub>\<nat> y = 0 \<longrightarrow> x = 0" @qed
+@proof @var_induct "x \<in>. \<nat>" @qed
 
 lemma nat_mult_nonzero [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x *\<^sub>\<nat> y = 0 \<Longrightarrow> x = 0 \<or> y = 0"
-@proof
-  @contradiction @have "x \<noteq> 0"
-  @var_induct "y \<in> nat" "y \<noteq> 0 \<longrightarrow> x *\<^sub>\<nat> y \<noteq> 0"
-@qed
+@proof @var_induct "y \<in>. \<nat>" @qed
 setup {* del_prfstep_thm @{thm nat_mult_Suc_right} *}
 
 section {* Ordering on natural numbers *}
@@ -282,7 +278,7 @@ lemma nat_le_to_Suc_le [backward2]: "x \<le>\<^sub>\<nat> y \<Longrightarrow> x 
 @proof @have "x <\<^sub>\<nat> y" @qed
 
 lemma nat_comparable [resolve]: "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> \<not>x \<le>\<^sub>\<nat> y \<Longrightarrow> y \<le>\<^sub>\<nat> x"
-@proof @var_induct "x \<in> nat" "x \<le>\<^sub>\<nat> y \<or> y \<le>\<^sub>\<nat> x" @qed
+@proof @var_induct "x \<in>. \<nat>" for "x \<le>\<^sub>\<nat> y \<or> y \<le>\<^sub>\<nat> x" @qed
 
 lemma nat_is_linorder [forward]: "linorder(\<nat>)" by auto2
 setup {* del_prfstep_thm @{thm nat_comparable} *}
@@ -389,11 +385,10 @@ setup {* fold del_prfstep_thm [@{thm nat_Suc_not_zero}, @{thm nat_case_split},
   @{thm nat_le_Suc}, @{thm nat_le_to_less_Suc},
   @{thm nat_less_to_Suc_le}, @{thm nat_le_to_Suc_le}] *}
 
-lemma nat_induct':
+lemma nat_induct' [var_induct]:
   "P(0) \<Longrightarrow> \<forall>x\<in>nat. P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> n \<in> nat \<Longrightarrow> P(n)"
-@proof @var_induct "n \<in> nat" "P(n)" @qed
-setup {* delete_var_induct_data @{thm nat_induct} *}
-setup {* add_var_induct_data @{thm nat_induct'} *}
+@proof @var_induct "n \<in> nat" @qed
+setup {* add_var_induct_data_with_prem (@{term_pat "?n \<in>. \<nat>"}, @{thm nat_induct'}) *}
 setup {* del_prfstep_thm @{thm nat_add_1} *}
 
 section {* Other induction principles *}
@@ -401,22 +396,21 @@ section {* Other induction principles *}
 lemma nat_induct_k [var_induct]:
   "P(k) \<Longrightarrow> \<forall>x\<in>nat. x \<ge>\<^sub>\<nat> k \<longrightarrow> P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> n \<ge>\<^sub>\<nat> k \<Longrightarrow> P(n)"
 @proof
-  @have (@rule) "\<forall>m\<in>nat. P(m +\<^sub>\<nat> k)" @with
-    @var_induct "m \<in> nat" "P(m +\<^sub>\<nat> k)" @end
+  @have (@rule) "\<forall>m\<in>nat. P(m +\<^sub>\<nat> k)" @with @var_induct "m \<in> nat" @end
   @have "n = (n -\<^sub>\<nat> k) +\<^sub>\<nat> k"
 @qed
 
 lemma nat_induct_less:
   "(\<forall>n. n \<in> nat \<longrightarrow> (\<forall>m. m <\<^sub>\<nat> n \<longrightarrow> P(m)) \<longrightarrow> P(n)) \<Longrightarrow> n \<in> nat \<Longrightarrow> P(n)"
-@proof @var_induct "n \<in> nat" "\<forall>m. m \<le>\<^sub>\<nat> n \<longrightarrow> P(m)" @qed
+@proof @var_induct "n \<in> nat" for "\<forall>m. m \<le>\<^sub>\<nat> n \<longrightarrow> P(m)" @qed
 setup {* add_strong_induct_data @{thm nat_induct_less} *}
 
 lemma nat_double_induct [script_induct]:
   "P(0,0) \<Longrightarrow> \<forall>x\<in>nat. \<forall>y\<in>nat. P(x,y) \<longrightarrow> P(x,y +\<^sub>\<nat> 1) \<Longrightarrow>
    \<forall>x\<in>nat. \<forall>y\<in>nat. P(x,y) \<longrightarrow> P(x +\<^sub>\<nat> 1,y) \<Longrightarrow> m \<in> nat \<and> n \<in> nat \<Longrightarrow> P(m,n)"
 @proof
-  @var_induct "m \<in> nat" "\<forall>n\<in>nat. P(m,n)" @with
-    @subgoal "m = 0" @var_induct "n \<in> nat" "P(0,n)" @endgoal
+  @var_induct "m \<in> nat" arbitrary n @with
+    @subgoal "m = 0" @var_induct "n \<in> nat" @endgoal
   @end
 @qed
 

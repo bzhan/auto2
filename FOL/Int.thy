@@ -214,7 +214,7 @@ lemma int_is_domain [forward]: "integral_domain(\<int>)" by auto2
 section {* Integer as a difference of two natural numbers *}
 
 lemma int_of_nat [rewrite]: "n \<in> nat \<Longrightarrow> of_nat(\<int>,n) = Int(\<langle>n,0\<rangle>)"
-@proof @var_induct "n \<in> nat" "of_nat(\<int>,n) = Int(\<langle>n,0\<rangle>)" @qed
+@proof @var_induct "n \<in> nat" @qed
 
 lemma int_diff_eval [rewrite]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> Int(\<langle>a,b\<rangle>) -\<^sub>\<int> Int(\<langle>c,d\<rangle>) = Int(\<langle>a+\<^sub>\<nat>d,b+\<^sub>\<nat>c\<rangle>)"
@@ -261,7 +261,7 @@ lemma of_int_eval_diff [rewrite]:
   @let "z = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
   @let "p = rep(\<R>,z)" @then @have "rep(\<R>,z) \<sim>\<^sub>\<R> \<langle>a,b\<rangle>"
 @qed
-      
+
 lemma of_int_of_nat [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_int(R,of_nat(\<int>,n)) = of_nat(R,n)" by auto2
 

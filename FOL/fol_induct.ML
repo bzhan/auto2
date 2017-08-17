@@ -4,6 +4,7 @@ signature SCRIPT_INDUCT_DATA =
 sig
   val add_induct_data: string -> thm -> theory -> theory
   val delete_induct_data: string -> thm -> theory -> theory
+  val add_induct_data_with_prem: string -> term * thm -> theory -> theory
   val lookup_induct_data: string -> theory -> term -> thm option
   val induct_cmd: string * string -> Proof.state -> Proof.state
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
@@ -22,24 +23,31 @@ structure Data = Theory_Data (
   val merge = Symtab.merge_list (eq_fst (op =))
 )
 
-fun add_induct_data str th thy =
+fun add_induct_data_with_prem str (t, th) thy =
     let
-      val t = Thm.prems_of th |> List.last |> dest_Trueprop
+      (* First remove all induction rules for the given string and term. *)
+      val prev_data = (Symtab.lookup_list (Data.get thy) str)
+                          |> filter (fn (t', _) => t' aconv t)
+      fun print_remove (_, th) =
+          writeln ("Removing induction rule " ^
+                   (th |> Thm.prop_of |> Syntax.string_of_term_global thy))
+      val _ = map print_remove prev_data
       val _ = writeln ("Add induction rule for premise " ^
                        (Syntax.string_of_term_global thy t))
     in
-      Data.map (Symtab.cons_list (str, (t, th))) thy
+      thy |> Data.map (Symtab.remove_list (fn ((t, _), (t', _)) => t aconv t')
+                                          (str, (t, th)))
+          |> Data.map (Symtab.cons_list (str, (t, th)))
     end
 
-fun delete_induct_data str th thy =
-    let
-      val t = Thm.prems_of th |> List.last |> dest_Trueprop
-      val _ = writeln ("Remove induction rule for premise " ^
-                       (Syntax.string_of_term_global thy t))
-    in
-      Data.map (Symtab.remove_list (fn ((t, _), (t', _)) => t aconv t')
-                                   (str, (t, th))) thy
-    end
+fun add_induct_data str th =
+    add_induct_data_with_prem
+        str (Thm.prems_of th |> List.last |> dest_Trueprop, th)
+
+fun delete_induct_data str th =
+    Data.map (Symtab.remove_list
+                  (fn ((_, th), (_, th')) => Thm.eq_thm_prop (th, th'))
+                  (str, (Term.dummy, th)))
 
 fun lookup_induct_data str thy t =
     let

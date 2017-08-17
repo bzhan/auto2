@@ -250,7 +250,7 @@ section {* Rational as a quotient of two integers *}
           
 lemma rat_of_nat [rewrite]:
   "n \<in> nat \<Longrightarrow> of_nat(\<rat>,n) = Rat(\<langle>of_nat(\<int>,n),1\<^sub>\<int>\<rangle>)"
-@proof @var_induct "n \<in> nat" "of_nat(\<rat>,n) = Rat(\<langle>of_nat(\<int>,n),1\<^sub>\<int>\<rangle>)" @qed
+@proof @var_induct "n \<in> nat" @qed
 
 lemma rat_diff_raw_eval [rewrite]:
   "\<langle>p,r\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>q,r\<rangle> \<in>. \<R> \<Longrightarrow> Rat(\<langle>p,r\<rangle>) -\<^sub>\<rat> Rat(\<langle>q,r\<rangle>) = Rat(\<langle>p-\<^sub>\<int>q, r\<rangle>)"

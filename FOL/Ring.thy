@@ -101,7 +101,7 @@ lemma of_nat_Suc [rewrite]: "n \<in> nat \<Longrightarrow> of_nat(R,n +\<^sub>\<
 lemma of_nat_one [rewrite_bidir]: "is_ring(R) \<Longrightarrow> of_nat(R,1) = \<one>\<^sub>R"
   @proof @have "1 = 0 +\<^sub>\<nat> 1" @qed
 lemma of_nat_type [typing]: "is_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_nat(R,n) \<in>. R"
-  @proof @var_induct "n \<in> nat" "of_nat(R,n) \<in>. R" @qed
+  @proof @var_induct "n \<in> nat" @qed
 
 abbreviation ZeroR ("0\<^sub>_" [91] 90) where "0\<^sub>R \<equiv> of_nat(R,0)"
 abbreviation OneR ("1\<^sub>_" [91] 90) where "1\<^sub>R \<equiv> of_nat(R,1)"
@@ -123,7 +123,7 @@ lemma of_nat_add_aux [backward]:
 
 lemma of_nat_add:
   "is_comm_ring(R) \<Longrightarrow> x \<in> nat \<Longrightarrow> y \<in> nat \<Longrightarrow> of_nat(R,x) +\<^sub>R of_nat(R,y) = of_nat(R, x +\<^sub>\<nat> y) \<and> x +\<^sub>\<nat> y \<in> nat"
-@proof @var_induct "x \<in> nat" "of_nat(R,x) +\<^sub>R of_nat(R,y) = of_nat(R, x +\<^sub>\<nat> y)" @qed
+@proof @var_induct "x \<in> nat" @qed
 setup {* add_rewrite_rule_cond @{thm of_nat_add}
   (with_conds ["?x \<noteq> 0", "?x \<noteq> Suc(?z)", "?y \<noteq> 0", "?y \<noteq> Suc(?z)"]) *}
 setup {* del_prfstep_thm @{thm of_nat_add_aux} *}
@@ -133,7 +133,7 @@ lemma of_nat_add_back [rewrite]:
 
 lemma of_nat_mult:
   "is_comm_ring(R) \<Longrightarrow> x \<in> nat \<Longrightarrow> y \<in> nat \<Longrightarrow> of_nat(R,x) *\<^sub>R of_nat(R,y) = of_nat(R, x *\<^sub>\<nat> y) \<and> x *\<^sub>\<nat> y \<in> nat"
-@proof @var_induct "x \<in> nat" "of_nat(R,x) *\<^sub>R of_nat(R,y) = of_nat(R, x *\<^sub>\<nat> y)" @qed
+@proof @var_induct "x \<in> nat" @qed
 setup {* add_rewrite_rule_cond @{thm of_nat_mult}
   (with_conds ["?x \<noteq> 0", "?x \<noteq> Suc(?z)", "?y \<noteq> 0", "?y \<noteq> Suc(?z)"]) *}
 
@@ -500,7 +500,7 @@ setup {* add_forward_prfstep_cond @{thm ord_ring_of_nat_Suc} [with_term "of_nat(
 
 lemma ord_ring_of_nat_ge_zero [backward]:
   "is_ord_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_nat(R,n) \<ge>\<^sub>R \<zero>\<^sub>R"
-@proof @var_induct "n \<in> nat" "of_nat(R,n) \<ge>\<^sub>R \<zero>\<^sub>R" @qed
+@proof @var_induct "n \<in> nat" @qed
 setup {* del_prfstep_thm @{thm ord_ring_of_nat_Suc} *}
 
 lemma ord_field_char_zero' [backward]:
@@ -545,11 +545,11 @@ lemma ord_ring_is_unbounded [forward]:
 
 lemma power_gt_0 [backward]:
   "is_ord_ring(R) \<Longrightarrow> integral_domain(R) \<Longrightarrow> e \<in> nat \<Longrightarrow> b >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> b ^\<^sub>R e >\<^sub>R \<zero>\<^sub>R"
-@proof @var_induct "e \<in> nat" "b ^\<^sub>R e >\<^sub>R \<zero>\<^sub>R" @qed
+@proof @var_induct "e \<in> nat" @qed
     
 lemma power_gt_n [resolve]: "is_ord_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_nat(R,n) <\<^sub>R 2\<^sub>R ^\<^sub>R n"
 @proof
-  @var_induct "n \<in> nat" "of_nat(R,n) <\<^sub>R 2\<^sub>R ^\<^sub>R n" @with
+  @var_induct "n \<in> nat" @with
     @subgoal "n = n' +\<^sub>\<nat> 1" @have "2\<^sub>R ^\<^sub>R (n' +\<^sub>\<nat> 1) = 2\<^sub>R ^\<^sub>R n' +\<^sub>R 2\<^sub>R ^\<^sub>R n'" @endgoal
   @end
 @qed

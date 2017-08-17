@@ -186,7 +186,7 @@ section {* of_nat, of_int, of_rat in terms of sequences *}
 
 lemma real_of_nat [rewrite]:
   "n \<in> nat \<Longrightarrow> of_nat(\<real>,n) = Real({of_nat(\<rat>,n)}\<^sub>\<rat>)"
-@proof @var_induct "n \<in> nat" "of_nat(\<real>,n) = Real({of_nat(\<rat>,n)}\<^sub>\<rat>)" @qed
+@proof @var_induct "n \<in> nat" @qed
 
 lemma real_diff_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Real(x) -\<^sub>\<real> Real(y) = Real(x -\<^sub>S y)"

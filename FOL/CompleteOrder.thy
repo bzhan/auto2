@@ -22,7 +22,7 @@ lemma seq_has_increment_induct [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> N \<in> nat \<Longrightarrow> a >\<^sub>R \<zero>\<^sub>R \<Longrightarrow>
    \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a \<Longrightarrow> \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a"
 @proof
-  @var_induct "N \<in> nat" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a" @with
+  @var_induct "N \<in> nat" arbitrary k @with
     @subgoal "N = N' +\<^sub>\<nat> 1"
       @obtain k1 where "k1\<ge>\<^sub>\<nat>k" "X`k1 -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N') *\<^sub>R a" @then
       @obtain k2 where "k2\<ge>\<^sub>\<nat>k1" "X`k2 -\<^sub>R X`k1 \<ge>\<^sub>R a" @then
@@ -75,9 +75,7 @@ lemma ord_field_divide_le_trans1 [backward1]:
 lemma half_seq_induct [resolve]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> half_seq(X) \<Longrightarrow> n \<in> nat \<Longrightarrow>
    \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)"
-@proof
-  @var_induct "n \<in> nat" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)"
-@qed
+@proof @var_induct "n \<in> nat" @qed
 setup {* del_prfstep_thm @{thm ord_field_divide_le_trans1} *}
 
 lemma half_seq_abs_decr [forward]:
@@ -142,7 +140,7 @@ setup {* del_prfstep_thm @{thm DCSeqs_def} *}
 lemma DCSeqs_le [backward]:
   "is_ord_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> A = fst(DCSeqs(R,U)) \<Longrightarrow> B = snd(DCSeqs(R,U)) \<Longrightarrow>
    n \<in> source(A) \<Longrightarrow> n \<in> source(B) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> A`n \<le>\<^sub>R B`n"
-@proof @var_induct "n \<in> nat" "A`n \<le>\<^sub>R B`n" @qed
+@proof @var_induct "n \<in> nat" @qed
 
 lemma dedekind_complete [resolve]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> \<exists>x\<in>.R. \<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U"
@@ -151,16 +149,16 @@ lemma dedekind_complete [resolve]:
   @have "converges(A)" @with
     @have "seq_incr(A)" @with @have "\<forall>n\<in>.\<nat>. A`(n +\<^sub>\<nat> 1) \<ge>\<^sub>R A`n" @end
     @have "upper_bounded(A)" @with
-      @have "\<forall>n\<in>.\<nat>. A`n \<le>\<^sub>R B`0" @with @var_induct "n \<in> nat" "A`n \<le>\<^sub>R B`0" @end @end @end
+      @have "\<forall>n\<in>.\<nat>. A`n \<le>\<^sub>R B`0" @with @var_induct "n \<in>. \<nat>" @end @end @end
   @have "converges(B)" @with
     @have "seq_decr(B)" @with @have "\<forall>n\<in>.\<nat>. B`(n +\<^sub>\<nat> 1) \<le>\<^sub>R B`n" @end
     @have "lower_bounded(B)" @with
-      @have "\<forall>n\<in>.\<nat>. B`n \<ge>\<^sub>R A`0" @with @var_induct "n \<in> nat" "B`n \<ge>\<^sub>R A`0" @end @end @end
+      @have "\<forall>n\<in>.\<nat>. B`n \<ge>\<^sub>R A`0" @with @var_induct "n \<in>. \<nat>" @end @end @end
   @obtain x where "converges_to(B,x)" @then
   @let "S = seq_ring(R)" @then
   @have "vanishes(B -\<^sub>S A)" @with @have "half_seq(B -\<^sub>S A)" @end
-  @have (@rule) "\<forall>n\<in>nat. A`n \<in> U" @with @var_induct "n \<in> nat" "A`n \<in> U" @end
-  @have (@rule) "\<forall>n\<in>nat. B`n \<notin> U" @with @var_induct "n \<in> nat" "B`n \<notin> U" @end
+  @have (@rule) "\<forall>n\<in>nat. A`n \<in> U" @with @var_induct "n \<in> nat" @end
+  @have (@rule) "\<forall>n\<in>nat. B`n \<notin> U" @with @var_induct "n \<in> nat" @end
   @have "\<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" @with
     @case "y <\<^sub>R x" @with @obtain "n\<in>nat" where "y <\<^sub>R A`n" @end
     @case "y \<in> U" @with

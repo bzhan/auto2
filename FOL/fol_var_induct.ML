@@ -1,18 +1,42 @@
 (* Induction on variables *)
 
-fun var_induct_cmd ((n, s), t, v) state =
+fun read_var_spec ctxt (n, s) =
+    let
+      val prem = Syntax.read_term ctxt s
+      val var = if is_none n then
+                  (Term.add_frees prem []) |> the_single |> Free
+                  handle List.Empty => raise Fail "read_var_spec"
+                else Syntax.read_term ctxt (the n)
+    in
+      (var, prem)
+    end
+
+fun get_induct_stmt ctxt (var, prem, stmt, arbitrary) =
+    if is_some stmt then
+      UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt (the stmt)))
+    else
+      let
+        val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                                |> Thm.term_of |> Util.strip_meta_horn
+        val all_vars = var :: arbitrary
+        val obj_As = As |> filter (occurs_frees all_vars)
+                        |> map dest_Trueprop
+                        |> remove (op aconv) prem
+        val obj_C = dest_Trueprop C
+      in
+        UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
+      end
+
+fun var_induct_cmd ((n, s), t, u, v) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
-      val (prem, goal) = the_pair (Syntax.read_terms ctxt [s, t])
+      val (var, prem) = read_var_spec ctxt (n, s)
+      val arbitraries = map (Syntax.read_term ctxt) u
+      val stmt = get_induct_stmt ctxt (var, prem, t, arbitraries)
+      val _ = trace_t ctxt "Induct statement" stmt
 
-      val var =
-          if is_none n then
-            (Term.add_frees prem []) |> the_single |> Free
-            handle List.Empty => raise Fail "var_induct_cmd"
-          else Syntax.read_term ctxt (the n)
-
-      val (arbitraries, _) = UtilLogic.strip_obj_horn goal
+      val (arbitraries, _) = UtilLogic.strip_obj_horn stmt
 
       (* Obtain the induction theorem *)
       val ind_th = the (ScriptInduct_Data.lookup_induct_data "var_induct" thy prem)
@@ -21,7 +45,7 @@ fun var_induct_cmd ((n, s), t, v) state =
       val concl = concl_of' ind_th
       val (P, vars) = Term.strip_comb concl
       val _ = assert (Term.is_Var P) "var induct: P is not schematic variable."
-      val P_inst = fold Term.lambda (rev vars) goal
+      val P_inst = fold Term.lambda (rev vars) stmt
       val inst = update_env (("P", 0), P_inst) fo_init
       val ind_th' = subst_thm_thy thy inst ind_th
 
@@ -100,11 +124,18 @@ fun var_induct_cmd ((n, s), t, v) state =
 val var_spec =
     Scan.option (Parse.term --| @{keyword "in"}) -- Parse.term
 
+val for_stmt =
+    Scan.option (@{keyword "for"} |-- Parse.term)
+
+val arbitrary =
+    Scan.option (@{keyword "arbitrary"} |-- Scan.repeat Parse.term)
+
 val _ =
   Outer_Syntax.command @{command_keyword "@var_induct"} "apply induction"
-    (var_spec -- Parse.term -- Scan.option @{keyword "@with"} >>
-        (fn (((n, s), t), v) =>
-            Toplevel.proof (fn state => var_induct_cmd ((n, s), t, v) state)))
+    (var_spec -- for_stmt -- arbitrary -- Scan.option @{keyword "@with"} >>
+        (fn ((((n, s), t), u), v) =>
+            Toplevel.proof (fn state => var_induct_cmd ((n, s), t, these u, v) state)))
 
 val add_var_induct_data = ScriptInduct_Data.add_induct_data "var_induct"
-val delete_var_induct_data = ScriptInduct_Data.delete_induct_data "var_induct"
+val add_var_induct_data_with_prem =
+    ScriptInduct_Data.add_induct_data_with_prem "var_induct"
