@@ -116,17 +116,18 @@ lemma nat_less_range_notin [resolve]: "k \<in> nat \<Longrightarrow> k \<notin> 
 lemma nat_less_range_Suc [rewrite_back]: "n \<in> nat \<Longrightarrow> [n +\<^sub>\<nat> 1] = cons(n,[n])" by auto2
 lemma nat_less_range_Suc_diff [rewrite]: "n \<in>. \<nat> \<Longrightarrow> [n +\<^sub>\<nat> 1] \<midarrow> {n} = [n]" by auto2
 
-lemma equipotent_nat_less_range_Suc [forward]:
-  "m \<in>. \<nat> \<Longrightarrow> n \<in>. \<nat> \<Longrightarrow> equipotent([m +\<^sub>\<nat> 1], [n +\<^sub>\<nat> 1]) \<Longrightarrow> equipotent([m], [n])"
-@proof @have "[m] = [m +\<^sub>\<nat> 1] \<midarrow> {m}" @then @have "[n] = [n +\<^sub>\<nat> 1] \<midarrow> {n}" @qed
-
-lemma equipotent_is_Suc [forward]:
-  "m \<in>. \<nat> \<Longrightarrow> n \<in> nat \<Longrightarrow> equipotent([m +\<^sub>\<nat> 1], [n]) \<Longrightarrow> \<exists>n'\<in>nat. n = n' +\<^sub>\<nat> 1" by auto2
-
 lemma equipotent_nat_less_range [forward]:
   "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> equipotent([m], [n]) \<Longrightarrow> m = n"
-@proof @induct "m \<in> nat" "\<forall>n\<in>nat. equipotent([m], [n]) \<longrightarrow> m = n" @qed
-setup {* del_prfstep_thm @{thm equipotent_is_Suc} *}
+@proof
+  @var_induct "m \<in> nat" "\<forall>n\<in>nat. equipotent([m], [n]) \<longrightarrow> m = n" @with
+    @subgoal "m = m' +\<^sub>\<nat> 1"
+      @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1" @then
+      @have "[m'] = [m' +\<^sub>\<nat> 1] \<midarrow> {m'}" @then
+      @have "[n'] = [n' +\<^sub>\<nat> 1] \<midarrow> {n'}" @then
+      @have "equipotent([m'], [n'])"
+    @endgoal
+  @end
+@qed
 
 section {* Cardinality on finite sets *}
   
@@ -195,50 +196,66 @@ no_notation nat_less_range ("[_]")
 
 section {* Induction on finite sets *}
 
-lemma card_induct_step [forward]:
+lemma card_Suc_elim [resolve]:
   "finite(F) \<Longrightarrow> n \<in>. \<nat> \<Longrightarrow> card(F) = n +\<^sub>\<nat> 1 \<Longrightarrow> \<exists>a F'. F = cons(a,F') \<and> a \<notin> F' \<and> finite(F') \<and> card(F') = n"
 @proof @obtain "a \<in> F" @then @have "F = cons(a,F\<midarrow>{a})" @qed
+setup {* del_prfstep_thm @{thm finite_diff_singleton} *}
 
-lemma finite_induct [script_induct]:
+lemma card_1_elim [backward]:
+  "finite(F) \<Longrightarrow> card(F) = 1 \<Longrightarrow> \<exists>a. F = {a}"
+@proof
+  @have "1 = 0 +\<^sub>\<nat> 1" @then
+  @obtain a F' where "F = cons(a,F') \<and> a \<notin> F' \<and> finite(F') \<and> card(F') = 0"
+@qed
+
+lemma finite_induct [var_induct]:
   "P(\<emptyset>) \<Longrightarrow> \<forall>a X. finite(X) \<longrightarrow> a \<notin> X \<longrightarrow> P(X) \<longrightarrow> P(cons(a,X)) \<Longrightarrow> finite(F) \<Longrightarrow> P(F)"
 @proof
   @let "n = card(F)" @then
-  @induct "n \<in> nat" "\<forall>F. finite(F) \<longrightarrow> card(F) = n \<longrightarrow> P(F)"
+  @var_induct "n \<in> nat" "\<forall>F. finite(F) \<longrightarrow> n = card(F) \<longrightarrow> P(F)" @with
+    @subgoal "n = n' +\<^sub>\<nat> 1"
+      @obtain a F' where "F = cons(a,F')" "a \<notin> F'" "finite(F')" "card(F') = n'"
+    @endgoal
+  @end
 @qed
 
-lemma finite_nonempty_induct [script_induct]:
+lemma finite_nonempty_induct [var_induct]:
   "\<forall>a. P({a}) \<Longrightarrow> \<forall>a X. finite(X) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> a \<notin> X \<longrightarrow> P(X) \<longrightarrow> P(cons(a,X)) \<Longrightarrow>
    finite(F) \<and> F \<noteq> \<emptyset> \<Longrightarrow> P(F)"
 @proof
-  @let "n = card(F)" @then @have "1 = 0 +\<^sub>\<nat> 1" @then
-  @induct "n \<ge>\<^sub>\<nat> 1" "\<forall>F. finite(F) \<longrightarrow> card(F) = n \<longrightarrow> P(F)"
+  @let "n = card(F)"
+  @var_induct "n \<ge>\<^sub>\<nat> 1" "\<forall>F. finite(F) \<longrightarrow> n = card(F) \<longrightarrow> P(F)" @with
+    @subgoal "n = 1"
+      @obtain a where "F = {a}"
+    @endgoal
+    @subgoal "n = n' +\<^sub>\<nat> 1"
+      @obtain a F' where "F = cons(a,F')" "a \<notin> F'" "finite(F')" "card(F') = n'"
+    @endgoal
+  @end  
 @qed
-setup {* del_prfstep_thm @{thm card_induct_step} *}
 
 section {* Applications *}
 
-lemma subset_finite_step [forward]:
-  "\<forall>B. B \<subseteq> A \<longrightarrow> finite(B) \<Longrightarrow> B \<subseteq> cons(a,A) \<Longrightarrow> finite(B)"
+lemma subset_finite [forward]: "finite(A) \<Longrightarrow> B \<subseteq> A \<Longrightarrow> finite(B)"
 @proof
-  @case "a \<notin> B" @with @have "B \<subseteq> A" @end
-  @have "B = cons(a, B \<inter> A)" @then @have "B \<inter> A \<subseteq> A"
+  @var_induct "finite(A)" "\<forall>B. B \<subseteq> A \<longrightarrow> finite(B)" @with
+    @subgoal "A = cons(a,A')"
+      @case "a \<notin> B" @with @have "B \<subseteq> A'" @end
+      @have "B = cons(a, B \<inter> A')" @then @have "B \<inter> A' \<subseteq> A'"
+    @endgoal
+  @end
 @qed
-  
-lemma subset_finite [forward]:
-  "finite(A) \<Longrightarrow> B \<subseteq> A \<Longrightarrow> finite(B)"
-@proof @induct "finite(A)" "\<forall>B. B \<subseteq> A \<longrightarrow> finite(B)" @qed
-setup {* del_prfstep_thm @{thm subset_finite_step} *}
 
-lemma finite_minus_gen [forward]:
-  "finite(A) \<Longrightarrow> finite(A \<midarrow> B)"
+lemma finite_minus_gen [forward]: "finite(A) \<Longrightarrow> finite(A \<midarrow> B)"
 @proof @have "A \<midarrow> B \<subseteq> A" @qed
-setup {* del_prfstep_thm @{thm finite_diff_singleton} *}
 
-lemma image_finite [forward]:
-  "is_function(f) \<Longrightarrow> finite(A) \<Longrightarrow> finite(f `` A)"
+lemma image_finite [forward]: "is_function(f) \<Longrightarrow> finite(A) \<Longrightarrow> finite(f `` A)"
 @proof
-  @have (@rule) "\<forall>x B. f `` cons(x,B) \<subseteq> cons(f`x, f``B)" @then
-  @induct "finite(A)" "finite(f `` A)"
+  @var_induct "finite(A)" "finite(f `` A)" @with
+    @subgoal "A = cons(x,A')"
+      @have "f `` cons(x,A') \<subseteq> cons(f ` x, f `` A')"
+    @endgoal
+  @end
 @qed
 
 section {* Finite sets contain greatest element *}
@@ -253,7 +270,9 @@ lemma has_greatest_cons [backward1]:
 
 lemma finite_set_has_greatest [backward]:
   "linorder(R) \<Longrightarrow> finite(X) \<Longrightarrow> X \<noteq> \<emptyset> \<Longrightarrow> X \<subseteq> carrier(R) \<Longrightarrow> has_greatest(R,X)"
-@proof @induct "finite(X) \<and> X \<noteq> \<emptyset>" "X \<subseteq> carrier(R) \<longrightarrow> has_greatest(R,X)" @qed
+@proof
+  @var_induct "finite(X) \<and> X \<noteq> \<emptyset>" "X \<subseteq> carrier(R) \<longrightarrow> has_greatest(R,X)"
+@qed
 setup {* add_forward_prfstep_cond @{thm finite_set_has_greatest} [with_term "greatest(?R,?X)"] *}
 
 section {* Other consequences of induction *}
@@ -262,12 +281,15 @@ lemma ex_least_nat_less [backward1]:
   "n \<in> nat \<Longrightarrow> \<not>P(0) \<Longrightarrow> P(n) \<Longrightarrow> \<exists>k<\<^sub>\<nat>n. (\<forall>i\<le>\<^sub>\<nat>k. \<not>P(i)) \<and> P(k +\<^sub>\<nat> 1)"
 @proof
   @contradiction
-  @have (@rule) "\<forall>x\<in>nat. (\<forall>i\<le>\<^sub>\<nat>x. \<not>P(i)) \<longrightarrow> (\<forall>i\<le>\<^sub>\<nat>x+\<^sub>\<nat>1. \<not>P(i))" @with @case "i = x +\<^sub>\<nat> 1" @end
-  @induct "n \<in> nat" "\<forall>i\<le>\<^sub>\<nat>n. \<not>P(i)"
+  @have (@rule) "\<forall>x\<in>nat. \<forall>i\<le>\<^sub>\<nat>x. \<not>P(i)" @with
+    @var_induct "x \<in> nat" "\<forall>i\<le>\<^sub>\<nat>x. \<not>P(i)" @with
+      @subgoal "x = x' +\<^sub>\<nat> 1" @case "i = x' +\<^sub>\<nat> 1" @endgoal
+    @end
+  @end
 @qed
-      
+
 lemma ex_nat_split [backward1]:
   "n \<in> nat \<Longrightarrow> \<not>P(0) \<Longrightarrow> P(n) \<Longrightarrow> \<exists>k<\<^sub>\<nat>n. \<not>P(k) \<and> P(k +\<^sub>\<nat> 1)"
-@proof @obtain k where "k <\<^sub>\<nat> n" "(\<forall>i\<le>\<^sub>\<nat>k. \<not>P(i))" "P (k +\<^sub>\<nat> 1)" @qed
+@proof @obtain k where "k <\<^sub>\<nat> n" "(\<forall>i\<le>\<^sub>\<nat>k. \<not>P(i))" "P(k +\<^sub>\<nat> 1)" @qed
 
 end

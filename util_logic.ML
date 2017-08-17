@@ -414,6 +414,9 @@ fun to_meta_conv ctxt ct =
       if is_Trueprop t andalso is_obj_all (dest_Trueprop t) then
         Conv.every_conv [Conv.rewr_conv (meta_sym atomize_all_th),
                          to_meta_conv ctxt] ct
+      else if is_Trueprop t andalso is_ball (dest_Trueprop t) then
+        Conv.every_conv [Conv.arg_conv (rewr_obj_eq Ball_def_th),
+                         to_meta_conv ctxt] ct
       else if is_Trueprop t andalso is_imp (dest_Trueprop t) then
         Conv.every_conv [Conv.rewr_conv (meta_sym atomize_imp_th),
                          to_meta_conv ctxt] ct

@@ -401,17 +401,19 @@ lemma seq_decr_on_neg_is_seq_incr [rewrite]:
   "is_sequence(X) \<Longrightarrow> is_ord_ring(target_str(X)) \<Longrightarrow> seq_decr(seq_neg(X)) \<longleftrightarrow> seq_incr(X)" by auto2
 
 setup {* fold del_prfstep_thm [@{thm seq_incr_def}, @{thm seq_decr_def}] *}
-  
+
 lemma seq_incrI' [forward]:
   "R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. X`(n +\<^sub>\<nat> 1) \<ge>\<^sub>R X`n \<Longrightarrow> seq_incr(X)"
 @proof
-  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<ge>\<^sub>R X`m" @with @induct "n \<ge>\<^sub>\<nat> m" "X`n \<ge>\<^sub>R X`m" @end
+  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<ge>\<^sub>R X`m" @with
+    @have "m \<in> nat" @var_induct n in "n \<ge>\<^sub>\<nat> m" "X`n \<ge>\<^sub>R X`m" @end
 @qed
 
 lemma seq_decrI' [forward]:
   "R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. X`(n +\<^sub>\<nat> 1) \<le>\<^sub>R X`n \<Longrightarrow> seq_decr(X)"
 @proof
-  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<le>\<^sub>R X`m" @with @induct "n \<ge>\<^sub>\<nat> m" "X`n \<le>\<^sub>R X`m" @end
+  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<le>\<^sub>R X`m" @with
+    @have "m \<in> nat" @var_induct n in "n \<ge>\<^sub>\<nat> m" "X`n \<le>\<^sub>R X`m" @end
 @qed
 
 definition seq_abs_decr :: "i \<Rightarrow> o" where [rewrite]:
@@ -428,9 +430,9 @@ setup {* del_prfstep_thm @{thm seq_abs_decr_def} *}
 lemma seq_abs_decrI' [forward]:
   "R = target_str(X) \<Longrightarrow> order(R) \<Longrightarrow> \<forall>n\<in>.\<nat>. \<bar>X`(n +\<^sub>\<nat> 1)\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R \<Longrightarrow> seq_abs_decr(X)"
 @proof
-  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" @with @induct "n \<ge>\<^sub>\<nat> m" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" @end
+  @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" @with
+    @have "m \<in> nat" @var_induct n in "n \<ge>\<^sub>\<nat> m" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" @end
 @qed
-
 section {* Inductive definition of sequences *}
 
 definition rec_type_cond :: "[i, i, [i, i] \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
@@ -482,7 +484,7 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm rec2_type_cond_def} *}
 
 lemma nat_rec2_type [backward,typing]:
   "k \<in> nat \<Longrightarrow> rec2_type_cond(S,T,a,ai,b,bi) \<Longrightarrow> nat_rec2(a,ai,b,bi,k) \<in> S \<times> T"
-@proof @induct "k \<in> nat" "nat_rec2(a,ai,b,bi,k) \<in> S \<times> T" @qed
+@proof @var_induct "k \<in> nat" "nat_rec2(a,ai,b,bi,k) \<in> S \<times> T" @qed
 setup {* fold del_prfstep_thm @{thms rec2_type_condD} *}
 
 definition Seq_rec2 :: "[i, i, [i, i, i] \<Rightarrow> i, i, [i, i, i] \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:

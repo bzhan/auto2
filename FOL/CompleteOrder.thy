@@ -18,36 +18,20 @@ setup {* del_prfstep_thm @{thm cauchy_complete_field_def} *}
 
 section {* Monotone convergence theorem *}
 
-definition seq_has_increment :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "seq_has_increment(X,a) \<longleftrightarrow> (let R = target_str(X) in \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a)"
-
-lemma seq_has_incrementD [backward1]:
-  "seq_has_increment(X,a) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a" by auto2
-
-lemma seq_has_incrementI [forward]:
-  "R = target_str(X) \<Longrightarrow> \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a \<Longrightarrow> seq_has_increment(X,a)" by auto2
-    
-lemma seq_has_increment_zero [resolve]:
-  "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> seq_has_increment(X,0\<^sub>R)"
-@proof
-  @have "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R 0\<^sub>R" @with @have "X`k -\<^sub>R X`k \<ge>\<^sub>R 0\<^sub>R" @end
-@qed
-setup {* del_prfstep_thm @{thm seq_has_increment_def} *}
-  
 lemma seq_has_increment_induct [backward1]:
-  "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> N \<in> nat \<Longrightarrow> a >\<^sub>R \<zero>\<^sub>R \<Longrightarrow>
-   seq_has_increment(X,a) \<Longrightarrow> seq_has_increment(X,of_nat(R,N) *\<^sub>R a)"
+  "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> N \<in> nat \<Longrightarrow> a >\<^sub>R \<zero>\<^sub>R \<Longrightarrow>
+   \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a \<Longrightarrow> \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a"
 @proof
-  @have "seq_has_increment(X,0\<^sub>R)" @then
-  @have (@rule) "\<forall>n\<in>nat. seq_has_increment(X,of_nat(R,n) *\<^sub>R a) \<longrightarrow> seq_has_increment(X,of_nat(R,n +\<^sub>\<nat> 1) *\<^sub>R a)" @with
-    @have "\<forall>k\<in>.\<nat>. \<exists>k'\<ge>\<^sub>\<nat>k. X`k' -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,n +\<^sub>\<nat> 1) *\<^sub>R a" @with
-      @obtain k1 where "k1\<ge>\<^sub>\<nat>k" "X`k1 -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,n) *\<^sub>R a" @then
+  @var_induct "N \<in> nat" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a" @with
+    @subgoal "N = N' +\<^sub>\<nat> 1"
+      @obtain k1 where "k1\<ge>\<^sub>\<nat>k" "X`k1 -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N') *\<^sub>R a" @then
       @obtain k2 where "k2\<ge>\<^sub>\<nat>k1" "X`k2 -\<^sub>R X`k1 \<ge>\<^sub>R a" @then
       @have "X`k2 -\<^sub>R X`k = (X`k2 -\<^sub>R X`k1) +\<^sub>R (X`k1 -\<^sub>R X`k)" @then
-      @have "(of_nat(R,n) +\<^sub>R 1\<^sub>R) *\<^sub>R a = a +\<^sub>R of_nat(R,n) *\<^sub>R a" @end @end
-  @induct "N \<in> nat" "seq_has_increment(X,of_nat(R,N) *\<^sub>R a)"
+      @have "(of_nat(R,N') +\<^sub>R 1\<^sub>R) *\<^sub>R a = a +\<^sub>R of_nat(R,N') *\<^sub>R a"
+    @endgoal
+  @end
 @qed
-   
+
 lemma monotone_cauchy [forward]:
   "ord_field_seq(X) \<Longrightarrow> seq_incr(X) \<Longrightarrow> upper_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow>
    is_archimedean(R) \<Longrightarrow> cauchy(X)"
@@ -59,7 +43,7 @@ lemma monotone_cauchy [forward]:
   @obtain "N\<in>nat" where "of_nat(R,N) *\<^sub>R a >\<^sub>R (M -\<^sub>R X`0)" @then
   @obtain n where "n \<ge>\<^sub>\<nat> 0" "X`n -\<^sub>R X`0 \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a" @then @have "X`n \<le>\<^sub>R M"
 @qed
-      
+
 lemma monotone_incr_converges [forward]:
   "is_sequence(X) \<Longrightarrow> seq_incr(X) \<Longrightarrow> upper_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow>
    cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> converges(X)" by auto2
@@ -92,7 +76,7 @@ lemma half_seq_induct [resolve]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> half_seq(X) \<Longrightarrow> n \<in> nat \<Longrightarrow>
    \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)"
 @proof
-  @induct "n \<in> nat" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)"
+  @var_induct "n \<in> nat" "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R n)"
 @qed
 setup {* del_prfstep_thm @{thm ord_field_divide_le_trans1} *}
 
@@ -158,7 +142,7 @@ setup {* del_prfstep_thm @{thm DCSeqs_def} *}
 lemma DCSeqs_le [backward]:
   "is_ord_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> A = fst(DCSeqs(R,U)) \<Longrightarrow> B = snd(DCSeqs(R,U)) \<Longrightarrow>
    n \<in> source(A) \<Longrightarrow> n \<in> source(B) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> A`n \<le>\<^sub>R B`n"
-@proof @induct "n \<in> nat" "A`n \<le>\<^sub>R B`n" @qed
+@proof @var_induct "n \<in> nat" "A`n \<le>\<^sub>R B`n" @qed
 
 lemma dedekind_complete [resolve]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> \<exists>x\<in>.R. \<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U"
@@ -167,16 +151,16 @@ lemma dedekind_complete [resolve]:
   @have "converges(A)" @with
     @have "seq_incr(A)" @with @have "\<forall>n\<in>.\<nat>. A`(n +\<^sub>\<nat> 1) \<ge>\<^sub>R A`n" @end
     @have "upper_bounded(A)" @with
-      @have "\<forall>n\<in>.\<nat>. A`n \<le>\<^sub>R B`0" @with @induct "n \<in> nat" "A`n \<le>\<^sub>R B`0" @end @end @end
+      @have "\<forall>n\<in>.\<nat>. A`n \<le>\<^sub>R B`0" @with @var_induct "n \<in> nat" "A`n \<le>\<^sub>R B`0" @end @end @end
   @have "converges(B)" @with
     @have "seq_decr(B)" @with @have "\<forall>n\<in>.\<nat>. B`(n +\<^sub>\<nat> 1) \<le>\<^sub>R B`n" @end
     @have "lower_bounded(B)" @with
-      @have "\<forall>n\<in>.\<nat>. B`n \<ge>\<^sub>R A`0" @with @induct "n \<in> nat" "B`n \<ge>\<^sub>R A`0" @end @end @end
+      @have "\<forall>n\<in>.\<nat>. B`n \<ge>\<^sub>R A`0" @with @var_induct "n \<in> nat" "B`n \<ge>\<^sub>R A`0" @end @end @end
   @obtain x where "converges_to(B,x)" @then
   @let "S = seq_ring(R)" @then
   @have "vanishes(B -\<^sub>S A)" @with @have "half_seq(B -\<^sub>S A)" @end
-  @have (@rule) "\<forall>n\<in>nat. A`n \<in> U" @with @induct "n \<in> nat" "A`n \<in> U" @end
-  @have (@rule) "\<forall>n\<in>nat. B`n \<notin> U" @with @induct "n \<in> nat" "B`n \<notin> U" @end
+  @have (@rule) "\<forall>n\<in>nat. A`n \<in> U" @with @var_induct "n \<in> nat" "A`n \<in> U" @end
+  @have (@rule) "\<forall>n\<in>nat. B`n \<notin> U" @with @var_induct "n \<in> nat" "B`n \<notin> U" @end
   @have "\<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" @with
     @case "y <\<^sub>R x" @with @obtain "n\<in>nat" where "y <\<^sub>R A`n" @end
     @case "y \<in> U" @with
@@ -202,7 +186,7 @@ lemma least_upper_bound_complete [forward]:
   @obtain "y\<in>.R" where "\<forall>z\<in>.R. z <\<^sub>R y \<longleftrightarrow> z \<in> U" @then
   @have "y \<notin> U" @then @have "y \<in> upper_bound(R,S)" @then
   @have "has_sup(R,S) \<and> sup(R,S) = y"
-@qed  
+@qed
 
 lemma complete_to_linear_continuum [forward]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> linear_continuum(R)"

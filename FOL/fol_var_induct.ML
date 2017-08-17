@@ -1,0 +1,110 @@
+(* Induction on variables *)
+
+fun var_induct_cmd ((n, s), t, v) state =
+    let
+      val {context = ctxt, ...} = Proof.goal state
+      val thy = Proof_Context.theory_of ctxt
+      val (prem, goal) = the_pair (Syntax.read_terms ctxt [s, t])
+
+      val var =
+          if is_none n then
+            (Term.add_frees prem []) |> the_single |> Free
+            handle List.Empty => raise Fail "var_induct_cmd"
+          else Syntax.read_term ctxt (the n)
+
+      val (arbitraries, _) = UtilLogic.strip_obj_horn goal
+
+      (* Obtain the induction theorem *)
+      val ind_th = the (ScriptInduct_Data.lookup_induct_data "var_induct" thy prem)
+                   handle Option.Option => error "var induct: cannot find theorem."
+
+      val concl = concl_of' ind_th
+      val (P, vars) = Term.strip_comb concl
+      val _ = assert (Term.is_Var P) "var induct: P is not schematic variable."
+      val P_inst = fold Term.lambda (rev vars) goal
+      val inst = update_env (("P", 0), P_inst) fo_init
+      val ind_th' = subst_thm_thy thy inst ind_th
+
+      (* Obtain list of assumptions *)
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                              |> Thm.term_of |> Util.strip_meta_horn
+      val cAs = map (Thm.cterm_of ctxt) As
+      val use_As = As |> filter_out (occurs_frees (var :: arbitraries))
+
+      fun retrieve_pat t =
+          let
+            val t = dest_Trueprop t
+            val (vars, (_, C)) = UtilLogic.strip_obj_horn t
+            val pat_vars = map (fn t => let val (x, T) = dest_Free t in
+                                          Var ((x,0), T)
+                                        end) vars
+            val arg = C |> dest_arg |> Term.subst_atomic (vars ~~ pat_vars)
+          in
+            mk_eq (var, arg)
+          end
+
+      val (ind_prems, prem) = ind_th |> Thm.prems_of |> split_last
+      val pats = map retrieve_pat ind_prems @ [prem]
+
+      val ind_goals =
+          ind_th' |> Thm.prems_of |> split_last |> fst
+                  |> map (fn t => Logic.list_implies (use_As, t))
+                  |> map (Thm.cterm_of ctxt)
+                  |> map (UtilLogic.to_meta_conv ctxt)
+
+      val prem_goal = (Logic.list_implies (As, prem))
+                          |> Thm.cterm_of ctxt
+                          |> Thm.reflexive
+      val all_goals = ind_goals @ [prem_goal]
+
+      fun solve_eq eq =
+          let
+            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
+          in
+            Thm.equal_elim (meta_sym eq) th
+          end
+
+      val _ = assert (length pats = length all_goals)
+                     "var_induct: unexpected number of patterns"
+    in
+      if is_none v then
+        let
+          val ths = (map solve_eq all_goals) |> map send_all_to_hyps
+          val ind_concl = ind_th' |> fold Thm.elim_implies ths
+                                  |> fold Thm.implies_intr (rev cAs)
+          val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+        in
+          state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+        end
+      else
+        let
+        (* Create new block with the subgoals *)
+        fun after_qed ths prop =
+            let
+              val ths' = (all_goals ~~ ths)
+                            |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
+                            |> map send_all_to_hyps
+              val ind_concl = ind_th' |> fold Thm.elim_implies ths'
+                                      |> fold Thm.implies_intr (rev cAs)
+            in
+              Auto2_Outer.have_after_qed ctxt ind_concl prop
+            end
+
+          val new_frame =
+              Auto2_State.multiple_frame (pats ~~ map Thm.rhs_of all_goals, SOME ([], after_qed))
+        in
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
+        end
+    end
+
+val var_spec =
+    Scan.option (Parse.term --| @{keyword "in"}) -- Parse.term
+
+val _ =
+  Outer_Syntax.command @{command_keyword "@var_induct"} "apply induction"
+    (var_spec -- Parse.term -- Scan.option @{keyword "@with"} >>
+        (fn (((n, s), t), v) =>
+            Toplevel.proof (fn state => var_induct_cmd ((n, s), t, v) state)))
+
+val add_var_induct_data = ScriptInduct_Data.add_induct_data "var_induct"
+val delete_var_induct_data = ScriptInduct_Data.delete_induct_data "var_induct"
