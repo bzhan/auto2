@@ -51,7 +51,7 @@ section {* General induction rule for least fixed points *}
 (* Induction rule: given predicate P and let A be the subset of lfp that satisfies P.
    If everything in h(A) also satisfies P, then in fact A = lfp. *)
 lemma lfp_induct [script_induct]:
-  "bnd_mono(D,h) \<Longrightarrow> \<forall>x\<in>h(Collect(lfp(D,h),P)). P(x) \<Longrightarrow> a \<in> lfp(D,h) \<Longrightarrow> P(a)"
+  "a \<in> lfp(D,h) \<Longrightarrow> bnd_mono(D,h) \<Longrightarrow> \<forall>x\<in>h(Collect(lfp(D,h),P)). P(x) \<Longrightarrow> P(a)"
 @proof @have "h(Collect(lfp(D,h),P)) \<subseteq> lfp(D,h)" @qed
 
 lemma lfp_Int_lowerbound [backward1]:
@@ -116,17 +116,15 @@ lemma rtrans_clI2 [typing2]: "\<langle>a,b\<rangle> \<in> r \<Longrightarrow> \<
 lemma rtrans_clI3 [forward]: "\<langle>a,b\<rangle>\<in>rtrans_cl(r) \<Longrightarrow> \<langle>b,c\<rangle>\<in>r \<Longrightarrow> \<langle>a,c\<rangle>\<in>rtrans_cl(r)" by auto2
 
 lemma rtrans_cl_full_induct [script_induct]:
-  "\<forall>x\<in>gr_field(r). P(\<langle>x,x\<rangle>) \<Longrightarrow>
-   \<forall>x y z. P(\<langle>x,y\<rangle>) \<longrightarrow> \<langle>x,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> P(\<langle>x,z\<rangle>) \<Longrightarrow>
-   x \<in> rtrans_cl(r) \<Longrightarrow> P(x)"
+  "x \<in> rtrans_cl(r) \<Longrightarrow> \<forall>x\<in>gr_field(r). P(\<langle>x,x\<rangle>) \<Longrightarrow>
+   \<forall>x y z. P(\<langle>x,y\<rangle>) \<longrightarrow> \<langle>x,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> P(\<langle>x,z\<rangle>) \<Longrightarrow> P(x)"
 @proof
   @induct "x \<in> lfp(gr_field(r)\<times>gr_field(r), \<lambda>s. gr_id(gr_field(r)) \<union> (r \<circ>\<^sub>g s))" "P(x)"
 @qed
 setup {* del_prfstep_thm @{thm rtrans_cl_def} *}
 
 lemma rtrans_cl_induct [script_induct]:
-  "\<forall>y z. \<langle>a,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow>
-   P(a) \<Longrightarrow> \<langle>a,b\<rangle>\<in>rtrans_cl(r) \<Longrightarrow> P(b)"
+  "\<langle>a,b\<rangle>\<in>rtrans_cl(r) \<Longrightarrow> \<forall>y z. \<langle>a,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(a) \<Longrightarrow> P(b)"
 @proof
   @induct "\<langle>a,b\<rangle> \<in> rtrans_cl(r)" "fst(\<langle>a,b\<rangle>) = a \<longrightarrow> P(snd(\<langle>a,b\<rangle>))"
 @qed
@@ -148,9 +146,8 @@ lemma trans_clI1 [typing2]: "\<langle>a,b\<rangle> \<in> r \<Longrightarrow> \<l
 lemma trans_clI2 [forward]: "\<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<langle>b,c\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<langle>a,c\<rangle> \<in> trans_cl(r)" by auto2
 
 lemma trans_cl_induct [script_induct]:
-  "\<forall>y. \<langle>a,y\<rangle> \<in> r \<longrightarrow> P(y) \<Longrightarrow>
-   \<forall>y z. \<langle>a,y\<rangle> \<in> trans_cl(r) \<longrightarrow> \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow>
-   \<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> P(b)"
+  "\<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<forall>y. \<langle>a,y\<rangle> \<in> r \<longrightarrow> P(y) \<Longrightarrow>
+   \<forall>y z. \<langle>a,y\<rangle> \<in> trans_cl(r) \<longrightarrow> \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(b)"
 @proof
   @obtain y where "\<langle>a,y\<rangle> \<in> rtrans_cl(r) \<and> \<langle>y,b\<rangle> \<in> r" @then
   @induct "\<langle>a,y\<rangle> \<in> rtrans_cl(r)" "\<forall>z. \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(z)"
@@ -183,9 +180,8 @@ setup {* add_forward_prfstep_cond @{thm rel_trans_clI1} [with_term "rel_trans_cl
 lemma rel_trans_clI2 [forward]: "is_rel(R) \<Longrightarrow> trans(rel_trans_cl(R))" by auto2
 
 lemma rel_trans_cl_induct [script_induct]:
-  "is_rel(R) \<Longrightarrow> \<forall>y. rel(R,a,y) \<longrightarrow> P(y) \<Longrightarrow>
-   \<forall>y z. rel(rel_trans_cl(R),a,y) \<longrightarrow> rel(R,y,z) \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow>
-   rel(rel_trans_cl(R),a,b) \<Longrightarrow> P(b)"
+  "rel(rel_trans_cl(R),a,b) \<Longrightarrow> is_rel(R) \<Longrightarrow> \<forall>y. rel(R,a,y) \<longrightarrow> P(y) \<Longrightarrow>
+   \<forall>y z. rel(rel_trans_cl(R),a,y) \<longrightarrow> rel(R,y,z) \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(b)"
 @proof
   @induct "\<langle>a,b\<rangle>\<in>trans_cl(graph(R))" "P(b)"
 @qed

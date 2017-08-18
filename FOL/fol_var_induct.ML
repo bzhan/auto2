@@ -67,19 +67,20 @@ fun var_induct_cmd ((n, s), t, u, v) state =
             mk_eq (var, arg)
           end
 
-      val (ind_prems, prem) = ind_th |> Thm.prems_of |> split_last
-      val pats = map retrieve_pat ind_prems @ [prem]
+      val prem = hd (Thm.prems_of ind_th)
+      val ind_prems = tl (Thm.prems_of ind_th)
+      val pats = prem :: map retrieve_pat ind_prems
+
+      val prem_goal = (Logic.list_implies (As, prem))
+                          |> Thm.cterm_of ctxt |> Thm.reflexive
 
       val ind_goals =
-          ind_th' |> Thm.prems_of |> split_last |> fst
+          ind_th' |> Thm.prems_of |> tl
                   |> map (fn t => Logic.list_implies (use_As, t))
                   |> map (Thm.cterm_of ctxt)
                   |> map (UtilLogic.to_meta_conv ctxt)
 
-      val prem_goal = (Logic.list_implies (As, prem))
-                          |> Thm.cterm_of ctxt
-                          |> Thm.reflexive
-      val all_goals = ind_goals @ [prem_goal]
+      val all_goals = prem_goal :: ind_goals
 
       fun solve_eq eq =
           let

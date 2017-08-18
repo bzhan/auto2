@@ -43,8 +43,8 @@ lemma wf_trans_cl [forward]:
 @qed
 
 (* Well-founded induction *)
-lemma wf_induct [script_induct]:
-  "\<forall>x\<in>source(r). (\<forall>y\<in>source(r). rel(r,y,x) \<longrightarrow> P(y)) \<longrightarrow> P(x) \<Longrightarrow> wf(r) \<and> a \<in> source(r) \<Longrightarrow> P(a)"
+lemma wf_induct [strong_induct]:
+  "wf(r) \<and> a \<in> source(r) \<Longrightarrow> \<forall>x\<in>source(r). (\<forall>y\<in>source(r). rel(r,y,x) \<longrightarrow> P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(a)"
 @proof
   @let "Z = {z \<in> source(r). \<not>P(z)}" @then
   @case "Z = \<emptyset>" @with @have "a \<notin> Z" @end
@@ -74,8 +74,9 @@ lemma is_recfun_agree [forward]:
    \<forall>x. rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x"
 @proof
   @have "\<forall>x. rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x" @with
-    @induct "wf(r) \<and> x \<in> source(r)" "rel(r,x,a) \<longrightarrow> rel(r,x,b) \<longrightarrow> f`x = g`x" @end
-@qed    
+    @strong_induct "wf(r) \<and> x \<in> source(r)"
+  @end
+@qed
 
 lemma is_recfun_unique [forward]:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> is_recfun(r,a,H,f) \<Longrightarrow> is_recfun(r,a,H,g) \<Longrightarrow> f = g" by auto2
@@ -101,11 +102,9 @@ setup {* del_prfstep_thm @{thm the_recfun_def} *}
 lemma unfold_the_recfun:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> a \<in> source(r) \<Longrightarrow> is_recfun(r,a,H,the_recfun(r,a,H))"
 @proof
-  @have "\<forall>x\<in>source(r). (\<forall>y\<in>source(r). rel(r,y,x) \<longrightarrow> is_recfun(r,y,H,the_recfun(r,y,H))) \<longrightarrow> is_recfun(r,x,H,the_recfun(r,x,H))" @with
-    @let "f = Tup(rel_vsection(r,x), \<lambda>y. H(y, the_recfun(r,y,H)))" @then
-    @have "is_recfun(r,x,H,f)"
-  @end
-  @induct "wf(r) \<and> a \<in> source(r)" "is_recfun(r,a,H,the_recfun(r,a,H))"
+  @strong_induct "wf(r) \<and> a \<in> source(r)"
+  @let "f = Tup(rel_vsection(r,a), \<lambda>y. H(y, the_recfun(r,y,H)))" @then
+  @have "is_recfun(r,a,H,f)"
 @qed
 setup {* add_forward_prfstep_cond @{thm unfold_the_recfun} [with_term "the_recfun(?r,?a,?H)"] *}
 

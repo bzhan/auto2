@@ -53,5 +53,6 @@ attribute_setup typing = {* setup_attrib add_typing_rule *}
 attribute_setup typing2 = {* setup_attrib add_typing2_rule *}
 attribute_setup backward_replace = {* setup_attrib add_backward_replace *}
 attribute_setup script_induct = {* setup_attrib add_script_induct_data *}
+attribute_setup strong_induct = {* setup_attrib add_strong_induct_data *}
 
 end

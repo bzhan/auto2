@@ -62,23 +62,19 @@ lemma union_ordP: "\<forall>a\<in>I. ord(X(a)) \<Longrightarrow> ord(\<Union>a\<
 
 section {* Induction on ordinals *}
 
-lemma ord_induct' [script_induct]:
-  "\<forall>x\<in>k. (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> ord(k) \<and> i \<in> k \<Longrightarrow> P(i)"
-@proof
-  @induct "wf(mem_rel(k)) \<and> i \<in> source(mem_rel(k))" "P(i)"
-@qed
-  
+lemma ord_induct' [strong_induct]:
+  "ord(k) \<and> i \<in> k \<Longrightarrow> \<forall>x\<in>k. (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(i)"
+@proof @strong_induct "wf(mem_rel(k)) \<and> i \<in> source(mem_rel(k))" @qed
+
 lemma ord_induct [script_induct]:
-  "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> ord(i) \<Longrightarrow> P(i)"
-@proof
-  @induct "ord(succ(i)) \<and> i \<in> succ(i)" "P(i)"
-@qed
+  "ord(i) \<Longrightarrow> \<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(i)"
+@proof @strong_induct "ord(succ(i)) \<and> i \<in> succ(i)" @qed
 
 lemma ord_double_induct [script_induct]:
-  "\<forall>x y. ord(x) \<longrightarrow> ord(y) \<longrightarrow> (\<forall>x'\<in>x. P(x',y)) \<longrightarrow> (\<forall>y'\<in>y. P(x,y')) \<longrightarrow> P(x,y) \<Longrightarrow>
-   ord(i) \<and> ord(j) \<Longrightarrow> P(i,j)"
+  "ord(i) \<and> ord(j) \<Longrightarrow> 
+   \<forall>x y. ord(x) \<longrightarrow> ord(y) \<longrightarrow> (\<forall>x'\<in>x. P(x',y)) \<longrightarrow> (\<forall>y'\<in>y. P(x,y')) \<longrightarrow> P(x,y) \<Longrightarrow> P(i,j)"
 @proof
-  @have "\<forall>i'. ord(i') \<longrightarrow> (\<forall>i\<in>i'. \<forall>j. ord(j) \<longrightarrow> P(i, j)) \<longrightarrow> (\<forall>j'. ord(j') \<longrightarrow> P(i', j'))" @with
+  @have "\<forall>i' j'. ord(i') \<longrightarrow> (\<forall>i\<in>i'. \<forall>j. ord(j) \<longrightarrow> P(i, j)) \<longrightarrow> ord(j') \<longrightarrow> P(i', j')" @with
     @induct "ord(j')" "P(i',j')" @end
   @induct "ord(i)" "\<forall>j. ord(j) \<longrightarrow> P(i,j)"
 @qed

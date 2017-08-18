@@ -209,7 +209,7 @@ lemma card_1_elim [backward]:
 @qed
 
 lemma finite_induct [var_induct]:
-  "P(\<emptyset>) \<Longrightarrow> \<forall>a X. finite(X) \<longrightarrow> a \<notin> X \<longrightarrow> P(X) \<longrightarrow> P(cons(a,X)) \<Longrightarrow> finite(F) \<Longrightarrow> P(F)"
+  "finite(F) \<Longrightarrow> P(\<emptyset>) \<Longrightarrow> \<forall>a X. finite(X) \<longrightarrow> a \<notin> X \<longrightarrow> P(X) \<longrightarrow> P(cons(a,X)) \<Longrightarrow> P(F)"
 @proof
   @let "n = card(F)" @then
   @var_induct "n \<in> nat" arbitrary F @with
@@ -220,8 +220,8 @@ lemma finite_induct [var_induct]:
 @qed
 
 lemma finite_nonempty_induct [var_induct]:
-  "\<forall>a. P({a}) \<Longrightarrow> \<forall>a X. finite(X) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> a \<notin> X \<longrightarrow> P(X) \<longrightarrow> P(cons(a,X)) \<Longrightarrow>
-   finite(F) \<and> F \<noteq> \<emptyset> \<Longrightarrow> P(F)"
+  "finite(F) \<and> F \<noteq> \<emptyset> \<Longrightarrow>
+   \<forall>a. P({a}) \<Longrightarrow> \<forall>a X. finite(X) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> a \<notin> X \<longrightarrow> P(X) \<longrightarrow> P(cons(a,X)) \<Longrightarrow> P(F)"
 @proof
   @let "n = card(F)"
   @var_induct "n \<ge>\<^sub>\<nat> 1" for "finite(F) \<longrightarrow> n = card(F) \<longrightarrow> P(F)" arbitrary F @with

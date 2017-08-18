@@ -31,7 +31,7 @@ ML_file "fol_var_induct.ML"
 attribute_setup var_induct = {* setup_attrib add_var_induct_data *}
 
 lemma nat_induct [var_induct]:
-  "P(0) \<Longrightarrow> \<forall>x\<in>nat. P(x) \<longrightarrow> P(Suc(x)) \<Longrightarrow> n \<in> nat \<Longrightarrow> P(n)"
+  "n \<in> nat \<Longrightarrow> P(0) \<Longrightarrow> \<forall>x\<in>nat. P(x) \<longrightarrow> P(Suc(x)) \<Longrightarrow> P(n)"
 @proof
   @induct "n \<in> lfp(Inf, \<lambda>X. {0} \<union> {Suc(i). i \<in> X})" "P(n)"
 @qed
@@ -386,7 +386,7 @@ setup {* fold del_prfstep_thm [@{thm nat_Suc_not_zero}, @{thm nat_case_split},
   @{thm nat_less_to_Suc_le}, @{thm nat_le_to_Suc_le}] *}
 
 lemma nat_induct' [var_induct]:
-  "P(0) \<Longrightarrow> \<forall>x\<in>nat. P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> n \<in> nat \<Longrightarrow> P(n)"
+  "n \<in> nat \<Longrightarrow> P(0) \<Longrightarrow> \<forall>x\<in>nat. P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> P(n)"
 @proof @var_induct "n \<in> nat" @qed
 setup {* add_var_induct_data_with_prem (@{term_pat "?n \<in>. \<nat>"}, @{thm nat_induct'}) *}
 setup {* del_prfstep_thm @{thm nat_add_1} *}
@@ -394,20 +394,19 @@ setup {* del_prfstep_thm @{thm nat_add_1} *}
 section {* Other induction principles *}
 
 lemma nat_induct_k [var_induct]:
-  "P(k) \<Longrightarrow> \<forall>x\<in>nat. x \<ge>\<^sub>\<nat> k \<longrightarrow> P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> n \<ge>\<^sub>\<nat> k \<Longrightarrow> P(n)"
+  "n \<ge>\<^sub>\<nat> k \<Longrightarrow> P(k) \<Longrightarrow> \<forall>x\<in>nat. x \<ge>\<^sub>\<nat> k \<longrightarrow> P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> P(n)"
 @proof
   @have (@rule) "\<forall>m\<in>nat. P(m +\<^sub>\<nat> k)" @with @var_induct "m \<in> nat" @end
   @have "n = (n -\<^sub>\<nat> k) +\<^sub>\<nat> k"
 @qed
 
-lemma nat_induct_less:
-  "(\<forall>n. n \<in> nat \<longrightarrow> (\<forall>m. m <\<^sub>\<nat> n \<longrightarrow> P(m)) \<longrightarrow> P(n)) \<Longrightarrow> n \<in> nat \<Longrightarrow> P(n)"
+lemma nat_induct_less [strong_induct]:
+  "n \<in> nat \<Longrightarrow> (\<forall>n\<in>nat. (\<forall>m. m <\<^sub>\<nat> n \<longrightarrow> P(m)) \<longrightarrow> P(n)) \<Longrightarrow> P(n)"
 @proof @var_induct "n \<in> nat" for "\<forall>m. m \<le>\<^sub>\<nat> n \<longrightarrow> P(m)" @qed
-setup {* add_strong_induct_data @{thm nat_induct_less} *}
 
 lemma nat_double_induct [script_induct]:
-  "P(0,0) \<Longrightarrow> \<forall>x\<in>nat. \<forall>y\<in>nat. P(x,y) \<longrightarrow> P(x,y +\<^sub>\<nat> 1) \<Longrightarrow>
-   \<forall>x\<in>nat. \<forall>y\<in>nat. P(x,y) \<longrightarrow> P(x +\<^sub>\<nat> 1,y) \<Longrightarrow> m \<in> nat \<and> n \<in> nat \<Longrightarrow> P(m,n)"
+  "m \<in> nat \<and> n \<in> nat \<Longrightarrow> P(0,0) \<Longrightarrow> \<forall>x\<in>nat. \<forall>y\<in>nat. P(x,y) \<longrightarrow> P(x,y +\<^sub>\<nat> 1) \<Longrightarrow>
+   \<forall>x\<in>nat. \<forall>y\<in>nat. P(x,y) \<longrightarrow> P(x +\<^sub>\<nat> 1,y) \<Longrightarrow> P(m,n)"
 @proof
   @var_induct "m \<in> nat" arbitrary n @with
     @subgoal "m = 0" @var_induct "n \<in> nat" @endgoal

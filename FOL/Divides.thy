@@ -59,7 +59,7 @@ definition odd :: "i \<Rightarrow> o" where [rewrite]:
 section {* Quotient and Remainder *}
 
 lemma quotient_remainder_theorem:
-  "n \<in> nat \<Longrightarrow> m >\<^sub>\<nat> 0 \<Longrightarrow> \<exists>q\<in>nat. \<exists>r\<in>nat. n = m *\<^sub>\<nat> q +\<^sub>\<nat> r \<and> 0 \<le>\<^sub>\<nat> r \<and> r <\<^sub>\<nat> m"
+  "m >\<^sub>\<nat> 0 \<Longrightarrow> n \<in> nat \<Longrightarrow> \<exists>q\<in>nat. \<exists>r\<in>nat. n = m *\<^sub>\<nat> q +\<^sub>\<nat> r \<and> 0 \<le>\<^sub>\<nat> r \<and> r <\<^sub>\<nat> m"
 @proof
   @strong_induct "n \<in> nat"
   @case "n <\<^sub>\<nat> m" @then
