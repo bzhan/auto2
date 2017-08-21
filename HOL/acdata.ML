@@ -37,7 +37,6 @@ end;
 structure ACUtil : ACUTIL =
 struct
 
-open Base
 open UtilLogic
 
 (* Register of generators of ac_inst_info. *)

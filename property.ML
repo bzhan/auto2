@@ -27,7 +27,6 @@ end;
 structure Property : PROPERTY =
 struct
 
-open Base
 open UtilLogic
 
 (* Register for property predicates. *)

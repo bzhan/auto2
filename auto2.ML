@@ -84,7 +84,6 @@ end;
 structure ProofStatus : PROOFSTATUS =
 struct
 
-open Base
 open UtilLogic
 
 fun check_hyps id th (st as {ctxt, ...}) =

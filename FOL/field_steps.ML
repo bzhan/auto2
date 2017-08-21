@@ -395,7 +395,7 @@ val add_field_proofsteps =
                 val info = ord_field_alg_info ord_field_th
                 val le_th = mk_rat_le_th info (dest_rat rt, dest_rat st)
               in
-                [Update.thm_update (id, [th, le_th] MRS contra_triv_th)]
+                [Update.thm_update (id, [th, le_th] MRS UtilBase.contra_triv_th)]
               end
             else
               [ShadowItem {id = id, item = the_single items}]
@@ -418,7 +418,7 @@ val add_field_proofsteps =
                 val info = ord_field_alg_info ord_field_th
                 val less_th = mk_rat_less_th info (dest_rat rt, dest_rat st)
               in
-                [Update.thm_update (id, [th, less_th] MRS contra_triv_th)]
+                [Update.thm_update (id, [th, less_th] MRS UtilBase.contra_triv_th)]
               end
             else
               [ShadowItem {id = id, item = the_single items}]

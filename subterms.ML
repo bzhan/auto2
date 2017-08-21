@@ -13,7 +13,6 @@ end;
 structure Subterms : SUBTERMS =
 struct
 
-open Base
 open UtilLogic
 
 fun get_subvar n ct = Thm.var (("SUB", n), Thm.ctyp_of_cterm ct)
@@ -109,7 +108,7 @@ fun get_all_subterms ct =
    no, list only subterms of cond.
  *)
 fun get_all_subterms_skip_if ct =
-    if is_if (Thm.term_of ct) then
+    if UtilBase.is_if (Thm.term_of ct) then
       ct :: get_all_subterms_skip_if (ct |> dest_cargs |> hd)
     else
       ct :: (ct |> list_subterms |> maps get_all_subterms_skip_if

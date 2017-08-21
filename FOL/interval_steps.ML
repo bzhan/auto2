@@ -52,7 +52,7 @@ val add_interval_proofsteps =
                   val mem_th = [ord_field_th, le_th1, le_th2]
                                    MRS @{thm closed_interval_memI}
                 in
-                  [Update.thm_update (id, [th, mem_th] MRS contra_triv_th)]
+                  [Update.thm_update (id, [th, mem_th] MRS UtilBase.contra_triv_th)]
                 end
               else []
             end

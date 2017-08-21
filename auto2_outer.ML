@@ -39,7 +39,6 @@ end;
 structure Auto2_Outer : AUTO2_OUTER =
 struct
 
-open Base
 open UtilLogic
 
 (* Use auto2 to solve the given statement *)
@@ -456,8 +455,8 @@ fun case_resolve ctxt vars th =
 
       val inst = fo_init |> update_env (("P",0), dest_Trueprop B)
                          |> update_env (("Q",0), dest_Trueprop C)
-      val th_c = case_split_th |> subst_thm ctxt inst
-                               |> fold Thm.elim_implies [th_bc, th_nbc]
+      val th_c = (subst_thm ctxt inst UtilBase.case_split_th)
+                     |> fold Thm.elim_implies [th_bc, th_nbc]
     in
       th_c |> fold Thm.implies_intr (rev cAs)
            |> fold Thm.forall_intr (rev c_vars)
@@ -574,12 +573,12 @@ fun let_resolve ctxt vars eq As C =
 
       (* Call obtain_resolve with th as A_i ==> EX y. y = t. *)
       val (lhs, rhs) = dest_eq eq
-      val pat_a = case ex_vardef_th |> prop_of' |> dest_arg of
+      val pat_a = case UtilBase.ex_vardef_th |> prop_of' |> dest_arg of
                       Abs (_, _, b) => dest_arg b
                     | _ => raise Fail "ex_vardef_th"
       val (x, _) = Term.dest_Free lhs
       val inst = Pattern.first_order_match thy (pat_a, rhs) fo_init
-      val ex_th = subst_thm ctxt inst ex_vardef_th
+      val ex_th = subst_thm ctxt inst UtilBase.ex_vardef_th
       val t' = case Thm.prop_of ex_th of
                    A $ (B $ Abs (_, T, body)) => A $ (B $ Abs (x, T, body))
                  | _ => error "let_resolve"

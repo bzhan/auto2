@@ -54,6 +54,9 @@ sig
   val make_trueprop_eq: thm -> thm
   val assume_eq: theory -> term * term -> thm
   val apply_to_thm': conv -> thm -> thm
+  val to_meta_eq: thm -> thm
+  val to_obj_eq: thm -> thm
+  val obj_sym: thm -> thm
   val rewr_obj_eq: thm -> conv
   val rewr_obj_eq_sym: thm -> conv
   val rewr_obj_eq_top: Proof.context -> thm -> conv
@@ -97,8 +100,6 @@ end;
 structure UtilLogic : UTIL_LOGIC =
 struct
 
-open Base
-
 (* Booleans *)
 
 fun term_of_bool b = (if b then bTrue else bFalse)
@@ -110,45 +111,33 @@ fun bool_of_term t =
 
 (* Trueprop *)
 
-val Trueprop = Const (Trueprop_name, boolT --> propT)
+val Trueprop = Const (UtilBase.Trueprop_name, boolT --> propT)
 
 (* Returns whether the given term is Trueprop. *)
 fun is_Trueprop t =
     let
       val _ = assert (fastype_of t = propT) "is_Trueprop: wrong type"
     in
-      case t of Const (c, _) $ _ => c = Trueprop_name
+      case t of Const (c, _) $ _ => c = UtilBase.Trueprop_name
               | _ => false
     end
 
 fun mk_Trueprop P = Trueprop $ P
 
 fun dest_Trueprop t =
-    case t of
-        Const (c, _) $ P =>
-        if c = Trueprop_name then P else raise Fail "dest_Trueprop"
-      | _ => raise Fail "dest_Trueprop"
+    if is_Trueprop t then dest_arg t else raise Fail "dest_Trueprop"
 
 fun Trueprop_conv cv ct =
-    case Thm.term_of ct of
-        Const (c, _) $ _ =>
-        if c = Trueprop_name then Conv.arg_conv cv ct
-        else raise CTERM ("Trueprop_conv", [ct])
-      | _ => raise CTERM ("Trueprop_conv", [ct])
+    if is_Trueprop (Thm.term_of ct) then Conv.arg_conv cv ct
+    else raise CTERM ("Trueprop_conv", [ct])
 
 val pFalse = Trueprop $ bFalse
 
 (* Not *)
 
-val Not = Const (Not_name, boolT --> boolT)
+val Not = Const (UtilBase.Not_name, boolT --> boolT)
 
 fun mk_not P = Not $ P
-
-fun dest_not t =
-    case t of
-        Const (c, _) $ P =>
-        if c = Not_name then P else raise Fail "dest_not"
-      | _ => raise Fail "dest_not"
 
 (* Returns whether the given term is in neg form. *)
 fun is_neg t =
@@ -156,19 +145,16 @@ fun is_neg t =
       val _ = assert (fastype_of t = boolT) "is_neg: wrong type"
     in
       case t of
-          Const (c, _) $ _ => c = Not_name
+          Const (c, _) $ _ => c = UtilBase.Not_name
         | _ => false
     end
 
+fun dest_not t =
+    if is_neg t then dest_arg t else raise Fail "dest_not"
+
 (* Returns the negation of the given term. Avoids double negatives. *)
 fun get_neg t =
-    let
-      val _ = assert (fastype_of t = boolT) "get_neg: wrong type"
-    in
-      case t of
-          Const (c, _) $ P => if c = Not_name then P else Not $ t
-        | _ => Not $ t
-    end
+    if is_neg t then dest_not t else Not $ t
 
 (* Version of get_neg for Trueprop terms. *)
 fun get_neg' t =
@@ -188,28 +174,32 @@ fun is_eq_term' t =
 
 (* Conjunction and disjunction *)
 
-val conj = Const (Conj_name, boolT --> boolT --> boolT)
-fun is_conj t = case t of Const (c, _) $ _ $ _ => c = Conj_name | _ => false
+val conj = Const (UtilBase.Conj_name, boolT --> boolT --> boolT)
+
+fun is_conj t =
+    case t of Const (c, _) $ _ $ _ => c = UtilBase.Conj_name | _ => false
+
 fun mk_conj (t, u) = conj $ t $ u
+
 fun strip_conj t =
-    case t of
-        Const (c, _) $ A $ B =>
-        if c = Conj_name then A :: strip_conj B else [t]
-      | _ => [t]
+    if is_conj t then (dest_arg1 t) :: strip_conj (dest_arg t) else [t]
+
 fun list_conj ts =
     case ts of
         [] => error "list_conj"
       | [t] => t
       | t :: rest => mk_conj (t, list_conj rest)
 
-val disj = Const (Disj_name, boolT --> boolT --> boolT)
-fun is_disj t = case t of Const (c, _) $ _ $ _ => c = Disj_name | _ => false
+val disj = Const (UtilBase.Disj_name, boolT --> boolT --> boolT)
+
+fun is_disj t =
+    case t of Const (c, _) $ _ $ _ => c = UtilBase.Disj_name | _ => false
+
 fun mk_disj (t, u) = disj $ t $ u
+
 fun strip_disj t =
-    case t of
-        Const (c, _) $ A $ B =>
-        if c = Disj_name then A :: strip_disj B else [t]
-      | _ => [t]
+    if is_disj t then (dest_arg1 t) :: strip_disj (dest_arg t) else [t]
+
 fun list_disj ts =
     case ts of
         [] => raise Fail "list_disj"
@@ -218,24 +208,21 @@ fun list_disj ts =
 
 (* Object implication *)
 
-val imp = Const (Imp_name, boolT --> boolT --> boolT)
-fun is_imp t = case t of Const (c, _) $ _ $ _ => c = Imp_name | _ => false
+val imp = Const (UtilBase.Imp_name, boolT --> boolT --> boolT)
+
+fun is_imp t =
+    case t of Const (c, _) $ _ $ _ => c = UtilBase.Imp_name | _ => false
+
 fun mk_imp (t, u) = imp $ t $ u
 
 fun dest_imp t =
-    case t of
-        Const (c, _) $ A $ B =>
-        if c = Imp_name then (A, B) else raise Fail "dest_imp"
-      | _ => raise Fail "dest_imp"
+    if is_imp t then (dest_arg1 t, dest_arg t) else raise Fail "dest_imp"
 
 (* Given t of form A1 --> ... --> An, return ([A1, ..., A(n-1)], An). *)
 fun strip_obj_imp t =
-    case t of
-        Const (c, _) $ A $ B =>
-        if c = Imp_name then
-          let val (As, B') = strip_obj_imp B in (A :: As, B') end
-        else ([], t)
-      | _ => ([], t)
+    if is_imp t then
+      let val (As, B') = strip_obj_imp (dest_arg t) in (dest_arg1 t :: As, B') end
+    else ([], t)
 
 fun list_obj_imp (As, C) =
     case As of
@@ -244,44 +231,40 @@ fun list_obj_imp (As, C) =
 
 fun is_obj_all t =
     case t of
-        Const (c, _) $ Abs _ => c = All_name
-      | _ => false
+        Const (c, _) $ Abs _ => c = UtilBase.All_name | _ => false
 
 fun is_ball t =
-    case t of Const (c, _) $ _ $ _ => (c = Ball_name)
-            | _ => false
+    case t of
+        Const (c, _) $ _ $ _ => c = UtilBase.Ball_name | _ => false
 
 fun mk_obj_all t body =
     let
       val (x, T) = Term.dest_Free t
     in
-      Const (All_name, (T --> boolT) --> boolT) $ Term.absfree (x, T) body
+      Const (UtilBase.All_name, (T --> boolT) --> boolT) $ Term.absfree (x, T) body
     end
 
 fun is_ex t =
-    case t of Const (c, _) $ Abs _ => (c = Ex_name)
-            | _ => false
+    case t of Const (c, _) $ Abs _ => c = UtilBase.Ex_name | _ => false
 
 fun is_bex t =
-    case t of Const (c, _) $ _ $ _ => (c = Bex_name)
-            | _ => false
+    case t of Const (c, _) $ _ $ _ => c = UtilBase.Bex_name | _ => false
 
 fun mk_exists t body =
     let
       val (x, T) = Term.dest_Free t
     in
-      Const (Ex_name, (T --> boolT) --> boolT) $ Term.absfree (x, T) body
+      Const (UtilBase.Ex_name, (T --> boolT) --> boolT) $ Term.absfree (x, T) body
     end
 
 fun is_mem t =
-    case t of Const (c, _) $ _ $ _ => (c = Mem_name)
-            | _ => false
+    case t of Const (c, _) $ _ $ _ => c = UtilBase.Mem_name | _ => false
 
 fun mk_mem (x, A) =
     let
       val T = fastype_of x
     in
-      Const (Mem_name, T --> mk_setT T --> boolT) $ x $ A
+      Const (UtilBase.Mem_name, T --> UtilBase.mk_setT T --> boolT) $ x $ A
     end
 
 (* cterms *)
@@ -289,7 +272,7 @@ fun mk_mem (x, A) =
 fun cdest_Trueprop ct =
     case Thm.term_of ct of
         Const (c, _) $ _ =>
-        if c = Trueprop_name then Thm.dest_arg ct else
+        if c = UtilBase.Trueprop_name then Thm.dest_arg ct else
         raise Fail "dest_Trueprop"
       | _ => raise Fail "dest_Trueprop"
 
@@ -302,10 +285,7 @@ fun get_cneg ct =
       val t = Thm.term_of ct
       val _ = assert (fastype_of t = boolT) "get_neg: wrong type"
     in
-      case t of
-          Const (c, _) $ _ => if c = Not_name then Thm.dest_arg ct
-                              else Thm.apply cNot ct
-        | _ => Thm.apply cNot ct
+      if is_neg t then Thm.dest_arg ct else Thm.apply UtilBase.cNot ct
     end
 
 (* Theorems *)
@@ -319,7 +299,7 @@ fun concl_of' th = dest_Trueprop (Thm.concl_of th)
    by applying the function Trueprop to both sides.
  *)
 fun make_trueprop_eq th =
-    Thm.combination (Thm.reflexive cTrueprop) th
+    Thm.combination (Thm.reflexive UtilBase.cTrueprop) th
 
 (* Assumed theorems. *)
 fun assume_eq thy (t1, t2) =
@@ -327,6 +307,12 @@ fun assume_eq thy (t1, t2) =
 
 (* Apply cv to the statement of th, skipping Trueprop. *)
 fun apply_to_thm' cv th = apply_to_thm (Trueprop_conv cv) th
+
+val to_meta_eq = apply_to_thm (concl_conv UtilBase.to_meta_eq_cv)
+
+val to_obj_eq = apply_to_thm (concl_conv UtilBase.to_obj_eq_cv)
+
+val obj_sym = apply_to_thm (concl_conv UtilBase.obj_sym_cv)
 
 (* Obtain rewriting conv from obj equality. *)
 fun rewr_obj_eq eq_th = Conv.rewr_conv (to_meta_eq eq_th)
@@ -339,13 +325,13 @@ fun rewr_obj_eq_top ctxt eq_th =
     Conv.top_conv (K (Conv.try_conv (rewr_obj_eq eq_th))) ctxt
 
 (* Try to cancel terms of the form ~~A. *)
-val try_nn_cancel_cv = Conv.try_conv (rewr_obj_eq nn_cancel_th)
+val try_nn_cancel_cv = Conv.try_conv (rewr_obj_eq UtilBase.nn_cancel_th)
 
 (* Given an equality A == B, make the equality ~A == ~B. Cancel ~~ on
    both sides if exists.
  *)
 fun make_neg_eq th =
-    th |> Thm.combination (Thm.reflexive cNot)
+    th |> Thm.combination (Thm.reflexive UtilBase.cNot)
        |> apply_to_lhs try_nn_cancel_cv
        |> apply_to_rhs try_nn_cancel_cv
 
@@ -361,9 +347,9 @@ fun rewrite_to_contra_form ct =
       if concl' aconv bFalse then
         Conv.all_conv ct
       else if is_neg concl' then
-        concl_conv (Conv.rewr_conv to_contra_form_th') ct
+        concl_conv (Conv.rewr_conv UtilBase.to_contra_form_th') ct
       else
-        concl_conv (Conv.rewr_conv to_contra_form_th) ct
+        concl_conv (Conv.rewr_conv UtilBase.to_contra_form_th) ct
     end
 
 val rewrite_thm_to_contra_form = apply_to_thm rewrite_to_contra_form
@@ -378,8 +364,8 @@ fun rewrite_from_contra_form ct =
                      "rewrite_from_contra_form: concl should be false."
       val num_prems = length prems
       val last_prem' = dest_Trueprop (nth prems (num_prems-1))
-      val to_contra_form = if is_neg last_prem' then to_contra_form_th
-                           else to_contra_form_th'
+      val to_contra_form = if is_neg last_prem' then UtilBase.to_contra_form_th
+                           else UtilBase.to_contra_form_th'
     in
       concl_conv_n (num_prems-1)
                    (Conv.rewr_conv (meta_sym to_contra_form)) ct
@@ -392,10 +378,10 @@ fun to_obj_conv ctxt ct =
     case Thm.term_of ct of
         @{const Pure.imp} $ _ $ _ =>
         Conv.every_conv [Conv.binop_conv (to_obj_conv ctxt),
-                         Conv.rewr_conv atomize_imp_th] ct
+                         Conv.rewr_conv UtilBase.atomize_imp_th] ct
       | Const (@{const_name Pure.all}, _) $ Abs _ =>
         Conv.every_conv [Conv.binder_conv (to_obj_conv o snd) ctxt,
-                         Conv.rewr_conv atomize_all_th] ct
+                         Conv.rewr_conv UtilBase.atomize_all_th] ct
       | _ => Conv.all_conv ct
 
 (* When ct is of form A1 ==> ... ==> An, apply to_obj_conv to each Ai. *)
@@ -412,13 +398,13 @@ fun to_meta_conv ctxt ct =
       val t = Thm.term_of ct
     in
       if is_Trueprop t andalso is_obj_all (dest_Trueprop t) then
-        Conv.every_conv [Conv.rewr_conv (meta_sym atomize_all_th),
+        Conv.every_conv [Conv.rewr_conv (meta_sym UtilBase.atomize_all_th),
                          to_meta_conv ctxt] ct
       else if is_Trueprop t andalso is_ball (dest_Trueprop t) then
-        Conv.every_conv [Conv.arg_conv (rewr_obj_eq Ball_def_th),
+        Conv.every_conv [Conv.arg_conv (rewr_obj_eq UtilBase.Ball_def_th),
                          to_meta_conv ctxt] ct
       else if is_Trueprop t andalso is_imp (dest_Trueprop t) then
-        Conv.every_conv [Conv.rewr_conv (meta_sym atomize_imp_th),
+        Conv.every_conv [Conv.rewr_conv (meta_sym UtilBase.atomize_imp_th),
                          to_meta_conv ctxt] ct
       else if Logic.is_all t then
         Conv.binder_conv (to_meta_conv o snd) ctxt ct
@@ -435,19 +421,19 @@ fun thm_RS_mod imp_th suffix th =
                    |> update_name_of_thm th suffix
 
 (* From A & B, obtain A. *)
-val conj_left_th = thm_RS_mod conjunct1_th "@left"
+val conj_left_th = thm_RS_mod UtilBase.conjunct1_th "@left"
 (* From A & B, obtain B. *)
-val conj_right_th = thm_RS_mod conjunct2_th "@right"
+val conj_right_th = thm_RS_mod UtilBase.conjunct2_th "@right"
 (* From (A::bool) = B, obtain A ==> B. *)
-val equiv_forward_th = thm_RS_mod iffD1_th "@eqforward"
+val equiv_forward_th = thm_RS_mod UtilBase.iffD1_th "@eqforward"
 (* From (A::bool) = B, obtain B ==> A. *)
-val equiv_backward_th = thm_RS_mod iffD2_th "@eqbackward"
+val equiv_backward_th = thm_RS_mod UtilBase.iffD2_th "@eqbackward"
 (* From (A::bool) = B, obtain ~A ==> ~B. *)
-val inv_backward_th = thm_RS_mod inv_back_th "@invbackward"
+val inv_backward_th = thm_RS_mod UtilBase.inv_back_th "@invbackward"
 (* Same as to_obj_eq, except keeping names and indices. *)
 fun to_obj_eq_th th = th |> to_obj_eq |> update_name_of_thm th "@obj_eq"
 (* Same as to_obj_eq_iff, except keeping names and indices. *)
-fun to_obj_eq_iff_th th = th |> to_obj_eq_iff |> update_name_of_thm th "@iff"
+fun to_obj_eq_iff_th th = th |> UtilBase.to_obj_eq_iff |> update_name_of_thm th "@iff"
 (* Same as obj_sym, except keeping names and indices. *)
 fun obj_sym_th th = th |> obj_sym |> update_name_of_thm th "@sym"
 
@@ -464,7 +450,7 @@ fun horn_conv cv ct =
  *)
 fun split_conj_th th =
     if is_conj (prop_of' th) then
-      (th RS conjunct1_th) :: (split_conj_th (th RS conjunct2_th))
+      (th RS UtilBase.conjunct1_th) :: (split_conj_th (th RS UtilBase.conjunct2_th))
     else [th]
 
 (* Given th of form ~ (A1 | ... | An), return theorems ~ A1, ... ~ An. *)
@@ -473,7 +459,7 @@ fun split_not_disj_th th =
       val t = prop_of' th
     in
       if is_neg t andalso is_disj (dest_not t) then
-        (th RS or_intro1_th) :: (split_not_disj_th (th RS or_intro2_th))
+        (th RS UtilBase.or_intro1_th) :: (split_not_disj_th (th RS UtilBase.or_intro2_th))
       else [th]
     end
 
@@ -486,7 +472,7 @@ fun mk_conjs_th ths =
     case ths of
         [] => raise Fail "mk_conjs_th"
       | [th] => th
-      | th :: rest => [th, mk_conjs_th rest] MRS conjI_th
+      | th :: rest => [th, mk_conjs_th rest] MRS UtilBase.conjI_th
 
 (* Given th of form P x ==> False, where x is the given free variable,
    obtain new theorem of form (EX x. P x) ==> False. The function is
@@ -498,9 +484,9 @@ fun ex_elim ctxt freevar th =
     let
       val thy = Proof_Context.theory_of ctxt
       val th' = th |> Thm.forall_intr (Thm.cterm_of ctxt freevar)
-      val head_prem = hd (Thm.prems_of exE_th')
+      val head_prem = hd (Thm.prems_of UtilBase.exE_th')
       val inst = Pattern.match thy (head_prem, Thm.prop_of th') fo_init
-      val exE_inst = subst_thm ctxt inst exE_th'
+      val exE_inst = subst_thm ctxt inst UtilBase.exE_th'
     in
       Thm.elim_implies th' exE_inst
     end
@@ -562,7 +548,7 @@ fun swap_conj_exists ctxt ct =
       val t = Thm.term_of ct
     in
       if is_conj t andalso is_ex (dest_arg t) then
-        Conv.every_conv [rewr_obj_eq swap_ex_conj_th,
+        Conv.every_conv [rewr_obj_eq UtilBase.swap_ex_conj_th,
                          Conv.binder_conv (swap_conj_exists o snd) ctxt] ct
       else
         Conv.all_conv ct
@@ -579,13 +565,13 @@ fun normalize_exists ctxt ct =
       if is_ex t then
         Conv.binder_conv (normalize_exists o snd) ctxt ct
       else if is_bex t then
-        Conv.every_conv [rewr_obj_eq Bex_def_th, normalize_exists ctxt] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.Bex_def_th, normalize_exists ctxt] ct
       else if is_neg t andalso is_obj_all (dest_not t) then
-        Conv.every_conv [rewr_obj_eq not_all_th, normalize_exists ctxt] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.not_all_th, normalize_exists ctxt] ct
       else if is_neg t andalso is_ball (dest_not t) then
-        Conv.every_conv [Conv.arg_conv (rewr_obj_eq Ball_def_th),
-                         rewr_obj_eq not_all_th,
-                         Conv.binder_conv (K (rewr_obj_eq not_imp_th)) ctxt,
+        Conv.every_conv [Conv.arg_conv (rewr_obj_eq UtilBase.Ball_def_th),
+                         rewr_obj_eq UtilBase.not_all_th,
+                         Conv.binder_conv (K (rewr_obj_eq UtilBase.not_imp_th)) ctxt,
                          normalize_exists ctxt] ct
       else if is_conj t then
         Conv.every_conv [Conv.arg_conv (normalize_exists ctxt),

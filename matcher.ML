@@ -45,7 +45,6 @@ end;
 structure Matcher : MATCHER =
 struct
 
-open Base
 open UtilLogic
 
 fun compare_inst (((id1, inst1), _), ((id2, inst2), _)) =

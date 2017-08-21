@@ -71,7 +71,7 @@ setup {* add_prfstep_custom ("ex_choice",
   PRIORITY_ADD,
   (fn ((id, _), ths) => fn _ => fn _ =>
     let
-      val choice = @{thm choice} |> apply_to_thm (Conv.rewr_conv backward_conv_th)
+      val choice = @{thm choice} |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)
     in
       [Update.thm_update (id, (ths MRS choice))]
     end

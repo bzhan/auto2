@@ -14,7 +14,6 @@ end;
 structure WellForm : WELLFORM =
 struct
 
-open Base
 open UtilLogic
 
 (* Each entry in the table consists of a term of the form f ?a_1

@@ -175,7 +175,7 @@ setup {* add_prfstep_custom ("ex_fun",
   PRIORITY_SHADOW,
   (fn ((id, _), ths) => fn items => fn _ =>
     let
-      val ex_fun' = @{thm ex_fun} |> apply_to_thm (Conv.rewr_conv backward_conv_th)
+      val ex_fun' = @{thm ex_fun} |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)
     in
       [AddItems {id = id, sc = SOME 1, raw_items = [Update.thm_to_ritem (ths MRS ex_fun')]},
        ShadowItem {id = id, item = the_single items}]

@@ -51,7 +51,6 @@ end;
 structure Logic_ProofSteps : LOGIC_PROOFSTEPS =
 struct
 
-open Base
 open UtilLogic
 
 fun boolVar s = Var ((s, 0), boolT)
@@ -178,13 +177,12 @@ fun cong_on_ineq_fn rtype _ {id, prop, ...} =
                         val cv = Conv.every_conv [
                               Conv.arg1_conv (Conv.rewr_conv (meta_sym eq_A)),
                               Conv.arg_conv (Conv.rewr_conv eq_B),
-                              to_obj_eq_cv]
+                              UtilBase.to_obj_eq_cv]
                         val cong_th =
                             (eq_cong_th i tx A' ctxt)
                                 |> apply_to_thm (concl_conv cv)
-                                |> apply_to_thm (Conv.arg1_conv to_obj_eq_cv)
-                                |> apply_to_thm (Conv.rewr_conv
-                                                     backward_conv_th)
+                                |> apply_to_thm (Conv.arg1_conv UtilBase.to_obj_eq_cv)
+                                |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)
                       in
                         Update.thm_update (id'', prop RS cong_th)
                       end
@@ -371,7 +369,7 @@ fun norm_disj_clauses ct =
       val (arg1, _) = dest_binop_args (Thm.term_of ct)
     in
       if is_disj arg1 then
-        Conv.every_conv [rewr_obj_eq disj_assoc_th,
+        Conv.every_conv [rewr_obj_eq UtilBase.disj_assoc_th,
                          Conv.arg_conv norm_disj_clauses] ct
       else
         Conv.all_conv ct
@@ -386,11 +384,11 @@ fun norm_disj ct =
       if is_disj t then
         Conv.every_conv [Conv.binop_conv norm_disj, norm_disj_clauses] ct
       else if is_imp t then
-        Conv.every_conv [rewr_obj_eq imp_conv_disj_th, norm_disj] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.imp_conv_disj_th, norm_disj] ct
       else if is_neg t andalso is_neg (dest_not t) then
-        Conv.every_conv [rewr_obj_eq nn_cancel_th, norm_disj] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.nn_cancel_th, norm_disj] ct
       else if is_neg t andalso is_conj (dest_not t) then
-        Conv.every_conv [rewr_obj_eq de_Morgan_conj_th, norm_disj] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.de_Morgan_conj_th, norm_disj] ct
       else
         Conv.all_conv ct
     end
@@ -402,17 +400,17 @@ fun norm_all_disj ctxt ct =
     in
       if is_obj_all t then
         if not (is_subterm (Bound 0) (dest_arg t)) then
-          Conv.every_conv [rewr_obj_eq all_trivial_th,
+          Conv.every_conv [rewr_obj_eq UtilBase.all_trivial_th,
                            norm_all_disj ctxt] ct
         else
           Conv.every_conv [Conv.binder_conv (norm_all_disj o snd) ctxt] ct
       else if is_ball t then
-        Conv.every_conv [rewr_obj_eq Ball_def_th, norm_all_disj ctxt] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.Ball_def_th, norm_all_disj ctxt] ct
       else if is_neg t andalso is_ex (dest_not t) then
-        Conv.every_conv [rewr_obj_eq not_ex_th, norm_all_disj ctxt] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.not_ex_th, norm_all_disj ctxt] ct
       else if is_neg t andalso is_bex (dest_not t) then
         Conv.every_conv [
-          Conv.arg_conv (rewr_obj_eq Bex_def_th), norm_all_disj ctxt] ct
+          Conv.arg_conv (rewr_obj_eq UtilBase.Bex_def_th), norm_all_disj ctxt] ct
       else if is_disj t then
         let
           val eq1 = Conv.binop_conv (norm_all_disj ctxt) ct
@@ -420,22 +418,22 @@ fun norm_all_disj ctxt ct =
         in
           if is_obj_all (dest_arg1 rhs) then
             Conv.every_conv [Conv.rewr_conv eq1,
-                             rewr_obj_eq disj_commute_th,
-                             rewr_obj_eq swap_all_disj_th,
+                             rewr_obj_eq UtilBase.disj_commute_th,
+                             rewr_obj_eq UtilBase.swap_all_disj_th,
                              norm_all_disj ctxt] ct
           else if is_obj_all (dest_arg rhs) then
             Conv.every_conv [Conv.rewr_conv eq1,
-                             rewr_obj_eq swap_all_disj_th,
+                             rewr_obj_eq UtilBase.swap_all_disj_th,
                              norm_all_disj ctxt] ct
           else
             Conv.every_conv [Conv.rewr_conv eq1, norm_disj_clauses] ct
         end
       else if is_imp t then
-        Conv.every_conv [rewr_obj_eq imp_conv_disj_th, norm_all_disj ctxt] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.imp_conv_disj_th, norm_all_disj ctxt] ct
       else if is_neg t andalso is_neg (dest_not t) then
-        Conv.every_conv [rewr_obj_eq nn_cancel_th, norm_all_disj ctxt] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.nn_cancel_th, norm_all_disj ctxt] ct
       else if is_neg t andalso is_conj (dest_not t) then
-        Conv.every_conv [rewr_obj_eq de_Morgan_conj_th, norm_all_disj ctxt] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.de_Morgan_conj_th, norm_all_disj ctxt] ct
       else
         Conv.all_conv ct
     end
@@ -444,7 +442,7 @@ fun mk_disj_eq eq_ths =
     case eq_ths of
         [] => raise Fail "mk_disj_eq"
       | [eq] => eq
-      | eq :: eqs' => Drule.binop_cong_rule cDisj eq (mk_disj_eq eqs')
+      | eq :: eqs' => Drule.binop_cong_rule UtilBase.cDisj eq (mk_disj_eq eqs')
 
 (* Sort A | (B_1 | B_2 | ... | B_n), assuming the right side is sorted. *)
 fun sort_disj_clause_aux ct =
@@ -454,15 +452,15 @@ fun sort_disj_clause_aux ct =
     in
       if is_disj arg2 then
         if Term_Ord.termless (dest_arg1 arg2, arg1) then
-          Conv.every_conv [rewr_obj_eq (obj_sym disj_assoc_th),
-                           Conv.arg1_conv (rewr_obj_eq disj_commute_th),
-                           rewr_obj_eq disj_assoc_th,
+          Conv.every_conv [rewr_obj_eq (obj_sym UtilBase.disj_assoc_th),
+                           Conv.arg1_conv (rewr_obj_eq UtilBase.disj_commute_th),
+                           rewr_obj_eq UtilBase.disj_assoc_th,
                            Conv.arg_conv sort_disj_clause_aux] ct
         else
           Conv.all_conv ct
       else
         if Term_Ord.termless (arg2, arg1) then
-          rewr_obj_eq (obj_sym disj_commute_th) ct
+          rewr_obj_eq (obj_sym UtilBase.disj_commute_th) ct
         else
           Conv.all_conv ct
     end
@@ -487,7 +485,7 @@ fun norm_all_disj_sorted ctxt ct =
 fun abstract_eq ctxt var eq =
     let
       val (x, T) = Term.dest_Free var
-      val all_const = Const (All_name, (T --> boolT) --> boolT)
+      val all_const = Const (UtilBase.All_name, (T --> boolT) --> boolT)
     in
       Drule.arg_cong_rule (Thm.cterm_of ctxt all_const)
                           (Thm.abstract_rule x (Thm.cterm_of ctxt var) eq)
@@ -556,7 +554,7 @@ fun norm_conj_clauses ct =
       val (arg1, _) = dest_binop_args (Thm.term_of ct)
     in
       if is_conj arg1 then
-        Conv.every_conv [rewr_obj_eq conj_assoc_th,
+        Conv.every_conv [rewr_obj_eq UtilBase.conj_assoc_th,
                          Conv.arg_conv norm_conj_clauses] ct
       else
         Conv.all_conv ct
@@ -570,11 +568,11 @@ fun norm_conj ct =
       if is_conj t then
         Conv.every_conv [Conv.binop_conv norm_conj, norm_conj_clauses] ct
       else if is_neg t andalso is_neg (dest_not t) then
-        Conv.every_conv [rewr_obj_eq nn_cancel_th, norm_conj] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.nn_cancel_th, norm_conj] ct
       else if is_neg t andalso is_imp (dest_not t) then
-        Conv.every_conv [rewr_obj_eq not_imp_th, norm_conj] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.not_imp_th, norm_conj] ct
       else if is_neg t andalso is_disj (dest_not t) then
-        Conv.every_conv [rewr_obj_eq de_Morgan_disj_th, norm_conj] ct
+        Conv.every_conv [rewr_obj_eq UtilBase.de_Morgan_disj_th, norm_conj] ct
       else
         Conv.all_conv ct
     end
@@ -758,9 +756,9 @@ fun ac_disj_conv cv ct =
 (* Assume ct is a disjunction, associating to the right. *)
 fun reduce_disj_True ct =
     if is_disj (Thm.term_of ct) then
-      ((rewr_obj_eq disj_True1_th)
+      ((rewr_obj_eq UtilBase.disj_True1_th)
            else_conv ((Conv.arg_conv reduce_disj_True)
-                          then_conv (rewr_obj_eq disj_True2_th))) ct
+                          then_conv (rewr_obj_eq UtilBase.disj_True2_th))) ct
     else
       Conv.all_conv ct
 
@@ -776,7 +774,7 @@ fun match_prop rtype (id, item2) pat =
           let
             val {ctxt, ...} = RewriteTable.table_of_rtype rtype
             (* Construct the theorem pat'(inst) == True. *)
-            val to_eqT_cv = (th RS eq_True_th) |> rewr_obj_eq |> Conv.try_conv
+            val to_eqT_cv = (th RS UtilBase.eq_True_th) |> rewr_obj_eq |> Conv.try_conv
 
             (* Rewrite pat(inst) using the above, then rewrite to True. *)
             val pat_eqT =
@@ -785,7 +783,7 @@ fun match_prop rtype (id, item2) pat =
                     |> apply_to_rhs (ac_disj_conv to_eqT_cv)
                     |> apply_to_rhs reduce_disj_True
                     |> to_obj_eq
-            val patT = pat_eqT RS eq_True_inv_th
+            val patT = pat_eqT RS UtilBase.eq_True_inv_th
           in
             ((id, inst), patT)
           end
@@ -802,8 +800,8 @@ fun match_prop rtype (id, item2) pat =
 fun disj_cancel_cv ctxt th ct =
     if is_disj (Thm.term_of ct) then
       Conv.every_conv [Conv.arg_conv (disj_cancel_cv ctxt th),
-                       Conv.try_conv (rewr_obj_eq (th RS or_cancel1_th)),
-                       Conv.try_conv (rewr_obj_eq (th RS or_cancel2_th))] ct
+                       Conv.try_conv (rewr_obj_eq (th RS UtilBase.or_cancel1_th)),
+                       Conv.try_conv (rewr_obj_eq (th RS UtilBase.or_cancel2_th))] ct
     else
       Conv.all_conv ct
 
@@ -817,7 +815,7 @@ fun disj_cancel_prop ctxt th prop =
       val P = th |> prop_of' |> dest_not
     in
       if prop_of' prop' aconv P then
-        [th, prop'] MRS contra_triv_th
+        [th, prop'] MRS UtilBase.contra_triv_th
       else prop'
     end
 
@@ -870,7 +868,7 @@ fun match_update_fn rtype {ctxt, ...} item1 item2 =
             fun process_inst ((id', inst), th) =
                 let
                   val th' = if is_neg (prop_of' th) then th
-                            else th RS nn_create_th
+                            else th RS UtilBase.nn_create_th
                   val prop' = prop |> subst_thm_thy thy inst
                                    |> disj_cancel_prop ctxt th'
                   val sc = if max_nvar = 0 then 1

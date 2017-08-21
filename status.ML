@@ -46,7 +46,6 @@ end;
 structure BoxItem : BOXITEM =
 struct
 
-open Base
 open UtilLogic
 
 fun var_to_fact t = Fact (TY_VAR, [t], true_th)
@@ -224,7 +223,6 @@ end;
 structure ItemIO : ITEM_IO =
 struct
 
-open Base
 open UtilLogic
 
 fun add_prop_matcher_to_info
@@ -348,9 +346,9 @@ val prop_matcher =
                 fun process_inst (inst, eq_th) =
                     let
                       (* This version certainly will not cancel ~~ on
-                       two sides.
+                         two sides.
                        *)
-                      val make_neg_eq' = Thm.combination (Thm.reflexive cNot)
+                      val make_neg_eq' = Thm.combination (Thm.reflexive UtilBase.cNot)
                     in
                       (inst, Thm.equal_elim (
                          make_trueprop_eq (make_neg_eq' (meta_sym eq_th))) prop)
@@ -697,7 +695,6 @@ end;
 structure Update : UPDATE =
 struct
 
-open Base
 open UtilLogic
 
 fun dest_init_var init = case init of InitVar t => [t] | _ => []
@@ -1074,7 +1071,6 @@ end;
 structure Status : STATUS =
 struct
 
-open Base
 open UtilLogic
 
 fun empty_status ctxt =

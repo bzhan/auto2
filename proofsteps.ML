@@ -69,7 +69,6 @@ end;
 structure ProofStep : PROOFSTEP =
 struct
 
-open Base
 open UtilLogic
 
 fun eq_prfstep (prfstep1, prfstep2) = (#name prfstep1 = #name prfstep2)
@@ -570,7 +569,6 @@ end;
 structure ProofStepData : PROOFSTEP_DATA =
 struct
 
-open Base
 open UtilLogic
 
 fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
@@ -833,8 +831,8 @@ fun atomize_conj_cv keep_last ct =
       Conv.all_conv ct
     else
       ((Conv.arg_conv (atomize_conj_cv keep_last))
-           then_conv (if keep_last then Conv.rewr_conv atomize_conjL2_th
-                      else Conv.rewr_conv atomize_conjL_th)) ct
+           then_conv (if keep_last then Conv.rewr_conv UtilBase.atomize_conjL2_th
+                      else Conv.rewr_conv UtilBase.atomize_conjL_th)) ct
 
 (* Swap the last premise to become the first. *)
 fun swap_prem_to_front ct =
@@ -863,7 +861,7 @@ fun swap_one_eq_to_front ct =
     case Thm.term_of ct of
         @{const Pure.imp} $ A $ _ =>
         if is_eq_term' A andalso is_def_eq (dest_Trueprop A) then
-          Conv.arg1_conv to_meta_eq_cv ct
+          Conv.arg1_conv UtilBase.to_meta_eq_cv ct
         else
           ((Conv.arg_conv swap_one_eq_to_front)
                then_conv (Conv.rewr_conv Drule.swap_prems_eq)) ct
@@ -891,7 +889,7 @@ fun post_process_th ctxt mode side_count ts th =
       | MODE_BACKWARD =>
         let
           val cv = (atomize_conj_cv false)
-                       then_conv (Conv.rewr_conv backward_conv_th)
+                       then_conv (Conv.rewr_conv UtilBase.backward_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
         in
           th |> apply_to_thm (skip_n_conv side_count cv)
@@ -900,7 +898,7 @@ fun post_process_th ctxt mode side_count ts th =
       | MODE_BACKWARD1 =>
         let
           val cv = (atomize_conj_cv true)
-                       then_conv (Conv.rewr_conv backward1_conv_th)
+                       then_conv (Conv.rewr_conv UtilBase.backward1_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
         in
           th |> apply_to_thm (skip_n_conv side_count cv)
@@ -909,7 +907,7 @@ fun post_process_th ctxt mode side_count ts th =
       | MODE_BACKWARD2 =>
         let
           val cv = (Conv.arg_conv (atomize_conj_cv false))
-                       then_conv (Conv.rewr_conv backward2_conv_th)
+                       then_conv (Conv.rewr_conv UtilBase.backward2_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
         in
           th |> apply_to_thm (skip_n_conv side_count cv)
@@ -919,9 +917,9 @@ fun post_process_th ctxt mode side_count ts th =
         let
           val rewr_th =
               case Thm.nprems_of th - side_count of
-                  0 => if is_neg (concl_of' th) then to_contra_form_th'
-                       else to_contra_form_th
-                | 1 => resolve_conv_th
+                  0 => if is_neg (concl_of' th) then UtilBase.to_contra_form_th'
+                       else UtilBase.to_contra_form_th
+                | 1 => UtilBase.resolve_conv_th
                 | _ => raise Fail "resolve: too many hypothesis in th."
           val cv = (Conv.rewr_conv rewr_th)
                        then_conv (horn_conv try_nn_cancel_cv)

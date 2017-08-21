@@ -51,7 +51,7 @@ fun add_backward_replace_cond th conds thy =
       val conds' = map (fn cond => cond ctxt') conds
       fun prfstep_fn ((id, _), ths) items _ =
           let
-            val th' = th |> apply_to_thm (Conv.rewr_conv backward_conv_th)
+            val th' = th |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)
           in
             [AddItems {
                 id = id, sc = SOME 1,

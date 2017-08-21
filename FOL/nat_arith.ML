@@ -169,9 +169,9 @@ fun nat_neq_resolve th =
       val (m, n) = th |> prop_of' |> dest_eq
     in
       if m aconv nat_Zero then
-        [@{thm nat_Suc_not_zero}, th] MRS contra_triv_th
+        [@{thm nat_Suc_not_zero}, th] MRS UtilBase.contra_triv_th
       else if n aconv nat_Zero then
-        [@{thm nat_Suc_not_zero}, obj_sym th] MRS contra_triv_th
+        [@{thm nat_Suc_not_zero}, obj_sym th] MRS UtilBase.contra_triv_th
       else
         nat_neq_resolve (th RS @{thm nat_Suc_inj})
     end
@@ -242,7 +242,7 @@ val add_nat_arith_proofsteps =
               let
                 val le_th = nat_le (dest_nat m, dest_nat n)
               in
-                [Update.thm_update (id, [th, le_th] MRS contra_triv_th)]
+                [Update.thm_update (id, [th, le_th] MRS UtilBase.contra_triv_th)]
               end
             else []
           end),
@@ -259,7 +259,7 @@ val add_nat_arith_proofsteps =
               let
                 val less_th = nat_less (dest_nat m, dest_nat n)
               in
-                [Update.thm_update (id, [th, less_th] MRS contra_triv_th)]
+                [Update.thm_update (id, [th, less_th] MRS UtilBase.contra_triv_th)]
               end
             else []
           end)

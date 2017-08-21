@@ -1,6 +1,6 @@
 (* Setup for FOL *)
 
-structure Base : UTIL_BASE =
+structure UtilBase : UTIL_BASE =
 struct
 
 (* Types *)
@@ -68,21 +68,16 @@ val to_meta_eq_cv =
     (Conv.rewr_conv @{thm to_meta_eq})
         else_conv (Conv.rewr_conv @{thm to_meta_eq_iff})
 
-val to_meta_eq = apply_to_thm (concl_conv to_meta_eq_cv)
-
 val to_obj_eq_cv =
     (Conv.rewr_conv @{thm atomize_eq})
         else_conv (Conv.rewr_conv @{thm atomize_iff})
 
-val to_obj_eq = apply_to_thm (concl_conv to_obj_eq_cv)
-
 val to_obj_eq_iff =
     apply_to_thm (concl_conv (Conv.rewr_conv @{thm atomize_iff}))
 
-val obj_sym =
-    apply_to_thm (concl_conv (
-                     (Conv.rewr_conv @{thm obj_sym})
-                         else_conv (Conv.rewr_conv @{thm obj_sym_iff})))
+val obj_sym_cv =
+    (Conv.rewr_conv @{thm obj_sym})
+        else_conv (Conv.rewr_conv @{thm obj_sym_iff})
 
 (* Theorems *)
 val true_th = @{thm TrueI}
@@ -117,6 +112,7 @@ val not_imp_th = @{thm not_imp}
 val or_cancel1_th = @{thm or_cancel1}
 val or_cancel2_th = @{thm or_cancel2}
 val swap_all_disj_th = @{thm swap_all_disj}
+val swap_ex_conj_th = @{thm swap_ex_conj}
 val all_trivial_th = @{thm all_trivial}
 val case_split_th = @{thm case_split}
 
@@ -138,6 +134,8 @@ val Ball_name = "FOL_Base.Ball"
 val Bex_name = "FOL_Base.Bex"
 val Bex_def_th = @{thm Bex_def'}
 val Ball_def_th = @{thm Ball_def'}
-val swap_ex_conj_th = @{thm swap_ex_conj}
 
-end  (* structure Base *)
+end  (* structure UtilBase *)
+
+structure Basic_UtilBase: BASIC_UTIL_BASE = UtilBase
+open Basic_UtilBase

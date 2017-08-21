@@ -31,7 +31,6 @@ ML_file "../auto2.ML"
 ML_file "../auto2_outer.ML"
 
 ML {*
-open Base
 open UtilLogic
 *}
 

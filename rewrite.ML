@@ -231,7 +231,6 @@ end;
 structure RewriteTable : REWRITE_TABLE =
 struct
 
-open Base
 open UtilLogic
 
 fun table_of_rtype rtype =

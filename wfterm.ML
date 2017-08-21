@@ -46,7 +46,6 @@ end;
 structure WfTerm : WFTERM =
 struct
 
-open Base
 open UtilLogic
 
 (* Extract a regular cterm from a wellformed term. *)

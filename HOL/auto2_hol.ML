@@ -1,6 +1,6 @@
 (* Setup for HOL *)
 
-structure Base : UTIL_BASE =
+structure UtilBase : UTIL_BASE =
 struct
 
 (* Types *)
@@ -62,11 +62,9 @@ val cDisj = @{cterm disj}
 
 (* Theorems for equality *)
 val to_meta_eq_cv = Conv.rewr_conv @{thm to_meta_eq}
-val to_meta_eq = apply_to_thm (concl_conv to_meta_eq_cv)
 val to_obj_eq_cv = Conv.rewr_conv @{thm atomize_eq}
-val to_obj_eq = apply_to_thm (concl_conv to_obj_eq_cv)
-val to_obj_eq_iff = to_obj_eq
-val obj_sym = apply_to_thm (concl_conv (Conv.rewr_conv @{thm obj_sym}))
+val to_obj_eq_iff = apply_to_thm (concl_conv to_obj_eq_cv)
+val obj_sym_cv = Conv.rewr_conv @{thm obj_sym}
 
 (* Theorems *)
 val true_th = @{thm TrueI}
@@ -101,6 +99,7 @@ val not_imp_th = @{thm HOL.not_imp}
 val or_cancel1_th = @{thm or_cancel1}
 val or_cancel2_th = @{thm or_cancel2}
 val swap_all_disj_th = @{thm swap_all_disj}
+val swap_ex_conj_th = @{thm swap_ex_conj}
 val all_trivial_th = @{thm HOL.simp_thms(35)}
 val case_split_th = @{thm HOL.case_split}
 
@@ -122,6 +121,8 @@ val Ball_name = "Set.Ball"
 val Bex_name = "Set.Bex"
 val Bex_def_th = @{thm Bex_def'}
 val Ball_def_th = @{thm Ball_def'}
-val swap_ex_conj_th = @{thm swap_ex_conj}
 
 end  (* structure Base *)
+
+structure Basic_UtilBase: BASIC_UTIL_BASE = UtilBase
+open Basic_UtilBase

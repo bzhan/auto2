@@ -16,7 +16,6 @@ end;
 structure Normalizer : NORMALIZER =
 struct
 
-open Base
 open UtilLogic
 
 (* Keeps list of normalizers. *)

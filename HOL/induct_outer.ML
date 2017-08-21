@@ -89,7 +89,7 @@ fun check_strong_ind_prop ind_prop =
       fun dest_one_all var body =
           case body of
               Const (c, _) $ Abs (_, _, t) =>
-              if c = All_name then subst_bound (var, t)
+              if c = UtilBase.All_name then subst_bound (var, t)
               else error err_ind_hyp
             | _ => error err_ind_hyp
       val (pat_subst, P_vars) =
