@@ -28,7 +28,7 @@ in
 fun convert_prop_to_nat_order prop =
     let
       val err_str = "convert_prop_to_nat_order: "
-      val th = prop |> mk_Trueprop |> assume_thm ctxt'
+      val th = prop |> mk_Trueprop |> Util.assume_thm ctxt'
       val mk_box_item = BoxItem.mk_box_item ctxt'
       val item = mk_box_item (0, [], 0, Fact (TY_PROP, [prop], th))
 
@@ -71,8 +71,8 @@ val test_parse_prop =
             if eq_set eq_specs (specs, specs') then ()
             else let
               val _ = tracing (
-                    "Expected:" ^ (string_of_list string_of_spec specs) ^ "\n" ^
-                    "Actual:" ^ (string_of_list string_of_spec specs'))
+                    "Expected:" ^ (Util.string_of_list string_of_spec specs) ^ "\n" ^
+                    "Actual:" ^ (Util.string_of_list string_of_spec specs'))
             in
               raise Fail "test_parse_prop"
             end
@@ -114,10 +114,10 @@ val test_nat_order_match_side =
             val res = Syntax.read_terms ctxt' res_strs
             val res' = Nat_Order.nat_order_match_side tbl (pat, cx) ([], fo_init)
             fun check_inst ((_, inst), _, eq_th) =
-                (subst_term_norm inst pat) aconv (lhs_of eq_th)
+                (Util.subst_term_norm inst pat) aconv (Util.lhs_of eq_th)
             fun eq_th_of (_, _, eq_th) = eq_th
             val check_res =
-                eq_list (op aconv) (res, map (rhs_of o eq_th_of) res')
+                eq_list (op aconv) (res, map (Util.rhs_of o eq_th_of) res')
           in
             if forall check_inst res' andalso check_res then ()
             else let
@@ -158,7 +158,7 @@ val test_nat_order_match =
             val res = map (mk_Trueprop o Syntax.read_term ctxt') res_strs
             val res' = match_fn pat item tbl ([], fo_init)
             fun check_inst ((_, inst), th) =
-                (subst_term_norm inst pat) aconv (prop_of' th)
+                (Util.subst_term_norm inst pat) aconv (prop_of' th)
             val check_res =
                 eq_list (op aconv) (res, map (Thm.prop_of o snd) res')
           in

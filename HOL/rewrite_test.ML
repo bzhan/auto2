@@ -15,7 +15,7 @@ fun add_prim_id (prim_id, id) (tbl as {lat, ...}) =
 (* Conversion between (id, th) used in rewrite.ML and (id, t) used in
    test cases.
  *)
-fun to_term_info (id, th) = (id, rhs_of th)
+fun to_term_info (id, th) = (id, Util.rhs_of th)
 (* Comparison of list of box_ids. *)
 val eq_id_list = eq_set (op =)
 (* Comparison of list of (box_id, term) pairs. *)
@@ -25,7 +25,7 @@ fun print_term_info ctxt (id, t) =
     "(" ^ (string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
 fun print_term_infos ctxt lst =
     commas (map (print_term_info ctxt) lst)
-val string_of_box_id_list = string_of_list BoxID.string_of_box_id
+val string_of_box_id_list = Util.string_of_list BoxID.string_of_box_id
 
 fun done str _ = let val _ = tracing ("Finished " ^ str) in () end
 
@@ -102,7 +102,7 @@ fun assert_simpl id (str, str') (tbl as {ctxt, ...}) =
     let
       val (t, t') = (Syntax.read_term ctxt str, Syntax.read_term ctxt str')
       val ct = Thm.cterm_of ctxt t
-      val res = rhs_of (RewriteTable.simplify id tbl ct)
+      val res = Util.rhs_of (RewriteTable.simplify id tbl ct)
     in
       if res aconv t' then tbl
       else let
@@ -148,7 +148,7 @@ fun declare_term str (tbl as {ctxt, ...}) =
 fun add_equiv id (str1, str2) (tbl as {ctxt, ...}) =
     let
       val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
-      val eq_th = assume_meta_eq (RewriteTable.theory_of tbl) (t1, t2)
+      val eq_th = Util.assume_meta_eq (RewriteTable.theory_of tbl) (t1, t2)
     in
       tbl |> RewriteTable.add_equiv (id, eq_th)
     end
@@ -176,7 +176,7 @@ fun assert_eq_edges (str1, str2) ids (tbl as {ctxt, ...}) =
 fun update_simp id (str1, str2) (tbl as {ctxt, ...}) =
     let
       val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
-      val eq_th = assume_meta_eq (RewriteTable.theory_of tbl) (t1, t2)
+      val eq_th = Util.assume_meta_eq (RewriteTable.theory_of tbl) (t1, t2)
     in
       tbl |> RewriteTable.update_simp (id, eq_th)
     end
@@ -184,7 +184,7 @@ fun update_simp id (str1, str2) (tbl as {ctxt, ...}) =
 fun assert_rewrite id (str, str') (tbl as {ctxt, ...}) =
     let
       val (t, t') = (Syntax.read_term ctxt str, Syntax.read_term ctxt str')
-      val res = rhs_of (RewriteTable.get_rewrite id tbl (Thm.cterm_of ctxt t))
+      val res = Util.rhs_of (RewriteTable.get_rewrite id tbl (Thm.cterm_of ctxt t))
     in
       if res aconv t' then tbl
       else let

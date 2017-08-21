@@ -1,6 +1,6 @@
 (* Utility functions. *)
 
-signature UTIL =
+signature BASIC_UTIL =
 sig
   (* Exceptions *)
   val assert: bool -> string -> unit
@@ -9,13 +9,43 @@ sig
   val propT: typ
 
   (* Lists *)
+  val the_pair: 'a list -> 'a * 'a
+  val the_triple: 'a list -> 'a * 'a * 'a
+  val filter_split: ('a -> bool) -> 'a list -> 'a list * 'a list
+
+  (* Managing matching environments. *)
+  val fo_init: Type.tyenv * Envir.tenv
+  val lookup_instn: Type.tyenv * Envir.tenv -> string * int -> term
+  val lookup_inst: Type.tyenv * Envir.tenv -> string -> term
+
+  (* Tracing functions. *)
+  val trace_t: Proof.context -> string -> term -> unit
+  val trace_tlist: Proof.context -> string -> term list -> unit
+  val trace_thm: Proof.context -> string -> thm -> unit
+  val trace_fullthm: Proof.context -> string -> thm -> unit
+  val trace_thm_global: string -> thm -> unit
+  val trace_fullthm_global: string -> thm -> unit
+
+  (* Terms *)
+  val dest_arg: term -> term
+  val dest_arg1: term -> term
+
+  (* Theorems *)
+  val apply_to_thm: conv -> thm -> thm
+  val meta_sym: thm -> thm
+  val apply_to_lhs: conv -> thm -> thm
+  val apply_to_rhs: conv -> thm -> thm
+end;
+
+signature UTIL =
+sig
+  include BASIC_UTIL
+
+  (* Lists *)
   val max: ('a * 'a -> order) -> 'a list -> 'a
   val max_partial: ('a -> 'a -> bool) -> 'a list -> 'a list
   val subsets: 'a list -> 'a list list
   val all_permutes: 'a list -> 'a list list
-  val the_pair: 'a list -> 'a * 'a
-  val the_triple: 'a list -> 'a * 'a * 'a
-  val filter_split: ('a -> bool) -> 'a list -> 'a list * 'a list
   val all_pairs: 'a list * 'b list -> ('a * 'b) list
 
   (* Strings. *)
@@ -23,10 +53,7 @@ sig
   val is_just_internal: string -> bool
 
   (* Managing matching environments. *)
-  val fo_init: Type.tyenv * Envir.tenv
   val defined_instn: Type.tyenv * Envir.tenv -> string * int -> bool
-  val lookup_instn: Type.tyenv * Envir.tenv -> string * int -> term
-  val lookup_inst: Type.tyenv * Envir.tenv -> string -> term
   val lookup_tyinst: Type.tyenv * Envir.tenv -> string -> typ
   val update_env: indexname * term -> Type.tyenv * Envir.tenv ->
                   Type.tyenv * Envir.tenv
@@ -45,14 +72,6 @@ sig
   val string_of_list': ('a -> string) -> 'a list -> string
   val string_of_bool: bool -> string
 
-  (* Tracing functions. *)
-  val trace_t: Proof.context -> string -> term -> unit
-  val trace_tlist: Proof.context -> string -> term list -> unit
-  val trace_thm: Proof.context -> string -> thm -> unit
-  val trace_fullthm: Proof.context -> string -> thm -> unit
-  val trace_thm_global: string -> thm -> unit
-  val trace_fullthm_global: string -> thm -> unit
-
   (* Managing context. *)
   val declare_free_term: term -> Proof.context -> Proof.context
 
@@ -61,8 +80,6 @@ sig
   val dest_binop: term -> term * (term * term)
   val dest_binop_head: term -> term
   val dest_binop_args: term -> term * term
-  val dest_arg: term -> term
-  val dest_arg1: term -> term
   val dest_args: term -> term list
   val dest_argn: int -> term -> term
   val is_meta_eq: term -> bool
@@ -111,10 +128,6 @@ sig
   val meta_use_vardef: thm -> thm
   val meta_use_vardefs: thm -> thm
   val subst_term_norm: Type.tyenv * Envir.tenv -> term -> term
-  val apply_to_thm: conv -> thm -> thm
-  val meta_sym: thm -> thm
-  val apply_to_lhs: conv -> thm -> thm
-  val apply_to_rhs: conv -> thm -> thm
   val concl_conv_n: int -> conv -> conv
   val concl_conv: conv -> conv
   val transitive_list: thm list -> thm
@@ -886,8 +899,9 @@ fun exn_trace f = Runtime.exn_trace f
 
 end  (* structure Util. *)
 
-open Util
+structure Basic_Util: BASIC_UTIL = Util
+open Basic_Util
 
-val _ = Theory.setup (term_pat_setup)
-val _ = Theory.setup (cterm_pat_setup)
-val _ = Theory.setup (type_pat_setup)
+val _ = Theory.setup (Util.term_pat_setup)
+val _ = Theory.setup (Util.cterm_pat_setup)
+val _ = Theory.setup (Util.type_pat_setup)

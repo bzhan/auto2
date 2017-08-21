@@ -19,7 +19,7 @@ fun get_induct_stmt ctxt (var, prem, stmt, arbitrary) =
         val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
                                 |> Thm.term_of |> Util.strip_meta_horn
         val all_vars = var :: arbitrary
-        val obj_As = As |> filter (occurs_frees all_vars)
+        val obj_As = As |> filter (Util.occurs_frees all_vars)
                         |> map dest_Trueprop
                         |> remove (op aconv) prem
         val obj_C = dest_Trueprop C
@@ -46,14 +46,14 @@ fun var_induct_cmd ((n, s), t, u, v) state =
       val (P, vars) = Term.strip_comb concl
       val _ = assert (Term.is_Var P) "var induct: P is not schematic variable."
       val P_inst = fold Term.lambda (rev vars) stmt
-      val inst = update_env (("P", 0), P_inst) fo_init
-      val ind_th' = subst_thm_thy thy inst ind_th
+      val inst = Util.update_env (("P", 0), P_inst) fo_init
+      val ind_th' = Util.subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
                               |> Thm.term_of |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
-      val use_As = As |> filter_out (occurs_frees (var :: arbitraries))
+      val use_As = As |> filter_out (Util.occurs_frees (var :: arbitraries))
 
       fun retrieve_pat t =
           let
@@ -94,7 +94,7 @@ fun var_induct_cmd ((n, s), t, u, v) state =
     in
       if is_none v then
         let
-          val ths = (map solve_eq all_goals) |> map send_all_to_hyps
+          val ths = (map solve_eq all_goals) |> map Util.send_all_to_hyps
           val ind_concl = ind_th' |> fold Thm.elim_implies ths
                                   |> fold Thm.implies_intr (rev cAs)
           val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
@@ -108,7 +108,7 @@ fun var_induct_cmd ((n, s), t, u, v) state =
             let
               val ths' = (all_goals ~~ ths)
                             |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
-                            |> map send_all_to_hyps
+                            |> map Util.send_all_to_hyps
               val ind_concl = ind_th' |> fold Thm.elim_implies ths'
                                       |> fold Thm.implies_intr (rev cAs)
             in

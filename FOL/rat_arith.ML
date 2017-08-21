@@ -6,7 +6,7 @@ val of_nat_t = @{term of_nat}
 val of_nat_ct = @{cterm of_nat}
 val divide_t = @{term divide}
 val divide_ct = @{cterm divide}
-fun is_divide G t = is_head (divide_t $ G) t
+fun is_divide G t = Util.is_head (divide_t $ G) t
 
 (* Produce wfconv from conv. Currently do not add wellform information
    on the resulting term.
@@ -235,7 +235,7 @@ fun int_add info wft =
     let
       val {of_nat_add, plus_comm, of_nat_sub1, of_nat_sub2,
            neg_distrib', ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
       val (m, n) = (dest_int arg1, dest_int arg2)
     in
       if m >= 0 andalso n >= 0 then
@@ -257,7 +257,7 @@ fun int_add info wft =
 fun int_mult info wft =
     let
       val {of_nat_mult, sign_l, sign_r, sign_both, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
       val (m, n) = (dest_int arg1, dest_int arg2)
     in
       if m >= 0 andalso n >= 0 then
@@ -339,7 +339,7 @@ fun mk_int_mult_th_back info (m, n) =
 fun rat_reduce_to_int info wft =
     let
       val {div_1_back, ...} = info
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
       val q = dest_int arg2
     in
       if q = 1 then div_1_back wft
@@ -351,7 +351,7 @@ fun rat_reduce info wft =
     let
       val {G, div_cleft, ...} = info
       val fheads = rat_fheads G
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
       val (p, q) = (dest_int arg1, dest_int arg2)
       val gcd = Integer.gcd p q
       val (p', q') = (fst (Integer.div_mod p gcd), fst (Integer.div_mod q gcd))
@@ -382,7 +382,7 @@ fun rat_to_frac info wft =
 fun rat_add info wft =
     let
       val {G, div_cross, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_int G arg1 andalso is_int G arg2 then
         int_add info wft
@@ -397,7 +397,7 @@ fun rat_add info wft =
 fun rat_mult info wft =
     let
       val {G, div_mult, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_int G arg1 andalso is_int G arg2 then
         int_mult info wft

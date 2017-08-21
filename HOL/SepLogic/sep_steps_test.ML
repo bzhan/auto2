@@ -10,7 +10,7 @@ val test_normalize_assn =
       val ctxt' = ctxt |> fold Variable.auto_fixes [
             Free ("P", assnT), Free ("S", natT --> assnT),
             Free ("T", natT --> assnT)]
-      val test = test_conv ctxt' (normalize_assn_cv ctxt') "normalize_assn"
+      val test = Util.test_conv ctxt' (normalize_assn_cv ctxt') "normalize_assn"
 
       val test_data = [
         ("P * (Q * R)", "P * Q * R"),
@@ -33,7 +33,7 @@ val test_normalize_mod =
       val ctxt' = ctxt |> fold Variable.auto_fixes [
             Free ("P", assnT), Free ("S", natT --> assnT),
             Free ("T", natT --> assnT)]
-      val test = test_conv ctxt' (normalize_mod_cv ctxt') "normalize_mod"
+      val test = Util.test_conv ctxt' (normalize_mod_cv ctxt') "normalize_mod"
 
       val test_data = [
         ("h |= (P * \<up>(b))", "(h |= P) & b"),

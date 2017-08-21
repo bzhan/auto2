@@ -21,7 +21,7 @@ type alg_norm_info = {
 
 fun get_struct_t op_heads t =
     if member (op aconv) op_heads (head_of t) then
-      SOME (hd (dest_args t))
+      SOME (hd (Util.dest_args t))
     else NONE
 
 fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
@@ -50,11 +50,11 @@ fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
                 val wfcv = norm_wfcv property_th
                 val (_, eq) = wfcv wft
               in
-                if rhs_of eq aconv t' then
+                if Util.rhs_of eq aconv t' then
                   AddItems {id = id', sc = SOME 1,
                             raw_items = [Update.thm_to_ritem (to_obj_eq eq)]}
                 else let
-                  val _ = trace_tlist ctxt "" [t, rhs_of eq, t']
+                  val _ = trace_tlist ctxt "" [t, Util.rhs_of eq, t']
                   val (c, _) = Term.dest_Const pred_t
                 in
                   raise Fail ("alg_norm1 for " ^ c)
@@ -116,16 +116,16 @@ fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
                 val (_, eq1) = wfcv wft1
                 val (_, eq2) = wfcv wft2
               in
-                if rhs_of eq1 aconv t1' andalso rhs_of eq2 aconv t2' then
+                if Util.rhs_of eq1 aconv t1' andalso Util.rhs_of eq2 aconv t2' then
                   let
-                    val th = to_obj_eq (transitive_list [eq1, meta_sym eq2])
+                    val th = to_obj_eq (Util.transitive_list [eq1, meta_sym eq2])
                   in
                     AddItems {id = id', sc = SOME 1,
                               raw_items = [Update.thm_to_ritem th]}
                   end
                 else let
-                  val _ = trace_tlist ctxt "" [t1, rhs_of eq1, t1']
-                  val _ = trace_tlist ctxt "" [t2, rhs_of eq2, t2']
+                  val _ = trace_tlist ctxt "" [t1, Util.rhs_of eq1, t1']
+                  val _ = trace_tlist ctxt "" [t2, Util.rhs_of eq2, t2']
                   val (c, _) = Term.dest_Const pred_t
                 in
                   raise Fail ("alg_norm2 for " ^ c)
@@ -139,7 +139,7 @@ fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
                 val wfts2 =
                     RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct2)
               in
-                (all_pairs (wfts1, wfts2))
+                (Util.all_pairs (wfts1, wfts2))
                     |> map (fn ((id1, wft1), (id2, wft2)) =>
                                (BoxID.merge_boxes lat (id1, id2), (wft1, wft2)))
                     |> RewriteTable.replace_id_for_type' rtype

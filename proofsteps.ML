@@ -109,11 +109,11 @@ fun string_of_desc thy desc =
         | WithWellForm (_, req) => "WithWellForm " ^ (print req)
         | GetFact (t, th) =>
           if t aconv @{term False} then
-            "GetResolve " ^ (name_of_thm th)
+            "GetResolve " ^ (Util.name_of_thm th)
           else if is_neg t then
-            "GetGoal (" ^ (print (get_neg t)) ^ ", " ^ (name_of_thm th) ^ ")"
+            "GetGoal (" ^ (print (get_neg t)) ^ ", " ^ (Util.name_of_thm th) ^ ")"
           else
-            "GetFact (" ^ (print t) ^ ", " ^ (name_of_thm th) ^ ")"
+            "GetFact (" ^ (print t) ^ ", " ^ (Util.name_of_thm th) ^ ")"
         | ShadowFirst => "Shadow first" | ShadowSecond => "Shadow second"
         | CreateCase assum => "CreateCase " ^ (print assum)
         | CreateConcl concl => "CreateConcl " ^ (print concl)
@@ -161,15 +161,15 @@ fun neq_filter cond tbl (id, inst) =
                      "neq_filter: should not contain free variable."
 
       val {ctxt, ...} = tbl
-      val t1 = subst_term_norm inst lhs
-      val t2 = subst_term_norm inst rhs
+      val t1 = Util.subst_term_norm inst lhs
+      val t2 = Util.subst_term_norm inst rhs
     in
-      if has_vars t1 andalso has_vars t2 then true
-      else if has_vars t1 then
+      if Util.has_vars t1 andalso Util.has_vars t2 then true
+      else if Util.has_vars t1 then
         (Matcher.rewrite_match tbl (t1, Thm.cterm_of ctxt t2) (id, fo_init))
             |> filter (fn ((id', _), _) => id = id')
             |> length |> equal 0
-      else if has_vars t2 then
+      else if Util.has_vars t2 then
         (Matcher.rewrite_match tbl (t2, Thm.cterm_of ctxt t1) (id, fo_init))
             |> filter (fn ((id', _), _) => id = id')
             |> length |> equal 0
@@ -195,13 +195,13 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
       (* Split into meta equalities (usually produced by term
          matching, not applied to th, and others (assumptions for th).
        *)
-      val (eqs, ths') = ths |> filter_split (is_meta_eq o Thm.prop_of)
+      val (eqs, ths') = ths |> filter_split (Util.is_meta_eq o Thm.prop_of)
       val _ = assert (length ths' = Thm.nprems_of th)
                      "apply_pat_r: wrong number of assumptions."
       val obj_eqs = map to_obj_eq eqs
 
-      val inst_new = subst_term_norm inst (mk_Trueprop pat_r)
-      val th' = th |> subst_thm ctxt inst |> fold Thm.elim_implies ths'
+      val inst_new = Util.subst_term_norm inst (mk_Trueprop pat_r)
+      val th' = th |> Util.subst_thm ctxt inst |> fold Thm.elim_implies ths'
       val _ = if inst_new aconv (Thm.prop_of th') then () else
               raise Fail "apply_pat_r: conclusion mismatch"
     in
@@ -274,7 +274,7 @@ fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
     in
       if exists null side_ths then []
       else side_ths |> BoxID.get_all_merges_info lat
-                    |> max_partial (BoxID.id_is_eq_ancestor lat)
+                    |> Util.max_partial (BoxID.id_is_eq_ancestor lat)
     end
 
 (* Creates a proofstep with specified patterns and filters (in descs),
@@ -396,7 +396,7 @@ fun gen_prfstep name descs =
 
       fun case_to_update ((id, inst), _) assum =
           AddBoxes {id = id, sc = NONE,
-                    inits = [InitAssum (subst_term_norm inst assum)]}
+                    inits = [InitAssum (Util.subst_term_norm inst assum)]}
       fun cases_to_update inst_ths = map (case_to_update inst_ths) cases
 
       val priority =
@@ -437,7 +437,7 @@ fun prfstep_pre_conv name descs pre_cv =
                          id tbl (Thm.rhs_of eq1, Thm.rhs_of eq_th)
                   then []
                   else let
-                    val th = to_obj_eq (transitive_list [meta_sym eq1, eq_th])
+                    val th = to_obj_eq (Util.transitive_list [meta_sym eq1, eq_th])
                   in
                     [Update.thm_update (id, th)]
                   end
@@ -470,7 +470,7 @@ fun eval_fun_conv ths ctxt ct =
 fun prfsteps_eval_fun' desc_ths ths =
     let
       fun get_prfstep th =
-          prfstep_pre_conv ((name_of_thm th) ^ "@eval")
+          prfstep_pre_conv ((Util.name_of_thm th) ^ "@eval")
                            [WithTerm (th |> prop_of' |> dest_eq |> fst)]
                            (eval_fun_conv ths)
     in
@@ -596,7 +596,7 @@ fun add_prfstep (prfstep as {args, ...}) =
       Data.map (
         fn ProofStepTable {
             prfsteps, sorted_prfsteps, fixed_sc} =>
-           if is_prefix_str "$" (#name prfstep) then
+           if Util.is_prefix_str "$" (#name prfstep) then
              error "Add prfstep: names beginning with $ is reserved."
            else
              ProofStepTable {
@@ -636,14 +636,14 @@ fun del_prfstep prfstep_name thy =
 (* Delete all proofsteps for a given theorem. *)
 fun del_prfstep_thm th =
     let
-      val th_name = name_of_thm th
+      val th_name = Util.name_of_thm th
     in
-      del_prfstep_pred (equal th_name orf is_prefix_str (th_name ^ "@"))
+      del_prfstep_pred (equal th_name orf Util.is_prefix_str (th_name ^ "@"))
     end
 
 (* Delete proofsteps for a given theorem, with the given postfix. *)
 fun del_prfstep_thm_str str th =
-    del_prfstep_pred (equal (name_of_thm th ^ str))
+    del_prfstep_pred (equal (Util.name_of_thm th ^ str))
 
 fun add_fixed_sc (prfstep_name, sc) =
     Data.map (
@@ -723,7 +723,7 @@ fun add_prfstep_check_req (t_str, req_str) thy =
       val _ = assert (Term.is_Const f)
                      "add_prfstep_check_req: head must be Const."
       val (c, _) = Term.dest_Const f
-      val ctxt' = fold declare_free_term vars ctxt
+      val ctxt' = fold Util.declare_free_term vars ctxt
       val req = Proof_Context.read_term_pattern ctxt' req_str
 
       fun get_subst var =
@@ -854,7 +854,7 @@ fun is_def_eq t =
       val (lhs, rhs) = dest_eq t
     in
       Term.is_Var lhs andalso not (Term.is_Var rhs) andalso
-      not (is_subterm lhs rhs)
+      not (Util.is_subterm lhs rhs)
     end
 
 fun swap_one_eq_to_front ct =
@@ -874,17 +874,17 @@ fun post_process_th ctxt mode side_count ts th =
         let
           val to_skip = side_count + (2 - length ts)
         in
-          th |> apply_to_thm (skip_n_conv to_skip (to_obj_conv ctxt))
-             |> update_name_of_thm th ""
+          th |> apply_to_thm (Util.skip_n_conv to_skip (to_obj_conv ctxt))
+             |> Util.update_name_of_thm th ""
         end
       | MODE_FORWARD' =>
         let
           val cv =
               swap_prem_to_front
-                  then_conv (skip_n_conv (2 - length ts) (to_obj_conv ctxt))
+                  then_conv (Util.skip_n_conv (2 - length ts) (to_obj_conv ctxt))
         in
-          th |> apply_to_thm (skip_n_conv side_count cv)
-             |> update_name_of_thm th ""
+          th |> apply_to_thm (Util.skip_n_conv side_count cv)
+             |> Util.update_name_of_thm th ""
         end
       | MODE_BACKWARD =>
         let
@@ -892,8 +892,8 @@ fun post_process_th ctxt mode side_count ts th =
                        then_conv (Conv.rewr_conv UtilBase.backward_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
         in
-          th |> apply_to_thm (skip_n_conv side_count cv)
-             |> update_name_of_thm th "@back"
+          th |> apply_to_thm (Util.skip_n_conv side_count cv)
+             |> Util.update_name_of_thm th "@back"
         end
       | MODE_BACKWARD1 =>
         let
@@ -901,8 +901,8 @@ fun post_process_th ctxt mode side_count ts th =
                        then_conv (Conv.rewr_conv UtilBase.backward1_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
         in
-          th |> apply_to_thm (skip_n_conv side_count cv)
-             |> update_name_of_thm th "@back1"
+          th |> apply_to_thm (Util.skip_n_conv side_count cv)
+             |> Util.update_name_of_thm th "@back1"
         end
       | MODE_BACKWARD2 =>
         let
@@ -910,8 +910,8 @@ fun post_process_th ctxt mode side_count ts th =
                        then_conv (Conv.rewr_conv UtilBase.backward2_conv_th)
                        then_conv (horn_conv try_nn_cancel_cv)
         in
-          th |> apply_to_thm (skip_n_conv side_count cv)
-             |> update_name_of_thm th "@back2"
+          th |> apply_to_thm (Util.skip_n_conv side_count cv)
+             |> Util.update_name_of_thm th "@back2"
         end
       | MODE_RESOLVE =>
         let
@@ -924,8 +924,8 @@ fun post_process_th ctxt mode side_count ts th =
           val cv = (Conv.rewr_conv rewr_th)
                        then_conv (horn_conv try_nn_cancel_cv)
         in
-          th |> apply_to_thm (skip_n_conv side_count cv)
-             |> update_name_of_thm th "@res"
+          th |> apply_to_thm (Util.skip_n_conv side_count cv)
+             |> Util.update_name_of_thm th "@res"
         end
 
 (* Add basic proofstep for the given theorem and mode. *)
@@ -939,7 +939,7 @@ fun add_basic_prfstep_cond th mode conds thy =
                        |> apply_to_thm (Conv.repeat_conv swap_one_eq_to_front)
 
       (* List of definitions used. *)
-      val def_subst = th_defs |> Thm.prems_of |> filter is_meta_eq
+      val def_subst = th_defs |> Thm.prems_of |> filter Util.is_meta_eq
                               |> map Logic.dest_equals
       fun print_def_subst (lhs, rhs) =
           writeln ("Apply def " ^ (Syntax.string_of_term ctxt' lhs) ^ " = " ^
@@ -953,8 +953,8 @@ fun add_basic_prfstep_cond th mode conds thy =
                                      def_subst t)
             | _ => cond
 
-      val th = th_defs |> meta_use_vardefs
-                       |> update_name_of_thm th ""
+      val th = th_defs |> Util.meta_use_vardefs
+                       |> Util.update_name_of_thm th ""
     in
       if null conds andalso mode = MODE_FORWARD andalso
          Property.can_add_property_update th thy then
@@ -987,32 +987,32 @@ fun add_basic_prfstep_cond th mode conds thy =
             th' |> strip_horn' |> apfst (drop side_count)
         val pats = map extract_term_cond term_conds @ assums
         val match_descs = term_conds @ map WithFact assums
-        val _ = assert (is_pattern_list pats)
+        val _ = assert (Util.is_pattern_list pats)
                        "add_basic_prfstep: invalid patterns."
         val _ = assert (length pats > 0 andalso length pats <= 2)
                        "add_basic_prfstep: invalid number of patterns."
       in
         (* Switch two assumptions if necessary. *)
-        if length pats = 2 andalso not (is_pattern (hd pats)) then
+        if length pats = 2 andalso not (Util.is_pattern (hd pats)) then
           let
             val _ = writeln "Switching two patterns."
             val swap_prems_cv = Conv.rewr_conv Drule.swap_prems_eq
             val th'' =
                 if length assums = 1 then th'
-                else th' |> apply_to_thm (skip_n_conv side_count swap_prems_cv)
-                         |> update_name_of_thm th' ""
+                else th' |> apply_to_thm (Util.skip_n_conv side_count swap_prems_cv)
+                         |> Util.update_name_of_thm th' ""
             val swap_match_descs = [nth match_descs 1, hd match_descs]
             val descs = side_prems @ swap_match_descs @ filt_conds @
                         [GetFact (concl, th'')]
           in
-            add_and_print_prfstep (name_of_thm th') descs thy
+            add_and_print_prfstep (Util.name_of_thm th') descs thy
           end
         else
           let
             val descs = side_prems @ match_descs @ filt_conds @
                         [GetFact (concl, th')]
           in
-            add_and_print_prfstep (name_of_thm th') descs thy
+            add_and_print_prfstep (Util.name_of_thm th') descs thy
           end
       end
     end
@@ -1033,7 +1033,7 @@ fun add_resolve_prfstep th = add_resolve_prfstep_cond th []
 
 fun add_rewrite_eq_rule_cond th conds thy =
     let
-      val th = if is_meta_eq (Thm.concl_of th) then to_obj_eq_th th else th
+      val th = if Util.is_meta_eq (Thm.concl_of th) then to_obj_eq_th th else th
       val (lhs, _) = th |> concl_of' |> strip_conj |> hd |> dest_eq
     in
       thy |> add_forward_prfstep_cond th (K (WithTerm lhs) :: conds)
@@ -1041,7 +1041,7 @@ fun add_rewrite_eq_rule_cond th conds thy =
 
 fun add_rewrite_iff_rule_cond th conds thy =
     let
-      val th = if is_meta_eq (Thm.concl_of th) then to_obj_eq_iff_th th
+      val th = if Util.is_meta_eq (Thm.concl_of th) then to_obj_eq_iff_th th
                else th
       val (lhs, _) = th |> concl_of' |> dest_eq
       val _ = assert (fastype_of lhs = boolT)
@@ -1050,7 +1050,7 @@ fun add_rewrite_iff_rule_cond th conds thy =
       val forward_th = th |> equiv_forward_th
       val nforward_th = th |> inv_backward_th
                            |> apply_to_thm (horn_conv try_nn_cancel_cv)
-                           |> update_name_of_thm th "@invbackward"
+                           |> Util.update_name_of_thm th "@invbackward"
     in
       thy |> add_basic_prfstep_cond forward_th MODE_FORWARD' conds
           |> add_basic_prfstep_cond nforward_th MODE_FORWARD' conds
@@ -1058,7 +1058,7 @@ fun add_rewrite_iff_rule_cond th conds thy =
 
 fun add_rewrite_rule_cond th conds thy =
     let
-      val th = if is_meta_eq (Thm.concl_of th) then to_obj_eq_th th else th
+      val th = if Util.is_meta_eq (Thm.concl_of th) then to_obj_eq_th th else th
       val (lhs, _) = th |> concl_of' |> strip_conj |> hd |> dest_eq
     in
       if fastype_of lhs = boolT then
@@ -1081,7 +1081,7 @@ fun add_rewrite_rule_bidir th = add_rewrite_rule th #> add_rewrite_rule_back th
 fun add_eval_fun_prfsteps' desc_ths ths thy =
     let
       fun eval_thm_to_str th =
-          (name_of_thm th) ^ ": " ^
+          (Util.name_of_thm th) ^ ": " ^
           (th |> Thm.prop_of |> Syntax.string_of_term_global thy)
       val _ = writeln (cat_lines (map eval_thm_to_str desc_ths))
     in

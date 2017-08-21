@@ -308,11 +308,11 @@ fun assume_eq thy (t1, t2) =
 (* Apply cv to the statement of th, skipping Trueprop. *)
 fun apply_to_thm' cv th = apply_to_thm (Trueprop_conv cv) th
 
-val to_meta_eq = apply_to_thm (concl_conv UtilBase.to_meta_eq_cv)
+val to_meta_eq = apply_to_thm (Util.concl_conv UtilBase.to_meta_eq_cv)
 
-val to_obj_eq = apply_to_thm (concl_conv UtilBase.to_obj_eq_cv)
+val to_obj_eq = apply_to_thm (Util.concl_conv UtilBase.to_obj_eq_cv)
 
-val obj_sym = apply_to_thm (concl_conv UtilBase.obj_sym_cv)
+val obj_sym = apply_to_thm (Util.concl_conv UtilBase.obj_sym_cv)
 
 (* Obtain rewriting conv from obj equality. *)
 fun rewr_obj_eq eq_th = Conv.rewr_conv (to_meta_eq eq_th)
@@ -347,9 +347,9 @@ fun rewrite_to_contra_form ct =
       if concl' aconv bFalse then
         Conv.all_conv ct
       else if is_neg concl' then
-        concl_conv (Conv.rewr_conv UtilBase.to_contra_form_th') ct
+        Util.concl_conv (Conv.rewr_conv UtilBase.to_contra_form_th') ct
       else
-        concl_conv (Conv.rewr_conv UtilBase.to_contra_form_th) ct
+        Util.concl_conv (Conv.rewr_conv UtilBase.to_contra_form_th) ct
     end
 
 val rewrite_thm_to_contra_form = apply_to_thm rewrite_to_contra_form
@@ -367,8 +367,8 @@ fun rewrite_from_contra_form ct =
       val to_contra_form = if is_neg last_prem' then UtilBase.to_contra_form_th
                            else UtilBase.to_contra_form_th'
     in
-      concl_conv_n (num_prems-1)
-                   (Conv.rewr_conv (meta_sym to_contra_form)) ct
+      Util.concl_conv_n (num_prems-1)
+                        (Conv.rewr_conv (meta_sym to_contra_form)) ct
     end
 
 val rewrite_thm_from_contra_form = apply_to_thm rewrite_from_contra_form
@@ -408,9 +408,9 @@ fun to_meta_conv ctxt ct =
                          to_meta_conv ctxt] ct
       else if Logic.is_all t then
         Conv.binder_conv (to_meta_conv o snd) ctxt ct
-      else if is_implies t then
+      else if Util.is_implies t then
         Conv.every_conv [Conv.arg_conv (to_meta_conv ctxt),
-                         swap_meta_imp_alls ctxt] ct
+                         Util.swap_meta_imp_alls ctxt] ct
       else
         Conv.all_conv ct
     end
@@ -418,7 +418,7 @@ fun to_meta_conv ctxt ct =
 (* Modify th using imp_th, and add postfix to name (if available). *)
 fun thm_RS_mod imp_th suffix th =
     (th RS imp_th) |> Drule.zero_var_indexes
-                   |> update_name_of_thm th suffix
+                   |> Util.update_name_of_thm th suffix
 
 (* From A & B, obtain A. *)
 val conj_left_th = thm_RS_mod UtilBase.conjunct1_th "@left"
@@ -431,11 +431,11 @@ val equiv_backward_th = thm_RS_mod UtilBase.iffD2_th "@eqbackward"
 (* From (A::bool) = B, obtain ~A ==> ~B. *)
 val inv_backward_th = thm_RS_mod UtilBase.inv_back_th "@invbackward"
 (* Same as to_obj_eq, except keeping names and indices. *)
-fun to_obj_eq_th th = th |> to_obj_eq |> update_name_of_thm th "@obj_eq"
+fun to_obj_eq_th th = th |> to_obj_eq |> Util.update_name_of_thm th "@obj_eq"
 (* Same as to_obj_eq_iff, except keeping names and indices. *)
-fun to_obj_eq_iff_th th = th |> UtilBase.to_obj_eq_iff |> update_name_of_thm th "@iff"
+fun to_obj_eq_iff_th th = th |> UtilBase.to_obj_eq_iff |> Util.update_name_of_thm th "@iff"
 (* Same as obj_sym, except keeping names and indices. *)
-fun obj_sym_th th = th |> obj_sym |> update_name_of_thm th "@sym"
+fun obj_sym_th th = th |> obj_sym |> Util.update_name_of_thm th "@sym"
 
 (* Using cv, rewrite all assumptions and conclusion in ct. *)
 fun horn_conv cv ct =
@@ -486,7 +486,7 @@ fun ex_elim ctxt freevar th =
       val th' = th |> Thm.forall_intr (Thm.cterm_of ctxt freevar)
       val head_prem = hd (Thm.prems_of UtilBase.exE_th')
       val inst = Pattern.match thy (head_prem, Thm.prop_of th') fo_init
-      val exE_inst = subst_thm ctxt inst UtilBase.exE_th'
+      val exE_inst = Util.subst_thm ctxt inst UtilBase.exE_th'
     in
       Thm.elim_implies th' exE_inst
     end

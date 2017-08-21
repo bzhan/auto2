@@ -5,7 +5,7 @@ val times_t = @{term times}
 val times_ct = @{cterm times}
 
 fun is_one G t = t aconv (one_t $ G)
-fun is_times G t = is_head (times_t $ G) t
+fun is_times G t = Util.is_head (times_t $ G) t
 
 fun list_times G ts =
     let
@@ -39,7 +39,7 @@ type monoid_info = {G: term, assoc_l: wfconv, unit_l: wfconv, unit_r: wfconv}
 fun monoid_mult_atom info wft =
     let
       val {G, unit_l, unit_r, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_one G arg1 then unit_l wft
       else if is_one G arg2 then unit_r wft
@@ -49,7 +49,7 @@ fun monoid_mult_atom info wft =
 fun monoid_mult_monomial info wft =
     let
       val {G, assoc_l, ...} = info
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_times G arg2 then
         WfTerm.every_conv [

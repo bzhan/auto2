@@ -4,25 +4,25 @@
  *)
 
 val string_of_box_id = BoxID.string_of_box_id
-val string_of_box_ids = string_of_list string_of_box_id
+val string_of_box_ids = Util.string_of_list string_of_box_id
 
 type box_lattice = BoxID.box_lattice
 
 (* Order on equality theorems, by comparing the right side. *)
-val simp_ord = Term_Ord.term_ord o (apply2 rhs_of)
-val simp_less = Term_Ord.termless o (apply2 rhs_of)
+val simp_ord = Term_Ord.term_ord o (apply2 Util.rhs_of)
+val simp_less = Term_Ord.termless o (apply2 Util.rhs_of)
 
 (* Equality on box_id * thm, comparing the right side. *)
 fun eq_info ((id, th), (id', th')) =
-    (id = id' andalso rhs_of th aconv rhs_of th')
+    (id = id' andalso Util.rhs_of th aconv Util.rhs_of th')
 
 (* Debug functions. *)
 fun print_info ctxt (id, th) = "(" ^ (string_of_box_id id) ^ ", " ^
-                               (th |> rhs_of |> Syntax.string_of_term ctxt) ^ ")"
+                               (th |> Util.rhs_of |> Syntax.string_of_term ctxt) ^ ")"
 fun print_infos ctxt lst = commas (map (print_info ctxt) lst)
 fun print_info' ctxt (id, ths) =
     "(" ^ (string_of_box_id id) ^ ", " ^
-    (ths |> map rhs_of |> string_of_terms ctxt) ^ ")"
+    (ths |> map Util.rhs_of |> Util.string_of_terms ctxt) ^ ")"
 fun print_infos' ctxt lst = cat_lines (map (print_info' ctxt) lst)
 
 (* Data structure for rewrite table. *)
@@ -250,7 +250,7 @@ val is_eq_descendent = BoxID.is_eq_descendent o get_lattice
 fun merge_box_with_info tbl id =
     map (apfst (fn id' => merge_boxes tbl (id, id')))
 fun merge_info tbl (id, th) (id', th') =
-    (merge_boxes tbl (id, id'), transitive_list [th, th'])
+    (merge_boxes tbl (id, id'), Util.transitive_list [th, th'])
 val id_is_eq_ancestor = BoxID.id_is_eq_ancestor o get_lattice
 
 (* Print info from one of the tables terms, equiv, simp, subsimp, and
@@ -418,7 +418,7 @@ fun add_term_raw (id, ct) tbl =
       val t = Thm.term_of ct
       val prev_ids = in_table_raw_ids tbl t
       val ids_t = (id :: prev_ids)
-                      |> max_partial (is_eq_ancestor tbl)
+                      |> Util.max_partial (is_eq_ancestor tbl)
     in
       tbl |> map_terms (Termtab.update (t, (ids_t, ct)))
     end
@@ -438,12 +438,12 @@ fun get_all_id_terms {terms, ...} =
    equiv table.
  *)
 fun equiv_eq_better tbl (id, th) (id', th') =
-    rhs_of th aconv rhs_of th' andalso is_eq_ancestor tbl id id'
+    Util.rhs_of th aconv Util.rhs_of th' andalso is_eq_ancestor tbl id id'
 fun has_equiv_eq_better tbl infos info' =
     exists (fn info => equiv_eq_better tbl info info') infos
 
 (* Remove extraneous ids for infos with equal terms. *)
-fun reduce_equiv_info tbl info = max_partial (equiv_eq_better tbl) info
+fun reduce_equiv_info tbl info = Util.max_partial (equiv_eq_better tbl) info
 
 (* Add one way equivalence edge. Maintain the non-comparable property
    of the set of equivalence edges between any two nodes. cur_info is
@@ -451,7 +451,7 @@ fun reduce_equiv_info tbl info = max_partial (equiv_eq_better tbl) info
  *)
 fun add_equiv_raw (cur_info as (_, th)) (tbl as {equiv, ...}) =
     let
-      val t = lhs_of th
+      val t = Util.lhs_of th
       val equiv_t = the_default [] (Termtab.lookup equiv t)
     in
       if exists (fn info => equiv_eq_better tbl info cur_info) equiv_t then tbl
@@ -464,7 +464,7 @@ fun add_equiv_raw (cur_info as (_, th)) (tbl as {equiv, ...}) =
 (* Add the given equivalence edge. *)
 fun add_equiv (id, th) tbl =
     let
-      val _ = assert (not (lhs_of th aconv rhs_of th)) "add_equiv: t == t'"
+      val _ = assert (not (Util.lhs_of th aconv Util.rhs_of th)) "add_equiv: t == t'"
     in
       tbl |> add_equiv_raw (id, th)
           |> add_equiv_raw (id, meta_sym th)
@@ -487,7 +487,7 @@ fun compute_all_equiv tbl ct =
               [] => ([], all)
             | (id, th) :: rest =>
               let
-                val t' = rhs_of th
+                val t' = Util.rhs_of th
                 fun process_new (id', th') = merge_info tbl (id, th) (id', th')
                 val new' = (equiv_neighs tbl t')
                                |> map process_new
@@ -517,12 +517,12 @@ fun get_all_equiv {all_equiv, ...} t =
  *)
 fun simp_eq_better tbl (id, th) (id', th') =
     if is_eq_ancestor tbl id id' then
-      let val (t, t') = (rhs_of th, rhs_of th')
+      let val (t, t') = (Util.rhs_of th, Util.rhs_of th')
       in t aconv t' orelse Term_Ord.termless (t, t') end
     else false
 
 (* Remove all extraneous rewrite or simplification infos. *)
-fun reduce_simp_info tbl info = max_partial (simp_eq_better tbl) info
+fun reduce_simp_info tbl info = Util.max_partial (simp_eq_better tbl) info
 
 (* Update rewrite of t under id to th: t == t'. Similar to
    add_equiv_raw.
@@ -557,7 +557,7 @@ fun get_rewrite id tbl ct =
         [] => Thm.reflexive ct
       | ths' => ths' |> filter (is_eq_descendent tbl id o fst)
                      |> map snd
-                     |> max (rev_order o simp_ord)
+                     |> Util.max (rev_order o simp_ord)
 
 (*** Basic manipulation of subsimp and rep tables. ***)
 
@@ -569,7 +569,7 @@ fun merge_simp_infos tbl lsts =
       val ids = map (map fst) lsts |> get_all_merges tbl
       fun get_for_id_lst id lst =
           lst |> filter (is_eq_descendent tbl id o fst)
-              |> map snd |> max (rev_order o simp_ord)
+              |> map snd |> Util.max (rev_order o simp_ord)
       fun get_for_id id = (id, map (get_for_id_lst id) lsts)
     in
       map get_for_id ids
@@ -594,7 +594,7 @@ fun get_subterm_rewrite_info tbl ct =
  *)
 fun remove_rep (id, th) (tbl as {reps, ...}) =
     let
-      val t = lhs_of th
+      val t = Util.lhs_of th
       val reps_t = the_default [] (Termtab.lookup reps t)
       val _ = assert (member eq_info reps_t (id, th)) "remove_rep: not found"
     in
@@ -606,7 +606,7 @@ fun remove_rep (id, th) (tbl as {reps, ...}) =
  *)
 fun update_subsimp (id, th) (tbl as {subsimp, ...}) =
     let
-      val (t, t') = (lhs_of th, rhs_of th)
+      val (t, t') = (Util.lhs_of th, Util.rhs_of th)
       val subsimp_t = the_default [] (Termtab.lookup subsimp t)
     in
       if exists (fn info => simp_eq_better tbl info (id, th)) subsimp_t then tbl
@@ -643,7 +643,7 @@ fun get_head_rep id tbl t =
    with th. Not guaranteed to be non-redundant.
  *)
 fun get_head_rep_with_id_th tbl (id, th) =
-    get_head_rep_info tbl (rhs_of th) |> map (merge_info tbl (id, th))
+    get_head_rep_info tbl (Util.rhs_of th) |> map (merge_info tbl (id, th))
 
 (* Using the subsimp table for subterm simplification. *)
 fun get_cached_subterm_rewrite_info {subsimp, ...} t =
@@ -659,7 +659,7 @@ fun get_cached_subterm_rewrite id tbl ct =
         [] => Thm.reflexive ct
       | ths' => ths' |> filter (is_eq_descendent tbl id o fst)
                      |> map snd
-                     |> max (rev_order o simp_ord)
+                     |> Util.max (rev_order o simp_ord)
 
 (*** Basic manipulation of the property table. ***)
 
@@ -702,7 +702,7 @@ fun convert_property tbl (id', eq_th) (id, th) =
 fun head_simplify id tbl ct =
     case get_head_rep id tbl (Thm.term_of ct) of
         NONE => Thm.reflexive ct
-      | SOME th => transitive_list [th, get_rewrite id tbl (Thm.rhs_of th)]
+      | SOME th => Util.transitive_list [th, get_rewrite id tbl (Thm.rhs_of th)]
 
 (* First simplify subterms, then simplify head. *)
 fun simplify id tbl ct =
@@ -711,7 +711,7 @@ fun simplify id tbl ct =
     let
       val th = subterm_simplify id tbl ct
     in
-      transitive_list [th, head_simplify id tbl (Thm.rhs_of th)]
+      Util.transitive_list [th, head_simplify id tbl (Thm.rhs_of th)]
     end
 
 (* Simplify subterms, but not head. *)
@@ -729,7 +729,7 @@ and subterm_simplify id tbl ct =
 fun simp_val id tbl ct = Thm.rhs_of (simplify id tbl ct)
 
 fun simp_val_t id (tbl as {ctxt, ...}) t =
-    rhs_of (simplify id tbl (Thm.cterm_of ctxt t))
+    Util.rhs_of (simplify id tbl (Thm.cterm_of ctxt t))
 
 (* Get all simplifications and subterm-simplifications. *)
 fun simplify_info tbl ct =
@@ -741,7 +741,7 @@ fun simplify_info tbl ct =
           (get_rewrite_info tbl (Thm.rhs_of th'))
               |> map (merge_info tbl (id', th'))
       val head_info = subterm_info |> maps (get_head_rep_with_id_th tbl)
-                                  |> max_partial (id_is_eq_ancestor tbl)
+                                  |> Util.max_partial (id_is_eq_ancestor tbl)
                                   |> maps get_rewrite_with_id_th
     in
       subterm_info @ head_info |> reduce_simp_info tbl
@@ -770,8 +770,8 @@ fun is_equiv_t id (tbl as {ctxt, ...}) (t1, t2) =
 
 fun is_subequiv id tbl (ct1, ct2) =
     if ct1 aconvc ct2 then true
-    else (rhs_of (subterm_simplify id tbl ct1))
-             aconv (rhs_of (subterm_simplify id tbl ct2))
+    else (Util.rhs_of (subterm_simplify id tbl ct1))
+             aconv (Util.rhs_of (subterm_simplify id tbl ct2))
 
 (* infos is a list of (id, th), where the right side of each th is
    fhead as head.
@@ -780,14 +780,14 @@ fun reduce_equivs tbl (fhead, infos) =
     if length infos <= 1 then (fhead, infos) else
     let
       fun args_of id cu =
-          cu |> dest_cargs |> map (simp_val id tbl)
+          cu |> Util.dest_cargs |> map (simp_val id tbl)
 
       fun head_equiv_eq_better (id1, th1) (id2, th2) =
           is_eq_ancestor tbl id1 id2 andalso
           eq_list (op aconvc) (args_of id2 (Thm.rhs_of th1),
                                args_of id2 (Thm.rhs_of th2))
     in
-      (fhead, max_partial head_equiv_eq_better infos)
+      (fhead, Util.max_partial head_equiv_eq_better infos)
     end
 
 (* No assumption on u. Get list of (id', u') pairs where id <= id', u'
@@ -808,19 +808,19 @@ fun compute_head_equiv tbl cu =
           is_eq_ancestor tbl id1 id2 andalso
           is_equiv id2 tbl (Thm.rhs_of th1, Thm.rhs_of th2)
       fun get_all_equiv_under_id (id', th') =
-          get_all_equiv tbl (rhs_of th') |> map (merge_info tbl (id', th'))
+          get_all_equiv tbl (Util.rhs_of th') |> map (merge_info tbl (id', th'))
 
       (* Get all equivs from table. *)
       val all_equiv =
           if in_table_raw tbl u then get_all_equiv tbl u
           else (subterm_simplify_info tbl cu)
                    |> maps (get_head_rep_with_id_th tbl)
-                   |> max_partial rep_eq_better
+                   |> Util.max_partial rep_eq_better
                    |> maps get_all_equiv_under_id
                    |> cons ([], Thm.reflexive cu)
     in
       (* Sort by head of term, and reduce at each head. *)
-      all_equiv |> map (fn (id, th) => (Term.head_of (rhs_of th), (id, th)))
+      all_equiv |> map (fn (id, th) => (Term.head_of (Util.rhs_of th), (id, th)))
                 |> AList.group (op aconv)
                 |> map (reduce_equivs tbl)
     end
@@ -895,7 +895,7 @@ fun process_update_simp inits tbl =
               [] => ([], tbl)
             | (id, th) :: rest =>
               let
-                val t = lhs_of th
+                val t = Util.lhs_of th
                 (* th: t == simp_t, th': t = t', result: t' = simp_t. *)
                 fun process_neigh (id', th') =
                     merge_info tbl (id', meta_sym th') (id, th)
@@ -917,13 +917,13 @@ fun equiv_info tbl id (ct1, ct2) =
       val simp1 = simplify_info tbl ct1
       val simp2 = simplify_info tbl ct2
       fun compare (id1, th1) (id2, th2) =
-          if rhs_of th1 aconv rhs_of th2 then
-            [(merge_boxes tbl (id1, id2), transitive_list [th1, meta_sym th2])]
+          if Util.rhs_of th1 aconv Util.rhs_of th2 then
+            [(merge_boxes tbl (id1, id2), Util.transitive_list [th1, meta_sym th2])]
           else []
     in
       (maps (fn s1 => maps (compare s1) simp2) simp1)
           |> merge_box_with_info tbl id
-          |> max_partial (id_is_eq_ancestor tbl)
+          |> Util.max_partial (id_is_eq_ancestor tbl)
     end
 
 fun equiv_info_t (tbl as {ctxt, ...}) id (t1, t2) =
@@ -939,13 +939,13 @@ fun subequiv_info tbl id (ct1, ct2) =
       val simp1 = subterm_simplify_info tbl ct1
       val simp2 = subterm_simplify_info tbl ct2
       fun compare (id1, th1) (id2, th2) =
-          if rhs_of th1 aconv rhs_of th2 then
-            [(merge_boxes tbl (id1, id2), transitive_list [th1, meta_sym th2])]
+          if Util.rhs_of th1 aconv Util.rhs_of th2 then
+            [(merge_boxes tbl (id1, id2), Util.transitive_list [th1, meta_sym th2])]
           else []
     in
       (maps (fn s1 => maps (compare s1) simp2) simp1)
           |> merge_box_with_info tbl id
-          |> max_partial (id_is_eq_ancestor tbl)
+          |> Util.max_partial (id_is_eq_ancestor tbl)
     end
 
 (* Attempt to retrieve property with the given statement from the table. *)
@@ -962,7 +962,7 @@ fun get_property tbl (id, cprop) =
                 |> filter head_agrees
           else let
             fun process_head_rep (id', eq_th) =
-                (get_property_for_term tbl (rhs_of eq_th))
+                (get_property_for_term tbl (Util.rhs_of eq_th))
                     |> filter head_agrees
                     |> map (convert_property tbl (id', meta_sym eq_th))
           in
@@ -972,7 +972,7 @@ fun get_property tbl (id, cprop) =
           end
     in
       property_t |> merge_box_with_info tbl id
-                 |> max_partial (property_eq_better tbl)
+                 |> Util.max_partial (property_eq_better tbl)
     end
 
 fun get_property_t (tbl as {ctxt, ...}) (id, prop) =
@@ -993,7 +993,7 @@ fun apply_property_update_rule (tbl as {lat, ...}) id th_opt =
           else let
             val p_ths = (map (get_property tbl) (map (pair id) cprems))
                             |> BoxID.get_all_merges_info lat
-                            |> max_partial (BoxID.id_is_eq_ancestor lat)
+                            |> Util.max_partial (BoxID.id_is_eq_ancestor lat)
             fun process_p_th (id', ths) = (id', ths MRS th)
           in
             map process_p_th p_ths
@@ -1062,7 +1062,7 @@ fun process_update_property inits (tbl as {ctxt, ...}) =
                     th |> Property.instantiate_property_update ctxt t
                        |> apply_property_update_rule tbl id
                 val new_property_t = maps process_updt_rule
-                                          (all_pairs (ts, updt_rules))
+                                          (Util.all_pairs (ts, updt_rules))
 
                 (* Derived properties of parent terms of t. *)
                 val parents_t = map (Thm.term_of) (immediate_contains tbl t)
@@ -1147,7 +1147,7 @@ fun complete_table tbl =
                 |> filter_out (has_equiv_eq_better tbl equivs)
           end
       val new_equivs = (maps find_new_equiv (get_all_terms tbl))
-                           |> max_partial (id_is_eq_ancestor tbl)
+                           |> Util.max_partial (id_is_eq_ancestor tbl)
     in
       case new_equivs of
           [] => ([], tbl)
@@ -1279,24 +1279,24 @@ fun convert_wellform tbl (id', eq_th) (id, th) =
       else let
         val thy = theory_of tbl
       in
-        case WellForm.lookup_wellform_pattern thy (lhs_of eq_th, prop_of' th) of
+        case WellForm.lookup_wellform_pattern thy (Util.lhs_of eq_th, prop_of' th) of
             NONE => raise Fail "convert_wellform: invalid input."
           | SOME (pat, data_pat) =>
             let
               (* Cannot use eq_th directly. Rather, find all the
                  equivalences again for all the subterms.
                *)
-              val cargs1 = dest_cargs (Thm.lhs_of eq_th)
-              val cargs2 = dest_cargs (Thm.rhs_of eq_th)
+              val cargs1 = Util.dest_cargs (Thm.lhs_of eq_th)
+              val cargs2 = Util.dest_cargs (Thm.rhs_of eq_th)
               val eq_ths =
                   map (fn (ct, ct') =>
                           (equiv_info tbl id' (ct, ct'))
                               |> filter (fn (id'', _) => id'' = id')
                               |> map snd |> the_single)
                       (cargs1 ~~ cargs2)
-              val pat_args = dest_args pat
+              val pat_args = Util.dest_args pat
               val th' = apply_to_thm' (
-                    pattern_rewr_conv data_pat (pat_args ~~ eq_ths)) th
+                    Util.pattern_rewr_conv data_pat (pat_args ~~ eq_ths)) th
 
               (* Check the result is in the right form. *)
               val subst' = pat_args ~~ map Thm.term_of cargs2
@@ -1326,14 +1326,14 @@ fun get_wellform tbl (id, ct) =
              convert them into wellform data for t.
            *)
           fun process_head_rep (id', eq_th) =
-              (get_wellform_infos_for_term tbl (rhs_of eq_th))
+              (get_wellform_infos_for_term tbl (Util.rhs_of eq_th))
                   |> map (convert_wellform tbl (id', meta_sym eq_th))
         in
           (subterm_simplify_info tbl ct)
               |> maps (get_head_rep_with_id_th tbl)
               |> maps process_head_rep
               |> merge_box_with_info tbl id
-              |> max_partial (property_eq_better tbl)
+              |> Util.max_partial (property_eq_better tbl)
         end
     end
 
@@ -1357,7 +1357,7 @@ fun get_complete_wellform (tbl as {lat, ...}) (id, ct) =
     in
       if length data < length targets then []
       else data |> BoxID.get_all_merges_info lat
-                |> max_partial (BoxID.id_is_eq_ancestor lat)
+                |> Util.max_partial (BoxID.id_is_eq_ancestor lat)
     end
 
 (* Given a regular term, construct a wellformed term by adding
@@ -1371,7 +1371,7 @@ fun term_to_wfterm_on_tbl (tbl as {lat, ...}) fheads (id, ct) =
           val t = Thm.term_of ct
           val (cf, cargs) = Drule.strip_comb ct
         in
-          if forall (fn fhead => not (is_head fhead t)) fheads then
+          if forall (fn fhead => not (Util.is_head fhead t)) fheads then
             [(id, WfTerm ct)] else
           let
             val wfdata = get_complete_wellform tbl (id, ct)
@@ -1386,7 +1386,7 @@ fun term_to_wfterm_on_tbl (tbl as {lat, ...}) fheads (id, ct) =
                       |> map (fn (id'', arg') => (id'', WfComb (cf, arg', ths)))
           in
             (maps process_wfdata wfdata)
-                |> max_partial (BoxID.id_is_eq_ancestor lat)
+                |> Util.max_partial (BoxID.id_is_eq_ancestor lat)
           end
         end
       | _ => [(id, WfTerm ct)]
@@ -1472,7 +1472,7 @@ fun complete_wellform_data_for_terms infos ts tbl =
                               prop_data)
                 end
 
-            val targets = (all_pairs (target_ids, map fst cur_data))
+            val targets = (Util.all_pairs (target_ids, map fst cur_data))
                               |> filter is_target
           in
             targets |> maps (rewrite_find_fact tbl infos)
@@ -1551,7 +1551,7 @@ fun add_infos infos (id, new_infos) tbl =
       val relevant_props =
           filter (fn (_, th) => classify_th thy th = "PROP")
                  (map (pair id) new_infos) @
-          filter (fn (_, th) => has_subterm relevant_terms (prop_of' th)) infos
+          filter (fn (_, th) => Util.has_subterm relevant_terms (prop_of' th)) infos
 
       fun add_one_info th tbl =
           case classify_th thy th of
@@ -1583,7 +1583,7 @@ fun get_incr_type (tbl as {lat, ctxt, ...}) infos (id, new_infos) =
       val relevant_props =
           filter (fn (_, th) => classify_th thy th = "PROP")
                  (map (pair [prim_id]) new_infos) @
-          filter (fn (_, th) => has_subterm relevant_terms (prop_of' th)) infos
+          filter (fn (_, th) => Util.has_subterm relevant_terms (prop_of' th)) infos
 
       fun add_one_info th tbl =
           case classify_th thy th of

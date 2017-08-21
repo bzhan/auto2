@@ -109,7 +109,7 @@ fun get_all_subterms ct =
  *)
 fun get_all_subterms_skip_if ct =
     if UtilBase.is_if (Thm.term_of ct) then
-      ct :: get_all_subterms_skip_if (ct |> dest_cargs |> hd)
+      ct :: get_all_subterms_skip_if (ct |> Util.dest_cargs |> hd)
     else
       ct :: (ct |> list_subterms |> maps get_all_subterms_skip_if
                 |> distinct (op aconvc))

@@ -66,7 +66,7 @@ fun nat_neq_th m n =
 fun nat_fold_reduce t =
     if fastype_of t <> natT then t else
     let
-      val (f, (n1, n2)) = t |> dest_binop |> apsnd (apply2 UtilArith.dest_numc)
+      val (f, (n1, n2)) = t |> Util.dest_binop |> apsnd (apply2 UtilArith.dest_numc)
     in
       case f of
           Const (@{const_name plus}, _) => mk_nat (n1 + n2)

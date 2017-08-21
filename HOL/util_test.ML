@@ -33,7 +33,7 @@ val test_is_pattern =
           let
             val t = Proof_Context.read_term_pattern ctxt str
           in
-            if b = is_pattern t then ()
+            if b = Util.is_pattern t then ()
             else raise Fail "test_is_pattern"
           end
 

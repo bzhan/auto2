@@ -4,8 +4,8 @@ val le_t = @{term le}
 val less_t = @{term less}
 fun ord_heads G = rat_fheads G @ [le_t $ G, less_t $ G]
 
-fun is_le G t = is_head (le_t $ G) t
-fun is_less G t = is_head (less_t $ G) t
+fun is_le G t = Util.is_head (le_t $ G) t
+fun is_less G t = Util.is_head (less_t $ G) t
 fun is_ineq G t = is_le G t orelse is_less G t
 fun is_neg_le G t = is_neg t andalso is_le G (dest_not t)
 fun is_neg_less G t = is_neg t andalso is_less G (dest_not t)
@@ -74,9 +74,9 @@ fun ord_normalize_fn rtype _ item1 item2 =
        *)
       val (ct1, ct2) = (cprop_of' prop1, Thm.dest_arg (cprop_of' prop2))
       val (t1, t2) = (Thm.term_of ct1, Thm.term_of ct2)
-      val (x1, y1) = dest_binop_args t1
-      val (x2, y2) = dest_binop_args t2
-      val G = hd (dest_args (Thm.term_of ct1))
+      val (x1, y1) = Util.dest_binop_args t1
+      val (x2, y2) = Util.dest_binop_args t2
+      val G = hd (Util.dest_args (Thm.term_of ct1))
       val diff1 = AlgCommRing.norm_term G (minus_t $ G $ y1 $ x1)
       val diff2 = AlgCommRing.norm_term G (minus_t $ G $ y2 $ x2)
     in
@@ -92,7 +92,7 @@ fun ord_normalize_fn rtype _ item1 item2 =
               val (_, eq1) = wfcv wft1
               val (_, eq2) = wfcv wft2
             in
-              if not (rhs_of eq1 aconv rhs_of eq2) then []
+              if not (Util.rhs_of eq1 aconv Util.rhs_of eq2) then []
               else let
                 val prop1' =
                     apply_to_thm' (Conv.rewr_conv eq1) prop1
@@ -111,7 +111,7 @@ fun ord_normalize_fn rtype _ item1 item2 =
               val wfts2 =
                   RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct2)
             in
-              (all_pairs (wfts1, wfts2))
+              (Util.all_pairs (wfts1, wfts2))
                   |> map (fn ((id1, wft1), (id2, wft2)) =>
                              (BoxID.merge_boxes lat (id1, id2), (wft1, wft2)))
                   |> RewriteTable.replace_id_for_type' rtype

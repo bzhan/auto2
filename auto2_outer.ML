@@ -97,7 +97,7 @@ fun refine_subgoal_th th prop =
     let
       val assum = hd (Drule.cprems_of th)
     in
-      th |> send_first_to_hyps
+      th |> Util.send_first_to_hyps
          |> Thm.implies_elim prop
          |> Thm.implies_intr assum
     end
@@ -109,7 +109,7 @@ fun refine_subgoal_th th prop =
 fun have_after_qed ctxt th prop =
     let
       val (vars, (_, concl)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                    |> strip_meta_horn
+                                    |> Util.strip_meta_horn
       val have_res = have_resolve ctxt vars th concl
     in
       refine_subgoal_th have_res prop
@@ -124,7 +124,7 @@ fun have_cmd (s, r, t) state =
 
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected
                               |> Auto2_State.subgoal_of |> Thm.term_of
-                              |> strip_meta_horn
+                              |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As @ map mk_Trueprop assums,
                                      mk_Trueprop concl)
@@ -132,7 +132,7 @@ fun have_cmd (s, r, t) state =
       fun after_qed ths prop =
           let
             val th' = ths |> the_single
-                          |> funpow (length As) send_first_to_hyps
+                          |> funpow (length As) Util.send_first_to_hyps
                           |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
                           |> apply_to_thm (to_obj_conv ctxt)
                           |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
@@ -148,7 +148,7 @@ fun have_cmd (s, r, t) state =
       if is_none t orelse the t = "@then" then
         let
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B. *)
-          val ctxt' = ctxt |> fold declare_free_term new_vars
+          val ctxt' = ctxt |> fold Util.declare_free_term new_vars
           val th = auto2_solve ctxt' (Thm.cterm_of ctxt' stmt)
         in
           state |> Proof.map_contexts (Auto2_State.map_head_th (after_qed [th]))
@@ -163,7 +163,7 @@ fun have_cmd (s, r, t) state =
         in
           state |> (if is_rule then I else
                     Proof.map_contexts (Auto2_State.add_prem_only stmt'))
-                |> Proof.map_contexts (fold declare_free_term new_vars)
+                |> Proof.map_contexts (fold Util.declare_free_term new_vars)
                 |> Proof.map_contexts (Auto2_State.push_head new_block)
         end
     end
@@ -184,7 +184,7 @@ fun match_subgoal_pat thy t (i, pat) =
     let
       val inst = Pattern.first_order_match thy (pat, t) fo_init
       val vars = rev (map Var (Term.add_vars pat []))
-      val ts = map (subst_term_norm inst) vars
+      val ts = map (Util.subst_term_norm inst) vars
     in
       SOME (i, ts)
     end
@@ -209,14 +209,14 @@ fun subgoal_cmd s state =
             val _ = assert (not (is_goal_resolved prop))
                            "@subgoal: goal already resolved."
             val t' = case Thm.prop_of prop of
-                        imp $ A $ B => imp $ rename_abs_term ts A $ B
+                        imp $ A $ B => imp $ Util.rename_abs_term ts A $ B
                       | _ => raise Fail "subgoal_cmd"
             val prop = prop |> Thm.renamed_prop t'
             val new_ts = filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) ts
           in
             state |> Proof.map_contexts (Auto2_State.set_selected (SOME i))
                   |> Proof.map_contexts (Auto2_State.map_head_th (K prop))
-                  |> Proof.map_contexts (fold declare_free_term new_ts)
+                  |> Proof.map_contexts (fold Util.declare_free_term new_ts)
           end
     end
 
@@ -225,7 +225,7 @@ fun auto2_solve_goal ctxt prop =
     if is_goal_resolved prop then prop
     else let
       val (vars, (As, C)) =
-          prop |> Auto2_State.subgoal_of |> Thm.term_of |> strip_meta_horn
+          prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
       val th = auto2_solve ctxt (Thm.cterm_of ctxt body)
     in
@@ -279,7 +279,7 @@ fun end_cmd state =
     in
       state |> Proof.map_contexts Auto2_State.pop_head
             |> Proof.map_contexts (Auto2_State.map_head_th (f solved_props))
-            |> Proof.map_contexts (fold declare_free_term new_vars)
+            |> Proof.map_contexts (fold Util.declare_free_term new_vars)
     end
 
 val _ =
@@ -295,7 +295,7 @@ fun qed_cmd state =
 
       val prop = Auto2_State.get_selected ctxt
       val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                 |> strip_meta_horn
+                                 |> Util.strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
 
       val th = (auto2_solve ctxt (Thm.cterm_of ctxt body))
@@ -371,7 +371,7 @@ fun obtain_after_qed ctxt ths prop =
     let
       val th = the_single ths
       val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                 |> strip_meta_horn
+                                 |> Util.strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
 
       val concl = Logic.strip_imp_concl body
@@ -395,7 +395,7 @@ fun obtain_cmd (s, t, u) state =
 
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected
                               |> Auto2_State.subgoal_of |> Thm.term_of
-                              |> strip_meta_horn
+                              |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As, C)
       val new_vars =
@@ -407,7 +407,7 @@ fun obtain_cmd (s, t, u) state =
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B. *)
           val th = auto2_solve ctxt (Thm.cterm_of ctxt stmt)
         in
-          state |> Proof.map_contexts (fold declare_free_term new_vars)
+          state |> Proof.map_contexts (fold Util.declare_free_term new_vars)
                 |> Proof.map_contexts (Auto2_State.map_head_th (obtain_after_qed ctxt [th]))
         end
       else
@@ -453,9 +453,9 @@ fun case_resolve ctxt vars th =
 
       val th_bc = th |> fold Thm.elim_implies thAs
 
-      val inst = fo_init |> update_env (("P",0), dest_Trueprop B)
-                         |> update_env (("Q",0), dest_Trueprop C)
-      val th_c = (subst_thm ctxt inst UtilBase.case_split_th)
+      val inst = fo_init |> Util.update_env (("P",0), dest_Trueprop B)
+                         |> Util.update_env (("Q",0), dest_Trueprop C)
+      val th_c = (Util.subst_thm ctxt inst UtilBase.case_split_th)
                      |> fold Thm.elim_implies [th_bc, th_nbc]
     in
       th_c |> fold Thm.implies_intr (rev cAs)
@@ -471,7 +471,7 @@ fun case_after_qed ctxt ths prop =
     let
       val th = the_single ths
       val (vars, _) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                           |> strip_meta_horn
+                           |> Util.strip_meta_horn
       val case_res = case_resolve ctxt vars th
     in
       refine_subgoal_th case_res prop
@@ -541,7 +541,7 @@ fun contra_resolve ctxt vars As C =
 fun contra_after_qed ctxt prop =
     let
       val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                 |> strip_meta_horn
+                                 |> Util.strip_meta_horn
       val contra_res = contra_resolve ctxt vars As C
     in
       refine_subgoal_th contra_res prop
@@ -578,7 +578,7 @@ fun let_resolve ctxt vars eq As C =
                     | _ => raise Fail "ex_vardef_th"
       val (x, _) = Term.dest_Free lhs
       val inst = Pattern.first_order_match thy (pat_a, rhs) fo_init
-      val ex_th = subst_thm ctxt inst UtilBase.ex_vardef_th
+      val ex_th = Util.subst_thm ctxt inst UtilBase.ex_vardef_th
       val t' = case Thm.prop_of ex_th of
                    A $ (B $ Abs (_, T, body)) => A $ (B $ Abs (x, T, body))
                  | _ => error "let_resolve"
@@ -595,7 +595,7 @@ fun let_resolve ctxt vars eq As C =
 fun let_after_qed_one ctxt eq prop =
     let
       val (vars, (As, C)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                 |> strip_meta_horn
+                                 |> Util.strip_meta_horn
       val let_res = let_resolve ctxt vars eq As C
     in
       refine_subgoal_th let_res prop
@@ -614,7 +614,7 @@ fun let_cmd s state =
           filter_out (
             fn v => Variable.is_fixed ctxt (fst (Term.dest_Free v))) vars
     in
-      state |> Proof.map_context (fold declare_free_term new_vars)
+      state |> Proof.map_context (fold Util.declare_free_term new_vars)
             |> Proof.map_contexts (Auto2_State.map_head_th (let_after_qed ctxt eqs))
     end
 

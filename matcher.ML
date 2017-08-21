@@ -48,7 +48,7 @@ struct
 open UtilLogic
 
 fun compare_inst (((id1, inst1), _), ((id2, inst2), _)) =
-    eq_list (op =) (id1, id2) andalso eq_env (inst1, inst2)
+    eq_list (op =) (id1, id2) andalso Util.eq_env (inst1, inst2)
 
 (* Match type at the top level for t and u. If there is no match,
    return NONE. Otherwise, return the updated instsp as well as t
@@ -97,7 +97,7 @@ fun update_inst bd_vars ixn cu (id, inst) =
       val u = Thm.term_of cu
     in
       if is_open bd_vars u then []
-      else [((id, update_env (ixn, u) inst), Thm.reflexive cu)]
+      else [((id, Util.update_env (ixn, u) inst), Thm.reflexive cu)]
     end
 
 (* Partial comparison using just the ID. *)
@@ -159,7 +159,7 @@ and match_comb tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
         let
           val instsps' = match_list tbl bd_vars (targs, cuargs) instsp
           fun process_inst (instsp', ths) =
-              (instsp', comb_equiv (cuf, ths))
+              (instsp', Util.comb_equiv (cuf, ths))
         in
           map process_inst instsps'
         end
@@ -173,7 +173,7 @@ and match_comb tbl bd_vars (t, cu) (instsp as (_, (_, inst))) =
                  not (has_duplicates (op aconv) targs) then
                 let
                   val cu' = cu |> Thm.term_of
-                               |> fold lambda_abstract (rev targs)
+                               |> fold Util.lambda_abstract (rev targs)
                                |> Thm.cterm_of ctxt
                 in
                   map (fn (instsp', _) => (instsp', Thm.reflexive cu))
@@ -228,7 +228,7 @@ and match_all_head tbl bd_vars (t, cu) (id, env) =
             val insts_u' = match_head tbl bd_vars (t, cu') (id', env)
             fun process_inst ((id', env'), eq_th) =
                 (* eq_th: t(env') == u', eq_u: u == u'. *)
-                ((id', env'), transitive_list [eq_th, meta_sym eq_u])
+                ((id', env'), Util.transitive_list [eq_th, meta_sym eq_u])
           in
             map process_inst insts_u'
           end

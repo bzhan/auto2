@@ -19,7 +19,7 @@ struct
 fun add_typing_rule_cond th conds thy =
     let
       val concl = th |> concl_of' |> strip_conj |> hd
-      val th_name = name_of_thm th
+      val th_name = Util.name_of_thm th
     in
       if is_mem concl then
         thy |> add_forward_prfstep_cond th ([K (WithTerm (dest_arg1 concl))] @ conds)
@@ -46,7 +46,7 @@ fun add_backward_replace_cond th conds thy =
     let
       val ctxt = Proof_Context.init_global thy
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
-      val th_name = name_of_thm th
+      val th_name = Util.name_of_thm th
       val concl = concl_of' th
       val conds' = map (fn cond => cond ctxt') conds
       fun prfstep_fn ((id, _), ths) items _ =

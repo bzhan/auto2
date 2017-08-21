@@ -224,7 +224,7 @@ fun entail_triv_th ctxt A =
       val thy = Proof_Context.theory_of ctxt
       val inst = Pattern.first_order_match thy (Var (("A", 0), assnT), A) fo_init
     in
-      subst_thm ctxt inst @{thm entails_triv}
+      Util.subst_thm ctxt inst @{thm entails_triv}
     end
 
 (* Given A of type assnT, return the theorem A ==> true. *)
@@ -233,7 +233,7 @@ fun entail_true_th ctxt A =
       val thy = Proof_Context.theory_of ctxt
       val inst = Pattern.first_order_match thy (Var (("A", 0), assnT), A) fo_init
     in
-      subst_thm ctxt inst @{thm entails_true}
+      Util.subst_thm ctxt inst @{thm entails_true}
     end
 
 (* Given theorem A ==> B and a conversion cv, apply cv to A *)

@@ -72,7 +72,7 @@ fun assn_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
         let
           val t = Thm.term_of ct
         in
-          [((id, update_env (ixn, t) inst),
+          [((id, Util.update_env (ixn, t) inst),
             t |> entail_triv_th ctxt |> apply_to_entail_r mult_emp_right)]
         end
       | _ =>
@@ -87,7 +87,7 @@ fun assn_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
               let
                 val _ = assert (is_entail (prop_of' th)) "assn_match_term"
                 val (_, rhs) = th |> prop_of' |> dest_entail
-                val exp_rhs = subst_term_norm inst' pat
+                val exp_rhs = Util.subst_term_norm inst' pat
               in
                 if rhs aconv exp_rhs then
                   ((id, inst'), th |> apply_to_entail_r mult_emp_right)
@@ -116,7 +116,7 @@ fun assn_match_all tbl (pat, ct) (id, inst) =
           fun process_inst ((id', inst'), th) =
               let
                 val ct' = th |> cprop_of' |> cdest_entail |> snd |> Thm.dest_arg
-                val B' = subst_term_norm inst' B
+                val B' = Util.subst_term_norm inst' B
                 val insts' = assn_match_all tbl (B', ct') (id', inst')
 
                 (* th' is t' ==> B(s) * t''. *)
@@ -143,7 +143,7 @@ fun assn_match_all_strict tbl (pat, ct) (id, inst) =
           let
             val rhs = th |> prop_of' |> dest_entail |> snd
             val _ = assert (is_times rhs andalso
-                            dest_arg1 rhs aconv subst_term_norm inst' pat)
+                            dest_arg1 rhs aconv Util.subst_term_norm inst' pat)
                            "assn_match_all"
           in
             if dest_arg rhs aconv emp then
@@ -272,7 +272,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r ct id =
        *)
       fun process_inst_r ((id', inst'), eq_th) =
           let
-            val entail_th' = subst_thm ctxt inst' entail_th
+            val entail_th' = Util.subst_thm ctxt inst' entail_th
             val pat = entail_th' |> prop_of' |> dest_arg1
             val matches = assn_match_all tbl (pat, ct) (id', fo_init)
 
@@ -283,7 +283,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r ct id =
              *)
             fun process_match ((id'', _), th) =
                 let
-                  val cv = eq_th |> Conv.rewr_conv |> argn_conv 1
+                  val cv = eq_th |> Conv.rewr_conv |> Util.argn_conv 1
                                  |> ACUtil.ac_last_conv assn_ac_info
                   val th' = th |> apply_to_entail_r assn_comm_cv
                 in
@@ -310,7 +310,7 @@ fun entail_matcher entail_th tbl (pat, ct) (id, inst) =
       val pat_f = entail_th |> prop_of' |> dest_entail |> snd |> Term.head_of
     in
       if not (Term.aconv_untyped (f, pat_f)) orelse
-         has_vars (nth args 1) then []
+         Util.has_vars (nth args 1) then []
       else let
         val (pat_xs, r) = the_pair args
         val matches = entail_matcher' entail_th tbl r ct id
@@ -362,7 +362,7 @@ fun assn_inv_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
         let
           val t = Thm.term_of ct
         in
-          [((id, update_env (ixn, t) inst),
+          [((id, Util.update_env (ixn, t) inst),
             t |> entail_triv_th ctxt |> apply_to_entail_l mult_emp_right)]
         end
       | _ =>
@@ -377,7 +377,7 @@ fun assn_inv_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
               let
                 val _ = assert (is_entail (prop_of' th)) "assn_inv_match_term"
                 val (lhs, _) = th |> prop_of' |> dest_entail
-                val exp_lhs = subst_term_norm inst' pat
+                val exp_lhs = Util.subst_term_norm inst' pat
               in
                 if lhs aconv exp_lhs then
                   ((id, inst'), th |> apply_to_entail_l mult_emp_right)
@@ -406,7 +406,7 @@ fun assn_inv_match_all tbl (pat, ct) (id, inst) =
           fun process_inst ((id', inst'), th) =
               let
                 val ct' = th |> cprop_of' |> cdest_entail |> fst |> Thm.dest_arg
-                val B' = subst_term_norm inst' B
+                val B' = Util.subst_term_norm inst' B
                 val insts' = assn_inv_match_all tbl (B', ct') (id', inst')
 
                 (* th' is B(s) * t'' ==> t'. *)
@@ -433,7 +433,7 @@ fun assn_inv_match_all_strict tbl (pat, ct) (id, inst) =
           let
             val lhs = th |> prop_of' |> dest_entail |> fst
             val _ = assert (is_times lhs andalso
-                            dest_arg1 lhs aconv subst_term_norm inst' pat)
+                            dest_arg1 lhs aconv Util.subst_term_norm inst' pat)
                            "assn_match_all"
           in
             if dest_arg lhs aconv emp then

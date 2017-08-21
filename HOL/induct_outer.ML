@@ -101,7 +101,7 @@ fun check_strong_ind_prop ind_prop =
 
 fun add_strong_induct_rule ind_th thy =
     let
-      val name = name_of_thm ind_th
+      val name = Util.name_of_thm ind_th
       val ctxt = Proof_Context.init_global thy
       val ind_th' = apply_to_thm (to_obj_conv_on_horn ctxt) ind_th
       val (pat_var, pat_subst) =
@@ -109,7 +109,7 @@ fun add_strong_induct_rule ind_th thy =
           handle List.Empty => error "Strong induction: more than one var."
       val ty_var = type_of pat_var
       val _ = writeln (name ^ "\nSubstitution: " ^
-                       (string_of_terms_global thy [pat_var, pat_subst]))
+                       (Util.string_of_terms_global thy [pat_var, pat_subst]))
     in
       thy |> add_typed_induct_data "strong_induct" (ty_var, ind_th')
     end
@@ -156,7 +156,7 @@ fun strong_induct_cmd (s, t) state =
                                          |> Util.strip_meta_horn
 
       val P = (list_obj_horn (arbitraries, (map dest_Trueprop assums, dest_Trueprop concl)))
-                  |> lambda_abstract var
+                  |> Util.lambda_abstract var
 
       val ty = type_of var
       val ind_th = the (get_typed_ind_th thy "strong_induct" ty)
@@ -167,18 +167,18 @@ fun strong_induct_cmd (s, t) state =
                                   |> Term.dest_comb
       val inst = fold (Pattern.match thy) [(var_P, P), (var_n, var)] fo_init
       val ind_th =
-          ind_th |> subst_thm ctxt inst
+          ind_th |> Util.subst_thm ctxt inst
                  |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
 
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
-          ind_th |> send_first_to_hyps
+          ind_th |> Util.send_first_to_hyps
                  |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
                  |> fold Thm.forall_intr (map (Thm.cterm_of ctxt) vars)
                  |> Thm.implies_intr assum
 
       val t' = case Thm.prop_of ind_th of
-                   imp $ A $ B => imp $ rename_abs_term [var] A $ B
+                   imp $ A $ B => imp $ Util.rename_abs_term [var] A $ B
                  | _ => raise Fail "strong_induct_cmd"
 
       val ind_th = ind_th |> Thm.renamed_prop t'
@@ -249,7 +249,7 @@ fun case_induct_cmd s state =
       val var_P = ind_th |> concl_of'
       val inst = fold (Pattern.match thy)
                       ((var_P, dest_Trueprop C) :: (vars ~~ args)) fo_init
-      val ind_th = subst_thm_thy thy inst ind_th
+      val ind_th = Util.subst_thm_thy thy inst ind_th
 
       val ind_goals =
           ind_th |> Thm.prems_of
@@ -257,7 +257,7 @@ fun case_induct_cmd s state =
                  |> map (Thm.cterm_of ctxt)
 
       val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
-                    |> map send_all_to_hyps
+                    |> map Util.send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
                              |> fold Thm.implies_intr (rev cAs)
@@ -285,10 +285,10 @@ fun prop_induct_cmd (s, t) state =
                           raise Fail "prop_induct: cannot find theorem."
 
       (* Instantiate the induction theorem *)
-      val P = fold lambda_abstract (rev args) stmt
+      val P = fold Util.lambda_abstract (rev args) stmt
       val (var_P, vars) = ind_th |> concl_of' |> Term.strip_comb
       val inst = fold (Pattern.match thy) ((var_P, P) :: (vars ~~ args)) fo_init
-      val ind_th = subst_thm_thy thy inst ind_th
+      val ind_th = Util.subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
@@ -301,7 +301,7 @@ fun prop_induct_cmd (s, t) state =
                  |> map (Thm.cterm_of ctxt)
 
       val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
-                    |> map send_all_to_hyps
+                    |> map Util.send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
                              |> fold Thm.implies_intr (rev cAs)
@@ -326,7 +326,7 @@ fun get_induct_stmt ctxt (var, stmt, arbitrary) =
         val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
                                 |> Thm.term_of |> Util.strip_meta_horn
         val all_vars = var :: arbitrary
-        val obj_As = map dest_Trueprop (filter (occurs_frees all_vars) As)
+        val obj_As = map dest_Trueprop (filter (Util.occurs_frees all_vars) As)
         val obj_C = dest_Trueprop C
       in
         UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
@@ -352,13 +352,13 @@ fun induct_cmd (s, t, u, v) state =
 
       val P_inst = Term.lambda var stmt
       val inst = fold (Pattern.match thy) [(var_P, P_inst), (var_n, var)] fo_init
-      val ind_th' = subst_thm_thy thy inst ind_th
+      val ind_th' = Util.subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
                               |> Thm.term_of |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
-      val use_As = As |> filter_out (occurs_frees (var :: arbitraries))
+      val use_As = As |> filter_out (Util.occurs_frees (var :: arbitraries))
 
       fun retrieve_pat t =
           let
@@ -388,7 +388,7 @@ fun induct_cmd (s, t, u, v) state =
   in
     if is_none v then
       let
-        val ths = (map solve_eq ind_goals) |> map send_all_to_hyps
+        val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
         val ind_concl = ind_th' |> fold Thm.elim_implies ths
                                 |> fold Thm.implies_intr (rev cAs)
         val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
@@ -402,7 +402,7 @@ fun induct_cmd (s, t, u, v) state =
             let
               val ths' = (ind_goals ~~ ths)
                             |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
-                            |> map send_all_to_hyps
+                            |> map Util.send_all_to_hyps
               val ind_concl = ind_th' |> fold Thm.elim_implies ths'
                                       |> fold Thm.implies_intr (rev cAs)
             in

@@ -120,7 +120,7 @@ fun in_nat' n = apply_to_thm' (Conv.arg_conv rewr_to_NN) (in_nat_raw' n)
 
 fun nat_add ct =
     let
-      val (arg1, arg2) = dest_binop_args (Thm.term_of ct)
+      val (arg1, arg2) = Util.dest_binop_args (Thm.term_of ct)
       val eq_th = [in_nat arg1, in_nat arg2] MRS @{thm nat_evals(3)}
     in
       Conv.every_conv [rewr_obj_eq eq_th, nat_add_raw] ct
@@ -128,7 +128,7 @@ fun nat_add ct =
 
 fun nat_mult ct =
     let
-      val (arg1, arg2) = dest_binop_args (Thm.term_of ct)
+      val (arg1, arg2) = Util.dest_binop_args (Thm.term_of ct)
       val eq_th = [in_nat arg1, in_nat arg2] MRS @{thm nat_evals(4)}
     in
       Conv.every_conv [rewr_obj_eq eq_th, nat_mult_raw] ct
@@ -149,7 +149,7 @@ fun mk_nat_mult_th (m, n) =
 
 fun nat_sub ct =
     let
-      val (arg1, arg2) = dest_binop_args (Thm.term_of ct)
+      val (arg1, arg2) = Util.dest_binop_args (Thm.term_of ct)
       val (x, y) = (dest_nat arg1, dest_nat arg2)
     in
       if x < y then raise Fail "nat_sub"
@@ -181,9 +181,9 @@ fun nat_neq_zero n =
     if n <= 0 then raise Fail "nat_neq_zero"
     else let
       val nt = mk_nat (n - 1)
-      val inst = update_env (("n",0), nt) fo_init
+      val inst = Util.update_env (("n",0), nt) fo_init
     in
-      (subst_thm ctxt inst @{thm nat_Suc_not_zero}) RS @{thm not_sym}
+      (Util.subst_thm ctxt inst @{thm nat_Suc_not_zero}) RS @{thm not_sym}
     end
 
 (* Produce the theorem m ~= n. *)
@@ -236,7 +236,7 @@ val add_nat_arith_proofsteps =
        fn ((id, _), ths) => fn _ => fn _ =>
           let
             val th = the_single ths
-            val (m, n) = th |> prop_of' |> dest_not |> dest_binop_args
+            val (m, n) = th |> prop_of' |> dest_not |> Util.dest_binop_args
           in
             if is_nat m andalso is_nat n andalso dest_nat m <= dest_nat n then
               let
@@ -253,7 +253,7 @@ val add_nat_arith_proofsteps =
        fn ((id, _), ths) => fn _ => fn _ =>
           let
             val th = the_single ths
-            val (m, n) = th |> prop_of' |> dest_not |> dest_binop_args
+            val (m, n) = th |> prop_of' |> dest_not |> Util.dest_binop_args
           in
             if is_nat m andalso is_nat n andalso dest_nat m < dest_nat n then
               let

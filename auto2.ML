@@ -23,7 +23,7 @@ fun init_score init =
         InitVar _ => 0
       | InitAssum t => size_of_term t
 
-fun items_score raw_items = max int_ord (map item_score raw_items)
+fun items_score raw_items = Util.max int_ord (map item_score raw_items)
 
 fun get_score raw_updt =
     case raw_updt of
@@ -321,7 +321,7 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
       val ts = map Thm.term_of tname
 
       fun qualify_term t =
-          case t of Abs _ => false | _ => not (has_vars t)
+          case t of Abs _ => false | _ => not (Util.has_vars t)
 
       val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
       val terms = rewr_terms |> map (Thm.cterm_of ctxt)
@@ -407,7 +407,7 @@ fun process_fact_all items st =
           else (maps (Status.get_items false st) incr_ids)
                    |> subtract BoxItem.eq_item items
                    |> filter (fn {tname, ...} =>
-                                 exists (has_subterm ts)
+                                 exists (Util.has_subterm ts)
                                         (map Thm.term_of tname))
                    |> cons BoxItem.null_item
 
@@ -420,7 +420,7 @@ fun process_fact_all items st =
     end
 
 fun is_shadowing_prfstep prfstep_name {ctxt, ...} =
-    if is_prefix_str "$" prfstep_name then false
+    if Util.is_prefix_str "$" prfstep_name then false
     else let
       val {priority, ...} = ProofStepData.get_prfstep_by_name ctxt prfstep_name
     in
@@ -437,7 +437,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
           val (ctxt', subst) = BoxItem.obtain_variant_frees (ctxt, ritems)
           val ritems' =
               ritems |> map (BoxItem.instantiate subst)
-                     |> (if is_prefix_str "$" prfstep_name then
+                     |> (if Util.is_prefix_str "$" prfstep_name then
                            maps (Normalizer.normalize_keep ctxt')
                          else
                            maps (Normalizer.normalize ctxt'))
@@ -577,13 +577,13 @@ fun init_status ctxt subgoal =
       val vars = map Free (Term.add_frees subgoal [])
 
       val (vars2, (assums, concl)) =
-        (strip_meta_horn subgoal) |> Util.replace_horn_vars ctxt
+        (Util.strip_meta_horn subgoal) |> Util.replace_horn_vars ctxt
       val inits = map InitVar (vars @ vars2) @ map InitAssum assums @ [InitAssum (get_neg' concl)]
       val raw_updt = AddBoxes {id = [], sc = NONE, inits = inits}
       val updt = {sc = 0, prfstep_name = "$INIT", source = [],
                   raw_updt = raw_updt}
     in
-      ctxt |> fold declare_free_term vars2
+      ctxt |> fold Util.declare_free_term vars2
            |> Status.empty_status
            |> Status.add_composite_box [] |> Status.add_item BoxItem.null_item
            |> apply_update updt
@@ -634,11 +634,11 @@ fun auto2_tac ctxt state =
               "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
               (Syntax.string_of_term ctxt subgoal) ^ "\n")
         val subgoal_norm = Conv.every_conv [
-            normalize_meta_horn ctxt, to_obj_conv_on_horn ctxt] c_subgoal
-        val st = ProofStatus.init_status ctxt (rhs_of subgoal_norm)
+            Util.normalize_meta_horn ctxt, to_obj_conv_on_horn ctxt] c_subgoal
+        val st = ProofStatus.init_status ctxt (Util.rhs_of subgoal_norm)
         val (_, st') =
-            timer ("Total time: ",
-                   fn _ => ProofStatus.solve_root (steps, st))
+            Util.timer ("Total time: ",
+                        fn _ => ProofStatus.solve_root (steps, st))
         val th = Status.get_resolve_th st' [0]
         val vars = map Free (Term.add_frees subgoal [])
         val th' = th |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)

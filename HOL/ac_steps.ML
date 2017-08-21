@@ -21,7 +21,7 @@ fun get_ac_head_equiv (tbl as {lat, ...}) ac_info (id, cu) =
     let
       fun process_equiv_list (id', eq_th) (id'', eq_ths) =
           (BoxID.merge_boxes lat (id', id''),
-           transitive_list [eq_th, ACUtil.comb_ac_equiv ac_info eq_ths])
+           Util.transitive_list [eq_th, ACUtil.comb_ac_equiv ac_info eq_ths])
 
       (* Simplify each term of the AC expression on the right side. *)
       fun process_head_equiv (id', eq_th) =
@@ -76,12 +76,12 @@ fun ac_expand tbl ac_info (id, ct) =
       val max_ac = Config.get ctxt max_ac
 
       fun merge_info (id, th) (id', th') =
-          (BoxID.merge_boxes lat (id, id'), transitive_list [th, th'])
+          (BoxID.merge_boxes lat (id, id'), Util.transitive_list [th, th'])
 
       fun ac_equiv_eq_better (id, th) (id', th') =
           let
-            val seq1 = ACUtil.dest_ac ac_info (rhs_of th)
-            val seq2 = ACUtil.dest_ac ac_info (rhs_of th')
+            val seq1 = ACUtil.dest_ac ac_info (Util.rhs_of th)
+            val seq2 = ACUtil.dest_ac ac_info (Util.rhs_of th')
           in
             is_subseq (op aconv) (seq1, seq2) andalso
             BoxID.is_eq_ancestor lat id id'
@@ -100,7 +100,7 @@ fun ac_expand tbl ac_info (id, ct) =
                 val old' = ((id', eq_th) :: old)
                 val rhs_expand =
                     (ac_expand_once tbl ac_info (id, Thm.rhs_of eq_th))
-                        |> max_partial ac_equiv_eq_better
+                        |> Util.max_partial ac_equiv_eq_better
                         |> map (merge_info (id', eq_th))
                         |> filter_out (has_ac_equiv_eq_better (old' @ rest))
               in
@@ -137,13 +137,13 @@ fun ac_expand_equiv_fn rtype _ item1 item2 =
             val expand2 = ac_expand tbl ac_info (id, ct2)
 
             fun get_equiv ((id1, eq_th1), (id2, eq_th2)) =
-                if rhs_of eq_th1 aconv rhs_of eq_th2 then
+                if Util.rhs_of eq_th1 aconv Util.rhs_of eq_th2 then
                   [(BoxID.merge_boxes lat (id1, id2),
-                    to_obj_eq (transitive_list [eq_th1, meta_sym eq_th2]))]
+                    to_obj_eq (Util.transitive_list [eq_th1, meta_sym eq_th2]))]
                 else []
           in
-            (maps get_equiv (all_pairs (expand1, expand2)))
-                |> max_partial (BoxID.id_is_eq_ancestor lat)
+            (maps get_equiv (Util.all_pairs (expand1, expand2)))
+                |> Util.max_partial (BoxID.id_is_eq_ancestor lat)
                 |> RewriteTable.replace_id_for_type' rtype
                 |> map (fn (id, th) => Update.thm_update (id, th))
           end
@@ -171,7 +171,7 @@ fun ac_expand_unit_fn rtype _ item =
             val expand = ac_expand tbl ac_info (id, ct)
 
             fun process_expand (id', eq_th) =
-                if not (ACUtil.head_agrees ac_info (rhs_of eq_th)) then
+                if not (ACUtil.head_agrees ac_info (Util.rhs_of eq_th)) then
                   [(id', to_obj_eq eq_th)]
                 else []
           in

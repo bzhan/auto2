@@ -27,23 +27,23 @@ fun hoare_induct_cmd state =
       val ind_th = the (Induct_ProofSteps.get_term_ind_th thy "hoare_induct" c_head)
 
       val P = subgoal |> fold mk_obj_all (rev arbitraries)
-                      |> fold lambda_abstract (rev vars)
+                      |> fold Util.lambda_abstract (rev vars)
 
       val (var_P, var_args) = ind_th |> concl_of' |> Term.strip_comb
       val inst = fold (Pattern.match thy) ((var_P, P) :: (var_args ~~ vars))
                       fo_init
       val ind_th =
-          ind_th |> subst_thm ctxt inst
+          ind_th |> Util.subst_thm ctxt inst
                  |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
 
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
-          ind_th |> send_first_to_hyps
+          ind_th |> Util.send_first_to_hyps
                  |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
                  |> Thm.implies_intr assum
 
       val t' = case Thm.prop_of ind_th of
-                   imp $ A $ B => imp $ rename_abs_term vars A $ B
+                   imp $ A $ B => imp $ Util.rename_abs_term vars A $ B
                  | _ => error "hoare_induct_cmd"
       val ind_th = ind_th |> Thm.renamed_prop t'
                           |> Goal.protect 1

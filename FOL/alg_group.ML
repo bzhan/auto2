@@ -2,7 +2,7 @@
 
 val inv_t = @{term inv}
 
-fun is_inv G t = is_head (inv_t $ G) t
+fun is_inv G t = Util.is_head (inv_t $ G) t
 fun is_inv_pair_l G (t1, t2) = (t1 aconv inv_t $ G $ t2)
 fun is_inv_pair_r G (t1, t2) = (t2 aconv inv_t $ G $ t1)
 
@@ -41,7 +41,7 @@ type group_info = {
 fun group_mult_atom info wft =
     let
       val {G, assoc_r, unit_l, unit_r, inv_l, inv_r, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_one G arg1 then unit_l wft
       else if is_one G arg2 then unit_r wft
@@ -61,7 +61,7 @@ fun group_mult_atom info wft =
 fun group_mult_monomial info wft =
     let
       val {G, assoc_l, ...} = info
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_times G arg2 then
         WfTerm.every_conv [

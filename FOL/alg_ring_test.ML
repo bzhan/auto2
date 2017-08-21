@@ -8,7 +8,7 @@ fun term_to_wfterm_assum thy fheads ct =
           val t = Thm.term_of ct
           val (cf, cargs) = Drule.strip_comb ct
         in
-          if forall (fn fhead => not (is_head fhead t)) fheads then
+          if forall (fn fhead => not (Util.is_head fhead t)) fheads then
             WfTerm ct
           else let
             val ths = (WellForm.lookup_wellform_data thy t)
@@ -46,7 +46,7 @@ fun test_wfconv wfcv err_str (str1, str2) =
                         raise Fail (err ^ " -- " ^ err_str)
                       end
     in
-      if t1 aconv (lhs_of th) andalso t2 aconv (rhs_of th) then ()
+      if t1 aconv (Util.lhs_of th) andalso t2 aconv (Util.rhs_of th) then ()
       else let
         val _ = trace_t ctxt "Input:" t1
         val _ = trace_t ctxt "Expected:" t2

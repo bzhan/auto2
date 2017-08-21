@@ -87,7 +87,7 @@ fun cterm_to_wfterm_on_ths assum_ths fheads ct =
           val t = Thm.term_of ct
           val (cf, cargs) = Drule.strip_comb ct
         in
-          if forall (fn fhead => not (is_head fhead t)) fheads then
+          if forall (fn fhead => not (Util.is_head fhead t)) fheads then
             WfTerm ct
           else let
             val ths =
@@ -110,7 +110,7 @@ fun cterm_to_wfterm_assume fheads ct =
           val t = Thm.term_of ct
           val (cf, cargs) = Drule.strip_comb ct
         in
-          if forall (fn fhead => not (is_head fhead t)) fheads then
+          if forall (fn fhead => not (Util.is_head fhead t)) fheads then
             WfTerm ct
           else let
             val ths = map (Thm.assume o Thm.global_cterm_of thy o mk_Trueprop)
@@ -160,13 +160,13 @@ fun argn_conv n wfcv wft =
                     handle Option.Option =>
                            raise Fail "convert_th: invalid input."
 
-                val pat_args = dest_args pat
+                val pat_args = Util.dest_args pat
               in
                 apply_to_thm' (
-                  pattern_rewr_conv data_pat (pat_args ~~ eq_ths')) th
+                  Util.pattern_rewr_conv data_pat (pat_args ~~ eq_ths')) th
               end
         in
-          (WfComb (cf, args', map convert_th ths), comb_equiv (cf, eq_ths'))
+          (WfComb (cf, args', map convert_th ths), Util.comb_equiv (cf, eq_ths'))
         end
 
 fun arg_conv wfcv wft =
@@ -197,7 +197,7 @@ fun rewr_obj_eq fheads th wft =
       (* First need to instantiate th by matching l with the term of wft. *)
       val pat_l = th |> concl_of' |> strip_conj |> hd |> dest_eq |> fst
       val inst = Pattern.first_order_match thy (pat_l, t) fo_init
-      val th' = subst_thm_thy thy inst th
+      val th' = Util.subst_thm_thy thy inst th
 
       (* Second, find theorems justifying premises of th'. *)
       val prems = map dest_Trueprop (Thm.prems_of th')
@@ -221,7 +221,7 @@ fun (wfcv1 then_wfconv wfcv2) wft =
       val (wft', eq_th1) = wfcv1 wft
       val (wft'', eq_th2) = wfcv2 wft'
     in
-      (wft'', transitive_list [eq_th1, eq_th2])
+      (wft'', Util.transitive_list [eq_th1, eq_th2])
     end
 
 fun (wfcv1 else_wfconv wfcv2) wft =

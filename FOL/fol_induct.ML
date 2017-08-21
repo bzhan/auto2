@@ -55,7 +55,7 @@ fun lookup_induct_data str thy t =
           let
             val inst = Pattern.first_order_match thy (pat, t) fo_init
           in
-            SOME (subst_thm_thy thy inst th)
+            SOME (Util.subst_thm_thy thy inst th)
           end
           handle Pattern.MATCH => NONE
     in
@@ -76,8 +76,8 @@ fun induct_cmd (s, t) state =
       val (P, vars) = Term.strip_comb concl
       val _ = assert (Term.is_Var P) "induct: P is not schematic variable."
       val P_inst = fold Term.lambda (rev vars) goal
-      val inst = update_env (("P", 0), P_inst) fo_init
-      val ind_th = subst_thm_thy thy inst ind_th
+      val inst = Util.update_env (("P", 0), P_inst) fo_init
+      val ind_th = Util.subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
@@ -89,7 +89,7 @@ fun induct_cmd (s, t) state =
                  |> map (fn t => Logic.list_implies (As, t))
 
       val ths = (map (Auto2_Outer.auto2_solve ctxt o Thm.cterm_of ctxt) ind_goals)
-                    |> map send_all_to_hyps
+                    |> map Util.send_all_to_hyps
 
       val ind_concl = (ths MRS ind_th)
                           |> fold Thm.implies_intr (rev cAs)
@@ -126,33 +126,33 @@ fun strong_induct_cmd (s, t) state =
 
       val use_As = As |> map dest_Trueprop
       val P = (list_obj_horn (arbitraries, (use_As, dest_Trueprop C)))
-                  |> lambda_abstract var
+                  |> Util.lambda_abstract var
 
       val inst = Pattern.match thy (var_P, P) fo_init
-      val ind_th = ind_th |> subst_thm ctxt inst
-                          |> apply_to_thm (skip_n_conv n_conds (Conv.binop_conv (to_meta_conv ctxt)))
+      val ind_th = ind_th |> Util.subst_thm ctxt inst
+                          |> apply_to_thm (Util.skip_n_conv n_conds (Conv.binop_conv (to_meta_conv ctxt)))
 
       val ind_goals = ind_th |> Thm.prems_of |> take n_conds
                              |> map (fn t => Logic.list_implies (As, t))
                              |> map (Thm.cterm_of ctxt)
 
       val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
-                    |> map send_all_to_hyps
+                    |> map Util.send_all_to_hyps
 
       val ind_th = ind_th |> fold Thm.elim_implies ths
       val prems = ind_th |> Drule.cprems_of
-      val ind_th = ind_th |> send_all_to_hyps
+      val ind_th = ind_th |> Util.send_all_to_hyps
                           |> fold Thm.implies_intr (rev prems)
 
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
-          ind_th |> send_first_to_hyps
+          ind_th |> Util.send_first_to_hyps
                  |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
                  |> fold Thm.forall_intr (map (Thm.cterm_of ctxt) vars)
                  |> Thm.implies_intr assum
 
       val t' = case Thm.prop_of ind_th of
-                   imp $ A $ B => imp $ rename_abs_term [var] A $ B
+                   imp $ A $ B => imp $ Util.rename_abs_term [var] A $ B
                  | _ => error "strong_induct_cmd"
       val ind_th = ind_th |> Thm.renamed_prop t'
 

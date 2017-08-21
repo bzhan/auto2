@@ -59,14 +59,14 @@ fun inst_ac_info thy T {assoc_th, comm_th, unitl_th, unitr_th, ...} =
             (* Extract the first argument of th, then the body type of
                that argument.
              *)
-            val arg_type = th |> prop_of' |> dest_args |> hd
+            val arg_type = th |> prop_of' |> Util.dest_args |> hd
                               |> Term.type_of |> Term.body_type
           in
             if arg_type = T then th else
             let
               val tenv = Sign.typ_match thy (arg_type, T) Vartab.empty
             in
-              subst_thm_thy thy (tenv, Vartab.empty) th
+              Util.subst_thm_thy thy (tenv, Vartab.empty) th
             end
             handle Type.TYPE_MATCH => true_th
           end
@@ -81,7 +81,7 @@ fun inst_ac_info thy T {assoc_th, comm_th, unitl_th, unitr_th, ...} =
             unitr_th = inst_th unitr_th}
     end
 
-fun head_agrees {cfhead, ...} t = is_head (Thm.term_of cfhead) t
+fun head_agrees {cfhead, ...} t = Util.is_head (Thm.term_of cfhead) t
 
 (* Add the given ac_info under the given name. *)
 fun add_ac_data info thy =
@@ -126,7 +126,7 @@ fun dest_ac ac_info t =
     let
       fun dest t =
           if head_agrees ac_info t then
-            let val (a1, a2) = dest_binop_args t in a2 :: dest a1 end
+            let val (a1, a2) = Util.dest_binop_args t in a2 :: dest a1 end
           else [t]
     in
       rev (dest t)
@@ -136,7 +136,7 @@ fun cdest_ac ac_info ct =
     let
       fun dest ct =
           if head_agrees ac_info (Thm.term_of ct) then
-            let val (a1, a2) = dest_binop_cargs ct in a2 :: dest a1 end
+            let val (a1, a2) = Util.dest_binop_cargs ct in a2 :: dest a1 end
           else [ct]
     in
       rev (dest ct)
@@ -190,7 +190,7 @@ fun move_outmost (ac_info as {comm_th, ...}) u ct =
     if not (head_agrees ac_info (Thm.term_of ct)) then
       raise Fail "move_outmost: u not found in ct."
     else let
-      val (a, b) = dest_binop_args (Thm.term_of ct)
+      val (a, b) = Util.dest_binop_args (Thm.term_of ct)
     in
       if u aconv b then Conv.all_conv ct
       else if head_agrees ac_info a then
@@ -232,7 +232,7 @@ fun normalize_comm_gen (ac_info as {comm_th, ...}) termless ct =
       fun swap_last ct =
           if head_agrees ac_info (Thm.term_of ct) then
             let
-              val (a1, a2) = dest_binop_args (Thm.term_of ct)
+              val (a1, a2) = Util.dest_binop_args (Thm.term_of ct)
             in
               if head_agrees ac_info a1 then
                 (* Structure of t is a1 . a2 = (_ . b2) . a2. *)

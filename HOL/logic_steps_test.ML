@@ -23,10 +23,10 @@ val test_norm_all_disj =
               in
                 raise Fail "test_strip_all_disj"
               end
-            else if not (rhs_of res_th aconv t2) then
+            else if not (Util.rhs_of res_th aconv t2) then
               let
                 val _ = trace_t ctxt "Input" t1
-                val _ = trace_t ctxt "Output" (rhs_of res_th)
+                val _ = trace_t ctxt "Output" (Util.rhs_of res_th)
                 val _ = trace_t ctxt "Expected" t2
               in
                 raise Fail "test_norm_all_disj"
@@ -105,8 +105,8 @@ val test_disj_prop_match =
           in
             case res of
                 [(([], instsp), eq)] =>
-                if lhs_of eq aconv (subst_term_norm instsp t) andalso
-                   rhs_of eq aconv u' then () else
+                if Util.lhs_of eq aconv (Util.subst_term_norm instsp t) andalso
+                   Util.rhs_of eq aconv u' then () else
                 let
                   val _ = trace_t ctxt "t" t
                   val _ = trace_t ctxt "u" u
@@ -223,8 +223,8 @@ val test_match_update =
 
       fun test_updt rtype (disj_str, t_str, res_strs) =
           let
-            val disj_th = assume_thm ctxt' (read_prop disj_str)
-            val th = assume_thm ctxt' (read_prop t_str)
+            val disj_th = Util.assume_thm ctxt' (read_prop disj_str)
+            val th = Util.assume_thm ctxt' (read_prop t_str)
             val res_ts = map read_prop res_strs
             val mk_box_item = BoxItem.mk_box_item ctxt'
             val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),

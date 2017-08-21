@@ -63,7 +63,7 @@ val cDisj = @{cterm disj}
 (* Theorems for equality *)
 val to_meta_eq_cv = Conv.rewr_conv @{thm to_meta_eq}
 val to_obj_eq_cv = Conv.rewr_conv @{thm atomize_eq}
-val to_obj_eq_iff = apply_to_thm (concl_conv to_obj_eq_cv)
+val to_obj_eq_iff = apply_to_thm (Util.concl_conv to_obj_eq_cv)
 val obj_sym_cv = Conv.rewr_conv @{thm obj_sym}
 
 (* Theorems *)

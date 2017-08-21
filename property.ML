@@ -185,7 +185,7 @@ fun can_add_property_update th thy =
       in
         if is_Var concl_arg then length all_vars = 1
         else let
-          val args = dest_args concl_arg
+          val args = Util.dest_args concl_arg
         in
           forall is_Var args andalso subset (op aconv) (all_vars, args)
         end
@@ -209,7 +209,7 @@ fun add_property_update th thy =
           val _ = assert (length all_vars = 1)
                          "add_property_update: extraneous Vars in th."
           val names = get_property_names prems
-          val _ = writeln ("Add property rule for " ^ (string_of_list I names))
+          val _ = writeln ("Add property rule for " ^ (Util.string_of_list I names))
         in
           thy |> UpdateData.map (
             fold (Symtab.update_list Thm.eq_thm_prop) (map (rpair th) names))
@@ -257,7 +257,7 @@ fun instantiate_property_update ctxt t th =
                      handle Pattern.MATCH =>
                             raise Fail "inst_property: cannot match with t."
         in
-          SOME (subst_thm ctxt inst th)
+          SOME (Util.subst_thm ctxt inst th)
         end
       else NONE
     end

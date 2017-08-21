@@ -39,7 +39,7 @@ fun test_ac_conv ctxt cv err_str (str1, str2) =
           in
             raise Fail "test_ac_conv: ac_info"
           end
-        | SOME ac_info => test_conv ctxt (cv ac_info) err_str (str1, str2)
+        | SOME ac_info => Util.test_conv ctxt (cv ac_info) err_str (str1, str2)
     end
 
 val test_normalize_assoc =
@@ -64,7 +64,7 @@ val test_move_outmost =
                 the (ACUtil.get_head_ac_info thy t1)
                 handle Option.Option => raise Fail (err_str ^ ": ac_info")
           in
-            test_conv ctxt (ACUtil.move_outmost ac_info u) err_str (str1, str2)
+            Util.test_conv ctxt (ACUtil.move_outmost ac_info u) err_str (str1, str2)
           end
       val test_data = [
         ("a::nat", ("(a::nat) + b", "(b::nat) + a")),

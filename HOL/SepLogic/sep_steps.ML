@@ -121,13 +121,13 @@ fun forward_ent_prfstep_fn shadowing ent_th rtype {ctxt, ...} item =
     end
 
 fun forward_ent_prfstep ent_th =
-    {name = (name_of_thm ent_th) ^ "@ent",
+    {name = (Util.name_of_thm ent_th) ^ "@ent",
      args = [TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_ADD,
      func = OneStep (forward_ent_prfstep_fn false ent_th)}
 
 fun forward_ent_shadowing_prfstep ent_th =
-    {name = (name_of_thm ent_th) ^ "@ent_shadow",
+    {name = (Util.name_of_thm ent_th) ^ "@ent_shadow",
      args = [TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_SHADOW,
      func = OneStep (forward_ent_prfstep_fn true ent_th)}
@@ -160,7 +160,7 @@ fun backward_ent_prfstep_fn ent_th rtype {ctxt, ...} item =
     end
 
 fun backward_ent_prfstep ent_th =
-    {name = (name_of_thm ent_th) ^ "@entback",
+    {name = (Util.name_of_thm ent_th) ^ "@entback",
      args = [TypedMatch (TY_PROP, @{term_pat "~(?h |= ?P)"})],
      priority = PRIORITY_ADD,
      func = OneStep (backward_ent_prfstep_fn ent_th)}
@@ -171,12 +171,12 @@ fun add_backward_ent_prfstep ent_th =
 fun entail_equiv_forward_th th =
     (th RS @{thm entail_equiv_forward})
         |> Drule.zero_var_indexes
-        |> update_name_of_thm th "@ent_eqforward"
+        |> Util.update_name_of_thm th "@ent_eqforward"
 
 fun entail_equiv_backward_th th =
     (th RS @{thm entail_equiv_backward})
         |> Drule.zero_var_indexes
-        |> update_name_of_thm th "@ent_eqbackward"
+        |> Util.update_name_of_thm th "@ent_eqbackward"
 
 fun add_rewrite_ent_rule eq_th thy =
     thy |> add_forward_ent_prfstep (entail_equiv_forward_th eq_th)
@@ -261,7 +261,7 @@ val TY_SUCCESS_RUN = "SUCCESS_RUN"
 
 fun output_code_pos_fn ctxt (tname, th) =
     let
-      val is_bind = th |> conj_left_th |> prop_of' |> dest_args |> hd
+      val is_bind = th |> conj_left_th |> prop_of' |> Util.dest_args |> hd
                        |> is_bind_cmd
     in
       "CODE_POS " ^ (if is_bind then "" else "(last) ") ^
@@ -311,9 +311,9 @@ val code_pos_typed_matcher =
                           rewr_obj_eq_bottom ctxt (hd obj_eqs),
                           rewr_obj_eq_bottom ctxt (nth obj_eqs 1),
                           Conv.arg1_conv (
-                            argn_conv 0 (rewr_obj_eq (nth obj_eqs 3))),
+                            Util.argn_conv 0 (rewr_obj_eq (nth obj_eqs 3))),
                           Conv.arg1_conv (
-                            argn_conv 2 (rewr_obj_eq (nth obj_eqs 4)))]
+                            Util.argn_conv 2 (rewr_obj_eq (nth obj_eqs 4)))]
                       else
                         Conv.every_conv (
                           map (rewr_obj_eq_bottom ctxt) obj_eqs)
@@ -333,7 +333,7 @@ val code_pos_typed_matcher =
 fun find_proc_def ctxt c =
     let
       val ths = Named_Theorems.get ctxt @{named_theorems sep_proc_defs}
-      fun rewr_cv th = if is_meta_eq (Thm.prop_of th) then Conv.rewr_conv th
+      fun rewr_cv th = if Util.is_meta_eq (Thm.prop_of th) then Conv.rewr_conv th
                        else rewr_obj_eq th
     in
       SOME (Conv.first_conv (map rewr_cv ths) (Thm.cterm_of ctxt c))
@@ -368,7 +368,7 @@ val heap_preservingI =
 (* Given heap_preserving c, conclude h = h' from effect c h h' r. *)
 fun heap_preserving_effectD presv_th =
     let
-      val name = (name_of_thm presv_th) ^ "effectD"
+      val name = (Util.name_of_thm presv_th) ^ "effectD"
       val pat_c = presv_th |> prop_of' |> dest_arg
       val cT = fastype_of pat_c |> dest_Type |> snd |> the_single
       val heapT = @{typ heap}
@@ -417,8 +417,8 @@ fun mod_fact_ritems ctxt mod_th =
     let
       val mod_th' = apply_to_thm' (normalize_mod_cv ctxt) mod_th
       val (vars, _) = (strip_exists (prop_of' mod_th'))
-                          |> replace_vars ctxt
-                          |> replace_internal_vars
+                          |> Util.replace_vars ctxt
+                          |> Util.replace_internal_vars
       val xs = map (fst o Term.dest_Free) vars
     in
       if null xs then ([], mod_th')
@@ -471,7 +471,7 @@ fun find_heap_preserving_th ctxt c =
             val pat = th |> prop_of' |> dest_arg
             val inst = Pattern.first_order_match thy (pat, c) fo_init
           in
-            SOME (th |> subst_thm ctxt inst)
+            SOME (th |> Util.subst_thm ctxt inst)
           end
           handle Pattern.MATCH => NONE
     in
@@ -485,7 +485,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
           (conj_left_th code_pos_th, conj_right_th code_pos_th)
 
       (* Find current command, decompose into c1 or c1 ; c2 ... ; cn. *)
-      val cur_cmd = run_th |> prop_of' |> dest_args |> hd
+      val cur_cmd = run_th |> prop_of' |> Util.dest_args |> hd
       val is_bind = is_bind_cmd cur_cmd
       val c1 = if is_bind then fst (dest_bind cur_cmd) else cur_cmd
       val heap_preserve_opt = find_heap_preserving_th ctxt c1
@@ -497,7 +497,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
        *)
       val try_reduce_emp_right_th =
           apply_to_thm (
-            concl_conv (Trueprop_conv (Conv.try_conv reduce_emp_right)))
+            Util.concl_conv (Trueprop_conv (Conv.try_conv reduce_emp_right)))
 
       fun split_conj_all_th th =
           case prop_of' th of
@@ -539,7 +539,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val modQ_th = try_reduce_emp_right_th modQ_th
 
         (* Extract c2 ; ... ; cn *)
-        val rest_c = run_rest_th |> prop_of' |> dest_args |> hd
+        val rest_c = run_rest_th |> prop_of' |> Util.dest_args |> hd
         val next_is_bind = is_bind_cmd rest_c
         val rest_c1 = if next_is_bind then fst (dest_bind rest_c) else rest_c
 
@@ -668,7 +668,7 @@ val rewrite_pos =
             let
               val th = the_single ths
               val (run_th, _) = (conj_left_th th, conj_right_th th)
-              val new_c = run_th |> prop_of' |> dest_args |> hd
+              val new_c = run_th |> prop_of' |> Util.dest_args |> hd
               val new_is_bind = is_bind_cmd new_c
               val new_c1 = if new_is_bind then fst (dest_bind new_c) else new_c
               val {tname, ...} = the_single items
@@ -707,7 +707,7 @@ fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
             let
               (* Substitute and rewrite command to c1. *)
               val th1' =
-                  th1 |> subst_thm_thy thy inst
+                  th1 |> Util.subst_thm_thy thy inst
                       |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
               val (P', _, Q') = dest_hoare_triple (prop_of' th1')
               val new_tname = [h_t, c1, term_of_bool false, P', Q']
@@ -790,8 +790,8 @@ val convert_match_pos =
 fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
     let
       val (vars, new_prop) = ex_th |> prop_of' |> strip_exists
-                                   |> replace_vars ctxt
-                                   |> replace_internal_vars
+                                   |> Util.replace_vars ctxt
+                                   |> Util.replace_internal_vars
                                    |> apsnd mk_Trueprop
       val new_th = new_prop |> Thm.cterm_of ctxt |> Thm.assume
       val base_th' = base_th RS @{thm mod_star_trueI}
@@ -821,7 +821,7 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
       val new_th' = fold apply_prec_thm sep_prec_thms new_th
 
       (* Check that all new variables in new_th' are replaced. *)
-      val _ = assert (not (occurs_frees vars (Thm.prop_of new_th')))
+      val _ = assert (not (Util.occurs_frees vars (Thm.prop_of new_th')))
                      "use_prec_thms: failed to remove all new vars."
     in
       (* Remove assumptions involving original variables. Similar to
@@ -857,7 +857,7 @@ fun match_assn2_fn rtype {ctxt, ...} item1 item2 =
               val mod_th' = if P aconv emp then
                               apply_to_thm' (mod_assn_conv mult_emp_left) mod_th
                             else mod_th
-              val hoare_th' = subst_thm ctxt inst hoare_th
+              val hoare_th' = Util.subst_thm ctxt inst hoare_th
               val res_th =
                   [hoare_th', mod_th', success_th] MRS @{thm hoare_triple_mp}
               val mod_cv = Conv.try_conv (rewr_obj_eq @{thm mod_ex_dist})
@@ -889,12 +889,12 @@ val match_assn2 =
    where there are no schematic variables in b.
  *)
 fun match_assn_pure_fn ((id, inst), ths) items {ctxt, ...} =
-    if has_vars (lookup_inst inst "b") then []
+    if Util.has_vars (lookup_inst inst "b") then []
     else let
       val (th1, th2) = the_pair ths
       val hoare_th =
-          if not (defined_instn inst ("P", 0)) then
-            apply_to_thm' (argn_conv 0 mult_emp_left) (conj_left_th th1)
+          if not (Util.defined_instn inst ("P", 0)) then
+            apply_to_thm' (Util.argn_conv 0 mult_emp_left) (conj_left_th th1)
           else conj_left_th th1
       val success_ths = conj_right_th th1
       val norm_th = @{thm norm_pre_pure_iff}
@@ -938,7 +938,7 @@ fun match_assn_spatial_fn rtype {ctxt, ...} item1 item2 =
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
     in
-      if not (has_vars P) then []
+      if not (Util.has_vars P) then []
       else if not (has_pure_assn P) then []
       else let
         val P' = strip_pure_assn P
@@ -951,7 +951,7 @@ fun match_assn_spatial_fn rtype {ctxt, ...} item1 item2 =
         val insts = mod_match_item rtype (mod_pat, item2) (id, fo_init)
         fun process_inst ((id'', inst), _) =
             let
-              val hoare_th' = subst_thm ctxt inst hoare_th
+              val hoare_th' = Util.subst_thm ctxt inst hoare_th
               val (P'', _, Q'') = dest_hoare_triple (prop_of' hoare_th')
               val tname' = [h_t, c, is_success, P'', Q'']
               val prop' = mk_conjs_th [hoare_th', success_ths]
@@ -978,7 +978,7 @@ fun match_hoare_create_case_gen (prfstep_name, pat) =
         prfstep_name [WithItem (TY_MATCH_POS, pat)]
         PRIORITY_ADD
         (fn ((id, inst), _) => fn _ => fn _ =>
-            if has_vars (lookup_inst inst "P") then [] else
+            if Util.has_vars (lookup_inst inst "P") then [] else
             let
               val ts = (lookup_inst inst "P")
                            |> ACUtil.dest_ac assn_ac_info
@@ -994,7 +994,7 @@ fun match_hoare_create_case_gen (prfstep_name, pat) =
 
 fun add_match_hoare_create_case hoare_th =
     let
-      val name = (name_of_thm hoare_th) ^ "@hoare_case"
+      val name = (Util.name_of_thm hoare_th) ^ "@hoare_case"
       val (_, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
       val pat = HOLogic.mk_tuple [Var (("h", 0), pheapT), pat_c,
                                   Var (("s", 0), boolT), Var (("P", 0), assnT)]
@@ -1009,16 +1009,16 @@ fun add_match_hoare_create_case hoare_th =
 fun hoare_triple_prfstep hoare_th =
     let
       val (_, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val name = (name_of_thm hoare_th) ^ "@hoare"
+      val name = (Util.name_of_thm hoare_th) ^ "@hoare"
       val code_pos_pat = HOLogic.mk_tuple [Var (("h", 0), pheapT), pat_c]
       val descs = [WithItem (TY_CODE_POS, code_pos_pat)]
       fun prfstep_fn ((id, inst), ths) _ {ctxt, ...} =
           let
             val h_t = lookup_inst inst "h"
-            val c = subst_term_norm inst pat_c
+            val c = Util.subst_term_norm inst pat_c
             val hoare_th' =
-                (subst_thm ctxt inst hoare_th)
-                    |> apply_to_thm' (argn_conv 0 (normalize_assn_cv ctxt))
+                (Util.subst_thm ctxt inst hoare_th)
+                    |> apply_to_thm' (Util.argn_conv 0 (normalize_assn_cv ctxt))
             val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
             val new_tname = [h_t, c, term_of_bool false, P', Q']
             val new_prop = mk_conjs_th [hoare_th', the_single ths]
@@ -1076,7 +1076,7 @@ fun hoare_triple_direct_prfstep_fn hoare_th rtype {ctxt, ...} item1 item2 =
     end
 
 fun hoare_triple_direct_prfstep hoare_th =
-    {name = (name_of_thm hoare_th) ^ "@hoare_direct",
+    {name = (Util.name_of_thm hoare_th) ^ "@hoare_direct",
      args = [TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c)"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_SHADOW,

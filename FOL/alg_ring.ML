@@ -74,7 +74,7 @@ fun is_nat_zero G t =
 fun swap_times_r info wft =
     let
       val {G, times_assoc_l, times_assoc_r, times_comm, ...} = info
-      val (arg1, _) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, _) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_times G arg1 then
         WfTerm.every_conv [times_assoc_r, WfTerm.arg_conv times_comm,
@@ -87,7 +87,7 @@ fun swap_times_r info wft =
 fun swap_plus_r info wft =
     let
       val {G, plus_assoc_l, plus_assoc_r, plus_comm, ...} = info
-      val (arg1, _) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, _) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_plus G arg1 then
         WfTerm.every_conv [plus_assoc_r, WfTerm.arg_conv plus_comm,
@@ -139,7 +139,7 @@ fun norm_mult_atom info wft =
     let
       val {G, rat_info, unit_l, mult_zero_l, times_assoc_r, times_comm,
            inv_l, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_nat_one G arg1 then unit_l wft
       else if is_nat_one G arg2 then unit_r info wft
@@ -185,7 +185,7 @@ fun norm_mult_atom info wft =
 fun norm_mult_monomial info wft =
     let
       val {G, times_assoc_l, ...} = info
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_times G arg2 then
         WfTerm.every_conv [times_assoc_l,
@@ -217,7 +217,7 @@ fun compare_monomial G (t1, t2) =
 (* Reduce p * of_nat(1) to p, and p * of_nat(0) to 0. *)
 fun norm_reduce_unit info wft =
     let
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
       val r = dest_rat arg2
     in
       if r = rat_one then unit_r info wft
@@ -230,7 +230,7 @@ fun norm_combine_term info wft =
     let
       val {G, rat_info, plus_comm, distrib_l', add_mono_l,
            add_mono_same, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
       val (b1, b2) = apply2 (has_const_monomial G) (arg1, arg2)
     in
       if b1 andalso b2 then
@@ -252,7 +252,7 @@ fun norm_combine_term info wft =
 fun norm_add_monomial info wft =
     let
       val {G, rat_info, plus_assoc_r, plus_comm, zero_l, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_nat_zero G arg1 then zero_l wft
       else if is_nat_zero G arg2 then zero_r info wft
@@ -291,7 +291,7 @@ fun norm_add_monomial info wft =
 fun norm_add_polynomial info wft =
     let
       val {G, plus_assoc_l, ...} = info
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_plus G arg2 then
         WfTerm.every_conv [plus_assoc_l,
@@ -304,7 +304,7 @@ fun norm_add_polynomial info wft =
 fun norm_mult_poly_monomial info wft =
     let
       val {G, ...} = info
-      val (arg1, _) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, _) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_plus G arg1 then
         WfTerm.every_conv [distrib_r info,
@@ -318,7 +318,7 @@ fun norm_mult_poly_monomial info wft =
 fun norm_mult_polynomials info wft =
     let
       val {G, distrib_l, ...} = info
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_plus G arg2 then
         WfTerm.every_conv [distrib_l,
@@ -484,7 +484,7 @@ fun uminus_polynomial_list ls =
 
 (* Multiply two lists of (l, c). *)
 fun mult_polynomial_list G (ls1, ls2) =
-    (all_pairs (ls1, ls2))
+    (Util.all_pairs (ls1, ls2))
         |> map (fn (l1, l2) => mult_monomial G (l1, l2))
         |> sort (compare_monomial_t G)
         |> reduce_monomial_list G

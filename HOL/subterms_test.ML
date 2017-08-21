@@ -68,11 +68,11 @@ val test_build_equiv =
       fun test_raw (t, equivs) =
           let
             val eq_th = Subterms.build_equiv equivs (Thm.cterm_of ctxt t)
-            val lsubs = map lhs_of equivs
-            val rsubs = map rhs_of equivs
+            val lsubs = map Util.lhs_of equivs
+            val rsubs = map Util.rhs_of equivs
           in
-            if lhs_of eq_th aconv (Subterms.subst_subterms (t, lsubs)) andalso
-               rhs_of eq_th aconv (Subterms.subst_subterms (t, rsubs)) then ()
+            if Util.lhs_of eq_th aconv (Subterms.subst_subterms (t, lsubs)) andalso
+               Util.rhs_of eq_th aconv (Subterms.subst_subterms (t, rsubs)) then ()
             else
               raise Fail "test_build_equiv"
           end

@@ -78,11 +78,11 @@ fun shadow_item_fn rtype _ item1 item2 =
             (RewriteTable.subequiv_info
                  tbl id (get_cneg tname1, get_cneg tname2))
                 |> RewriteTable.replace_id_for_type' rtype |> map fst
-                |> max_partial (BoxID.is_eq_ancestor lat)
+                |> Util.max_partial (BoxID.is_eq_ancestor lat)
           else
             (RewriteTable.subequiv_info tbl id (tname1, tname2))
                 |> RewriteTable.replace_id_for_type' rtype |> map fst
-                |> max_partial (BoxID.is_eq_ancestor lat)
+                |> Util.max_partial (BoxID.is_eq_ancestor lat)
       val item_to_shadow =
           if #sc item1 > #sc item2 orelse
              (#sc item1 = #sc item2 andalso #uid item1 > #uid item2) then item1
@@ -153,13 +153,13 @@ val eq_elim_prfstep =
  *)
 fun cong_on_ineq_fn rtype _ {id, prop, ...} =
     let
-      val (cA, cB) = cprop_of' prop |> get_cneg |> dest_binop_cargs
+      val (cA, cB) = cprop_of' prop |> get_cneg |> Util.dest_binop_cargs
       val (A, B) = apply2 Thm.term_of (cA, cB)
       val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
 
       fun process_A_equiv (id', eq_A) =
           let
-            val A' = rhs_of eq_A
+            val A' = Util.rhs_of eq_A
             val (f, argsA') = Term.strip_comb A'
             fun process_i i =
                 let
@@ -179,8 +179,8 @@ fun cong_on_ineq_fn rtype _ {id, prop, ...} =
                               Conv.arg_conv (Conv.rewr_conv eq_B),
                               UtilBase.to_obj_eq_cv]
                         val cong_th =
-                            (eq_cong_th i tx A' ctxt)
-                                |> apply_to_thm (concl_conv cv)
+                            (Util.eq_cong_th i tx A' ctxt)
+                                |> apply_to_thm (Util.concl_conv cv)
                                 |> apply_to_thm (Conv.arg1_conv UtilBase.to_obj_eq_cv)
                                 |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)
                       in
@@ -233,8 +233,8 @@ fun exists_elim_fn rtype {ctxt, ...} {id, prop, ...} =
         let
           val th = prop |> apply_to_thm' (normalize_exists ctxt)
           val (vars, _) = (strip_exists (prop_of' th))
-                              |> replace_vars ctxt
-                              |> replace_internal_vars
+                              |> Util.replace_vars ctxt
+                              |> Util.replace_internal_vars
           val xs = map (fst o Term.dest_Free) vars
         in
           Update.apply_exists ctxt xs (id, th)
@@ -289,7 +289,7 @@ fun strip_all_disj t =
             val var = Free (x, T)
             val (vars, disjs) = strip_all_disj body
           in
-            if exists (occurs_free var) disjs then (var :: vars, disjs)
+            if exists (Util.occurs_free var) disjs then (var :: vars, disjs)
             else (vars, disjs)
           end
         | f $ arg => strip_all_disj (f $ force_abs_form arg)
@@ -315,7 +315,7 @@ fun strip_all_disj t =
             val var = Free (x, T)
             val (vars, disjs) = strip_all_disj (get_neg body)
           in
-            if exists (occurs_free var) disjs then (var :: vars, disjs)
+            if exists (Util.occurs_free var) disjs then (var :: vars, disjs)
             else (vars, disjs)
           end
         | f $ arg => strip_all_disj (get_neg (f $ force_abs_form arg))
@@ -366,7 +366,7 @@ fun strip_all_disj t =
 (* Normalize (A_1 | A_2 | ... | A_m) | (B_1 | B_2 | ... | B_n) *)
 fun norm_disj_clauses ct =
     let
-      val (arg1, _) = dest_binop_args (Thm.term_of ct)
+      val (arg1, _) = Util.dest_binop_args (Thm.term_of ct)
     in
       if is_disj arg1 then
         Conv.every_conv [rewr_obj_eq UtilBase.disj_assoc_th,
@@ -399,7 +399,7 @@ fun norm_all_disj ctxt ct =
       val t = Thm.term_of ct
     in
       if is_obj_all t then
-        if not (is_subterm (Bound 0) (dest_arg t)) then
+        if not (Util.is_subterm (Bound 0) (dest_arg t)) then
           Conv.every_conv [rewr_obj_eq UtilBase.all_trivial_th,
                            norm_all_disj ctxt] ct
         else
@@ -414,7 +414,7 @@ fun norm_all_disj ctxt ct =
       else if is_disj t then
         let
           val eq1 = Conv.binop_conv (norm_all_disj ctxt) ct
-          val rhs = rhs_of eq1
+          val rhs = Util.rhs_of eq1
         in
           if is_obj_all (dest_arg1 rhs) then
             Conv.every_conv [Conv.rewr_conv eq1,
@@ -448,7 +448,7 @@ fun mk_disj_eq eq_ths =
 fun sort_disj_clause_aux ct =
     if not (is_disj (Thm.term_of ct)) then Conv.all_conv ct else
     let
-      val (arg1, arg2) = dest_binop_args (Thm.term_of ct)
+      val (arg1, arg2) = Util.dest_binop_args (Thm.term_of ct)
     in
       if is_disj arg2 then
         if Term_Ord.termless (dest_arg1 arg2, arg1) then
@@ -534,11 +534,11 @@ fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
                               |> apply_to_rhs (norm_all_disj_sorted ctxt)
 
               (* Equality between un-normalized t and u *)
-              val t' = subst_term_norm instsp' t
+              val t' = Util.subst_term_norm instsp' t
               val norm1 = norm_all_disj_sorted ctxt (Thm.cterm_of ctxt t')
               val cu = Thm.cterm_of ctxt (mk_all_disj (var_t', map Thm.term_of cus'))
               val norm2 = norm_all_disj_sorted ctxt cu
-              val eq_th' = transitive_list [norm1, eq_th, meta_sym norm2]
+              val eq_th' = Util.transitive_list [norm1, eq_th, meta_sym norm2]
             in
               ((id', instsp'), eq_th')
             end
@@ -551,7 +551,7 @@ fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
 (* Normalize (A_1 & A_2 & ... & A_m) & (B_1 & B_2 & ... & B_n) *)
 fun norm_conj_clauses ct =
     let
-      val (arg1, _) = dest_binop_args (Thm.term_of ct)
+      val (arg1, _) = Util.dest_binop_args (Thm.term_of ct)
     in
       if is_conj arg1 then
         Conv.every_conv [rewr_obj_eq UtilBase.conj_assoc_th,
@@ -589,7 +589,7 @@ fun disj_to_ritems prem_only disj_head th =
       val subs = strip_disj (prop_of' th)
     in
       if length subs = 1 then
-        if has_vars (Thm.prop_of th) then
+        if Util.has_vars (Thm.prop_of th) then
           let
             fun th_to_ritem th =
                 Fact (TY_DISJ,
@@ -733,7 +733,7 @@ val disj_prop_matcher =
                   ((id', instsp'), Thm.equal_elim eq_th' forall_th)
                 end
           in
-            var_u |> all_permutes |> maps process_perm
+            var_u |> Util.all_permutes |> maps process_perm
                   |> map process_inst
           end
     in
@@ -779,7 +779,7 @@ fun match_prop rtype (id, item2) pat =
             (* Rewrite pat(inst) using the above, then rewrite to True. *)
             val pat_eqT =
                 pat |> Thm.cterm_of ctxt |> norm_disj
-                    |> subst_thm ctxt inst
+                    |> Util.subst_thm ctxt inst
                     |> apply_to_rhs (ac_disj_conv to_eqT_cv)
                     |> apply_to_rhs reduce_disj_True
                     |> to_obj_eq
@@ -845,7 +845,7 @@ fun match_update_fn rtype {ctxt, ...} item1 item2 =
           else let
             val nsub = get_neg sub
           in
-            if not (is_pattern sub) then NO_MATCH
+            if not (Util.is_pattern sub) then NO_MATCH
             else if length subs > 1 andalso
                     Property.is_property_prem thy nsub then NO_MATCH
             else if has_priority_term andalso
@@ -869,7 +869,7 @@ fun match_update_fn rtype {ctxt, ...} item1 item2 =
                 let
                   val th' = if is_neg (prop_of' th) then th
                             else th RS UtilBase.nn_create_th
-                  val prop' = prop |> subst_thm_thy thy inst
+                  val prop' = prop |> Util.subst_thm_thy thy inst
                                    |> disj_cancel_prop ctxt th'
                   val sc = if max_nvar = 0 then 1
                            else if do_match = SLOW_MATCH then 200 else 10
@@ -914,7 +914,7 @@ fun match_one_sch_fn rtype {tbl, ...} item1 item2 =
       if length subs > 1 then [] else
       let
         val t = the_single subs
-        val args = dest_args t
+        val args = Util.dest_args t
         fun count_var t = length (Term.add_vars t [])
         val nvar = count_var t
 
@@ -926,7 +926,7 @@ fun match_one_sch_fn rtype {tbl, ...} item1 item2 =
                                               (id, fo_init)
               fun inst_to_updt ((id', inst), _) =
                   let
-                    val th1' = subst_thm_thy thy inst th1
+                    val th1' = Util.subst_thm_thy thy inst th1
                     val prop' = prop_of' th1'
                   in
                     if is_eq_term prop' andalso
@@ -976,7 +976,7 @@ val disj_match_iff_prfstep =
 (* For active case, create box checking the next case. *)
 fun disj_create_case_fn rtype {ctxt, ...} {id, tname, ...} =
     if not (RewriteTable.is_single_rtype rtype) then [] else
-    if exists has_vars (map Thm.term_of tname) then [] else
+    if exists Util.has_vars (map Thm.term_of tname) then [] else
     let
       val (disj_head, csubs) = dest_tname_of_disj tname
     in
@@ -986,8 +986,8 @@ fun disj_create_case_fn rtype {ctxt, ...} {id, tname, ...} =
         val subs = map Thm.term_of csubs
         val goal = get_neg (hd subs)
         val (vars, (As, C)) = (strip_obj_horn goal)
-                                  |> replace_horn_vars ctxt
-                                  |> replace_horn_internal_vars
+                                  |> Util.replace_horn_vars ctxt
+                                  |> Util.replace_horn_internal_vars
         val inits =
             map InitVar vars @ map (InitAssum o mk_Trueprop) As @
             [InitAssum (mk_Trueprop (get_neg C))]

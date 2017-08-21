@@ -73,7 +73,7 @@ val to_obj_eq_cv =
         else_conv (Conv.rewr_conv @{thm atomize_iff})
 
 val to_obj_eq_iff =
-    apply_to_thm (concl_conv (Conv.rewr_conv @{thm atomize_iff}))
+    apply_to_thm (Util.concl_conv (Conv.rewr_conv @{thm atomize_iff}))
 
 val obj_sym_cv =
     (Conv.rewr_conv @{thm obj_sym})

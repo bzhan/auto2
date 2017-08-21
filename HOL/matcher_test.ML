@@ -8,7 +8,7 @@ val init = RewriteTable.empty ctxt
 (* Conversion between (id, th) used in rewrite.ML and (id, t) used in
    test cases.
  *)
-fun to_term_info (id, th) = (id, rhs_of th)
+fun to_term_info (id, th) = (id, Util.rhs_of th)
 
 (* Comparison of list of (box_id, term) pairs. *)
 fun eq_info_list (l1, l2) =
@@ -59,7 +59,7 @@ fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
 (* Check th is actually t(env) == u. *)
 fun check_info (t, u) txt {ctxt, ...} ((_, inst), th) =
     let
-      val t' = subst_term_norm inst t
+      val t' = Util.subst_term_norm inst t
       val (lhs, rhs) = Logic.dest_equals (Thm.prop_of th)
     in
       if lhs aconv t' andalso rhs aconv u then ()
@@ -106,7 +106,7 @@ fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
       val _ = map check_info_list info'
       val info'' = map (fn ((id, _), ths) => (id, map meta_sym ths)) info'
       val eq_info_list' = eq_set (eq_pair (op =) (eq_list (op aconv)))
-      fun to_term_info' (id, ths) = (id, map rhs_of ths)
+      fun to_term_info' (id, ths) = (id, map Util.rhs_of ths)
     in
       if eq_info_list' (info, map to_term_info' info'') then tbl
       else let
@@ -231,7 +231,7 @@ fun assert_pre_match_gen res at_head (str_t, str_u) (tbl as {ctxt, ...}) =
       else let
         val _ = trace_tlist ctxt "Pattern, term: " [t, Thm.term_of cu]
       in
-        raise Fail ("assert_pre_match (expected " ^ (string_of_bool res) ^ ")")
+        raise Fail ("assert_pre_match (expected " ^ (Util.string_of_bool res) ^ ")")
       end
     end
 

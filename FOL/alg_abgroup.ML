@@ -9,11 +9,11 @@ val minus_t = @{term minus}
 val minus_ct = @{cterm minus}
 
 fun is_zero G t = t aconv (zero_t $ G)
-fun is_plus G t = is_head (plus_t $ G) t
-fun is_uminus G t = is_head (uminus_t $ G) t
+fun is_plus G t = Util.is_head (plus_t $ G) t
+fun is_uminus G t = Util.is_head (uminus_t $ G) t
 fun is_uminus_pair_l G (t1, t2) = (t1 aconv uminus_t $ G $ t2)
 fun is_uminus_pair_r G (t1, t2) = (t2 aconv uminus_t $ G $ t1)
-fun is_minus G t = is_head (minus_t $ G) t
+fun is_minus G t = Util.is_head (minus_t $ G) t
 
 fun list_plus G ts =
     let
@@ -60,7 +60,7 @@ type abgroup_info = {
 (* (a + b) + c = (a + c) + b. *)
 fun swap_plus_r_cv {G, assoc_l, assoc_r, comm, ...} wft =
     let
-      val (arg1, _) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, _) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_plus G arg1 then
         WfTerm.every_conv [assoc_r, WfTerm.arg_conv comm, assoc_l] wft
@@ -86,7 +86,7 @@ fun compare_atom G (t1, t2) =
 fun abgroup_add_atom info wft =
     let
       val {G, assoc_r, comm, zero_l, neg_l, ...} = info
-      val (arg1, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (arg1, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_zero G arg1 then zero_l wft
       else if is_zero G arg2 then zero_r info wft
@@ -120,7 +120,7 @@ fun abgroup_add_atom info wft =
 fun abgroup_add_monomial info wft =
     let
       val {G, assoc_l, ...} = info
-      val (_, arg2) = dest_binop_args (WfTerm.term_of wft)
+      val (_, arg2) = Util.dest_binop_args (WfTerm.term_of wft)
     in
       if is_plus G arg2 then
         WfTerm.every_conv [

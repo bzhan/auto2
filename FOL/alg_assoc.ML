@@ -48,15 +48,15 @@ fun alg_assoc_prfstep_fn (fhead, assoc_l) rtype _ item1 item2 =
             let
               val (_, eq1) = normalize_assoc (fhead, assoc_l) wft1
               val (_, eq2) = normalize_assoc (fhead, assoc_l) wft2
-              val _ = assert (rhs_of eq1 aconv rhs_of eq2)
+              val _ = assert (Util.rhs_of eq1 aconv Util.rhs_of eq2)
                              "alg_assoc_prfstep"
-              val eq_th = to_obj_eq (transitive_list [eq1, meta_sym eq2])
+              val eq_th = to_obj_eq (Util.transitive_list [eq1, meta_sym eq2])
             in
               AddItems {id = id', sc = SOME 1,
                         raw_items = [Update.thm_to_ritem eq_th]}
             end
       in
-        (all_pairs (wfts1, wfts2))
+        (Util.all_pairs (wfts1, wfts2))
             |> map (fn ((id1, wft1), (id2, wft2)) =>
                        (BoxID.merge_boxes lat (id1, id2), (wft1, wft2)))
             |> RewriteTable.replace_id_for_type' rtype
