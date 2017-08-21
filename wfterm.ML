@@ -196,7 +196,7 @@ fun rewr_obj_eq fheads th wft =
       val wf_ths = wellform_ths_of wft
 
       (* First need to instantiate th by matching l with the term of wft. *)
-      val pat_l = th |> concl_of' |> strip_conj |> hd |> dest_eq_lhs
+      val pat_l = th |> concl_of' |> strip_conj |> hd |> dest_eq |> fst
       val inst = Pattern.first_order_match thy (pat_l, t) fo_init
       val th' = subst_thm_thy thy inst th
 

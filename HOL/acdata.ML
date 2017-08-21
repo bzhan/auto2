@@ -88,7 +88,7 @@ fun head_agrees {cfhead, ...} t = is_head (Thm.term_of cfhead) t
 fun add_ac_data info thy =
     let
       val {assoc_th, ...} = info
-      val f = assoc_th |> prop_of' |> dest_eq_rhs |> Term.head_of
+      val f = assoc_th |> prop_of' |> dest_eq |> snd |> Term.head_of
     in
       case f of
           Const (c, _) =>

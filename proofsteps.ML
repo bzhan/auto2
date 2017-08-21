@@ -1043,8 +1043,7 @@ fun add_rewrite_eq_rule_cond th conds thy =
 
 fun add_rewrite_iff_rule_cond th conds thy =
     let
-      val th = if is_meta_eq (Thm.concl_of th) orelse
-                  is_eq_term_non_iff (concl_of' th) then to_obj_eq_iff_th th
+      val th = if is_meta_eq (Thm.concl_of th) then to_obj_eq_iff_th th
                else th
       val (lhs, _) = th |> concl_of' |> dest_eq
       val _ = assert (fastype_of lhs = boolT)

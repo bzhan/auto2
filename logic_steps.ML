@@ -957,7 +957,8 @@ fun disj_match_iff_fn rtype {ctxt, ...} {id, tname, prop, ...} =
       val subs = map Thm.term_of csubs
     in
       if length subs > 1 then []
-      else if not (is_eq_term_iff (the_single subs)) then []
+      else if not (is_eq_term (the_single subs) andalso
+              fastype_of (dest_arg (the_single subs)) = boolT) then []
       else let
         val cv = (to_obj_conv ctxt) then_conv (Trueprop_conv norm_disj)
         val forward = prop |> equiv_forward_th |> apply_to_thm cv

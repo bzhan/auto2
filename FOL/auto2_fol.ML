@@ -23,9 +23,6 @@ fun cdest_eq ct =
       | Const (@{const_name IFOL.iff}, _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
       | _ => raise Fail "dest_eq"
 
-fun dest_eq_lhs t = fst (dest_eq t)
-fun dest_eq_rhs t = snd (dest_eq t)
-
 fun mk_eq (t, u) =
     let
       val T = fastype_of t
@@ -33,30 +30,14 @@ fun mk_eq (t, u) =
       Const (@{const_name IFOL.eq}, T --> T --> boolT) $ t $ u
     end
 
-fun mk_bool_eq (t, u) =
-    let
-      val _ = assert (fastype_of t = boolT) "mk_bool_eq"
-    in
-      Const (@{const_name IFOL.iff}, boolT --> boolT --> boolT) $ t $ u
-    end
-
-fun is_eq_term_iff t =
-    let
-      val _ = assert (fastype_of t = boolT) "is_eq_term: wrong type"
-    in
-      case t of Const (@{const_name IFOL.iff}, _) $ _ $ _ => true
-              | _ => false
-    end
-
-fun is_eq_term_non_iff t =
+fun is_eq_term t =
     let
       val _ = assert (fastype_of t = boolT) "is_eq_term: wrong type"
     in
       case t of Const (@{const_name IFOL.eq}, _) $ _ $ _ => true
+              | Const (@{const_name IFOL.iff}, _) $ _ $ _ => true
               | _ => false
     end
-
-fun is_eq_term t = is_eq_term_iff t orelse is_eq_term_non_iff t
 
 val bTrue = @{term True}
 val bFalse = @{term False}

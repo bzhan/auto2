@@ -7,12 +7,7 @@ sig
   (* Equality *)
   val dest_eq: term -> term * term
   val cdest_eq: cterm -> cterm * cterm
-  val dest_eq_lhs: term -> term
-  val dest_eq_rhs: term -> term
   val mk_eq: term * term -> term
-  val mk_bool_eq: term * term -> term
-  val is_eq_term_iff: term -> bool
-  val is_eq_term_non_iff: term -> bool
   val is_eq_term: term -> bool
 
   (* Terms *)

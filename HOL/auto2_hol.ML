@@ -20,17 +20,12 @@ fun cdest_eq ct =
         Const (@{const_name HOL.eq}, _) $ _ $ _ => (Thm.dest_arg1 ct, Thm.dest_arg ct)
       | _ => raise Fail "dest_eq"
 
-fun dest_eq_lhs t = fst (dest_eq t)
-fun dest_eq_rhs t = snd (dest_eq t)
-
 fun mk_eq (t, u) =
     let
       val T = fastype_of t
     in
       Const (@{const_name HOL.eq}, T --> T --> boolT) $ t $ u
     end
-
-val mk_bool_eq = mk_eq
 
 fun is_eq_term t =
     let
@@ -39,12 +34,6 @@ fun is_eq_term t =
       case t of Const (@{const_name HOL.eq}, _) $ _ $ _ => true
               | _ => false
     end
-
-fun is_eq_term_iff t =
-    is_eq_term t andalso fastype_of (dest_arg t) = boolT
-
-fun is_eq_term_non_iff t =
-    is_eq_term t andalso fastype_of (dest_arg t) <> boolT
 
 (* Terms *)
 
