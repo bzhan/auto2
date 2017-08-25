@@ -51,6 +51,24 @@ fun assert_box_resolved lat id ord_tbl =
       raise Fail "assert_box_resolved"
     end
 
+fun assert_justify_ineq (id, str) ord_tbl =
+    let
+      val t = Syntax.read_term ctxt str
+      val ct = Thm.cterm_of ctxt t
+      val info =
+          if is_neg t then NatOrder.justify_neg_ineq ord_tbl ct
+          else NatOrder.justify_ineq ord_tbl ct
+    in
+      if length info = 1 andalso fst (the_single info) = id andalso
+         prop_of' (snd (the_single info)) aconv t then ord_tbl else
+      let
+        val _ = tracing (string_of_box_id id ^ " " ^
+                         (Syntax.string_of_term ctxt t))
+      in
+        raise Fail "assert_justify_ineq"
+      end
+    end
+
 (* Basic non-contradictory case. *)
 val test1 =
     let
@@ -94,6 +112,20 @@ val test3 =
            |> clear
            |> add_ineq_general lat ([], "x + 1 < y")
            |> assert_info ([], "x + 2 <= y")
+    end
+
+(* Test of justifying inequalities. *)
+val test4 =
+    let
+      val lat = BoxID.empty
+    in
+      init |> add_ineq lat ([], "x <= y + 3")
+           |> assert_justify_ineq ([], "x <= y + 3")
+           |> assert_justify_ineq ([], "x <= y + 4")
+           |> assert_justify_ineq ([], "x < y + 4")
+           |> assert_justify_ineq ([], "~(y + 3 < x)")
+           |> assert_justify_ineq ([], "~(y + 4 <= x)")
+           |> assert_justify_ineq ([], "~(y + 5 <= x)")
     end
 
 end

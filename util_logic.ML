@@ -42,8 +42,8 @@ sig
   val mk_mem: term * term -> term
 
   (* cterms *)
-  val cdest_Trueprop: cterm -> cterm
-  val cstrip_horn': thm -> cterm list * cterm
+  val mk_cTrueprop: cterm -> cterm
+  val dest_cTrueprop: cterm -> cterm
   val get_cneg: cterm -> cterm
 
   (* Theorems *)
@@ -269,16 +269,15 @@ fun mk_mem (x, A) =
 
 (* cterms *)
 
-fun cdest_Trueprop ct =
+fun mk_cTrueprop ct =
+    Thm.apply UtilBase.cTrueprop ct
+
+fun dest_cTrueprop ct =
     case Thm.term_of ct of
         Const (c, _) $ _ =>
         if c = UtilBase.Trueprop_name then Thm.dest_arg ct else
         raise Fail "dest_Trueprop"
       | _ => raise Fail "dest_Trueprop"
-
-fun cstrip_horn' th =
-    (map cdest_Trueprop (Drule.strip_imp_prems (Thm.cprop_of th)),
-     cdest_Trueprop (Drule.strip_imp_concl (Thm.cprop_of th)))
 
 fun get_cneg ct =
     let
@@ -292,7 +291,7 @@ fun get_cneg ct =
 
 fun is_true_th th = Thm.eq_thm_prop (th, true_th)
 fun prop_of' th = dest_Trueprop (Thm.prop_of th)
-fun cprop_of' th = cdest_Trueprop (Thm.cprop_of th)
+fun cprop_of' th = dest_cTrueprop (Thm.cprop_of th)
 fun concl_of' th = dest_Trueprop (Thm.concl_of th)
 
 (* Given an equality between bools, make it an equality between props,

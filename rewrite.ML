@@ -987,7 +987,7 @@ fun apply_property_update_rule (tbl as {lat, ...}) id th_opt =
         NONE => []
       | SOME th =>
         let
-          val (cprems, _) = cstrip_horn' th
+          val cprems = map dest_cTrueprop (Drule.cprems_of th)
         in
           if null cprems then [(id, th)]
           else let

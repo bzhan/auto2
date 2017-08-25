@@ -20,6 +20,7 @@ sig
   val info_is_better: box_lattice -> box_id * thm -> box_id * thm -> bool
 
   val is_box_resolved: box_lattice -> order_table -> box_id -> bool
+  val ineq_to_contradiction: thm -> thm
   val add_resolved: box_id * thm -> order_table -> order_table
   val retrieve_ineqs: order_table -> term * term -> (box_id * thm) list
   val contains_info: box_lattice -> order_table -> box_id * thm -> bool
@@ -36,6 +37,10 @@ sig
 
   val norm_ineq_th: thm -> thm
   val add_ineq_general: box_lattice -> box_id * thm -> order_table -> order_table
+
+  val derive_contradiction: order_table -> thm -> (box_id * thm) list
+  val justify_neg_ineq: order_table -> cterm -> (box_id * thm) list
+  val justify_ineq: order_table -> cterm -> (box_id * thm) list
 end;
 
 structure NatOrder : NAT_ORDER =
@@ -143,17 +148,25 @@ fun is_box_resolved lat ord_tbl id =
       exists (BoxID.is_eq_descendent lat id) (map fst resolved)
     end
 
+(* Given an inequality of the form x + n <= x, where n > 0, return the
+   theorem False.
+ *)
+fun ineq_to_contradiction th =
+    let
+      val (_, _, d) = dest_ineq (prop_of' th)
+    in
+      [Nat_Arith.nat_less_th 0 (~d), th] MRS @{thm single_resolve}
+    end
+
 (* Add a new resolved id (with proof) to the table. *)
 fun add_resolved (id, th) ord_tbl =
     let
       val {resolved, graph, inv_graph} = ord_tbl
       val (x, y, d) = dest_ineq (prop_of' th)
       val _ = assert (x aconv y andalso d < 0) "add_resolved"
-
-      (* Produce theorem with statement False. *)
-      val th' = [Nat_Arith.nat_less_th 0 (~d), th] MRS @{thm single_resolve}
     in
-      {resolved = (id, th') :: resolved, graph = graph, inv_graph = inv_graph}
+      {resolved = (id, ineq_to_contradiction th) :: resolved,
+       graph = graph, inv_graph = inv_graph}
     end
 
 (* Returns the best inequalities between x and y. *)
@@ -347,5 +360,61 @@ fun norm_ineq_th th =
  *)
 fun add_ineq_general lat (id, th) ord_tbl =
     add_ineq lat (id, norm_ineq_th th) ord_tbl
+
+(* Deriving a contradiction from a normalized theorem using the
+   table. Return a list of pairs (id, False).
+ *)
+fun derive_contradiction ord_tbl th =
+    let
+      val (x, y, d) = dest_ineq (prop_of' th)
+      val ineqs = retrieve_ineqs ord_tbl (y, x)
+      fun process_ineq (id, th') =
+          let
+            val (_, _, d') = dest_ineq (prop_of' th')
+          in
+            if d + d' < 0 then
+              [(id, ineq_to_contradiction (combine_ineqs th th'))]
+            else
+              []
+          end
+    in
+      maps process_ineq ineqs
+    end
+
+(* Given cterm in the form ~(a </<= b), attempt to justify it using
+   the table.
+ *)
+fun justify_neg_ineq ord_tbl ct =
+    let
+      val ct' = ct |> UtilLogic.get_cneg
+                   |> UtilLogic.mk_cTrueprop
+      val infos = ct' |> Thm.assume |> norm_ineq_th
+                      |> derive_contradiction ord_tbl
+      fun process_info (id, th) =
+          (id, th |> Thm.implies_intr ct'
+                  |> rewrite_thm_from_contra_form)
+    in
+      map process_info infos
+    end
+
+(* Given cterm in the form a </<= b, attempt to justify it using the
+   table. This works by first converting the theorem into the form ~(b
+   </<= a).
+ *)
+fun justify_ineq ord_tbl ct =
+    let
+      val t = Thm.term_of ct
+
+      val eq = if is_less t then
+                 rewr_obj_eq (obj_sym @{thm linorder_not_le}) ct
+               else
+                 rewr_obj_eq (obj_sym @{thm linorder_not_less}) ct
+      val infos = justify_neg_ineq ord_tbl (Thm.rhs_of eq)
+
+      fun process_info (id, th) =
+          (id, apply_to_thm' (Conv.rewr_conv (Util.meta_sym eq)) th)
+    in
+      map process_info infos
+    end
 
 end  (* NatOrder *)
