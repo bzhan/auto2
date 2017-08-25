@@ -16,6 +16,16 @@ fun add_ineq lat (id, str) =
       NatOrder.add_ineq lat (id, th)
     end
 
+fun add_ineq_general lat (id, str) =
+    let
+      val t = Syntax.read_term ctxt str
+      val th = t |> mk_Trueprop |> Thm.cterm_of ctxt |> Thm.assume
+    in
+      NatOrder.add_ineq_general lat (id, th)
+    end
+
+val clear = K init
+
 fun assert_info (id, str) ord_tbl =
     let
       val t = Syntax.read_term ctxt str
@@ -66,6 +76,24 @@ val test2 =
            |> add_ineq lat ([], "y <= z + 2")
            |> add_ineq lat ([], "z + 4 <= x")
            |> assert_box_resolved lat []
+    end
+
+(* Basic test for adding general inequalities. *)
+val test3 =
+    let
+      val lat = BoxID.empty
+    in
+      init |> add_ineq_general lat ([], "x <= y")
+           |> assert_info ([], "x <= y + 0")
+           |> clear
+           |> add_ineq_general lat ([], "x < y")
+           |> assert_info ([], "x + 1 <= y")
+           |> clear
+           |> add_ineq_general lat ([], "x < y + 1")
+           |> assert_info ([], "x <= y + 0")
+           |> clear
+           |> add_ineq_general lat ([], "x + 1 < y")
+           |> assert_info ([], "x + 2 <= y")
     end
 
 end

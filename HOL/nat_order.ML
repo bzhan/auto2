@@ -33,6 +33,9 @@ sig
   val combine_ineq_infos:
       box_lattice -> box_id * thm -> box_id * thm -> box_id * thm
   val add_ineq: box_lattice -> box_id * thm -> order_table -> order_table
+
+  val norm_ineq_th: thm -> thm
+  val add_ineq_general: box_lattice -> box_id * thm -> order_table -> order_table
 end;
 
 structure NatOrder : NAT_ORDER =
@@ -54,9 +57,31 @@ fun is_plus t =
         Const (@{const_name plus}, _) $ _ $ _ => true
       | _ => false
 
+(* Check whether t is in the form a - b. *)
+fun is_minus t =
+    case t of
+        Const (@{const_name minus}, _) $ _ $ _ => true
+      | _ => false
+
 (* Check whether t is in the form a + n, where n is a constant. *)
 fun is_plus_const t =
     is_plus t andalso UtilArith.is_numc (dest_arg t)
+
+(* Check whether t is in the form a - n, where n is a constant. *)
+fun is_minus_const t =
+    is_minus t andalso UtilArith.is_numc (dest_arg t)
+
+(* Check whether t is in the form a <= b (boolean value). *)
+fun is_less_eq t =
+    case t of
+        Const (@{const_name less_eq}, _) $ _ $ _ => true
+      | _ => false
+
+(* Check whether t is in the form a < b (boolean value). *)
+fun is_less t =
+    case t of
+        Const (@{const_name less}, _) $ _ $ _ => true
+      | _ => false
 
 (* Check whether t is an inequality in the standard form. In this
    form, t is in the form a <= b, where a and b are natural numbers,
@@ -64,12 +89,15 @@ fun is_plus_const t =
    constant.
  *)
 fun is_standard_ineq t =
-    case t of
-        Const (@{const_name less_eq}, _) $ lhs $ rhs =>
-        if fastype_of lhs <> natT then false
-        else if is_plus_const lhs then not (is_plus_const rhs)
-        else is_plus_const rhs
-      | _ => false
+    if is_less_eq t then
+      let
+        val (lhs, rhs) = Util.dest_binop_args t
+      in
+        fastype_of lhs = natT andalso
+        ((is_plus_const lhs andalso not (is_plus_const rhs)) orelse
+         (is_plus_const rhs andalso not (is_plus_const lhs)))
+      end
+    else false
 
 (* Assume t is in the form x + n <= y or x <= y + n, deconstruct into
    the triple (x, y, d), where d = -n in the first case and n in the
@@ -283,5 +311,41 @@ fun add_ineq lat (id, th) ord_tbl =
     in
       snd (update_step ([(id, th)], ord_tbl))
     end
+
+(* Normalize inequality to standard form. This function is able to
+   process any theorem of the form a </<= b.
+ *)
+fun norm_ineq_th th =
+    let
+      val t = prop_of' th
+      val _ = assert (is_less_eq t orelse is_less t) "norm_ineq_th"
+      val (lhs, rhs) = Util.dest_binop_args t
+    in
+      if is_less_eq t then
+        if is_plus_const lhs orelse is_plus_const rhs then th
+        else if is_minus_const lhs then
+          th RS @{thm norm_le_lminus}
+        else if is_minus_const rhs then
+          th RS @{thm norm_le_rminus}
+        else
+          th RS @{thm norm_le}
+      else  (* is_less t *)
+        if is_plus_const lhs then
+          (th RS @{thm norm_less_lplus}) |> fold_const_left
+        else if is_plus_const rhs then
+          (th RS @{thm norm_less_rplus}) |> fold_const_right
+        else if is_minus_const lhs then
+          (th RS @{thm norm_less_lminus}) |> fold_const_right
+        else if is_minus_const rhs then
+          (th RS @{thm norm_less_rminus}) |> fold_const_left
+        else
+          th RS @{thm norm_less}
+    end
+
+(* Add any inequality in the form a </<= b to the table, by first
+   converting to the normal form.
+ *)
+fun add_ineq_general lat (id, th) ord_tbl =
+    add_ineq lat (id, norm_ineq_th th) ord_tbl
 
 end  (* NatOrder *)
