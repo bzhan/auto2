@@ -15,7 +15,7 @@ ML_file "../util.ML"
 ML_file "../util_base.ML"
 ML_file "auto2_hol.ML"
 ML_file "../util_logic.ML"
-ML_file "../box_id.ML"
+ML_file "../box_id.ML" 
 ML_file "../consts.ML"
 ML_file "../subterms.ML"
 ML_file "../property.ML"
@@ -30,10 +30,6 @@ ML_file "../auto2_state.ML"
 ML_file "../logic_steps.ML"
 ML_file "../auto2.ML"
 ML_file "../auto2_outer.ML"
-
-ML {*
-open UtilLogic
-*}
 
 ML_file "acdata.ML"
 ML_file "ac_steps.ML"

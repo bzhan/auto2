@@ -14,8 +14,6 @@ end;
 structure WellForm : WELLFORM =
 struct
 
-open UtilLogic
-
 (* Each entry in the table consists of a term of the form f ?a_1
    ... ?a_n, where f is a constant, and each ?a_i is a pure schematic
    variable, paired with a list of requirements for the term to be

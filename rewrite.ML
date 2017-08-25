@@ -231,8 +231,6 @@ end;
 structure RewriteTable : REWRITE_TABLE =
 struct
 
-open UtilLogic
-
 fun table_of_rtype rtype =
     case rtype of SINGLE tbl => tbl | LAST (tbl, _, _) => tbl
 fun single_of_rtype rtype =
@@ -987,7 +985,7 @@ fun apply_property_update_rule (tbl as {lat, ...}) id th_opt =
         NONE => []
       | SOME th =>
         let
-          val cprems = map dest_cTrueprop (Drule.cprems_of th)
+          val cprems = map UtilLogic.dest_cTrueprop (Drule.cprems_of th)
         in
           if null cprems then [(id, th)]
           else let

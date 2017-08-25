@@ -125,12 +125,13 @@ fun strong_induct_cmd (s, t) state =
                                 |> Term.dest_comb
 
       val use_As = As |> map dest_Trueprop
-      val P = (list_obj_horn (arbitraries, (use_As, dest_Trueprop C)))
+      val P = (UtilLogic.list_obj_horn (arbitraries, (use_As, dest_Trueprop C)))
                   |> Util.lambda_abstract var
 
       val inst = Pattern.match thy (var_P, P) fo_init
       val ind_th = ind_th |> Util.subst_thm ctxt inst
-                          |> apply_to_thm (Util.skip_n_conv n_conds (Conv.binop_conv (to_meta_conv ctxt)))
+                          |> apply_to_thm (Util.skip_n_conv n_conds (
+                                Conv.binop_conv (UtilLogic.to_meta_conv ctxt)))
 
       val ind_goals = ind_th |> Thm.prems_of |> take n_conds
                              |> map (fn t => Logic.list_implies (As, t))

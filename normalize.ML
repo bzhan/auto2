@@ -16,8 +16,6 @@ end;
 structure Normalizer : NORMALIZER =
 struct
 
-open UtilLogic
-
 (* Keeps list of normalizers. *)
 structure Data = Theory_Data (
   type T = normalizer Symtab.table;

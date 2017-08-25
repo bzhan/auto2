@@ -1,8 +1,8 @@
-signature UTIL_LOGIC =
+(* Utility functions, after fixing object logic. *)
+
+signature BASIC_UTIL_LOGIC =
 sig
   (* Terms *)
-  val term_of_bool: bool -> term
-  val bool_of_term: term -> bool
   val Trueprop: term
   val is_Trueprop: term -> bool
   val mk_Trueprop: term -> term
@@ -40,11 +40,6 @@ sig
   val is_mem: term -> bool
   val mk_mem: term * term -> term
 
-  (* cterms *)
-  val mk_cTrueprop: cterm -> cterm
-  val dest_cTrueprop: cterm -> cterm
-  val get_cneg: cterm -> cterm
-
   (* Theorems *)
   val is_true_th: thm -> bool
   val prop_of': thm -> term
@@ -57,13 +52,7 @@ sig
   val to_obj_eq: thm -> thm
   val obj_sym: thm -> thm
   val rewr_obj_eq: thm -> conv
-  val try_nn_cancel_cv: conv
-  val make_neg_eq: thm -> thm
-  val rewrite_to_contra_form: conv
-  val rewrite_from_contra_form: conv
-  val to_obj_conv: Proof.context -> conv
-  val to_obj_conv_on_horn: Proof.context -> conv
-  val to_meta_conv: Proof.context -> conv
+
   val conj_left_th: thm -> thm
   val conj_right_th: thm -> thm
   val equiv_forward_th: thm -> thm
@@ -72,7 +61,28 @@ sig
   val to_obj_eq_th: thm -> thm
   val to_obj_eq_iff_th: thm -> thm
   val obj_sym_th: thm -> thm
-  val horn_conv: conv -> conv
+end;
+
+signature UTIL_LOGIC =
+sig
+  include BASIC_UTIL_LOGIC
+
+  (* Terms *)
+  val term_of_bool: bool -> term
+  val bool_of_term: term -> bool
+
+  (* cterms *)
+  val mk_cTrueprop: cterm -> cterm
+  val dest_cTrueprop: cterm -> cterm
+  val get_cneg: cterm -> cterm
+
+  (* Theorems *)
+  val make_neg_eq: thm -> thm
+  val rewrite_to_contra_form: conv
+  val rewrite_from_contra_form: conv
+  val to_obj_conv: Proof.context -> conv
+  val to_obj_conv_on_horn: Proof.context -> conv
+  val to_meta_conv: Proof.context -> conv
   val split_conj_th: thm -> thm list
   val split_not_disj_th: thm -> thm list
   val strip_horn': thm -> term list * term
@@ -303,16 +313,13 @@ val obj_sym = apply_to_thm (Util.concl_conv UtilBase.obj_sym_cv)
 (* Obtain rewriting conv from obj equality. *)
 fun rewr_obj_eq eq_th = Conv.rewr_conv (to_meta_eq eq_th)
 
-(* Try to cancel terms of the form ~~A. *)
-val try_nn_cancel_cv = Conv.try_conv (rewr_obj_eq UtilBase.nn_cancel_th)
-
 (* Given an equality A == B, make the equality ~A == ~B. Cancel ~~ on
    both sides if exists.
  *)
 fun make_neg_eq th =
     th |> Thm.combination (Thm.reflexive UtilBase.cNot)
-       |> apply_to_lhs try_nn_cancel_cv
-       |> apply_to_rhs try_nn_cancel_cv
+       |> apply_to_lhs (Conv.try_conv (rewr_obj_eq UtilBase.nn_cancel_th))
+       |> apply_to_rhs (Conv.try_conv (rewr_obj_eq UtilBase.nn_cancel_th))
 
 (* If ct is of the form [...] ==> False, leave it unchanged.
    Otherwise, change [...] ==> B to [..., ~ B] ==> False and change
@@ -411,14 +418,6 @@ fun to_obj_eq_th th = th |> to_obj_eq |> Util.update_name_of_thm th "@obj_eq"
 fun to_obj_eq_iff_th th = th |> UtilBase.to_obj_eq_iff |> Util.update_name_of_thm th "@iff"
 (* Same as obj_sym, except keeping names and indices. *)
 fun obj_sym_th th = th |> obj_sym |> Util.update_name_of_thm th "@sym"
-
-(* Using cv, rewrite all assumptions and conclusion in ct. *)
-fun horn_conv cv ct =
-    (case Thm.term_of ct of
-         @{const Pure.imp} $ _ $ _ =>
-         (Conv.arg1_conv (Trueprop_conv cv))
-             then_conv (Conv.arg_conv (horn_conv cv))
-       | _ => Trueprop_conv cv) ct
 
 (* Given th of form (P ==>) A1 & ... & An, return theorems (P ==>) A1,
    ..., (P ==>) An, where there can be zero or more premises in front.
@@ -582,3 +581,6 @@ fun prove_by_tac tac ctxt ths goal =
 fun contra_by_tac tac ctxt ths = prove_by_tac tac ctxt ths bFalse
 
 end  (* structure UtilLogic *)
+
+structure Basic_UtilLogic: BASIC_UTIL_LOGIC = UtilLogic
+open Basic_UtilLogic

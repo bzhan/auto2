@@ -45,8 +45,6 @@ end;
 structure Matcher : MATCHER =
 struct
 
-open UtilLogic
-
 fun compare_inst (((id1, inst1), _), ((id2, inst2), _)) =
     eq_list (op =) (id1, id2) andalso Util.eq_env (inst1, inst2)
 

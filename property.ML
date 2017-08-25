@@ -27,8 +27,6 @@ end;
 structure Property : PROPERTY =
 struct
 
-open UtilLogic
-
 (* Register for property predicates. *)
 
 structure Data = Theory_Data (
@@ -176,7 +174,7 @@ fun get_property_arg_th_gen th =
  *)
 fun can_add_property_update th thy =
     let
-      val (prems, concl) = strip_horn' th
+      val (prems, concl) = UtilLogic.strip_horn' th
     in
       if is_property_const thy concl andalso forall (is_property_prem thy) prems
       then let
@@ -195,7 +193,7 @@ fun can_add_property_update th thy =
 
 fun add_property_update th thy =
     let
-      val (prems, concl) = strip_horn' th
+      val (prems, concl) = UtilLogic.strip_horn' th
       val _ = assert (is_property_const thy concl)
                      "add_property_update: concl must be a property constant."
       val _ = assert (forall (is_property_prem thy) prems)
@@ -247,7 +245,7 @@ fun lookup_property_update thy c =
  *)
 fun instantiate_property_update ctxt t th =
     let
-      val (_, concl) = strip_horn' th
+      val (_, concl) = UtilLogic.strip_horn' th
       val concl_arg = get_property_arg concl
       val thy = Proof_Context.theory_of ctxt
     in

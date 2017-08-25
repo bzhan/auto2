@@ -39,8 +39,6 @@ end;
 structure Auto2_Outer : AUTO2_OUTER =
 struct
 
-open UtilLogic
-
 (* Use auto2 to solve the given statement *)
 fun auto2_solve ctxt stmt =
     let
@@ -120,7 +118,7 @@ fun have_cmd (s, r, t) state =
       val {context = ctxt, ...} = Proof.goal state
 
       val (vars, (assums, concl)) = s |> Syntax.read_term ctxt
-                                      |> strip_obj_horn
+                                      |> UtilLogic.strip_obj_horn
 
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected
                               |> Auto2_State.subgoal_of |> Thm.term_of
@@ -134,13 +132,13 @@ fun have_cmd (s, r, t) state =
             val th' = ths |> the_single
                           |> funpow (length As) Util.send_first_to_hyps
                           |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
-                          |> apply_to_thm (to_obj_conv ctxt)
+                          |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
                           |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
           in
             have_after_qed ctxt th' prop
           end
 
-      val stmt' = list_obj_horn (vars, (assums, concl))
+      val stmt' = UtilLogic.list_obj_horn (vars, (assums, concl))
 
       val is_rule = is_some r
       val new_vars = filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) vars
@@ -355,7 +353,7 @@ fun obtain_resolve ctxt vars th concl =
                        |> fold Thm.forall_elim c_vars
                        |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) new_vars)
                        |> fold Thm.elim_implies thAs
-      val th_c = (fold (ex_elim ctxt) (rev new_vars) th_bc)
+      val th_c = (fold (UtilLogic.ex_elim ctxt) (rev new_vars) th_bc)
                      |> Thm.elim_implies th_b
     in
       th_c |> fold Thm.implies_intr (rev cAs)

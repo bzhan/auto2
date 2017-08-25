@@ -84,8 +84,6 @@ end;
 structure ProofStatus : PROOFSTATUS =
 struct
 
-open UtilLogic
-
 fun check_hyps id th (st as {ctxt, ...}) =
     let
       val hyps = Thm.hyps_of th
@@ -185,7 +183,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
                 val res_th = Status.get_on_resolve st id i th
                 val _ = check_hyps cur_parent res_th st
 
-                val res_obj_th = apply_to_thm (to_obj_conv ctxt) res_th
+                val res_obj_th = apply_to_thm (UtilLogic.to_obj_conv ctxt) res_th
                 val updt = {sc = sc, prfstep_name = "$RESOLVE", source = [],
                             raw_updt = Logic_ProofSteps.logic_thm_update
                                            ctxt (cur_parent, res_obj_th)}
@@ -619,8 +617,6 @@ end
 structure Auto2 : AUTO2 =
 struct
 
-open UtilLogic
-
 fun auto2_tac ctxt state =
     let
       val subgoals = state |> Thm.cprop_of |> Drule.strip_imp_prems
@@ -634,7 +630,7 @@ fun auto2_tac ctxt state =
               "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
               (Syntax.string_of_term ctxt subgoal) ^ "\n")
         val subgoal_norm = Conv.every_conv [
-            Util.normalize_meta_horn ctxt, to_obj_conv_on_horn ctxt] c_subgoal
+            Util.normalize_meta_horn ctxt, UtilLogic.to_obj_conv_on_horn ctxt] c_subgoal
         val st = ProofStatus.init_status ctxt (Util.rhs_of subgoal_norm)
         val (_, st') =
             Util.timer ("Total time: ",

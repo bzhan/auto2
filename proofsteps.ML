@@ -69,8 +69,6 @@ end;
 structure ProofStep : PROOFSTEP =
 struct
 
-open UtilLogic
-
 fun eq_prfstep (prfstep1, prfstep2) = (#name prfstep1 = #name prfstep2)
 
 fun apply_prfstep rtype st items {func, ...} =
@@ -571,8 +569,6 @@ end;
 structure ProofStepData : PROOFSTEP_DATA =
 struct
 
-open UtilLogic
-
 fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
     int_ord (priority, priority')
 
@@ -756,7 +752,7 @@ fun max_term_matches mode =
  *)
 fun get_side_prems thy mode ts th =
     let
-      val (prems, concl) = strip_horn' th
+      val (prems, concl) = UtilLogic.strip_horn' th
       val _ = assert (length ts <= max_term_matches mode)
                      "get_side_prems: too many term matches."
 
@@ -869,6 +865,17 @@ fun swap_one_eq_to_front ct =
                then_conv (Conv.rewr_conv Drule.swap_prems_eq)) ct
       | _ => Conv.no_conv ct
 
+(* Using cv, rewrite all assumptions and conclusion in ct. *)
+fun horn_conv cv ct =
+    (case Thm.term_of ct of
+         @{const Pure.imp} $ _ $ _ =>
+         (Conv.arg1_conv (Trueprop_conv cv))
+             then_conv (Conv.arg_conv (horn_conv cv))
+       | _ => Trueprop_conv cv) ct
+
+(* Try to cancel terms of the form ~~A. *)
+val try_nn_cancel_cv = Conv.try_conv (rewr_obj_eq UtilBase.nn_cancel_th)
+
 (* Post-processing of the given theorem according to mode. *)
 fun post_process_th ctxt mode side_count ts th =
     case mode of
@@ -876,14 +883,14 @@ fun post_process_th ctxt mode side_count ts th =
         let
           val to_skip = side_count + (2 - length ts)
         in
-          th |> apply_to_thm (Util.skip_n_conv to_skip (to_obj_conv ctxt))
+          th |> apply_to_thm (Util.skip_n_conv to_skip (UtilLogic.to_obj_conv ctxt))
              |> Util.update_name_of_thm th ""
         end
       | MODE_FORWARD' =>
         let
           val cv =
               swap_prem_to_front
-                  then_conv (Util.skip_n_conv (2 - length ts) (to_obj_conv ctxt))
+                  then_conv (Util.skip_n_conv (2 - length ts) (UtilLogic.to_obj_conv ctxt))
         in
           th |> apply_to_thm (Util.skip_n_conv side_count cv)
              |> Util.update_name_of_thm th ""
@@ -937,7 +944,7 @@ fun add_basic_prfstep_cond th mode conds thy =
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
 
       (* Intermediate form, with definitional eqs in front. *)
-      val th_defs = th |> apply_to_thm (to_obj_conv_on_horn ctxt')
+      val th_defs = th |> apply_to_thm (UtilLogic.to_obj_conv_on_horn ctxt')
                        |> apply_to_thm (Conv.repeat_conv swap_one_eq_to_front)
 
       (* List of definitions used. *)
@@ -986,7 +993,7 @@ fun add_basic_prfstep_cond th mode conds thy =
         val th' = th |> post_process_th ctxt' mode side_count ts
 
         val (assums, concl) =
-            th' |> strip_horn' |> apfst (drop side_count)
+            th' |> UtilLogic.strip_horn' |> apfst (drop side_count)
         val pats = map extract_term_cond term_conds @ assums
         val match_descs = term_conds @ map WithFact assums
         val _ = assert (Util.is_pattern_list pats)
@@ -1035,7 +1042,8 @@ fun add_resolve_prfstep th = add_resolve_prfstep_cond th []
 
 fun add_rewrite_eq_rule_cond th conds thy =
     let
-      val th = if Util.is_meta_eq (Thm.concl_of th) then to_obj_eq_th th else th
+      val th = if Util.is_meta_eq (Thm.concl_of th) then
+                 UtilLogic.to_obj_eq_th th else th
       val (lhs, _) = th |> concl_of' |> strip_conj |> hd |> dest_eq
     in
       thy |> add_forward_prfstep_cond th (K (WithTerm lhs) :: conds)
@@ -1043,8 +1051,8 @@ fun add_rewrite_eq_rule_cond th conds thy =
 
 fun add_rewrite_iff_rule_cond th conds thy =
     let
-      val th = if Util.is_meta_eq (Thm.concl_of th) then to_obj_eq_iff_th th
-               else th
+      val th = if Util.is_meta_eq (Thm.concl_of th) then
+                 UtilLogic.to_obj_eq_iff_th th else th
       val (lhs, _) = th |> concl_of' |> dest_eq
       val _ = assert (fastype_of lhs = boolT)
                      "add_rewrite_iff: argument not of type bool."

@@ -30,10 +30,6 @@ ML_file "../logic_steps.ML"
 ML_file "../auto2.ML"
 ML_file "../auto2_outer.ML"
 
-ML {*
-open UtilLogic
-*}
-
 ML_file "extra_fol.ML"
 ML_file "fol_induct.ML"
 ML_file "alg_assoc.ML"

@@ -46,8 +46,6 @@ end;
 structure BoxItem : BOXITEM =
 struct
 
-open UtilLogic
-
 fun var_to_fact t = Fact (TY_VAR, [t], true_th)
 fun term_to_fact t = Fact (TY_TERM, [t], true_th)
 
@@ -223,8 +221,6 @@ end;
 structure ItemIO : ITEM_IO =
 struct
 
-open UtilLogic
-
 fun add_prop_matcher_to_info
         mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
     {prop_matchers = mtch :: prop_matchers, typed_matchers = typed_matchers,
@@ -328,7 +324,7 @@ val prop_matcher =
           in
             if is_neg pat then
               is_neg t andalso
-              Matcher.pre_match_head tbl (get_neg pat, get_cneg ct)
+              Matcher.pre_match_head tbl (get_neg pat, UtilLogic.get_cneg ct)
             else
               Term.is_Var pat orelse
               (not (is_neg t) andalso Matcher.pre_match_head tbl (pat, ct))
@@ -342,7 +338,7 @@ val prop_matcher =
             if is_neg pat andalso is_neg t then
               let
                 val insts' = Matcher.rewrite_match_head
-                                 tbl (get_neg pat, get_cneg ct) (id, inst)
+                                 tbl (get_neg pat, UtilLogic.get_cneg ct) (id, inst)
                 fun process_inst (inst, eq_th) =
                     let
                       (* This version certainly will not cancel ~~ on
@@ -695,8 +691,6 @@ end;
 structure Update : UPDATE =
 struct
 
-open UtilLogic
-
 fun dest_init_var init = case init of InitVar t => [t] | _ => []
 fun dest_init_assum init = case init of InitAssum t => [t] | _ => []
 fun is_init_assum init = case init of InitAssum _ => true | _ => false
@@ -730,7 +724,7 @@ fun get_neg_form inits =
 
 fun get_neg_form_obj ctxt inits =
     inits |> get_neg_form |> Thm.cterm_of ctxt
-          |> to_obj_conv ctxt |> Util.rhs_of
+          |> UtilLogic.to_obj_conv ctxt |> Util.rhs_of
 
 (* Given a contradiction th, returns a new theorem with assumptions
    pulled into the proposition of th. The resulting form of th is the
@@ -814,8 +808,8 @@ fun apply_exists_ritems ctxt xs ex_th =
     let
       val thy = Proof_Context.theory_of ctxt
 
-      val ex_th' = ex_th |> apply_to_thm' (normalize_exists ctxt)
-      val (vars, body) = ex_th' |> prop_of' |> strip_exists
+      val ex_th' = ex_th |> apply_to_thm' (UtilLogic.normalize_exists ctxt)
+      val (vars, body) = ex_th' |> prop_of' |> UtilLogic.strip_exists
                                 |> apsnd mk_Trueprop
                                 |> Util.replace_names xs
 
@@ -883,7 +877,7 @@ fun apply_exists_ritems ctxt xs ex_th =
             val fvars = get_freevars t
           in
             th |> Thm.implies_intr (Thm.cterm_of ctxt t)
-               |> fold (ex_elim ctxt) (rev fvars)
+               |> fold (UtilLogic.ex_elim ctxt) (rev fvars)
                |> Thm.elim_implies (Util.subst_thm_atomic subst ex_th')
           end
 
@@ -1070,8 +1064,6 @@ end;
 
 structure Status : STATUS =
 struct
-
-open UtilLogic
 
 fun empty_status ctxt =
     {uid_next = 1, lat = BoxID.empty, boxes = Boxidtab.empty,

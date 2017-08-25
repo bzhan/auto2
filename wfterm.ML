@@ -46,8 +46,6 @@ end;
 structure WfTerm : WFTERM =
 struct
 
-open UtilLogic
-
 (* Extract a regular cterm from a wellformed term. *)
 fun cterm_of wft =
     case wft of
@@ -207,7 +205,7 @@ fun rewr_obj_eq fheads th wft =
       val th'' = prems_th MRS th'
 
       (* Finally, apply rewrite rule and fill in wellform data on rhs. *)
-      val th_splits = split_conj_th th''
+      val th_splits = UtilLogic.split_conj_th th''
       val (eq_th, wf_ths') = (hd th_splits, tl th_splits)
       val c_rhs = eq_th |> Thm.cprop_of |> Thm.dest_arg |> Thm.dest_arg
       val wf_rhs = cterm_to_wfterm_on_ths (wf_ths @ wf_ths') fheads c_rhs

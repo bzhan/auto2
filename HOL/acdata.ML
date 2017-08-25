@@ -37,8 +37,6 @@ end;
 structure ACUtil : ACUTIL =
 struct
 
-open UtilLogic
-
 (* Register of generators of ac_inst_info. *)
 structure Data = Theory_Data (
   type T = ac_info Symtab.table;

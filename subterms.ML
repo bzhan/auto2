@@ -13,8 +13,6 @@ end;
 structure Subterms : SUBTERMS =
 struct
 
-open UtilLogic
-
 fun get_subvar n ct = Thm.var (("SUB", n), Thm.ctyp_of_cterm ct)
 fun get_subvar_t n t = Var (("SUB", n), fastype_of t)
 

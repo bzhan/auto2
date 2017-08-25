@@ -332,7 +332,7 @@ fun mk_int_mult_th_back info (m, n) =
       val n_ths = WfTerm.wellform_ths_of (mk_int_wfterm info n)
       val prod_th = to_obj_eq (meta_sym (mk_int_mult_th info (m, n)))
     in
-      mk_conjs_th ([prod_th, m_in_G, n_in_G] @ m_ths @ n_ths)
+      UtilLogic.mk_conjs_th ([prod_th, m_in_G, n_in_G] @ m_ths @ n_ths)
     end
 
 (* Given a fraction of the form p / 1, reduce to p. *)

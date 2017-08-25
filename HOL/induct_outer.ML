@@ -103,7 +103,7 @@ fun add_strong_induct_rule ind_th thy =
     let
       val name = Util.name_of_thm ind_th
       val ctxt = Proof_Context.init_global thy
-      val ind_th' = apply_to_thm (to_obj_conv_on_horn ctxt) ind_th
+      val ind_th' = apply_to_thm (UtilLogic.to_obj_conv_on_horn ctxt) ind_th
       val (pat_var, pat_subst) =
           check_strong_ind_prop (Thm.prop_of ind_th') |> apfst the_single
           handle List.Empty => error "Strong induction: more than one var."
@@ -155,7 +155,7 @@ fun strong_induct_cmd (s, t) state =
       val (vars, (assums, concl)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
                                          |> Util.strip_meta_horn
 
-      val P = (list_obj_horn (arbitraries, (map dest_Trueprop assums, dest_Trueprop concl)))
+      val P = (UtilLogic.list_obj_horn (arbitraries, (map dest_Trueprop assums, dest_Trueprop concl)))
                   |> Util.lambda_abstract var
 
       val ty = type_of var
@@ -168,7 +168,7 @@ fun strong_induct_cmd (s, t) state =
       val inst = fold (Pattern.match thy) [(var_P, P), (var_n, var)] fo_init
       val ind_th =
           ind_th |> Util.subst_thm ctxt inst
-                 |> apply_to_thm (Conv.binop_conv (to_meta_conv ctxt))
+                 |> apply_to_thm (Conv.binop_conv (UtilLogic.to_meta_conv ctxt))
 
       val assum = hd (Drule.cprems_of ind_th)
       val ind_th =
