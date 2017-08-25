@@ -195,7 +195,7 @@ fun nat_neq (m, n) =
       m_eq_n |> Thm.assume
              |> nat_neq_resolve
              |> Thm.implies_intr m_eq_n
-             |> rewrite_thm_from_contra_form
+             |> apply_to_thm UtilLogic.rewrite_from_contra_form
     end
 
 val nat_linorder_th = @{thm nat_is_linorder}

@@ -392,7 +392,7 @@ fun justify_neg_ineq ord_tbl ct =
                       |> derive_contradiction ord_tbl
       fun process_info (id, th) =
           (id, th |> Thm.implies_intr ct'
-                  |> rewrite_thm_from_contra_form)
+                  |> apply_to_thm UtilLogic.rewrite_from_contra_form)
     in
       map process_info infos
     end

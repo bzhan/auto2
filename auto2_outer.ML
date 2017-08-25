@@ -527,7 +527,7 @@ fun contra_resolve ctxt vars As C =
           stmt |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> ~C ==> False *)
                |> fold Thm.forall_elim c_vars
                |> fold Thm.elim_implies thAs  (* ~C ==> False *)
-               |> rewrite_thm_from_contra_form  (* C *)
+               |> apply_to_thm UtilLogic.rewrite_from_contra_form  (* C *)
     in
       th_c |> fold Thm.implies_intr (rev cAs)
            |> fold Thm.forall_intr (rev c_vars)

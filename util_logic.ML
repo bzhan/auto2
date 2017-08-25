@@ -15,7 +15,6 @@ sig
   val is_neg: term -> bool
   val get_neg: term -> term
   val get_neg': term -> term
-  val is_eq_term': term -> bool
   val conj: term
   val is_conj: term -> bool
   val mk_conj: term * term -> term
@@ -58,14 +57,10 @@ sig
   val to_obj_eq: thm -> thm
   val obj_sym: thm -> thm
   val rewr_obj_eq: thm -> conv
-  val rewr_obj_eq_sym: thm -> conv
-  val rewr_obj_eq_top: Proof.context -> thm -> conv
   val try_nn_cancel_cv: conv
   val make_neg_eq: thm -> thm
   val rewrite_to_contra_form: conv
-  val rewrite_thm_to_contra_form: thm -> thm
   val rewrite_from_contra_form: conv
-  val rewrite_thm_from_contra_form: thm -> thm
   val to_obj_conv: Proof.context -> conv
   val to_obj_conv_on_horn: Proof.context -> conv
   val to_meta_conv: Proof.context -> conv
@@ -162,14 +157,6 @@ fun get_neg' t =
       val _ = assert (is_Trueprop t) "get_neg': input should be a Trueprop."
     in
       t |> dest_Trueprop |> get_neg |> mk_Trueprop
-    end
-
-(* Version of is_eq_term' for Trueprop terms. *)
-fun is_eq_term' t =
-    let
-      val _ = assert (fastype_of t = propT) "is_eq_term': wrong type"
-    in
-      is_Trueprop t andalso is_eq_term (dest_Trueprop t)
     end
 
 (* Conjunction and disjunction *)
@@ -316,13 +303,6 @@ val obj_sym = apply_to_thm (Util.concl_conv UtilBase.obj_sym_cv)
 (* Obtain rewriting conv from obj equality. *)
 fun rewr_obj_eq eq_th = Conv.rewr_conv (to_meta_eq eq_th)
 
-(* Obtain rewriting conv in the reverse direction from obj equality. *)
-fun rewr_obj_eq_sym eq_th = Conv.rewr_conv (meta_sym (to_meta_eq eq_th))
-
-(* Rewrite on subterms, top order. *)
-fun rewr_obj_eq_top ctxt eq_th =
-    Conv.top_conv (K (Conv.try_conv (rewr_obj_eq eq_th))) ctxt
-
 (* Try to cancel terms of the form ~~A. *)
 val try_nn_cancel_cv = Conv.try_conv (rewr_obj_eq UtilBase.nn_cancel_th)
 
@@ -351,8 +331,6 @@ fun rewrite_to_contra_form ct =
         Util.concl_conv (Conv.rewr_conv UtilBase.to_contra_form_th) ct
     end
 
-val rewrite_thm_to_contra_form = apply_to_thm rewrite_to_contra_form
-
 (* Rewrite ct from [...] ==> A ==> False to [...] ==> ~ A and from
    [...] ==> ~ A ==> False to [...] ==> A.
  *)
@@ -369,8 +347,6 @@ fun rewrite_from_contra_form ct =
       Util.concl_conv_n (num_prems-1)
                         (Conv.rewr_conv (meta_sym to_contra_form)) ct
     end
-
-val rewrite_thm_from_contra_form = apply_to_thm rewrite_from_contra_form
 
 (* Converts ==> to --> and !! to !. *)
 fun to_obj_conv ctxt ct =

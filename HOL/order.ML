@@ -788,7 +788,7 @@ fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
             val neg_tp' = Util.subst_term_norm inst' neg_tp
             val pat_th =
                 contra_th |> Thm.implies_intr (Thm.cterm_of ctxt neg_tp')
-                          |> rewrite_thm_from_contra_form
+                          |> apply_to_thm UtilLogic.rewrite_from_contra_form
                           |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
           in
             [((id', inst'), pat_th)]
@@ -877,7 +877,7 @@ fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
 
       fun contra_to_pat_th assum contra_th =
           contra_th |> Thm.implies_intr (Thm.cterm_of ctxt assum)
-                    |> rewrite_thm_from_contra_form
+                    |> apply_to_thm UtilLogic.rewrite_from_contra_form
                     |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
 
       val insts_A = nat_order_match' neg_t (cA, cA) tbl (id, inst)

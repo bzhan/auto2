@@ -198,15 +198,17 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
       val (eqs, ths') = ths |> filter_split (Util.is_meta_eq o Thm.prop_of)
       val _ = assert (length ths' = Thm.nprems_of th)
                      "apply_pat_r: wrong number of assumptions."
-      val obj_eqs = map to_obj_eq eqs
 
       val inst_new = Util.subst_term_norm inst (mk_Trueprop pat_r)
       val th' = th |> Util.subst_thm ctxt inst |> fold Thm.elim_implies ths'
       val _ = if inst_new aconv (Thm.prop_of th') then () else
               raise Fail "apply_pat_r: conclusion mismatch"
+
+      (* Rewrite on subterms, top order. *)
+      fun rewr_top eq_th =
+          Conv.top_conv (K (Conv.try_conv (Conv.rewr_conv eq_th))) ctxt
     in
-      th' |> apply_to_thm (
-        Conv.every_conv (map (fn eq => rewr_obj_eq_top ctxt eq) obj_eqs))
+      th' |> apply_to_thm (Conv.every_conv (map rewr_top eqs))
     end
 
 fun retrieve_args descs =
@@ -860,7 +862,7 @@ fun is_def_eq t =
 fun swap_one_eq_to_front ct =
     case Thm.term_of ct of
         @{const Pure.imp} $ A $ _ =>
-        if is_eq_term' A andalso is_def_eq (dest_Trueprop A) then
+        if is_Trueprop A andalso is_def_eq (dest_Trueprop A) then
           Conv.arg1_conv UtilBase.to_meta_eq_cv ct
         else
           ((Conv.arg_conv swap_one_eq_to_front)

@@ -752,7 +752,7 @@ fun get_neg_form_thm ctxt inits th =
             | InitAssum assum => th |> Thm.implies_intr (Thm.cterm_of ctxt assum)
     in
       th |> Thm.implies_intr (Thm.cterm_of ctxt tl_assum)
-         |> rewrite_thm_from_contra_form
+         |> apply_to_thm UtilLogic.rewrite_from_contra_form
          |> fold fold_init (tl (rev inits))
     end
 
