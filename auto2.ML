@@ -35,8 +35,9 @@ fun get_score raw_updt =
       | ResolveBox _ => ~1
       | ShadowItem _ => ~1
 
-fun get_id_score {ctxt, ...} raw_updt =
+fun get_id_score st raw_updt =
     let
+      val ctxt = Status.context_of st
       val id = target_of_update raw_updt
     in
       length (BoxID.get_ancestors_prim ctxt id) + 1
@@ -84,7 +85,7 @@ end;
 structure ProofStatus : PROOFSTATUS =
 struct
 
-fun check_hyps id th (st as {ctxt, ...}) =
+fun check_hyps id th st =
     let
       val hyps = Thm.hyps_of th
       val inits = Status.get_all_init_assums st id
@@ -93,22 +94,24 @@ fun check_hyps id th (st as {ctxt, ...}) =
     in
       if null extra then ()
       else let
+        val ctxt = Status.context_of st
         val _ = trace_tlist ctxt "extra:" extra
       in
         raise Fail "illegal hyp"
       end
     end
 
-fun is_rtype_resolved {ctxt, ...} rtype =
+fun is_rtype_resolved st rtype =
     case rtype of
         SINGLE _ => false
-      | LAST (_, id, _) => BoxID.is_box_resolved ctxt id
+      | LAST (_, id, _) => BoxID.is_box_resolved (Status.context_of st) id
 
 (* Perform preliminary checks before matching the last item of a
    proofstep, and process the resulting updates.
  *)
-fun scoring {name, ...} sc items rtype (st as {ctxt, ...}) func =
+fun scoring {name, ...} sc items rtype st func =
     let
+      val ctxt = Status.context_of st
       val merged_id = BoxItem.merged_id ctxt items
     in
       if BoxID.is_box_resolved ctxt merged_id orelse
@@ -145,10 +148,11 @@ fun scoring {name, ...} sc items rtype (st as {ctxt, ...}) func =
         end
     end
 
-fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
+fun process_shadow (updt as {raw_updt, ...}) st =
     case raw_updt of
         ShadowItem {id = shadow_id, item as {ty_str, ...}} =>
         let
+          val ctxt = Status.context_of st
           val _ = if not (Config.get ctxt print_trace) orelse
                      not (Config.get ctxt print_shadow) then ()
                   else if ty_str = TY_TERM andalso
@@ -167,10 +171,11 @@ fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
    boxes. 2. Add the appropriate fact to each of the immediate parent
    boxes.
  *)
-and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
+and process_resolve (updt as {sc, raw_updt, ...}) st =
     case raw_updt of
         ResolveBox {id, th} =>
         let
+          val ctxt = Status.context_of st
           val _ = if Config.get ctxt print_trace then
                     tracing ("Finished box " ^ BoxID.string_of_box_id id ^
                              " (" ^ Update.source_info updt ^ ")")
@@ -204,8 +209,9 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
 (* Directly apply Shadow and Resolve updates. Put the remaining
    updates in queue.
 *)
-and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
+and apply_update_instant (updt as {raw_updt, ...}) st =
     let
+      val ctxt = Status.context_of st
       val id = target_of_update raw_updt
       val st' = if Status.exist_box st id then st
                 else Status.add_composite_box id st
@@ -297,8 +303,9 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
          |> process_pairs (subtract BoxItem.eq_item items items', items)
     end
 
-fun process_prfstep sc rtype items items' (prfstep as {args, ...}) (st as {ctxt, ...}) =
+fun process_prfstep sc rtype items items' (prfstep as {args, ...}) st =
     let
+      val ctxt = Status.context_of st
       val items = filter_out (
           fn item => BoxID.is_box_resolved ctxt (#id item) orelse
                      Status.query_removed st item) items
@@ -311,9 +318,10 @@ fun process_prfstep sc rtype items items' (prfstep as {args, ...}) (st as {ctxt,
         st |> process_step_pair sc rtype items items' prfstep
     end
 
-fun process_add_terms item (st as {tbl, ctxt, ...}) =
+fun process_add_terms item (st as {tbl, ...}) =
     let
       (* Add terms to the rewrite table. *)
+      val {ctxt, ...} = tbl
       val {id, sc, ty_str, tname, ...} = item
       val ts = map Thm.term_of tname
 
@@ -373,7 +381,8 @@ fun process_add_terms item (st as {tbl, ctxt, ...}) =
 fun process_fact_all items st =
     if null items then st else
     let
-      val {tbl, ctxt, ...} = st
+      val {tbl, ...} = st
+      val {ctxt, ...} = tbl
       val id = #id (hd items)
       val sc = #sc (hd items)
 
@@ -553,8 +562,9 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
         end
       | _ => raise Fail "process_add_boxes: wrong type of update"
 
-fun apply_update (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
+fun apply_update (updt as {raw_updt, ...}) st =
     let
+      val ctxt = Status.context_of st
       val id = target_of_update raw_updt
     in
       if BoxID.is_box_resolved ctxt id then st else
@@ -601,7 +611,7 @@ fun step_until cond (steps, (st as {queue, ...})) =
       step_until cond (steps - 1, st')
     end
 
-val solve_root = step_until (fn ({ctxt, ...}) => BoxID.is_box_resolved ctxt [0])
+val solve_root = step_until (fn st => BoxID.is_box_resolved (Status.context_of st) [0])
 
 end  (* structure ProofStatus. *)
 
