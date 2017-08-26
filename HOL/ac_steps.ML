@@ -116,7 +116,7 @@ fun ac_expand tbl ac_info (id, ct) =
       helper ([], [(id, eq_th)])
     end
 
-fun ac_expand_equiv_fn rtype _ item1 item2 =
+fun ac_expand_equiv_fn rtype item1 item2 =
     let
       val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
       val {id = id1, tname = tname1, ...} = item1
@@ -156,7 +156,7 @@ val ac_expand_equiv =
      priority = PRIORITY_ADD,
      func = TwoStep ac_expand_equiv_fn}
 
-fun ac_expand_unit_fn rtype _ item =
+fun ac_expand_unit_fn rtype item =
     let
       val tbl = RewriteTable.table_of_rtype rtype
       val {id, tname, ...} = item

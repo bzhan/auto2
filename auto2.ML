@@ -230,7 +230,7 @@ fun process_step_single sc rtype items (prfstep as {args, func, ...}) st =
 
       fun process_one_item item st =
           let
-            val updts = scoring prfstep sc [item] rtype st (f rtype st)
+            val updts = scoring prfstep sc [item] rtype st (f rtype)
           in
             st |> fold apply_update_instant updts
           end
@@ -282,7 +282,7 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
             (* Iterate over the right items, fixing left item. *)
             fun loop_right left_item st =
                 let
-                  val func = f rtype st left_item
+                  val func = f rtype left_item
                 in
                   st |> fold (process_pair left_item func) right'
                 end

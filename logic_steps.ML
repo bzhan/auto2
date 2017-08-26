@@ -57,7 +57,7 @@ fun boolVar s = Var ((s, 0), boolT)
    shadowing is based on subterm equivalence, skipping any Not (~) at
    head.
  *)
-fun shadow_item_fn rtype _ item1 item2 =
+fun shadow_item_fn rtype item1 item2 =
     if #sc item1 = 0 andalso #sc item2 = 0 then []
     else let
       val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
@@ -109,7 +109,7 @@ val shadow_term_item =
    derive the other side of the equality (or its negation) and shadow
    the equality.
  *)
-fun eq_elim_fn rtype _ (item1 as {id, prop, ...}) item2 =
+fun eq_elim_fn rtype (item1 as {id, prop, ...}) item2 =
     let
       val (A, B) = dest_eq (prop_of' prop)
       fun inst_t t = ProofStep.get_insts (PropMatch t) item2 rtype (id, fo_init)
@@ -149,7 +149,7 @@ val eq_elim_prfstep =
    pairs a_i and b_i are equal. Reduce the equality goal to the goal
    a_i = b_i for that i.
  *)
-fun cong_on_ineq_fn rtype _ {id, prop, ...} =
+fun cong_on_ineq_fn rtype {id, prop, ...} =
     let
       val (cA, cB) = prop |> cprop_of' |> UtilLogic.get_cneg
                           |> Util.dest_binop_cargs
@@ -221,10 +221,11 @@ val cong_on_ineq_prfstep =
    determined by the context. We produce at most two variables at a
    time.
  *)
-fun exists_elim_fn rtype {ctxt, ...} {id, prop, ...} =
+fun exists_elim_fn rtype {id, prop, ...} =
     if not (RewriteTable.is_single_rtype rtype) then []
     else let
       val t = prop_of' prop
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
     in
       if is_ex t orelse is_bex t orelse
          (is_neg t andalso is_obj_all (dest_not t)) orelse
@@ -826,9 +827,10 @@ fun is_avoid_term t =
    the second item. If the disjunction contains schematic variables, t
    must have either zero or the largest number of schematic variables.
  *)
-fun match_update_fn rtype {ctxt, ...} item1 item2 =
+fun match_update_fn rtype item1 item2 =
     if is_match_prem_only item1 then [] else
     let
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val {id, prop, tname, ...} = item1
       val thy = Proof_Context.theory_of ctxt
       val (disj_head, csubs) = dest_tname_of_disj tname
@@ -903,10 +905,11 @@ val match_update_prfstep =
 (* For DISJ items with a single term, of form f p1 ... pn, match t
    against each of p_i.
  *)
-fun match_one_sch_fn rtype {tbl, ...} item1 item2 =
+fun match_one_sch_fn rtype item1 item2 =
     if is_match_prem_only item1 then [] else
     let
       val {id, tname, prop = th1, ...} = item1
+      val tbl = RewriteTable.table_of_rtype rtype
       val thy = RewriteTable.theory_of tbl
       val subs = (dest_tname_of_disj tname) |> snd |> map Thm.term_of
     in
@@ -947,9 +950,10 @@ val match_one_sch_prfstep =
      priority = PRIORITY_ADD,
      func = TwoStep match_one_sch_fn}
 
-fun disj_match_iff_fn rtype {ctxt, ...} {id, tname, prop, ...} =
+fun disj_match_iff_fn rtype {id, tname, prop, ...} =
     if not (RewriteTable.is_single_rtype rtype) then [] else
     let
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val (_, csubs) = dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
     in
@@ -973,10 +977,11 @@ val disj_match_iff_prfstep =
      func = OneStep disj_match_iff_fn}
 
 (* For active case, create box checking the next case. *)
-fun disj_create_case_fn rtype {ctxt, ...} {id, tname, ...} =
+fun disj_create_case_fn rtype {id, tname, ...} =
     if not (RewriteTable.is_single_rtype rtype) then [] else
     if exists Util.has_vars (map Thm.term_of tname) then [] else
     let
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val (disj_head, csubs) = dest_tname_of_disj tname
     in
       if not (is_active_head disj_head) then []
@@ -1004,7 +1009,7 @@ val disj_create_case_prfstep =
 (* item1 dominates item2 if the disjunctive terms in item1 is a subset
    of that for item2.
  *)
-fun disj_shadow_fn rtype _ (item1 as {tname = tname1, ...})
+fun disj_shadow_fn rtype (item1 as {tname = tname1, ...})
                    (item2 as {tname = tname2, ...}) =
     if not (RewriteTable.is_single_rtype rtype) then [] else
     let

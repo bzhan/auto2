@@ -58,7 +58,7 @@ fun rewr_obj_eq_bottom ctxt eq_th =
 fun normalize_mod_cv_prfstep (prfstep_name, pat) =
     ProofStep.prfstep_custom
         prfstep_name [WithItem (TY_PROP, pat)] PRIORITY_URGENT
-        (fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
+        (fn ((id, _), ths) => fn _ => fn ctxt =>
             let
               val th = the_single ths
               val th' =
@@ -95,9 +95,10 @@ fun mod_inv_match_item rtype (pat, item) (id, inst) =
           |> RewriteTable.replace_id_for_type rtype
     end
 
-fun forward_ent_prfstep_fn shadowing ent_th rtype {ctxt, ...} item =
+fun forward_ent_prfstep_fn shadowing ent_th rtype item =
     let
       val (A, B) = dest_entail (prop_of' ent_th)
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val {id, tname, ...} = item
       val h_t = tname |> the_single |> Thm.term_of |> dest_mod |> fst
       val pat = mk_mod (h_t, mk_star (A, Var (("Ru", 0), assnT)))
@@ -138,8 +139,9 @@ fun add_forward_ent_prfstep ent_th =
 fun add_forward_ent_shadowing_prfstep ent_th =
     add_prfstep (forward_ent_shadowing_prfstep ent_th)
 
-fun backward_ent_prfstep_fn ent_th rtype {ctxt, ...} item =
+fun backward_ent_prfstep_fn ent_th rtype item =
     let
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val (_, B) = dest_entail (prop_of' ent_th)
       val {id, tname, ...} = item
       val h_t = tname |> the_single |> Thm.term_of |> dest_not
@@ -186,8 +188,9 @@ fun add_rewrite_ent_rule eq_th thy =
    contain schematic variables. Match pattern h |= A * Ru with item2,
    and produce h |= B * Ru for each match.
  *)
-fun frame_entail_fn rtype {ctxt, ...} item1 item2 =
+fun frame_entail_fn rtype item1 item2 =
     let
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val {id, tname, prop = th1, ...} = item1
       val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
@@ -348,7 +351,7 @@ val heap_preservingI =
         "heap_preservingI"
         [WithGoal @{term_pat "heap_preserving ?c"}, ShadowFirst]
         PRIORITY_SHADOW
-        (fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
+        (fn ((id, _), ths) => fn _ => fn ctxt =>
             let
               val th = the_single ths
               val c = th |> prop_of' |> get_neg |> dest_arg
@@ -430,7 +433,7 @@ val init_pos =
         "sep.init_pos"
         [WithProp @{term_pat "~<?P> ?c <?Q>"}]
         PRIORITY_ADD
-        (fn ((id, _), ths) => fn _ => fn {ctxt, ...} =>
+        (fn ((id, _), ths) => fn _ => fn ctxt =>
             let
               (* First step, replace c by its definition in goal. *)
               val th = rewrite_hoare_triple_goal ctxt (the_single ths)
@@ -622,8 +625,9 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
    propositions h |= P * Ru (or R if P is emp), and produce the next
    CODE_POS and SUCCESS_RUN items.
  *)
-fun match_assn1_fn rtype {ctxt, ...} item1 item2 =
+fun match_assn1_fn rtype item1 item2 =
     let
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val {id, tname, prop, ...} = item1
       val h_t = Thm.term_of (hd tname)
       val (hoare_th, code_pos_th) = (conj_left_th prop, conj_right_th prop)
@@ -684,7 +688,7 @@ val rewrite_pos =
    (h, P) containing the instantiated hoare triple as well as theorems
    from item2.
  *)
-fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
+fun match_hoare_disj_fn rtype {id, tname, prop = th1, ...} item2 =
     let
       val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
@@ -836,9 +840,9 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
    propositions h |= P * Ru (or R if P is emp), and produce the
    proposition h |= Q * Ru.
  *)
-fun match_assn2_fn rtype {ctxt, ...} item1 item2 =
+fun match_assn2_fn rtype item1 item2 =
     let
-      val tbl = RewriteTable.table_of_rtype rtype
+      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
       val {id, tname, prop, ...} = item1
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (success_th, post_th) =
@@ -888,7 +892,7 @@ val match_assn2 =
    original one) with hoare triple <P> c <Q>. Only work in the case
    where there are no schematic variables in b.
  *)
-fun match_assn_pure_fn ((id, inst), ths) items {ctxt, ...} =
+fun match_assn_pure_fn ((id, inst), ths) items ctxt =
     if Util.has_vars (lookup_inst inst "b") then []
     else let
       val (th1, th2) = the_pair ths
@@ -932,8 +936,9 @@ val match_assn_pure2 =
    of P. Match with propositions h |= P' * Ru, and produce
    instantiated version of MATCH_POS.
  *)
-fun match_assn_spatial_fn rtype {ctxt, ...} item1 item2 =
+fun match_assn_spatial_fn rtype item1 item2 =
     let
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
       val {id, tname, prop, ...} = item1
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
@@ -1012,7 +1017,7 @@ fun hoare_triple_prfstep hoare_th =
       val name = (Util.name_of_thm hoare_th) ^ "@hoare"
       val code_pos_pat = HOLogic.mk_tuple [Var (("h", 0), pheapT), pat_c]
       val descs = [WithItem (TY_CODE_POS, code_pos_pat)]
-      fun prfstep_fn ((id, inst), ths) _ {ctxt, ...} =
+      fun prfstep_fn ((id, inst), ths) _ ctxt =
           let
             val h_t = lookup_inst inst "h"
             val c = Util.subst_term_norm inst pat_c
@@ -1041,10 +1046,10 @@ val add_hoare_triple_prfstep = add_prfstep o hoare_triple_prfstep
    hoare triple <P> c <Q>, item1 is the CODE_POS item with parameters
    (h, c), and item2 gives the proposition h |= P * P'.
  *)
-fun hoare_triple_direct_prfstep_fn hoare_th rtype {ctxt, ...} item1 item2 =
+fun hoare_triple_direct_prfstep_fn hoare_th rtype item1 item2 =
     let
       val (P, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val tbl = RewriteTable.table_of_rtype rtype
+      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
 
       val h_pat = Var (("h", 0), pheapT)
       val code_pos_pat = HOLogic.mk_tuple [h_pat, pat_c]

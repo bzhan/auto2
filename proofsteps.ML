@@ -6,8 +6,8 @@ val (PRIORITY_NORM, PRIORITY_URGENT,
      PRIORITY_SHADOW, PRIORITY_RESOLVE, PRIORITY_ADD) = (1, 2, 3, 4, 5)
 
 datatype proofstep_fn
-  = OneStep of rewrite_type -> status -> box_item -> raw_update list
-  | TwoStep of rewrite_type -> status -> box_item -> box_item -> raw_update list
+  = OneStep of rewrite_type -> box_item -> raw_update list
+  | TwoStep of rewrite_type -> box_item -> box_item -> raw_update list
 
 type proofstep =
      {name: string, args: match_arg list, priority: int, func: proofstep_fn}
@@ -26,8 +26,7 @@ datatype prfstep_descriptor = WithFact of term
 signature PROOFSTEP =
 sig
   val eq_prfstep: proofstep * proofstep -> bool
-  val apply_prfstep: rewrite_type -> status -> box_item list -> proofstep ->
-                     raw_update list
+  val apply_prfstep: rewrite_type -> box_item list -> proofstep -> raw_update list
   val WithGoal: term -> prfstep_descriptor
   val WithTerm: term -> prfstep_descriptor
   val WithProp: term -> prfstep_descriptor
@@ -57,7 +56,7 @@ sig
       rewrite_table -> id_inst -> match_arg list -> (box_id * thm list) list
   val prfstep_custom:
       string -> prfstep_descriptor list -> int ->
-      (id_inst_ths -> box_item list -> status -> raw_update list) -> proofstep
+      (id_inst_ths -> box_item list -> Proof.context -> raw_update list) -> proofstep
   val gen_prfstep: string -> prfstep_descriptor list -> proofstep
   val prfstep_pre_conv: string -> prfstep_descriptor list ->
                         (Proof.context -> conv) -> proofstep
@@ -71,10 +70,10 @@ struct
 
 fun eq_prfstep (prfstep1, prfstep2) = (#name prfstep1 = #name prfstep2)
 
-fun apply_prfstep rtype st items {func, ...} =
+fun apply_prfstep rtype items {func, ...} =
     case func of
-        OneStep f => f rtype st (the_single items)
-      | TwoStep f => f rtype st (hd items) (nth items 1)
+        OneStep f => f rtype (the_single items)
+      | TwoStep f => f rtype (hd items) (nth items 1)
 
 fun WithGoal t =
     let
@@ -308,15 +307,15 @@ fun prfstep_custom name descs priority updt_fn =
       if length item_args = 1 then
         let
           val arg = the_single item_args
-          fun prfstep rtype st item =
+          fun prfstep rtype item =
               let
-                val tbl = RewriteTable.table_of_rtype rtype
+                val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
                 val inst_ths = (ItemIO.match_arg tbl arg item ([], fo_init))
                                 |> map (fn (inst, th) => (inst, [th]))
                                 |> maps (process_inst rtype)
 
                 fun process_inst inst_th =
-                    updt_fn inst_th [item] st @
+                    updt_fn inst_th [item] ctxt @
                     map (shadow_to_update [item] inst_th) shadows
               in
                 maps process_inst inst_ths
@@ -328,9 +327,9 @@ fun prfstep_custom name descs priority updt_fn =
       else if length item_args = 2 then
         let
           val (arg1, arg2) = the_pair item_args
-          fun prfstep1 rtype st item1 =
+          fun prfstep1 rtype item1 =
               let
-                val tbl = RewriteTable.table_of_rtype rtype
+                val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
                 val inst_ths = ItemIO.match_arg tbl arg1 item1 ([], fo_init)
 
                 fun process_inst1 item2 ((id, inst), th) =
@@ -342,7 +341,7 @@ fun prfstep_custom name descs priority updt_fn =
                               |> maps (process_inst rtype)
 
                       fun process_inst inst_th' =
-                          updt_fn inst_th' [item1, item2] st @
+                          updt_fn inst_th' [item1, item2] ctxt @
                           map (shadow_to_update [item1, item2] inst_th') shadows
                     in
                       maps process_inst inst_ths'
@@ -404,7 +403,7 @@ fun gen_prfstep name descs =
           if exists (fn (t, _) => t aconv bFalse) pats_r then PRIORITY_RESOLVE
           else PRIORITY_ADD
 
-      fun updt_fn inst_th _ {ctxt, ...} =
+      fun updt_fn inst_th _ ctxt =
           pats_r_to_update ctxt inst_th @ cases_to_update inst_th
     in
       prfstep_custom name input_descs priority updt_fn
@@ -419,9 +418,9 @@ fun prfstep_pre_conv name descs pre_cv =
                                    "term pattern.")
       val filt = retrieve_filts descs
 
-      fun prfstep rtype {ctxt, ...} item =
+      fun prfstep rtype item =
           let
-            val tbl = RewriteTable.table_of_rtype rtype
+            val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
             val inst_ths =
                 get_insts_filt (the_single args) item rtype ([], fo_init) filt
             fun inst_to_updt ((id, _), eq1) =
@@ -509,7 +508,7 @@ sig
 
   val add_prfstep_custom:
       (string * prfstep_descriptor list * int *
-       (id_inst_ths -> box_item list -> status -> raw_update list)) ->
+       (id_inst_ths -> box_item list -> Proof.context -> raw_update list)) ->
       theory -> theory
 
   val add_gen_prfstep: string * prfstep_descriptor list -> theory -> theory

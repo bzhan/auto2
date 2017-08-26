@@ -19,7 +19,6 @@ local
   val tbl = (RewriteTable.empty ctxt')
                 |> RewriteTable.add_rewrite ([], assume_eq thy (x, x'))
   val rtype = SINGLE tbl
-  val st = Status.empty_status ctxt'
 in
 
 (* Convert proposition to nat_order item, by applying one of the
@@ -33,7 +32,7 @@ fun convert_prop_to_nat_order prop =
       val item = mk_box_item (0, [], 0, Fact (TY_PROP, [prop], th))
 
       fun apply_prfsteps item =
-          maps (ProofStep.apply_prfstep rtype st [item]) Nat_Order.to_nat_order_prfsteps
+          maps (ProofStep.apply_prfstep rtype [item]) Nat_Order.to_nat_order_prfsteps
 
       fun process_raw_update updt =
           case updt of

@@ -28,7 +28,7 @@ fun normalize_assoc (fhead, assoc_l) wft =
       normalize wft
     end
 
-fun alg_assoc_prfstep_fn (fhead, assoc_l) rtype _ item1 item2 =
+fun alg_assoc_prfstep_fn (fhead, assoc_l) rtype item1 item2 =
     let
       val tbl = RewriteTable.table_of_rtype rtype
       val {ctxt, ...} = tbl

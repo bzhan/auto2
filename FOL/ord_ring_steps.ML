@@ -61,7 +61,7 @@ fun ord_ring_alg_data ord_ring_th =
       }
     end
 
-fun ord_normalize_fn rtype _ item1 item2 =
+fun ord_normalize_fn rtype item1 item2 =
     let
       val tbl = RewriteTable.table_of_rtype rtype
       val {ctxt, ...} = tbl

@@ -24,7 +24,7 @@ fun get_struct_t op_heads t =
       SOME (hd (Util.dest_args t))
     else NONE
 
-fun alg_norm1_prfstep_fn norm_info rtype _ {id, tname, ...} =
+fun alg_norm1_prfstep_fn norm_info rtype {id, tname, ...} =
     let
       val tbl = RewriteTable.table_of_rtype rtype
       val {ctxt, ...} = tbl
@@ -83,7 +83,7 @@ fun alg_norm1_prfstep norm_info =
        func = OneStep (alg_norm1_prfstep_fn norm_info)}
     end
 
-fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
+fun alg_norm2_prfstep_fn norm_info rtype item1 item2 =
     let
       val tbl = RewriteTable.table_of_rtype rtype
       val {ctxt, ...} = tbl
