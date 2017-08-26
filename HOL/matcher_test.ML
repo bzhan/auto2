@@ -15,7 +15,7 @@ fun eq_info_list (l1, l2) =
     (length l1 = length l2) andalso eq_set (eq_pair (op =) (op aconv)) (l1, l2)
 
 fun print_term_info ctxt (id, t) =
-    "(" ^ (string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
+    "(" ^ (BoxID.string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
 
 fun print_term_infos ctxt lst =
     commas (map (print_term_info ctxt) lst)
@@ -32,12 +32,12 @@ fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
       raise Fail txt
     end
 
-fun add_prim_id (prim_id, id) (tbl as {lat, ...}) =
+fun add_prim_id (prim_id, id) (tbl as {ctxt, ...}) =
     let
-      val (prim_id', lat') = BoxID.add_prim_id id lat
+      val (prim_id', ctxt') = BoxID.add_prim_id id ctxt
       val _ = assert (prim_id = prim_id') "add_prim_id"
     in
-      tbl |> RewriteTable.map_lat (K lat')
+      tbl |> RewriteTable.map_context (K ctxt')
     end
 
 fun declare_term str (tbl as {ctxt, ...}) =

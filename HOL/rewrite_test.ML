@@ -4,12 +4,12 @@ local
 
 val init = RewriteTable.empty @{context}
 
-fun add_prim_id (prim_id, id) (tbl as {lat, ...}) =
+fun add_prim_id (prim_id, id) (tbl as {ctxt, ...}) =
     let
-      val (prim_id', lat') = BoxID.add_prim_id id lat
+      val (prim_id', ctxt') = BoxID.add_prim_id id ctxt
       val _ = assert (prim_id = prim_id') "add_prim_id"
     in
-      tbl |> RewriteTable.map_lat (K lat')
+      tbl |> RewriteTable.map_context (K ctxt')
     end
 
 (* Conversion between (id, th) used in rewrite.ML and (id, t) used in
@@ -22,7 +22,7 @@ val eq_id_list = eq_set (op =)
 val eq_info_list = eq_set (eq_pair (op =) (op aconv))
 
 fun print_term_info ctxt (id, t) =
-    "(" ^ (string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
+    "(" ^ (BoxID.string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
 fun print_term_infos ctxt lst =
     commas (map (print_term_info ctxt) lst)
 val string_of_box_id_list = Util.string_of_list BoxID.string_of_box_id
@@ -78,7 +78,7 @@ fun assert_equiv_gen exp_equiv id (str1, str2) (tbl as {ctxt, ...}) =
     in
       if exp_equiv = RewriteTable.is_equiv_t id tbl (t1, t2) then tbl
       else let
-        val _ = tracing ("id: " ^ (string_of_box_id id))
+        val _ = tracing ("id: " ^ (BoxID.string_of_box_id id))
         val _ = trace_tlist ctxt "Input:" [t1, t2]
       in
         raise Fail (if exp_equiv then "assert_equiv" else "assert_not_equiv")
@@ -124,7 +124,7 @@ fun assert_head_equivs (id, str) info_str (tbl as {ctxt, ...}) =
       val info = map (apsnd (Syntax.read_term ctxt)) info_str
       val res = (RewriteTable.get_head_equiv tbl cu)
                     |> maps snd
-                    |> RewriteTable.merge_box_with_info tbl id
+                    |> RewriteTable.merge_box_with_info ctxt id
     in
       assert_eq_info (info, res) "assert_head_equivs" tbl
     end

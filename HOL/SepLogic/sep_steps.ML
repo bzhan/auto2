@@ -78,9 +78,9 @@ val normalize_mod_cv_prfsteps =
 
 fun mod_match_item rtype (pat, item) (id, inst) =
     let
-      val tbl = RewriteTable.table_of_rtype rtype
+      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
       val {id = id', prop, ...} = item
-      val id'' = RewriteTable.merge_boxes tbl (id, id')
+      val id'' = BoxID.merge_boxes ctxt (id, id')
     in
       (AssnMatcher.mod_match tbl (pat, prop) (id'', inst))
           |> RewriteTable.replace_id_for_type rtype
@@ -692,14 +692,14 @@ fun match_hoare_disj_fn rtype _ {id, tname, prop = th1, ...} item2 =
       if length subs > 1 then []
       else if not (is_hoare_triple (the_single subs)) then []
       else let
-        val (tbl as {lat, ctxt, ...}) = RewriteTable.table_of_rtype rtype
+        val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
         val thy = RewriteTable.theory_of tbl
         val _ = assert (length subs = 1)
                        "match_hoare_disj_fn: unexpected DISJ."
         val (_, c, _) = dest_hoare_triple (the_single subs)
         val {id = id', tname = tname2, prop = th2, ...} = item2
         val (h_t, c1) = the_pair (map Thm.term_of tname2)
-        val id'' = BoxID.merge_boxes lat (id, id')
+        val id'' = BoxID.merge_boxes ctxt (id, id')
         val insts =
             (Matcher.rewrite_match tbl (c, Thm.cterm_of ctxt c1) (id'', fo_init))
                 |> RewriteTable.replace_id_for_type rtype

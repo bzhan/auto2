@@ -15,7 +15,7 @@ local
       eq_set (eq_pair (op =) (op aconv)) (l1, l2)
 
   fun print_term_info ctxt (id, t) =
-      "(" ^ (string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
+      "(" ^ (BoxID.string_of_box_id id) ^ ", " ^ (Syntax.string_of_term ctxt t) ^ ")"
 
   fun print_term_infos ctxt lst =
       commas (map (print_term_info ctxt) lst)

@@ -257,7 +257,7 @@ fun has_shadows_desc descs = length (retrieve_shadows descs) > 0
    list of theorems for each possible (mutually non-comparable) box
    IDs.
  *)
-fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
+fun get_side_ths (tbl as {ctxt, ...}) (id, inst) side_args =
     if null side_args then
       [(id, [])]
     else let
@@ -273,8 +273,8 @@ fun get_side_ths (tbl as {lat, ...}) (id, inst) side_args =
       val side_ths = map process_side_arg side_args'
     in
       if exists null side_ths then []
-      else side_ths |> BoxID.get_all_merges_info lat
-                    |> Util.max_partial (BoxID.id_is_eq_ancestor lat)
+      else side_ths |> BoxID.get_all_merges_info ctxt
+                    |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
     end
 
 (* Creates a proofstep with specified patterns and filters (in descs),

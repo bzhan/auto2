@@ -86,11 +86,11 @@ fun alg_norm1_prfstep norm_info =
 fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
     let
       val tbl = RewriteTable.table_of_rtype rtype
-      val {lat, ctxt, ...} = tbl
+      val {ctxt, ...} = tbl
       val {op_heads, pred_t, norm_t, excl_norm_t, norm_wfcv} = norm_info
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
-      val id = BoxID.merge_boxes lat (id1, id2)
+      val id = BoxID.merge_boxes ctxt (id1, id2)
       val (ct1, ct2) = (the_single tname1, the_single tname2)
       val (t1, t2) = (Thm.term_of ct1, Thm.term_of ct2)
       val (G1_opt, G2_opt) = apply2 (get_struct_t op_heads) (t1, t2)
@@ -141,7 +141,7 @@ fun alg_norm2_prfstep_fn norm_info rtype _ item1 item2 =
               in
                 (Util.all_pairs (wfts1, wfts2))
                     |> map (fn ((id1, wft1), (id2, wft2)) =>
-                               (BoxID.merge_boxes lat (id1, id2), (wft1, wft2)))
+                               (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
                     |> RewriteTable.replace_id_for_type' rtype
                     |> map (process_wft property_th)
               end

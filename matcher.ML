@@ -7,9 +7,6 @@ sig
       rewrite_table -> term * term -> id_inst -> (id_inst * term) option
   val check_type: rewrite_table -> typ * typ -> id_inst -> id_inst option
   val update_inst: term list -> indexname -> cterm -> id_inst -> id_inst_th list
-  val id_eq_better: rewrite_table -> box_id * 'a -> box_id * 'a -> bool
-  val inst_eq_better: rewrite_table -> (string * int) list -> id_inst_th ->
-                      id_inst_th -> bool
 
   (* THe actual matching function. These are defined together. *)
   val match_list: rewrite_table -> term list -> term list * cterm list ->
@@ -97,17 +94,6 @@ fun update_inst bd_vars ixn cu (id, inst) =
       if is_open bd_vars u then []
       else [((id, Util.update_env (ixn, u) inst), Thm.reflexive cu)]
     end
-
-(* Partial comparison using just the ID. *)
-fun id_eq_better {lat, ...} (id, _) (id', _) = BoxID.is_eq_ancestor lat id id'
-
-(* Whether the second instantiation is extraneous compared to the
-   first. Currently use a fast version where instantiated terms are
-   compared using aconv.
- *)
-fun inst_eq_better {lat, ...} vars ((id, inst), _) ((id', inst'), _) =
-    BoxID.is_eq_ancestor lat id id' andalso
-    forall (fn var => lookup_instn inst var aconv lookup_instn inst' var) vars
 
 (* Matching an order list of patterns against terms. *)
 fun match_list tbl bd_vars (ts, cus) instsp =

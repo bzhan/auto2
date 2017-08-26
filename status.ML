@@ -39,7 +39,7 @@ sig
   val match_ty_str: string -> box_item -> bool
   val match_ty_strs: string list -> box_item -> bool
   (* Misc. functions. *)
-  val merged_id: box_lattice -> box_item list -> box_id
+  val merged_id: Proof.context -> box_item list -> box_id
   val mk_box_item: Proof.context -> int * box_id * int * raw_item -> box_item
 end;
 
@@ -121,10 +121,10 @@ fun eq_item (item1, item2) = (#uid item1 = #uid item2)
 fun match_ty_str s {ty_str, ...} = (s = "" orelse s = ty_str)
 fun match_ty_strs slist {ty_str, ...} = member (op =) slist ty_str
 
-fun merged_id lat items =
+fun merged_id ctxt items =
     case items of
         [] => []
-      | {id, ...} :: items' => BoxID.merge_boxes lat (id, merged_id lat items')
+      | {id, ...} :: items' => BoxID.merge_boxes ctxt (id, merged_id ctxt items')
 
 fun mk_box_item ctxt (uid, id, sc, ritem) =
     case ritem of
@@ -552,14 +552,14 @@ fun pre_match_arg tbl arg (item as {ty_str, ...}) =
    over all registered matchers for the given item type. Note box_id
    for item is taken into account here.
  *)
-fun match_arg (tbl as {lat, ...}) arg (item as {id, ty_str, ...}) (id', inst) =
+fun match_arg (tbl as {ctxt, ...}) arg (item as {id, ty_str, ...}) (id', inst) =
     if not (check_ty_str ty_str arg) then [] else
     let
       val _ = assert_valid_arg arg
       val thy = RewriteTable.theory_of tbl
       val {prop_matchers, typed_matchers, ...} = get_io_info thy ty_str
       val pat = pat_of_match_arg arg
-      val id'' = BoxID.merge_boxes lat (id, id')
+      val id'' = BoxID.merge_boxes ctxt (id, id')
     in
       case arg of
           PropMatch _ => maps (fn f => f pat item tbl (id'', inst))
@@ -769,15 +769,15 @@ fun string_of_raw_update ctxt raw_updt =
         AddItems {id, raw_items, ...} =>
         "Add items " ^ (Util.string_of_list (
                            ItemIO.string_of_raw_item ctxt) raw_items) ^
-        " to box " ^ (string_of_box_id id)
+        " to box " ^ (BoxID.string_of_box_id id)
       | AddBoxes {id, inits, ...} =>
         "Add box " ^ (Util.string_of_list (string_of_init_info ctxt) inits) ^
-        " under box " ^ (string_of_box_id id)
+        " under box " ^ (BoxID.string_of_box_id id)
       | ResolveBox {id, ...} =>
-        "Resolve box " ^ (string_of_box_id id)
+        "Resolve box " ^ (BoxID.string_of_box_id id)
       | ShadowItem {id, item} =>
         "Shadow item " ^ (ItemIO.string_of_item ctxt item) ^
-        " in box " ^ (string_of_box_id id)
+        " in box " ^ (BoxID.string_of_box_id id)
 
 fun thm_to_ritem th =
     let
@@ -899,7 +899,7 @@ fun apply_exists ctxt xs (id, ex_th) =
 fun update_info ctxt id ritems =
     (Util.string_of_list' (ItemIO.string_of_raw_item ctxt)
                      (filter (not o BoxItem.is_handler_raw) ritems)) ^
-    " at box " ^ (string_of_box_id id)
+    " at box " ^ (BoxID.string_of_box_id id)
 
 fun uid_string_of_item {uid, ...} = "(" ^ string_of_int uid ^ ")"
 
@@ -992,7 +992,6 @@ Heap (
 
 type status = {
   uid_next: int,
-  lat: BoxID.box_lattice,
   boxes: box Boxidtab.table,
   queue: Updates_Heap.T,
   tbl: rewrite_table,
@@ -1005,16 +1004,6 @@ sig
   val theory_of: status -> theory
   val exist_box: status -> box_id -> bool
   val get_box: status -> box_id -> box
-
-  val get_lattice: status -> BoxID.box_lattice
-  val get_parent_prim: status -> int -> box_id
-  val merge_boxes: status -> box_id * box_id -> box_id
-  val is_ancestor: status -> box_id -> box_id -> bool
-  val is_descendent: status -> box_id -> box_id -> bool
-  val is_eq_ancestor: status -> box_id -> box_id -> bool
-  val is_eq_descendent: status -> box_id -> box_id -> bool
-  val is_box_resolved: status -> box_id -> bool
-  val is_box_unresolved: status -> box_id -> bool
 
   val incr_uid: int -> status -> status
   val map_box: box_id -> (box -> box) -> status -> status
@@ -1066,7 +1055,7 @@ structure Status : STATUS =
 struct
 
 fun empty_status ctxt =
-    {uid_next = 1, lat = BoxID.empty, boxes = Boxidtab.empty,
+    {uid_next = 1, boxes = Boxidtab.empty,
      queue = Updates_Heap.empty, tbl = RewriteTable.empty ctxt, ctxt = ctxt}
 
 fun theory_of {ctxt, ...} = Proof_Context.theory_of ctxt
@@ -1076,73 +1065,64 @@ fun get_box {boxes, ...} id =
     the (Boxidtab.lookup boxes id)
     handle Option.Option => raise Fail "get_box: id not found."
 
-fun get_lattice {lat, ...} = lat
-val get_parent_prim = BoxID.get_parent_prim o get_lattice
-val merge_boxes = BoxID.merge_boxes o get_lattice
-val is_ancestor = BoxID.is_ancestor o get_lattice
-val is_descendent = BoxID.is_descendent o get_lattice
-val is_eq_ancestor = BoxID.is_eq_ancestor o get_lattice
-val is_eq_descendent = BoxID.is_eq_descendent o get_lattice
-val is_box_resolved = BoxID.is_box_resolved o get_lattice
-val is_box_unresolved = BoxID.is_box_unresolved o get_lattice
-
-fun incr_uid n {uid_next, lat, boxes, queue, tbl, ctxt} =
-    {uid_next = uid_next + n, lat = lat, boxes = boxes, queue = queue,
+fun incr_uid n {uid_next, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next + n, boxes = boxes, queue = queue,
      tbl = tbl, ctxt = ctxt}
 
-fun map_box id f {uid_next, lat, boxes, queue, tbl, ctxt} =
-    {uid_next = uid_next, lat = lat, boxes = Boxidtab.map_entry id f boxes,
+fun map_box id f {uid_next, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, boxes = Boxidtab.map_entry id f boxes,
      queue = queue, tbl = tbl, ctxt = ctxt}
 
-fun map_context f {uid_next, lat, boxes, queue, tbl, ctxt} =
-    {uid_next = uid_next, lat = lat, boxes = boxes, queue = queue,
+fun map_context f {uid_next, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, boxes = boxes, queue = queue,
      tbl = tbl |> RewriteTable.map_context f, ctxt = f ctxt}
 
-fun map_rewrites f {uid_next, lat, boxes, queue, tbl, ctxt = _} =
+fun map_rewrites f {uid_next, boxes, queue, tbl, ctxt = _} =
     let
       val (tbl' as {ctxt = ctxt', ...}) = f tbl
     in
-      {uid_next = uid_next, lat = lat, boxes = boxes, queue = queue, tbl = tbl',
-       ctxt = ctxt'}
+      {uid_next = uid_next, boxes = boxes, queue = queue, tbl = tbl', ctxt = ctxt'}
     end
 
-fun add_prim_box parent_id new_box {uid_next, lat, boxes, queue, tbl, ctxt} =
+fun add_prim_box parent_id new_box {uid_next, boxes, queue, tbl, ctxt} =
     let
-      val (id, lat') = BoxID.add_prim_id parent_id lat
+      val (id, ctxt') = BoxID.add_prim_id parent_id ctxt
     in
-      (id, {uid_next = uid_next, lat = lat',
+      (id, {uid_next = uid_next,
             boxes = Boxidtab.update_new ([id], new_box) boxes, queue = queue,
-            tbl = RewriteTable.map_lat (K lat') tbl, ctxt = ctxt})
+            tbl = RewriteTable.map_context (K ctxt') tbl, ctxt = ctxt'})
     end
 
-fun add_resolved id {uid_next, lat, boxes, queue, tbl, ctxt} =
+fun add_resolved id {uid_next, boxes, queue, tbl, ctxt} =
     let
-      val lat' = BoxID.add_resolved id lat
+      val ctxt' = BoxID.add_resolved id ctxt
     in
-      {uid_next = uid_next, lat = lat', boxes = boxes, queue = queue,
-       tbl = RewriteTable.map_lat (K lat') tbl, ctxt = ctxt}
+      {uid_next = uid_next, boxes = boxes, queue = queue,
+       tbl = tbl |> RewriteTable.map_context (K ctxt')
+                 |> RewriteTable.clean_resolved id, ctxt = ctxt'}
     end
 
 fun get_all_ids {boxes, ...} = Boxidtab.keys boxes
-fun get_resolved st = filter (is_box_resolved st) (get_all_ids st)
-fun get_unresolved st = filter_out (is_box_resolved st) (get_all_ids st)
+fun get_resolved (st as {ctxt, ...}) = filter (BoxID.is_box_resolved ctxt) (get_all_ids st)
+fun get_unresolved (st as {ctxt, ...}) = filter_out (BoxID.is_box_resolved ctxt) (get_all_ids st)
 
 (* Returns list of generalized boxes currently in st that are
    eq-ancestors of id. Note if id is unresolved, then all ancestors of
    id must be unresolved.
  *)
-fun get_eq_ancestors st id = filter (is_eq_descendent st id) (get_unresolved st)
+fun get_eq_ancestors (st as {ctxt, ...}) id =
+    filter (BoxID.is_eq_descendent ctxt id) (get_unresolved st)
 
 (* Add box with the given composite id to status. Assuming this ID is
    not already present in status.
  *)
-fun add_composite_box id (st as {uid_next, lat, boxes, queue, tbl, ctxt}) =
+fun add_composite_box id (st as {uid_next, boxes, queue, tbl, ctxt}) =
     if exist_box st id then
       raise Fail "Try to add a composite box that already exists"
     else if length id = 1 then
       raise Fail "Try to add a primitive box as a composite"
     else
-      {uid_next = uid_next, lat = lat,
+      {uid_next = uid_next,
        boxes = Boxidtab.update_new (id, Box.init_box []) boxes,
        queue = queue, tbl = tbl, ctxt = ctxt}
 
@@ -1169,23 +1149,23 @@ fun lookup_item st id uid =
 fun lookup_item_all st id uid =
     maps (fn id => the_list (lookup_item st id uid)) (get_eq_ancestors st id)
 
-fun add_shadowed (shadow_id, {uid, id, ...}) (st as {lat, ...}) =
+fun add_shadowed (shadow_id, {uid, id, ...}) (st as {ctxt, ...}) =
     case lookup_item st id uid of
         NONE => raise Fail "add_shadowed: item not found."
       | SOME (item, shadow_ids) =>
         let
           val shadow_ids' = (shadow_id :: shadow_ids)
-                                |> Util.max_partial (BoxID.is_eq_ancestor lat)
+                                |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
         in
           map_box id (
             Box.map_items (Inttab.update (uid, (item, shadow_ids')))) st
         end
 
-fun query_shadowed st shadow_id {uid, id, ...} =
+fun query_shadowed (st as {ctxt, ...}) shadow_id {uid, id, ...} =
     case lookup_item st id uid of
         NONE => raise Fail "query_shadowed: item not found."
       | SOME (_, shadow_ids) =>
-        exists (is_eq_descendent st shadow_id) shadow_ids
+        exists (BoxID.is_eq_descendent ctxt shadow_id) shadow_ids
 
 fun query_removed st (item as {id, ...}) = query_shadowed st id item
 
@@ -1223,7 +1203,7 @@ fun find_neg_form st id inits =
    There are two special cases: if the ritem in question is of type EQ
    and PROPERTY, in which case we try to find it in the rewrite table.
  *)
-fun find_ritem_exact (st as {tbl, ...}) id ritem =
+fun find_ritem_exact (st as {tbl, ctxt, ...}) id ritem =
     case ritem of
         Handler _ => false
       | Fact (ty_str, tname, _) =>
@@ -1235,11 +1215,10 @@ fun find_ritem_exact (st as {tbl, ...}) id ritem =
           end
         else if ty_str = TY_PROPERTY then
           let
-            val {lat, ...} = tbl
             val prop = the_single tname
             val infos =
                 (RewriteTable.get_property_t tbl (id, prop))
-                    |> filter (fn (id', _) => BoxID.is_eq_ancestor lat id' id)
+                    |> filter (fn (id', _) => BoxID.is_eq_ancestor ctxt id' id)
           in
             length infos > 0
           end
@@ -1338,15 +1317,15 @@ fun invoke_handlers handlers th =
 (* Derive the consequence if box id is resolved, to the parent id
    formed by getting parent at index i.
  *)
-fun get_on_resolve (st as {lat, ctxt, ...}) id i th =
+fun get_on_resolve (st as {ctxt, ...}) id i th =
     let
-      val parent = BoxID.get_parent_at_i lat id i
+      val parent = BoxID.get_parent_at_i ctxt id i
       val prim_id = nth id i
 
       (* First get list of handlers to invoke. *)
       val retro_ids = (get_unresolved st)
-                          |> filter (is_eq_ancestor st [prim_id])
-                          |> filter (is_eq_descendent st id)
+                          |> filter (BoxID.is_eq_ancestor ctxt [prim_id])
+                          |> filter (BoxID.is_eq_descendent ctxt id)
       val handlers = map (pair true) (maps (get_handlers st) retro_ids) @
                      map (pair false) (get_handlers st parent)
       val th' = invoke_handlers handlers th
@@ -1366,13 +1345,13 @@ fun get_on_resolve (st as {lat, ctxt, ...}) id i th =
    exactly with the given initial facts. Note we cannot yet handle new
    variables.
  *)
-fun find_prim_box (st as {tbl, ...}) id inits =
+fun find_prim_box (st as {tbl, ctxt, ...}) id inits =
     let
       val vars = maps Update.dest_init_var inits
       val assums = maps Update.dest_init_assum inits
       fun agree_at_id id' =
           let
-            val parent = get_parent_prim st (the_single id')
+            val parent = BoxID.get_parent_prim ctxt (the_single id')
             val is_equiv_t = RewriteTable.is_equiv_t parent tbl
           in
             eq_set is_equiv_t (vars, get_init_vars st id') andalso
@@ -1381,7 +1360,7 @@ fun find_prim_box (st as {tbl, ...}) id inits =
 
       fun can_test_id id' =
           case id' of
-              [prim_id'] => is_eq_ancestor st (get_parent_prim st prim_id') id
+              [prim_id'] => BoxID.is_eq_ancestor ctxt (BoxID.get_parent_prim ctxt prim_id') id
             | _ => false
 
       val ids_to_test = get_all_ids st |> filter can_test_id
@@ -1389,8 +1368,8 @@ fun find_prim_box (st as {tbl, ...}) id inits =
       find_first agree_at_id ids_to_test
     end
 
-fun map_queue f {uid_next, lat, boxes, queue, tbl, ctxt} =
-    {uid_next = uid_next, lat = lat, boxes = boxes, queue = f queue, tbl = tbl,
+fun map_queue f {uid_next, boxes, queue, tbl, ctxt} =
+    {uid_next = uid_next, boxes = boxes, queue = f queue, tbl = tbl,
      ctxt = ctxt}
 
 fun add_to_queue updt = map_queue (Updates_Heap.insert updt)

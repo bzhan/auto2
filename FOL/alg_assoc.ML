@@ -31,10 +31,10 @@ fun normalize_assoc (fhead, assoc_l) wft =
 fun alg_assoc_prfstep_fn (fhead, assoc_l) rtype _ item1 item2 =
     let
       val tbl = RewriteTable.table_of_rtype rtype
-      val {lat, ...} = tbl
+      val {ctxt, ...} = tbl
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
-      val id = BoxID.merge_boxes lat (id1, id2)
+      val id = BoxID.merge_boxes ctxt (id1, id2)
       val (ct1, ct2) = (the_single tname1, the_single tname2)
       val (t1, t2) = (Thm.term_of ct1, Thm.term_of ct2)
       val (ts1, ts2) = apply2 (dest_assoc fhead) (t1, t2)
@@ -58,7 +58,7 @@ fun alg_assoc_prfstep_fn (fhead, assoc_l) rtype _ item1 item2 =
       in
         (Util.all_pairs (wfts1, wfts2))
             |> map (fn ((id1, wft1), (id2, wft2)) =>
-                       (BoxID.merge_boxes lat (id1, id2), (wft1, wft2)))
+                       (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
             |> RewriteTable.replace_id_for_type' rtype
             |> map process_wft
       end

@@ -17,10 +17,10 @@ struct
 
 val max_ac = Attrib.setup_config_int @{binding "max_ac"} (K 20)
 
-fun get_ac_head_equiv (tbl as {lat, ...}) ac_info (id, cu) =
+fun get_ac_head_equiv (tbl as {ctxt, ...}) ac_info (id, cu) =
     let
       fun process_equiv_list (id', eq_th) (id'', eq_ths) =
-          (BoxID.merge_boxes lat (id', id''),
+          (BoxID.merge_boxes ctxt (id', id''),
            Util.transitive_list [eq_th, ACUtil.comb_ac_equiv ac_info eq_ths])
 
       (* Simplify each term of the AC expression on the right side. *)
@@ -29,13 +29,13 @@ fun get_ac_head_equiv (tbl as {lat, ...}) ac_info (id, cu) =
             val cus = ACUtil.cdest_ac ac_info (Thm.rhs_of eq_th)
           in
             cus |> map (RewriteTable.simplify_info tbl)
-                |> BoxID.get_all_merges_info lat
+                |> BoxID.get_all_merges_info ctxt
                 |> map (process_equiv_list (id', eq_th))
           end
     in
       cu |> RewriteTable.get_head_equiv tbl
          |> maps snd
-         |> RewriteTable.merge_box_with_info tbl id
+         |> RewriteTable.merge_box_with_info ctxt id
          |> maps process_head_equiv
          |> filter_out (Thm.is_reflexive o snd)
     end
@@ -72,11 +72,11 @@ fun ac_expand_once tbl ac_info (id, ct) =
 (* Find all ways to write ct, up to a certain limit. *)
 fun ac_expand tbl ac_info (id, ct) =
     let
-      val {lat, ctxt, ...} = tbl
+      val {ctxt, ...} = tbl
       val max_ac = Config.get ctxt max_ac
 
       fun merge_info (id, th) (id', th') =
-          (BoxID.merge_boxes lat (id, id'), Util.transitive_list [th, th'])
+          (BoxID.merge_boxes ctxt (id, id'), Util.transitive_list [th, th'])
 
       fun ac_equiv_eq_better (id, th) (id', th') =
           let
@@ -84,7 +84,7 @@ fun ac_expand tbl ac_info (id, ct) =
             val seq2 = ACUtil.dest_ac ac_info (Util.rhs_of th')
           in
             is_subseq (op aconv) (seq1, seq2) andalso
-            BoxID.is_eq_ancestor lat id id'
+            BoxID.is_eq_ancestor ctxt id id'
           end
 
       fun has_ac_equiv_eq_better infos info' =
@@ -118,12 +118,12 @@ fun ac_expand tbl ac_info (id, ct) =
 
 fun ac_expand_equiv_fn rtype _ item1 item2 =
     let
-      val (tbl as {lat, ...}) = RewriteTable.table_of_rtype rtype
+      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
       val (ct1, ct2) = (the_single tname1, the_single tname2)
       val (t1, t2) = (Thm.term_of ct1, Thm.term_of ct2)
-      val id = BoxID.merge_boxes lat (id1, id2)
+      val id = BoxID.merge_boxes ctxt (id1, id2)
       val thy = RewriteTable.theory_of tbl
     in
       case ACUtil.get_head_ac_info thy t1 of
@@ -138,12 +138,12 @@ fun ac_expand_equiv_fn rtype _ item1 item2 =
 
             fun get_equiv ((id1, eq_th1), (id2, eq_th2)) =
                 if Util.rhs_of eq_th1 aconv Util.rhs_of eq_th2 then
-                  [(BoxID.merge_boxes lat (id1, id2),
+                  [(BoxID.merge_boxes ctxt (id1, id2),
                     to_obj_eq (Util.transitive_list [eq_th1, meta_sym eq_th2]))]
                 else []
           in
             (maps get_equiv (Util.all_pairs (expand1, expand2)))
-                |> Util.max_partial (BoxID.id_is_eq_ancestor lat)
+                |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
                 |> RewriteTable.replace_id_for_type' rtype
                 |> map (fn (id, th) => Update.thm_update (id, th))
           end

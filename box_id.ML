@@ -6,35 +6,36 @@ sig
   val string_of_box_id: box_id -> string
 
   type box_lattice
-  val empty: box_lattice
-  val num_prim_id: box_lattice -> int
-  val get_parent_prim: box_lattice -> int -> box_id
-  val get_ancestors_prim: box_lattice -> box_id -> int list
-  val reduce_box_id: box_lattice -> int list -> box_id
-  val get_parent_at_i: box_lattice -> box_id -> int -> box_id
-  val merge_boxes: box_lattice -> box_id * box_id -> box_id
-  val get_all_merges: box_lattice -> box_id list list -> box_id list
+  val num_prim_id: Proof.context -> int
+  val get_parent_prim: Proof.context -> int -> box_id
+  val get_ancestors_prim: Proof.context -> box_id -> int list
+  val reduce_box_id: Proof.context -> int list -> box_id
+  val get_parent_at_i: Proof.context -> box_id -> int -> box_id
+  val merge_boxes: Proof.context -> box_id * box_id -> box_id
+  val get_all_merges: Proof.context -> box_id list list -> box_id list
   val get_all_merges_info:
-      box_lattice -> (box_id * 'a) list list -> (box_id * 'a list) list
-  val is_eq_ancestor: box_lattice -> box_id -> box_id -> bool
-  val is_eq_descendent: box_lattice -> box_id -> box_id -> bool
-  val is_ancestor: box_lattice -> box_id -> box_id -> bool
-  val is_descendent: box_lattice -> box_id -> box_id -> bool
-  val is_box_resolved: box_lattice -> box_id -> bool
-  val is_box_unresolved: box_lattice -> box_id -> bool
-  val is_box_supported: box_lattice -> box_id -> bool
-  val id_is_eq_ancestor: box_lattice -> box_id * 'a -> box_id * 'a -> bool
-  val add_prim_id: box_id -> box_lattice -> int * box_lattice
-  val add_resolved: box_id -> box_lattice -> box_lattice
+      Proof.context -> (box_id * 'a) list list -> (box_id * 'a list) list
+  val is_eq_ancestor: Proof.context -> box_id -> box_id -> bool
+  val is_eq_descendent: Proof.context -> box_id -> box_id -> bool
+  val is_ancestor: Proof.context -> box_id -> box_id -> bool
+  val is_descendent: Proof.context -> box_id -> box_id -> bool
+  val is_box_resolved: Proof.context -> box_id -> bool
+  val is_box_unresolved: Proof.context -> box_id -> bool
+  val is_box_supported: Proof.context -> box_id -> bool
+  val id_is_eq_ancestor: Proof.context -> box_id * 'a -> box_id * 'a -> bool
+  val add_prim_id: box_id -> Proof.context -> int * Proof.context
+  val add_resolved: box_id -> Proof.context -> Proof.context
 end;
 
 structure BoxID : BOXID =
 struct
 
 type box_id = int list
+
 fun string_of_box_id id =
     if length id = 1 then string_of_int (hd id)
     else "(" ^ commas (map string_of_int id) ^ ")"
+
 structure Boxidtab = Table (type key = box_id val ord = list_ord int_ord)
 
 type box_lattice = {
@@ -42,24 +43,36 @@ type box_lattice = {
   resolved: box_id list
 }
 
-val empty = {parents = Vector.fromList [], resolved = []}
+structure Data = Proof_Data
+(
+  type T = box_lattice
+  fun init _ = {parents = Vector.fromList [], resolved = []}
+)
 
-fun num_prim_id {parents, ...} = Vector.length parents
+fun num_prim_id ctxt =
+    let
+      val {parents, ...} = Data.get ctxt
+    in
+      Vector.length parents
+    end
 
-fun get_parent_prim {parents, ...} prim_id =
-    Vector.sub (parents, prim_id)
-    handle Subscript =>
-           raise Fail "get_parent_prim: prim_id out of bounds."
+fun get_parent_prim ctxt prim_id =
+    let
+      val {parents, ...} = Data.get ctxt
+    in
+      Vector.sub (parents, prim_id)
+    end
+    handle Subscript => raise Fail "get_parent_prim: prim_id out of bounds."
 
 (* Returns the list of primitive ancestors of id. Result may not be in
    order.
  *)
-fun get_ancestors_prim lat id =
+fun get_ancestors_prim ctxt id =
     let
       fun helper all_ids cur_ids =
           let
             val new_ids =
-                (maps (get_parent_prim lat) cur_ids)
+                (maps (get_parent_prim ctxt) cur_ids)
                     |> distinct (op =) |> subtract (op =) all_ids
           in
             if null new_ids then all_ids
@@ -74,13 +87,13 @@ fun get_ancestors_prim lat id =
 (* For any {a, b} in ids where a is an ancestor of b, remove a from
    ids. Assume input is in order. Output is a valid box_id.
  *)
-fun reduce_box_id lat prim_lst =
+fun reduce_box_id ctxt prim_lst =
     let
       fun helper taken rest =
           case rest of
               [] => taken
             | cur :: rest' =>
-              let val cur_ancestors = get_ancestors_prim lat [cur]
+              let val cur_ancestors = get_ancestors_prim ctxt [cur]
               in helper (cur :: subtract (op =) cur_ancestors taken) rest' end
     in
       rev (helper [] prim_lst)
@@ -101,28 +114,28 @@ fun ordered_merge ms ns =
 (* Returns box_id of the immediate parent coming from expanding the
    parent of the ith primitive id in the current box_id.
  *)
-fun get_parent_at_i lat id i =
-    reduce_box_id lat (ordered_merge (nth_drop i id)
-                                     (get_parent_prim lat (nth id i)))
+fun get_parent_at_i ctxt id i =
+    reduce_box_id ctxt (ordered_merge (nth_drop i id)
+                                      (get_parent_prim ctxt (nth id i)))
 
 (* Merge two generalized boxes. *)
-fun merge_boxes lat (id1, id2) =
+fun merge_boxes ctxt (id1, id2) =
     let
       val merged = ordered_merge id1 id2
       val merged_len = length merged
     in
       if merged_len = length id1 then id1
       else if merged_len = length id2 then id2
-      else reduce_box_id lat merged
+      else reduce_box_id ctxt merged
     end
 
 (* Returns list of ids that are all possible intersections of subsets
    of ids.
  *)
-fun get_all_merges lat id_lsts =
+fun get_all_merges ctxt id_lsts =
     let
       fun merge2 ids1 ids2 =
-          maps (fn id1 => map (fn id2 => merge_boxes lat (id1, id2)) ids2) ids1
+          maps (fn id1 => map (fn id2 => merge_boxes ctxt (id1, id2)) ids2) ids1
                |> distinct (op =)
     in
       fold merge2 id_lsts [[]]
@@ -133,9 +146,9 @@ fun get_all_merges lat id_lsts =
    choosing one entry b_{pq} from each a_p, combining them by merging
    id_{pq} and putting x_{pq} into a list.
  *)
-fun get_all_merges_info lat lsts =
+fun get_all_merges_info ctxt lsts =
     let
-      fun merge (id1, x) (id2, xs) = (merge_boxes lat (id1, id2), x :: xs)
+      fun merge (id1, x) (id2, xs) = (merge_boxes ctxt (id1, id2), x :: xs)
       fun merge2 (lst1, lst2) =
           maps (fn i2 => map (fn i1 => merge i1 i2) lst1) lst2
     in
@@ -143,32 +156,45 @@ fun get_all_merges_info lat lsts =
     end
 
 (* Returns whether id is an ancestor / descendent of id'. *)
-fun is_eq_ancestor lat id id' = (id' = merge_boxes lat (id, id'))
-fun is_eq_descendent lat id id' = (id = merge_boxes lat (id, id'))
-fun is_ancestor lat id id' = id <> id' andalso is_eq_ancestor lat id id'
-fun is_descendent lat id id' = id <> id' andalso is_eq_descendent lat id id'
+fun is_eq_ancestor ctxt id id' = (id' = merge_boxes ctxt (id, id'))
+fun is_eq_descendent ctxt id id' = (id = merge_boxes ctxt (id, id'))
+fun is_ancestor ctxt id id' = id <> id' andalso is_eq_ancestor ctxt id id'
+fun is_descendent ctxt id id' = id <> id' andalso is_eq_descendent ctxt id id'
 
-fun is_box_resolved (lat as {resolved, ...}) id =
-    exists (is_eq_descendent lat id) resolved
+fun is_box_resolved ctxt id =
+    let
+      val {resolved, ...} = Data.get ctxt
+    in
+      exists (is_eq_descendent ctxt id) resolved
+    end
+
 val is_box_unresolved = not oo is_box_resolved
 
-fun is_box_supported lat id =
-    forall (fn prim_id => is_box_unresolved lat [prim_id]) id
+fun is_box_supported ctxt id =
+    forall (fn prim_id => is_box_unresolved ctxt [prim_id]) id
 
-fun id_is_eq_ancestor lat (id, _) (id', _) = is_eq_ancestor lat id id'
+fun id_is_eq_ancestor ctxt (id, _) (id', _) = is_eq_ancestor ctxt id id'
 
-fun add_prim_id parent_id {parents, resolved} =
+fun add_prim_id parent_id ctxt =
     let
+      val {parents, resolved} = Data.get ctxt
       val prim_id = Vector.length parents
       val parents' = Vector.concat [parents, Vector.fromList [parent_id]]
     in
-      (prim_id, {parents = parents', resolved = resolved})
+      (prim_id, ctxt |> Data.map (K {parents = parents', resolved = resolved}))
     end
 
-fun add_resolved id (lat as {parents, resolved}) =
-    {parents = parents,
-     resolved = if exists (is_eq_descendent lat id) resolved then resolved
-                else id :: filter_out (is_eq_ancestor lat id) resolved}
+fun add_resolved id ctxt =
+    let
+      val {parents, resolved} = Data.get ctxt
+    in
+      if exists (is_eq_descendent ctxt id) resolved then ctxt
+      else let
+        val resolved' = id :: filter_out (is_eq_ancestor ctxt id) resolved
+      in
+        ctxt |> Data.map (K {parents = parents, resolved = resolved'})
+      end
+    end
 
 end  (* structure BoxID *)
 

@@ -64,10 +64,10 @@ fun ord_ring_alg_data ord_ring_th =
 fun ord_normalize_fn rtype _ item1 item2 =
     let
       val tbl = RewriteTable.table_of_rtype rtype
-      val {lat, ...} = tbl
+      val {ctxt, ...} = tbl
       val {id = id1, prop = prop1, ...} = item1
       val {id = id2, prop = prop2, ...} = item2
-      val id = BoxID.merge_boxes lat (id1, id2)
+      val id = BoxID.merge_boxes ctxt (id1, id2)
 
       (* t1 is the statement of prop1, t2 is statement of prop2 with
          negation removed.
@@ -113,7 +113,7 @@ fun ord_normalize_fn rtype _ item1 item2 =
             in
               (Util.all_pairs (wfts1, wfts2))
                   |> map (fn ((id1, wft1), (id2, wft2)) =>
-                             (BoxID.merge_boxes lat (id1, id2), (wft1, wft2)))
+                             (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
                   |> RewriteTable.replace_id_for_type' rtype
                   |> maps (process_wft property_th)
             end

@@ -861,7 +861,7 @@ val nat_order_noteq_matcher =
 (* Using term x to justify propositions of the form x <= x + n, where
    n >= 0. This follows the same general outline as nat_order_match.
  *)
-fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
+fun nat_order_single_match pat _ (tbl as {ctxt, ...}) (id, inst) =
     if not ((is_order pat andalso fastype_of (dest_arg pat) = natT) orelse
             (is_order (get_neg pat) andalso fastype_of (dest_arg (get_neg pat)) = natT))
     then [] else
@@ -917,7 +917,7 @@ fun nat_order_single_match pat _ (tbl as {lat, ctxt, ...}) (id, inst) =
     in
       (maps process_inst (insts_A @ insts_B) @ const_ineqs)
           |> Util.max_partial (fn ((i,_),_) => fn ((j,_),_) =>
-                               BoxID.is_eq_ancestor lat i j)
+                               BoxID.is_eq_ancestor ctxt i j)
     end
 
 val nat_order_single_matcher =

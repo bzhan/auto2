@@ -8,20 +8,20 @@ local
 
 in
 
-fun add_ineq lat (id, str) =
+fun add_ineq ctxt (id, str) =
     let
       val t = Syntax.read_term ctxt str
       val th = t |> mk_Trueprop |> Thm.cterm_of ctxt |> Thm.assume
     in
-      NatOrder.add_ineq lat (id, th)
+      NatOrder.add_ineq ctxt (id, th)
     end
 
-fun add_ineq_general lat (id, str) =
+fun add_ineq_general ctxt (id, str) =
     let
       val t = Syntax.read_term ctxt str
       val th = t |> mk_Trueprop |> Thm.cterm_of ctxt |> Thm.assume
     in
-      NatOrder.add_ineq_general lat (id, th)
+      NatOrder.add_ineq_general ctxt (id, th)
     end
 
 val clear = K init
@@ -43,10 +43,10 @@ fun assert_info (id, str) ord_tbl =
       end
     end
 
-fun assert_box_resolved lat id ord_tbl =
-    if NatOrder.is_box_resolved lat ord_tbl id then ord_tbl else
+fun assert_box_resolved ctxt id ord_tbl =
+    if NatOrder.is_box_resolved ctxt ord_tbl id then ord_tbl else
     let
-      val _ = tracing (string_of_box_id id ^ " not resolved.")
+      val _ = tracing (BoxID.string_of_box_id id ^ " not resolved.")
     in
       raise Fail "assert_box_resolved"
     end
@@ -62,7 +62,7 @@ fun assert_justify_ineq (id, str) ord_tbl =
       if length info = 1 andalso fst (the_single info) = id andalso
          prop_of' (snd (the_single info)) aconv t then ord_tbl else
       let
-        val _ = tracing (string_of_box_id id ^ " " ^
+        val _ = tracing (BoxID.string_of_box_id id ^ " " ^
                          (Syntax.string_of_term ctxt t))
       in
         raise Fail "assert_justify_ineq"
@@ -71,61 +71,45 @@ fun assert_justify_ineq (id, str) ord_tbl =
 
 (* Basic non-contradictory case. *)
 val test1 =
-    let
-      val lat = BoxID.empty
-    in
-      init |> add_ineq lat ([], "x <= y + 1")
-           |> add_ineq lat ([], "y <= z + 1")
-           |> add_ineq lat ([], "z <= x + 1")
-           |> assert_info ([], "x <= y + 1")
-           |> assert_info ([], "x <= z + 2")
-           |> assert_info ([], "y <= z + 1")
-           |> assert_info ([], "y <= x + 2")
-           |> assert_info ([], "z <= x + 1")
-           |> assert_info ([], "z <= y + 2")
-    end
+    init |> add_ineq ctxt ([], "x <= y + 1")
+         |> add_ineq ctxt ([], "y <= z + 1")
+         |> add_ineq ctxt ([], "z <= x + 1")
+         |> assert_info ([], "x <= y + 1")
+         |> assert_info ([], "x <= z + 2")
+         |> assert_info ([], "y <= z + 1")
+         |> assert_info ([], "y <= x + 2")
+         |> assert_info ([], "z <= x + 1")
+         |> assert_info ([], "z <= y + 2")
 
 (* Basic contradictory case. *)
 val test2 =
-    let
-      val lat = BoxID.empty
-    in
-      init |> add_ineq lat ([], "x <= y + 1")
-           |> add_ineq lat ([], "y <= z + 2")
-           |> add_ineq lat ([], "z + 4 <= x")
-           |> assert_box_resolved lat []
-    end
+    init |> add_ineq ctxt ([], "x <= y + 1")
+         |> add_ineq ctxt ([], "y <= z + 2")
+         |> add_ineq ctxt ([], "z + 4 <= x")
+         |> assert_box_resolved ctxt []
 
 (* Basic test for adding general inequalities. *)
 val test3 =
-    let
-      val lat = BoxID.empty
-    in
-      init |> add_ineq_general lat ([], "x <= y")
-           |> assert_info ([], "x <= y + 0")
-           |> clear
-           |> add_ineq_general lat ([], "x < y")
-           |> assert_info ([], "x + 1 <= y")
-           |> clear
-           |> add_ineq_general lat ([], "x < y + 1")
-           |> assert_info ([], "x <= y + 0")
-           |> clear
-           |> add_ineq_general lat ([], "x + 1 < y")
-           |> assert_info ([], "x + 2 <= y")
-    end
+    init |> add_ineq_general ctxt ([], "x <= y")
+         |> assert_info ([], "x <= y + 0")
+         |> clear
+         |> add_ineq_general ctxt ([], "x < y")
+         |> assert_info ([], "x + 1 <= y")
+         |> clear
+         |> add_ineq_general ctxt ([], "x < y + 1")
+         |> assert_info ([], "x <= y + 0")
+         |> clear
+         |> add_ineq_general ctxt ([], "x + 1 < y")
+         |> assert_info ([], "x + 2 <= y")
 
 (* Test of justifying inequalities. *)
 val test4 =
-    let
-      val lat = BoxID.empty
-    in
-      init |> add_ineq lat ([], "x <= y + 3")
-           |> assert_justify_ineq ([], "x <= y + 3")
-           |> assert_justify_ineq ([], "x <= y + 4")
-           |> assert_justify_ineq ([], "x < y + 4")
-           |> assert_justify_ineq ([], "~(y + 3 < x)")
-           |> assert_justify_ineq ([], "~(y + 4 <= x)")
-           |> assert_justify_ineq ([], "~(y + 5 <= x)")
-    end
+    init |> add_ineq ctxt ([], "x <= y + 3")
+         |> assert_justify_ineq ([], "x <= y + 3")
+         |> assert_justify_ineq ([], "x <= y + 4")
+         |> assert_justify_ineq ([], "x < y + 4")
+         |> assert_justify_ineq ([], "~(y + 3 < x)")
+         |> assert_justify_ineq ([], "~(y + 4 <= x)")
+         |> assert_justify_ineq ([], "~(y + 5 <= x)")
 
 end

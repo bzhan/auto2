@@ -35,11 +35,11 @@ fun get_score raw_updt =
       | ResolveBox _ => ~1
       | ShadowItem _ => ~1
 
-fun get_id_score {lat, ...} raw_updt =
+fun get_id_score {ctxt, ...} raw_updt =
     let
       val id = target_of_update raw_updt
     in
-      length (BoxID.get_ancestors_prim lat id) + 1
+      length (BoxID.get_ancestors_prim ctxt id) + 1
     end
 
 end  (* structure SCORES. *)
@@ -99,20 +99,19 @@ fun check_hyps id th (st as {ctxt, ...}) =
       end
     end
 
-fun is_rtype_resolved {lat, ...} rtype =
+fun is_rtype_resolved {ctxt, ...} rtype =
     case rtype of
         SINGLE _ => false
-      | LAST (_, id, _) => BoxID.is_box_resolved lat id
+      | LAST (_, id, _) => BoxID.is_box_resolved ctxt id
 
 (* Perform preliminary checks before matching the last item of a
    proofstep, and process the resulting updates.
  *)
 fun scoring {name, ...} sc items rtype (st as {ctxt, ...}) func =
     let
-      val {lat, ...} = RewriteTable.table_of_rtype rtype
-      val merged_id = BoxItem.merged_id lat items
+      val merged_id = BoxItem.merged_id ctxt items
     in
-      if Status.is_box_resolved st merged_id orelse
+      if BoxID.is_box_resolved ctxt merged_id orelse
          is_rtype_resolved st rtype orelse
          exists (Status.query_shadowed st merged_id) items then []
       else
@@ -127,7 +126,7 @@ fun scoring {name, ...} sc items rtype (st as {ctxt, ...}) func =
                 (* Perform resolved and shadowed tests again since id
                    may be descendent of merged_id.
                  *)
-                if Status.is_box_resolved st id then []
+                if BoxID.is_box_resolved ctxt id then []
                 else if exists (Status.query_shadowed st id) items then []
                 else
                   let
@@ -156,7 +155,7 @@ fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
                           not (Config.get ctxt print_term) then ()
                   else tracing ("Shadowing " ^
                                 ItemIO.string_of_item ctxt item ^
-                                " at box " ^ string_of_box_id shadow_id ^
+                                " at box " ^ BoxID.string_of_box_id shadow_id ^
                                 " (" ^ Update.source_info updt ^ ")")
         in
           st |> Status.add_shadowed (shadow_id, item)
@@ -168,18 +167,18 @@ fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
    boxes. 2. Add the appropriate fact to each of the immediate parent
    boxes.
  *)
-and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
+and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
     case raw_updt of
         ResolveBox {id, th} =>
         let
           val _ = if Config.get ctxt print_trace then
-                    tracing ("Finished box " ^ string_of_box_id id ^
+                    tracing ("Finished box " ^ BoxID.string_of_box_id id ^
                              " (" ^ Update.source_info updt ^ ")")
                   else ()
 
           fun update_one i st =
               let
-                val cur_parent = BoxID.get_parent_at_i lat id i
+                val cur_parent = BoxID.get_parent_at_i ctxt id i
                 val res_th = Status.get_on_resolve st id i th
                 val _ = check_hyps cur_parent res_th st
 
@@ -192,7 +191,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
                    |> apply_update_instant updt
               end
         in
-          if Status.is_box_resolved st id then st
+          if BoxID.is_box_resolved ctxt id then st
           else if id = [0] then
             st |> Status.set_resolve_th id (Status.get_on_resolve st id 0 th)
                |> Status.add_resolved id
@@ -205,13 +204,13 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {lat, ctxt, ...}) =
 (* Directly apply Shadow and Resolve updates. Put the remaining
    updates in queue.
 *)
-and apply_update_instant (updt as {raw_updt, ...}) st =
+and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
     let
       val id = target_of_update raw_updt
       val st' = if Status.exist_box st id then st
                 else Status.add_composite_box id st
     in
-      if Status.is_box_resolved st id then st else
+      if BoxID.is_box_resolved ctxt id then st else
       case raw_updt of
           ResolveBox _ => st' |> process_resolve updt
         | ShadowItem _ => st' |> process_shadow updt
@@ -298,10 +297,10 @@ fun process_step_pair sc rtype items items' (prfstep as {args, func, ...}) st =
          |> process_pairs (subtract BoxItem.eq_item items items', items)
     end
 
-fun process_prfstep sc rtype items items' (prfstep as {args, ...}) st =
+fun process_prfstep sc rtype items items' (prfstep as {args, ...}) (st as {ctxt, ...}) =
     let
       val items = filter_out (
-          fn item => Status.is_box_resolved st (#id item) orelse
+          fn item => BoxID.is_box_resolved ctxt (#id item) orelse
                      Status.query_removed st item) items
     in
       if null items then st
@@ -398,8 +397,7 @@ fun process_fact_all items st =
       val init_items = filter_out (BoxItem.match_ty_str TY_PROPERTY) items
 
       val incr_ids = Status.get_unresolved st |> filter (
-            fn id' => Status.is_box_unresolved
-                          st (Status.merge_boxes st (id, id')))
+            fn id' => BoxID.is_box_unresolved ctxt (BoxID.merge_boxes ctxt (id, id')))
       val incr_items =
           if null ts then []
           else (maps (Status.get_items false st) incr_ids)
@@ -532,15 +530,16 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
           (* Otherwise, proceed to create the box. *)
           else let
             val _ = if Config.get ctxt print_trace then
-                      tracing ("Add box under " ^ string_of_box_id id ^ " (" ^
+                      tracing ("Add box under " ^ BoxID.string_of_box_id id ^ " (" ^
                                Update.source_info updt ^ ")")
                     else ()
             val init_box = Box.init_box inits'
-            val (prim_id, st') = Status.add_prim_box id init_box st
+            val (prim_id, st') = st |> Status.map_context (K ctxt')
+                                    |> Status.add_prim_box id init_box
             val new_id = [prim_id]
             val _ = if Config.get ctxt print_trace then
                       tracing (
-                        (string_of_box_id new_id) ^ ": " ^
+                        (BoxID.string_of_box_id new_id) ^ ": " ^
                         (Box.short_string_of_box
                              ctxt' (Status.get_box st' new_id)))
                     else ()
@@ -549,17 +548,16 @@ fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
               sc = sc, prfstep_name = "$INIT_BOX", source = [],
               raw_updt = AddItems {id = new_id, sc = NONE, raw_items = ritems'}}
           in
-            st' |> Status.map_context (K ctxt')
-                |> process_add_items item_updt
+            st' |> process_add_items item_updt
           end
         end
       | _ => raise Fail "process_add_boxes: wrong type of update"
 
-fun apply_update (updt as {raw_updt, ...}) st =
+fun apply_update (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
     let
       val id = target_of_update raw_updt
     in
-      if Status.is_box_resolved st id then st else
+      if BoxID.is_box_resolved ctxt id then st else
       st |> not (Status.exist_box st id) ? Status.add_composite_box id
          |> (case raw_updt of
                  AddItems _ => process_add_items updt
@@ -603,7 +601,7 @@ fun step_until cond (steps, (st as {queue, ...})) =
       step_until cond (steps - 1, st')
     end
 
-val solve_root = step_until (fn st => Status.is_box_resolved st [0])
+val solve_root = step_until (fn ({ctxt, ...}) => BoxID.is_box_resolved ctxt [0])
 
 end  (* structure ProofStatus. *)
 

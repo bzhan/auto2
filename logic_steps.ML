@@ -60,8 +60,8 @@ fun boolVar s = Var ((s, 0), boolT)
 fun shadow_item_fn rtype _ item1 item2 =
     if #sc item1 = 0 andalso #sc item2 = 0 then []
     else let
-      val (tbl as {lat, ...}) = RewriteTable.table_of_rtype rtype
-      val id = BoxItem.merged_id lat [item1, item2]
+      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val id = BoxItem.merged_id ctxt [item1, item2]
       val _ = assert (forall (BoxItem.match_ty_strs [TY_TERM, TY_PROP])
                              [item1, item2])
                      "shadow_item_fn"
@@ -76,11 +76,11 @@ fun shadow_item_fn rtype _ item1 item2 =
             (RewriteTable.subequiv_info
                  tbl id (UtilLogic.get_cneg tname1, UtilLogic.get_cneg tname2))
                 |> RewriteTable.replace_id_for_type' rtype |> map fst
-                |> Util.max_partial (BoxID.is_eq_ancestor lat)
+                |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
           else
             (RewriteTable.subequiv_info tbl id (tname1, tname2))
                 |> RewriteTable.replace_id_for_type' rtype |> map fst
-                |> Util.max_partial (BoxID.is_eq_ancestor lat)
+                |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
       val item_to_shadow =
           if #sc item1 > #sc item2 orelse
              (#sc item1 = #sc item2 andalso #uid item1 > #uid item2) then item1
@@ -200,7 +200,7 @@ fun cong_on_ineq_fn rtype _ {id, prop, ...} =
         let
           val A_equivs = (RewriteTable.get_head_equiv tbl cA)
                              |> maps snd
-                             |> RewriteTable.merge_box_with_info tbl id
+                             |> RewriteTable.merge_box_with_info ctxt id
         in
           maps process_A_equiv A_equivs
         end
@@ -1008,8 +1008,8 @@ fun disj_shadow_fn rtype _ (item1 as {tname = tname1, ...})
                    (item2 as {tname = tname2, ...}) =
     if not (RewriteTable.is_single_rtype rtype) then [] else
     let
-      val {lat, ...} = RewriteTable.table_of_rtype rtype
-      val id = BoxItem.merged_id lat [item1, item2]
+      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val id = BoxItem.merged_id ctxt [item1, item2]
       val (disj_head1, subs1) = dest_tname_of_disj tname1
       val (disj_head2, subs2) = dest_tname_of_disj tname2
     in
