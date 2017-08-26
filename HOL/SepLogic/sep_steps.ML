@@ -31,7 +31,7 @@ sig
   val rewrite_pos: proofstep
   val match_hoare_disj: proofstep
   val convert_match_pos: proofstep
-  val use_prec_thms: rewrite_table -> thm -> thm -> thm
+  val use_prec_thms: Proof.context -> thm -> thm -> thm
   val match_assn2: proofstep
   val match_assn_pure1: proofstep
   val match_assn_pure2: proofstep
@@ -76,33 +76,34 @@ val normalize_mod_cv_prfsteps =
     [normalize_mod_cv_prfstep ("mod_norm", @{term_pat "?h |= ?P"}),
      normalize_mod_cv_prfstep ("mod_norm_neg", @{term_pat "~(?h |= ?P)"})]
 
-fun mod_match_item rtype (pat, item) (id, inst) =
+fun mod_match_item ictxt (pat, item) (id, inst) =
     let
-      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val {id = id', prop, ...} = item
       val id'' = BoxID.merge_boxes ctxt (id, id')
     in
-      (AssnMatcher.mod_match tbl (pat, prop) (id'', inst))
-          |> RewriteTable.replace_id_for_type rtype
+      (AssnMatcher.mod_match ctxt (pat, prop) (id'', inst))
+          |> IncrContext.replace_id_for_type ictxt
     end
 
-fun mod_inv_match_item rtype (pat, item) (id, inst) =
+fun mod_inv_match_item ictxt (pat, item) (id, inst) =
     let
-      val tbl = RewriteTable.table_of_rtype rtype
-      val {prop, ...} = item
+      val ctxt = IncrContext.context_of ictxt
+      val {id = id', prop, ...} = item
+      val id'' = BoxID.merge_boxes ctxt (id, id')
     in
-      (AssnMatcher.mod_inv_match tbl (pat, prop) (id, inst))
-          |> RewriteTable.replace_id_for_type rtype
+      (AssnMatcher.mod_inv_match ctxt (pat, prop) (id'', inst))
+          |> IncrContext.replace_id_for_type ictxt
     end
 
-fun forward_ent_prfstep_fn shadowing ent_th rtype item =
+fun forward_ent_prfstep_fn shadowing ent_th ictxt item =
     let
       val (A, B) = dest_entail (prop_of' ent_th)
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val {id, tname, ...} = item
       val h_t = tname |> the_single |> Thm.term_of |> dest_mod |> fst
       val pat = mk_mod (h_t, mk_star (A, Var (("Ru", 0), assnT)))
-      val insts = mod_match_item rtype (pat, item) (id, fo_init)
+      val insts = mod_match_item ictxt (pat, item) (id, fo_init)
       val is_pure_B = strip_pure_assn B aconv assn_true
 
       fun process_inst ((id', _), th) =
@@ -139,15 +140,15 @@ fun add_forward_ent_prfstep ent_th =
 fun add_forward_ent_shadowing_prfstep ent_th =
     add_prfstep (forward_ent_shadowing_prfstep ent_th)
 
-fun backward_ent_prfstep_fn ent_th rtype item =
+fun backward_ent_prfstep_fn ent_th ictxt item =
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val (_, B) = dest_entail (prop_of' ent_th)
       val {id, tname, ...} = item
       val h_t = tname |> the_single |> Thm.term_of |> dest_not
                       |> dest_mod |> fst
       val pat = get_neg (mk_mod (h_t, mk_star (B, Var (("Ru", 0), assnT))))
-      val insts = mod_inv_match_item rtype (pat, item) (id, fo_init)
+      val insts = mod_inv_match_item ictxt (pat, item) (id, fo_init)
 
       fun process_inst ((id', _), th) =
           let
@@ -188,9 +189,9 @@ fun add_rewrite_ent_rule eq_th thy =
    contain schematic variables. Match pattern h |= A * Ru with item2,
    and produce h |= B * Ru for each match.
  *)
-fun frame_entail_fn rtype item1 item2 =
+fun frame_entail_fn ictxt item1 item2 =
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val {id, tname, prop = th1, ...} = item1
       val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
@@ -201,7 +202,7 @@ fun frame_entail_fn rtype item1 item2 =
         val (A, _) = dest_entail (the_single subs)
         val pat = mk_mod (Var (("h", 0), pheapT),
                           mk_star (A, Var (("Ru", 0), assnT)))
-        val insts = mod_match_item rtype (pat, item2) (id, fo_init)
+        val insts = mod_match_item ictxt (pat, item2) (id, fo_init)
         fun inst_to_updt ((id', _), th) =
             let
               val th' = ([th1, th] MRS @{thm entailsD'})
@@ -285,23 +286,23 @@ fun output_success_run_fn ctxt (tname, _) =
 val code_pos_typed_matcher =
     let
       (* Check pat contains at least as many terms as tname. *)
-      fun pre_match pat {tname, ...} tbl =
+      fun pre_match pat {tname, ...} ctxt =
           let
             val pats = HOLogic.strip_tuple pat
           in
             if length pats > length tname then false
-            else forall (Matcher.pre_match tbl)
+            else forall (Matcher.pre_match ctxt)
                         (pats ~~ take (length pats) tname)
           end
 
       (* Use equalities to convert prop to prop'. *)
-      fun match pat {tname, prop, ty_str, ...} (tbl as {ctxt, ...}) (id, inst) =
+      fun match pat {tname, prop, ty_str, ...} ctxt (id, inst) =
           let
             val pats = HOLogic.strip_tuple pat
             val pairs = map (pair false)
                             (pats ~~ (take (length pats) tname))
 
-            val insts = Matcher.rewrite_match_list tbl pairs (id, inst)
+            val insts = Matcher.rewrite_match_list ctxt pairs (id, inst)
             fun process_inst (inst, ths) =
                 let
                   val obj_eqs = map (obj_sym o to_obj_eq) ths
@@ -625,9 +626,9 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
    propositions h |= P * Ru (or R if P is emp), and produce the next
    CODE_POS and SUCCESS_RUN items.
  *)
-fun match_assn1_fn rtype item1 item2 =
+fun match_assn1_fn ictxt item1 item2 =
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val {id, tname, prop, ...} = item1
       val h_t = Thm.term_of (hd tname)
       val (hoare_th, code_pos_th) = (conj_left_th prop, conj_right_th prop)
@@ -638,7 +639,7 @@ fun match_assn1_fn rtype item1 item2 =
         val P_pat = if P aconv emp then Var (("R", 0), assnT)
                     else mk_star (P, Var (("Ru", 0), assnT))
         val mod_pat = mk_mod (h_t, P_pat)
-        val insts = mod_match_item rtype (mod_pat, item2) (id, fo_init)
+        val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
         fun inst_to_updt ((id', _), mod_th) =
             let
               val (_, ritems) =
@@ -688,7 +689,7 @@ val rewrite_pos =
    (h, P) containing the instantiated hoare triple as well as theorems
    from item2.
  *)
-fun match_hoare_disj_fn rtype {id, tname, prop = th1, ...} item2 =
+fun match_hoare_disj_fn ictxt {id, tname, prop = th1, ...} item2 =
     let
       val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
@@ -696,8 +697,8 @@ fun match_hoare_disj_fn rtype {id, tname, prop = th1, ...} item2 =
       if length subs > 1 then []
       else if not (is_hoare_triple (the_single subs)) then []
       else let
-        val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
-        val thy = RewriteTable.theory_of tbl
+        val ctxt = IncrContext.context_of ictxt
+        val thy = Proof_Context.theory_of ctxt
         val _ = assert (length subs = 1)
                        "match_hoare_disj_fn: unexpected DISJ."
         val (_, c, _) = dest_hoare_triple (the_single subs)
@@ -705,8 +706,8 @@ fun match_hoare_disj_fn rtype {id, tname, prop = th1, ...} item2 =
         val (h_t, c1) = the_pair (map Thm.term_of tname2)
         val id'' = BoxID.merge_boxes ctxt (id, id')
         val insts =
-            (Matcher.rewrite_match tbl (c, Thm.cterm_of ctxt c1) (id'', fo_init))
-                |> RewriteTable.replace_id_for_type rtype
+            (Matcher.rewrite_match ctxt (c, Thm.cterm_of ctxt c1) (id'', fo_init))
+                |> IncrContext.replace_id_for_type ictxt
         fun process_inst ((id''', inst), eq_th) =
             let
               (* Substitute and rewrite command to c1. *)
@@ -791,7 +792,7 @@ val convert_match_pos =
    l'. os_list l' p & length l' = 3, then return the theorem os_list l
    p & length l = 3.
  *)
-fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
+fun use_prec_thms ctxt base_th ex_th =
     let
       val (vars, new_prop) = ex_th |> prop_of' |> UtilLogic.strip_exists
                                    |> Util.replace_vars ctxt
@@ -810,7 +811,7 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
             val (prem1, prem2) =
                 prec_th |> Thm.prems_of |> map dest_Trueprop |> the_pair
             val pairs = [(prem1, base_th'), (prem2, new_th)]
-            val insts = AssnMatcher.mod_matches tbl pairs ([], fo_init)
+            val insts = AssnMatcher.mod_matches ctxt pairs ([], fo_init)
 
             fun process_inst (_, ths) = ths MRS prec_th
 
@@ -840,9 +841,9 @@ fun use_prec_thms (tbl as {ctxt, ...}) base_th ex_th =
    propositions h |= P * Ru (or R if P is emp), and produce the
    proposition h |= Q * Ru.
  *)
-fun match_assn2_fn rtype item1 item2 =
+fun match_assn2_fn ictxt item1 item2 =
     let
-      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val {id, tname, prop, ...} = item1
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (success_th, post_th) =
@@ -855,7 +856,7 @@ fun match_assn2_fn rtype item1 item2 =
         val P_pat = if P aconv emp then Var (("R", 0), assnT)
                     else mk_star (P, Var (("Ru", 0), assnT))
         val mod_pat = mk_mod (h_t, P_pat)
-        val insts = mod_match_item rtype (mod_pat, item2) (id, fo_init)
+        val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
         fun process_inst ((id'', inst), mod_th) =
             let
               val mod_th' = if P aconv emp then
@@ -869,7 +870,7 @@ fun match_assn2_fn rtype item1 item2 =
                   res_th |> apply_to_thm' (mod_assn_conv (
                                               normalize_assn_cv ctxt))
                          |> apply_to_thm' (Conv.top_conv (K mod_cv) ctxt)
-                         |> use_prec_thms tbl post_th
+                         |> use_prec_thms ctxt post_th
                          |> apply_to_thm' (normalize_mod_cv ctxt)
                          |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
             in
@@ -936,9 +937,9 @@ val match_assn_pure2 =
    of P. Match with propositions h |= P' * Ru, and produce
    instantiated version of MATCH_POS.
  *)
-fun match_assn_spatial_fn rtype item1 item2 =
+fun match_assn_spatial_fn ictxt item1 item2 =
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val {id, tname, prop, ...} = item1
       val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
@@ -953,7 +954,7 @@ fun match_assn_spatial_fn rtype item1 item2 =
 
         val P_pat = mk_star (P', Var (("Ru", 0), assnT))
         val mod_pat = mk_mod (h_t, P_pat)
-        val insts = mod_match_item rtype (mod_pat, item2) (id, fo_init)
+        val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
         fun process_inst ((id'', inst), _) =
             let
               val hoare_th' = Util.subst_thm ctxt inst hoare_th
@@ -1046,10 +1047,10 @@ val add_hoare_triple_prfstep = add_prfstep o hoare_triple_prfstep
    hoare triple <P> c <Q>, item1 is the CODE_POS item with parameters
    (h, c), and item2 gives the proposition h |= P * P'.
  *)
-fun hoare_triple_direct_prfstep_fn hoare_th rtype item1 item2 =
+fun hoare_triple_direct_prfstep_fn hoare_th ictxt item1 item2 =
     let
       val (P, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
 
       val h_pat = Var (("h", 0), pheapT)
       val code_pos_pat = HOLogic.mk_tuple [h_pat, pat_c]
@@ -1059,11 +1060,11 @@ fun hoare_triple_direct_prfstep_fn hoare_th rtype item1 item2 =
 
       (* First, match pat_c with c, then match mod_pat with item2. *)
       val arg1 = TypedMatch (TY_CODE_POS, code_pos_pat)
-      val insts = ItemIO.match_arg tbl arg1 item1 ([], fo_init)
+      val insts = ItemIO.match_arg ctxt arg1 item1 ([], fo_init)
 
       fun process_inst ((id', inst'), code_pos_th) =
           let
-            val insts' = mod_match_item rtype (mod_pat, item2) (id', inst')
+            val insts' = mod_match_item ictxt (mod_pat, item2) (id', inst')
             fun process_inst' ((id'', _), mod_th) =
                 let
                   val (modQ_th, ritems) =

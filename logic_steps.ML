@@ -14,9 +14,9 @@ sig
   val mk_all_disj: term list * term list -> term
   val strip_all_disj: term -> term list * term list
   val norm_all_disj: Proof.context -> conv
-  val disj_prop_match: rewrite_table -> id_inst ->
-                       term * ((indexname * typ) list * cterm list) ->
-                       id_inst_th list
+  val disj_prop_match:
+      Proof.context -> id_inst -> term * ((indexname * typ) list * cterm list) ->
+      id_inst_th list
   val norm_conj: conv
 
   (* DISJ items. *)
@@ -57,10 +57,10 @@ fun boolVar s = Var ((s, 0), boolT)
    shadowing is based on subterm equivalence, skipping any Not (~) at
    head.
  *)
-fun shadow_item_fn rtype item1 item2 =
+fun shadow_item_fn ictxt item1 item2 =
     if #sc item1 = 0 andalso #sc item2 = 0 then []
     else let
-      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val id = BoxItem.merged_id ctxt [item1, item2]
       val _ = assert (forall (BoxItem.match_ty_strs [TY_TERM, TY_PROP])
                              [item1, item2])
@@ -74,12 +74,12 @@ fun shadow_item_fn rtype item1 item2 =
           if fastype_of t1 = boolT andalso is_neg t1 andalso
              fastype_of t2 = boolT andalso is_neg t2 then
             (RewriteTable.subequiv_info
-                 tbl id (UtilLogic.get_cneg tname1, UtilLogic.get_cneg tname2))
-                |> RewriteTable.replace_id_for_type' rtype |> map fst
+                 ctxt id (UtilLogic.get_cneg tname1, UtilLogic.get_cneg tname2))
+                |> IncrContext.replace_id_for_type' ictxt |> map fst
                 |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
           else
-            (RewriteTable.subequiv_info tbl id (tname1, tname2))
-                |> RewriteTable.replace_id_for_type' rtype |> map fst
+            (RewriteTable.subequiv_info ctxt id (tname1, tname2))
+                |> IncrContext.replace_id_for_type' ictxt |> map fst
                 |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
       val item_to_shadow =
           if #sc item1 > #sc item2 orelse
@@ -109,10 +109,10 @@ val shadow_term_item =
    derive the other side of the equality (or its negation) and shadow
    the equality.
  *)
-fun eq_elim_fn rtype (item1 as {id, prop, ...}) item2 =
+fun eq_elim_fn ictxt (item1 as {id, prop, ...}) item2 =
     let
       val (A, B) = dest_eq (prop_of' prop)
-      fun inst_t t = ProofStep.get_insts (PropMatch t) item2 rtype (id, fo_init)
+      fun inst_t t = ProofStep.get_insts (PropMatch t) item2 ictxt (id, fo_init)
       val (inst_A, inst_B) = (inst_t A, inst_t B)
       val (inst_nA, inst_nB) = (inst_t (get_neg A), inst_t (get_neg B))
 
@@ -149,12 +149,12 @@ val eq_elim_prfstep =
    pairs a_i and b_i are equal. Reduce the equality goal to the goal
    a_i = b_i for that i.
  *)
-fun cong_on_ineq_fn rtype {id, prop, ...} =
+fun cong_on_ineq_fn ictxt {id, prop, ...} =
     let
       val (cA, cB) = prop |> cprop_of' |> UtilLogic.get_cneg
                           |> Util.dest_binop_cargs
       val (A, B) = apply2 Thm.term_of (cA, cB)
-      val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
 
       fun process_A_equiv (id', eq_A) =
           let
@@ -167,8 +167,8 @@ fun cong_on_ineq_fn rtype {id, prop, ...} =
                                  (drop (i + 1) argsA')
                   val pat = Term.list_comb (f, args_pat)
                   val insts =
-                      (Matcher.rewrite_match tbl (pat, cB) (id', fo_init))
-                          |> RewriteTable.replace_id_for_type rtype
+                      (Matcher.rewrite_match ctxt (pat, cB) (id', fo_init))
+                          |> IncrContext.replace_id_for_type ictxt
 
                   fun process_inst ((id'', inst), eq_B) =
                       let
@@ -198,7 +198,7 @@ fun cong_on_ineq_fn rtype {id, prop, ...} =
       (* Due to symmetry, only need to process one side. *)
       if Term_Ord.termless (A, B) then
         let
-          val A_equivs = (RewriteTable.get_head_equiv tbl cA)
+          val A_equivs = (RewriteTable.get_head_equiv ctxt cA)
                              |> maps snd
                              |> RewriteTable.merge_box_with_info ctxt id
         in
@@ -221,11 +221,11 @@ val cong_on_ineq_prfstep =
    determined by the context. We produce at most two variables at a
    time.
  *)
-fun exists_elim_fn rtype {id, prop, ...} =
-    if not (RewriteTable.is_single_rtype rtype) then []
+fun exists_elim_fn ictxt {id, prop, ...} =
+    if not (IncrContext.is_single_ictxt ictxt) then []
     else let
       val t = prop_of' prop
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
     in
       if is_ex t orelse is_bex t orelse
          (is_neg t andalso is_obj_all (dest_not t)) orelse
@@ -502,11 +502,9 @@ fun replace_disj_vars ctxt (vars, disjs) =
     end
 
 (* Matching for all-disj propositions *)
-fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
+fun disj_prop_match ctxt (id, (tyinst, inst)) (t, (var_u, cus)) =
     let
-      val thy = RewriteTable.theory_of tbl
-      val {ctxt, ...} = tbl
-
+      val thy = Proof_Context.theory_of ctxt
       val us = map Thm.term_of cus
       val (var_t, ts) = (strip_all_disj t) |> replace_disj_vars ctxt
     in
@@ -523,7 +521,7 @@ fun disj_prop_match tbl (id, (tyinst, inst)) (t, (var_u, cus)) =
 
         (* Match the type-instantiated pattern with term. *)
         val insts = Matcher.rewrite_match_subset
-                        tbl var_t' (ts', cus') (id, (tyinst', inst))
+                        ctxt var_t' (ts', cus') (id, (tyinst', inst))
 
         fun process_inst ((id', instsp'), ths) =
             let
@@ -701,7 +699,7 @@ fun output_disj_fn ctxt (ts, _) =
 
 val disj_prop_matcher =
     let
-      fun pre_match pat {tname, ...} {ctxt, ...} =
+      fun pre_match pat {tname, ...} ctxt =
           let
             val (var_t, ts) = (strip_all_disj pat) |> replace_disj_vars ctxt
             val (_, cus) = dest_tname_of_disj tname
@@ -711,7 +709,7 @@ val disj_prop_matcher =
             length ts = length us andalso length var_t = length var_u
           end
 
-      fun match pat item (tbl as {ctxt, ...}) (id, instsp) =
+      fun match pat item ctxt (id, instsp) =
           let
             val {tname, prop = th, ...} = item
 
@@ -721,7 +719,7 @@ val disj_prop_matcher =
 
             fun process_perm perm =
                 map (pair (map Var perm))
-                    (disj_prop_match tbl (id, instsp) (pat, (perm, cus)))
+                    (disj_prop_match ctxt (id, instsp) (pat, (perm, cus)))
 
             fun process_inst (var_u, ((id', instsp'), eq_th)) =
                 let
@@ -763,7 +761,7 @@ fun reduce_disj_True ct =
       Conv.all_conv ct
 
 (* Handles also the case where pat is in not-conj or imp form. *)
-fun match_prop rtype (id, item2) pat =
+fun match_prop ictxt (id, item2) pat =
     let
       val disj_pats = strip_disj pat
 
@@ -772,7 +770,7 @@ fun match_prop rtype (id, item2) pat =
        *)
       fun process_inst ((id, inst), th) =
           let
-            val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+            val ctxt = IncrContext.context_of ictxt
             (* Construct the theorem pat'(inst) == True. *)
             val to_eqT_cv = (th RS UtilBase.eq_True_th) |> rewr_obj_eq |> Conv.try_conv
 
@@ -788,9 +786,9 @@ fun match_prop rtype (id, item2) pat =
             ((id, inst), patT)
           end
     in
-      ProofStep.get_insts (PropMatch pat) item2 rtype (id, fo_init) @
+      ProofStep.get_insts (PropMatch pat) item2 ictxt (id, fo_init) @
       (if length disj_pats > 1 then
-         map process_inst (maps (match_prop rtype (id, item2)) disj_pats)
+         map process_inst (maps (match_prop ictxt (id, item2)) disj_pats)
        else [])
     end
 
@@ -827,10 +825,10 @@ fun is_avoid_term t =
    the second item. If the disjunction contains schematic variables, t
    must have either zero or the largest number of schematic variables.
  *)
-fun match_update_fn rtype item1 item2 =
+fun match_update_fn ictxt item1 item2 =
     if is_match_prem_only item1 then [] else
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val {id, prop, tname, ...} = item1
       val thy = Proof_Context.theory_of ctxt
       val (disj_head, csubs) = dest_tname_of_disj tname
@@ -882,13 +880,13 @@ fun match_update_fn rtype item1 item2 =
           in
             if do_match = NO_MATCH then []
             else if do_match = FREE_ONLY then
-              t |> get_neg |> match_prop rtype (id, item2)
+              t |> get_neg |> match_prop ictxt (id, item2)
                 |> filter (fn ((_, inst), _) =>
                               forall (fn (_, (_, t)) => Term.is_Free t)
                                      (Vartab.dest (snd inst)))
                 |> maps process_inst
             else
-              t |> get_neg |> match_prop rtype (id, item2)
+              t |> get_neg |> match_prop ictxt (id, item2)
                 |> maps process_inst
           end
     in
@@ -905,12 +903,12 @@ val match_update_prfstep =
 (* For DISJ items with a single term, of form f p1 ... pn, match t
    against each of p_i.
  *)
-fun match_one_sch_fn rtype item1 item2 =
+fun match_one_sch_fn ictxt item1 item2 =
     if is_match_prem_only item1 then [] else
     let
       val {id, tname, prop = th1, ...} = item1
-      val tbl = RewriteTable.table_of_rtype rtype
-      val thy = RewriteTable.theory_of tbl
+      val ctxt = IncrContext.context_of ictxt
+      val thy = Proof_Context.theory_of ctxt
       val subs = (dest_tname_of_disj tname) |> snd |> map Thm.term_of
     in
       if length subs > 1 then [] else
@@ -924,7 +922,7 @@ fun match_one_sch_fn rtype item1 item2 =
             if count_var (nth args i) < nvar then [] else
             let
               val arg = nth args i
-              val insts = ProofStep.get_insts (TypedMatch (TY_TERM, arg)) item2 rtype
+              val insts = ProofStep.get_insts (TypedMatch (TY_TERM, arg)) item2 ictxt
                                               (id, fo_init)
               fun inst_to_updt ((id', inst), _) =
                   let
@@ -932,7 +930,7 @@ fun match_one_sch_fn rtype item1 item2 =
                     val prop' = prop_of' th1'
                   in
                     if is_eq_term prop' andalso
-                       RewriteTable.is_equiv_t id' tbl (dest_eq prop')
+                       RewriteTable.is_equiv_t id' ctxt (dest_eq prop')
                     then [] else [Update.thm_update (id', th1')]
                   end
             in
@@ -950,10 +948,10 @@ val match_one_sch_prfstep =
      priority = PRIORITY_ADD,
      func = TwoStep match_one_sch_fn}
 
-fun disj_match_iff_fn rtype {id, tname, prop, ...} =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
+fun disj_match_iff_fn ictxt {id, tname, prop, ...} =
+    if not (IncrContext.is_single_ictxt ictxt) then [] else
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val (_, csubs) = dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
     in
@@ -977,11 +975,11 @@ val disj_match_iff_prfstep =
      func = OneStep disj_match_iff_fn}
 
 (* For active case, create box checking the next case. *)
-fun disj_create_case_fn rtype {id, tname, ...} =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
+fun disj_create_case_fn ictxt {id, tname, ...} =
+    if not (IncrContext.is_single_ictxt ictxt) then [] else
     if exists Util.has_vars (map Thm.term_of tname) then [] else
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val (disj_head, csubs) = dest_tname_of_disj tname
     in
       if not (is_active_head disj_head) then []
@@ -1009,11 +1007,11 @@ val disj_create_case_prfstep =
 (* item1 dominates item2 if the disjunctive terms in item1 is a subset
    of that for item2.
  *)
-fun disj_shadow_fn rtype (item1 as {tname = tname1, ...})
+fun disj_shadow_fn ictxt (item1 as {tname = tname1, ...})
                    (item2 as {tname = tname2, ...}) =
-    if not (RewriteTable.is_single_rtype rtype) then [] else
+    if not (IncrContext.is_single_ictxt ictxt) then [] else
     let
-      val {ctxt, ...} = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
       val id = BoxItem.merged_id ctxt [item1, item2]
       val (disj_head1, subs1) = dest_tname_of_disj tname1
       val (disj_head2, subs2) = dest_tname_of_disj tname2

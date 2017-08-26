@@ -24,10 +24,9 @@ fun get_struct_t op_heads t =
       SOME (hd (Util.dest_args t))
     else NONE
 
-fun alg_norm1_prfstep_fn norm_info rtype {id, tname, ...} =
+fun alg_norm1_prfstep_fn norm_info ictxt {id, tname, ...} =
     let
-      val tbl = RewriteTable.table_of_rtype rtype
-      val {ctxt, ...} = tbl
+      val ctxt = IncrContext.context_of ictxt
       val {op_heads, pred_t, norm_t, excl_norm_t, norm_wfcv} = norm_info
       val ct = the_single tname
       val t = Thm.term_of ct
@@ -39,11 +38,11 @@ fun alg_norm1_prfstep_fn norm_info rtype {id, tname, ...} =
         val t' = norm_t G t
       in
         if member (op aconv) op_heads (head_of t') orelse
-           RewriteTable.is_equiv id tbl (ct, Thm.cterm_of ctxt t') orelse
+           RewriteTable.is_equiv id ctxt (ct, Thm.cterm_of ctxt t') orelse
            exists (fn f => f G t aconv t') excl_norm_t then []
         else let
           val fheads = map (fn t => t $ G) op_heads
-          val property_infos = RewriteTable.get_property_t tbl (id, pred_t $ G)
+          val property_infos = RewriteTable.get_property_t ctxt (id, pred_t $ G)
 
           fun process_wft property_th (id', wft) =
               let
@@ -62,8 +61,8 @@ fun alg_norm1_prfstep_fn norm_info rtype {id, tname, ...} =
               end
 
           fun process_property_info (id', property_th) =
-              (RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct))
-                  |> RewriteTable.replace_id_for_type' rtype
+              (RewriteTable.cterm_to_wfterm ctxt fheads (id', ct))
+                  |> IncrContext.replace_id_for_type' ictxt
                   |> map (process_wft property_th)
         in
           maps process_property_info property_infos
@@ -83,10 +82,9 @@ fun alg_norm1_prfstep norm_info =
        func = OneStep (alg_norm1_prfstep_fn norm_info)}
     end
 
-fun alg_norm2_prfstep_fn norm_info rtype item1 item2 =
+fun alg_norm2_prfstep_fn norm_info ictxt item1 item2 =
     let
-      val tbl = RewriteTable.table_of_rtype rtype
-      val {ctxt, ...} = tbl
+      val ctxt = IncrContext.context_of ictxt
       val {op_heads, pred_t, norm_t, excl_norm_t, norm_wfcv} = norm_info
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
@@ -104,11 +102,11 @@ fun alg_norm2_prfstep_fn norm_info rtype item1 item2 =
         val t2' = norm_t G t2
       in
         if not (t1' aconv t2') orelse
-           RewriteTable.is_equiv id tbl (ct1, ct2) orelse
+           RewriteTable.is_equiv id ctxt (ct1, ct2) orelse
            exists (fn f => f G t1 aconv f G t2) excl_norm_t then []
         else let
           val fheads = map (fn t => t $ G) op_heads
-          val property_infos = RewriteTable.get_property_t tbl (id, pred_t $ G)
+          val property_infos = RewriteTable.get_property_t ctxt (id, pred_t $ G)
 
           fun process_wft property_th (id', (wft1, wft2)) =
               let
@@ -134,15 +132,13 @@ fun alg_norm2_prfstep_fn norm_info rtype item1 item2 =
 
           fun process_property_info (id', property_th) =
               let
-                val wfts1 =
-                    RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct1)
-                val wfts2 =
-                    RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct2)
+                val wfts1 = RewriteTable.cterm_to_wfterm ctxt fheads (id', ct1)
+                val wfts2 = RewriteTable.cterm_to_wfterm ctxt fheads (id', ct2)
               in
                 (Util.all_pairs (wfts1, wfts2))
                     |> map (fn ((id1, wft1), (id2, wft2)) =>
                                (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-                    |> RewriteTable.replace_id_for_type' rtype
+                    |> IncrContext.replace_id_for_type' ictxt
                     |> map (process_wft property_th)
               end
         in

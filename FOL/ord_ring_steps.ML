@@ -61,10 +61,9 @@ fun ord_ring_alg_data ord_ring_th =
       }
     end
 
-fun ord_normalize_fn rtype item1 item2 =
+fun ord_normalize_fn ictxt item1 item2 =
     let
-      val tbl = RewriteTable.table_of_rtype rtype
-      val {ctxt, ...} = tbl
+      val ctxt = IncrContext.context_of ictxt
       val {id = id1, prop = prop1, ...} = item1
       val {id = id2, prop = prop2, ...} = item2
       val id = BoxID.merge_boxes ctxt (id1, id2)
@@ -84,7 +83,7 @@ fun ord_normalize_fn rtype item1 item2 =
       else let
         val pred_t = @{term is_ord_ring}
         val fheads = ord_heads G
-        val property_infos = RewriteTable.get_property_t tbl (id, pred_t $ G)
+        val property_infos = RewriteTable.get_property_t ctxt (id, pred_t $ G)
 
         fun process_wft property_th (id', (wft1, wft2)) =
             let
@@ -106,15 +105,13 @@ fun ord_normalize_fn rtype item1 item2 =
 
         fun process_property_info (id', property_th) =
             let
-              val wfts1 =
-                  RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct1)
-              val wfts2 =
-                  RewriteTable.term_to_wfterm_on_tbl tbl fheads (id', ct2)
+              val wfts1 = RewriteTable.cterm_to_wfterm ctxt fheads (id', ct1)
+              val wfts2 = RewriteTable.cterm_to_wfterm ctxt fheads (id', ct2)
             in
               (Util.all_pairs (wfts1, wfts2))
                   |> map (fn ((id1, wft1), (id2, wft2)) =>
                              (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-                  |> RewriteTable.replace_id_for_type' rtype
+                  |> IncrContext.replace_id_for_type' ictxt
                   |> maps (process_wft property_th)
             end
       in

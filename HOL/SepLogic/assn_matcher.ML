@@ -1,24 +1,24 @@
 (* Matching of assertions. *)
 
-(* Given arguments tbl (pat, t) (id, inst), match pat with t. Assume
+(* Given arguments ctxt (pat, t) (id, inst), match pat with t. Assume
    pat is not a product. Produce t ==> pat(s) or t ==> pat(s) * t' for
    those in AssnMatchData. Produce pat(s) or pat(s) * t' ==> t for
    those in AssnInvMatchData.
  *)
-type assn_matcher = rewrite_table -> term * cterm -> id_inst -> id_inst_th list
+type assn_matcher = Proof.context -> term * cterm -> id_inst -> id_inst_th list
 
 signature ASSN_MATCHER =
 sig
   val add_assn_matcher: assn_matcher -> theory -> theory
   val assn_match_term:
-      rewrite_table -> term * cterm -> id_inst -> id_inst_th list
+      Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val assn_match_all:
-      rewrite_table -> term * cterm -> id_inst -> id_inst_th list
+      Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val assn_match_all_strict:
-      rewrite_table -> term * cterm -> id_inst -> id_inst_th list
-  val mod_match: rewrite_table -> term * thm -> id_inst -> id_inst_th list
+      Proof.context -> term * cterm -> id_inst -> id_inst_th list
+  val mod_match: Proof.context -> term * thm -> id_inst -> id_inst_th list
   val mod_matches:
-      rewrite_table -> (term * thm) list -> id_inst -> id_inst_ths list
+      Proof.context -> (term * thm) list -> id_inst -> id_inst_ths list
   val assn_matcher: item_matcher
   val triv_assn_matcher: assn_matcher
   val emp_assn_matcher: assn_matcher
@@ -27,12 +27,12 @@ sig
 
   val add_assn_inv_matcher: assn_matcher -> theory -> theory
   val assn_inv_match_term:
-      rewrite_table -> term * cterm -> id_inst -> id_inst_th list
+      Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val assn_inv_match_all:
-      rewrite_table -> term * cterm -> id_inst -> id_inst_th list
+      Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val assn_inv_match_all_strict:
-      rewrite_table -> term * cterm -> id_inst -> id_inst_th list
-  val mod_inv_match: rewrite_table -> term * thm -> id_inst -> id_inst_th list
+      Proof.context -> term * cterm -> id_inst -> id_inst_th list
+  val mod_inv_match: Proof.context -> term * thm -> id_inst -> id_inst_th list
   val assn_inv_matcher: item_matcher
   val triv_assn_inv_matcher: assn_matcher
   val emp_assn_inv_matcher: assn_matcher
@@ -66,7 +66,7 @@ fun add_assn_matcher matcher = MatchData.map (cons matcher)
 (* Assume pat is not in the form A * B. Match pat with one or more
    terms of t. Return theorem of form t ==> pat(s) * t'.
  *)
-fun assn_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
+fun assn_match_term ctxt (pat, ct) (id, inst) =
     case pat of
         Var (ixn, _) =>
         let
@@ -77,8 +77,8 @@ fun assn_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
         end
       | _ =>
         let
-          val thy = RewriteTable.theory_of tbl
-          fun apply_matcher matcher = matcher tbl (pat, ct) (id, inst)
+          val thy = Proof_Context.theory_of ctxt
+          fun apply_matcher matcher = matcher ctxt (pat, ct) (id, inst)
 
           (* th must be an entailment, and the right side must be
              pat(s), pat(s) * t', or t' * pat(s).
@@ -104,11 +104,11 @@ fun assn_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
         end
 
 (* Match each term of pat with some term in t. Returns t ==> pat(s) * t'. *)
-fun assn_match_all tbl (pat, ct) (id, inst) =
+fun assn_match_all ctxt (pat, ct) (id, inst) =
     case pat of
         Const (@{const_name times}, _) $ A $ B =>
         let
-          val insts = assn_match_all tbl (A, ct) (id, inst)
+          val insts = assn_match_all ctxt (A, ct) (id, inst)
 
           (* th is t ==> A(s) * t'. Match B(s) with t', with result t'
              ==> B(s) * t''. Produce t ==> (A(s) * B(s)) * t''
@@ -117,7 +117,7 @@ fun assn_match_all tbl (pat, ct) (id, inst) =
               let
                 val ct' = th |> cprop_of' |> cdest_entail |> snd |> Thm.dest_arg
                 val B' = Util.subst_term_norm inst' B
-                val insts' = assn_match_all tbl (B', ct') (id', inst')
+                val insts' = assn_match_all ctxt (B', ct') (id', inst')
 
                 (* th' is t' ==> B(s) * t''. *)
                 fun process_inst' ((id'', inst''), th') =
@@ -133,12 +133,12 @@ fun assn_match_all tbl (pat, ct) (id, inst) =
         in
           maps process_inst insts
         end
-      | _ => assn_match_term tbl (pat, ct) (id, inst)
+      | _ => assn_match_term ctxt (pat, ct) (id, inst)
 
 (* Guarantees that every term in t is matched. Returns t ==> pat(s). *)
-fun assn_match_all_strict tbl (pat, ct) (id, inst) =
+fun assn_match_all_strict ctxt (pat, ct) (id, inst) =
     let
-      val inst = assn_match_all tbl (pat, ct) (id, inst)
+      val inst = assn_match_all ctxt (pat, ct) (id, inst)
       fun process_inst ((id', inst'), th) =
           let
             val rhs = th |> prop_of' |> dest_entail |> snd
@@ -158,16 +158,16 @@ fun assn_match_all_strict tbl (pat, ct) (id, inst) =
    to h using regular matching, then match pat_P to P using assertion
    matching. Return the theorem pat_h(s) |= pat_P(s).
  *)
-fun mod_match tbl (pat, th) (id, inst) =
+fun mod_match ctxt (pat, th) (id, inst) =
     let
       val (pat_h, pat_P) = pat |> dest_mod
       val (ch, cP) = th |> cprop_of' |> cdest_mod
-      val insts_h = Matcher.rewrite_match tbl (pat_h, ch) (id, inst)
+      val insts_h = Matcher.rewrite_match ctxt (pat_h, ch) (id, inst)
 
       (* eq_th is pat_h(s) == h. *)
       fun process_inst_h ((id', inst'), eq_th) =
           let
-            val insts'' = assn_match_all_strict tbl (pat_P, cP) (id', inst')
+            val insts'' = assn_match_all_strict ctxt (pat_P, cP) (id', inst')
             val rewr_eq_th = eq_th |> Conv.rewr_conv |> Conv.arg1_conv
 
             (* ent_th is P ==> pat_P(s). Obtain h |= pat_P(s) then
@@ -184,14 +184,14 @@ fun mod_match tbl (pat, th) (id, inst) =
     end
 
 (* Match a list of (pat, th) pairs *)
-fun mod_matches tbl pairs instsp =
+fun mod_matches ctxt pairs instsp =
     case pairs of
         [] => [(instsp, [])]
       | (pat, th) :: pairs' =>
         let
-          val insts = mod_match tbl (pat, th) instsp
+          val insts = mod_match ctxt (pat, th) instsp
           fun process_inst (instsp', th) =
-              map (apsnd (cons th)) (mod_matches tbl pairs' instsp')
+              map (apsnd (cons th)) (mod_matches ctxt pairs' instsp')
         in
           maps process_inst insts
         end
@@ -201,9 +201,9 @@ val assn_matcher =
       fun pre_match pat {tname, ...} _ =
           is_mod pat andalso is_mod (Thm.term_of (the_single tname))
 
-      fun match pat (item as {prop, ...}) tbl (id, inst) =
-          if not (pre_match pat item tbl) then []
-          else mod_match tbl (pat, prop) (id, inst)
+      fun match pat (item as {prop, ...}) ctxt (id, inst) =
+          if not (pre_match pat item ctxt) then []
+          else mod_match ctxt (pat, prop) (id, inst)
     in
       {pre_match = pre_match, match = match}
     end
@@ -211,7 +211,7 @@ val assn_matcher =
 (* Specific assertion matchers *)
 
 (* Matcher using the theorem A ==> A. *)
-fun triv_assn_matcher (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
+fun triv_assn_matcher ctxt (pat, ct) (id, inst) =
     if pat aconv emp then []  (* leave to emp_assn_matcher *)
     else let
       val cts = ACUtil.cdest_ac assn_ac_info ct
@@ -219,7 +219,7 @@ fun triv_assn_matcher (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
       fun match_i i =
           let
             val ct' = nth cts i
-            val insts = Matcher.rewrite_match tbl (pat, ct') (id, inst)
+            val insts = Matcher.rewrite_match ctxt (pat, ct') (id, inst)
 
             (* eq_th is of form pat(inst') == t'. *)
             fun process_inst ((id', inst'), eq_th) =
@@ -240,13 +240,13 @@ fun triv_assn_matcher (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
     end
 
 (* Consider the case where pat = emp. Return t ==> emp * t. *)
-fun emp_assn_matcher {ctxt, ...} (pat, ct) (id, inst) =
+fun emp_assn_matcher ctxt (pat, ct) (id, inst) =
     if not (pat aconv emp) then []
     else [((id, inst), ct |> Thm.term_of |> entail_triv_th ctxt
                           |> apply_to_entail_r mult_emp_left)]
 
 (* If pat = true, match all of t. Return t ==> emp * true. *)
-fun true_assn_matcher {ctxt, ...} (pat, ct) (id, inst) =
+fun true_assn_matcher ctxt (pat, ct) (id, inst) =
     if not (pat aconv assn_true) then []
     else [((id, inst), ct |> Thm.term_of |> entail_true_th ctxt
                           |> apply_to_entail_r mult_emp_left)]
@@ -261,11 +261,11 @@ fun true_assn_matcher {ctxt, ...} (pat, ct) (id, inst) =
    implication t ==> f xs r or t ==> t' * f xs r. This function serves
    as the first step of entail_matcher.
  *)
-fun entail_matcher' entail_th (tbl as {ctxt, ...}) r ct id =
+fun entail_matcher' entail_th ctxt r ct id =
     let
       (* Match pat_r with r. *)
       val pat_r = entail_th |> prop_of' |> dest_entail |> snd |> dest_arg
-      val inst_r = Matcher.rewrite_match tbl (pat_r, Thm.cterm_of ctxt r) (id, fo_init)
+      val inst_r = Matcher.rewrite_match ctxt (pat_r, Thm.cterm_of ctxt r) (id, fo_init)
 
       (* For each match, recursively match the instantiated version of
          A (named pat here) with t.
@@ -274,7 +274,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r ct id =
           let
             val entail_th' = Util.subst_thm ctxt inst' entail_th
             val pat = entail_th' |> prop_of' |> dest_arg1
-            val matches = assn_match_all tbl (pat, ct) (id', fo_init)
+            val matches = assn_match_all ctxt (pat, ct) (id', fo_init)
 
             (* th is of form t ==> pat(s) * t'. Convert to t ==> t' *
                pat(s). Then use entailment theorem to convert to t ==>
@@ -304,7 +304,7 @@ fun entail_matcher' entail_th (tbl as {ctxt, ...}) r ct id =
    cannot. First, find f xs r using entail_matcher', then match pat_xs
    with xs.
  *)
-fun entail_matcher entail_th tbl (pat, ct) (id, inst) =
+fun entail_matcher entail_th ctxt (pat, ct) (id, inst) =
     let
       val (f, args) = Term.strip_comb pat
       val pat_f = entail_th |> prop_of' |> dest_entail |> snd |> Term.head_of
@@ -313,14 +313,14 @@ fun entail_matcher entail_th tbl (pat, ct) (id, inst) =
          Util.has_vars (nth args 1) then []
       else let
         val (pat_xs, r) = the_pair args
-        val matches = entail_matcher' entail_th tbl r ct id
+        val matches = entail_matcher' entail_th ctxt r ct id
 
         fun process_res (id', th) =
             let
               val xs = th |> cprop_of' |> Thm.dest_arg
                           |> ACUtil.cdest_ac assn_ac_info
                           |> List.last |> Drule.strip_comb |> snd |> hd
-              val insts = Matcher.rewrite_match tbl (pat_xs, xs) (id', inst)
+              val insts = Matcher.rewrite_match ctxt (pat_xs, xs) (id', inst)
 
               fun process_inst ((id'', inst'), eq_th) =
                   let
@@ -356,7 +356,7 @@ fun add_assn_inv_matcher matcher = InvMatchData.map (cons matcher)
 (* Assume pat is not in the form A * B. Match pat with one or more
    terms of t. Return theorem of form pat(s) * t' ==> t.
  *)
-fun assn_inv_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
+fun assn_inv_match_term ctxt (pat, ct) (id, inst) =
     case pat of
         Var (ixn, _) =>
         let
@@ -367,8 +367,8 @@ fun assn_inv_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
         end
       | _ =>
         let
-          val thy = RewriteTable.theory_of tbl
-          fun apply_matcher matcher = matcher tbl (pat, ct) (id, inst)
+          val thy = Proof_Context.theory_of ctxt
+          fun apply_matcher matcher = matcher ctxt (pat, ct) (id, inst)
 
           (* th must be an entailment, and the left side must be
              pat(s), pat(s) * t', or t' * pat(s).
@@ -394,11 +394,11 @@ fun assn_inv_match_term (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
         end
 
 (* Match each term of pat with some term in t. Return pat(s) * t' ==> t. *)
-fun assn_inv_match_all tbl (pat, ct) (id, inst) =
+fun assn_inv_match_all ctxt (pat, ct) (id, inst) =
     case pat of
         Const (@{const_name times}, _) $ A $ B =>
         let
-          val insts = assn_inv_match_all tbl (A, ct) (id, inst)
+          val insts = assn_inv_match_all ctxt (A, ct) (id, inst)
 
           (* th is A(s) * t' ==> t. Match B(s) with t', with result
              B(s) * t'' ==> t'. Produce (A(s) * B(s)) * t'' ==> t.
@@ -407,7 +407,7 @@ fun assn_inv_match_all tbl (pat, ct) (id, inst) =
               let
                 val ct' = th |> cprop_of' |> cdest_entail |> fst |> Thm.dest_arg
                 val B' = Util.subst_term_norm inst' B
-                val insts' = assn_inv_match_all tbl (B', ct') (id', inst')
+                val insts' = assn_inv_match_all ctxt (B', ct') (id', inst')
 
                 (* th' is B(s) * t'' ==> t'. *)
                 fun process_inst' ((id'', inst''), th') =
@@ -423,12 +423,12 @@ fun assn_inv_match_all tbl (pat, ct) (id, inst) =
         in
           maps process_inst insts
         end
-      | _ => assn_inv_match_term tbl (pat, ct) (id, inst)
+      | _ => assn_inv_match_term ctxt (pat, ct) (id, inst)
 
 (* Guarantees that every term in t is matched. Returns pat(s) ==> t. *)
-fun assn_inv_match_all_strict tbl (pat, ct) (id, inst) =
+fun assn_inv_match_all_strict ctxt (pat, ct) (id, inst) =
     let
-      val inst = assn_inv_match_all tbl (pat, ct) (id, inst)
+      val inst = assn_inv_match_all ctxt (pat, ct) (id, inst)
       fun process_inst ((id', inst'), th) =
           let
             val lhs = th |> prop_of' |> dest_entail |> fst
@@ -449,16 +449,16 @@ fun assn_inv_match_all_strict tbl (pat, ct) (id, inst) =
    inverted assertion matching. Return the theorem ~(pat_h(s) |=
    pat_P(s)).
  *)
-fun mod_inv_match tbl (pat, th) (id, inst) =
+fun mod_inv_match ctxt (pat, th) (id, inst) =
     let
       val (pat_h, pat_P) = pat |> dest_not |> dest_mod
       val (ch, cP) = th |> cprop_of' |> Thm.dest_arg |> cdest_mod
-      val insts_h = Matcher.rewrite_match tbl (pat_h, ch) (id, inst)
+      val insts_h = Matcher.rewrite_match ctxt (pat_h, ch) (id, inst)
 
       (* eq_th is pat_h(s) == h. *)
       fun process_inst_h ((id', inst'), eq_th) =
           let
-            val insts'' = assn_inv_match_all_strict tbl (pat_P, cP) (id', inst')
+            val insts'' = assn_inv_match_all_strict ctxt (pat_P, cP) (id', inst')
             val rewr_eq_th = eq_th |> Conv.rewr_conv |> Conv.arg1_conv
                                    |> Conv.arg_conv
 
@@ -487,9 +487,9 @@ val assn_inv_matcher =
                 aconv (t |> dest_not |> dest_mod |> fst)
           end
 
-      fun match pat (item as {prop, ...}) tbl (id, inst) =
-          if not (pre_match pat item tbl) then []
-          else mod_inv_match tbl (pat, prop) (id, inst)
+      fun match pat (item as {prop, ...}) ctxt (id, inst) =
+          if not (pre_match pat item ctxt) then []
+          else mod_inv_match ctxt (pat, prop) (id, inst)
     in
       {pre_match = pre_match, match = match}
     end
@@ -497,7 +497,7 @@ val assn_inv_matcher =
 (* Specific inverted assertion matchers *)
 
 (* Matcher using the theorem A ==> A. *)
-fun triv_assn_inv_matcher (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
+fun triv_assn_inv_matcher ctxt (pat, ct) (id, inst) =
     if pat aconv emp then []  (* leave to emp_assn_matcher *)
     else let
       val cts = ACUtil.cdest_ac assn_ac_info ct
@@ -505,7 +505,7 @@ fun triv_assn_inv_matcher (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
       fun match_i i =
           let
             val ct' = nth cts i
-            val insts = Matcher.rewrite_match tbl (pat, ct') (id, inst)
+            val insts = Matcher.rewrite_match ctxt (pat, ct') (id, inst)
 
             (* eq_th is of form pat(inst') == t'. *)
             fun process_inst ((id', inst'), eq_th) =
@@ -526,7 +526,7 @@ fun triv_assn_inv_matcher (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
     end
 
 (* Consider the case where pat = emp. Return emp * t ==> t. *)
-fun emp_assn_inv_matcher {ctxt, ...} (pat, ct) (id, inst) =
+fun emp_assn_inv_matcher ctxt (pat, ct) (id, inst) =
     if not (pat aconv emp) then []
     else [((id, inst), ct |> Thm.term_of |> entail_triv_th ctxt
                           |> apply_to_entail_l mult_emp_left)]

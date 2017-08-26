@@ -16,14 +16,14 @@ fun lseg_triv_th ctxt t =
    cases where x = y, or x is a schematic variable, or y is a
    schematic variable.
  *)
-fun lseg_empty_matcher (tbl as {ctxt, ...}) (pat, ct) (id, inst) =
+fun lseg_empty_matcher ctxt (pat, ct) (id, inst) =
     case pat of
         Const (@{const_name lseg}, _) $ ls $ x $ y =>
         let
           val t = Thm.term_of ct
           val list_T = fastype_of ls
           val empty_list = Const (@{const_name Nil}, list_T)
-          val equivs = RewriteTable.equiv_info_t tbl id (ls, empty_list)
+          val equivs = RewriteTable.equiv_info_t ctxt id (ls, empty_list)
           fun process_equiv (id', eq_th) =
               let
                 (* t_triv: t ==> t * emp *)

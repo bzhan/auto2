@@ -6,13 +6,13 @@ val (PRIORITY_NORM, PRIORITY_URGENT,
      PRIORITY_SHADOW, PRIORITY_RESOLVE, PRIORITY_ADD) = (1, 2, 3, 4, 5)
 
 datatype proofstep_fn
-  = OneStep of rewrite_type -> box_item -> raw_update list
-  | TwoStep of rewrite_type -> box_item -> box_item -> raw_update list
+  = OneStep of incr_context -> box_item -> raw_update list
+  | TwoStep of incr_context -> box_item -> box_item -> raw_update list
 
 type proofstep =
      {name: string, args: match_arg list, priority: int, func: proofstep_fn}
 
-type prfstep_filter = rewrite_table -> id_inst -> bool
+type prfstep_filter = Proof.context -> id_inst -> bool
 
 datatype prfstep_descriptor = WithFact of term
                             | WithItem of string * term
@@ -26,15 +26,15 @@ datatype prfstep_descriptor = WithFact of term
 signature PROOFSTEP =
 sig
   val eq_prfstep: proofstep * proofstep -> bool
-  val apply_prfstep: rewrite_type -> box_item list -> proofstep -> raw_update list
+  val apply_prfstep: incr_context -> box_item list -> proofstep -> raw_update list
   val WithGoal: term -> prfstep_descriptor
   val WithTerm: term -> prfstep_descriptor
   val WithProp: term -> prfstep_descriptor
   val string_of_desc: theory -> prfstep_descriptor -> string
   val string_of_descs: theory -> prfstep_descriptor list -> string
-  val get_insts_filt: match_arg -> box_item -> rewrite_type -> id_inst ->
+  val get_insts_filt: match_arg -> box_item -> incr_context -> id_inst ->
                       prfstep_filter -> id_inst_th list
-  val get_insts: match_arg -> box_item -> rewrite_type -> id_inst ->
+  val get_insts: match_arg -> box_item -> incr_context -> id_inst ->
                  id_inst_th list
 
   (* prfstep_filter *)
@@ -53,7 +53,7 @@ sig
   val retrieve_shadows: prfstep_descriptor list -> int list
   val has_shadows_desc: prfstep_descriptor list -> bool
   val get_side_ths:
-      rewrite_table -> id_inst -> match_arg list -> (box_id * thm list) list
+      Proof.context -> id_inst -> match_arg list -> (box_id * thm list) list
   val prfstep_custom:
       string -> prfstep_descriptor list -> int ->
       (id_inst_ths -> box_item list -> Proof.context -> raw_update list) -> proofstep
@@ -70,10 +70,10 @@ struct
 
 fun eq_prfstep (prfstep1, prfstep2) = (#name prfstep1 = #name prfstep2)
 
-fun apply_prfstep rtype items {func, ...} =
+fun apply_prfstep ictxt items {func, ...} =
     case func of
-        OneStep f => f rtype (the_single items)
-      | TwoStep f => f rtype (hd items) (nth items 1)
+        OneStep f => f ictxt (the_single items)
+      | TwoStep f => f ictxt (hd items) (nth items 1)
 
 fun WithGoal t =
     let
@@ -127,28 +127,28 @@ fun string_of_descs thy descs =
          (" + " ^ (string_of_int (length filts)) ^ " filters") else "")
     end
 
-(* Obtain list of incremental matches (taking into account rtype)
+(* Obtain list of incremental matches (taking into account ictxt)
    between item and pattern specified by arg. Apply list of filters
    filt.
  *)
-fun get_insts_filt arg item rtype (id, inst) filt =
+fun get_insts_filt arg item ictxt (id, inst) filt =
     let
-      val tbl = RewriteTable.table_of_rtype rtype
+      val ctxt = IncrContext.context_of ictxt
     in
-      (ItemIO.match_arg tbl arg item (id, inst))
-          |> RewriteTable.filter_id_for_type rtype
-          |> filter (filt tbl o fst)
-          |> RewriteTable.replace_id_for_type rtype
+      (ItemIO.match_arg ctxt arg item (id, inst))
+          |> IncrContext.filter_id_for_type ictxt
+          |> filter (filt ctxt o fst)
+          |> IncrContext.replace_id_for_type ictxt
     end
 
-fun get_insts arg item rtype (id, inst) =
-    get_insts_filt arg item rtype (id, inst) (K (K true))
+fun get_insts arg item ictxt (id, inst) =
+    get_insts_filt arg item ictxt (id, inst) (K (K true))
 
 (* prfstep_filter *)
 
 val all_insts = fn _ => fn _ => true
 
-fun neq_filter cond tbl (id, inst) =
+fun neq_filter cond ctxt (id, inst) =
     let
       val (lhs, rhs) =
           cond |> dest_not |> dest_eq
@@ -157,28 +157,27 @@ fun neq_filter cond tbl (id, inst) =
       val _ = assert (null (Term.add_frees cond []))
                      "neq_filter: should not contain free variable."
 
-      val {ctxt, ...} = tbl
       val t1 = Util.subst_term_norm inst lhs
       val t2 = Util.subst_term_norm inst rhs
     in
       if Util.has_vars t1 andalso Util.has_vars t2 then true
       else if Util.has_vars t1 then
-        (Matcher.rewrite_match tbl (t1, Thm.cterm_of ctxt t2) (id, fo_init))
+        (Matcher.rewrite_match ctxt (t1, Thm.cterm_of ctxt t2) (id, fo_init))
             |> filter (fn ((id', _), _) => id = id')
             |> length |> equal 0
       else if Util.has_vars t2 then
-        (Matcher.rewrite_match tbl (t2, Thm.cterm_of ctxt t1) (id, fo_init))
+        (Matcher.rewrite_match ctxt (t2, Thm.cterm_of ctxt t1) (id, fo_init))
             |> filter (fn ((id', _), _) => id = id')
             |> length |> equal 0
       else
-        not (RewriteTable.is_equiv_t id tbl (t1, t2))
+        not (RewriteTable.is_equiv_t id ctxt (t1, t2))
     end
 
 fun order_filter s1 s2 _ (_, inst) =
     not (Term_Ord.termless (lookup_inst inst s2, lookup_inst inst s1))
 
-fun size1_filter s1 tbl (id, inst) =
-    size_of_term (RewriteTable.simp_val_t id tbl (lookup_inst inst s1)) = 1
+fun size1_filter s1 ctxt (id, inst) =
+    size_of_term (RewriteTable.simp_val_t id ctxt (lookup_inst inst s1)) = 1
 
 fun not_type_filter s ty _ (_, inst) =
     not (Term.fastype_of (lookup_inst inst s) = ty)
@@ -223,11 +222,11 @@ fun retrieve_pats_r descs =
                        | _ => [])
          descs
 
-fun retrieve_filts descs tbl inst =
+fun retrieve_filts descs =
     let
       val filts = maps (fn Filter filt => [filt] | _ => []) descs
     in
-      forall (fn f => f tbl inst) filts
+      fn ctxt => fn inst => forall (fn f => f ctxt inst) filts
     end
 
 fun retrieve_cases descs =
@@ -256,7 +255,7 @@ fun has_shadows_desc descs = length (retrieve_shadows descs) > 0
    list of theorems for each possible (mutually non-comparable) box
    IDs.
  *)
-fun get_side_ths (tbl as {ctxt, ...}) (id, inst) side_args =
+fun get_side_ths ctxt (id, inst) side_args =
     if null side_args then
       [(id, [])]
     else let
@@ -264,9 +263,9 @@ fun get_side_ths (tbl as {ctxt, ...}) (id, inst) side_args =
       fun process_side_arg side_arg =
           case side_arg of
               PropertyMatch prop =>
-              RewriteTable.get_property_t tbl (id, prop)
+              RewriteTable.get_property_t ctxt (id, prop)
             | WellFormMatch (t, req) =>
-              (RewriteTable.get_wellform_t tbl (id, t))
+              (RewriteTable.get_wellform_t ctxt (id, t))
                   |> filter (fn (_, th) => prop_of' th aconv req)
             | _ => raise Fail "get_side_ths: wrong kind of arg."
       val side_ths = map process_side_arg side_args'
@@ -288,17 +287,17 @@ fun prfstep_custom name descs priority updt_fn =
 
       (* Processing an instantiation after matching the one or two
          main matchers: apply filters, remove trivial True from
-         matchings, find properties, and replace ids based on rtype.
+         matchings, find properties, and replace ids based on ictxt.
        *)
-      fun process_inst rtype ((id, inst), ths) =
+      fun process_inst ictxt ((id, inst), ths) =
           let
-            val tbl = RewriteTable.table_of_rtype rtype
+            val ctxt = IncrContext.context_of ictxt
           in
-            (get_side_ths tbl (id, inst) side_args)
+            (get_side_ths ctxt (id, inst) side_args)
                 |> map (fn (id', p_ths) => ((id', inst), p_ths @ ths))
-                |> RewriteTable.filter_id_for_type rtype
-                |> filter (filt tbl o fst)
-                |> RewriteTable.replace_id_for_type rtype
+                |> IncrContext.filter_id_for_type ictxt
+                |> filter (filt ctxt o fst)
+                |> IncrContext.replace_id_for_type ictxt
           end
 
       fun shadow_to_update items ((id, _), _) n =
@@ -307,12 +306,12 @@ fun prfstep_custom name descs priority updt_fn =
       if length item_args = 1 then
         let
           val arg = the_single item_args
-          fun prfstep rtype item =
+          fun prfstep ictxt item =
               let
-                val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
-                val inst_ths = (ItemIO.match_arg tbl arg item ([], fo_init))
+                val ctxt = IncrContext.context_of ictxt
+                val inst_ths = (ItemIO.match_arg ctxt arg item ([], fo_init))
                                 |> map (fn (inst, th) => (inst, [th]))
-                                |> maps (process_inst rtype)
+                                |> maps (process_inst ictxt)
 
                 fun process_inst inst_th =
                     updt_fn inst_th [item] ctxt @
@@ -327,18 +326,18 @@ fun prfstep_custom name descs priority updt_fn =
       else if length item_args = 2 then
         let
           val (arg1, arg2) = the_pair item_args
-          fun prfstep1 rtype item1 =
+          fun prfstep1 ictxt item1 =
               let
-                val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
-                val inst_ths = ItemIO.match_arg tbl arg1 item1 ([], fo_init)
+                val ctxt = IncrContext.context_of ictxt
+                val inst_ths = ItemIO.match_arg ctxt arg1 item1 ([], fo_init)
 
                 fun process_inst1 item2 ((id, inst), th) =
                     let
                       val arg2' = ItemIO.subst_arg inst arg2
                       val inst_ths' =
-                          (ItemIO.match_arg tbl arg2' item2 (id, inst))
+                          (ItemIO.match_arg ctxt arg2' item2 (id, inst))
                               |> map (fn (inst', th') => (inst', [th, th']))
-                              |> maps (process_inst rtype)
+                              |> maps (process_inst ictxt)
 
                       fun process_inst inst_th' =
                           updt_fn inst_th' [item1, item2] ctxt @
@@ -418,11 +417,11 @@ fun prfstep_pre_conv name descs pre_cv =
                                    "term pattern.")
       val filt = retrieve_filts descs
 
-      fun prfstep rtype item =
+      fun prfstep ictxt item =
           let
-            val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+            val ctxt = IncrContext.context_of ictxt
             val inst_ths =
-                get_insts_filt (the_single args) item rtype ([], fo_init) filt
+                get_insts_filt (the_single args) item ictxt ([], fo_init) filt
             fun inst_to_updt ((id, _), eq1) =
                 (* Here eq1 is meta_eq from pat(inst) to item. *)
                 let
@@ -432,8 +431,7 @@ fun prfstep_pre_conv name descs pre_cv =
                               handle CTERM _ => raise Fail err
                 in
                   if Thm.is_reflexive eq_th then [] else
-                  if RewriteTable.is_equiv
-                         id tbl (Thm.rhs_of eq1, Thm.rhs_of eq_th)
+                  if RewriteTable.is_equiv id ctxt (Thm.rhs_of eq1, Thm.rhs_of eq_th)
                   then []
                   else let
                     val th = to_obj_eq (Util.transitive_list [meta_sym eq1, eq_th])

@@ -53,7 +53,6 @@ val test_use_prec_thms =
           ctxt |> fold Variable.auto_fixes [
             Free ("h", pheapT), Free ("p", @{typ "nat ref"}),
             Free ("x", @{typ "nat"}), Free ("y", @{typ "nat"})]
-      val tbl = RewriteTable.empty ctxt'
 
       fun test (base_str, ex_str) =
           let
@@ -62,7 +61,7 @@ val test_use_prec_thms =
             val (th1, th2) =
                 apply2 (Thm.assume o Thm.cterm_of ctxt' o mk_Trueprop) (t1, t2)
             (* Just run it to see that all asserts passed. *)
-            val _ = SepLogic.use_prec_thms tbl th1 th2
+            val _ = SepLogic.use_prec_thms ctxt' th1 th2
           in
             ()
           end

@@ -3,12 +3,6 @@ local
   open SepUtil
 
   val ctxt = @{context}
-  val ctxt' = ctxt |> fold Variable.auto_fixes [
-        @{term "[p::nat node ref option, n1, s1, s2]"},
-        @{term "[pp::nat node ref, pp']"},
-        @{term "[x::nat]"},
-        @{term "[xs::nat list, ys, zs]"}
-      ]
 
   fun eq_info_list (l1, l2) =
       length l1 = length l2 andalso
@@ -20,20 +14,26 @@ local
   fun print_term_infos ctxt lst =
       commas (map (print_term_info ctxt) lst)
 
-  fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
+  fun add_rewrite id (str1, str2) ctxt =
       let
         val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
-        val th = assume_eq (RewriteTable.theory_of tbl) (t1, t2)
+        val thy = Proof_Context.theory_of ctxt
+        val th = assume_eq thy (t1, t2)
       in
-        tbl |> RewriteTable.add_rewrite (id, th)
+        ctxt |> RewriteTable.add_rewrite (id, th)
       end
 
-  val tbl = (RewriteTable.empty ctxt')
-                |> RewriteTable.add_term ([], Thm.cterm_of ctxt' (Free ("P", assnT)))
-                |> add_rewrite [] ("n1", "None::nat node ref option")
-                |> add_rewrite [] ("s1", "Some pp")
-                |> add_rewrite [] ("s2", "Some pp'")
-                |> add_rewrite [] ("zs", "x # xs")
+  val ts = [@{term "[p::nat node ref option, n1, s1, s2]"},
+            @{term "[pp::nat node ref, pp']"},
+            @{term "[x::nat]"},
+            @{term "[xs::nat list, ys, zs]"}]
+
+  val ctxt' = ctxt |> fold Variable.auto_fixes ts
+                   |> RewriteTable.add_term ([], Thm.cterm_of ctxt (Free ("P", assnT)))
+                   |> add_rewrite [] ("n1", "None::nat node ref option")
+                   |> add_rewrite [] ("s1", "Some pp")
+                   |> add_rewrite [] ("s2", "Some pp'")
+                   |> add_rewrite [] ("zs", "x # xs")
 in
 
 fun test test_fun str (pat_str, t_str, info_str) =
@@ -42,7 +42,7 @@ fun test test_fun str (pat_str, t_str, info_str) =
       val t = Syntax.read_term ctxt' t_str
       val ct = Thm.cterm_of ctxt t
       val info = map (apsnd (Syntax.read_term ctxt')) info_str
-      val info' = (test_fun tbl (pat, ct) ([], fo_init)) |> map (apsnd prop_of')
+      val info' = (test_fun ctxt' (pat, ct) ([], fo_init)) |> map (apsnd prop_of')
       val infol = info' |> map snd |> map dest_arg1
       val infor = info' |> map (fn ((id, _), t) => (id, dest_arg t))
     in

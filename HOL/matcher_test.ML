@@ -2,8 +2,7 @@
 
 local
 
-val ctxt = @{context}
-val init = RewriteTable.empty ctxt
+val init = @{context}
 
 (* Conversion between (id, th) used in rewrite.ML and (id, t) used in
    test cases.
@@ -23,8 +22,8 @@ fun print_term_infos ctxt lst =
 (* info is expected, in box_id * term form, info' is returned value,
    in box_id * thm form (to be printed).
  *)
-fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
-    if eq_info_list (info, map to_term_info info') then tbl
+fun assert_eq_info (info, info') txt ctxt =
+    if eq_info_list (info, map to_term_info info') then ctxt
     else let
       val _ = tracing ("Expected: " ^ print_term_infos ctxt info ^ "\n" ^
                        "Actual: " ^ print_infos ctxt info')
@@ -32,32 +31,31 @@ fun assert_eq_info (info, info') txt (tbl as {ctxt, ...}) =
       raise Fail txt
     end
 
-fun add_prim_id (prim_id, id) (tbl as {ctxt, ...}) =
+fun add_prim_id (prim_id, id) ctxt =
     let
       val (prim_id', ctxt') = BoxID.add_prim_id id ctxt
       val _ = assert (prim_id = prim_id') "add_prim_id"
     in
-      tbl |> RewriteTable.map_context (K ctxt')
+      ctxt'
     end
 
-fun declare_term str (tbl as {ctxt, ...}) =
-    tbl |> RewriteTable.map_context (
-      Variable.auto_fixes (Syntax.read_term ctxt str))
+fun declare_term str ctxt =
+    Variable.auto_fixes (Syntax.read_term ctxt str) ctxt
 
-fun declare_pat str (tbl as {ctxt, ...}) =
-    tbl |> RewriteTable.map_context (
-      Variable.auto_fixes (Proof_Context.read_term_pattern ctxt str))
+fun declare_pat str ctxt =
+    Variable.auto_fixes (Proof_Context.read_term_pattern ctxt str) ctxt
 
-fun add_rewrite id (str1, str2) (tbl as {ctxt, ...}) =
+fun add_rewrite id (str1, str2) ctxt =
     let
       val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
-      val th = assume_eq (RewriteTable.theory_of tbl) (t1, t2)
+      val thy = Proof_Context.theory_of ctxt
+      val th = assume_eq thy (t1, t2)
     in
-      tbl |> RewriteTable.add_rewrite (id, th)
+      ctxt |> RewriteTable.add_rewrite (id, th)
     end
 
 (* Check th is actually t(env) == u. *)
-fun check_info (t, u) txt {ctxt, ...} ((_, inst), th) =
+fun check_info (t, u) txt ctxt ((_, inst), th) =
     let
       val t' = Util.subst_term_norm inst t
       val (lhs, rhs) = Logic.dest_equals (Thm.prop_of th)
@@ -71,22 +69,22 @@ fun check_info (t, u) txt {ctxt, ...} ((_, inst), th) =
       in raise Fail txt end
     end
 
-fun assert_match_gen matcher ((str_t, str_u), info_str) (tbl as {ctxt, ...}) =
+fun assert_match_gen matcher ((str_t, str_u), info_str) ctxt =
     let
       val (t, u) = (Proof_Context.read_term_pattern ctxt str_t,
                     Syntax.read_term ctxt str_u)
       val _ = trace_tlist ctxt "Matching" [t, u]
       val info = map (apsnd (Syntax.read_term ctxt)) info_str
-      val info' = matcher tbl [] (t, Thm.cterm_of ctxt u) ([], fo_init)
-      val _ = map (check_info (t, u) "assert_match" tbl) info'
+      val info' = matcher ctxt [] (t, Thm.cterm_of ctxt u) ([], fo_init)
+      val _ = map (check_info (t, u) "assert_match" ctxt) info'
       val info'' = map (fn ((id, _), th) => (id, meta_sym th)) info'
     in
-      assert_eq_info (info, info'') "assert_match" tbl
+      assert_eq_info (info, info'') "assert_match" ctxt
     end
 
 val assert_match = assert_match_gen Matcher.match
 
-fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
+fun assert_match_list (pairs_str, info_str) ctxt =
     let
       val pairs =
           map (fn (is_head, (str_t, str_u)) =>
@@ -94,12 +92,12 @@ fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
                              Thm.cterm_of ctxt (Syntax.read_term ctxt str_u))))
               pairs_str
       val info = map (apsnd (map (Syntax.read_term ctxt))) info_str
-      val info' = Matcher.rewrite_match_list tbl pairs ([], fo_init)
+      val info' = Matcher.rewrite_match_list ctxt pairs ([], fo_init)
       fun check_info_list (instsp, ths) =
           let
             fun check_pair ((t, cu), th) =
                 check_info (t, Thm.term_of cu)
-                           "assert_match_list" tbl (instsp, th)
+                           "assert_match_list" ctxt (instsp, th)
           in
             map check_pair (map snd pairs ~~ ths)
           end
@@ -108,7 +106,7 @@ fun assert_match_list (pairs_str, info_str) (tbl as {ctxt, ...}) =
       val eq_info_list' = eq_set (eq_pair (op =) (eq_list (op aconv)))
       fun to_term_info' (id, ths) = (id, map Util.rhs_of ths)
     in
-      if eq_info_list' (info, map to_term_info' info'') then tbl
+      if eq_info_list' (info, map to_term_info' info'') then ctxt
       else let
         val _ = tracing ("got " ^ print_infos' ctxt info'')
       in
@@ -220,14 +218,14 @@ val test_match_list =
          |> done "test_match_list"
 
 (* Test of pre-matcher. *)
-fun assert_pre_match_gen res at_head (str_t, str_u) (tbl as {ctxt, ...}) =
+fun assert_pre_match_gen res at_head (str_t, str_u) ctxt =
     let
       val (t, cu) = (Proof_Context.read_term_pattern ctxt str_t,
                      Thm.cterm_of ctxt (Syntax.read_term ctxt str_u))
       val pre_match_fn = if at_head then Matcher.pre_match_head
                          else Matcher.pre_match
     in
-      if pre_match_fn tbl (t, cu) = res then tbl
+      if pre_match_fn ctxt (t, cu) = res then ctxt
       else let
         val _ = trace_tlist ctxt "Pattern, term: " [t, Thm.term_of cu]
       in

@@ -20,6 +20,66 @@ fun print_info' ctxt (id, ths) =
     (ths |> map Util.rhs_of |> Util.string_of_terms ctxt) ^ ")"
 fun print_infos' ctxt lst = cat_lines (map (print_info' ctxt) lst)
 
+(* Initial and incremental contexts. In the incremental case,
+   new data is added under a fresh primitive ID. The original id of
+   the new data, as well as the list of terms that are affected, are
+   stored as well.
+ *)
+datatype incr_context = SINGLE of Proof.context
+                      | LAST of Proof.context * box_id * cterm list
+
+signature INCR_CONTEXT =
+sig
+  val context_of: incr_context -> Proof.context
+  val is_single_ictxt: incr_context -> bool
+
+  val filter_id_for_type:
+      incr_context -> ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
+  val replace_id_for_type:
+      incr_context -> ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
+  val replace_id_for_type':
+      incr_context -> (box_id * 'a) list -> (box_id * 'a) list
+end;
+
+structure IncrContext : INCR_CONTEXT =
+struct
+
+fun context_of ictxt =
+    case ictxt of SINGLE ctxt => ctxt | LAST (ctxt, _, _) => ctxt
+
+fun is_single_ictxt ictxt =
+    case ictxt of SINGLE _ => true | _ => false
+
+fun filter_id_for_type ictxt insts =
+    case ictxt of
+        SINGLE _ => insts
+      | LAST (ctxt, _, _) =>
+        let
+          val prim = (BoxID.num_prim_id ctxt) - 1
+        in
+          filter (fn ((id, _), _) => member (op =) id prim) insts
+        end
+
+(* Keep only the last prim id and replace it with repl_id in rtype. *)
+fun replace_id_for_type ictxt insts =
+    case ictxt of
+        SINGLE _ => insts
+      | LAST (ctxt, repl_id, _) =>
+        let
+          val prim = (BoxID.num_prim_id ctxt) - 1
+          fun process_info ((id, inst), th) =
+              if member (op =) id prim then
+                [((BoxID.merge_boxes ctxt (repl_id, remove (op =) prim id), inst), th)]
+              else []
+        in
+          maps process_info insts
+        end
+
+fun replace_id_for_type' rtype insts =
+    insts |> map (rpair ()) |> replace_id_for_type rtype |> map fst
+
+end  (* IncrContext *)
+
 (* Data structure for rewrite table. *)
 type rewrite_table = {
   (* terms[t] is the list of ids at which t is present. *)
@@ -41,207 +101,171 @@ type rewrite_table = {
   (* Property list of a term. *)
   property: ((box_id * thm) list) Termtab.table,
   (* Wellformed-ness data of a term. *)
-  wellform: ((cterm * (box_id * thm) list) list) Termtab.table,
-  (* Current context. *)
-  ctxt: Proof.context
+  wellform: ((cterm * (box_id * thm) list) list) Termtab.table
 }
-
-(* Initial and incremental rewrite tables. In the incremental case,
-   new data is added under a fresh primitive ID. The original id of
-   the new data, as well as the list of terms that are affected, are
-   stored as well.
- *)
-datatype rewrite_type = SINGLE of rewrite_table
-                      | LAST of rewrite_table * box_id * cterm list
 
 signature REWRITE_TABLE =
 sig
-  val table_of_rtype: rewrite_type -> rewrite_table
-  val single_of_rtype: rewrite_type -> rewrite_type
-  val is_single_rtype: rewrite_type -> bool
-  val theory_of: rewrite_table -> theory
-
   (* Dealing with box_ids. *)
   val merge_box_with_info:
       Proof.context -> box_id -> (box_id * 'a) list -> (box_id * 'a) list
   val merge_info: Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
 
   (* Construction and modification. *)
-  val empty: Proof.context -> rewrite_table
-  val map_context: (Proof.context -> Proof.context) -> rewrite_table -> rewrite_table
-  val clean_resolved: box_id -> rewrite_table -> rewrite_table
+  val clean_resolved: box_id -> Proof.context -> Proof.context
 
   (* contain table. *)
-  val add_contain: cterm -> term -> rewrite_table -> rewrite_table
-  val immediate_contains: rewrite_table -> term -> cterm list
+  val add_contain: cterm -> term -> Proof.context -> Proof.context
+  val immediate_contains: Proof.context -> term -> cterm list
 
   (* terms table. *)
-  val in_table_raw_ids: rewrite_table -> term -> box_id list
-  val in_table_raw_for_id: rewrite_table -> box_id * term -> bool
-  val in_table_raw: rewrite_table -> term -> bool
-  val add_term_raw: box_id * cterm -> rewrite_table -> rewrite_table
-  val get_all_terms: rewrite_table -> cterm list
-  val get_all_id_terms: rewrite_table -> (box_id * cterm) list
+  val in_table_raw_ids: Proof.context -> term -> box_id list
+  val in_table_raw_for_id: Proof.context -> box_id * term -> bool
+  val in_table_raw: Proof.context -> term -> bool
+  val add_term_raw: box_id * cterm -> Proof.context -> Proof.context
+  val get_all_terms: Proof.context -> cterm list
+  val get_all_id_terms: Proof.context -> (box_id * cterm) list
 
   (* equiv table. *)
-  val add_equiv: box_id * thm -> rewrite_table -> rewrite_table
-  val equiv_neighs: rewrite_table -> term -> (box_id * thm) list
-  val compute_all_equiv: rewrite_table -> cterm -> (box_id * thm) list
-  val index_all_equiv: cterm -> rewrite_table -> rewrite_table
-  val get_all_equiv: rewrite_table -> term -> (box_id * thm) list
+  val add_equiv: box_id * thm -> Proof.context -> Proof.context
+  val equiv_neighs: Proof.context -> term -> (box_id * thm) list
+  val compute_all_equiv: Proof.context -> cterm -> (box_id * thm) list
+  val index_all_equiv: cterm -> Proof.context -> Proof.context
+  val get_all_equiv: Proof.context -> term -> (box_id * thm) list
 
   (* simp table. *)
-  val update_simp: box_id * thm -> rewrite_table -> rewrite_table
-  val get_rewrite_info: rewrite_table -> cterm -> (box_id * thm) list
-  val get_rewrite: box_id -> rewrite_table -> cterm -> thm
+  val update_simp: box_id * thm -> Proof.context -> Proof.context
+  val get_rewrite_info: Proof.context -> cterm -> (box_id * thm) list
+  val get_rewrite: box_id -> Proof.context -> cterm -> thm
 
   (* subsimp and rep tables. *)
-  val get_subterm_rewrite_info: rewrite_table -> cterm -> (box_id * thm) list
-  val remove_rep: box_id * thm -> rewrite_table -> rewrite_table
-  val update_subsimp: box_id * thm -> rewrite_table -> rewrite_table
-  val get_head_rep_info: rewrite_table -> term -> (box_id * thm) list
-  val get_head_rep: box_id -> rewrite_table -> term -> thm option
+  val get_subterm_rewrite_info: Proof.context -> cterm -> (box_id * thm) list
+  val remove_rep: box_id * thm -> Proof.context -> Proof.context
+  val update_subsimp: box_id * thm -> Proof.context -> Proof.context
+  val get_head_rep_info: Proof.context -> term -> (box_id * thm) list
+  val get_head_rep: box_id -> Proof.context -> term -> thm option
   val get_head_rep_with_id_th:
-      rewrite_table -> box_id * thm -> (box_id * thm) list
+      Proof.context -> box_id * thm -> (box_id * thm) list
   val get_cached_subterm_rewrite_info:
-      rewrite_table -> term -> (box_id * thm) list
-  val get_cached_subterm_rewrite: box_id -> rewrite_table -> cterm -> thm
+      Proof.context -> term -> (box_id * thm) list
+  val get_cached_subterm_rewrite: box_id -> Proof.context -> cterm -> thm
 
   (* property table. *)
-  val get_property_for_term: rewrite_table -> term -> (box_id * thm) list
-  val add_property_raw: box_id * thm -> rewrite_table -> rewrite_table
+  val get_property_for_term: Proof.context -> term -> (box_id * thm) list
+  val add_property_raw: box_id * thm -> Proof.context -> Proof.context
   val convert_property: Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
 
   (* Simplification of arbitrary terms. *)
-  val head_simplify: box_id -> rewrite_table -> cterm -> thm
-  val simplify: box_id -> rewrite_table -> cterm -> thm
-  val subterm_simplify: box_id -> rewrite_table -> cterm -> thm
-  val simp_val: box_id -> rewrite_table -> cterm -> cterm
-  val simp_val_t: box_id -> rewrite_table -> term -> term
-  val simplify_info: rewrite_table -> cterm -> (box_id * thm) list
-  val subterm_simplify_info: rewrite_table -> cterm -> (box_id * thm) list
-  val is_equiv: box_id -> rewrite_table -> cterm * cterm -> bool
-  val is_equiv_t: box_id -> rewrite_table -> term * term -> bool
-  val is_subequiv: box_id -> rewrite_table -> cterm * cterm -> bool
+  val head_simplify: box_id -> Proof.context -> cterm -> thm
+  val simplify: box_id -> Proof.context -> cterm -> thm
+  val subterm_simplify: box_id -> Proof.context -> cterm -> thm
+  val simp_val: box_id -> Proof.context -> cterm -> cterm
+  val simp_val_t: box_id -> Proof.context -> term -> term
+  val simplify_info: Proof.context -> cterm -> (box_id * thm) list
+  val subterm_simplify_info: Proof.context -> cterm -> (box_id * thm) list
+  val is_equiv: box_id -> Proof.context -> cterm * cterm -> bool
+  val is_equiv_t: box_id -> Proof.context -> term * term -> bool
+  val is_subequiv: box_id -> Proof.context -> cterm * cterm -> bool
 
   (* head_equiv table. *)
   val reduce_equivs:
-      rewrite_table -> term * (box_id * thm) list -> term * (box_id * thm) list
+      Proof.context -> term * (box_id * thm) list -> term * (box_id * thm) list
   val compute_head_equiv:
-      rewrite_table -> cterm -> (term * (box_id * thm) list) list
-  val index_head_equiv: cterm -> rewrite_table -> rewrite_table
+      Proof.context -> cterm -> (term * (box_id * thm) list) list
+  val index_head_equiv: cterm -> Proof.context -> Proof.context
   val get_head_equiv:
-      rewrite_table -> cterm -> (term * (box_id * thm) list) list
+      Proof.context -> cterm -> (term * (box_id * thm) list) list
   val get_head_equiv_with_t:
-      rewrite_table -> box_id * cterm -> term -> (box_id * thm) list
+      Proof.context -> box_id * cterm -> term -> (box_id * thm) list
 
   (* Update of whole rewrite table. *)
-  val process_update_simp: (box_id * thm) list -> rewrite_table -> rewrite_table
+  val process_update_simp: (box_id * thm) list -> Proof.context -> Proof.context
   val equiv_info:
-      rewrite_table -> box_id -> cterm * cterm -> (box_id * thm) list
+      Proof.context -> box_id -> cterm * cterm -> (box_id * thm) list
   val equiv_info_t:
-      rewrite_table -> box_id -> term * term -> (box_id * thm) list
+      Proof.context -> box_id -> term * term -> (box_id * thm) list
   val subequiv_info:
-      rewrite_table -> box_id -> cterm * cterm -> (box_id * thm) list
-  val get_property: rewrite_table -> box_id * cterm -> (box_id * thm) list
-  val get_property_t: rewrite_table -> box_id * term -> (box_id * thm) list
+      Proof.context -> box_id -> cterm * cterm -> (box_id * thm) list
+  val get_property: Proof.context -> box_id * cterm -> (box_id * thm) list
+  val get_property_t: Proof.context -> box_id * term -> (box_id * thm) list
   val apply_property_update_rule:
-      rewrite_table -> box_id -> thm option -> (box_id * thm) list
+      Proof.context -> box_id -> thm option -> (box_id * thm) list
   val apply_property_update_on_term:
-      rewrite_table -> box_id -> term -> (box_id * thm) list
+      Proof.context -> box_id -> term -> (box_id * thm) list
   val process_update_property:
-      (box_id * thm) list -> rewrite_table -> rewrite_table
-  val get_reachable_terms: bool -> rewrite_table -> cterm list -> cterm list
-  val add_rewrite_raw: box_id -> thm -> rewrite_table -> rewrite_table
-  val complete_table: rewrite_table -> (box_id * thm) list * rewrite_table
+      (box_id * thm) list -> Proof.context -> Proof.context
+  val get_reachable_terms: bool -> Proof.context -> cterm list -> cterm list
+  val add_rewrite_raw: box_id -> thm -> Proof.context -> Proof.context
+  val complete_table: Proof.context -> (box_id * thm) list * Proof.context
   val complete_table_with_edges:
-      (box_id * thm) list -> rewrite_table -> rewrite_table
-  val initialize_wellform_data: term -> rewrite_table -> rewrite_table
-  val add_term: box_id * cterm -> rewrite_table -> rewrite_table
-  val add_rewrite: box_id * thm -> rewrite_table -> rewrite_table
-  val add_property: box_id * thm -> rewrite_table -> rewrite_table
+      (box_id * thm) list -> Proof.context -> Proof.context
+  val initialize_wellform_data: term -> Proof.context -> Proof.context
+  val add_term: box_id * cterm -> Proof.context -> Proof.context
+  val add_rewrite: box_id * thm -> Proof.context -> Proof.context
+  val add_property: box_id * thm -> Proof.context -> Proof.context
 
   (* wellform table. *)
   val get_wellform_for_term:
-      rewrite_table -> term -> (cterm * (box_id * thm) list) list
-  val get_wellform_infos_for_term: rewrite_table -> term -> (box_id * thm) list
+      Proof.context -> term -> (cterm * (box_id * thm) list) list
+  val get_wellform_infos_for_term: Proof.context -> term -> (box_id * thm) list
   val convert_wellform:
-      rewrite_table -> box_id * thm -> box_id * thm -> box_id * thm
-  val get_wellform: rewrite_table -> box_id * cterm -> (box_id * thm) list
-  val get_wellform_t: rewrite_table -> box_id * term -> (box_id * thm) list
+      Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
+  val get_wellform: Proof.context -> box_id * cterm -> (box_id * thm) list
+  val get_wellform_t: Proof.context -> box_id * term -> (box_id * thm) list
   val get_complete_wellform:
-      rewrite_table -> box_id * cterm -> (box_id * thm list) list
-  val term_to_wfterm_on_tbl:
-      rewrite_table -> term list -> box_id * cterm -> (box_id * wfterm) list
-  val term_to_wfterm_on_tbl_t:
-      rewrite_table -> term list -> box_id * term -> (box_id * wfterm) list
+      Proof.context -> box_id * cterm -> (box_id * thm list) list
+  val cterm_to_wfterm:
+      Proof.context -> term list -> box_id * cterm -> (box_id * wfterm) list
+  val term_to_wfterm:
+      Proof.context -> term list -> box_id * term -> (box_id * wfterm) list
 
   (* Update to wellform table. *)
   val add_wellform_data_raw:
-      term * (box_id * thm) -> rewrite_table -> rewrite_table
-  val rewrite_find_fact: rewrite_table -> (box_id * thm) list ->
+      term * (box_id * thm) -> Proof.context -> Proof.context
+  val rewrite_find_fact: Proof.context -> (box_id * thm) list ->
                          box_id * cterm -> (box_id * thm) list
   val complete_wellform_data_for_terms:
-      (box_id * thm) list -> term list -> rewrite_table -> rewrite_table
+      (box_id * thm) list -> term list -> Proof.context -> Proof.context
   val complete_wellform_data:
-      (box_id * thm) list -> rewrite_table -> rewrite_table
+      (box_id * thm) list -> Proof.context -> Proof.context
 
   (* Updating rewrite table from list of (id, th) pairs. *)
-  val get_new_terms: rewrite_table * rewrite_table -> (box_id * cterm) list
+  val get_new_terms: Proof.context * Proof.context -> (box_id * cterm) list
   val get_new_wellform_data:
-      int -> rewrite_table -> (term * (box_id * thm)) list
+      int -> Proof.context -> (term * (box_id * thm)) list
   val classify_th: theory -> thm -> string
   val relevant_terms_single: theory -> thm -> cterm list
-  val add_infos: (box_id * thm) list -> box_id * thm list -> rewrite_table ->
-                 rewrite_table
+  val add_infos: (box_id * thm) list -> box_id * thm list -> Proof.context ->
+                 Proof.context
   val get_incr_type:
-      rewrite_table -> (box_id * thm) list -> box_id * thm list -> rewrite_type
-
-  (* Incremental tables. *)
-  val filter_id_for_type:
-      rewrite_type -> ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
-  val replace_id_for_type:
-      rewrite_type -> ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
-  val replace_id_for_type':
-      rewrite_type -> (box_id * 'a) list -> (box_id * 'a) list
+      Proof.context -> (box_id * thm) list -> box_id * thm list -> incr_context
 end;
 
 structure RewriteTable : REWRITE_TABLE =
 struct
 
-fun table_of_rtype rtype =
-    case rtype of SINGLE tbl => tbl | LAST (tbl, _, _) => tbl
-fun single_of_rtype rtype =
-    case rtype of SINGLE tbl => SINGLE tbl | LAST (tbl, _, _) => SINGLE tbl
-fun is_single_rtype rtype = case rtype of SINGLE _ => true | _ => false
-
-fun theory_of {ctxt, ...} = Proof_Context.theory_of ctxt
-
 fun merge_box_with_info ctxt id =
     map (apfst (fn id' => BoxID.merge_boxes ctxt (id, id')))
+
 fun merge_info ctxt (id, th) (id', th') =
     (BoxID.merge_boxes ctxt (id, id'), Util.transitive_list [th, th'])
 
-(*** empty and basic modification functions. ***)
-fun empty ctxt = {
-  terms = Termtab.empty, equiv = Termtab.empty,
-  all_equiv = Termtab.empty, head_equiv = Termtab.empty,
-  contain = Termtab.empty, simp = Termtab.empty, subsimp = Termtab.empty,
-  reps = Termtab.empty, property = Termtab.empty, wellform = Termtab.empty,
-  ctxt = ctxt}
+(*** Initialization and modification of rewrite table ***)
 
-fun map_context f {terms, equiv, all_equiv, head_equiv, contain, simp, subsimp,
-                   reps, property, wellform, ctxt} =
-    {terms = terms, equiv = equiv,
-     all_equiv = all_equiv,
-     head_equiv = head_equiv,
-     contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property,
-     wellform = wellform, ctxt = f ctxt}
+structure Data = Proof_Data
+(
+  type T = rewrite_table
+  fun init _ = {terms = Termtab.empty, equiv = Termtab.empty,
+                all_equiv = Termtab.empty, head_equiv = Termtab.empty,
+                contain = Termtab.empty, simp = Termtab.empty, subsimp = Termtab.empty,
+                reps = Termtab.empty, property = Termtab.empty, wellform = Termtab.empty}
+)
 
-fun clean_resolved id {terms, equiv, all_equiv, head_equiv, contain, simp,
-                       subsimp, reps, property, wellform, ctxt} =
+fun clean_resolved id ctxt =
     let
+      val {terms, equiv, all_equiv, head_equiv, contain, simp, subsimp,
+           reps, property, wellform} = Data.get ctxt
+
       fun clean tb id_fun =
           tb |> Termtab.map
              (fn _ => filter_out (BoxID.is_eq_ancestor ctxt id o id_fun))
@@ -268,127 +292,155 @@ fun clean_resolved id {terms, equiv, all_equiv, head_equiv, contain, simp,
       fun clean_wellform tb =
           tb |> Termtab.map (fn _ => map clean_wellform_1)
     in
-      {terms = clean_terms terms, equiv = clean equiv fst,
-       all_equiv = clean all_equiv fst,
-       head_equiv = clean_head_equiv head_equiv,
-       contain = contain, simp = clean simp fst, subsimp = clean subsimp fst,
-       reps = clean reps fst, property = clean property fst,
-       wellform = clean_wellform wellform, ctxt = ctxt}
+      ctxt |> Data.map (
+        K {terms = clean_terms terms, equiv = clean equiv fst,
+           all_equiv = clean all_equiv fst,
+           head_equiv = clean_head_equiv head_equiv,
+           contain = contain, simp = clean simp fst, subsimp = clean subsimp fst,
+           reps = clean reps fst, property = clean property fst,
+           wellform = clean_wellform wellform})
     end
 
 fun map_terms f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                 subsimp, reps, property, wellform, ctxt} =
+                 subsimp, reps, property, wellform} =
     {terms = f terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property, wellform = wellform, ctxt = ctxt}
+     reps = reps, property = property, wellform = wellform}
+
 fun map_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                 subsimp, reps, property, wellform, ctxt} =
+                 subsimp, reps, property, wellform} =
     {terms = terms, equiv = f equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property, wellform = wellform, ctxt = ctxt}
+     reps = reps, property = property, wellform = wellform}
+
 fun map_all_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                     subsimp, reps, property, wellform, ctxt} =
+                     subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = f all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property, wellform = wellform, ctxt = ctxt}
+     reps = reps, property = property, wellform = wellform}
+
 fun map_head_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                      subsimp, reps, property, wellform, ctxt} =
+                      subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = f head_equiv, contain = contain, simp = simp,
      subsimp = subsimp, reps = reps, property = property,
-     wellform = wellform, ctxt = ctxt}
+     wellform = wellform}
+
 fun map_contain f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                   subsimp, reps, property, wellform, ctxt} =
+                   subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = f contain, simp = simp,
      subsimp = subsimp, reps = reps, property = property,
-     wellform = wellform, ctxt = ctxt}
+     wellform = wellform}
+
 fun map_simp f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                subsimp, reps, property, wellform, ctxt} =
+                subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = f simp,
      subsimp = subsimp, reps = reps, property = property,
-     wellform = wellform, ctxt = ctxt}
+     wellform = wellform}
+
 fun map_subsimp f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                   subsimp, reps, property, wellform, ctxt} =
+                   subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp,
      subsimp = f subsimp, reps = reps, property = property,
-     wellform = wellform, ctxt = ctxt}
+     wellform = wellform}
+
 fun map_reps f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                subsimp, reps, property, wellform, ctxt} =
+                subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = f reps, property = property, wellform = wellform, ctxt = ctxt}
+     reps = f reps, property = property, wellform = wellform}
+
 fun map_property f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                    subsimp, reps, property, wellform, ctxt} =
+                    subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = f property, wellform = wellform, ctxt = ctxt}
+     reps = reps, property = f property, wellform = wellform}
+
 fun map_wellform f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                    subsimp, reps, property, wellform, ctxt} =
+                    subsimp, reps, property, wellform} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property, wellform = f wellform, ctxt = ctxt}
+     reps = reps, property = property, wellform = f wellform}
 
 (*** Basic manipulation of contain table. ***)
 
 (* Add the information that t contains subt directly. *)
-fun add_contain ct subt (tbl as {contain, ...}) =
+fun add_contain ct subt ctxt =
     let
+      val {contain, ...} = Data.get ctxt
       val contain_subt = the_default [] (Termtab.lookup contain subt)
     in
-      if member (op aconvc) contain_subt ct then tbl
-      else tbl |> map_contain (Termtab.update (subt,  ct :: contain_subt))
+      if member (op aconvc) contain_subt ct then ctxt
+      else ctxt |> Data.map (map_contain (Termtab.update (subt,  ct :: contain_subt)))
     end
 
 (* Get all terms that directly contains t. *)
-fun immediate_contains {contain, ...} t =
-    the_default [] (Termtab.lookup contain t)
+fun immediate_contains ctxt t =
+    let
+      val {contain, ...} = Data.get ctxt
+    in
+      the_default [] (Termtab.lookup contain t)
+    end
 
 (*** Basic manipulation of the terms table. ***)
 
 (* Return ids in which t is directly in table. *)
-fun in_table_raw_ids {terms, ...} t =
-    case Termtab.lookup terms t of
-        NONE => []
-      | SOME (ids, _) => ids
+fun in_table_raw_ids ctxt t =
+    let
+      val {terms, ...} = Data.get ctxt
+    in
+      case Termtab.lookup terms t of
+          NONE => []
+        | SOME (ids, _) => ids
+    end
 
 (* Whether the term is present in table at the given id. *)
-fun in_table_raw_for_id (tbl as {ctxt, ...}) (id, t) =
-    exists (BoxID.is_eq_descendent ctxt id) (in_table_raw_ids tbl t)
+fun in_table_raw_for_id ctxt (id, t) =
+    exists (BoxID.is_eq_descendent ctxt id) (in_table_raw_ids ctxt t)
 
 (* Whether the term is present at any id. *)
-fun in_table_raw tbl t =
-    length (in_table_raw_ids tbl t) > 0
+fun in_table_raw ctxt t =
+    length (in_table_raw_ids ctxt t) > 0
 
 (* Add t to table at the given id. *)
-fun add_term_raw (id, ct) (tbl as {ctxt, ...}) =
+fun add_term_raw (id, ct) ctxt =
     let
       val t = Thm.term_of ct
-      val prev_ids = in_table_raw_ids tbl t
+      val prev_ids = in_table_raw_ids ctxt t
       val ids_t = (id :: prev_ids)
                       |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
     in
-      tbl |> map_terms (Termtab.update (t, (ids_t, ct)))
+      ctxt |> Data.map (map_terms (Termtab.update (t, (ids_t, ct))))
     end
 
 (* Return list of all terms (at any ids) present in table. *)
-fun get_all_terms {terms, ...} =
-    map (fn (_, (_, ct)) => ct) (Termtab.dest terms)
+fun get_all_terms ctxt =
+    let
+      val {terms, ...} = Data.get ctxt
+    in
+      map (fn (_, (_, ct)) => ct) (Termtab.dest terms)
+    end
 
 (* Return list of all terms with ids present in table. *)
-fun get_all_id_terms {terms, ...} =
-    maps (fn (_, (ids, ct)) => map (rpair ct) ids)
-         (Termtab.dest terms)
+fun get_all_id_terms ctxt =
+    let
+      val {terms, ...} = Data.get ctxt
+    in
+      maps (fn (_, (ids, ct)) => map (rpair ct) ids)
+           (Termtab.dest terms)
+    end
 
 (*** Basic manipulation of equiv table. ***)
 
-(* equiv_eq_better tbl info1 info2 means info2 is extraneous in the
+(* equiv_eq_better ctxt info1 info2 means info2 is extraneous in the
    equiv table.
  *)
 fun equiv_eq_better ctxt (id, th) (id', th') =
     Util.rhs_of th aconv Util.rhs_of th' andalso BoxID.is_eq_ancestor ctxt id id'
+
 fun has_equiv_eq_better ctxt infos info' =
     exists (fn info => equiv_eq_better ctxt info info') infos
 
@@ -396,37 +448,42 @@ fun has_equiv_eq_better ctxt infos info' =
    of the set of equivalence edges between any two nodes. cur_info is
    of form (id, t == t').
  *)
-fun add_equiv_raw (cur_info as (_, th)) (tbl as {equiv, ctxt, ...}) =
+fun add_equiv_raw (cur_info as (_, th)) ctxt =
     let
+      val {equiv, ...} = Data.get ctxt
       val t = Util.lhs_of th
       val equiv_t = the_default [] (Termtab.lookup equiv t)
     in
-      if exists (fn info => equiv_eq_better ctxt info cur_info) equiv_t then tbl
-      else tbl |> map_equiv (
+      if exists (fn info => equiv_eq_better ctxt info cur_info) equiv_t then ctxt
+      else ctxt |> Data.map (map_equiv (
           Termtab.update (
             t, equiv_t |> filter_out (equiv_eq_better ctxt cur_info)
-                       |> cons cur_info))
+                       |> cons cur_info)))
     end
 
 (* Add the given equivalence edge. *)
-fun add_equiv (id, th) tbl =
+fun add_equiv (id, th) ctxt =
     let
       val _ = assert (not (Util.lhs_of th aconv Util.rhs_of th)) "add_equiv: t == t'"
     in
-      tbl |> add_equiv_raw (id, th)
-          |> add_equiv_raw (id, meta_sym th)
+      ctxt |> add_equiv_raw (id, th)
+           |> add_equiv_raw (id, meta_sym th)
     end
 
 (* Get all edges coming from t in the equiv graph. *)
-fun equiv_neighs {equiv, ...} t =
-    case Termtab.lookup equiv t of
-        NONE => []
-      | SOME infos => infos
+fun equiv_neighs ctxt t =
+    let
+      val {equiv, ...} = Data.get ctxt
+    in
+      case Termtab.lookup equiv t of
+          NONE => []
+        | SOME infos => infos
+    end
 
 (* Assume t is directly in table. Returns list of (id, t == t') pairs,
    where id is the minimum assumption needed for t == t'.
  *)
-fun compute_all_equiv (tbl as {ctxt, ...}) ct =
+fun compute_all_equiv ctxt ct =
     let
       (* Each item in new / all is (id, th). *)
       fun helper (new, all) =
@@ -436,7 +493,7 @@ fun compute_all_equiv (tbl as {ctxt, ...}) ct =
               let
                 val t' = Util.rhs_of th
                 fun process_new (id', th') = merge_info ctxt (id, th) (id', th')
-                val new' = (equiv_neighs tbl t')
+                val new' = (equiv_neighs ctxt t')
                                |> map process_new
                                |> filter_out (has_equiv_eq_better ctxt all)
                 val all' = new' @
@@ -449,17 +506,21 @@ fun compute_all_equiv (tbl as {ctxt, ...}) ct =
       snd (helper ([init], [init]))
     end
 
-fun index_all_equiv ct tbl =
-    tbl |> map_all_equiv (
-      Termtab.update (Thm.term_of ct, compute_all_equiv tbl ct))
+fun index_all_equiv ct ctxt =
+    ctxt |> Data.map (map_all_equiv (
+      Termtab.update (Thm.term_of ct, compute_all_equiv ctxt ct)))
 
-fun get_all_equiv {all_equiv, ...} t =
-    the (Termtab.lookup all_equiv t)
-    handle Option.Option => raise Fail "all_equiv: not found"
+fun get_all_equiv ctxt t =
+    let
+      val {all_equiv, ...} = Data.get ctxt
+    in
+      the (Termtab.lookup all_equiv t)
+      handle Option.Option => raise Fail "all_equiv: not found"
+    end
 
 (*** Basic manipulation of simp table. ***)
 
-(* simp_eq_better tbl info1 info2 means info2 is extraneous in the
+(* simp_eq_better ctxt info1 info2 means info2 is extraneous in the
    simp table.
  *)
 fun simp_eq_better ctxt (id, th) (id', th') =
@@ -471,33 +532,38 @@ fun simp_eq_better ctxt (id, th) (id', th') =
 (* Update rewrite of t under id to th: t == t'. Similar to
    add_equiv_raw.
  *)
-fun update_simp (id, th) (tbl as {simp, ctxt, ...}) =
+fun update_simp (id, th) ctxt =
     let
+      val {simp, ...} = Data.get ctxt
       val ct = Thm.lhs_of th
       val t = Thm.term_of ct
       val simp_t = the_default [([], Thm.reflexive ct)] (Termtab.lookup simp t)
     in
-      if exists (fn info => simp_eq_better ctxt info (id, th)) simp_t then tbl
+      if exists (fn info => simp_eq_better ctxt info (id, th)) simp_t then ctxt
       else
-        tbl |> map_simp (
+        ctxt |> Data.map (map_simp (
           Termtab.update (
             t, simp_t |> filter_out (simp_eq_better ctxt (id, th))
-                      |> cons (id, th)))
+                      |> cons (id, th))))
     end
 
 (* Get the entire rewrite info of t as stored directly in
    table. Return as a list of (id, th) pairs.
  *)
-fun get_rewrite_info {simp, ...} ct =
-    case Termtab.lookup simp (Thm.term_of ct) of
-        NONE => [([], Thm.reflexive ct)]
-      | SOME infos => infos
+fun get_rewrite_info ctxt ct =
+    let
+      val {simp, ...} = Data.get ctxt
+    in
+      case Termtab.lookup simp (Thm.term_of ct) of
+          NONE => [([], Thm.reflexive ct)]
+        | SOME infos => infos
+    end
 
 (* Return the rewrite of t under a given id, as stored directly in
    table. Return t == t if not in table.
  *)
-fun get_rewrite id (tbl as {ctxt, ...}) ct =
-    case get_rewrite_info tbl ct of
+fun get_rewrite id ctxt ct =
+    case get_rewrite_info ctxt ct of
         [] => Thm.reflexive ct
       | ths' => ths' |> filter (BoxID.is_eq_descendent ctxt id o fst)
                      |> map snd
@@ -522,12 +588,12 @@ fun merge_simp_infos ctxt lsts =
 (* Get entire subterm rewrite info of t. Return as a list of (id,
    rewrite) pairs.
  *)
-fun get_subterm_rewrite_info (tbl as {ctxt, ...}) ct =
+fun get_subterm_rewrite_info ctxt ct =
     let
       val (ct', subs) = Subterms.dest_subterms ct
     in
       if null subs then [([], Thm.reflexive ct)] else
-      (map (get_rewrite_info tbl) subs)
+      (map (get_rewrite_info ctxt) subs)
           |> merge_simp_infos ctxt
           |> map (fn (id, equivs) => (id, Subterms.build_equiv equivs ct'))
           |> Util.max_partial (simp_eq_better ctxt)
@@ -536,70 +602,80 @@ fun get_subterm_rewrite_info (tbl as {ctxt, ...}) ct =
 (* Given a head rep (id, th) (where th is reverse of a subterm
    rewrite), remove th from the reps table.
  *)
-fun remove_rep (id, th) (tbl as {reps, ...}) =
+fun remove_rep (id, th) ctxt =
     let
+      val {reps, ...} = Data.get ctxt
       val t = Util.lhs_of th
       val reps_t = the_default [] (Termtab.lookup reps t)
       val _ = assert (member eq_info reps_t (id, th)) "remove_rep: not found"
     in
-      tbl |> map_reps (Termtab.map_entry t (remove eq_info (id, th)))
+      ctxt |> Data.map (map_reps (Termtab.map_entry t (remove eq_info (id, th))))
     end
 
 (* Update subterm rewrite of t under id to th: t == t'. Also update
    the reps table (reverse of subsimp table).
  *)
-fun update_subsimp (id, th) (tbl as {subsimp, ctxt, ...}) =
+fun update_subsimp (id, th) ctxt =
     let
+      val {subsimp, ...} = Data.get ctxt
       val (t, t') = (Util.lhs_of th, Util.rhs_of th)
       val subsimp_t = the_default [] (Termtab.lookup subsimp t)
     in
-      if exists (fn info => simp_eq_better ctxt info (id, th)) subsimp_t then tbl
+      if exists (fn info => simp_eq_better ctxt info (id, th)) subsimp_t then ctxt
       else
         let
           val th' = meta_sym th
           val (rem, keep) = filter_split (simp_eq_better ctxt (id, th)) subsimp_t
         in
-          tbl |> map_subsimp (Termtab.update (t, (id, th) :: keep))
-              |> map_reps (Termtab.map_default (t', []) (cons (id, th')))
-              |> fold remove_rep (map (apsnd meta_sym) rem)
+          ctxt |> Data.map (map_subsimp (Termtab.update (t, (id, th) :: keep)))
+               |> Data.map (map_reps (Termtab.map_default (t', []) (cons (id, th'))))
+               |> fold remove_rep (map (apsnd meta_sym) rem)
         end
     end
 
 (* Returns the list of (id, th) pairs, where th is t == t', such that
    t' subterm rewrites to t at box id.
  *)
-fun get_head_rep_info {reps, ...} t =
-    case Termtab.lookup reps t of
-        NONE => []
-      | SOME infos => infos
+fun get_head_rep_info ctxt t =
+    let
+      val {reps, ...} = Data.get ctxt
+    in
+      case Termtab.lookup reps t of
+          NONE => []
+        | SOME infos => infos
+    end
 
 (* Assume t is subterm simplified under id. Return SOME (t == v) if v
    is a term in the rewrite table that is subterm rewrites to t, under
    the given id. If there is no such v, return NONE.
  *)
-fun get_head_rep id (tbl as {ctxt, ...}) t =
+fun get_head_rep id ctxt t =
     get_first (fn (id', t') =>
                   if BoxID.is_eq_ancestor ctxt id' id then SOME t' else NONE)
-              (get_head_rep_info tbl t)
+              (get_head_rep_info ctxt t)
 
 (* Returns head representations of the right side of th under id, or
    under more restrictive assumptions. Merge the equivalence theorems
    with th. Not guaranteed to be non-redundant.
  *)
-fun get_head_rep_with_id_th (tbl as {ctxt, ...}) (id, th) =
-    get_head_rep_info tbl (Util.rhs_of th) |> map (merge_info ctxt (id, th))
+fun get_head_rep_with_id_th ctxt (id, th) =
+    get_head_rep_info ctxt (Util.rhs_of th) |> map (merge_info ctxt (id, th))
 
 (* Using the subsimp table for subterm simplification. *)
-fun get_cached_subterm_rewrite_info {subsimp, ...} t =
-    case Termtab.lookup subsimp t of
-        NONE => []
-      | SOME infos => infos
+fun get_cached_subterm_rewrite_info ctxt t =
+    let
+      val {subsimp, ...} = Data.get ctxt
+    in
+      case Termtab.lookup subsimp t of
+          NONE => []
+        | SOME infos => infos
+    end
 
 (* Obtain the subterm simplification of t under id, or a less
    restrictive assumption.
  *)
-fun get_cached_subterm_rewrite id (tbl as {ctxt, ...}) ct =
-    case get_cached_subterm_rewrite_info tbl (Thm.term_of ct) of
+fun get_cached_subterm_rewrite id ctxt ct =
+    case get_cached_subterm_rewrite_info ctxt (Thm.term_of ct) of
         [] => Thm.reflexive ct
       | ths' => ths' |> filter (BoxID.is_eq_descendent ctxt id o fst)
                      |> map snd
@@ -615,22 +691,26 @@ fun property_eq_better ctxt (id, th) (id', th') =
     Thm.prop_of th aconv Thm.prop_of th' andalso BoxID.is_eq_ancestor ctxt id id'
 
 (* Retrieve the current list of properties for a term t. *)
-fun get_property_for_term {property, ...} t =
-    the_default [] (Termtab.lookup property t)
+fun get_property_for_term ctxt t =
+    let
+      val {property, ...} = Data.get ctxt
+    in
+      the_default [] (Termtab.lookup property t)
+    end
 
 (* Add a new property. Similar to add_equiv_raw. *)
-fun add_property_raw (cur_info as (_, th)) (tbl as {ctxt, ...}) =
+fun add_property_raw (cur_info as (_, th)) ctxt =
     let
       val t = Property.get_property_arg (prop_of' th)
-      val property_t = get_property_for_term tbl t
+      val property_t = get_property_for_term ctxt t
     in
       if exists (fn info => property_eq_better ctxt info cur_info)
-                property_t then tbl
+                property_t then ctxt
       else
-        tbl |> map_property (
+        ctxt |> Data.map (map_property (
           Termtab.update (
             t, property_t |> filter_out (property_eq_better ctxt cur_info)
-                          |> cons cur_info))
+                          |> cons cur_info)))
     end
 
 (* Convert property P s to P t using equality s == t. Merge boxes
@@ -643,88 +723,88 @@ fun convert_property ctxt (id', eq_th) (id, th) =
 (*** Simplification of terms not indexed in table. ***)
 
 (* Assume t is subterm simplified under id. *)
-fun head_simplify id tbl ct =
-    case get_head_rep id tbl (Thm.term_of ct) of
+fun head_simplify id ctxt ct =
+    case get_head_rep id ctxt (Thm.term_of ct) of
         NONE => Thm.reflexive ct
-      | SOME th => Util.transitive_list [th, get_rewrite id tbl (Thm.rhs_of th)]
+      | SOME th => Util.transitive_list [th, get_rewrite id ctxt (Thm.rhs_of th)]
 
 (* First simplify subterms, then simplify head. *)
-fun simplify id tbl ct =
-    if in_table_raw tbl (Thm.term_of ct) then
-      get_rewrite id tbl ct else
+fun simplify id ctxt ct =
+    if in_table_raw ctxt (Thm.term_of ct) then
+      get_rewrite id ctxt ct else
     let
-      val th = subterm_simplify id tbl ct
+      val th = subterm_simplify id ctxt ct
     in
-      Util.transitive_list [th, head_simplify id tbl (Thm.rhs_of th)]
+      Util.transitive_list [th, head_simplify id ctxt (Thm.rhs_of th)]
     end
 
 (* Simplify subterms, but not head. *)
-and subterm_simplify id tbl ct =
-    if in_table_raw tbl (Thm.term_of ct) then
-      get_cached_subterm_rewrite id tbl ct else
+and subterm_simplify id ctxt ct =
+    if in_table_raw ctxt (Thm.term_of ct) then
+      get_cached_subterm_rewrite id ctxt ct else
     let
       val (ct', subs) = Subterms.dest_subterms ct
-      val equivs = map (simplify id tbl) subs
+      val equivs = map (simplify id ctxt) subs
     in
       Subterms.build_equiv equivs ct'
     end
 
 (* Convenient function for getting simplified value. *)
-fun simp_val id tbl ct = Thm.rhs_of (simplify id tbl ct)
+fun simp_val id ctxt ct = Thm.rhs_of (simplify id ctxt ct)
 
-fun simp_val_t id (tbl as {ctxt, ...}) t =
-    Util.rhs_of (simplify id tbl (Thm.cterm_of ctxt t))
+fun simp_val_t id ctxt t =
+    Util.rhs_of (simplify id ctxt (Thm.cterm_of ctxt t))
 
 (* Get all simplifications and subterm-simplifications. *)
-fun simplify_info (tbl as {ctxt, ...}) ct =
-    if in_table_raw tbl (Thm.term_of ct) then
-      get_rewrite_info tbl ct else
+fun simplify_info ctxt ct =
+    if in_table_raw ctxt (Thm.term_of ct) then
+      get_rewrite_info ctxt ct else
     let
-      val subterm_info = subterm_simplify_info tbl ct
+      val subterm_info = subterm_simplify_info ctxt ct
       fun get_rewrite_with_id_th (id', th') =
-          (get_rewrite_info tbl (Thm.rhs_of th'))
+          (get_rewrite_info ctxt (Thm.rhs_of th'))
               |> map (merge_info ctxt (id', th'))
-      val head_info = subterm_info |> maps (get_head_rep_with_id_th tbl)
-                                  |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
-                                  |> maps get_rewrite_with_id_th
+      val head_info = subterm_info |> maps (get_head_rep_with_id_th ctxt)
+                                   |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+                                   |> maps get_rewrite_with_id_th
     in
       subterm_info @ head_info |> Util.max_partial (simp_eq_better ctxt)
     end
 
 (* Note similarity with get_subterm_rewrite_info. *)
-and subterm_simplify_info (tbl as {ctxt, ...}) ct =
-    if in_table_raw tbl (Thm.term_of ct) then
-      get_cached_subterm_rewrite_info tbl (Thm.term_of ct) else
+and subterm_simplify_info ctxt ct =
+    if in_table_raw ctxt (Thm.term_of ct) then
+      get_cached_subterm_rewrite_info ctxt (Thm.term_of ct) else
     let
       val (ct', subs) = Subterms.dest_subterms ct
     in
       if null subs then [([], Thm.reflexive ct)] else
-      (map (simplify_info tbl) subs)
+      (map (simplify_info ctxt) subs)
           |> merge_simp_infos ctxt
           |> map (fn (id, equivs) => (id, Subterms.build_equiv equivs ct'))
           |> Util.max_partial (simp_eq_better ctxt)
     end
 
 (* Exported equivalence function. *)
-fun is_equiv id tbl (ct1, ct2) =
-    ct1 aconvc ct2 orelse simp_val id tbl ct1 aconvc simp_val id tbl ct2
+fun is_equiv id ctxt (ct1, ct2) =
+    ct1 aconvc ct2 orelse simp_val id ctxt ct1 aconvc simp_val id ctxt ct2
 
-fun is_equiv_t id (tbl as {ctxt, ...}) (t1, t2) =
-    t1 aconv t2 orelse is_equiv id tbl (Thm.cterm_of ctxt t1, Thm.cterm_of ctxt t2)
+fun is_equiv_t id ctxt (t1, t2) =
+    t1 aconv t2 orelse is_equiv id ctxt (Thm.cterm_of ctxt t1, Thm.cterm_of ctxt t2)
 
-fun is_subequiv id tbl (ct1, ct2) =
+fun is_subequiv id ctxt (ct1, ct2) =
     if ct1 aconvc ct2 then true
-    else (Util.rhs_of (subterm_simplify id tbl ct1))
-             aconv (Util.rhs_of (subterm_simplify id tbl ct2))
+    else (Util.rhs_of (subterm_simplify id ctxt ct1))
+             aconv (Util.rhs_of (subterm_simplify id ctxt ct2))
 
 (* infos is a list of (id, th), where the right side of each th is
    fhead as head.
  *)
-fun reduce_equivs (tbl as {ctxt, ...}) (fhead, infos) =
+fun reduce_equivs ctxt (fhead, infos) =
     if length infos <= 1 then (fhead, infos) else
     let
       fun args_of id cu =
-          cu |> Util.dest_cargs |> map (simp_val id tbl)
+          cu |> Util.dest_cargs |> map (simp_val id ctxt)
 
       fun head_equiv_eq_better (id1, th1) (id2, th2) =
           BoxID.is_eq_ancestor ctxt id1 id2 andalso
@@ -738,27 +818,26 @@ fun reduce_equivs (tbl as {ctxt, ...}) (fhead, infos) =
    is in the table equivalent to u under id', and the head of u' is
    the same as that for t. If (id1, u1) and (id2, u2) are such that
    id2 implies id1 and all arguments of u1, u2 are equivalent under
-   t2, then (id2, u2) is not included in the results. Arguments are
-   ordered for non-AC functions, and unordered for AC functions. This
+   t2, then (id2, u2) is not included in the results. This
    function is much faster when u is in table (uses get_all_equiv
    directly).
  *)
-fun compute_head_equiv (tbl as {ctxt, ...}) cu =
+fun compute_head_equiv ctxt cu =
     let
       val u = Thm.term_of cu
       val _ = if Term.is_open u then
                 raise Fail "get_all_head_equivs: u is open" else ()
       fun rep_eq_better (id1, th1) (id2, th2) =
           BoxID.is_eq_ancestor ctxt id1 id2 andalso
-          is_equiv id2 tbl (Thm.rhs_of th1, Thm.rhs_of th2)
+          is_equiv id2 ctxt (Thm.rhs_of th1, Thm.rhs_of th2)
       fun get_all_equiv_under_id (id', th') =
-          get_all_equiv tbl (Util.rhs_of th') |> map (merge_info ctxt (id', th'))
+          get_all_equiv ctxt (Util.rhs_of th') |> map (merge_info ctxt (id', th'))
 
       (* Get all equivs from table. *)
       val all_equiv =
-          if in_table_raw tbl u then get_all_equiv tbl u
-          else (subterm_simplify_info tbl cu)
-                   |> maps (get_head_rep_with_id_th tbl)
+          if in_table_raw ctxt u then get_all_equiv ctxt u
+          else (subterm_simplify_info ctxt cu)
+                   |> maps (get_head_rep_with_id_th ctxt)
                    |> Util.max_partial rep_eq_better
                    |> maps get_all_equiv_under_id
                    |> cons ([], Thm.reflexive cu)
@@ -766,21 +845,25 @@ fun compute_head_equiv (tbl as {ctxt, ...}) cu =
       (* Sort by head of term, and reduce at each head. *)
       all_equiv |> map (fn (id, th) => (Term.head_of (Util.rhs_of th), (id, th)))
                 |> AList.group (op aconv)
-                |> map (reduce_equivs tbl)
+                |> map (reduce_equivs ctxt)
     end
 
-fun index_head_equiv ct tbl =
-    tbl |> map_head_equiv (
-      Termtab.update (Thm.term_of ct, compute_head_equiv tbl ct))
+fun index_head_equiv ct ctxt =
+    ctxt |> Data.map (map_head_equiv (
+      Termtab.update (Thm.term_of ct, compute_head_equiv ctxt ct)))
 
 (* Get list of head equivs for cu, indexed by head term. *)
-fun get_head_equiv (tbl as {head_equiv, ...}) cu =
-    case Termtab.lookup head_equiv (Thm.term_of cu) of
-        NONE => compute_head_equiv tbl cu
-      | SOME info => info
+fun get_head_equiv ctxt cu =
+    let
+      val {head_equiv, ...} = Data.get ctxt
+    in
+      case Termtab.lookup head_equiv (Thm.term_of cu) of
+          NONE => compute_head_equiv ctxt cu
+        | SOME info => info
+    end
 
 (* Get list of head equivs for cu, whose head agrees (or matches) with t. *)
-fun get_head_equiv_with_t (tbl as {ctxt, ...}) (id, cu) t =
+fun get_head_equiv_with_t ctxt (id, cu) t =
     let
       fun is_valid (uhead, infos) =
           if Term.is_Var t then infos
@@ -788,14 +871,14 @@ fun get_head_equiv_with_t (tbl as {ctxt, ...}) (id, cu) t =
           else if Term.aconv_untyped (uhead, Term.head_of t) then infos
           else []
     in
-      (get_head_equiv tbl cu)
+      (get_head_equiv ctxt cu)
           |> maps is_valid
           |> merge_box_with_info ctxt id
     end
 
 (*** Adding rewrite rules and maintain invariants of the table. ***)
 
-(* Work out all consequences of updating simps in tbl. This includes
+(* Work out all consequences of updating simps in the rewrite table. This includes
    updating simp of neighboring nodes, and updating simps / subsimps
    of nodes for which the current node is a subterm. inits is a list
    of simps to be added, where each element is of the form (id, t ==
@@ -804,7 +887,7 @@ fun get_head_equiv_with_t (tbl as {ctxt, ...}) (id, cu) t =
    whose consequences (on neighboring terms and containing terms) need
    to be processed.
  *)
-fun process_update_simp inits tbl =
+fun process_update_simp inits ctxt =
     let
       fun eq_update ((id, th), (id', th')) =
           (id = id' andalso Thm.prop_of th aconv Thm.prop_of th')
@@ -813,53 +896,53 @@ fun process_update_simp inits tbl =
          table. If (id, th) is not redundant, add (id, th) to the list
          of simps whose consequences need to be processed.
        *)
-      fun process_simp (id, th) (to_process, tbl) =
-          if simp_less (th, get_rewrite id tbl (Thm.lhs_of th)) then
-            (insert eq_update (id, th) to_process, update_simp (id, th) tbl)
+      fun process_simp (id, th) (to_process, ctxt) =
+          if simp_less (th, get_rewrite id ctxt (Thm.lhs_of th)) then
+            (insert eq_update (id, th) to_process, update_simp (id, th) ctxt)
           else
-            (to_process, tbl)
+            (to_process, ctxt)
 
       (* Recompute subterm simplifications of t. Update the subsimp
          table as well as the simp table (in the latter case possibly
          adding to the to_process list.
        *)
-      fun process_term ct (to_process, tbl) =
+      fun process_term ct (to_process, ctxt) =
           let
-            val subsimps = get_subterm_rewrite_info tbl ct
-            val tbl' = fold update_subsimp subsimps tbl
+            val subsimps = get_subterm_rewrite_info ctxt ct
+            val ctxt' = fold update_subsimp subsimps ctxt
           in
-            fold process_simp subsimps (to_process, tbl')
+            fold process_simp subsimps (to_process, ctxt')
           end
 
       (* Pull the first item of to_process and work out its
          consequences.
        *)
-      fun update_step (to_process, (tbl as {ctxt, ...})) =
+      fun update_step (to_process, ctxt) =
           case to_process of
-              [] => ([], tbl)
+              [] => ([], ctxt)
             | (id, th) :: rest =>
               let
                 val t = Util.lhs_of th
                 (* th: t == simp_t, th': t = t', result: t' = simp_t. *)
                 fun process_neigh (id', th') =
                     merge_info ctxt (id', meta_sym th') (id, th)
-                val new_simp = map process_neigh (equiv_neighs tbl t)
+                val new_simp = map process_neigh (equiv_neighs ctxt t)
               in
-                (rest, tbl) |> fold process_simp new_simp
-                            |> fold process_term (immediate_contains tbl t)
-                            |> update_step
+                (rest, ctxt) |> fold process_simp new_simp
+                             |> fold process_term (immediate_contains ctxt t)
+                             |> update_step
               end
     in
-      ([], tbl) |> fold process_simp inits |> update_step |> snd
+      ([], ctxt) |> fold process_simp inits |> update_step |> snd
     end
 
 (* Return list of ids that are descendents of id at which t1 and t2
    are equiv.
  *)
-fun equiv_info (tbl as {ctxt, ...}) id (ct1, ct2) =
+fun equiv_info ctxt id (ct1, ct2) =
     let
-      val simp1 = simplify_info tbl ct1
-      val simp2 = simplify_info tbl ct2
+      val simp1 = simplify_info ctxt ct1
+      val simp2 = simplify_info ctxt ct2
       fun compare (id1, th1) (id2, th2) =
           if Util.rhs_of th1 aconv Util.rhs_of th2 then
             [(BoxID.merge_boxes ctxt (id1, id2), Util.transitive_list [th1, meta_sym th2])]
@@ -870,18 +953,18 @@ fun equiv_info (tbl as {ctxt, ...}) id (ct1, ct2) =
           |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
     end
 
-fun equiv_info_t (tbl as {ctxt, ...}) id (t1, t2) =
-    equiv_info tbl id (Thm.cterm_of ctxt t1, Thm.cterm_of ctxt t2)
+fun equiv_info_t ctxt id (t1, t2) =
+    equiv_info ctxt id (Thm.cterm_of ctxt t1, Thm.cterm_of ctxt t2)
 
 (* Return list of ids that are descendents of id at which t1 and t2
    are subterm equiv.
  *)
-fun subequiv_info (tbl as {ctxt, ...}) id (ct1, ct2) =
+fun subequiv_info ctxt id (ct1, ct2) =
     if not ((Term.head_of (Thm.term_of ct1))
                 aconv Term.head_of (Thm.term_of ct2)) then []
     else let
-      val simp1 = subterm_simplify_info tbl ct1
-      val simp2 = subterm_simplify_info tbl ct2
+      val simp1 = subterm_simplify_info ctxt ct1
+      val simp2 = subterm_simplify_info ctxt ct2
       fun compare (id1, th1) (id2, th2) =
           if Util.rhs_of th1 aconv Util.rhs_of th2 then
             [(BoxID.merge_boxes ctxt (id1, id2), Util.transitive_list [th1, meta_sym th2])]
@@ -893,7 +976,7 @@ fun subequiv_info (tbl as {ctxt, ...}) id (ct1, ct2) =
     end
 
 (* Attempt to retrieve property with the given statement from the table. *)
-fun get_property (tbl as {ctxt, ...}) (id, cprop) =
+fun get_property ctxt (id, cprop) =
     let
       val ct = Thm.dest_arg cprop
       val t = Thm.term_of ct
@@ -901,17 +984,17 @@ fun get_property (tbl as {ctxt, ...}) (id, cprop) =
           Term.head_of (prop_of' th) aconv Term.head_of (Thm.term_of cprop)
 
       val property_t =
-          if in_table_raw_for_id tbl (id, t) then
-            (get_property_for_term tbl t)
+          if in_table_raw_for_id ctxt (id, t) then
+            (get_property_for_term ctxt t)
                 |> filter head_agrees
           else let
             fun process_head_rep (id', eq_th) =
-                (get_property_for_term tbl (Util.rhs_of eq_th))
+                (get_property_for_term ctxt (Util.rhs_of eq_th))
                     |> filter head_agrees
                     |> map (convert_property ctxt (id', meta_sym eq_th))
           in
-            (subterm_simplify_info tbl ct)
-                |> maps (get_head_rep_with_id_th tbl)
+            (subterm_simplify_info ctxt ct)
+                |> maps (get_head_rep_with_id_th ctxt)
                 |> maps process_head_rep
           end
     in
@@ -919,14 +1002,14 @@ fun get_property (tbl as {ctxt, ...}) (id, cprop) =
                  |> Util.max_partial (property_eq_better ctxt)
     end
 
-fun get_property_t (tbl as {ctxt, ...}) (id, prop) =
-    get_property tbl (id, Thm.cterm_of ctxt prop)
+fun get_property_t ctxt (id, prop) =
+    get_property ctxt (id, Thm.cterm_of ctxt prop)
 
 (* th is an instantiated property update rule (without schematic
    variables). All premises and conclusions of th should be
    properties. Apply this rule at id and below to get new property.
  *)
-fun apply_property_update_rule (tbl as {ctxt, ...}) id th_opt =
+fun apply_property_update_rule ctxt id th_opt =
     case th_opt of
         NONE => []
       | SOME th =>
@@ -935,7 +1018,7 @@ fun apply_property_update_rule (tbl as {ctxt, ...}) id th_opt =
         in
           if null cprems then [(id, th)]
           else let
-            val p_ths = (map (get_property tbl) (map (pair id) cprems))
+            val p_ths = (map (get_property ctxt) (map (pair id) cprems))
                             |> BoxID.get_all_merges_info ctxt
                             |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
             fun process_p_th (id', ths) = (id', ths MRS th)
@@ -947,7 +1030,7 @@ fun apply_property_update_rule (tbl as {ctxt, ...}) id th_opt =
 (* Find relevant property updates for term t, apply these to get list
    of new properties.
  *)
-fun apply_property_update_on_term (tbl as {ctxt, ...}) id t =
+fun apply_property_update_on_term ctxt id t =
     if fastype_of t = boolT then [] else
     case head_of t of
         Const (c, _) =>
@@ -956,39 +1039,37 @@ fun apply_property_update_on_term (tbl as {ctxt, ...}) id t =
           val updt_rules = Property.lookup_property_update thy c
           fun process_updt_rule th =
               th |> Property.instantiate_property_update ctxt t
-                 |> apply_property_update_rule tbl id
+                 |> apply_property_update_rule ctxt id
         in
           maps process_updt_rule updt_rules
         end
       | _ => []
 
-(* Work out all consequences of updating the list of properties in
-   tbl. This works in a similar manner to process_update_simp. One
+(* Work out all consequences of updating the list of properties in the
+   rewrite table. This works in a similar manner to process_update_simp. One
    complication is the need to apply property update rules.
  *)
-fun process_update_property inits (tbl as {ctxt, ...}) =
+fun process_update_property inits ctxt =
     let
-      val thy = theory_of tbl
+      val thy = Proof_Context.theory_of ctxt
 
       fun eq_property ((id, th), (id', th')) =
           (id = id' andalso Thm.prop_of th aconv Thm.prop_of th')
 
-      fun process_property (id, th) (to_process, tbl) =
+      fun process_property (id, th) (to_process, ctxt) =
           let
             val t = Property.get_property_arg (prop_of' th)
-            val property_t = get_property_for_term tbl t
+            val property_t = get_property_for_term ctxt t
           in
-            if exists (fn info => property_eq_better ctxt info (id, th))
-                      property_t then
-              (to_process, tbl)
+            if exists (fn info => property_eq_better ctxt info (id, th)) property_t then
+              (to_process, ctxt)
             else
-              (insert eq_property (id, th) to_process,
-               add_property_raw (id, th) tbl)
+              (insert eq_property (id, th) to_process, add_property_raw (id, th) ctxt)
           end
 
-      fun update_step (to_process, (tbl as {ctxt, ...})) =
+      fun update_step (to_process, ctxt) =
           case to_process of
-              [] => ([], tbl)
+              [] => ([], ctxt)
             | (id, th) :: rest =>
               let
                 val t = Property.get_property_arg (prop_of' th)
@@ -996,7 +1077,7 @@ fun process_update_property inits (tbl as {ctxt, ...}) =
                 (* Neighbors of t. Here th: P t, th': t = t', result: P t'. *)
                 fun process_neigh (id', eq_th) =
                     convert_property ctxt (id', eq_th) (id, th)
-                val new_property_neigh = map process_neigh (equiv_neighs tbl t)
+                val new_property_neigh = map process_neigh (equiv_neighs ctxt t)
 
                 (* Derived properties of t. *)
                 val ts = Property.strip_property_field thy t
@@ -1004,29 +1085,29 @@ fun process_update_property inits (tbl as {ctxt, ...}) =
                 val updt_rules = Property.lookup_property_update thy c
                 fun process_updt_rule (t, th) =
                     th |> Property.instantiate_property_update ctxt t
-                       |> apply_property_update_rule tbl id
+                       |> apply_property_update_rule ctxt id
                 val new_property_t = maps process_updt_rule
                                           (Util.all_pairs (ts, updt_rules))
 
                 (* Derived properties of parent terms of t. *)
-                val parents_t = map (Thm.term_of) (immediate_contains tbl t)
+                val parents_t = map (Thm.term_of) (immediate_contains ctxt t)
                 val new_property_ps =
-                    maps (apply_property_update_on_term tbl id) parents_t
+                    maps (apply_property_update_on_term ctxt id) parents_t
               in
-                (rest, tbl) |> fold process_property new_property_neigh
-                            |> fold process_property new_property_t
-                            |> fold process_property new_property_ps
-                            |> update_step
+                (rest, ctxt) |> fold process_property new_property_neigh
+                             |> fold process_property new_property_t
+                             |> fold process_property new_property_ps
+                             |> update_step
               end
     in
-      ([], tbl) |> fold process_property inits |> update_step |> snd
+      ([], ctxt) |> fold process_property inits |> update_step |> snd
     end
 
 (* Get list of terms reachable from the terms ts. If trav_contains =
    false, only travel along equiv edges. Otherwise also travel from t
    to any term containing t.
  *)
-fun get_reachable_terms trav_contains tbl cts =
+fun get_reachable_terms trav_contains ctxt cts =
     let
       fun helper (new, all) =
           case new of
@@ -1035,8 +1116,8 @@ fun get_reachable_terms trav_contains tbl cts =
               let
                 val t = Thm.term_of ct
                 val contains =
-                    if trav_contains then immediate_contains tbl t else []
-                val neighs = (equiv_neighs tbl t)
+                    if trav_contains then immediate_contains ctxt t else []
+                val neighs = (equiv_neighs ctxt t)
                                  |> map (fn (_, th) => Thm.rhs_of th)
                 val new' = (contains @ neighs)
                                |> distinct (op aconvc)
@@ -1052,58 +1133,58 @@ fun get_reachable_terms trav_contains tbl cts =
 (* Assume t1 and t2 are already in table. Add equiv edge th: t1 == t2 and
    work out all the consequences.
  *)
-fun add_rewrite_raw id th (tbl as {ctxt, ...}) =
+fun add_rewrite_raw id th ctxt =
     let
       val (ct1, ct2) = (Thm.lhs_of th, Thm.rhs_of th)
       val (t1, t2) = (Thm.term_of ct1, Thm.term_of ct2)
 
       (* New simplifications. *)
-      val t1_rinfo = get_rewrite_info tbl ct1
-      val t2_rinfo = get_rewrite_info tbl ct2
+      val t1_rinfo = get_rewrite_info ctxt ct1
+      val t2_rinfo = get_rewrite_info ctxt ct2
       val t1_news = t2_rinfo |> map (merge_info ctxt (id, th))
       val t2_news = t1_rinfo |> map (merge_info ctxt (id, meta_sym th))
 
       (* New properties. *)
-      val t1_property = get_property_for_term tbl t1
-      val t2_property = get_property_for_term tbl t2
+      val t1_property = get_property_for_term ctxt t1
+      val t2_property = get_property_for_term ctxt t2
       val t1_newp = t2_property |> map (convert_property ctxt (id, meta_sym th))
       val t2_newp = t1_property |> map (convert_property ctxt (id, th))
     in
-      tbl |> add_equiv (id, th)
-          |> process_update_simp (t1_news @ t2_news)
-          |> process_update_property (t1_newp @ t2_newp)
-          |> fold index_all_equiv (get_reachable_terms false tbl [ct1, ct2])
+      ctxt |> add_equiv (id, th)
+           |> process_update_simp (t1_news @ t2_news)
+           |> process_update_property (t1_newp @ t2_newp)
+           |> fold index_all_equiv (get_reachable_terms false ctxt [ct1, ct2])
     end
 
-(* Add equiv edges so tbl is consistent. That is, any two nodes that
+(* Add equiv edges so the rewrite table is consistent. That is, any two nodes that
    have the same simp should be connected in the equiv graph. Also
    return the list of equiv edges added.
  *)
-fun complete_table (tbl as {ctxt, ...}) =
+fun complete_table ctxt =
     let
       fun find_new_equiv ct =
           let
-            val equivs = get_all_equiv tbl (Thm.term_of ct)
+            val equivs = get_all_equiv ctxt (Thm.term_of ct)
           in
-            (get_subterm_rewrite_info tbl ct)
-                |> maps (get_head_rep_with_id_th tbl)
+            (get_subterm_rewrite_info ctxt ct)
+                |> maps (get_head_rep_with_id_th ctxt)
                 |> Util.max_partial (equiv_eq_better ctxt)
                 |> filter_out (has_equiv_eq_better ctxt equivs)
           end
-      val new_equivs = (maps find_new_equiv (get_all_terms tbl))
+      val new_equivs = (maps find_new_equiv (get_all_terms ctxt))
                            |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
     in
       case new_equivs of
-          [] => ([], tbl)
+          [] => ([], ctxt)
         | (id, th) :: _ =>
           (* Add bi-directional edges for terms with the same subterm
              simplification. Keep track of list of edges added.
            *)
           let
-            val tbl' = tbl |> add_rewrite_raw id th
-            val (edges, tbl'') = complete_table tbl'
+            val ctxt' = ctxt |> add_rewrite_raw id th
+            val (edges, ctxt'') = complete_table ctxt'
           in
-            ((id, th) :: edges, tbl'')
+            ((id, th) :: edges, ctxt'')
           end
     end
 
@@ -1111,157 +1192,158 @@ fun complete_table (tbl as {ctxt, ...}) =
    reachable from either side of any edges added, including
    prev_edges.
  *)
-fun complete_table_with_edges prev_edges tbl =
+fun complete_table_with_edges prev_edges ctxt =
     let
-      val (edges, tbl') = complete_table tbl
+      val (edges, ctxt') = complete_table ctxt
       val update_terms = (prev_edges @ edges)
                              |> map snd
                              |> maps (fn th => [Thm.lhs_of th, Thm.rhs_of th])
                              |> distinct (op aconvc)
-                             |> get_reachable_terms true tbl'
+                             |> get_reachable_terms true ctxt'
     in
-      fold index_head_equiv update_terms tbl'
+      fold index_head_equiv update_terms ctxt'
     end
 
 (* Initialize wellform data for term t, with (currently) empty slots
    for each target.
  *)
-fun initialize_wellform_data t (tbl as {ctxt, ...}) =
+fun initialize_wellform_data t ctxt =
     let
-      val thy = theory_of tbl
+      val thy = Proof_Context.theory_of ctxt
       val targets = map (Thm.cterm_of ctxt) (WellForm.lookup_wellform_data thy t)
     in
-      if null targets then tbl
-      else tbl |> map_wellform (Termtab.update (t, map (rpair []) targets))
+      if null targets then ctxt
+      else ctxt |> Data.map (map_wellform (Termtab.update (t, map (rpair []) targets)))
     end
 
-(* Add term t to tbl at box id. The primed version (used in
+(* Add term t to rewrite table at box id. The primed version (used in
    add_rewrite_thm) add t and all its subterms to the table. The
    unprimed version also add new equiv edges if necessary, resulting
    is a consistent rewrite table.
  *)
-fun add_term' (id, ct) tbl =
-    if in_table_raw_for_id tbl (id, Thm.term_of ct) then tbl
+fun add_term' (id, ct) ctxt =
+    if in_table_raw_for_id ctxt (id, Thm.term_of ct) then ctxt
     else let
       (* First add subterms. *)
       val imm_subterms = Subterms.list_subterms ct
       val id_subs = map (pair id) imm_subterms
-      val tbl' = tbl |> fold add_term' id_subs |> add_term_raw (id, ct)
+      val ctxt' = ctxt |> fold add_term' id_subs |> add_term_raw (id, ct)
       val t = Thm.term_of ct
     in
       (* If t is already in table (just not at id), then we are
          done. Otherwise compute all indexed info for t.
        *)
-      if in_table_raw tbl t then tbl'
+      if in_table_raw ctxt t then ctxt'
       else let
         (* Compute simplification and properties of t. Note we are
            doing this in box [] (not id), so it does not need to be
            recomputed if a term is added to a more general box.
          *)
-        val simps = get_subterm_rewrite_info tbl' ct
-        val imm_properties = apply_property_update_on_term tbl' [] t
+        val simps = get_subterm_rewrite_info ctxt' ct
+        val imm_properties = apply_property_update_on_term ctxt' [] t
       in
-        tbl' |> fold (add_contain ct) (map Thm.term_of imm_subterms)
-             |> fold update_simp simps
-             |> fold update_subsimp simps
-             |> process_update_property imm_properties
-             |> initialize_wellform_data t
-             |> index_all_equiv ct
-             |> index_head_equiv ct
+        ctxt' |> fold (add_contain ct) (map Thm.term_of imm_subterms)
+              |> fold update_simp simps
+              |> fold update_subsimp simps
+              |> process_update_property imm_properties
+              |> initialize_wellform_data t
+              |> index_all_equiv ct
+              |> index_head_equiv ct
       end
     end
 
-fun add_term (id, ct) tbl =
-    if in_table_raw_for_id tbl (id, Thm.term_of ct) then tbl
-    else tbl |> add_term' (id, ct) |> complete_table_with_edges []
+fun add_term (id, ct) ctxt =
+    if in_table_raw_for_id ctxt (id, Thm.term_of ct) then ctxt
+    else ctxt |> add_term' (id, ct) |> complete_table_with_edges []
 
 (* First make sure t1 and t2 are in table. Add t1 == t2 to the table,
    and work out any consequences. The result is a consistent rewrite
    table.
  *)
-fun add_rewrite (id, eq_th) tbl =
+fun add_rewrite (id, eq_th) ctxt =
     let
       val meta_eq = to_meta_eq eq_th
       val (ct1, ct2) = meta_eq |> Thm.cprop_of |> Thm.dest_equals
     in
-      if is_equiv id tbl (ct1, ct2) then tbl
+      if is_equiv id ctxt (ct1, ct2) then ctxt
       else
-        tbl |> add_term' (id, ct1) |> add_term' (id, ct2)
-            |> add_rewrite_raw id meta_eq
-            |> complete_table_with_edges [(id, meta_eq)]
+        ctxt |> add_term' (id, ct1) |> add_term' (id, ct2)
+             |> add_rewrite_raw id meta_eq
+             |> complete_table_with_edges [(id, meta_eq)]
     end
 
 (* First make sure t is in the table. Add property P t to the table,
    and work out any consequences. The result is a consistent rewrite
    table.
  *)
-fun add_property (id, th) tbl =
+fun add_property (id, th) ctxt =
     let
       val ct = Property.get_property_arg_th th
     in
-      tbl |> add_term (id, ct)
-          |> process_update_property [(id, th)]
+      ctxt |> add_term (id, ct)
+           |> process_update_property [(id, th)]
     end
 
-fun get_wellform_for_term {wellform, ...} t =
-    the_default [] (Termtab.lookup wellform t)
+fun get_wellform_for_term ctxt t =
+    let
+      val {wellform, ...} = Data.get ctxt
+    in
+      the_default [] (Termtab.lookup wellform t)
+    end
 
 (* Given a term t, return the wellform data for t in a list of (id,
    th) pairs.
  *)
-fun get_wellform_infos_for_term tbl t =
-    maps snd (get_wellform_for_term tbl t)
+fun get_wellform_infos_for_term ctxt t =
+    maps snd (get_wellform_for_term ctxt t)
 
 (* Given (id, th) a wellform data for the left side of eq_th, convert
    to a wellform data for the right side.
  *)
-fun convert_wellform (tbl as {ctxt, ...}) (id', eq_th) (id, th) =
+fun convert_wellform ctxt (id', eq_th) (id, th) =
     let
       val (lhs, rhs) = Logic.dest_equals (Thm.prop_of eq_th)
+      val thy = Proof_Context.theory_of ctxt
     in
-      if lhs aconv rhs then (id, th)
-      else let
-        val thy = theory_of tbl
-      in
-        case WellForm.lookup_wellform_pattern thy (Util.lhs_of eq_th, prop_of' th) of
-            NONE => raise Fail "convert_wellform: invalid input."
-          | SOME (pat, data_pat) =>
-            let
-              (* Cannot use eq_th directly. Rather, find all the
-                 equivalences again for all the subterms.
-               *)
-              val cargs1 = Util.dest_cargs (Thm.lhs_of eq_th)
-              val cargs2 = Util.dest_cargs (Thm.rhs_of eq_th)
-              val eq_ths =
-                  map (fn (ct, ct') =>
-                          (equiv_info tbl id' (ct, ct'))
-                              |> filter (fn (id'', _) => id'' = id')
-                              |> map snd |> the_single)
-                      (cargs1 ~~ cargs2)
-              val pat_args = Util.dest_args pat
-              val th' = apply_to_thm' (
-                    Util.pattern_rewr_conv data_pat (pat_args ~~ eq_ths)) th
+      if lhs aconv rhs then (id, th) else
+      case WellForm.lookup_wellform_pattern thy (Util.lhs_of eq_th, prop_of' th) of
+          NONE => raise Fail "convert_wellform: invalid input."
+        | SOME (pat, data_pat) =>
+          let
+            (* Cannot use eq_th directly. Rather, find all the
+               equivalences again for all the subterms.
+             *)
+            val cargs1 = Util.dest_cargs (Thm.lhs_of eq_th)
+            val cargs2 = Util.dest_cargs (Thm.rhs_of eq_th)
+            val eq_ths =
+                map (fn (ct, ct') =>
+                        (equiv_info ctxt id' (ct, ct'))
+                            |> filter (fn (id'', _) => id'' = id')
+                            |> map snd |> the_single)
+                    (cargs1 ~~ cargs2)
+            val pat_args = Util.dest_args pat
+            val th' = apply_to_thm' (
+                  Util.pattern_rewr_conv data_pat (pat_args ~~ eq_ths)) th
 
-              (* Check the result is in the right form. *)
-              val subst' = pat_args ~~ map Thm.term_of cargs2
-              val prop' = Term.subst_atomic subst' data_pat
-              val _ = assert (prop_of' th' aconv prop')
-                             "convert_wellform: invalid output."
-            in
-              (BoxID.merge_boxes ctxt (id, id'), th')
-            end
-      end
+            (* Check the result is in the right form. *)
+            val subst' = pat_args ~~ map Thm.term_of cargs2
+            val prop' = Term.subst_atomic subst' data_pat
+            val _ = assert (prop_of' th' aconv prop')
+                           "convert_wellform: invalid output."
+          in
+            (BoxID.merge_boxes ctxt (id, id'), th')
+          end
     end
 
 (* Retrieve wellform data for the given term. May need to rewrite t up
    to subterm equivalence.
  *)
-fun get_wellform (tbl as {ctxt, ...}) (id, ct) =
+fun get_wellform ctxt (id, ct) =
     let
       val t = Thm.term_of ct
     in
-      if in_table_raw_for_id tbl (id, t) then
-        (get_wellform_infos_for_term tbl t)
+      if in_table_raw_for_id ctxt (id, t) then
+        (get_wellform_infos_for_term ctxt t)
             |> merge_box_with_info ctxt id
       else
         let
@@ -1270,29 +1352,29 @@ fun get_wellform (tbl as {ctxt, ...}) (id, ct) =
              convert them into wellform data for t.
            *)
           fun process_head_rep (id', eq_th) =
-              (get_wellform_infos_for_term tbl (Util.rhs_of eq_th))
-                  |> map (convert_wellform tbl (id', meta_sym eq_th))
+              (get_wellform_infos_for_term ctxt (Util.rhs_of eq_th))
+                  |> map (convert_wellform ctxt (id', meta_sym eq_th))
         in
-          (subterm_simplify_info tbl ct)
-              |> maps (get_head_rep_with_id_th tbl)
+          (subterm_simplify_info ctxt ct)
+              |> maps (get_head_rep_with_id_th ctxt)
               |> maps process_head_rep
               |> merge_box_with_info ctxt id
               |> Util.max_partial (property_eq_better ctxt)
         end
     end
 
-fun get_wellform_t (tbl as {ctxt, ...}) (id, t) =
-    get_wellform tbl (id, Thm.cterm_of ctxt t)
+fun get_wellform_t ctxt (id, t) =
+    get_wellform ctxt (id, Thm.cterm_of ctxt t)
 
 (* Retrieve the complete set of wellform data for term t, indexed by
    box id.
  *)
-fun get_complete_wellform (tbl as {ctxt, ...}) (id, ct) =
+fun get_complete_wellform ctxt (id, ct) =
     let
-      val thy = theory_of tbl
+      val thy = Proof_Context.theory_of ctxt
       val t = Thm.term_of ct
       val targets = WellForm.lookup_wellform_data thy t
-      val data = (get_wellform tbl (id, ct))
+      val data = (get_wellform ctxt (id, ct))
                      |> map (fn (id', th) => (prop_of' th, (id', th)))
                      |> AList.group (op aconv)
                      |> map snd
@@ -1308,7 +1390,7 @@ fun get_complete_wellform (tbl as {ctxt, ...}) (id, ct) =
    theorems corresponding to any combination whose head agrees with
    one of fheads.
  *)
-fun term_to_wfterm_on_tbl (tbl as {ctxt, ...}) fheads (id, ct) =
+fun cterm_to_wfterm ctxt fheads (id, ct) =
     case Thm.term_of ct of
         _ $ _ =>
         let
@@ -1318,14 +1400,14 @@ fun term_to_wfterm_on_tbl (tbl as {ctxt, ...}) fheads (id, ct) =
           if forall (fn fhead => not (Util.is_head fhead t)) fheads then
             [(id, WfTerm ct)] else
           let
-            val wfdata = get_complete_wellform tbl (id, ct)
+            val wfdata = get_complete_wellform ctxt (id, ct)
             fun process_wfdata (id', ths) =
                 (* For each wellform data of t at box id', retrieve
                    the wellform data of each argment, then merge
                    together.
                  *)
                 cargs |> map (pair id')
-                      |> map (term_to_wfterm_on_tbl tbl fheads)
+                      |> map (cterm_to_wfterm ctxt fheads)
                       |> BoxID.get_all_merges_info ctxt
                       |> map (fn (id'', arg') => (id'', WfComb (cf, arg', ths)))
           in
@@ -1335,24 +1417,24 @@ fun term_to_wfterm_on_tbl (tbl as {ctxt, ...}) fheads (id, ct) =
         end
       | _ => [(id, WfTerm ct)]
 
-fun term_to_wfterm_on_tbl_t (tbl as {ctxt, ...}) fheads (id, t) =
-    term_to_wfterm_on_tbl tbl fheads (id, Thm.cterm_of ctxt t)
+fun term_to_wfterm ctxt fheads (id, t) =
+    cterm_to_wfterm ctxt fheads (id, Thm.cterm_of ctxt t)
 
 (* Add the given wellform data (id, th) for the term t to the table. *)
-fun add_wellform_data_raw (t, (id, th)) (tbl as {ctxt, ...}) =
+fun add_wellform_data_raw (t, (id, th)) ctxt =
     let
       val cprop = cprop_of' th
-      val wellform_data = get_wellform_for_term tbl t
+      val wellform_data = get_wellform_for_term ctxt t
       val infos = the (AList.lookup (op aconvc) wellform_data cprop)
                   handle Option.Option => raise Fail "add_wellform_data_raw"
     in
-      if exists (fn info => property_eq_better ctxt info (id, th)) infos then tbl
+      if exists (fn info => property_eq_better ctxt info (id, th)) infos then ctxt
       else let
         val infos' = infos |> filter_out (property_eq_better ctxt (id, th))
                            |> cons (id, th)
       in
-        tbl |> map_wellform (
-          Termtab.map_entry t (AList.map_entry (op aconvc) cprop (K infos')))
+        ctxt |> Data.map (map_wellform (
+          Termtab.map_entry t (AList.map_entry (op aconvc) cprop (K infos'))))
       end
     end
 
@@ -1361,14 +1443,14 @@ fun add_wellform_data_raw (t, (id, th)) (tbl as {ctxt, ...}) =
    table. Return a list of (id', th') pairs, where the statement of
    th' is t.
  *)
-fun rewrite_find_fact (tbl as {ctxt, ...}) infos (id, ct) =
+fun rewrite_find_fact ctxt infos (id, ct) =
     let
       fun match_fact (id', th) =
           if not (is_Trueprop (Thm.prop_of th)) then [] else
           let
             val id'' = BoxID.merge_boxes ctxt (id, id')
             val ct' = cprop_of' th
-            val eq_info = equiv_info tbl id'' (ct', ct)
+            val eq_info = equiv_info ctxt id'' (ct', ct)
 
             fun process_info (id''', eq_th) =
                 let
@@ -1384,10 +1466,10 @@ fun rewrite_find_fact (tbl as {ctxt, ...}) infos (id, ct) =
     in
       if is_eq_term t then  (* Equality case *)
         map (apsnd to_obj_eq)
-            (equiv_info tbl id (cdest_eq ct))
-      else if Property.is_property_const (theory_of tbl) t then
+            (equiv_info ctxt id (cdest_eq ct))
+      else if Property.is_property_const (Proof_Context.theory_of ctxt) t then
         (* Property case *)
-        get_property tbl (id, ct)
+        get_property ctxt (id, ct)
       else  (* General case *)
         maps match_fact infos
     end
@@ -1401,12 +1483,12 @@ fun rewrite_find_fact (tbl as {ctxt, ...}) infos (id, ct) =
 
    - There are new equalities added.
  *)
-fun complete_wellform_data_for_terms infos ts (tbl as {ctxt, ...}) =
+fun complete_wellform_data_for_terms infos ts ctxt =
     let
       fun get_for_t t =
           let
-            val cur_data = get_wellform_for_term tbl t
-            val target_ids = in_table_raw_ids tbl t
+            val cur_data = get_wellform_for_term ctxt t
+            val target_ids = in_table_raw_ids ctxt t
 
             fun is_target (id, cprop) =
                 let
@@ -1419,46 +1501,54 @@ fun complete_wellform_data_for_terms infos ts (tbl as {ctxt, ...}) =
             val targets = (Util.all_pairs (target_ids, map fst cur_data))
                               |> filter is_target
           in
-            targets |> maps (rewrite_find_fact tbl infos)
+            targets |> maps (rewrite_find_fact ctxt infos)
                     |> map (pair t)
           end
 
       val all_data = maps get_for_t ts
     in
-      fold add_wellform_data_raw all_data tbl
+      fold add_wellform_data_raw all_data ctxt
     end
 
-fun complete_wellform_data infos (tbl as {wellform, ...}) =
+fun complete_wellform_data infos ctxt =
     let
+      val {wellform, ...} = Data.get ctxt
       val ts = Termtab.keys wellform
     in
-      complete_wellform_data_for_terms infos ts tbl
+      complete_wellform_data_for_terms infos ts ctxt
     end
 
-(* Returns the list of terms in tbl' that is not in tbl. *)
-fun get_new_terms (tbl, tbl') =
+(* Returns the list of terms in ctxt' that is not in ctxt. *)
+fun get_new_terms (ctxt, ctxt') =
     let
       fun get_for_term ct =
-          (in_table_raw_ids tbl' (Thm.term_of ct))
-              |> filter_out (fn id =>
-                                in_table_raw_for_id tbl (id, Thm.term_of ct))
+          (in_table_raw_ids ctxt' (Thm.term_of ct))
+              |> filter_out (fn id => in_table_raw_for_id ctxt (id, Thm.term_of ct))
               |> map (rpair ct)
     in
-      maps get_for_term (get_all_terms tbl')
+      maps get_for_term (get_all_terms ctxt')
     end
 
 (* Return the list of new wellform data (added under id prim or
    lower). Return as a list of (t, (id, th)).
  *)
-fun get_new_wellform_data prim_id {wellform, ctxt, ...} =
-    wellform |> Termtab.dest
-             |> maps (fn (t, vals) => map (pair t) (maps snd vals))
-             |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
+fun get_new_wellform_data prim_id ctxt =
+    let
+      val {wellform, ...} = Data.get ctxt
+    in
+      wellform |> Termtab.dest
+               |> maps (fn (t, vals) => map (pair t) (maps snd vals))
+               |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
+    end
 
 (* Return the list of new properties, as a list of (id, th). *)
-fun get_new_property prim_id {property, ctxt, ...} =
-    property |> Termtab.dest_list
-             |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
+fun get_new_property prim_id ctxt =
+    let
+      val {property, ...} = Data.get ctxt
+    in
+      property |> Termtab.dest_list
+               |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
+    end
 
 (* Use strings normally reserved for ty_str for convenience only. Does
    not indicate the original ty_str of the item.
@@ -1481,15 +1571,15 @@ fun relevant_terms_single thy th =
    cases: where th is an equalitiy, a property, and an ordinary
    theorem.
  *)
-fun add_infos infos (id, new_infos) tbl =
+fun add_infos infos (id, new_infos) ctxt =
     if exists (fn th => not (is_Trueprop (Thm.prop_of th))) new_infos then
       raise Fail "add_info"
     else let
-      val thy = theory_of tbl
+      val thy = Proof_Context.theory_of ctxt
 
       val relevant_terms =
           new_infos |> maps (relevant_terms_single thy)
-                    |> get_reachable_terms true tbl
+                    |> get_reachable_terms true ctxt
                     |> map Thm.term_of
 
       val relevant_props =
@@ -1503,25 +1593,25 @@ fun add_infos infos (id, new_infos) tbl =
             | "PROPERTY" => add_property (id, th) tbl
             | _ => tbl
     in
-      tbl |> fold add_one_info new_infos
-          |> complete_wellform_data relevant_props
+      ctxt |> fold add_one_info new_infos
+           |> complete_wellform_data relevant_props
     end
 
 (* Obtain the incremental rtype corresponding to the given (id, th)
    pairs. Consider three cases: when th is an equality, a property,
    and an ordinary theorem.
  *)
-fun get_incr_type (tbl as {ctxt, ...}) infos (id, new_infos) =
+fun get_incr_type ctxt infos (id, new_infos) =
     if exists (fn th => not (is_Trueprop (Thm.prop_of th))) new_infos then
       raise Fail "get_incr_type"
     else let
-      val thy = theory_of tbl
+      val thy = Proof_Context.theory_of ctxt
 
       val (prim_id, ctxt') = BoxID.add_prim_id [] ctxt
 
       val relevant_terms =
           new_infos |> maps (relevant_terms_single thy)
-                    |> get_reachable_terms true tbl
+                    |> get_reachable_terms true ctxt
                     |> map Thm.term_of
 
       val relevant_props =
@@ -1535,45 +1625,16 @@ fun get_incr_type (tbl as {ctxt, ...}) infos (id, new_infos) =
             | "PROPERTY" => add_property ([prim_id], th) tbl
             | _ => tbl
 
-      val tbl' = tbl |> map_context (K ctxt')
-                     |> fold add_one_info new_infos
-                     |> complete_wellform_data relevant_props
+      val ctxt'' = ctxt' |> fold add_one_info new_infos
+                         |> complete_wellform_data relevant_props
 
       val new_ts = (maps (relevant_terms_single thy) new_infos @
                     maps (Property.get_property_arg_th_gen o snd o snd)
-                         (get_new_property prim_id tbl') @
-                    map (Thm.cterm_of ctxt o fst) (get_new_wellform_data prim_id tbl'))
+                         (get_new_property prim_id ctxt'') @
+                    map (Thm.cterm_of ctxt o fst) (get_new_wellform_data prim_id ctxt''))
                        |> distinct (op aconvc)
     in
-      LAST (tbl', id, get_reachable_terms true tbl new_ts)
+      LAST (ctxt'', id, get_reachable_terms true ctxt new_ts)
     end
-
-fun filter_id_for_type rtype insts =
-    case rtype of
-        SINGLE _ => insts
-      | LAST ({ctxt, ...}, _, _) =>
-        let
-          val prim = (BoxID.num_prim_id ctxt) - 1
-        in
-          filter (fn ((id, _), _) => member (op =) id prim) insts
-        end
-
-(* Keep only the last prim id and replace it with repl_id in rtype. *)
-fun replace_id_for_type rtype insts =
-    case rtype of
-        SINGLE _ => insts
-      | LAST ({ctxt, ...}, repl_id, _) =>
-        let
-          val prim = (BoxID.num_prim_id ctxt) - 1
-          fun process_info ((id, inst), th) =
-              if member (op =) id prim then
-                [((BoxID.merge_boxes ctxt (repl_id, remove (op =) prim id), inst), th)]
-              else []
-        in
-          maps process_info insts
-        end
-
-fun replace_id_for_type' rtype insts =
-    insts |> map (rpair ()) |> replace_id_for_type rtype |> map fst
 
 end  (* structure RewriteTable. *)

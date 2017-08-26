@@ -33,15 +33,15 @@ sig
   val single_resolve: proofstep
   val single_resolve_zero: proofstep
 
-  val nat_order_match_side: rewrite_table -> term * cterm -> id_inst ->
+  val nat_order_match_side: Proof.context -> term * cterm -> id_inst ->
                             (id_inst * int * thm) list
-  val nat_order_match': term -> cterm * cterm -> rewrite_table -> id_inst ->
+  val nat_order_match': term -> cterm * cterm -> Proof.context -> id_inst ->
                         (id_inst * (order_type * int * thm)) list
-  val nat_order_match: term -> box_item -> rewrite_table -> id_inst ->
+  val nat_order_match: term -> box_item -> Proof.context -> id_inst ->
                        id_inst_th list
   val nat_order_matcher: item_matcher
   val nat_order_noteq_matcher: item_matcher
-  val nat_order_single_match: term -> box_item -> rewrite_table -> id_inst ->
+  val nat_order_single_match: term -> box_item -> Proof.context -> id_inst ->
                               id_inst_th list
   val nat_order_single_matcher: item_matcher
 
@@ -255,10 +255,10 @@ fun dest_plus' (Const (@{const_name plus}, _) $ A $ B) =
   | dest_plus' _ = NONE
 
 
-(* Whether t simplifies to a plus form in tbl. *)
-fun simp_in_plus_form (id, tbl) t =
+(* Whether t simplifies to a plus form. *)
+fun simp_in_plus_form (id, ctxt) t =
     let
-      val t' = RewriteTable.simp_val_t id tbl t
+      val t' = RewriteTable.simp_val_t id ctxt t
     in
       is_some (dest_plus t') orelse is_some (dest_plus' t')
     end
@@ -301,24 +301,24 @@ fun rewrite_info_y eq_y (cx, cy, diff, th) =
  *)
 fun to_nat_order_prfstep_templ (prfstep_name, pat, order_ty) =
     let
-      fun filt tbl (id, inst) =
-          not (simp_in_plus_form (id, tbl) (lookup_inst inst "x")) andalso
-          not (simp_in_plus_form (id, tbl) (lookup_inst inst "y")) andalso
+      fun filt ctxt (id, inst) =
+          not (simp_in_plus_form (id, ctxt) (lookup_inst inst "x")) andalso
+          not (simp_in_plus_form (id, ctxt) (lookup_inst inst "y")) andalso
           (order_ty = LESS orelse order_ty = LE orelse lookup_numc0 inst > 0)
 
-      fun prfstep_fn rtype item =
+      fun prfstep_fn ictxt item =
           let
-            val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+            val ctxt = IncrContext.context_of ictxt
             val {id, ...} = item
             val insts = ProofStep.get_insts (TypedMatch (TY_PROP, pat))
-                                            item rtype (id, fo_init)
+                                            item ictxt (id, fo_init)
             fun inst_to_updt ((id', inst), th) =
-                if not (filt tbl (id', inst)) then [] else
+                if not (filt ctxt (id', inst)) then [] else
                 let
                   val (x, y) = apply2 (lookup_inst inst) ("x", "y")
                   val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
                   val (simpx, simpy) =
-                      apply2 (RewriteTable.simplify id' tbl)
+                      apply2 (RewriteTable.simplify id' ctxt)
                              (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
                   val diff = order_diffs_inst order_ty inst
                   val th' = to_normal_th order_ty th
@@ -361,28 +361,28 @@ val nat_eq_diff_prfstep =
     let
       val pat = @{term_pat "(?x::nat) = ?y + ?NUMC"}
 
-      fun filt tbl (id, inst) =
+      fun filt ctxt (id, inst) =
           let
             val (x, y) = apply2 (lookup_inst inst) ("x", "y")
           in
             lookup_numc0 inst > 0 andalso
-            not (simp_in_plus_form (id, tbl) x) andalso
-            not (simp_in_plus_form (id, tbl) y) andalso
+            not (simp_in_plus_form (id, ctxt) x) andalso
+            not (simp_in_plus_form (id, ctxt) y) andalso
             not (is_numc x) andalso not (is_numc y)
           end
 
-      fun prfstep_fn rtype item =
+      fun prfstep_fn ictxt item =
           let
-            val (tbl as {ctxt, ...}) = RewriteTable.table_of_rtype rtype
+            val ctxt = IncrContext.context_of ictxt
             val {id, ...} = item
-            val insts = ProofStep.get_insts (PropMatch pat) item rtype
+            val insts = ProofStep.get_insts (PropMatch pat) item ictxt
                                             (id, fo_init)
             fun inst_to_updt ((id', inst), th) =
-                if not (filt tbl (id', inst)) then [] else
+                if not (filt ctxt (id', inst)) then [] else
                 let
                   val (x, y) = (lookup_inst inst "x", lookup_inst inst "y")
                   val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
-                  val (simpx, simpy) = apply2 (RewriteTable.simplify id' tbl) (cx, cy)
+                  val (simpx, simpy) = apply2 (RewriteTable.simplify id' ctxt) (cx, cy)
                   val diff = lookup_numc0 inst
                   val th' = [th] MRS @{thm nat_eq_to_ineqs}
                   val info1 = (cx, cy, diff, th' RS @{thm conjunct1})
@@ -413,15 +413,15 @@ fun get_nat_order_info {tname, prop, ...} =
 
 val nat_order_typed_matcher =
     let
-      fun pre_match pat {tname, ...} (tbl as {ctxt, ...}) =
+      fun pre_match pat {tname, ...} ctxt =
           Matcher.pre_match_head
-              tbl (pat, Thm.cterm_of ctxt (HOLogic.mk_tuple (map Thm.term_of tname)))
+              ctxt (pat, Thm.cterm_of ctxt (HOLogic.mk_tuple (map Thm.term_of tname)))
 
-      fun match pat (item as {tname = cts, ...}) tbl (id, inst) =
+      fun match pat (item as {tname = cts, ...}) ctxt (id, inst) =
           let
             val pats = HOLogic.strip_tuple pat
             val insts' = Matcher.rewrite_match_list
-                             tbl (map (pair false) (pats ~~ cts)) (id, inst)
+                             ctxt (map (pair false) (pats ~~ cts)) (id, inst)
             fun process_inst (inst, ths) =
                 let
                   (* eq_x: pat_x(env) == x, eq_y: pat_y(env) = y *)
@@ -627,12 +627,12 @@ fun minus_n_eq eq n = Util.comb_equiv (minus_nat_ct, [eq, nat_n_refl n])
    First try to match pat with x + n or n + x, and then with other
    forms.
  *)
-fun nat_order_match_side (tbl as {ctxt, ...}) (pat, cx) (id, inst) =
+fun nat_order_match_side ctxt (pat, cx) (id, inst) =
     (* Match pat with x + n. *)
     if is_some (dest_plus pat) then
       let
         val (p, n) = the (dest_plus pat)
-        val insts = Matcher.rewrite_match tbl (p, cx) (id, inst)
+        val insts = Matcher.rewrite_match ctxt (p, cx) (id, inst)
         fun process_inst ((id', inst'), eq_th) =
             (* eq_th: p(env) = x, return p(env) + n = x + n. *)
             ((id', inst'), n, plus_n_eq eq_th n)
@@ -643,7 +643,7 @@ fun nat_order_match_side (tbl as {ctxt, ...}) (pat, cx) (id, inst) =
     else if is_some (dest_plus' pat) then
       let
         val (p, n) = the (dest_plus' pat)
-        val insts = Matcher.rewrite_match tbl (p, cx) (id, inst)
+        val insts = Matcher.rewrite_match ctxt (p, cx) (id, inst)
         val comm_cv = rewr_obj_eq @{thm add_ac(2)}
         fun process_inst ((id', inst'), eq_th) =
             (* eq_th: p(env) = x, return n + p(env) = x + n. *)
@@ -659,7 +659,7 @@ fun nat_order_match_side (tbl as {ctxt, ...}) (pat, cx) (id, inst) =
             let
               val cpat = Thm.cterm_of ctxt pat
               val insts = Matcher.rewrite_match
-                              tbl (@{term_pat "?NUMC::nat"}, cpat) (id, fo_init)
+                              ctxt (@{term_pat "?NUMC::nat"}, cpat) (id, fo_init)
               fun process_inst ((id', inst'), eq_th) =
                   let
                     (* eq_th: n = pat, return pat = 0 or pat = n + 0. *)
@@ -678,7 +678,7 @@ fun nat_order_match_side (tbl as {ctxt, ...}) (pat, cx) (id, inst) =
             if is_none (dest_minus pat) then [] else
             let
               val (p, n) = the (dest_minus pat)
-              val insts = Matcher.rewrite_match tbl (p, cx) (id, inst)
+              val insts = Matcher.rewrite_match ctxt (p, cx) (id, inst)
               fun process_inst ((id', inst'), eq_th) =
                   (* eq_th: p(env) = x, return p(env) - n = x - n. *)
                   ((id', inst'), ~n, minus_n_eq eq_th n)
@@ -690,8 +690,7 @@ fun nat_order_match_side (tbl as {ctxt, ...}) (pat, cx) (id, inst) =
         val self_insts =
             if cx aconvc cnat0 then [] else
             let
-              val insts =
-                  Matcher.rewrite_match tbl (pat, cx) (id, inst)
+              val insts = Matcher.rewrite_match ctxt (pat, cx) (id, inst)
               fun process_inst ((id', inst'), eq_th) =
                   (* eq_th: p(env) = x, return the same. *)
                   ((id', inst'), 0, eq_th)
@@ -707,7 +706,7 @@ fun nat_order_match_side (tbl as {ctxt, ...}) (pat, cx) (id, inst) =
    eq_th)), where eq_th is the equality between pat(env) and x (+/-) n
    (</<=) y or x (</<=) y (+/-) n.
  *)
-fun nat_order_match' pat (cx, cy) (tbl as {ctxt, ...}) (id, inst) =
+fun nat_order_match' pat (cx, cy) ctxt (id, inst) =
     let
       (* Classify pat into A < B or A <= B. *)
       val (f, (patA, patB)) = Util.dest_binop pat
@@ -730,10 +729,10 @@ fun nat_order_match' pat (cx, cy) (tbl as {ctxt, ...}) (id, inst) =
             else (* nB < 0 *) if is_strict then LESS_RMINUS else LE_RMINUS
 
       (* Match A and B in sequence. *)
-      val insts_A = nat_order_match_side tbl (patA, cx) (id, inst)
+      val insts_A = nat_order_match_side ctxt (patA, cx) (id, inst)
       fun process_inst_A ((id', inst'), nA, eqA) =
           let
-            val insts_B = nat_order_match_side tbl (patB, cy) (id', inst')
+            val insts_B = nat_order_match_side ctxt (patB, cy) (id', inst')
             fun process_inst_B ((id'', inst''), nB, eqB) =
                 if nA <> 0 andalso nB <> 0 then [] else
                 let
@@ -773,7 +772,7 @@ fun valid_arg_type ctxt t = valid_type ctxt (fastype_of (dest_arg t))
    variables. Try to use theorem contained in item to justify an
    instantiated version of pat.
  *)
-fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
+fun nat_order_match pat item ctxt (id, inst) =
     if not ((is_order pat andalso valid_arg_type ctxt pat) orelse
             (is_order (get_neg pat) andalso valid_arg_type ctxt (get_neg pat)))
     then [] else
@@ -795,7 +794,7 @@ fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
          sides. If diff1 + diff2 < 0, obtain a contradiction from th1
          and the normalized version of negt_th (~pat).
        *)
-      val insts = nat_order_match' neg_t (y, x) tbl (id, inst)
+      val insts = nat_order_match' neg_t (y, x) ctxt (id, inst)
       fun process_inst ((id', inst'), (order_ty, diff2, eq_th)) =
           if diff1 + diff2 >= 0 then [] else
           let
@@ -823,7 +822,7 @@ fun nat_order_match pat item (tbl as {ctxt, ...}) (id, inst) =
       maps process_inst insts
     end
 
-fun nat_order_pre_match pat _ {ctxt, ...} =
+fun nat_order_pre_match pat _ ctxt =
     (is_order pat andalso valid_arg_type ctxt pat) orelse
     (is_order (get_neg pat) andalso valid_arg_type ctxt (get_neg pat))
 
@@ -834,37 +833,37 @@ val nat_order_matcher =
 (* Use x < y to match x <= y. *)
 val nat_order_noteq_matcher =
     let
-      fun get_insts pat item tbl (id, inst) =
+      fun get_insts pat item ctxt (id, inst) =
           let
             val (A, B) = pat |> dest_not |> dest_eq
             val (cx, cy, n, _) = get_nat_order_info item
           in
             if n >= 0 then ([], [])
             else (Matcher.rewrite_match_list
-                      tbl [(false, (A, cx)), (false, (B, cy))] (id, inst),
+                      ctxt [(false, (A, cx)), (false, (B, cy))] (id, inst),
                   Matcher.rewrite_match_list
-                      tbl [(false, (B, cx)), (false, (A, cy))] (id, inst))
+                      ctxt [(false, (B, cx)), (false, (A, cy))] (id, inst))
           end
           handle Fail "dest_not" => ([], [])
                | Fail "dest_eq" => ([], [])
 
-      fun pre_match pat item tbl =
+      fun pre_match pat item ctxt =
           let
             val (A, B) = pat |> dest_not |> dest_eq
             val (cx, cy, n, _) = get_nat_order_info item
           in
-            n < 0 andalso ((Matcher.pre_match tbl (A, cx) andalso
-                            Matcher.pre_match tbl (B, cy)) orelse
-                           (Matcher.pre_match tbl (A, cy) andalso
-                            Matcher.pre_match tbl (A, cx)))
+            n < 0 andalso ((Matcher.pre_match ctxt (A, cx) andalso
+                            Matcher.pre_match ctxt (B, cy)) orelse
+                           (Matcher.pre_match ctxt (A, cy) andalso
+                            Matcher.pre_match ctxt (A, cx)))
           end
           handle Fail "dest_not" => false
                | Fail "dest_eq" => false
 
-      fun match pat item tbl (id, inst) =
+      fun match pat item ctxt (id, inst) =
           if Util.has_vars pat then [] else
           let
-            val (instAB, instBA) = get_insts pat item tbl (id, inst)
+            val (instAB, instBA) = get_insts pat item ctxt (id, inst)
             fun process_inst (inst', ths) =
                 let
                   (* eq_x: (A/B) = x, eq_y: (B/A) = y *)
@@ -887,7 +886,7 @@ val nat_order_noteq_matcher =
 (* Using term x to justify propositions of the form x <= x + n, where
    n >= 0. This follows the same general outline as nat_order_match.
  *)
-fun nat_order_single_match pat _ (tbl as {ctxt, ...}) (id, inst) =
+fun nat_order_single_match pat _ ctxt (id, inst) =
     if not ((is_order pat andalso fastype_of (dest_arg pat) = natT) orelse
             (is_order (get_neg pat) andalso fastype_of (dest_arg (get_neg pat)) = natT))
     then [] else
@@ -906,8 +905,8 @@ fun nat_order_single_match pat _ (tbl as {ctxt, ...}) (id, inst) =
                     |> apply_to_thm UtilLogic.rewrite_from_contra_form
                     |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
 
-      val insts_A = nat_order_match' neg_t (cA, cA) tbl (id, inst)
-      val insts_B = nat_order_match' neg_t (cB, cB) tbl (id, inst)
+      val insts_A = nat_order_match' neg_t (cA, cA) ctxt (id, inst)
+      val insts_B = nat_order_match' neg_t (cB, cB) ctxt (id, inst)
 
       fun process_inst ((id', inst'), (order_ty, diff, eq_th)) =
           if diff >= 0 then [] else

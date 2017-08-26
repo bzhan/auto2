@@ -15,10 +15,8 @@ local
   val px = Var (("x", 0), natT)
   val py = Var (("y", 0), natT)
   val ctxt' = ctxt |> fold Variable.declare_term [x, x', y, y', z, w, px, py]
-
-  val tbl = (RewriteTable.empty ctxt')
-                |> RewriteTable.add_rewrite ([], assume_eq thy (x, x'))
-  val rtype = SINGLE tbl
+                   |> RewriteTable.add_rewrite ([], assume_eq thy (x, x'))
+  val rtype = SINGLE ctxt'
 in
 
 (* Convert proposition to nat_order item, by applying one of the
@@ -111,7 +109,7 @@ val test_nat_order_match_side =
             val pat = Proof_Context.read_term_pattern ctxt' pat_str
             val cx = Thm.cterm_of ctxt' (Syntax.read_term ctxt' x_str)
             val res = Syntax.read_terms ctxt' res_strs
-            val res' = Nat_Order.nat_order_match_side tbl (pat, cx) ([], fo_init)
+            val res' = Nat_Order.nat_order_match_side ctxt' (pat, cx) ([], fo_init)
             fun check_inst ((_, inst), _, eq_th) =
                 (Util.subst_term_norm inst pat) aconv (Util.lhs_of eq_th)
             fun eq_th_of (_, _, eq_th) = eq_th
@@ -155,7 +153,7 @@ val test_nat_order_match =
             val item = the_single items
                        handle List.Empty => raise Fail "ambiguous input"
             val res = map (mk_Trueprop o Syntax.read_term ctxt') res_strs
-            val res' = match_fn pat item tbl ([], fo_init)
+            val res' = match_fn pat item ctxt' ([], fo_init)
             fun check_inst ((_, inst), th) =
                 (Util.subst_term_norm inst pat) aconv (prop_of' th)
             val check_res =
@@ -223,7 +221,7 @@ val test_nat_order_single_match =
           let
             val ineq = Syntax.read_term ctxt' ineq_str
             val res = Nat_Order.nat_order_single_match
-                          ineq BoxItem.null_item tbl ([], fo_init)
+                          ineq BoxItem.null_item ctxt' ([], fo_init)
           in
             if length res = 1 andalso
                res |> the_single |> snd |> prop_of' aconv ineq then ()
