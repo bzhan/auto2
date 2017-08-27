@@ -5,7 +5,7 @@ local
   val ctxt = @{context}
   val thy = @{theory}
 
-  (* Set up rewrite table and rtype. *)
+  (* Set up rewrite table and incremental context. *)
   val x = Free ("x", natT)
   val x' = Free ("x'", natT)
   val y = Free ("y", natT)
@@ -15,8 +15,8 @@ local
   val px = Var (("x", 0), natT)
   val py = Var (("y", 0), natT)
   val ctxt' = ctxt |> fold Variable.declare_term [x, x', y, y', z, w, px, py]
-                   |> RewriteTable.add_rewrite ([], assume_eq thy (x, x'))
-  val rtype = SINGLE ctxt'
+                   |> RewriteTable.add_rewrite ([], assume_eq thy (x, x')) |> snd
+  val ictxt = SINGLE ctxt'
 in
 
 (* Convert proposition to nat_order item, by applying one of the
@@ -30,7 +30,7 @@ fun convert_prop_to_nat_order prop =
       val item = mk_box_item (0, [], 0, Fact (TY_PROP, [prop], th))
 
       fun apply_prfsteps item =
-          maps (ProofStep.apply_prfstep rtype [item]) Nat_Order.to_nat_order_prfsteps
+          maps (ProofStep.apply_prfstep ictxt [item]) Nat_Order.to_nat_order_prfsteps
 
       fun process_raw_update updt =
           case updt of

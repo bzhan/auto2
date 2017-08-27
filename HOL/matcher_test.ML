@@ -51,7 +51,7 @@ fun add_rewrite id (str1, str2) ctxt =
       val thy = Proof_Context.theory_of ctxt
       val th = assume_eq thy (t1, t2)
     in
-      ctxt |> RewriteTable.add_rewrite (id, th)
+      ctxt |> RewriteTable.add_rewrite (id, th) |> snd
     end
 
 (* Check th is actually t(env) == u. *)

@@ -83,7 +83,7 @@ fun ord_normalize_fn ictxt item1 item2 =
       else let
         val pred_t = @{term is_ord_ring}
         val fheads = ord_heads G
-        val property_infos = RewriteTable.get_property_t ctxt (id, pred_t $ G)
+        val property_infos = PropertyData.get_property_t ctxt (id, pred_t $ G)
 
         fun process_wft property_th (id', (wft1, wft2)) =
             let

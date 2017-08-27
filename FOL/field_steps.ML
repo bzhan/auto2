@@ -294,7 +294,7 @@ val null_const_order_matcher =
             else let
               val ord_field_t = @{term is_ord_field} $ G
               val ord_field_ths =
-                  RewriteTable.get_property_t ctxt (id, ord_field_t)
+                  PropertyData.get_property_t ctxt (id, ord_field_t)
 
               fun process_ord_field_th (id', th) =
                   let

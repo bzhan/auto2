@@ -60,7 +60,7 @@ fun filter_id_for_type ictxt insts =
           filter (fn ((id, _), _) => member (op =) id prim) insts
         end
 
-(* Keep only the last prim id and replace it with repl_id in rtype. *)
+(* Keep only the last prim id and replace it with repl_id in ictxt. *)
 fun replace_id_for_type ictxt insts =
     case ictxt of
         SINGLE _ => insts
@@ -75,8 +75,8 @@ fun replace_id_for_type ictxt insts =
           maps process_info insts
         end
 
-fun replace_id_for_type' rtype insts =
-    insts |> map (rpair ()) |> replace_id_for_type rtype |> map fst
+fun replace_id_for_type' ictxt insts =
+    insts |> map (rpair ()) |> replace_id_for_type ictxt |> map fst
 
 end  (* IncrContext *)
 
@@ -97,9 +97,7 @@ type rewrite_table = {
   (* Subterm rewrite info of a term. *)
   subsimp: ((box_id * thm) list) Termtab.table,
   (* Reverse of subsimp. Head rep of a term. *)
-  reps: ((box_id * thm) list) Termtab.table,
-  (* Property list of a term. *)
-  property: ((box_id * thm) list) Termtab.table
+  reps: ((box_id * thm) list) Termtab.table
 }
 
 signature REWRITE_TABLE =
@@ -143,11 +141,6 @@ sig
       Proof.context -> term -> (box_id * thm) list
   val get_cached_subterm_rewrite: box_id -> Proof.context -> cterm -> thm
 
-  (* property table. *)
-  val get_property_for_term: Proof.context -> term -> (box_id * thm) list
-  val add_property_raw: box_id * thm -> Proof.context -> Proof.context
-  val convert_property: Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
-
   (* Simplification of arbitrary terms. *)
   val head_simplify: box_id -> Proof.context -> cterm -> thm
   val simplify: box_id -> Proof.context -> cterm -> thm
@@ -179,26 +172,20 @@ sig
       Proof.context -> box_id -> term * term -> (box_id * thm) list
   val subequiv_info:
       Proof.context -> box_id -> cterm * cterm -> (box_id * thm) list
-  val get_property: Proof.context -> box_id * cterm -> (box_id * thm) list
-  val get_property_t: Proof.context -> box_id * term -> (box_id * thm) list
-  val apply_property_update_rule:
-      Proof.context -> box_id -> thm option -> (box_id * thm) list
-  val apply_property_update_on_term:
-      Proof.context -> box_id -> term -> (box_id * thm) list
-  val process_update_property:
-      (box_id * thm) list -> Proof.context -> Proof.context
-  val get_reachable_terms: bool -> Proof.context -> cterm list -> cterm list
   val add_rewrite_raw: box_id -> thm -> Proof.context -> Proof.context
+  val get_reachable_terms: bool -> Proof.context -> cterm list -> cterm list
   val complete_table: Proof.context -> (box_id * thm) list * Proof.context
   val complete_table_with_edges:
-      (box_id * thm) list -> Proof.context -> Proof.context
-  val add_term: box_id * cterm -> Proof.context -> Proof.context
-  val add_rewrite: box_id * thm -> Proof.context -> Proof.context
-  val add_property: box_id * thm -> Proof.context -> Proof.context
+      (box_id * thm) list -> Proof.context -> (box_id * thm) list * Proof.context
+  val add_term:
+      box_id * cterm -> Proof.context -> (box_id * thm) list * Proof.context
+  val add_term_list:
+      (box_id * cterm) list -> Proof.context -> (box_id * thm) list * Proof.context
+  val add_rewrite:
+      box_id * thm -> Proof.context -> (box_id * thm) list * Proof.context
 
   (* Updating rewrite table from list of (id, th) pairs. *)
   val get_new_terms: Proof.context * Proof.context -> (box_id * cterm) list
-  val get_new_property: int -> Proof.context -> (term * (box_id * thm)) list
 end;
 
 structure RewriteTable : REWRITE_TABLE =
@@ -212,13 +199,13 @@ structure Data = Proof_Data
   fun init _ = {terms = Termtab.empty, equiv = Termtab.empty,
                 all_equiv = Termtab.empty, head_equiv = Termtab.empty,
                 contain = Termtab.empty, simp = Termtab.empty, subsimp = Termtab.empty,
-                reps = Termtab.empty, property = Termtab.empty}
+                reps = Termtab.empty}
 )
 
 fun clean_resolved id ctxt =
     let
       val {terms, equiv, all_equiv, head_equiv, contain, simp, subsimp,
-           reps, property} = Data.get ctxt
+           reps} = Data.get ctxt
 
       fun clean tb id_fun =
           tb |> Termtab.map
@@ -245,62 +232,56 @@ fun clean_resolved id ctxt =
            all_equiv = clean all_equiv fst,
            head_equiv = clean_head_equiv head_equiv,
            contain = contain, simp = clean simp fst, subsimp = clean subsimp fst,
-           reps = clean reps fst, property = clean property fst})
+           reps = clean reps fst})
     end
 
 fun map_terms f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                 subsimp, reps, property} =
+                 subsimp, reps} =
     {terms = f terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property}
+     reps = reps}
 
 fun map_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                 subsimp, reps, property} =
+                 subsimp, reps} =
     {terms = terms, equiv = f equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property}
+     reps = reps}
 
 fun map_all_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                     subsimp, reps, property} =
+                     subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = f all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = property}
+     reps = reps}
 
 fun map_head_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                      subsimp, reps, property} =
+                      subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = f head_equiv, contain = contain, simp = simp,
-     subsimp = subsimp, reps = reps, property = property}
+     subsimp = subsimp, reps = reps}
 
 fun map_contain f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                   subsimp, reps, property} =
+                   subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = f contain, simp = simp,
-     subsimp = subsimp, reps = reps, property = property}
+     subsimp = subsimp, reps = reps}
 
 fun map_simp f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                subsimp, reps, property} =
+                subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = f simp,
-     subsimp = subsimp, reps = reps, property = property}
+     subsimp = subsimp, reps = reps}
 
 fun map_subsimp f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                   subsimp, reps, property} =
+                   subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp,
-     subsimp = f subsimp, reps = reps, property = property}
+     subsimp = f subsimp, reps = reps}
 
 fun map_reps f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                subsimp, reps, property} =
+                subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
      head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = f reps, property = property}
-
-fun map_property f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                    subsimp, reps, property} =
-    {terms = terms, equiv = equiv, all_equiv = all_equiv,
-     head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps, property = f property}
+     reps = f reps}
 
 (*** Basic manipulation of contain table. ***)
 
@@ -619,38 +600,6 @@ fun get_cached_subterm_rewrite id ctxt ct =
                      |> map snd
                      |> Util.max (rev_order o simp_ord)
 
-(*** Basic manipulation of the property table. ***)
-
-(* Retrieve the current list of properties for a term t. *)
-fun get_property_for_term ctxt t =
-    let
-      val {property, ...} = Data.get ctxt
-    in
-      the_default [] (Termtab.lookup property t)
-    end
-
-(* Add a new property. Similar to add_equiv_raw. *)
-fun add_property_raw (cur_info as (_, th)) ctxt =
-    let
-      val t = Property.get_property_arg (prop_of' th)
-      val property_t = get_property_for_term ctxt t
-    in
-      if exists (fn info => BoxID.info_eq_better ctxt info cur_info)
-                property_t then ctxt
-      else
-        ctxt |> Data.map (map_property (
-          Termtab.update (
-            t, property_t |> filter_out (BoxID.info_eq_better ctxt cur_info)
-                          |> cons cur_info)))
-    end
-
-(* Convert property P s to P t using equality s == t. Merge boxes
-   corresponding to the two theorems.
- *)
-fun convert_property ctxt (id', eq_th) (id, th) =
-    (BoxID.merge_boxes ctxt (id, id'),
-     th |> apply_to_thm' (Conv.arg_conv (Conv.rewr_conv eq_th)))
-
 (*** Simplification of terms not indexed in table. ***)
 
 (* Assume t is subterm simplified under id. *)
@@ -906,134 +855,6 @@ fun subequiv_info ctxt id (ct1, ct2) =
           |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
     end
 
-(* Attempt to retrieve property with the given statement from the table. *)
-fun get_property ctxt (id, cprop) =
-    let
-      val ct = Thm.dest_arg cprop
-      val t = Thm.term_of ct
-      fun head_agrees (_, th) =
-          Term.head_of (prop_of' th) aconv Term.head_of (Thm.term_of cprop)
-
-      val property_t =
-          if in_table_raw_for_id ctxt (id, t) then
-            (get_property_for_term ctxt t)
-                |> filter head_agrees
-          else let
-            fun process_head_rep (id', eq_th) =
-                (get_property_for_term ctxt (Util.rhs_of eq_th))
-                    |> filter head_agrees
-                    |> map (convert_property ctxt (id', meta_sym eq_th))
-          in
-            (subterm_simplify_info ctxt ct)
-                |> maps (get_head_rep_with_id_th ctxt)
-                |> maps process_head_rep
-          end
-    in
-      property_t |> BoxID.merge_box_with_info ctxt id
-                 |> Util.max_partial (BoxID.info_eq_better ctxt)
-    end
-
-fun get_property_t ctxt (id, prop) =
-    get_property ctxt (id, Thm.cterm_of ctxt prop)
-
-(* th is an instantiated property update rule (without schematic
-   variables). All premises and conclusions of th should be
-   properties. Apply this rule at id and below to get new property.
- *)
-fun apply_property_update_rule ctxt id th_opt =
-    case th_opt of
-        NONE => []
-      | SOME th =>
-        let
-          val cprems = map UtilLogic.dest_cTrueprop (Drule.cprems_of th)
-        in
-          if null cprems then [(id, th)]
-          else let
-            val p_ths = (map (get_property ctxt) (map (pair id) cprems))
-                            |> BoxID.get_all_merges_info ctxt
-                            |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
-            fun process_p_th (id', ths) = (id', ths MRS th)
-          in
-            map process_p_th p_ths
-          end
-        end
-
-(* Find relevant property updates for term t, apply these to get list
-   of new properties.
- *)
-fun apply_property_update_on_term ctxt id t =
-    if fastype_of t = boolT then [] else
-    case head_of t of
-        Const (c, _) =>
-        let
-          val thy = Proof_Context.theory_of ctxt
-          val updt_rules = Property.lookup_property_update thy c
-          fun process_updt_rule th =
-              th |> Property.instantiate_property_update ctxt t
-                 |> apply_property_update_rule ctxt id
-        in
-          maps process_updt_rule updt_rules
-        end
-      | _ => []
-
-(* Work out all consequences of updating the list of properties in the
-   rewrite table. This works in a similar manner to process_update_simp. One
-   complication is the need to apply property update rules.
- *)
-fun process_update_property inits ctxt =
-    let
-      val thy = Proof_Context.theory_of ctxt
-
-      fun eq_property ((id, th), (id', th')) =
-          (id = id' andalso Thm.prop_of th aconv Thm.prop_of th')
-
-      fun process_property (id, th) (to_process, ctxt) =
-          let
-            val t = Property.get_property_arg (prop_of' th)
-            val property_t = get_property_for_term ctxt t
-          in
-            if exists (fn info => BoxID.info_eq_better ctxt info (id, th)) property_t then
-              (to_process, ctxt)
-            else
-              (insert eq_property (id, th) to_process, add_property_raw (id, th) ctxt)
-          end
-
-      fun update_step (to_process, ctxt) =
-          case to_process of
-              [] => ([], ctxt)
-            | (id, th) :: rest =>
-              let
-                val t = Property.get_property_arg (prop_of' th)
-
-                (* Neighbors of t. Here th: P t, th': t = t', result: P t'. *)
-                fun process_neigh (id', eq_th) =
-                    convert_property ctxt (id', eq_th) (id, th)
-                val new_property_neigh = map process_neigh (equiv_neighs ctxt t)
-
-                (* Derived properties of t. *)
-                val ts = Property.strip_property_field thy t
-                val c = Property.get_property_name (prop_of' th)
-                val updt_rules = Property.lookup_property_update thy c
-                fun process_updt_rule (t, th) =
-                    th |> Property.instantiate_property_update ctxt t
-                       |> apply_property_update_rule ctxt id
-                val new_property_t = maps process_updt_rule
-                                          (Util.all_pairs (ts, updt_rules))
-
-                (* Derived properties of parent terms of t. *)
-                val parents_t = map (Thm.term_of) (immediate_contains ctxt t)
-                val new_property_ps =
-                    maps (apply_property_update_on_term ctxt id) parents_t
-              in
-                (rest, ctxt) |> fold process_property new_property_neigh
-                             |> fold process_property new_property_t
-                             |> fold process_property new_property_ps
-                             |> update_step
-              end
-    in
-      ([], ctxt) |> fold process_property inits |> update_step |> snd
-    end
-
 (* Get list of terms reachable from the terms ts. If trav_contains =
    false, only travel along equiv edges. Otherwise also travel from t
    to any term containing t.
@@ -1067,23 +888,15 @@ fun get_reachable_terms trav_contains ctxt cts =
 fun add_rewrite_raw id th ctxt =
     let
       val (ct1, ct2) = (Thm.lhs_of th, Thm.rhs_of th)
-      val (t1, t2) = (Thm.term_of ct1, Thm.term_of ct2)
 
       (* New simplifications. *)
       val t1_rinfo = get_rewrite_info ctxt ct1
       val t2_rinfo = get_rewrite_info ctxt ct2
       val t1_news = t2_rinfo |> map (BoxID.merge_eq_infos ctxt (id, th))
       val t2_news = t1_rinfo |> map (BoxID.merge_eq_infos ctxt (id, meta_sym th))
-
-      (* New properties. *)
-      val t1_property = get_property_for_term ctxt t1
-      val t2_property = get_property_for_term ctxt t2
-      val t1_newp = t2_property |> map (convert_property ctxt (id, meta_sym th))
-      val t2_newp = t1_property |> map (convert_property ctxt (id, th))
     in
       ctxt |> add_equiv (id, th)
            |> process_update_simp (t1_news @ t2_news)
-           |> process_update_property (t1_newp @ t2_newp)
            |> fold index_all_equiv (get_reachable_terms false ctxt [ct1, ct2])
     end
 
@@ -1126,13 +939,14 @@ fun complete_table ctxt =
 fun complete_table_with_edges prev_edges ctxt =
     let
       val (edges, ctxt') = complete_table ctxt
-      val update_terms = (prev_edges @ edges)
-                             |> map snd
-                             |> maps (fn th => [Thm.lhs_of th, Thm.rhs_of th])
-                             |> distinct (op aconvc)
-                             |> get_reachable_terms true ctxt'
+      val all_edges = prev_edges @ edges
+      val update_terms =
+          all_edges |> map snd
+                    |> maps (fn th => [Thm.lhs_of th, Thm.rhs_of th])
+                    |> distinct (op aconvc)
+                    |> get_reachable_terms true ctxt'
     in
-      fold index_head_equiv update_terms ctxt'
+      (all_edges, ctxt' |> fold index_head_equiv update_terms)
     end
 
 (* Add term t to rewrite table at box id. The primed version (used in
@@ -1159,20 +973,29 @@ fun add_term' (id, ct) ctxt =
            recomputed if a term is added to a more general box.
          *)
         val simps = get_subterm_rewrite_info ctxt' ct
-        val imm_properties = apply_property_update_on_term ctxt' [] t
       in
         ctxt' |> fold (add_contain ct) (map Thm.term_of imm_subterms)
               |> fold update_simp simps
               |> fold update_subsimp simps
-              |> process_update_property imm_properties
               |> index_all_equiv ct
               |> index_head_equiv ct
       end
     end
 
 fun add_term (id, ct) ctxt =
-    if in_table_raw_for_id ctxt (id, Thm.term_of ct) then ctxt
+    if in_table_raw_for_id ctxt (id, Thm.term_of ct) then ([], ctxt)
     else ctxt |> add_term' (id, ct) |> complete_table_with_edges []
+
+fun add_term_list term_infos ctxt =
+    case term_infos of
+        [] => ([], ctxt)
+      | (id, ct) :: rest =>
+        let
+          val (edges, ctxt') = add_term (id, ct) ctxt
+          val (edges', ctxt'') = add_term_list rest ctxt'
+        in
+          (edges @ edges', ctxt'')
+        end
 
 (* First make sure t1 and t2 are in table. Add t1 == t2 to the table,
    and work out any consequences. The result is a consistent rewrite
@@ -1183,23 +1006,11 @@ fun add_rewrite (id, eq_th) ctxt =
       val meta_eq = to_meta_eq eq_th
       val (ct1, ct2) = meta_eq |> Thm.cprop_of |> Thm.dest_equals
     in
-      if is_equiv id ctxt (ct1, ct2) then ctxt
+      if is_equiv id ctxt (ct1, ct2) then ([], ctxt)
       else
         ctxt |> add_term' (id, ct1) |> add_term' (id, ct2)
              |> add_rewrite_raw id meta_eq
              |> complete_table_with_edges [(id, meta_eq)]
-    end
-
-(* First make sure t is in the table. Add property P t to the table,
-   and work out any consequences. The result is a consistent rewrite
-   table.
- *)
-fun add_property (id, th) ctxt =
-    let
-      val ct = Property.get_property_arg_th th
-    in
-      ctxt |> add_term (id, ct)
-           |> process_update_property [(id, th)]
     end
 
 (* Returns the list of terms in ctxt' that is not in ctxt. *)
@@ -1211,15 +1022,6 @@ fun get_new_terms (ctxt, ctxt') =
               |> map (rpair ct)
     in
       maps get_for_term (get_all_terms ctxt')
-    end
-
-(* Return the list of new properties, as a list of (id, th). *)
-fun get_new_property prim_id ctxt =
-    let
-      val {property, ...} = Data.get ctxt
-    in
-      property |> Termtab.dest_list
-               |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
     end
 
 end  (* structure RewriteTable. *)

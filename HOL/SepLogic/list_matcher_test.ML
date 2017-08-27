@@ -29,11 +29,11 @@ local
             @{term "[xs::nat list, ys, zs]"}]
 
   val ctxt' = ctxt |> fold Variable.auto_fixes ts
-                   |> RewriteTable.add_term ([], Thm.cterm_of ctxt (Free ("P", assnT)))
-                   |> add_rewrite [] ("n1", "None::nat node ref option")
-                   |> add_rewrite [] ("s1", "Some pp")
-                   |> add_rewrite [] ("s2", "Some pp'")
-                   |> add_rewrite [] ("zs", "x # xs")
+                   |> RewriteTable.add_term ([], Thm.cterm_of ctxt (Free ("P", assnT))) |> snd
+                   |> add_rewrite [] ("n1", "None::nat node ref option") |> snd
+                   |> add_rewrite [] ("s1", "Some pp") |> snd
+                   |> add_rewrite [] ("s2", "Some pp'") |> snd
+                   |> add_rewrite [] ("zs", "x # xs") |> snd
 in
 
 fun test test_fun str (pat_str, t_str, info_str) =

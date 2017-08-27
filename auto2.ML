@@ -128,17 +128,22 @@ fun add_infos infos (id, new_infos) ctxt =
                  (map (pair id) new_infos) @
           filter (fn (_, th) => Util.has_subterm relevant_terms (prop_of' th)) infos
 
-      fun add_one_info th tbl =
+      fun add_one_info th ctxt =
           case classify_th thy th of
-              "EQ" => RewriteTable.add_rewrite (id, th) tbl
-            | "PROPERTY" => RewriteTable.add_property (id, th) tbl
-            | _ => tbl
+              "EQ" =>
+              let
+                val (edges, ctxt') = RewriteTable.add_rewrite (id, th) ctxt
+              in
+                ctxt' |> fold PropertyData.process_rewrite_property edges
+              end
+            | "PROPERTY" => PropertyData.add_property (id, th) ctxt
+            | _ => ctxt
     in
       ctxt |> fold add_one_info new_infos
            |> WellformData.complete_wellform_data relevant_props
     end
 
-(* Obtain the incremental rtype corresponding to the given (id, th)
+(* Obtain the incremental context corresponding to the given (id, th)
    pairs. Consider three cases: when th is an equality, a property,
    and an ordinary theorem.
  *)
@@ -160,18 +165,23 @@ fun get_incr_type ctxt infos (id, new_infos) =
                  (map (pair [prim_id]) new_infos) @
           filter (fn (_, th) => Util.has_subterm relevant_terms (prop_of' th)) infos
 
-      fun add_one_info th tbl =
+      fun add_one_info th ctxt =
           case classify_th thy th of
-              "EQ" => RewriteTable.add_rewrite ([prim_id], th) tbl
-            | "PROPERTY" => RewriteTable.add_property ([prim_id], th) tbl
-            | _ => tbl
+              "EQ" =>
+              let
+                val (edges, ctxt') = RewriteTable.add_rewrite ([prim_id], th) ctxt
+              in
+                ctxt' |> fold PropertyData.process_rewrite_property edges
+              end
+            | "PROPERTY" => PropertyData.add_property ([prim_id], th) ctxt
+            | _ => ctxt
 
       val ctxt'' = ctxt' |> fold add_one_info new_infos
                          |> WellformData.complete_wellform_data relevant_props
 
       val new_ts = (maps (relevant_terms_single thy) new_infos @
                     maps (Property.get_property_arg_th_gen o snd o snd)
-                         (RewriteTable.get_new_property prim_id ctxt'') @
+                         (PropertyData.get_new_property prim_id ctxt'') @
                     map (Thm.cterm_of ctxt o fst) (WellformData.get_new_wellform_data prim_id ctxt''))
                        |> distinct (op aconvc)
     in
@@ -428,8 +438,15 @@ fun process_add_terms item (st as {ctxt, ...}) =
 
       val term_infos = map (pair id o Thm.cterm_of ctxt) (headt @ terms)
       val ctxt' =
-          ctxt |> fold RewriteTable.add_term term_infos
-               |> fold WellformData.initialize_wellform_data (headt @ terms)
+          let
+            val (edges, ctxt') = RewriteTable.add_term_list term_infos ctxt
+            val imm_properties =
+                maps (PropertyData.apply_property_update_on_term ctxt' []) (headt @ terms)
+          in
+            ctxt' |> PropertyData.process_update_property imm_properties
+                  |> fold PropertyData.process_rewrite_property edges
+                  |> fold WellformData.initialize_wellform_data (headt @ terms)
+          end
 
       val new_ts = map (Thm.term_of o snd)
                        (RewriteTable.get_new_terms (ctxt, ctxt'))

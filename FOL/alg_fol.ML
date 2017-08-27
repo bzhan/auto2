@@ -42,7 +42,7 @@ fun alg_norm1_prfstep_fn norm_info ictxt {id, tname, ...} =
            exists (fn f => f G t aconv t') excl_norm_t then []
         else let
           val fheads = map (fn t => t $ G) op_heads
-          val property_infos = RewriteTable.get_property_t ctxt (id, pred_t $ G)
+          val property_infos = PropertyData.get_property_t ctxt (id, pred_t $ G)
 
           fun process_wft property_th (id', wft) =
               let
@@ -106,7 +106,7 @@ fun alg_norm2_prfstep_fn norm_info ictxt item1 item2 =
            exists (fn f => f G t1 aconv f G t2) excl_norm_t then []
         else let
           val fheads = map (fn t => t $ G) op_heads
-          val property_infos = RewriteTable.get_property_t ctxt (id, pred_t $ G)
+          val property_infos = PropertyData.get_property_t ctxt (id, pred_t $ G)
 
           fun process_wft property_th (id', (wft1, wft2)) =
               let

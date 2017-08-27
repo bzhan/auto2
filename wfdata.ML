@@ -254,7 +254,7 @@ fun rewrite_find_fact ctxt infos (id, ct) =
             (RewriteTable.equiv_info ctxt id (cdest_eq ct))
       else if Property.is_property_const (Proof_Context.theory_of ctxt) t then
         (* Property case *)
-        RewriteTable.get_property ctxt (id, ct)
+        PropertyData.get_property ctxt (id, ct)
       else  (* General case *)
         maps match_fact infos
     end

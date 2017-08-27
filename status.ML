@@ -477,7 +477,7 @@ val null_property_matcher =
             else if not (Property.is_property_const thy pat) then []
             else
               map (fn (id', th) => ((id', inst), th))
-                  (RewriteTable.get_property_t ctxt (id, pat))
+                  (PropertyData.get_property_t ctxt (id, pat))
           end
     in
       {pre_match = pre_match, match = match}
@@ -512,7 +512,7 @@ val term_property_matcher =
                     val t = Util.subst_term_norm inst' pat
                   in
                     map (fn (id'', th) => ((id'', inst'), th))
-                        (RewriteTable.get_property_t ctxt (id', t))
+                        (PropertyData.get_property_t ctxt (id', t))
                   end
             in
               maps process_inst insts'
@@ -1206,7 +1206,7 @@ fun find_ritem_exact (st as {ctxt, ...}) id ritem =
           let
             val prop = the_single tname
             val infos =
-                (RewriteTable.get_property_t ctxt (id, prop))
+                (PropertyData.get_property_t ctxt (id, prop))
                     |> filter (fn (id', _) => BoxID.is_eq_ancestor ctxt id' id)
           in
             length infos > 0

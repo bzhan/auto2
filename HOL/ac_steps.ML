@@ -50,11 +50,11 @@ fun is_subseq eq (l1, l2) =
                         else is_subseq eq (l1, l2')
 
 (* Find ways to modify ct once by rewriting one of the subterms. *)
-fun ac_expand_once tbl ac_info (id, ct) =
+fun ac_expand_once ctxt ac_info (id, ct) =
     let
       val cus = ACUtil.cdest_ac ac_info ct
       val refls = map Thm.reflexive cus
-      fun get_equiv cu = get_ac_head_equiv tbl ac_info (id, cu)
+      fun get_equiv cu = get_ac_head_equiv ctxt ac_info (id, cu)
 
       fun equivs_i i =
           let

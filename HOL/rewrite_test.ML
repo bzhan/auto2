@@ -154,7 +154,7 @@ fun add_equiv id (str1, str2) ctxt =
     end
 
 fun add_term str ctxt =
-    ctxt |> RewriteTable.add_term ([], Thm.cterm_of ctxt (Syntax.read_term ctxt str))
+    ctxt |> RewriteTable.add_term ([], Thm.cterm_of ctxt (Syntax.read_term ctxt str)) |> snd
 
 fun assert_eq_edges (str1, str2) ids ctxt =
     let
@@ -203,7 +203,7 @@ fun add_rewrite id (str1, str2) ctxt =
       val thy = Proof_Context.theory_of ctxt
       val th = assume_eq thy (t1, t2)
     in
-      ctxt |> RewriteTable.add_rewrite (id, th)
+      ctxt |> RewriteTable.add_rewrite (id, th) |> snd
     end
 
 in

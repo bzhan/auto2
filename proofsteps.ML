@@ -263,7 +263,7 @@ fun get_side_ths ctxt (id, inst) side_args =
       fun process_side_arg side_arg =
           case side_arg of
               PropertyMatch prop =>
-              RewriteTable.get_property_t ctxt (id, prop)
+              PropertyData.get_property_t ctxt (id, prop)
             | WellFormMatch (t, req) =>
               (WellformData.get_wellform_t ctxt (id, t))
                   |> filter (fn (_, th) => prop_of' th aconv req)
