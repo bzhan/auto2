@@ -265,7 +265,7 @@ fun get_side_ths ctxt (id, inst) side_args =
               PropertyMatch prop =>
               RewriteTable.get_property_t ctxt (id, prop)
             | WellFormMatch (t, req) =>
-              (RewriteTable.get_wellform_t ctxt (id, t))
+              (WellformData.get_wellform_t ctxt (id, t))
                   |> filter (fn (_, th) => prop_of' th aconv req)
             | _ => raise Fail "get_side_ths: wrong kind of arg."
       val side_ths = map process_side_arg side_args'

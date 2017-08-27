@@ -41,8 +41,8 @@ fun alg_assoc_prfstep_fn (fhead, assoc_l) ictxt item1 item2 =
       if not (eq_list (op aconv) (ts1, ts2)) then []
       else if RewriteTable.is_equiv id ctxt (ct1, ct2) then []
       else let
-        val wfts1 = RewriteTable.term_to_wfterm ctxt [fhead] (id, t1)
-        val wfts2 = RewriteTable.term_to_wfterm ctxt [fhead] (id, t2)
+        val wfts1 = WellformData.term_to_wfterm ctxt [fhead] (id, t1)
+        val wfts2 = WellformData.term_to_wfterm ctxt [fhead] (id, t2)
         fun process_wft (id', (wft1, wft2)) =
             let
               val (_, eq1) = normalize_assoc (fhead, assoc_l) wft1

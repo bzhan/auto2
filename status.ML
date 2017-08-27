@@ -1168,7 +1168,7 @@ fun find_fact (st as {ctxt, ...}) id t =
     let
       val infos = (get_all_items false st id)
                       |> map (fn {id, prop, ...} => (id, prop))
-      val res = (RewriteTable.rewrite_find_fact ctxt infos (id, Thm.cterm_of ctxt t))
+      val res = (WellformData.rewrite_find_fact ctxt infos (id, Thm.cterm_of ctxt t))
                     |> filter (fn (id', _) => id' = id)
     in
       case res of

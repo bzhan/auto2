@@ -124,7 +124,7 @@ fun assert_head_equivs (id, str) info_str ctxt =
       val info = map (apsnd (Syntax.read_term ctxt)) info_str
       val res = (RewriteTable.get_head_equiv ctxt cu)
                     |> maps snd
-                    |> RewriteTable.merge_box_with_info ctxt id
+                    |> BoxID.merge_box_with_info ctxt id
     in
       assert_eq_info (info, res) "assert_head_equivs" ctxt
     end

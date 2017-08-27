@@ -105,8 +105,8 @@ fun ord_normalize_fn ictxt item1 item2 =
 
         fun process_property_info (id', property_th) =
             let
-              val wfts1 = RewriteTable.cterm_to_wfterm ctxt fheads (id', ct1)
-              val wfts2 = RewriteTable.cterm_to_wfterm ctxt fheads (id', ct2)
+              val wfts1 = WellformData.cterm_to_wfterm ctxt fheads (id', ct1)
+              val wfts2 = WellformData.cterm_to_wfterm ctxt fheads (id', ct2)
             in
               (Util.all_pairs (wfts1, wfts2))
                   |> map (fn ((id1, wft1), (id2, wft2)) =>

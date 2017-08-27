@@ -35,7 +35,7 @@ fun get_ac_head_equiv ctxt ac_info (id, cu) =
     in
       cu |> RewriteTable.get_head_equiv ctxt
          |> maps snd
-         |> RewriteTable.merge_box_with_info ctxt id
+         |> BoxID.merge_box_with_info ctxt id
          |> maps process_head_equiv
          |> filter_out (Thm.is_reflexive o snd)
     end
@@ -74,9 +74,6 @@ fun ac_expand ctxt ac_info (id, ct) =
     let
       val max_ac = Config.get ctxt max_ac
 
-      fun merge_info (id, th) (id', th') =
-          (BoxID.merge_boxes ctxt (id, id'), Util.transitive_list [th, th'])
-
       fun ac_equiv_eq_better (id, th) (id', th') =
           let
             val seq1 = ACUtil.dest_ac ac_info (Util.rhs_of th)
@@ -100,7 +97,7 @@ fun ac_expand ctxt ac_info (id, ct) =
                 val rhs_expand =
                     (ac_expand_once ctxt ac_info (id, Thm.rhs_of eq_th))
                         |> Util.max_partial ac_equiv_eq_better
-                        |> map (merge_info (id', eq_th))
+                        |> map (BoxID.merge_eq_infos ctxt (id', eq_th))
                         |> filter_out (has_ac_equiv_eq_better (old' @ rest))
               in
                 helper (old', rest @ rhs_expand)

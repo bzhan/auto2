@@ -200,7 +200,7 @@ fun cong_on_ineq_fn ictxt {id, prop, ...} =
         let
           val A_equivs = (RewriteTable.get_head_equiv ctxt cA)
                              |> maps snd
-                             |> RewriteTable.merge_box_with_info ctxt id
+                             |> BoxID.merge_box_with_info ctxt id
         in
           maps process_A_equiv A_equivs
         end

@@ -23,6 +23,10 @@ sig
   val is_box_unresolved: Proof.context -> box_id -> bool
   val is_box_supported: Proof.context -> box_id -> bool
   val id_is_eq_ancestor: Proof.context -> box_id * 'a -> box_id * 'a -> bool
+  val info_eq_better: Proof.context -> box_id * thm -> box_id * thm -> bool
+  val merge_box_with_info:
+      Proof.context -> box_id -> (box_id * 'a) list -> (box_id * 'a) list
+  val merge_eq_infos: Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
   val add_prim_id: box_id -> Proof.context -> int * Proof.context
   val add_resolved: box_id -> Proof.context -> Proof.context
 end;
@@ -174,6 +178,15 @@ fun is_box_supported ctxt id =
     forall (fn prim_id => is_box_unresolved ctxt [prim_id]) id
 
 fun id_is_eq_ancestor ctxt (id, _) (id', _) = is_eq_ancestor ctxt id id'
+
+fun info_eq_better ctxt (id, th) (id', th') =
+    Thm.prop_of th aconv Thm.prop_of th' andalso is_eq_ancestor ctxt id id'
+
+fun merge_box_with_info ctxt id =
+    map (apfst (fn id' => merge_boxes ctxt (id, id')))
+
+fun merge_eq_infos ctxt (id, th) (id', th') =
+    (merge_boxes ctxt (id, id'), Util.transitive_list [th, th'])
 
 fun add_prim_id parent_id ctxt =
     let
