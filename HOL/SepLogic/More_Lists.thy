@@ -2,9 +2,6 @@ theory More_Lists
 imports "../DataStrs/Lists_Ex" "~~/src/HOL/Imperative_HOL/ex/Subarray"
 begin
 
-lemma append_eq_first [backward]: "b = c \<Longrightarrow> a @ b = a @ c" by simp
-lemma append_eq_second [backward]: "a = b \<Longrightarrow> a @ c = b @ c" by simp
-
 section {* Higher-order functions *}
 
 setup {* fold add_rewrite_rule @{thms List.filter.simps} *}

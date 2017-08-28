@@ -8,8 +8,6 @@ section {* Case checking and induction *}
 
 setup {* add_resolve_prfstep @{thm list.distinct(2)} *}
 theorem list_constr [forward]: "x # xs = y # ys \<Longrightarrow> x = y \<and> xs = ys" by simp
-theorem list_eq_hd [backward]: "xs = ys \<Longrightarrow> x # xs = x # ys" by simp
-theorem list_eq_tl [backward]: "x = y \<Longrightarrow> x # xs = y # xs" by simp
 setup {* fold add_rewrite_rule @{thms List.list.sel(1,3)} *}
 setup {* add_rewrite_rule @{thm List.hd_append2} *}
 setup {* add_forward_prfstep @{thm list.collapse} *}
