@@ -23,14 +23,6 @@ session Primes = AUTO2 +
   theories
     "HOL/Primes_Ex"
 
-session RBT = AUTO2 +
-  description {*
-    Examples in lists, trees, and red-black tree.
-  *}
-  theories
-    "HOL/DataStrs/BST_Func"
-    "HOL/DataStrs/RBT_Func"
-
 session Hoare = AUTO2 +
   description {*
     Examples in Hoare logic.
@@ -54,8 +46,6 @@ session SepLogic_BasicStr = SepLogic_Base +
   theories
     "HOL/SepLogic/LinkedList"
     "HOL/SepLogic/BinaryTree"
-    "HOL/SepLogic/DynamicArray"
-    "HOL/SepLogic/ArrayMap"
 
 session SepLogic_Arrays = SepLogic_Base +
   description {*
@@ -72,7 +62,7 @@ session SepLogic_RBT = SepLogic_Base +
   theories
     "HOL/SepLogic/RBT"
 
-session SepLogic_PQueue = SepLogic_BasicStr +
+session SepLogic_PQueue = SepLogic_Base +
   description {*
     Separation logic: priority queue (using array heap).
   *}
