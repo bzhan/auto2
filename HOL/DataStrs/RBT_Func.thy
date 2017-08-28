@@ -155,7 +155,6 @@ theorem balanceR_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balanceR t) = 
       @case "cl (lsub (rsub t)) = R" @then @case "cl (rsub (rsub t)) = R" @end @end
 @qed
 
-declare [[max_ac = 30]]
 theorem balance_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t"
 @proof
   @case "t = Leaf" @then
@@ -163,7 +162,6 @@ theorem balance_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balance t) = rb
     @case "cl (lsub t) = R" @with
       @case "cl (lsub (lsub t)) = R" @then @case "cl (rsub (lsub t)) = R" @end @end
 @qed
-declare [[max_ac = 20]]
 
 theorem balance_inorder [rewrite]: "rbt_in_traverse (balance t) = rbt_in_traverse t"
 @proof

@@ -56,7 +56,7 @@ theorem strict_sorted_delmin [rewrite]:
 @proof @have "distinct (x # xs)" @qed
 
 theorem map_of_alist_binary [rewrite]:
-  "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> (map_of_alist (xs @ a # ys))\<langle>x\<rangle> =
+  "strict_sorted (map fst (xs @ [a] @ ys)) \<Longrightarrow> (map_of_alist (xs @ [a] @ ys))\<langle>x\<rangle> =
    (if x < fst a then (map_of_alist xs)\<langle>x\<rangle>
     else if x > fst a then (map_of_alist ys)\<langle>x\<rangle> else Some (snd a))"
 @proof
@@ -84,10 +84,10 @@ theorem ordered_insert_sorted [backward]:
 @proof @induct ys @qed
 
 theorem ordered_insert_binary [rewrite]:
-  "strict_sorted (xs @ a # ys) \<Longrightarrow> ordered_insert x (xs @ a # ys) =
-    (if x < a then (ordered_insert x xs) @ a # ys
-     else if x > a then xs @ a # ordered_insert x ys
-     else xs @ a # ys)"
+  "strict_sorted (xs @ [a] @ ys) \<Longrightarrow> ordered_insert x (xs @ [a] @ ys) =
+    (if x < a then (ordered_insert x xs) @ [a] @ ys
+     else if x > a then xs @ [a] @ ordered_insert x ys
+     else xs @ [a] @ ys)"
 @proof @induct xs @qed
 
 section {* Ordered insertion into list of pairs *}
@@ -113,10 +113,10 @@ theorem ordered_insert_pairs_sorted [backward]:
 @proof @induct ys @qed
 
 theorem ordered_insert_pairs_binary [rewrite]:
-  "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> ordered_insert_pairs x v (xs @ a # ys) =
-    (if x < fst a then (ordered_insert_pairs x v xs) @ a # ys
-     else if x > fst a then xs @ a # ordered_insert_pairs x v ys
-     else xs @ (x, v) # ys)"
+  "strict_sorted (map fst (xs @ [a] @ ys)) \<Longrightarrow> ordered_insert_pairs x v (xs @ [a] @ ys) =
+    (if x < fst a then (ordered_insert_pairs x v xs) @ [a] @ ys
+     else if x > fst a then xs @ [a] @ ordered_insert_pairs x v ys
+     else xs @ [(x, v)] @ ys)"
 @proof
   @induct xs @with
     @subgoal "xs = x' # xs'"
@@ -145,9 +145,9 @@ theorem remove_elt_idem [rewrite]:
 @proof @induct xs @qed
 
 theorem remove_elt_list_binary [rewrite]:
-  "strict_sorted (xs @ a # ys) \<Longrightarrow> remove_elt_list x (xs @ a # ys) =
-    (if x < a then (remove_elt_list x xs) @ a # ys
-     else if x > a then xs @ a # remove_elt_list x ys else xs @ ys)"
+  "strict_sorted (xs @ [a] @ ys) \<Longrightarrow> remove_elt_list x (xs @ [a] @ ys) =
+    (if x < a then (remove_elt_list x xs) @ [a] @ ys
+     else if x > a then xs @ [a] @ remove_elt_list x ys else xs @ ys)"
 @proof
   @induct xs @with
     @subgoal "xs = []"
@@ -186,9 +186,9 @@ theorem remove_elt_pairs_idem [rewrite]:
 @proof @induct ys @qed
 
 theorem remove_elt_pairs_binary [rewrite]:
-  "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> remove_elt_pairs x (xs @ a # ys) =
-    (if x < fst a then (remove_elt_pairs x xs) @ a # ys
-     else if x > fst a then xs @ a # remove_elt_pairs x ys else xs @ ys)"
+  "strict_sorted (map fst (xs @ [a] @ ys)) \<Longrightarrow> remove_elt_pairs x (xs @ [a] @ ys) =
+    (if x < fst a then (remove_elt_pairs x xs) @ [a] @ ys
+     else if x > fst a then xs @ [a] @ remove_elt_pairs x ys else xs @ ys)"
 @proof
   @induct xs @with
     @subgoal "xs = []"
