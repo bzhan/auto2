@@ -89,10 +89,10 @@ theorem Least_equality' [backward1]:
 (* Pairs. *)
 setup {* add_rewrite_rule @{thm fst_conv} *}
 setup {* add_rewrite_rule @{thm snd_conv} *}
+setup {* add_forward_prfstep (equiv_forward_th @{thm prod.simps(1)}) *}
+setup {* add_rewrite_rule_cond @{thm surjective_pairing} [with_cond "?t \<noteq> (?a, ?b)"] *}
 setup {* add_rewrite_rule @{thm case_prod_conv} *}
 setup {* add_rewrite_rule_cond @{thm case_prod_beta} [with_cond "?p \<noteq> (?s, ?t)"] *}
-theorem pair_inject [forward]: "(a, b) = (a', b') \<Longrightarrow> a = a' \<and> b = b'" by simp
-setup {* add_rewrite_rule_cond @{thm Product_Type.prod.collapse} [with_cond "?prod \<noteq> (fst ?prod, snd ?prod)"] *}
 
 (* Let. *)
 setup {* add_rewrite_rule (to_obj_eq_th @{thm Let_def}) *}

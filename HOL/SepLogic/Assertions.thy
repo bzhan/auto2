@@ -4,8 +4,6 @@ theory Assertions
 imports "../Auto2_Main" "~~/src/HOL/Imperative_HOL/Imperative_HOL"
 begin 
 
-setup {* add_rewrite_rule_cond @{thm surjective_pairing} [with_cond "?t \<noteq> (?a, ?b)"] *}
-
 subsection {* Partial Heaps *}
 text {*
   A partial heap is modeled by a heap and a set of valid addresses, with the

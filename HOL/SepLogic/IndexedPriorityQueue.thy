@@ -564,11 +564,6 @@ theorem delete_min_idx_pqueue_rule [hoare_triple]:
 declare delete_min_idx_pqueue_def [sep_proc_defs del]
 
 setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
-setup {* add_rewrite_rule_cond @{thm surjective_pairing} [with_cond "?t \<noteq> (?a, ?b)"] *}
-lemma test1: "k = fst (k, v)" by simp
-setup {* add_forward_prfstep_cond @{thm test1} [with_term "(?k, ?v)"] *}
-lemma test2: "v = snd (k, v)" by simp
-setup {* add_forward_prfstep_cond @{thm test2} [with_term "(?k, ?v)"] *}
 
 theorem delete_min_idx_pqueue_map' [hoare_triple, hoare_create_case]:
   "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(length xs > 0)>
@@ -642,6 +637,7 @@ theorem heap_implies_hd_min2 [backward1]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_kv_list xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
 @proof
   @obtain i where "i < length xs \<and> (k, v) = xs ! i" @with @have "(k, v) \<in> set xs" @end
+  @have "v = snd (k, v)"
 @qed
 
 theorem empty_list_to_empty_map [rewrite]:

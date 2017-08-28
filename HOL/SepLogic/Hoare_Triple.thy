@@ -196,6 +196,5 @@ setup {* del_prfstep_thm @{thm effectI} *}
 setup {* del_prfstep_thm @{thm hoare_triple_def} *}
 setup {* del_prfstep_thm @{thm hoare_triple_def'} *}
 setup {* del_prfstep_thm @{thm success_run.simps} *}
-setup {* del_prfstep_thm @{thm surjective_pairing} *}
 
 end

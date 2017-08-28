@@ -102,8 +102,8 @@ setup {* add_forward_prfstep_cond @{thm last_in_mset} [with_term "last ?xs", wit
 
 section {* Relationship between mset and set of lists *}
 
-setup {* add_resolve_prfstep (equiv_forward_th @{thm in_multiset_in_set}) *}
-setup {* add_resolve_prfstep (equiv_backward_th @{thm in_multiset_in_set}) *}
+setup {* add_rewrite_rule_cond @{thm in_multiset_in_set} [with_term "set ?xs"] *}
+setup {* add_rewrite_rule_back_cond @{thm in_multiset_in_set} [with_term "mset ?xs"] *}
 
 theorem in_set_conv_nth' [resolve]: "x \<in> set xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
   by (metis in_set_conv_nth)
