@@ -102,7 +102,7 @@ fun tree_search :: "('a::ord, 'b) tree \<Rightarrow> 'a \<Rightarrow> 'b option"
    else tree_search r x)"
 setup {* fold add_rewrite_rule @{thms tree_search.simps} *}
 
-theorem tree_search_correct:
+theorem tree_search_correct [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_search t x = (tree_map t)\<langle>x\<rangle>"
 @proof @induct t @qed
 
