@@ -1086,7 +1086,10 @@ fun add_resolved id {uid_next, boxes, queue, ctxt} =
       val ctxt' = BoxID.add_resolved id ctxt
     in
       {uid_next = uid_next, boxes = boxes, queue = queue,
-       ctxt = ctxt' |> RewriteTable.clean_resolved id}
+       ctxt = ctxt' |> RewriteTable.clean_resolved id
+                    |> PropertyData.clean_resolved id
+                    |> WellformData.clean_resolved id
+                    |> Auto2Data.invoke_clean_resolved id}
     end
 
 fun get_all_ids {boxes, ...} = Boxidtab.keys boxes

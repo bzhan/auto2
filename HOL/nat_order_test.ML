@@ -2,38 +2,35 @@
 
 local
 
-  val init = {resolved = [], graph = Termtab.empty, inv_graph = Termtab.empty}
   val ts = map (fn x => Free (x, natT)) ["u", "v", "w", "x", "y", "z"]
-  val ctxt = fold Util.declare_free_term ts @{context}
+  val init = fold Util.declare_free_term ts @{context}
 
 in
 
-fun add_ineq ctxt (id, str) =
+fun add_ineq (id, str) ctxt =
     let
       val t = Syntax.read_term ctxt str
       val th = t |> mk_Trueprop |> Thm.cterm_of ctxt |> Thm.assume
     in
-      NatOrder.add_ineq ctxt (id, th)
+      NatOrder.add_ineq (id, th) ctxt
     end
 
-fun add_ineq_general ctxt (id, str) =
+fun add_ineq_general (id, str) ctxt =
     let
       val t = Syntax.read_term ctxt str
       val th = t |> mk_Trueprop |> Thm.cterm_of ctxt |> Thm.assume
     in
-      NatOrder.add_ineq_general ctxt (id, th)
+      NatOrder.add_ineq_general (id, th) ctxt
     end
 
-val clear = K init
-
-fun assert_info (id, str) ord_tbl =
+fun assert_info (id, str) ctxt =
     let
       val t = Syntax.read_term ctxt str
       val th = t |> mk_Trueprop |> Thm.cterm_of ctxt |> Thm.assume
       val (x, y, _) = NatOrder.dest_ineq t
-      val ineqs = NatOrder.retrieve_ineqs ord_tbl (x, y)
+      val ineqs = NatOrder.retrieve_ineqs ctxt (x, y)
     in
-      if member NatOrder.eq_info ineqs (id, th) then ord_tbl else
+      if member NatOrder.eq_info ineqs (id, th) then ctxt else
       let
         val _ = tracing (NatOrder.print_ord_info ctxt (id, th) ^
                          " not found.")
@@ -43,24 +40,22 @@ fun assert_info (id, str) ord_tbl =
       end
     end
 
-fun assert_box_resolved ctxt id ord_tbl =
-    if NatOrder.is_box_resolved ctxt ord_tbl id then ord_tbl else
+fun assert_box_resolved id ctxt =
+    if NatOrder.is_box_resolved ctxt id then ctxt else
     let
       val _ = tracing (BoxID.string_of_box_id id ^ " not resolved.")
     in
       raise Fail "assert_box_resolved"
     end
 
-fun assert_justify_ineq (id, str) ord_tbl =
+fun assert_justify_ineq (id, str) ctxt =
     let
       val t = Syntax.read_term ctxt str
-      val ct = Thm.cterm_of ctxt t
-      val info =
-          if is_neg t then NatOrder.justify_neg_ineq ord_tbl ct
-          else NatOrder.justify_ineq ord_tbl ct
+      val info = if is_neg t then NatOrder.justify_neg_ineq ctxt t
+                 else NatOrder.justify_ineq ctxt t
     in
       if length info = 1 andalso fst (the_single info) = id andalso
-         prop_of' (snd (the_single info)) aconv t then ord_tbl else
+         prop_of' (snd (the_single info)) aconv t then ctxt else
       let
         val _ = tracing (BoxID.string_of_box_id id ^ " " ^
                          (Syntax.string_of_term ctxt t))
@@ -71,9 +66,9 @@ fun assert_justify_ineq (id, str) ord_tbl =
 
 (* Basic non-contradictory case. *)
 val test1 =
-    init |> add_ineq ctxt ([], "x <= y + 1")
-         |> add_ineq ctxt ([], "y <= z + 1")
-         |> add_ineq ctxt ([], "z <= x + 1")
+    init |> add_ineq ([], "x <= y + 1")
+         |> add_ineq ([], "y <= z + 1")
+         |> add_ineq ([], "z <= x + 1")
          |> assert_info ([], "x <= y + 1")
          |> assert_info ([], "x <= z + 2")
          |> assert_info ([], "y <= z + 1")
@@ -83,33 +78,48 @@ val test1 =
 
 (* Basic contradictory case. *)
 val test2 =
-    init |> add_ineq ctxt ([], "x <= y + 1")
-         |> add_ineq ctxt ([], "y <= z + 2")
-         |> add_ineq ctxt ([], "z + 4 <= x")
-         |> assert_box_resolved ctxt []
+    init |> add_ineq ([], "x <= y + 1")
+         |> add_ineq ([], "y <= z + 2")
+         |> add_ineq ([], "z + 4 <= x")
+         |> assert_box_resolved []
 
 (* Basic test for adding general inequalities. *)
 val test3 =
-    init |> add_ineq_general ctxt ([], "x <= y")
+    init |> add_ineq_general ([], "x < y + 2")
+         |> assert_info ([], "x <= y + 1")
+         |> add_ineq_general ([], "x < y + 1")
          |> assert_info ([], "x <= y + 0")
-         |> clear
-         |> add_ineq_general ctxt ([], "x < y")
+         |> add_ineq_general ([], "x < y")
          |> assert_info ([], "x + 1 <= y")
-         |> clear
-         |> add_ineq_general ctxt ([], "x < y + 1")
-         |> assert_info ([], "x <= y + 0")
-         |> clear
-         |> add_ineq_general ctxt ([], "x + 1 < y")
+         |> add_ineq_general ([], "x + 1 < y")
          |> assert_info ([], "x + 2 <= y")
 
 (* Test of justifying inequalities. *)
 val test4 =
-    init |> add_ineq ctxt ([], "x <= y + 3")
+    init |> add_ineq ([], "x <= y + 3")
          |> assert_justify_ineq ([], "x <= y + 3")
          |> assert_justify_ineq ([], "x <= y + 4")
          |> assert_justify_ineq ([], "x < y + 4")
          |> assert_justify_ineq ([], "~(y + 3 < x)")
          |> assert_justify_ineq ([], "~(y + 4 <= x)")
          |> assert_justify_ineq ([], "~(y + 5 <= x)")
+
+(* Test for justifying trivial inequalities. *)
+val test5 =
+    init |> assert_justify_ineq ([], "x <= x")
+         |> assert_justify_ineq ([], "x <= x + 3")
+         |> assert_justify_ineq ([], "(0::nat) < 1")
+         |> assert_justify_ineq ([], "(1::nat) <= 1")
+
+(* Test for adding inequalities with addition on both sides. *)
+val test6 =
+    init |> add_ineq_general ([], "x + 1 <= y + 1")
+         |> assert_info ([], "x <= y + 0")
+         |> add_ineq_general ([], "x + 1 < y + 1")
+         |> assert_info ([], "x + 1 <= y")
+         |> add_ineq_general ([], "x + 3 <= y + 1")
+         |> assert_info ([], "x + 2 <= y")
+         |> add_ineq_general ([], "x + 3 < y + 1")
+         |> assert_info ([], "x + 3 <= y")
 
 end

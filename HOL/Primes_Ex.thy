@@ -36,7 +36,8 @@ setup {* add_forward_prfstep_cond @{thm prime_dvd_intro}
 lemma prime_dvd_mult_eq_nat: "prime p \<Longrightarrow> p dvd m * n = (p dvd m \<or> p dvd n)" by auto2
 
 lemma not_prime_eq_prod_nat [backward1]: "n > 1 \<Longrightarrow> \<not> prime n \<Longrightarrow>
-    \<exists>m k. n = m * k \<and> 1 < m \<and> m < n \<and> 1 < k \<and> k < n" by auto2
+    \<exists>m k. n = m * k \<and> 1 < m \<and> m < n \<and> 1 < k \<and> k < n"
+@proof @obtain m where "m dvd n \<and> m \<noteq> 1 \<and> m \<noteq> n" @obtain k where "n = m * k" @qed
 
 lemma prime_dvd_power_nat: "prime p \<Longrightarrow> p dvd x^n \<Longrightarrow> p dvd x" by auto2
 setup {* add_forward_prfstep_cond @{thm prime_dvd_power_nat} [with_cond "?p \<noteq> ?x"] *}
@@ -50,6 +51,7 @@ lemma prime_factor_nat [backward]: "n \<noteq> 1 \<Longrightarrow> \<exists>p. p
   @strong_induct n
   @case "prime n" @then @case "n = 0" @then
   @obtain k where "k \<noteq> 1" "k \<noteq> n" "k dvd n"
+  @apply_induct_hyp k
 @qed
 
 lemma prime_divprod_pow_nat:
@@ -113,7 +115,7 @@ theorem factorization_unique_aux:
   @strong_induct M arbitrary N
   @case "M = {#}" @then
   @obtain M' m where "M = M' + {#m#}" @then
-  @have "m dvd (\<Prod>i\<in>#N. i)" @then
+  @have "m dvd (\<Prod>i\<in>#M. i)" @then
   @obtain n where "n \<in># N" "m dvd n" @then
   @obtain N' where "N = N' + {#n#}" @then
   @have "m = n" @then

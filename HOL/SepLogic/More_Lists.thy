@@ -51,9 +51,9 @@ theorem list_update_range_rule:
   @induct l' arbitrary i l @with
     @subgoal "l' = a # as"
       @have "i < length l" @then
-      @have "take (1 + i) (l[i := a]) = (take (1 + i) l)[i := a]" @then
+      @have "take (i + 1) (l[i := a]) = (take (i + 1) l)[i := a]" @then
       @have "take i l @ [a]           @ as @ drop (1 + i + length as) (l[i := a]) = 
-             (take (1 + i) l)[i := a] @ as @ drop (1 + i + length as) (l[i := a])"
+             (take (i + 1) l)[i := a] @ as @ drop (1 + i + length as) (l[i := a])"
     @endgoal
   @end
 @qed

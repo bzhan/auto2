@@ -47,6 +47,8 @@ theorem cv_const6: "(x::nat) \<le> y + n \<Longrightarrow> x \<le> 0 + (y+n)" by
 (* Misc *)
 theorem nat_eq_to_ineqs: "(x::nat) = y + n \<Longrightarrow> x \<le> y + n \<and> x \<ge> y + n" by simp
 theorem nat_ineq_impl_not_eq: "(x::nat) + n \<le> y \<Longrightarrow> n > 0 \<Longrightarrow> x \<noteq> y" by simp
+theorem eq_to_ineqs: "(x::nat) \<equiv> y \<Longrightarrow> x \<le> y \<and> y \<le> x" by simp
+theorem ineq_to_eqs1: "(x::nat) \<le> y + 0 \<Longrightarrow> y \<le> x + 0 \<Longrightarrow> x = y" by simp
 
 ML_file "arith.ML"
 ML_file "order.ML"
@@ -75,9 +77,7 @@ theorem split_by_sign4: "(c::'a::comm_ring) * (-n) = 0 - c * n" by simp
 
 (* Ordering on Nats. *)
 setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
-theorem lt_one: "(m::nat) < 1 \<Longrightarrow> m = 0" by simp
-setup {* add_forward_prfstep_cond @{thm lt_one} [with_cond "?m \<noteq> 0"] *}
-setup {* add_resolve_prfstep @{thm Nat.le0} *}
+setup {* add_forward_prfstep_cond @{thm Nat.le0} [with_term "?n"] *}
 setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_term "?k", with_cond "?k \<noteq> 1"] *}
 setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_term "?i"] *}
 theorem not_minus_less: "\<not>(i::nat) < (i - j)" by simp
@@ -131,7 +131,12 @@ theorem diff_eq_zero [forward]: "j - k = 0 \<Longrightarrow> (k::nat) \<le> j \<
 theorem diff_eq_zero' [forward]: "j - k + i = j \<Longrightarrow> (k::nat) \<le> j \<Longrightarrow> k = i" by simp
 
 (* Divides. *)
-setup {* add_forward_prfstep_cond (equiv_forward_th @{thm dvd_def}) (with_conds ["?a \<noteq> ?b", "?a \<noteq> ?b * ?k"]) *}
+theorem dvd_defD1 [resolve]: "(a::nat) dvd b \<Longrightarrow> \<exists>k. b = a * k" using dvdE by blast
+theorem dvd_defD2 [resolve]: "(a::nat) dvd b \<Longrightarrow> \<exists>k. b = k * a"
+  by (metis dvd_mult_div_cancel mult.commute)
+setup {* add_forward_prfstep @{thm Nat.dvd_imp_le} *}
+theorem dvd_ineq2 [forward]: "(k::nat) dvd n \<Longrightarrow> n > 0 \<Longrightarrow> k \<ge> 1" by (simp add: Suc_leI dvd_pos_nat)
+  
 setup {* add_gen_prfstep ("shadow_exists_triv",
   [WithFact @{term_pat "\<exists>x. (?a::nat) = ?a * x"}, ShadowFirst]) *}
 setup {* add_forward_prfstep_cond @{thm dvd_trans}
@@ -152,20 +157,8 @@ setup {* add_forward_prfstep_cond @{thm n_dvd_one} [with_cond "?n \<noteq> 1"] *
 
 (* Products. *)
 setup {* add_rewrite_rule @{thm mult_zero_left} *}
-theorem prod_ineqs [forward]: "m * k > (0::nat) \<Longrightarrow> 1 \<le> m \<and> m \<le> m * k \<and> 1 \<le> k \<and> k \<le> m * k" by simp
-setup {* add_prfstep_custom
-  ("prod_ineqs'",
-   [WithFact @{term_pat "(?NUMC::nat) = ?m * ?k"},
-    Filter (fn _ => fn (_, inst) => Nat_Arith.lookup_numc0 inst >= 2),
-    Filter (neq_filter @{term_pat "(?m::nat) \<noteq> ?NUMC"})],
-   PRIORITY_ADD,
-   (fn ((id, inst), ths) => fn _ => fn _ =>
-      let
-        val less_th = (Nat_Arith.nat_less_th 0 (Nat_Arith.lookup_numc0 inst))
-                        |> apply_to_thm' (Conv.arg_conv (rewr_obj_eq (the_single ths)))
-      in
-        [Update.thm_update (id, [less_th] MRS @{thm prod_ineqs})]
-      end)) *}
+theorem prod_ineqs: "m * k > (0::nat) \<Longrightarrow> 1 \<le> m \<and> m \<le> m * k \<and> 1 \<le> k \<and> k \<le> m * k" by simp
+setup {* add_forward_prfstep_cond @{thm prod_ineqs} [with_term "?m * ?k"] *}
 
 theorem prod_cancel: "(a::nat) * b = a * c \<Longrightarrow> a > 0 \<Longrightarrow> b = c" by auto
 setup {* add_forward_prfstep_cond @{thm prod_cancel} [with_cond "?b \<noteq> ?c"] *}

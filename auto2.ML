@@ -333,25 +333,13 @@ fun process_add_terms item (st as {ctxt, ...}) =
                   else []
 
       val term_infos = map (pair id o Thm.cterm_of ctxt) (headt @ terms)
-      val ctxt' =
-          let
-            val (edges, ctxt') = RewriteTable.add_term_list term_infos ctxt
-            val imm_properties =
-                maps (PropertyData.apply_property_update_on_term ctxt' []) (headt @ terms)
-          in
-            ctxt' |> PropertyData.process_update_property imm_properties
-                  |> fold PropertyData.process_rewrite_property edges
-                  |> fold WellformData.initialize_wellform_data (headt @ terms)
-          end
 
-      val new_ts = map (Thm.term_of o snd)
-                       (RewriteTable.get_new_terms (ctxt, ctxt'))
-      val all_items =
+      val infos =
           (maps (Status.get_items false st) (Status.get_unresolved st))
               |> remove BoxItem.eq_item item
-      val infos = map (fn {id, prop, ...} => (id, prop)) all_items
-      val ctxt'' =
-          ctxt' |> WellformData.complete_wellform_data_for_terms infos new_ts
+              |> map (fn {id, prop, ...} => (id, prop))
+
+      val ctxt' = ctxt |> Auto2Data.add_terms infos term_infos
 
       (* Add new terms as updates. *)
       fun exists_item t =
@@ -371,7 +359,7 @@ fun process_add_terms item (st as {ctxt, ...}) =
                                 raw_items = map BoxItem.term_to_fact terms2}}
     in
       st |> (if length terms2 > 0 then Status.add_to_queue updt else I)
-         |> Status.map_context (K ctxt'')
+         |> Status.map_context (K ctxt')
     end
 
 (* Process the given item. This has two parts: first, if the item is
