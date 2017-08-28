@@ -1,7 +1,7 @@
 (* Red-black trees. *)
 
 theory RBT
-imports SepAuto "../DataStrs/RBT_Base"
+imports SepAuto "../DataStrs/RBT_Func"
 begin
 
 section {* Tree nodes *}
@@ -39,11 +39,12 @@ setup {* fold add_rewrite_ent_rule @{thms btree.simps} *}
 lemma btree_Leaf [forward_ent_shadow]: "btree Leaf p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
 lemma btree_Node [forward_ent_shadow]:
-  "btree (pre_rbt.Node lt c k v rt) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp c k v rp * btree lt lp * btree rt rp)" by auto2
-
-lemma btree_Leaf_some [forward_ent]: "btree Leaf (Some p) \<Longrightarrow>\<^sub>A false" by auto2
+  "btree (pre_rbt.Node lt c k v rt) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp c k v rp * btree lt lp * btree rt rp)"
+  by auto2
 
 lemma btree_Node_none [forward_ent]: "btree (pre_rbt.Node lt c k v rt) None \<Longrightarrow>\<^sub>A false" by auto2
+
+lemma btree_Leaf_some [forward_ent]: "btree Leaf (Some p) \<Longrightarrow>\<^sub>A false" by auto2
 
 lemma btree_is_some [forward_ent]: "btree (pre_rbt.Node lt c k v rt) q \<Longrightarrow>\<^sub>A true * \<up>(q \<noteq> None)" by auto2
 
@@ -74,6 +75,7 @@ declare tree_empty_def [sep_proc_defs]
 
 lemma tree_empty_rule [hoare_triple]:
   "<emp> tree_empty <btree Leaf>" by auto2
+declare tree_empty_def [sep_proc_defs del]
 
 definition tree_is_empty :: "('a, 'b) btree \<Rightarrow> bool Heap" where
   "tree_is_empty b \<equiv> return (b = None)"
@@ -81,6 +83,7 @@ declare tree_is_empty_def [sep_proc_defs]
 
 lemma tree_is_empty_rule:
   "<btree t b> tree_is_empty b <\<lambda>r. btree t b * \<up>(r \<longleftrightarrow> t = Leaf)>" by auto2
+declare tree_is_empty_def [sep_proc_defs del]
 
 definition btree_constr :: "('a::heap, 'b::heap) btree \<Rightarrow> color \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_constr lp c k v rp = do { p \<leftarrow> ref (Node lp c k v rp); return (Some p) }"
@@ -88,22 +91,7 @@ declare btree_constr_def [sep_proc_defs]
 
 lemma btree_constr_rule [hoare_triple, resolve]:
   "<btree lt lp * btree rt rp> btree_constr lp c k v rp <btree (pre_rbt.Node lt c k v rt)>" by auto2
-
-partial_function (heap) extract_tree ::
-  "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) pre_rbt Heap" where
-  "extract_tree p = (case p of
-     None \<Rightarrow> return Leaf
-   | Some pp \<Rightarrow> do {
-      t \<leftarrow> !pp;
-      lt \<leftarrow> extract_tree (lsub t);
-      rt \<leftarrow> extract_tree (rsub t);
-      return (pre_rbt.Node lt (cl t) (key t) (val t) rt)
-    })"
-declare extract_tree.simps [sep_proc_defs]
-
-theorem extract_tree_rule [hoare_triple_direct]:
-  "<btree t p> extract_tree p <\<lambda>r. btree t p * \<up>(r = t)>"
-@proof @induct t arbitrary p @qed
+declare btree_constr_def [sep_proc_defs del]
 
 definition set_color :: "color \<Rightarrow> ('a::heap, 'b::heap) btree \<Rightarrow> unit Heap" where
   "set_color c p = (case p of
@@ -118,6 +106,25 @@ theorem set_color_rule [hoare_triple]:
   "<btree (pre_rbt.Node a c x v b) p>
    set_color c' p
    <\<lambda>r. btree (pre_rbt.Node a c' x v b) p>" by auto2
+declare set_color_def [sep_proc_defs del]
+
+definition get_color :: "('a::heap, 'b::heap) btree \<Rightarrow> color Heap" where
+  "get_color p = (case p of
+     None \<Rightarrow> return B
+   | Some pp \<Rightarrow> do {
+       t \<leftarrow> !pp;
+       return (cl t)
+     })"
+declare get_color_def [sep_proc_defs]
+
+theorem get_color_heap_preserving [heap_presv_thms]:
+  "heap_preserving (get_color p)"
+@proof @case "p = None" @qed
+
+theorem get_color_rule [hoare_triple_direct]:
+  "<btree t p> get_color p <\<lambda>r. btree t p * \<up>(r = pre_rbt.cl t)>"
+@proof @case "t = Leaf" @qed
+declare get_color_def [sep_proc_defs del]
 
 subsection {* Rotation *}
 
@@ -159,81 +166,80 @@ lemma btree_rotate_r_rule [hoare_triple]:
    btree_rotate_r p
    <btree (pre_rbt.Node a c1 x v (pre_rbt.Node b c2 y w c))>" by auto2
 
-section {* Definition of functions *}
-
-definition get_cl :: "('a::heap, 'b::heap) btree \<Rightarrow> color Heap" where
-  "get_cl p = (case p of
-     None \<Rightarrow> return B
-   | Some pp \<Rightarrow> do {
-       t \<leftarrow> !pp;
-       return (cl t)
-     })"
-declare get_cl_def [sep_proc_defs]
-
-theorem get_cl_heap_preserving [heap_presv_thms]:
-  "heap_preserving (get_cl p)"
-@proof @case "p = None" @qed
-
-theorem get_cl_rule [hoare_triple_direct]:
-  "<btree t p> get_cl p <\<lambda>r. btree t p * \<up>(r = pre_rbt.cl t)>"
-@proof @case "t = Leaf" @qed
+subsection {* Balance *}
 
 definition btree_balanceR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balanceR p = (case p of None \<Rightarrow> return None | Some pp \<Rightarrow> do {
      t \<leftarrow> !pp;
      if cl t = R then return p
      else do {
-       cl_r \<leftarrow> get_cl (rsub t);
+       cl_r \<leftarrow> get_color (rsub t);
        if cl_r = R then do {
-          rt \<leftarrow> !(the (rsub t));
-          cl_lr \<leftarrow> get_cl (lsub rt);
-          cl_rr \<leftarrow> get_cl (rsub rt);
-          if cl_lr = R then do {
-            rp' \<leftarrow> btree_rotate_r (rsub t);
-            pp := Node (lsub t) (cl t) (key t) (val t) rp';
-            p' \<leftarrow> btree_rotate_l p;
-            t' \<leftarrow> !(the p');
-            set_color B (rsub t');
-            return p'
-          } else if cl_rr = R then do {
-            p' \<leftarrow> btree_rotate_l p;
-            t' \<leftarrow> !(the p');
-            set_color B (rsub t');
-            return p'
+         rt \<leftarrow> !(the (rsub t));
+         cl_lr \<leftarrow> get_color (lsub rt);
+         cl_rr \<leftarrow> get_color (rsub rt);
+         if cl_lr = R then do {
+           rp' \<leftarrow> btree_rotate_r (rsub t);
+           pp := Node (lsub t) (cl t) (key t) (val t) rp';
+           p' \<leftarrow> btree_rotate_l p;
+           t' \<leftarrow> !(the p');
+           set_color B (rsub t');
+           return p'
+         } else if cl_rr = R then do {
+           p' \<leftarrow> btree_rotate_l p;
+           t' \<leftarrow> !(the p');
+           set_color B (rsub t');
+           return p'
           } else return p }
        else return p
      }})"
 declare btree_balanceR_def [sep_proc_defs]
+
+theorem balanceR_to_fun [hoare_triple]:
+  "<btree t p>
+   btree_balanceR p
+   <\<lambda>r. btree (balanceR t) r>"
+@proof @case "t = Leaf" @qed
+declare btree_balanceR_def [sep_proc_defs del]
 
 definition btree_balance :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balance p = (case p of None \<Rightarrow> return None | Some pp \<Rightarrow> do {
      t \<leftarrow> !pp;
      if cl t = R then return p
      else do {
-       cl_l \<leftarrow> get_cl (lsub t);
+       cl_l \<leftarrow> get_color (lsub t);
        if cl_l = R then do {
-          lt \<leftarrow> !(the (lsub t));
-          cl_rl \<leftarrow> get_cl (rsub lt);
-          cl_ll \<leftarrow> get_cl (lsub lt);
-          if cl_rl = R then do {
-            lp' \<leftarrow> btree_rotate_l (lsub t);
-            pp := Node lp' (cl t) (key t) (val t) (rsub t);
-            p' \<leftarrow> btree_rotate_r p;
-            t' \<leftarrow> !(the p');
-            set_color B (lsub t');
-            return p'
-          } else if cl_ll = R then do {
-            p' \<leftarrow> btree_rotate_r p;
-            t' \<leftarrow> !(the p');
-            set_color B (lsub t');
-            return p'
-          } else btree_balanceR p }
+         lt \<leftarrow> !(the (lsub t));
+         cl_rl \<leftarrow> get_color (rsub lt);
+         cl_ll \<leftarrow> get_color (lsub lt);
+         if cl_ll = R then do {
+           p' \<leftarrow> btree_rotate_r p;
+           t' \<leftarrow> !(the p');
+           set_color B (lsub t');
+           return p' }
+         else if cl_rl = R then do {
+           lp' \<leftarrow> btree_rotate_l (lsub t);
+           pp := Node lp' (cl t) (key t) (val t) (rsub t);
+           p' \<leftarrow> btree_rotate_r p;
+           t' \<leftarrow> !(the p');
+           set_color B (lsub t');
+           return p'
+         } else btree_balanceR p }
        else do {
          p' \<leftarrow> btree_balanceR p;
          return p'
        }
      }})"
 declare btree_balance_def [sep_proc_defs]
+
+theorem balance_to_fun [hoare_triple]:
+  "<btree t p>
+   btree_balance p
+   <\<lambda>r. btree (balance t) r>"
+@proof @case "t = Leaf" @qed
+declare btree_balance_def [sep_proc_defs del]
+
+subsection {* Insertion *}
 
 partial_function (heap) rbt_ins ::
   "'a::{heap,ord} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -254,138 +260,27 @@ partial_function (heap) rbt_ins ::
          btree_balance p })} )"
 declare rbt_ins.simps [sep_proc_defs]
 
+theorem rbt_ins_to_fun [hoare_triple]:
+  "<btree t p>
+   rbt_ins k v p
+   <\<lambda>r. btree (ins k v t) r>"
+@proof @induct t arbitrary p @qed
+declare rbt_ins.simps [sep_proc_defs del]
+
 definition rbt_insert :: "'a::{heap,ord} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "rbt_insert k v p = do {
     p' \<leftarrow> rbt_ins k v p;
     set_color B p';
     return p' }"
 declare rbt_insert_def [sep_proc_defs]
-
-section {* Preservation of black-depth *}
-
-theorem balanceR_bd [hoare_triple]:
-  "<btree t p * \<up>(bd_inv t)>
-   btree_balanceR p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(bd_inv t') * \<up>(black_depth t' = black_depth t)>"
-@proof @case "t = Leaf" @qed
-
-theorem balance_bd [hoare_triple]:
-  "<btree t p * \<up>(bd_inv t)>
-   btree_balance p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(bd_inv t') * \<up>(black_depth t' = black_depth t)>"
-@proof @case "t = Leaf" @qed
-
-theorem ins_bd [hoare_triple]:
-  "<btree t p * \<up>(bd_inv t)>
-   rbt_ins k v p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(bd_inv t') * \<up>(black_depth t' = black_depth t)>"
-@proof
-  @induct t arbitrary p @with
-    @subgoal "t = pre_rbt.Node lt c x w rt" @case "c = R" @endgoal
-  @end
-@qed
-setup {* fold del_prfstep_thm [@{thm balanceR_bd}, @{thm balance_bd}] *}
-
-section {* Preservation of cl invariant *}
-
-theorem balanceR_cl [hoare_triple]:
-  "<btree (pre_rbt.Node lt B k v rt) p * \<up>(cl_inv lt) * \<up>(cl_inv' rt)>
-   btree_balanceR p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(cl_inv t')>"
-  by auto2
-
-theorem balance_cl1 [hoare_triple]:
-  "<btree (pre_rbt.Node lt B k v rt) p * \<up>(cl_inv' lt) * \<up>(cl_inv rt)>
-   btree_balance p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(cl_inv t')>"
-  by auto2
-
-theorem balance_cl2 [hoare_triple]:
-  "<btree (pre_rbt.Node lt B k v rt) p * \<up>(cl_inv lt) * \<up>(cl_inv' rt)>
-   btree_balance p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(cl_inv t')>"
-  by auto2
-
-theorem balanceR_non_leaf [hoare_triple]:
-  "<btree (pre_rbt.Node lt c k v rt) p>
-    btree_balanceR p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(t' \<noteq> Leaf)>"
-  by auto2
-
-theorem balance_non_leaf [hoare_triple]:
-  "<btree (pre_rbt.Node lt c k v rt) p>
-    btree_balance p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(t' \<noteq> Leaf)>"
-  by auto2
-
-theorem balance_on_R [hoare_triple]:
-  "<btree (pre_rbt.Node lt R k v rt) p>
-   btree_balance p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(t' = pre_rbt.Node lt R k v rt)>"
-  by auto2
-
-theorem ins_non_leaf [hoare_triple]:
-  "<btree t p> rbt_ins k v p <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(t' \<noteq> Leaf)>"
-@proof @induct t arbitrary p @qed
-
-theorem ins_cl [hoare_triple]:
-  "<btree t p * \<up>(cl_inv t)>
-   rbt_ins k v p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(if pre_rbt.cl t = B then cl_inv t' else pre_rbt.cl t' = R \<and> cl_inv' t')>"
-@proof @induct t arbitrary p @qed
-
-section {* Insert function *}
-
-theorem insert_is_rbt [hoare_triple]:
-  "<btree t p * \<up>(is_rbt t)>
-   rbt_insert k v p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(is_rbt t')>" by auto2
-
-(* insert_is_rbt is all we need, so we can clear out bd and cl properties. *)
-setup {* fold del_prfstep_thm [
-  @{thm balanceR_cl}, @{thm balance_cl1}, @{thm balance_cl2}, @{thm ins_bd}, @{thm ins_cl}] *}
-
-section {* sortedness on RBT, mapping associated to RBT *}
-
-theorem balanceR_in_traverse_pairs [hoare_triple]:
-  "<btree t p>
-   btree_balanceR p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_in_traverse_pairs t' = rbt_in_traverse_pairs t)>"
-@proof @case "t = Leaf" @qed
-
-theorem balance_in_traverse_pairs [hoare_triple]:
-  "<btree t p>
-   btree_balance p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_in_traverse_pairs t' = rbt_in_traverse_pairs t)>"
-@proof @case "t = Leaf" @qed
-
-declare btree_balance_def [sep_proc_defs del]
-
-theorem ins_inorder_pairs [hoare_triple]:
-  "<btree t p * \<up>(rbt_sorted t)>
-   rbt_ins k v p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_in_traverse_pairs t' = ordered_insert_pairs k v (rbt_in_traverse_pairs t))>"
-@proof @induct t arbitrary p @qed
-
-theorem insert_inorder_pairs [hoare_triple]:
-  "<btree t p * \<up>(rbt_sorted t)>
-   rbt_insert k v p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_in_traverse_pairs t' = ordered_insert_pairs k v (rbt_in_traverse_pairs t))>"
-  by auto2
-
-declare rbt_insert_def [sep_proc_defs del]
   
-theorem insert_sorted [hoare_triple]:
-  "<btree t p * \<up>(rbt_sorted t)>
+theorem rbt_insert_to_fun [hoare_triple]:
+  "<btree t p>
    rbt_insert k v p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_sorted t')>" by auto2
+   <\<lambda>r. btree (RBT_Func.rbt_insert k v t) r>" by auto2
+declare rbt_insert_def [sep_proc_defs del]
 
-theorem insert_tree_map [hoare_triple]:
-  "<btree t p * \<up>(rbt_sorted t)>
-   rbt_insert k v p
-   <\<lambda>r. \<exists>\<^sub>At'. btree t' r * \<up>(rbt_map t' = (rbt_map t) {k \<rightarrow> v})>" by auto2
-
-section {* Search function *}
+subsection {* Search *}
 
 partial_function (heap) rbt_search ::
   "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> 'b option Heap" where
@@ -401,7 +296,7 @@ declare rbt_search.simps [sep_proc_defs]
 lemma btree_search_correct [hoare_triple]:
   "<btree t b * \<up>(rbt_sorted t)>
    rbt_search x b
-   <\<lambda>r. btree t b * \<up>(r = (rbt_map t)\<langle>x\<rangle>)>"
+   <\<lambda>r. btree t b * \<up>(r = RBT_Func.rbt_search t x)>"
 @proof @induct t arbitrary b @qed
 declare rbt_search.simps [sep_proc_defs del]
 

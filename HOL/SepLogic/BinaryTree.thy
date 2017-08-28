@@ -38,6 +38,8 @@ lemma btree_Tip_some [forward_ent]: "btree Tip (Some p) \<Longrightarrow>\<^sub>
 
 lemma btree_is_some [forward_ent]: "btree (tree.Node lt k v rt) p \<Longrightarrow>\<^sub>A true * \<up>(p \<noteq> None)" by auto2
 
+lemma btree_is_not_leaf [forward_ent]: "btree t (Some p) \<Longrightarrow>\<^sub>A true * \<up>(t \<noteq> Tip)" by auto2
+
 lemma btree_none: "emp \<Longrightarrow>\<^sub>A btree tree.Tip None" by auto2
 
 lemma btree_constr_ent:
@@ -47,19 +49,15 @@ setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
 
 lemma btree_prec [sep_prec_thms]:
   "h \<Turnstile> btree t p * F1 \<Longrightarrow> h \<Turnstile> btree t' p * F2 \<Longrightarrow> t = t'"
-@proof
-  @induct t arbitrary p t' F1 F2 @with
-    @subgoal "t = tree.Node l x v r" @case "t' = Tip" @endgoal
-  @end
-@qed
+@proof @induct t arbitrary p t' F1 F2 @qed
 
 setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
 type_synonym ('a, 'b) btree = "('a, 'b) node ref option"
 
-subsection {* Operations *}
+section {* Operations *}
 
-subsubsection {* Basic operations *}
+subsection {* Basic operations *}
 
 definition tree_empty :: "('a, 'b) btree Heap" where
   "tree_empty \<equiv> return None"
@@ -85,7 +83,7 @@ lemma btree_constr_rule [hoare_triple, resolve]:
   "<btree lt lp * btree rt rp> btree_constr lp k v rp <btree (tree.Node lt k v rt)>" by auto2
 declare btree_constr_def [sep_proc_defs del]
 
-subsubsection {* Insertion *}
+subsection {* Insertion *}
 
 partial_function (heap) btree_insert ::
   "'a::{heap,linorder} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -112,6 +110,8 @@ lemma btree_insert_to_fun [hoare_triple]:
    <\<lambda>r. btree (tree_insert k v t) r>"
 @proof @induct t arbitrary b @qed
 declare btree_insert.simps [sep_proc_defs del]
+
+subsection {* Deletion *}
 
 partial_function (heap) btree_del_min :: "('a::heap, 'b::heap) btree \<Rightarrow> (('a \<times> 'b) \<times> ('a, 'b) btree) Heap" where
   "btree_del_min b = (case b of
@@ -182,6 +182,8 @@ lemma btree_delete_to_fun [hoare_triple]:
    <\<lambda>r. btree (tree_delete x t) r * true>"
 @proof @induct t arbitrary b @qed
 declare btree_delete.simps [sep_proc_defs del]
+
+subsection {* Search *}
 
 partial_function (heap) btree_search ::
   "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> 'b option Heap" where

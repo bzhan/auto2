@@ -202,7 +202,8 @@ fun rbt_search :: "('a::ord, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b optio
    else rbt_search r x)"
 setup {* fold add_rewrite_rule @{thms rbt_search.simps} *}
 
-theorem rbt_search_correct: "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
+theorem rbt_search_correct [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
 @proof @induct t @qed
 
 end
