@@ -65,16 +65,6 @@ setup {* add_rewrite_rule @{thm List.append_take_drop_id} *}
 theorem length_take' [rewrite]: "n \<le> length l \<Longrightarrow> length (take n l) = n" by simp
 setup {* add_rewrite_rule @{thm take_update_swap} *}
 
-subsection {* rev *}
-
-theorem rev_one [rewrite]: "rev [x] = [x]" by simp
-setup {* add_rewrite_rule @{thm List.rev.simps(1)} #>
-  add_rewrite_rule_cond @{thm List.rev.simps(2)} [with_cond "?xs \<noteq> []"] #>
-  add_rewrite_rule @{thm List.rev_append} *}
-theorem rev_nth' [rewrite]:
-  "n < length xs \<Longrightarrow> List.rev xs ! n = xs ! (length xs - 1 - n)" using rev_nth by auto
-setup {* add_rewrite_rule @{thm length_rev} *}
-
 subsection {* sorted *}
 
 setup {* fold add_resolve_prfstep [@{thm sorted.Nil}, @{thm sorted_single}] *}

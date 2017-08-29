@@ -2,7 +2,7 @@
    based on List_Seg and Open_List theories in Separation_Logic_Imperative_HOL/Examples. *)
 
 theory LinkedList
-imports SepAuto More_Lists
+imports SepAuto More_Lists "../DataStrs/Reverse_Func"
 begin
 
 subsection {* Nodes *}

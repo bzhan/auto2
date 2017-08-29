@@ -513,11 +513,11 @@ theorem idx_bubble_down_rule [hoare_triple]:
    idx_bubble_down a k
    <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs) * \<up>(map_of_kv_list xs' = map_of_kv_list xs)>"
 @proof
-  @contradiction
   @let "d = length xs - k"
   @strong_induct d arbitrary k xs
-  @apply_induct_hyp "length xs - s1 k" @have "length xs - s1 k < length xs - k"
-  @apply_induct_hyp "length xs - s2 k" @have "length xs - s2 k < length xs - k"
+  @contradiction
+  @apply_induct_hyp "length xs - s1 k" @have "length xs - s1 k < d"
+  @apply_induct_hyp "length xs - s2 k" @have "length xs - s2 k < d"
 @qed
 
 partial_function (heap) idx_bubble_up ::

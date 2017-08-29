@@ -1,5 +1,5 @@
 theory Reverse
-imports SepAuto More_Lists
+imports SepAuto "../DataStrs/Reverse_Func"
 begin
 
 definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
@@ -29,29 +29,17 @@ theorem rev_induct': "(\<forall>a i j. (i < j \<longrightarrow> P a (i + 1) (j -
   apply (induct rule: rev.induct) by blast
 setup {* add_hoare_induct_rule (@{term_pat Reverse.rev}, @{thm rev_induct'}) *}
 
-theorem reduce_minus_1 [rewrite]: "(k::nat) \<ge> i + 1 \<Longrightarrow> j - 1 - (k - (i + 1)) = j - (k - i)" by simp
-
-lemma rev_rule_length [hoare_triple]:
+lemma rev_to_fun [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(j < length xs)>
    rev p i j
-   <\<lambda>_. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(length xs' = length xs)>"
+   <\<lambda>_. p \<mapsto>\<^sub>a rev_swap xs i j>"
 @proof @hoare_induct @qed
-
-theorem list_swap_eval' [rewrite]:
-  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> (list_swap xs i j) ! k =
-    (if k = i then xs ! j else if k = j then xs ! i else xs ! k)" by auto2
-
-lemma rev_rule [hoare_triple]:
-  "<p \<mapsto>\<^sub>a xs * \<up>(j < length xs)>
-   rev p i j
-   <\<lambda>_. \<exists>\<^sub>Axs'. p \<mapsto>\<^sub>a xs' * \<up>(\<forall>k. xs' ! k =
-    (if k < i then xs ! k else if j < k then xs ! k
-     else xs ! (j - (k - i))))>"
-@proof @hoare_induct @qed
-
 declare rev.simps [sep_proc_defs del]
+
 lemma rev_is_rev:
-  "<p \<mapsto>\<^sub>a xs * \<up>(length xs > 0)> rev p 0 (length xs - 1) <\<lambda>_. p \<mapsto>\<^sub>a List.rev xs>"
-@proof @case "xs = []" @have "length xs = length (List.rev xs)" @qed
+  "<p \<mapsto>\<^sub>a xs * \<up>(length xs > 0)>
+   rev p 0 (length xs - 1)
+   <\<lambda>_. p \<mapsto>\<^sub>a List.rev xs>"
+@proof @case "xs = []" @qed
 
 end

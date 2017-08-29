@@ -97,7 +97,9 @@ theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<
   @case "n = 1" @with @have "n = (\<Prod>i\<in># {#}. i)" @end
   @case "prime n" @with @have "n = (\<Prod>i\<in># {#n#}. i)" @end
   @obtain m k where "n = m * k" "1 < m" "m < n" "1 < k" "k < n"
+  @apply_induct_hyp m
   @obtain M where "(\<forall>p\<in>#M. prime p)" "m = (\<Prod>i\<in>#M. i)"
+  @apply_induct_hyp k
   @obtain K where "(\<forall>p\<in>#K. prime p)" "k = (\<Prod>i\<in>#K. i)"
   @have "n = (\<Prod>i\<in>#(M+K). i)"
 @qed
@@ -107,6 +109,7 @@ theorem prime_dvd_multiset [backward1]: "prime p \<Longrightarrow> p dvd (\<Prod
   @strong_induct M
   @case "M = {#}" @then
   @obtain M' m where "M = M' + {#m#}"
+  @contradiction @apply_induct_hyp M'
 @qed
   
 theorem factorization_unique_aux:
@@ -120,6 +123,7 @@ theorem factorization_unique_aux:
   @obtain N' where "N = N' + {#n#}" @then
   @have "m = n" @then
   @have "(\<Prod>i\<in>#M'. i) dvd (\<Prod>i\<in>#N'. i)"
+  @apply_induct_hyp M' N'
 @qed
 setup {* add_forward_prfstep_cond @{thm factorization_unique_aux} [with_cond "?M \<noteq> ?N"] *}
 

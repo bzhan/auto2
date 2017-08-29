@@ -11,22 +11,6 @@ theory Lists_Ex
 imports "../Auto2_Main" Mapping
 begin
 
-section {* Linear time version of rev *}
-
-fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
-  "itrev []       ys = ys" |
-  "itrev (x # xs) ys = itrev xs (x # ys)"
-setup {* fold add_rewrite_rule @{thms itrev.simps} *}
-
-lemma itrev_prop [rewrite]: "itrev x y = rev x @ y"
-@proof
-  @induct x arbitrary y @with
-    @subgoal "x = a # b" @have "a # y = [a] @ y" @endgoal
-  @end
-@qed
-
-lemma itrev_eq_rev: "itrev x [] = rev x" by auto2
-
 section {* sorted function on lists *}
 
 fun strict_sorted :: "'a::linorder list \<Rightarrow> bool" where

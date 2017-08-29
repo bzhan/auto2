@@ -14,7 +14,7 @@ sig
   val add_var_induct_rule: thm -> theory -> theory
 
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
-  val apply_induct_hyp_cmd: string -> Proof.state -> Proof.state
+  val apply_induct_hyp_cmd: string list -> Proof.state -> Proof.state
   val case_induct_cmd: string -> Proof.state -> Proof.state
   val prop_induct_cmd: string * string -> Proof.state -> Proof.state
   val induct_cmd: string * string option * string list * string option -> Proof.state -> Proof.state
@@ -190,6 +190,7 @@ fun strong_induct_cmd (s, t) state =
     in
       state |> Proof.map_contexts (Auto2_State.set_head_th prop)
             |> Proof.map_contexts (Auto2_State.set_induct_stmt stmt)
+            |> Proof.map_contexts (Auto2_State.add_prem_only stmt)
     end
 
 val arbitrary =
@@ -205,26 +206,39 @@ fun apply_induct_hyp_cmd s state =
     let
       val {context = ctxt, ...} = Proof.goal state
 
-      val tm = Syntax.read_term ctxt s
+      val ts = Syntax.read_terms ctxt s
+
+      val induct_stmt = Auto2_State.get_last_induct_stmt ctxt
+      val stmt = induct_stmt |> the |> mk_Trueprop |> Thm.cterm_of ctxt
+                 handle Option.Option => raise Fail "apply_induct_hyp: no induct_stmt"
 
       val prop = Auto2_State.get_selected ctxt
-      val {induct_stmt, ...} = Auto2_State.get_head ctxt
-      val induct_stmt =
-          case induct_stmt of
-              SOME (_ $ Abs (_, _, body)) => Term.subst_bound (tm, body)
-            | _ => raise Fail "apply_induct_hyp_cmd"
-
       val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn
-      val goal = Logic.list_implies (As, mk_Trueprop induct_stmt)
-      val th = Auto2_Outer.auto2_solve ctxt (Thm.cterm_of ctxt goal)
+      val _ = assert (member (op aconv) As (Thm.term_of stmt))
+                     "apply_induct_hyp: induct_stmt not found among As."
+      val cAs = map (Thm.cterm_of ctxt) As
+
+      val th = stmt |> Thm.assume
+                    |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
+                    |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) ts)
+
+      val prems = th |> Thm.prems_of
+                     |> map (fn t => Logic.list_implies (As, t))
+                     |> map (Thm.cterm_of ctxt)
+
+      val prems_th = (map (Auto2_Outer.auto2_solve ctxt) prems)
+                         |> map Util.send_all_to_hyps
+      val concl = th |> fold Thm.elim_implies prems_th
+                     |> fold Thm.implies_intr (rev cAs)
+      val _ = writeln ("Obtained " ^ (concl |> Thm.concl_of |> Syntax.string_of_term ctxt))
     in
-      state |> Proof.map_contexts (Auto2_State.map_head_th (Auto2_Outer.have_after_qed ctxt th))
+      state |> Proof.map_contexts (Auto2_State.map_head_th (Auto2_Outer.have_after_qed ctxt concl))
     end
 
 val _ =
   Outer_Syntax.command @{command_keyword "@apply_induct_hyp"}
     "apply induction hypothesis"
-    (Parse.term >> (fn s =>
+    ((Scan.repeat Parse.term) >> (fn s =>
          Toplevel.proof (fn state => apply_induct_hyp_cmd s state)))
 
 fun case_induct_cmd s state =

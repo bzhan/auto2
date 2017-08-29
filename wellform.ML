@@ -30,8 +30,9 @@ structure Data = Theory_Data (
 fun register_wellform_data (t_str, req_strs) thy =
     let
       val ctxt = Proof_Context.init_global thy
-      val all_ts = Syntax.read_terms ctxt (t_str :: req_strs)
-      val (t, reqs) = (hd all_ts, tl all_ts)
+      val t = Proof_Context.read_term_pattern ctxt t_str
+      val ctxt' = Variable.declare_term t ctxt
+      val reqs = map (Proof_Context.read_term_pattern ctxt') req_strs
 
       val (f, args) = Term.strip_comb t
       val _ = assert (Term.is_Const f)

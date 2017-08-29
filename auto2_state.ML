@@ -22,6 +22,7 @@ sig
   val set_head_th: thm -> Proof.context -> Proof.context
   val set_selected: int option -> Proof.context -> Proof.context
   val set_induct_stmt: term -> Proof.context -> Proof.context
+  val get_last_induct_stmt: Proof.context -> term option
   val add_prem_only: term -> Proof.context -> Proof.context
   val lookup_prem_only: Proof.context -> term -> bool
   val get_head: Proof.context -> auto2_frame
@@ -123,6 +124,13 @@ fun set_induct_stmt stmt =
       fn {goals, selected, prem_only, after_qed, ...} =>
          {goals = goals, selected = selected, induct_stmt = SOME stmt,
           prem_only = prem_only, after_qed = after_qed})
+
+fun get_last_induct_stmt ctxt =
+    let
+      val frames = Data.get ctxt
+    in
+      get_first #induct_stmt (rev frames)
+    end
 
 fun add_prem_only stmt =
     map_head (

@@ -99,11 +99,6 @@ theorem n_minus_1_less_n [backward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 
 setup {* add_rewrite_rule @{thm le_add_diff_inverse} *}
 setup {* add_rewrite_rule @{thm Nat.diff_diff_cancel} *}
 
-(* Intervals. *)
-definition open_interval :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" ("_ < _ < _" [50,50,50] 50) where "a < b < c \<longleftrightarrow> a < b \<and> b < c"
-definition closed_interval :: "nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" ("_ \<le> _ \<le> _" [50,50,50] 50) where "a \<le> b \<le> c \<longleftrightarrow> a \<le> b \<and> b \<le> c"
-setup {* fold add_rewrite_rule [@{thm open_interval_def}, @{thm closed_interval_def}] *}
-
 (* Set intervals. *)
 theorem interval_empty [rewrite]: "{a::nat. x \<le> a \<and> a < x} = {}" by simp
 theorem interval_single [rewrite]: "{a::nat. x \<le> a \<and> a < x + 1} = {x}" using Collect_cong by auto
