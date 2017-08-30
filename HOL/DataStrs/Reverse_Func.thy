@@ -49,23 +49,33 @@ setup {* add_rewrite_rule @{thm List.nth_list_update} *}
 setup {* add_forward_prfstep_cond @{thm List.length_list_update} [with_term "?xs[?i := ?x]"] *}
 
 definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
-  "list_swap xs i j = xs[i := xs!j] [j := xs!i]"
+  "list_swap xs i j = xs[i := xs ! j, j := xs ! i]"
 setup {* add_rewrite_rule @{thm list_swap_def} *}
 setup {* register_wellform_data ("list_swap xs i j", ["i < length xs", "j < length xs"]) *}
+setup {* add_prfstep_check_req ("list_swap xs i j", "i < length xs \<and> j < length xs") *}
 
-lemma list_swap_eval [rewrite]:
+lemma list_swap_eval:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow>
    (list_swap xs i j) ! k = (if k = i then xs ! j else if k = j then xs ! i else xs ! k)" by auto2
+setup {* add_rewrite_rule_cond @{thm list_swap_eval} [with_cond "?k \<noteq> ?i", with_cond "?k \<noteq> ?j"] *}
+
+lemma list_swap_eval_triv [rewrite]:
+  "i < length xs \<Longrightarrow> (list_swap xs i j) ! i = xs ! j"
+  "j < length xs \<Longrightarrow> (list_swap xs i j) ! j = xs ! i" by auto2+
 
 lemma length_list_swap:
   "length (list_swap xs i j) = length xs" by auto2
 setup {* add_forward_prfstep_cond @{thm length_list_swap} [with_term "list_swap ?xs ?i ?j"] *}
 
+lemma mset_list_swap [rewrite]:
+  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> mset (list_swap xs i j) = mset xs" by auto2
+setup {* del_prfstep_thm @{thm list_swap_def} *}
+
 section {* Definition of rev in terms of swaps *}
   
 fun rev_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "rev_swap xs i j = (if i < j then rev_swap (list_swap xs i j) (i + 1) (j - 1) else xs)"
-setup {* add_rewrite_rule @{thm rev_swap.simps} *}
+setup {* add_rewrite_rule_cond @{thm rev_swap.simps} [with_filt (size1_filter "i"), with_filt (size1_filter "j")] *}
 setup {* register_wellform_data ("rev_swap xs i j", ["j < length xs"]) *}
 
 lemma rev_swap_length:

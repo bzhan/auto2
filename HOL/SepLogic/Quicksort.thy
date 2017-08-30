@@ -94,7 +94,6 @@ theorem quicksort_to_fun [hoare_triple]:
     @let "p = fst (Quicksort_Func.partition xs l r)"
     @have "p \<ge> l \<and> p \<le> r"
     @case "p + 1 \<ge> r"
-    @have "p - 1 < length xs"
     @case "l \<ge> p - 1"
   @end
 @qed

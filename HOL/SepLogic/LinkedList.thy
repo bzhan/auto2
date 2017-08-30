@@ -2,7 +2,7 @@
    based on List_Seg and Open_List theories in Separation_Logic_Imperative_HOL/Examples. *)
 
 theory LinkedList
-imports SepAuto More_Lists "../DataStrs/Reverse_Func"
+imports SepAuto "../DataStrs/Reverse_Func"
 begin
 
 subsection {* Nodes *}
@@ -395,6 +395,8 @@ lemma map_os_list_rule [hoare_triple]:
   "<os_list xs b> map_os_list f b <os_list (map f xs)>"
 @proof @induct xs arbitrary b @qed
 
+setup {* fold add_rewrite_rule @{thms List.filter.simps} *}
+
 partial_function (heap) filter_os_list ::
   "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
 "filter_os_list f b = (case b of
@@ -426,6 +428,8 @@ declare filter_os_list2.simps [sep_proc_defs]
 lemma filter_os_list2_rule [hoare_triple]:
   "<os_list xs b> filter_os_list2 f b <\<lambda>r. os_list xs b * os_list (filter f xs) r>"
 @proof @induct xs arbitrary b @qed
+
+setup {* fold add_rewrite_rule @{thms List.fold_simps} *}
 
 partial_function (heap) fold_os_list ::
   "('a::heap \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a os_list \<Rightarrow> 'b \<Rightarrow> 'b Heap" where

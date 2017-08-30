@@ -25,6 +25,7 @@ function part1 :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rig
   termination by (relation "measure (\<lambda>(_,l,r,_). r - l)") auto
 setup {* add_rewrite_rule_cond @{thm part1.simps} [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
 setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
+setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 
 lemma nat_sub3 [rewrite]: "(r::nat) - (l + 1) = r - l - 1" by simp
 
@@ -59,7 +60,6 @@ lemma part1_partitions1:
   @case "r \<le> l"
   @case "xs ! l \<le> a" @with
     @case "l + 1 \<le> i" @with @apply_induct_hyp "d - 1" "l + 1" r xs i @end
-    @have "l < l + 1"
   @end
   @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
 @qed
@@ -74,7 +74,6 @@ lemma part1_partitions2:
   @case "r \<le> l"
   @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
   @case "i \<le> r - 1" @with @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r" i @end
-  @have "r - 1 < length xs"
 @qed
 setup {* add_forward_prfstep_cond @{thm part1_partitions2} [with_term "?xs' ! ?i"] *}
 
@@ -93,21 +92,18 @@ definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat
 setup {* register_wellform_data ("partition xs l r", ["l < r", "r < length xs"]) *}
 
 lemma partition_return_in_bounds:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> l \<le> rs \<and> rs \<le> r"
-@proof @have "r - 1 < length xs" @qed
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> l \<le> rs \<and> rs \<le> r" by auto2
 setup {* add_forward_prfstep_cond @{thm partition_return_in_bounds} [with_term "?rs"] *}
 
 lemma partition_basic:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   length xs' = length xs \<and> outer_remains xs xs' l r \<and> mset xs' = mset xs"
-@proof @have "r - 1 < length xs" @qed
+   length xs' = length xs \<and> outer_remains xs xs' l r \<and> mset xs' = mset xs" by auto2
 setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "?xs'"] *}
 
 lemma partition_partitions1:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
    i \<ge> l \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> xs' ! rs"
 @proof
-  @have "r - 1 < length xs"
   @let "p = xs ! r"
   @let "xs'' = snd (part1 xs l (r - 1) p)"
   @have "xs'' ! r = p"
@@ -119,13 +115,11 @@ lemma partition_partitions2:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
    i \<ge> rs + 1 \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> xs' ! rs"
 @proof
-  @have "r - 1 < length xs" @have "r - 1 < r"
   @let "p = xs ! r"
   @let "m = fst (part1 xs l (r - 1) p)"
   @let "xs'' = snd (part1 xs l (r - 1) p)"
   @have "xs'' ! r = p"
-  @have (@rule) "\<forall>j. rs \<le> j \<longrightarrow> j < r - 1 \<longrightarrow> xs'' ! j \<ge> p" @with
-    @case "m = j" @end
+  @have (@rule) "\<forall>j. rs \<le> j \<longrightarrow> j < r - 1 \<longrightarrow> xs'' ! j \<ge> p" @with @case "m = j" @end
 @qed
 setup {* add_forward_prfstep_cond @{thm partition_partitions2} [with_term "?xs' ! ?i"] *}
 
@@ -150,8 +144,9 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
 setup {* add_rewrite_rule_cond @{thm quicksort.simps}
   [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
 setup {* register_wellform_data ("quicksort xs l r", ["l < length xs", "r < length xs"]) *}
+setup {* add_prfstep_check_req ("quicksort xs l r", "l < length xs \<and> r < length xs") *}
 
-lemma diff_less_mono [backward1]: "a \<ge> c \<Longrightarrow> (a::nat) < b \<Longrightarrow> a - c < b - c" by simp
+setup {* add_backward2_prfstep @{thm Nat.diff_less_mono} *}
 
 lemma quicksort_trivial [rewrite]:
   "r < length xs \<Longrightarrow> l \<ge> r \<Longrightarrow> quicksort xs l r = xs" by auto2
@@ -166,7 +161,6 @@ lemma quicksort_basic:
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
   @case "l \<ge> r"
-  @have "p - 1 < length xs"
   @have "length xs2 = length xs1 \<and> mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
     @case "p - 1 \<le> l" @then
     @have "p - 1 - l < r - l" @with @have "p - 1 < r" @end

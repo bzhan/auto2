@@ -1,5 +1,5 @@
 theory DynamicArray
-imports SepAuto More_Lists
+imports SepAuto More_Lists "../DataStrs/Reverse_Func"
 begin
 
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (amax: nat) (defv: 'a) (aref: "'a array")
@@ -92,6 +92,7 @@ theorem array_upd_rule [hoare_triple, hoare_create_case]:
   "<dyn_array l p * \<up>(i < length l)>
    array_upd i x p
    <\<lambda>_. dyn_array (list_update l i x) p>" by auto2
+declare array_upd_def [sep_proc_defs del]
 
 definition array_nth :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> 'a Heap" where
   "array_nth d i = Array.nth (aref d) i"
@@ -126,13 +127,12 @@ definition array_swap :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow>
     return ()
    }"
 declare array_swap_def [sep_proc_defs]
-
+declare [[print_trace]]
 theorem array_swap_rule [hoare_triple, hoare_create_case]:
   "<dyn_array xs p * \<up>(i < length xs) * \<up>(j < length xs)>
    array_swap p i j
    <\<lambda>_. dyn_array (list_swap xs i j) p>" by auto2
 
 setup {* del_prfstep_thm @{thm dynamic_array.collapse} *}
-declare array_upd_def [sep_proc_defs del]
 
 end

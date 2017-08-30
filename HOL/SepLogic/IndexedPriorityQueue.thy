@@ -243,12 +243,15 @@ theorem mset_butlast [rewrite]: "length xs > 0 \<Longrightarrow> mset (butlast x
   by (metis add_diff_cancel_right' append_butlast_last_id length_greater_0_conv list.size(3)
       mset.simps(2) size_eq_0_iff_empty size_mset union_code)
 
-theorem last_swap: "length xs > 0 \<Longrightarrow> (list_swap xs 0 (length xs - 1)) ! (length xs - 1) = xs ! 0"
-  by (simp add: list_swap_eval(2))
+lemma last_swap' [rewrite]:
+  "length xs > 0 \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
+@proof
+  @have "length xs - 1 < length xs"
+  @let "xs' = list_swap xs 0 (length xs - 1)"
+  @have "last xs' = xs' ! (length xs - 1)"
+  @have "hd xs = xs ! 0"
+@qed
 
-theorem last_swap' [rewrite]: "length xs > 0 \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
-  by (metis hd_conv_nth last_conv_nth last_swap length_swap list.size(3) not_gr0)
-    
 section {* Indexed priority queue *}
 
 datatype 'a indexed_pqueue =

@@ -2,11 +2,6 @@ theory More_Lists
 imports "../DataStrs/Lists_Ex" "~~/src/HOL/Imperative_HOL/ex/Subarray"
 begin
 
-section {* Higher-order functions *}
-
-setup {* fold add_rewrite_rule @{thms List.filter.simps} *}
-setup {* fold add_rewrite_rule @{thms List.fold_simps} *}
-
 section {* More on take, drop, and update *}
 
 theorem take_update [rewrite]: "i < length l \<Longrightarrow> take (1 + i) (list_update l i x) = take i l @ [x]"
@@ -62,23 +57,6 @@ theorem list_update_range_rule_zero [rewrite]:
 theorem take_n_list_update_range [rewrite]:
   "n \<le> length l \<Longrightarrow> n \<le> length l' \<Longrightarrow> take n (list_update_range l' 0 (take n l)) = take n l"
   by (simp add: list_update_range_rule_zero)
-
-section {* Swap *}
-
-definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
-  "list_swap xs i j = list_update (list_update xs i (xs!j)) j (xs!i)"
-setup {* add_rewrite_rule @{thm list_swap_def} *}
-
-theorem list_swap_eval [rewrite]:
-  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> (list_swap xs i j) ! i = xs ! j"
-  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> (list_swap xs i j) ! j = xs ! i"
-  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> k \<noteq> i \<Longrightarrow> k \<noteq> j \<Longrightarrow> (list_swap xs i j) ! k = xs ! k"
-  by (simp add: list_swap_def nth_list_update)+
-
-theorem length_swap [rewrite]: "length (list_swap xs i j) = length xs" by auto2
-
-theorem mset_swap [rewrite]:
-  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> mset (list_swap xs i j) = mset xs" by auto2
 
 section {* hd and last *}
 
