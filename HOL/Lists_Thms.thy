@@ -50,20 +50,11 @@ subsection {* nth *}
 
 theorem nth_append1 [rewrite]: "i < length xs \<Longrightarrow> (xs @ ys) ! i = xs ! i" by (simp add: nth_append)
 setup {* add_rewrite_rule_back @{thm hd_conv_nth} *}
-setup {* add_rewrite_rule @{thm List.nth_take} *}
 setup {* add_rewrite_rule @{thm nth_butlast} *}
 setup {* add_rewrite_rule @{thm List.nth_list_update_neq} *}
 setup {* add_rewrite_rule @{thm List.nth_list_update_eq} *}
 setup {* add_rewrite_rule @{thm List.nth_append_length} *}
 setup {* add_rewrite_rule @{thm List.nth_replicate} *}
-
-subsection {* take and drop *}
-
-setup {* add_rewrite_rule @{thm List.take_0} *}
-setup {* add_rewrite_rule @{thm List.drop_0} *}
-setup {* add_rewrite_rule @{thm List.append_take_drop_id} *}
-theorem length_take' [rewrite]: "n \<le> length l \<Longrightarrow> length (take n l) = n" by simp
-setup {* add_rewrite_rule @{thm take_update_swap} *}
 
 subsection {* sorted *}
 

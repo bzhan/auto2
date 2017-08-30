@@ -25,38 +25,7 @@ lemma last_take_nth_conv [rewrite]:
   apply (induction l arbitrary: n)
   by (auto simp: take_Cons split: nat.split)
 
-section {* list_update_range *}
-
-fun list_update_range :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where
-  "list_update_range l i [] = l"
-| "list_update_range l i (x # xs) = list_update_range (list_update l i x) (i + 1) xs"
-setup {* fold add_rewrite_rule @{thms list_update_range.simps} *}
-setup {* add_rewrite_rule_back @{thm list_update_range.simps(2)} *}
-
-theorem length_list_update_range [rewrite]:
-  "length (list_update_range l i l') = length l"
-@proof @induct l' arbitrary i l @qed
-
-theorem list_update_range_rule:
-  "length l' + i \<le> length l \<Longrightarrow> list_update_range l i l' = take i l @ l' @ drop (i + length l') l"
-@proof
-  @induct l' arbitrary i l @with
-    @subgoal "l' = a # as"
-      @have "i < length l" @then
-      @have "take (i + 1) (l[i := a]) = (take (i + 1) l)[i := a]" @then
-      @have "take i l @ [a]           @ as @ drop (1 + i + length as) (l[i := a]) = 
-             (take (i + 1) l)[i := a] @ as @ drop (1 + i + length as) (l[i := a])"
-    @endgoal
-  @end
-@qed
-
-theorem list_update_range_rule_zero [rewrite]:
-  "length l' \<le> length l \<Longrightarrow> list_update_range l 0 l' = l' @ drop (length l') l"
-  by (metis add.right_neutral append_Nil gen_length_def length_code list_update_range_rule take_0)
-
-theorem take_n_list_update_range [rewrite]:
-  "n \<le> length l \<Longrightarrow> n \<le> length l' \<Longrightarrow> take n (list_update_range l' 0 (take n l)) = take n l"
-  by (simp add: list_update_range_rule_zero)
+setup {* add_rewrite_rule @{thm take_update_swap} *}
 
 section {* hd and last *}
 
