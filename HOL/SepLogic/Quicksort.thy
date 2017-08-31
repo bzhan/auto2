@@ -1,5 +1,5 @@
 theory Quicksort
-imports Reverse "../DataStrs/Quicksort_Func2"
+imports Reverse "../DataStrs/Quicksort_Func"
 begin
 
 function part1 :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
@@ -104,6 +104,6 @@ setup {* del_prfstep_thm @{thm Quicksort_Func.quicksort.simps} *}
 theorem quicksort_sorts:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
    quicksort a l r
-   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(sorted (sublist' l (r + 1) xs'))>" by auto2
+   <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(sorted (sublist l (r + 1) xs'))>" by auto2
 
 end

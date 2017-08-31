@@ -100,7 +100,7 @@ lemma partition_basic:
    length xs' = length xs \<and> outer_remains xs xs' l r \<and> mset xs' = mset xs" by auto2
 setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "?xs'"] *}
 
-lemma partition_partitions1:
+lemma partition_partitions1':
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
    i \<ge> l \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> xs' ! rs"
 @proof
@@ -109,9 +109,15 @@ lemma partition_partitions1:
   @have "xs'' ! r = p"
   @have (@rule) "\<forall>j. j \<ge> l \<longrightarrow> j < rs \<longrightarrow> xs'' ! j \<le> p"
 @qed
-setup {* add_forward_prfstep_cond @{thm partition_partitions1} [with_term "?xs' ! ?i"] *}
+setup {* add_forward_prfstep_cond @{thm partition_partitions1'} [with_term "?xs' ! ?i"] *}
+  
+lemma partition_partitions1 [forward]:
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
+   x \<in> set (sublist l rs xs') \<Longrightarrow> x \<le> xs' ! rs"
+@proof @obtain i where "i \<ge> l" "i < rs" "x = xs' ! i" @qed
+setup {* del_prfstep_thm @{thm partition_partitions1'} *}
 
-lemma partition_partitions2:
+lemma partition_partitions2':
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
    i \<ge> rs + 1 \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> xs' ! rs"
 @proof
@@ -121,8 +127,13 @@ lemma partition_partitions2:
   @have "xs'' ! r = p"
   @have (@rule) "\<forall>j. rs \<le> j \<longrightarrow> j < r - 1 \<longrightarrow> xs'' ! j \<ge> p" @with @case "m = j" @end
 @qed
-setup {* add_forward_prfstep_cond @{thm partition_partitions2} [with_term "?xs' ! ?i"] *}
-
+setup {* add_forward_prfstep_cond @{thm partition_partitions2'} [with_term "?xs' ! ?i"] *}
+  
+lemma partition_partitions2 [forward]:
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
+   x \<in> set (sublist (rs + 1) (r + 1) xs') \<Longrightarrow> x \<ge> xs' ! rs"
+@proof @obtain i where "i \<ge> rs + 1" "i < r + 1" "x = xs' ! i" @qed
+setup {* del_prfstep_thm @{thm partition_partitions2'} *}
 setup {* del_prfstep_thm @{thm partition_def} *}
 
 function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
@@ -173,6 +184,56 @@ lemma quicksort_basic:
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm quicksort_basic} [with_term "?xs3.0"] *}
+
+lemma quicksort_permutes:
+  "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> xs' = quicksort xs l r \<Longrightarrow>
+   mset (sublist l (r + 1) xs') = mset (sublist l (r + 1) xs)"
+@proof
+  @case "l \<ge> r"
+  @have "xs = take l xs @ sublist l (r + 1) xs @ drop (r + 1) xs"
+  @have "xs' = take l xs' @ sublist l (r + 1) xs' @ drop (r + 1) xs'"
+  @have "take l xs = take l xs'"
+  @have "drop (r + 1) xs = drop (r + 1) xs'"
+@qed
+setup {* add_forward_prfstep_cond @{thm quicksort_permutes} [with_term "?xs'"] *}
+
+lemma quicksort_sorts:
+  "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> sorted (sublist l (r + 1) (quicksort xs l r))"
+@proof
+  @let "d = r - l"
+  @strong_induct d arbitrary l r xs
+  @let "p = fst (partition xs l r)"
+  @let "xs1 = snd (partition xs l r)"
+  @let "xs2 = quicksort xs1 l (p - 1)"
+  @let "xs3 = quicksort xs l r"
+  @have "length xs3 = length xs"
+  @case "l \<ge> r" @with @have "r + 1 \<le> length xs" @end
+  @have "l < r \<and> r < length xs"
+  @have "sublist l p xs2 = sublist l p xs3"
+  @have "set (sublist l p xs1) = set (sublist l p xs2)" @with @case "p = 0" @end
+  @have "xs1 ! p = xs3 ! p" @then
+  @have "sublist (p + 1) (r + 1) xs1 = sublist (p + 1) (r + 1) xs2"
+  @have "set (sublist (p + 1) (r + 1) xs2) = set (sublist (p + 1) (r + 1) xs3)"
+  @have "\<forall>x\<in>set (sublist l p xs3). x \<le> xs3 ! p"
+  @have "\<forall>x\<in>set (sublist (p + 1) (r + 1) xs1). x \<ge> xs1 ! p"
+  @have "sorted (sublist l p xs3)" @with
+    @case "p = 0" @then
+    @case "l < p - 1" @with
+      @have "p - 1 - l < r - l" @with @have "p - 1 < r" @end
+      @apply_induct_hyp "p - 1 - l" l "p - 1" xs1
+    @end
+    @have "p = p - 1 + 1"
+  @end
+  @have "sorted (sublist (p + 1) (r + 1) xs3)" @with
+    @case "p + 1 < r" @with
+      @have "r - (p + 1) < r - l"
+      @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2
+    @end
+    @have "r + 1 \<le> length xs"
+  @end
+@qed
+setup {* add_forward_prfstep_cond @{thm quicksort_sorts} [with_term "quicksort ?xs ?l ?r"] *}
+
 setup {* del_prfstep_thm @{thm quicksort.simps} *}
 
 end

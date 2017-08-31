@@ -81,6 +81,9 @@ setup {* add_forward_prfstep_cond @{thm List.list.set_intros(2)} [with_term "set
 setup {* add_backward_prfstep @{thm List.list.set_intros(2)} *}
 setup {* add_rewrite_rule @{thm List.set_append} *}
 
+theorem in_set_conv_nth' [resolve]: "x \<in> set xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
+  by (metis in_set_conv_nth)
+
 (* Apply just to the set of elements of a list for now. *)
 setup {* add_gen_prfstep ("Un_single_case_list",
   [WithFact @{term_pat "?x \<in> {?a} \<union> set ?B"},
@@ -93,9 +96,11 @@ setup {* add_resolve_prfstep @{thm split_list} *}
 theorem list_split_neq_second [resolve]: "xs \<noteq> as @ x # xs" by simp
 
 section {* Showing two lists are equal *}
-setup {* add_backward2_prfstep @{thm nth_equalityI} *}
+
+setup {* add_backward2_prfstep_cond @{thm nth_equalityI} [with_filt (order_filter "xs" "ys")] *}
 
 section {* maps *}
+
 setup {* add_rewrite_rule @{thm map_of.simps(1)} *}
 theorem map_of2 [rewrite]:
   "map_of (p # ps) x = (if x = fst p then Some (snd p) else map_of ps x)" by simp
