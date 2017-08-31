@@ -77,7 +77,7 @@ definition prime :: "i \<Rightarrow> o" where [rewrite]:
   
 lemma primeD1 [forward]: "prime(p) \<Longrightarrow> p >\<^sub>\<nat> 1" by auto2
 lemma primeD2 [forward]: "prime(p) \<Longrightarrow> divides(\<nat>,m,p) \<Longrightarrow> m = 1 \<or> m = p" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm prime_def} *}
+setup {* del_prfstep_thm_eqforward @{thm prime_def} *}
   
 lemma prime_odd_nat: "prime(p) \<Longrightarrow> p >\<^sub>\<nat> 2 \<Longrightarrow> odd(p)" by auto2
 

@@ -13,7 +13,7 @@ definition antisym_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow
 
 lemma antisym_meta_relD [forward]:
   "antisym_meta_rel(R) \<Longrightarrow> R(x,y) \<Longrightarrow> R(y,x) \<Longrightarrow> x = y" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm antisym_meta_rel_def} *}
+setup {* del_prfstep_thm_eqforward @{thm antisym_meta_rel_def} *}
 
 definition preorder_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "preorder_meta_rel(R) \<longleftrightarrow> (refl_meta_rel(R) \<and> trans_meta_rel(R))"
@@ -52,7 +52,7 @@ lemma preorderD [forward]:
 
 lemma preorderD' [backward]:
   "preorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> x \<le>\<^sub>R x" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm preorder_iff} *}
+setup {* del_prfstep_thm_eqforward @{thm preorder_iff} *}
   
 definition order :: "i \<Rightarrow> o" where [rewrite]:
   "order(R) \<longleftrightarrow> (raworder(R) \<and> order_on(\<lambda>x y. x \<le>\<^sub>R y, carrier(R)))"
@@ -66,7 +66,7 @@ setup {* del_prfstep_thm @{thm order_def} *}
 lemma orderD [forward]:
   "order(R) \<Longrightarrow> preorder(R)"
   "order(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R x \<Longrightarrow> x = y" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm order_iff} *}
+setup {* del_prfstep_thm_eqforward @{thm order_iff} *}
   
 (* Condition in terms of order_on. *)
 lemma induced_pre_order: "preorder_on(R,E) \<Longrightarrow> preorder(Order(E,R))" by auto2
@@ -173,7 +173,7 @@ lemma ord_isomorphismD1 [forward]:
 lemma ord_isomorphismD2 [rewrite]:
   "ord_isomorphism(f) \<Longrightarrow> R = source_str(f) \<Longrightarrow> S = target_str(f) \<Longrightarrow>
    x \<in> source(f) \<Longrightarrow> y \<in> source(f) \<Longrightarrow> f`x \<le>\<^sub>S f`y \<longleftrightarrow> x \<le>\<^sub>R y" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm ord_isomorphism_def} *}
+setup {* del_prfstep_thm_eqforward @{thm ord_isomorphism_def} *}
 
 definition ord_iso_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<cong>\<^sub>O" 60) where [rewrite]:
   "ord_iso_space(R,S) = {f \<in> mor_space(R,S). ord_isomorphism(f)}"
@@ -412,14 +412,14 @@ definition cofinal :: "[i, i] \<Rightarrow> o" where [rewrite]:
 
 lemma cofinalE1 [forward]: "cofinal(R,A) \<Longrightarrow> A \<subseteq> carrier(R)" by auto2
 lemma cofinalE2 [backward2]: "cofinal(R,A) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y\<in>A. x \<le>\<^sub>R y" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm cofinal_def} *}
+setup {* del_prfstep_thm_eqforward @{thm cofinal_def} *}
 
 definition coinitial :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "coinitial(R,A) \<longleftrightarrow> (A \<subseteq> carrier(R) \<and> (\<forall>x\<in>.R. \<exists>y\<in>A. y \<le>\<^sub>R x))"
 
 lemma coinitialE1 [forward]: "coinitial(R,A) \<Longrightarrow> A \<subseteq> carrier(R)" by auto2
 lemma coinitialE2 [backward2]: "coinitial(R,A) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y\<in>A. y \<le>\<^sub>R x" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm coinitial_def} *}
+setup {* del_prfstep_thm_eqforward @{thm coinitial_def} *}
 
 lemma greatest_is_cofinal:
   "order(R) \<Longrightarrow> has_greatest(R,carrier(R)) \<Longrightarrow> cofinal(R,{greatest(R,carrier(R))})" by auto2
@@ -593,7 +593,7 @@ setup {* add_property_const @{term right_directed} *}
 
 lemma right_directedE1 [forward]: "right_directed(R) \<Longrightarrow> order(R)" by auto2
 lemma right_directedE2 [backward]: "right_directed(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<exists>z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm right_directed_def} *}
+setup {* del_prfstep_thm_eqforward @{thm right_directed_def} *}
 
 lemma right_directed_max_is_greatest:
   "right_directed(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> maximal(R,a) \<Longrightarrow> has_greatest(R,carrier(R)) \<and> greatest(R,carrier(R)) = a"
@@ -630,7 +630,7 @@ lemma linorderD [forward]:
   "linorder(R) \<Longrightarrow> order(R)"
   "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<not>(x \<le>\<^sub>R y) \<Longrightarrow> x >\<^sub>R y"
   "linorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<not>(x <\<^sub>R y) \<Longrightarrow> x \<ge>\<^sub>R y" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm linorder_def} *}
+setup {* del_prfstep_thm_eqforward @{thm linorder_def} *}
 
 lemma linorder_iso [forward]:
   "linorder(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> linorder(S)"
@@ -741,7 +741,7 @@ lemma is_suborderD2 [rewrite]:
   "x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_suborder(R,S) \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>S y" by auto2
 lemma is_suborder_rewr [rewrite_back]:
   "ord_form(R) \<Longrightarrow> is_suborder(R,S) \<Longrightarrow> R = suborder(S,carrier(R))" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_suborder_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_suborder_def} *}
 
 lemma is_suborder_refl [resolve]: "preorder(R) \<Longrightarrow> is_suborder(R,R)" by auto2
 
@@ -758,7 +758,7 @@ lemma directed_relsD1 [forward]:
   "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> order(R)" by auto2
 lemma directed_relsD2 [backward]:
   "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> S \<in> X \<Longrightarrow> \<exists>T\<in>X. is_suborder(R,T) \<and> is_suborder(S,T)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm directed_rels_def} *}
+setup {* del_prfstep_thm_eqforward @{thm directed_rels_def} *}
 
 (* Union of a family of ordering. Has good properties when the family is directed. *)
 definition union_src :: "i \<Rightarrow> i" where [rewrite]:
@@ -845,7 +845,7 @@ setup {* add_property_const @{term order_unbounded} *}
 lemma order_unboundedD [backward]:
   "order_unbounded(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y. y <\<^sub>R x"
   "order_unbounded(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y. y >\<^sub>R x" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm order_unbounded_def} *}
+setup {* del_prfstep_thm_eqforward @{thm order_unbounded_def} *}
 
 definition dense_order :: "i \<Rightarrow> o" where [rewrite]:
   "dense_order(R) \<longleftrightarrow> linorder(R) \<and> (\<forall>x y. x <\<^sub>R y \<longrightarrow> (\<exists>z. x <\<^sub>R z \<and> z <\<^sub>R y))"

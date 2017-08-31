@@ -23,7 +23,7 @@ definition is_graph :: "i \<Rightarrow> o" where [rewrite]:
 setup {* add_property_const @{term is_graph} *}
 
 lemma is_graphE [forward]: "is_graph(G) \<Longrightarrow> x \<in> G \<Longrightarrow> x = \<langle>fst(x),snd(x)\<rangle>" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_graph_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_graph_def} *}
 
 definition gr_source :: "i \<Rightarrow> i" where [rewrite]:
   "gr_source(G) = {fst(p). p \<in> G}"
@@ -360,7 +360,7 @@ lemma eq_str_orderD1 [forward]: "eq_str_order(G,H) \<Longrightarrow> raworder(G)
 lemma eq_str_orderD2 [rewrite]: "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_order(G,H) \<Longrightarrow> x \<le>\<^sub>G y \<longleftrightarrow> x \<le>\<^sub>H y" by auto2
 lemma eq_str_orderD2' [rewrite]: "eq_str_order(G,H) \<Longrightarrow> order_graph(G) = order_graph(H)" by auto2
 lemma eq_str_order_sym [forward]: "eq_str_order(G,H) \<Longrightarrow> eq_str_order(H,G)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm eq_str_order_def} *}
+setup {* del_prfstep_thm_eqforward @{thm eq_str_order_def} *}
 
 lemma order_eq [backward]:
   "ord_form(R) \<Longrightarrow> ord_form(S) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> R = S" by auto2

@@ -441,7 +441,7 @@ definition rec_type_cond :: "[i, i, [i, i] \<Rightarrow> i] \<Rightarrow> o" whe
 lemma rec_type_cond [typing]:
   "rec_type_cond(S,a,b) \<Longrightarrow> a \<in> S"
   "rec_type_cond(S,a,b) \<Longrightarrow> m \<in> nat \<Longrightarrow> p \<in> S \<Longrightarrow> b(m,p) \<in> S" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm rec_type_cond_def} *}
+setup {* del_prfstep_thm_eqforward @{thm rec_type_cond_def} *}
 
 definition Seq_rec :: "[i, i, [i, i] \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "Seq_rec(R,a,b) = Seq(R, \<lambda>n. nat_rec(a,b,n))"
@@ -480,7 +480,7 @@ lemma rec2_type_condD [typing]:
   "rec2_type_cond(S,T,a,ai,b,bi) \<Longrightarrow> b \<in> T"
   "rec2_type_cond(S,T,a,ai,b,bi) \<Longrightarrow> m \<in> nat \<Longrightarrow> p \<in> S \<Longrightarrow> q \<in> T \<Longrightarrow> ai(m,p,q)\<in>S"
   "rec2_type_cond(S,T,a,ai,b,bi) \<Longrightarrow> m \<in> nat \<Longrightarrow> p \<in> S \<Longrightarrow> q \<in> T \<Longrightarrow> bi(m,p,q)\<in>T" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm rec2_type_cond_def} *}
+setup {* del_prfstep_thm_eqforward @{thm rec2_type_cond_def} *}
 
 lemma nat_rec2_type [backward,typing]:
   "k \<in> nat \<Longrightarrow> rec2_type_cond(S,T,a,ai,b,bi) \<Longrightarrow> nat_rec2(a,ai,b,bi,k) \<in> S \<times> T"

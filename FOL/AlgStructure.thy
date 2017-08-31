@@ -74,7 +74,7 @@ lemma eq_str_abgroupD [rewrite]:
   "eq_str_abgroup(G,H) \<Longrightarrow> \<zero>\<^sub>G = \<zero>\<^sub>H"
   "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> x +\<^sub>G y = x +\<^sub>H y" by auto2+
 lemma eq_str_abgroup_sym [forward]: "eq_str_abgroup(G,H) \<Longrightarrow> eq_str_abgroup(H,G)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm eq_str_abgroup_def} *}
+setup {* del_prfstep_thm_eqforward @{thm eq_str_abgroup_def} *}
 
 lemma abgroup_eq [backward]:
   "abgroup_form(G) \<Longrightarrow> abgroup_form(H) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> G = H" by auto2
@@ -122,7 +122,7 @@ lemma eq_str_groupD [rewrite]:
   "eq_str_group(G,H) \<Longrightarrow> \<one>\<^sub>G = \<one>\<^sub>H"
   "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> x *\<^sub>G y = x *\<^sub>H y" by auto2+
 lemma eq_str_group_sym [forward]: "eq_str_group(G,H) \<Longrightarrow> eq_str_group(H,G)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm eq_str_group_def} *}
+setup {* del_prfstep_thm_eqforward @{thm eq_str_group_def} *}
 
 lemma group_eq [backward]:
   "group_form(G) \<Longrightarrow> group_form(H) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> G = H" by auto2
@@ -238,7 +238,7 @@ setup {* add_property_const @{term is_add_id} *}
 lemma is_add_idD [rewrite]: "is_add_id(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> \<zero>\<^sub>G +\<^sub>G x = x" by auto2
 lemma is_add_id_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_add_id(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_add_id(H)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_add_id_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_add_id_def} *}
 
 definition is_plus_comm :: "i \<Rightarrow> o" where [rewrite]:
   "is_plus_comm(G) \<longleftrightarrow> (is_abgroup_raw(G) \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. x +\<^sub>G y = y +\<^sub>G x))"
@@ -247,7 +247,7 @@ setup {* add_property_const @{term is_plus_comm} *}
 lemma plus_commD: "is_plus_comm(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x +\<^sub>G y = y +\<^sub>G x" by auto2
 lemma is_plus_comm_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_plus_comm(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_plus_comm(H)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_plus_comm_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_plus_comm_def} *}
 
 definition is_plus_assoc :: "i \<Rightarrow> o" where [rewrite]:
   "is_plus_assoc(G) \<longleftrightarrow> is_abgroup_raw(G) \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. \<forall>z\<in>.G. (x +\<^sub>G y) +\<^sub>G z = x +\<^sub>G (y +\<^sub>G z))"
@@ -258,7 +258,7 @@ lemma plus_assoc_left [rewrite]:
 
 lemma plus_assoc_right:
   "is_plus_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> (x +\<^sub>G y) +\<^sub>G z = x +\<^sub>G (y +\<^sub>G z) \<and> y +\<^sub>G z \<in>. G" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_plus_assoc_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_plus_assoc_def} *}
   
 lemma is_plus_assoc_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_plus_assoc(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_plus_assoc(H)" by auto2
@@ -274,7 +274,7 @@ lemma is_mult_id_left [rewrite]: "is_mult_id(G) \<Longrightarrow> x \<in>. G \<L
 lemma is_mult_id_right [rewrite]: "is_mult_id(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> x *\<^sub>G \<one>\<^sub>G = x" by auto2
 lemma is_mult_id_group_prop [forward]:
   "is_group_raw(H) \<Longrightarrow> is_mult_id(G) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> is_mult_id(H)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_mult_id_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_mult_id_def} *}
 
 definition is_times_comm :: "i \<Rightarrow> o" where [rewrite]:
   "is_times_comm(G) \<longleftrightarrow> (is_group_raw(G) \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. x *\<^sub>G y = y *\<^sub>G x))"
@@ -283,7 +283,7 @@ setup {* add_property_const @{term is_times_comm} *}
 lemma times_commD: "is_times_comm(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x *\<^sub>G y = y *\<^sub>G x" by auto2
 lemma is_times_comm_group_prop [forward]:
   "is_group_raw(H) \<Longrightarrow> is_times_comm(G) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> is_times_comm(H)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_times_comm_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_times_comm_def} *}
 
 definition is_times_assoc :: "i \<Rightarrow> o" where [rewrite]:
   "is_times_assoc(G) \<longleftrightarrow> is_group_raw(G) \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. \<forall>z\<in>.G. (x *\<^sub>G y) *\<^sub>G z = x *\<^sub>G (y *\<^sub>G z))"
@@ -297,7 +297,7 @@ lemma times_assoc_left [rewrite]:
 
 lemma times_assoc_right:
   "is_times_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> (x *\<^sub>G y) *\<^sub>G z = x *\<^sub>G (y *\<^sub>G z) \<and> y *\<^sub>G z \<in>. G" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_times_assoc_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_times_assoc_def} *}
 
 lemma is_times_assoc_group_prop [forward]:
   "is_group_raw(H) \<Longrightarrow> is_times_assoc(G) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> is_times_assoc(H)" by auto2
@@ -316,7 +316,7 @@ lemma left_distribD [rewrite]:
 lemma left_distribD_back:
   "is_left_distrib(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow>
    x *\<^sub>R y +\<^sub>R x *\<^sub>R z = x *\<^sub>R (y +\<^sub>R z) \<and> y +\<^sub>R z \<in>. R" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_left_distrib_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_left_distrib_def} *}
 
 lemma is_left_distrib_ring_prop [forward]:
   "is_ring_raw(H) \<Longrightarrow> is_left_distrib(G) \<Longrightarrow> eq_str_ring(G,H) \<Longrightarrow> is_left_distrib(H)" by auto2
@@ -333,7 +333,7 @@ lemma right_distribD [rewrite]:
 lemma right_distribD_back:
   "is_right_distrib(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow>
    y *\<^sub>R x +\<^sub>R z *\<^sub>R x = (y +\<^sub>R z) *\<^sub>R x \<and> y +\<^sub>R z \<in>. R" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_right_distrib_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_right_distrib_def} *}
 
 lemma is_right_distrib_ring_prop [forward]:
   "is_ring_raw(H) \<Longrightarrow> is_right_distrib(G) \<Longrightarrow> eq_str_ring(G,H) \<Longrightarrow> is_right_distrib(H)" by auto2
@@ -349,7 +349,7 @@ lemma ord_ring_add_leftD [backward]:
   "ord_ring_add_left(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<le>\<^sub>R c \<Longrightarrow> a +\<^sub>R b \<le>\<^sub>R a +\<^sub>R c" by auto2
 lemma ord_ring_add_ord_ring_prop [forward]:
   "is_ord_ring_raw(H) \<Longrightarrow> ord_ring_add_left(G) \<Longrightarrow> eq_str_ord_ring(G,H) \<Longrightarrow> ord_ring_add_left(H)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm ord_ring_add_left_def} *}
+setup {* del_prfstep_thm_eqforward @{thm ord_ring_add_left_def} *}
 
 definition ord_ring_mult_pos :: "i \<Rightarrow> o" where [rewrite]:
   "ord_ring_mult_pos(R) \<longleftrightarrow> (\<forall>a b. a \<ge>\<^sub>R \<zero>\<^sub>R \<longrightarrow> b \<ge>\<^sub>R \<zero>\<^sub>R \<longrightarrow> a *\<^sub>R b \<ge>\<^sub>R \<zero>\<^sub>R)"
@@ -360,7 +360,7 @@ lemma ord_ring_mult_posD [backward1, backward2]:
 setup {* add_forward_prfstep_cond @{thm ord_ring_mult_posD} [with_term "?a *\<^sub>?R ?b"] *}
 lemma ord_ring_mult_pos_ord_ring_prop [forward]:
   "is_ord_ring_raw(H) \<Longrightarrow> ord_ring_mult_pos(G) \<Longrightarrow> eq_str_ord_ring(G,H) \<Longrightarrow> ord_ring_mult_pos(H)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm ord_ring_mult_pos_def} *}
+setup {* del_prfstep_thm_eqforward @{thm ord_ring_mult_pos_def} *}
   
 definition ord_semiring_mult_left :: "i \<Rightarrow> o" where [rewrite]:
   "ord_semiring_mult_left(R) \<longleftrightarrow> (\<forall>a\<in>.R. \<forall>b c. b \<le>\<^sub>R c \<longrightarrow> a *\<^sub>R b \<le>\<^sub>R a *\<^sub>R c)"
@@ -370,7 +370,7 @@ lemma ord_semiring_mult_leftD [backward2]:
   "ord_semiring_mult_left(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<le>\<^sub>R c \<Longrightarrow> a *\<^sub>R b \<le>\<^sub>R a *\<^sub>R c" by auto2
 lemma ord_semiring_mult_left_ord_ring_prop [forward]:
   "is_ord_ring_raw(H) \<Longrightarrow> ord_semiring_mult_left(G) \<Longrightarrow> eq_str_ord_ring(G,H) \<Longrightarrow> ord_semiring_mult_left(H)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm ord_semiring_mult_left_def} *}
+setup {* del_prfstep_thm_eqforward @{thm ord_semiring_mult_left_def} *}
 
 ML_file "alg_fol.ML"
 

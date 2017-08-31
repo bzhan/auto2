@@ -313,7 +313,7 @@ definition incr_arg_fun :: "i \<Rightarrow> o" where [rewrite]:
 lemma incr_arg_funD:
   "incr_arg_fun(f) \<Longrightarrow> is_morphism(f) \<Longrightarrow> S = source_str(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> f`x >\<^sub>S x" by auto2
 setup {* add_forward_prfstep_cond @{thm incr_arg_funD} [with_term "?f`?x"] *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm incr_arg_fun_def} *}
+setup {* del_prfstep_thm_eqforward @{thm incr_arg_fun_def} *}
 
 lemma rempe_gillen_challenge:
   "real_fun(f) \<Longrightarrow> continuous(f) \<Longrightarrow> incr_arg_fun(f) \<Longrightarrow> x0 \<in>. \<real> \<Longrightarrow>

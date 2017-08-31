@@ -60,7 +60,7 @@ setup {* add_property_const @{term well_order} *}
 lemma well_orderD1 [forward]: "well_order(R) \<Longrightarrow> linorder(R)" by auto2
 lemma well_orderD2 [forward, backward]:
   "well_order(R) \<Longrightarrow> X \<subseteq> carrier(R) \<Longrightarrow> X \<noteq> \<emptyset> \<Longrightarrow> has_least(R,X)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm well_order_def} *}
+setup {* del_prfstep_thm_eqforward @{thm well_order_def} *}
 
 lemma wellorder_iso [forward]:
   "well_order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> well_order(S)"
@@ -97,7 +97,7 @@ definition is_segment :: "[i, i] \<Rightarrow> o" where [rewrite]:
 lemma is_segmentD [forward]:
   "is_segment(R,S) \<Longrightarrow> S \<subseteq> carrier(R)"
   "is_segment(R,S) \<Longrightarrow> x \<in> S \<Longrightarrow> \<forall>y\<in>.R. y \<le>\<^sub>R x \<longrightarrow> y \<in> S" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_segment_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_segment_def} *}
 
 lemma segment_is_interval [backward2]:
   "well_order(R) \<Longrightarrow> is_segment(R,S) \<Longrightarrow> S \<noteq> carrier(R) \<Longrightarrow> \<exists>a\<in>.R. S = less_interval(R,a)"
@@ -165,7 +165,7 @@ setup {* add_property_const @{term well_order_family} *}
 lemma well_order_familyD [forward]:
   "well_order_family(X) \<Longrightarrow> R \<in> X \<Longrightarrow> well_order(R)"
   "well_order_family(X) \<Longrightarrow> \<not>is_segment_rel(R,S) \<Longrightarrow> R \<in> X \<Longrightarrow> S \<in> X \<Longrightarrow> is_segment_rel(S,R)" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm well_order_family_def} *}
+setup {* del_prfstep_thm_eqforward @{thm well_order_family_def} *}
 
 lemma well_order_familyD' [backward]:
   "well_order_family(X) \<Longrightarrow> R \<in> X \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow> \<exists>S\<in>X. y \<in>. S \<and> is_segment_rel(R,S)"
@@ -341,7 +341,7 @@ setup {* add_property_const @{term inductive_order} *}
 lemma inductive_orderE1 [forward]: "inductive_order(R) \<Longrightarrow> order(R)" by auto2
 lemma inductive_orderE2 [backward]:
   "inductive_order(R) \<Longrightarrow> X \<subseteq> carrier(R) \<Longrightarrow> linorder(suborder(R,X)) \<Longrightarrow> upper_bound(R,X) \<noteq> \<emptyset>" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm inductive_order_def} *}
+setup {* del_prfstep_thm_eqforward @{thm inductive_order_def} *}
 
 lemma zorn_aux [resolve]:
   "order(R) \<Longrightarrow> \<forall>X. X \<subseteq> carrier(R) \<longrightarrow> well_order(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset> \<Longrightarrow>

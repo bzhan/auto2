@@ -11,7 +11,7 @@ setup {* add_property_const @{term is_monoid} *}
 lemma is_monoidD [forward]:
   "is_monoid(G) \<Longrightarrow> is_mult_id(G)"
   "is_monoid(G) \<Longrightarrow> is_times_assoc(G)" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_monoid_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_monoid_def} *}
   
 lemma is_monoid_group_prop [forward]:
   "is_group_raw(H) \<Longrightarrow> is_monoid(G) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> is_monoid(H)" by auto2
@@ -132,14 +132,14 @@ definition subset_mult_closed :: "i \<Rightarrow> i \<Rightarrow> o" where [rewr
 
 lemma subset_mult_closedD [typing]:
   "subset_mult_closed(G,H) \<Longrightarrow> x \<in> H \<Longrightarrow> y \<in> H \<Longrightarrow> x *\<^sub>G y \<in> H" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm subset_mult_closed_def} *}
+setup {* del_prfstep_thm_eqforward @{thm subset_mult_closed_def} *}
 
 definition subset_inv_closed :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "subset_inv_closed(G,H) \<longleftrightarrow> (\<forall>x\<in>H. inv(G,x) \<in> H)"
 
 lemma subset_inv_closedD [typing]:
   "subset_inv_closed(G,H) \<Longrightarrow> x \<in> H \<Longrightarrow> inv(G,x) \<in> H" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm subset_inv_closed_def} *}
+setup {* del_prfstep_thm_eqforward @{thm subset_inv_closed_def} *}
 
 definition is_subgroup_set :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "is_subgroup_set(G,H) \<longleftrightarrow>
@@ -234,7 +234,7 @@ lemma is_group_homD1 [forward]:
 lemma is_group_homD2 [rewrite]:
   "is_group_hom(f) \<Longrightarrow> G = source_str(f) \<Longrightarrow> H = target_str(f) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow>
    f ` (x *\<^sub>G y) = f`x *\<^sub>H f`y" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_group_hom_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_group_hom_def} *}
 
 definition group_hom_space :: "i \<Rightarrow> i \<Rightarrow> i" (infix "\<rightharpoonup>\<^sub>G" 60) where [rewrite]:
   "G \<rightharpoonup>\<^sub>G H = {f \<in> G \<rightharpoonup> H. is_group_hom(f)}"

@@ -13,7 +13,7 @@ lemma is_normal_subgroup_setD1 [forward]:
     
 lemma is_normal_subgroup_setD2 [typing]:
   "a \<in>. G \<Longrightarrow> is_normal_subgroup_set(G,H) \<Longrightarrow> h \<in> H \<Longrightarrow> a *\<^sub>G h *\<^sub>G inv(G,a) \<in> H" by auto2    
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_normal_subgroup_set_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_normal_subgroup_set_def} *}
 
 lemma is_normal_subgroup_setD3 [typing]:
   "a \<in>. G \<Longrightarrow> is_normal_subgroup_set(G,H) \<Longrightarrow> h \<in> H \<Longrightarrow> inv(G,a) *\<^sub>G h *\<^sub>G a \<in> H"

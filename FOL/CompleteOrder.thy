@@ -116,7 +116,7 @@ lemma dedekind_cutI_ex [resolve]:
 
 lemma dedekind_cutI_ex2 [resolve]:
   "dedekind_cut(R,U) \<Longrightarrow> \<exists>x\<in>.R. x \<notin> U" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm dedekind_cut_def} *}
+setup {* del_prfstep_thm_eqforward @{thm dedekind_cut_def} *}
 
 (* For any dedekind cut, we define two sequences converging to the boundary point. *)
 definition DCSeqs :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:

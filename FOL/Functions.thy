@@ -95,7 +95,7 @@ lemma func_coincideD1 [forward]:
 
 lemma func_coincideD2 [rewrite_bidir]:
   "func_coincide(f,g,E) \<Longrightarrow> x \<in> E \<Longrightarrow> f`x = g`x" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm func_coincide_def} *}
+setup {* del_prfstep_thm_eqforward @{thm func_coincide_def} *}
 
 definition is_func_extension :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "is_func_extension(f,g) \<longleftrightarrow> (source(g) \<subseteq> source(f) \<and> func_coincide(f,g,source(g)))"
@@ -468,7 +468,7 @@ setup {* add_property_const @{term is_const_fun} *}
 
 lemma is_const_funD [forward]:
   "is_const_fun(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> y \<in> source(f) \<Longrightarrow> f`x = f`y" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_const_fun_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_const_fun_def} *}
 
 (* Functions that do not depend on the second argument. *)
 lemma exists_proj_fun:

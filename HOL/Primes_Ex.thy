@@ -14,7 +14,7 @@ definition prime :: "nat \<Rightarrow> bool" where [rewrite]:
 lemma primeD1 [forward]: "prime p \<Longrightarrow> 1 < p" by auto2
 lemma primeD2: "prime p \<Longrightarrow> m dvd p \<Longrightarrow> m = 1 \<or> m = p" by auto2
 setup {* add_forward_prfstep_cond @{thm primeD2} [with_cond "?m \<noteq> 1", with_cond "?m \<noteq> ?p"] *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm prime_def} *}
+setup {* del_prfstep_thm_eqforward @{thm prime_def} *}
 
 (* Exists a prime p. *)
 theorem exists_prime [resolve]: "\<exists>p. prime p"

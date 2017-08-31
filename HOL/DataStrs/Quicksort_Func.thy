@@ -12,7 +12,7 @@ setup {* add_forward_prfstep_cond @{thm outer_remainsD1} [with_term "?xs' ! ?i"]
 
 lemma outer_remainsD2: "outer_remains xs xs' l r \<Longrightarrow> r < i \<Longrightarrow> xs ! i = xs' ! i" by auto2
 setup {* add_forward_prfstep_cond @{thm outer_remainsD2} [with_term "?xs' ! ?i"] *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm outer_remains_def} *}
+setup {* del_prfstep_thm_eqforward @{thm outer_remains_def} *}
 
 section {* part1 function *}  
 

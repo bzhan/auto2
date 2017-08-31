@@ -51,7 +51,7 @@ setup {* add_property_const @{term hausdorff} *}
 
 lemma hausdorffD1 [forward]: "hausdorff(X) \<Longrightarrow> is_top_space(X)" by auto2
 lemma hausdorffD2 [backward]: "hausdorff(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> x \<noteq> y \<Longrightarrow> \<exists>U\<in>neighs(X,x). \<exists>V\<in>neighs(X,y). U \<inter> V = \<emptyset>" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm hausdorff_def} *}
+setup {* del_prfstep_thm_eqforward @{thm hausdorff_def} *}
 
 definition T1_space :: "i \<Rightarrow> o" where [rewrite]:
   "T1_space(X) \<longleftrightarrow> (is_top_space(X) \<and> (\<forall>x\<in>.X. is_closed(X,{x})))"
@@ -60,7 +60,7 @@ setup {* add_property_const @{term T1_space} *}
 lemma T1_spaceD1 [forward]: "T1_space(X) \<Longrightarrow> is_top_space(X)" by auto2
 lemma T1_spaceD2: "T1_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> is_closed(X,{x})" by auto2
 setup {* add_forward_prfstep_cond @{thm T1_spaceD2} [with_term "{?x}"] *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm T1_space_def} *}
+setup {* del_prfstep_thm_eqforward @{thm T1_space_def} *}
 
 lemma hausdorff_is_T1 [forward]: "hausdorff(X) \<Longrightarrow> T1_space(X)"
 @proof

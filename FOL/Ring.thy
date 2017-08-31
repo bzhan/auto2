@@ -17,7 +17,7 @@ lemma is_ringD [forward]:
   "is_ring(R) \<Longrightarrow> is_right_distrib(R)" by auto2+
 
 lemma is_ringD' [resolve]: "is_ring(R) \<Longrightarrow> \<zero>\<^sub>R \<noteq> \<one>\<^sub>R" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_ring_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_ring_def} *}
   
 lemma is_ring_ring_prop [forward]:
   "is_ring_raw(H) \<Longrightarrow> is_ring(G) \<Longrightarrow> eq_str_ring(G,H) \<Longrightarrow> is_ring(H)" by auto2
@@ -58,7 +58,7 @@ setup {* add_property_const @{term is_comm_ring} *}
 lemma is_comm_ringD [forward]:
   "is_comm_ring(R) \<Longrightarrow> is_ring(R)"
   "is_comm_ring(R) \<Longrightarrow> is_times_comm(R)" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_comm_ring_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_comm_ring_def} *}
 
 lemma is_comm_ring_ring_prop [forward]:
   "is_ring_raw(H) \<Longrightarrow> is_comm_ring(G) \<Longrightarrow> eq_str_ring(G,H) \<Longrightarrow> is_comm_ring(H)" by auto2
@@ -302,7 +302,7 @@ lemma integral_domainD [forward]:
   "integral_domain(R) \<Longrightarrow> is_comm_ring(R)"
   "integral_domain(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x *\<^sub>R y = \<zero>\<^sub>R \<Longrightarrow> x \<noteq> \<zero>\<^sub>R \<Longrightarrow> y = \<zero>\<^sub>R"
   "integral_domain(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x *\<^sub>R y = \<zero>\<^sub>R \<Longrightarrow> y \<noteq> \<zero>\<^sub>R \<Longrightarrow> x = \<zero>\<^sub>R" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm integral_domain_def} *}
+setup {* del_prfstep_thm_eqforward @{thm integral_domain_def} *}
 
 lemma integral_domain_cancel_right [forward]:
   "integral_domain(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> z \<noteq> \<zero>\<^sub>R \<Longrightarrow> x *\<^sub>R z = y *\<^sub>R z \<Longrightarrow> x = y"
@@ -325,7 +325,7 @@ lemma is_ord_ringD [forward]:
   "is_ord_ring(R) \<Longrightarrow> linorder(R)"
   "is_ord_ring(R) \<Longrightarrow> ord_ring_add_left(R)"
   "is_ord_ring(R) \<Longrightarrow> ord_ring_mult_pos(R)" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_ord_ring_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_ord_ring_def} *}
   
 lemma is_ord_ring_prop [forward]:
   "is_ord_ring(R) \<Longrightarrow> is_ord_ring_raw(S) \<Longrightarrow> eq_str_ord_ring(R,S) \<Longrightarrow> is_ord_ring(S)" by auto2
@@ -576,28 +576,28 @@ definition subset_add_closed :: "i \<Rightarrow> i \<Rightarrow> o" where [rewri
 
 lemma subset_add_closedD [typing]:
   "subset_add_closed(R,S) \<Longrightarrow> x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> x +\<^sub>R y \<in> S" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm subset_add_closed_def} *}
+setup {* del_prfstep_thm_eqforward @{thm subset_add_closed_def} *}
   
 definition subset_mult_closed :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "subset_mult_closed(R,S) \<longleftrightarrow> (\<forall>x\<in>S. \<forall>y\<in>S. x *\<^sub>R y \<in> S)"
   
 lemma subset_mult_closedD [typing]:
   "subset_mult_closed(R,S) \<Longrightarrow> x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> x *\<^sub>R y \<in> S" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm subset_mult_closed_def} *}
+setup {* del_prfstep_thm_eqforward @{thm subset_mult_closed_def} *}
 
 definition nonneg_compat_inter :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "nonneg_compat_inter(R,S) \<longleftrightarrow> (\<forall>x\<in>S. -\<^sub>R x \<in> S \<longrightarrow> x = \<zero>\<^sub>R)"
 
 lemma nonneg_compat_interD [forward]:
   "nonneg_compat_inter(R,S) \<Longrightarrow> -\<^sub>R x \<in> S \<Longrightarrow> x \<in> S \<Longrightarrow> x = \<zero>\<^sub>R" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm nonneg_compat_inter_def} *}
+setup {* del_prfstep_thm_eqforward @{thm nonneg_compat_inter_def} *}
 
 definition nonneg_compat_union :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "nonneg_compat_union(R,S) \<longleftrightarrow> (\<forall>x\<in>.R. x \<in> S \<or> -\<^sub>R x \<in> S)"
   
 lemma nonneg_compat_unionD [forward]:
   "x \<in>. R \<Longrightarrow> nonneg_compat_union(R,S) \<Longrightarrow> -\<^sub>R x \<notin> S \<Longrightarrow> x \<in> S" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm nonneg_compat_union_def} *}
+setup {* del_prfstep_thm_eqforward @{thm nonneg_compat_union_def} *}
 
 definition ord_ring_from_nonneg :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "ord_ring_from_nonneg(R,S) =

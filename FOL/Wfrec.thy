@@ -7,7 +7,7 @@ definition rel_minimal :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" wh
 
 lemma rel_minimalD [forward]:
   "y \<in> source(r) \<Longrightarrow> rel_minimal(r,Z,x) \<Longrightarrow> rel(r,y,x) \<Longrightarrow> y \<notin> Z" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm rel_minimal_def} *}
+setup {* del_prfstep_thm_eqforward @{thm rel_minimal_def} *}
 
 definition wf :: "i \<Rightarrow> o" where [rewrite]:
   "wf(r) \<longleftrightarrow> is_rel(r) \<and> (\<forall>Z\<in>Pow(source(r)). Z \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>Z. rel_minimal(r,Z,x)))"
@@ -15,7 +15,7 @@ setup {* add_property_const @{term wf} *}
 
 lemma wfD1 [forward]: "wf(r) \<Longrightarrow> is_rel(r)" by auto2
 lemma wfD2 [backward]: "wf(r) \<Longrightarrow> Z \<subseteq> source(r) \<Longrightarrow> Z \<noteq> \<emptyset> \<Longrightarrow> \<exists>x\<in>Z. rel_minimal(r,Z,x)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm wf_def} *}
+setup {* del_prfstep_thm_eqforward @{thm wf_def} *}
 
 (* Given \<langle>a,b\<rangle> \<in> r^+, take a' to be the predecessor of b in the chain from a to b. *)
 lemma rel_trans_cl_prev [backward]:

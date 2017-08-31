@@ -128,7 +128,7 @@ setup {* register_wellform_data ("unanimity(I,Cs,F)", ["F \<in> Policy(I,Cs)"]) 
 
 lemma unanimityE [forward]:
   "F \<in> Policy(I,Cs) \<Longrightarrow> unanimity(I,Cs,F) \<Longrightarrow> \<forall>i\<in>I. prefer(P`i,a,b) \<Longrightarrow> P \<in> source(F) \<Longrightarrow> prefer(F`P,a,b)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm unanimity_def} *}
+setup {* del_prfstep_thm_eqforward @{thm unanimity_def} *}
 
 definition IIA :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "IIA(I,Cs,F) \<longleftrightarrow> (\<forall>P\<in>Prof(I,Cs). \<forall>P'\<in>Prof(I,Cs). \<forall>a b.
@@ -138,7 +138,7 @@ setup {* register_wellform_data ("IIA(I,Cs,F)", ["F \<in> Policy(I,Cs)"]) *}
 lemma IIA_E [forward]:
   "F \<in> Policy(I,Cs) \<Longrightarrow> IIA(I,Cs,F) \<Longrightarrow> \<forall>i\<in>I. eq_prefer(P`i,a,b, P'`i,a,b) \<Longrightarrow>
    P \<in> source(F) \<Longrightarrow> P' \<in> source(F) \<Longrightarrow> eq_prefer(F`P,a,b, F`P',a,b)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm IIA_def} *}
+setup {* del_prfstep_thm_eqforward @{thm IIA_def} *}
 
 definition dictator :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "dictator(I,Cs,F,i) \<longleftrightarrow> (\<forall>P\<in>Prof(I,Cs). F`P = P`i)"
@@ -165,7 +165,7 @@ lemma strict_neutralE1 [forward]:
 lemma strict_neutralE2 [forward]:
   "strict_neutral(I,Cs,F,a,b,a',b') \<Longrightarrow> \<forall>i\<in>I. eq_prefer(P`i,a,b,P'`i,a',b') \<Longrightarrow>
    P \<in> Prof(I,Cs) \<Longrightarrow> P' \<in> Prof(I,Cs) \<Longrightarrow> eq_prefer(F`P,a,b,F`P',a',b')" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm strict_neutral_def} *}
+setup {* del_prfstep_thm_eqforward @{thm strict_neutral_def} *}
 
 lemma ex_fun: "\<forall>a\<in>X. \<exists>y\<in>Y. P(a,y) \<Longrightarrow> \<exists>f\<in>X\<rightarrow>Y. \<forall>a\<in>X. P(a,f`a)"
 @proof @let "f = Fun(X,Y,\<lambda>a. SOME y\<in>Y. P(a,y))" @qed

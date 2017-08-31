@@ -234,7 +234,7 @@ lemma order_convexD2a [backward2]:
     
 lemma order_convexD2b [backward2]:
   "linorder(X) \<Longrightarrow> order_convex(X,A) \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> A \<Longrightarrow> open_interval(X,a,b) \<subseteq> A" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm order_convex_def} *}
+setup {* del_prfstep_thm_eqforward @{thm order_convex_def} *}
   
 lemma closed_interval_convex [resolve]:
   "linorder(X) \<Longrightarrow> order_convex(X,closed_interval(X,a,b))" by auto2

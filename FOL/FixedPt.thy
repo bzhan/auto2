@@ -22,7 +22,7 @@ section {* Monotone operators *}
 
 lemma bnd_monoD1 [forward]: "bnd_mono(D,h) \<Longrightarrow> h(D) \<subseteq> D" by auto2
 lemma bnd_monoD2 [backward2]: "bnd_mono(D,h) \<Longrightarrow> W \<subseteq> X \<Longrightarrow> X \<subseteq> D \<Longrightarrow> h(W) \<subseteq> h(X)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm bnd_mono_def} *}
+setup {* del_prfstep_thm_eqforward @{thm bnd_mono_def} *}
 
 lemma bnd_mono_subset: "bnd_mono(D,h) \<Longrightarrow> X \<subseteq> D \<Longrightarrow> h(X) \<subseteq> D" by auto2
 lemma bnd_mono_Un: "bnd_mono(D,h) \<Longrightarrow> A \<subseteq> D \<Longrightarrow> B \<subseteq> D \<Longrightarrow> h(A) \<union> h(B) \<subseteq> h(A \<union> B)" by auto2
@@ -163,7 +163,7 @@ lemma transD [forward]:
   "trans(r) \<Longrightarrow> is_rel(r)"
   "trans(r) \<Longrightarrow> x \<in> source(r) \<Longrightarrow> y \<in> source(r) \<Longrightarrow> z \<in> target(r) \<Longrightarrow>
      rel(r,x,y) \<Longrightarrow> rel(r,y,z) \<Longrightarrow> rel(r,x,z)" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm trans_def} *}
+setup {* del_prfstep_thm_eqforward @{thm trans_def} *}
 
 definition rel_trans_cl :: "i \<Rightarrow> i" where [rewrite]:
   "rel_trans_cl(R) = Rel(source(R), \<lambda>x y. \<langle>x,y\<rangle> \<in> trans_cl(graph(R)))"

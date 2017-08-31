@@ -66,7 +66,7 @@ definition trans_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> 
 
 lemma trans_meta_relD [forward]:
   "trans_meta_rel(R) \<Longrightarrow> R(x,y) \<Longrightarrow> \<forall>z. R(y,z) \<longrightarrow> R(x,z)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm trans_meta_rel_def} *}
+setup {* del_prfstep_thm_eqforward @{thm trans_meta_rel_def} *}
 
 definition equiv_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
   "equiv_meta_rel(R) \<longleftrightarrow> (sym_meta_rel(R) \<and> trans_meta_rel(R))"
@@ -109,7 +109,7 @@ setup {* add_forward_prfstep @{thm equivD(1)} *}
 setup {* add_backward_prfstep @{thm equivD(2)} *}
 setup {* add_rewrite_rule @{thm equivD(3)} *}
 setup {* add_forward_prfstep_cond @{thm equivD(4)} [with_cond "?x \<noteq> ?z"] *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm equiv_iff} *}
+setup {* del_prfstep_thm_eqforward @{thm equiv_iff} *}
 
 definition equiv_space :: "i \<Rightarrow> i" where [rewrite]:
   "equiv_space(S) = {R\<in>rawequiv_space(S). equiv(R)}"
@@ -262,7 +262,7 @@ definition compat_pred :: "[i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrit
 
 lemma compat_relD [forward]:
   "compat_pred(P,R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> P(x) \<longrightarrow> P(y)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm compat_pred_def} *}
+setup {* del_prfstep_thm_eqforward @{thm compat_pred_def} *}
 
 (* Example *)
 lemma compat_pred_eq_equiv: "compat_pred(P, eq_equiv(E))" by auto2
@@ -333,7 +333,7 @@ definition compat_fun :: "[i, i] \<Rightarrow> o" where [rewrite]:
 lemma compat_funD [forward]:
   "compat_fun(f,R) \<Longrightarrow> source(f) = carrier(R)"
   "compat_fun(f,R) \<Longrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> f`x = f`y" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm compat_fun_def} *}
+setup {* del_prfstep_thm_eqforward @{thm compat_fun_def} *}
 
 (* Alternative definition *)
 lemma compat_fun_alt:
@@ -527,14 +527,14 @@ definition compat_meta_bin1 :: "[i, i \<Rightarrow> i \<Rightarrow> i] \<Rightar
 
 lemma compat_meta_bin1D [backward2]:
   "compat_meta_bin1(R,f) \<Longrightarrow> y \<in>. R \<Longrightarrow> x1 \<sim>\<^sub>R x2 \<Longrightarrow> f(x1,y) \<sim>\<^sub>R f(x2,y)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm compat_meta_bin1_def} *}
+setup {* del_prfstep_thm_eqforward @{thm compat_meta_bin1_def} *}
 
 definition compat_meta_bin2 :: "[i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
   "compat_meta_bin2(R,f) \<longleftrightarrow> (\<forall>x\<in>.R. \<forall>y1 y2. y1 \<sim>\<^sub>R y2 \<longrightarrow> f(x,y1) \<sim>\<^sub>R f(x,y2))"
 
 lemma compat_meta_bin2D [backward2]:
   "compat_meta_bin2(R,f) \<Longrightarrow> x \<in>. R \<Longrightarrow> y1 \<sim>\<^sub>R y2 \<Longrightarrow> f(x,y1) \<sim>\<^sub>R f(x,y2)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm compat_meta_bin2_def} *}
+setup {* del_prfstep_thm_eqforward @{thm compat_meta_bin2_def} *}
 
 lemma compat_meta_binI [backward]:
   "equiv(R) \<Longrightarrow> compat_meta_bin1(R,f) \<Longrightarrow> compat_meta_bin2(R,f) \<Longrightarrow> compat_meta_bin(R,f)"

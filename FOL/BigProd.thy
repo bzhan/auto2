@@ -152,7 +152,7 @@ lemma prod_non_empty [rewrite]:
 @qed
 
 lemma prod_is_empty [rewrite]: "B(a) = \<emptyset> \<Longrightarrow> a \<in> I \<Longrightarrow> Pi(I,B) = \<emptyset>" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm prod_non_empty} *}
+setup {* del_prfstep_thm_eqforward @{thm prod_non_empty} *}
 
 lemma prod_subset1 [backward]:
   "\<forall>a\<in>I. X(a) \<subseteq> Y(a) \<Longrightarrow> Pi(I,X) \<subseteq> Pi(I,Y)" by auto2

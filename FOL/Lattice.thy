@@ -19,7 +19,7 @@ lemma join_semilatticeD1 [forward]: "join_semilattice(R) \<Longrightarrow> order
 lemma join_semilatticeD2 [backward]:
   "join_semilattice(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow>
    \<exists>z. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y \<and> (\<forall>z'. z' \<ge>\<^sub>R x \<longrightarrow> z' \<ge>\<^sub>R y \<longrightarrow> z' \<ge>\<^sub>R z)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm join_semilattice_def} *}
+setup {* del_prfstep_thm_eqforward @{thm join_semilattice_def} *}
   
 (* The *unique* existence of join can be proved automatically. *)
 lemma join_semilattice_unique [backward]:
@@ -71,7 +71,7 @@ lemma meet_semilatticeD1 [forward]: "meet_semilattice(R) \<Longrightarrow> order
 lemma meet_semilatticeD2 [backward]:
   "meet_semilattice(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow>
    \<exists>z. z \<le>\<^sub>R x \<and> z \<le>\<^sub>R y \<and> (\<forall>z'. z' \<le>\<^sub>R x \<longrightarrow> z' \<le>\<^sub>R y \<longrightarrow> z' \<le>\<^sub>R z)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm meet_semilattice_def} *}
+setup {* del_prfstep_thm_eqforward @{thm meet_semilattice_def} *}
   
 lemma meet_semilattice_unique [backward]:
   "meet_semilattice(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow>
@@ -127,7 +127,7 @@ lemma distributive_latticeD1 [forward]:
 
 lemma distributive_latticeD2 [rewrite_back]:
   "distributive_lattice(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> x \<sqinter>\<^sub>R (y \<squnion>\<^sub>R z) = (x \<sqinter>\<^sub>R y) \<squnion>\<^sub>R (x \<sqinter>\<^sub>R z)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm distributive_lattice_def} *}
+setup {* del_prfstep_thm_eqforward @{thm distributive_lattice_def} *}
   
 (* An equivalent formulation of distributive lattices. Their equivalence requires
    several equality steps.
@@ -259,7 +259,7 @@ lemma modular_latticeD1 [forward]:
 
 lemma modular_latticeD2 [rewrite_bidir]:
   "modular_lattice(R) \<Longrightarrow> z \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> x \<squnion>\<^sub>R (y \<sqinter>\<^sub>R z) = y \<sqinter>\<^sub>R (x \<squnion>\<^sub>R z)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm modular_lattice_def} *}
+setup {* del_prfstep_thm_eqforward @{thm modular_lattice_def} *}
   
 lemma modular_latticeD3:
   "modular_lattice(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> (x \<sqinter>\<^sub>R y) \<squnion>\<^sub>R (y \<sqinter>\<^sub>R z) = y \<sqinter>\<^sub>R ((x \<sqinter>\<^sub>R y) \<squnion>\<^sub>R z)" by auto2

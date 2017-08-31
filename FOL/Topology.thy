@@ -85,7 +85,7 @@ setup {* add_property_const @{term finite_inter_closed} *}
   
 lemma finite_inter_closedD [backward1,backward2]:
   "finite_inter_closed(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> is_open(X,V) \<Longrightarrow> is_open(X,U \<inter> V)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm finite_inter_closed_def} *}
+setup {* del_prfstep_thm_eqforward @{thm finite_inter_closed_def} *}
 
 definition is_top_space :: "i \<Rightarrow> o" where [rewrite]:
   "is_top_space(X) \<longleftrightarrow> (is_top_space_raw(X) \<and> is_open(X,\<emptyset>) \<and> is_open(X,carrier(X)) \<and>
@@ -100,7 +100,7 @@ lemma is_top_spaceD1 [forward]:
 lemma is_top_spaceD2 [resolve]:
   "is_top_space(X) \<Longrightarrow> is_open(X,\<emptyset>)"
   "is_top_space(X) \<Longrightarrow> is_open(X,carrier(X))" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_top_space_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_top_space_def} *}
   
 section {* Finer topologies *}
   

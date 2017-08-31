@@ -499,6 +499,7 @@ sig
   val del_prfstep: string -> theory -> theory
   val del_prfstep_thm: thm -> theory -> theory
   val del_prfstep_thm_str: string -> thm -> theory -> theory
+  val del_prfstep_thm_eqforward: thm -> theory -> theory
   val add_fixed_sc: string * int -> theory -> theory
   val get_prfstep_by_name: Proof.context -> string -> proofstep
   val get_prfsteps: Proof.context -> proofstep list
@@ -639,6 +640,8 @@ fun del_prfstep_thm th =
 (* Delete proofsteps for a given theorem, with the given postfix. *)
 fun del_prfstep_thm_str str th =
     del_prfstep_pred (equal (Util.name_of_thm th ^ str))
+
+val del_prfstep_thm_eqforward = del_prfstep_thm_str "@eqforward"
 
 fun add_fixed_sc (prfstep_name, sc) =
     Data.map (

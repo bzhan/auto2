@@ -13,7 +13,7 @@ lemma is_ab_monoidD [forward]:
   "is_ab_monoid(G) \<Longrightarrow> is_add_id(G)"
   "is_ab_monoid(G) \<Longrightarrow> is_plus_comm(G)"
   "is_ab_monoid(G) \<Longrightarrow> is_plus_assoc(G)" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_ab_monoid_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_ab_monoid_def} *}
   
 lemma is_ab_monoid_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_ab_monoid(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_ab_monoid(H)" by auto2
@@ -42,7 +42,7 @@ setup {* add_property_const @{term is_abgroup} *}
 lemma is_abgroupD [forward]:
   "is_abgroup(G) \<Longrightarrow> is_ab_monoid(G)"
   "is_abgroup(G) \<Longrightarrow> has_add_inverse(G)" by auto2+
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_abgroup_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_abgroup_def} *}
   
 lemma is_abgroup_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_abgroup(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_abgroup(H)" by auto2

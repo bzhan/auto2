@@ -55,7 +55,7 @@ setup {* add_property_const @{term is_heap} *}
 lemma is_heapD:
   "is_heap xs \<Longrightarrow> eq_pred i j \<Longrightarrow> j < length xs \<Longrightarrow> snd (xs ! i) \<le> snd (xs ! j)" by auto2
 setup {* add_forward_prfstep_cond @{thm is_heapD} [with_term "?xs ! ?j"] *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm is_heap_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_heap_def} *}
 
 theorem is_heap_butlast: "is_heap xs \<Longrightarrow> is_heap (butlast xs)" by auto2
 setup {* add_forward_prfstep_cond @{thm is_heap_butlast} [with_term "butlast ?xs"] *}
@@ -239,7 +239,7 @@ lemma index_of_pqueueD1 [forward]:
 
 lemma index_of_pqueueD2 [forward]:
   "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> i < length xs \<and> fst (xs ! i) = k" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm index_of_pqueue_def} *}
+setup {* del_prfstep_thm_eqforward @{thm index_of_pqueue_def} *}
 
 definition unique_keys :: "(nat \<times> 'a) list \<Rightarrow> bool" where [rewrite]:
   "unique_keys xs = (\<forall>m n. m < length xs \<longrightarrow> n < length xs \<longrightarrow> m \<noteq> n \<longrightarrow> fst (xs ! m) \<noteq> fst (xs ! n))"
@@ -248,7 +248,7 @@ setup {* add_property_const @{term unique_keys} *}
 lemma unique_keysD:
   "unique_keys xs \<Longrightarrow> m < length xs \<Longrightarrow> n < length xs \<Longrightarrow> m \<noteq> n \<Longrightarrow> fst (xs ! m) \<noteq> fst (xs ! n)" by auto2
 setup {* add_forward_prfstep_cond @{thm unique_keysD} [with_term "?xs ! ?m", with_term "?xs ! ?n"] *}
-setup {* del_prfstep_thm_str "@eqforward" @{thm unique_keys_def} *}
+setup {* del_prfstep_thm_eqforward @{thm unique_keys_def} *}
   
 theorem has_index_unique_key [forward]:
   "index_of_pqueue xs m \<Longrightarrow> unique_keys xs" by auto2
