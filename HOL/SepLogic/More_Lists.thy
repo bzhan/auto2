@@ -59,21 +59,14 @@ theorem update_mset_to_set [rewrite]:
   "mset xs' = {# y #} + (mset xs - {# x #}) \<Longrightarrow> distinct xs \<Longrightarrow> set xs' = (set xs - {x}) \<union> {y}"
   by (metis insert_mset_to_set mset_remove1 set_remove1_eq union_commute)
 
-section {* Subarray and sublists. *}
+section {* Sublist *}
 
 setup {* add_backward2_prfstep (equiv_backward_th @{thm sublist'_eq_samelength_iff}) *}
 setup {* add_rewrite_rule @{thm length_sublist'} *}
-setup {* add_rewrite_rule @{thm nth_sublist'} *}
-theorem nth_rev_sublist'_use [rewrite]:
-  "k < j - i \<Longrightarrow> j \<le> length xs \<Longrightarrow> sublist' i j xs ! (length (sublist' i j xs) - 1 - k) = xs ! (j - 1 - k)"
-  by (simp add: length_sublist' nth_sublist')
 
 theorem sublist_as_Cons [backward]:
   "l < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sublist' l r xs = xs ! l # sublist' (l + 1) r xs"
   by (metis One_nat_def add.right_neutral add_Suc_right order_less_trans sublist'_front le_neq_implies_less)
-theorem sublist_as_Cons1 [backward]:
-  "0 < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sublist' 0 r xs = xs ! 0 # sublist' 1 r xs"
-  by (metis One_nat_def order_less_trans sublist'_front le_neq_implies_less)
 theorem sublist_as_append [backward]:
   "l \<le> m \<Longrightarrow> m \<le> r \<Longrightarrow> sublist' l r xs = sublist' l m xs @ sublist' m r xs"
   by (simp add: sublist'_append)
@@ -85,10 +78,31 @@ setup {* fold add_rewrite_rule [@{thm sublist'_Nil'}, @{thm sublist'_Nil2}] *}
 
 (* Some results about sets and multisets of sublists. *)
 setup {* add_rewrite_rule @{thm set_sublist'} *}
+lemma set_sublistD [forward]:
+  "x \<in> set (sublist' i j xs) \<Longrightarrow> \<exists>k. k \<ge> i \<and> k < j \<and> k < length xs \<and> x = xs ! k" by auto2
+setup {* del_prfstep_thm @{thm set_sublist'} *}
 
 theorem mset_sublist' [backward1]:
   "r \<le> List.length xs \<Longrightarrow> \<forall>i. i < l \<longrightarrow> xs ! i = ys ! i \<Longrightarrow> \<forall>i. i \<ge> r \<longrightarrow> xs ! i = ys ! i \<Longrightarrow>
    mset xs = mset ys \<Longrightarrow> mset (sublist' l r xs) = mset (sublist' l r ys)"
   by (smt le_less_trans mset_eq_length mset_sublist nat_less_le sublist'_eq_samelength_iff)
+
+(* Sortedness of lists of form x @ [pivot] @ y. *)
+setup {* add_rewrite_rule @{thm sorted_append} *}
+lemma sorted_pivoted_list [forward]: "sorted (sublist' (p + 1) r xs) \<Longrightarrow> sorted (sublist' l p xs) \<Longrightarrow>
+  \<forall>x\<in>set (sublist' l p xs). x \<le> xs ! p \<Longrightarrow> \<forall>y\<in>set (sublist' (p + 1) r xs). xs ! p \<le> y \<Longrightarrow>
+  l \<le> p \<Longrightarrow> p < r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sorted (sublist' l r xs)"
+@proof
+  @have "sublist' p r xs = xs ! p # sublist' (p + 1) r xs" @then
+  @case "p = 0" @then
+  @have "sublist' l r xs = sublist' l p xs @ sublist' p r xs"
+@qed
+setup {* del_prfstep_thm @{thm sorted_append} *}
+
+lemma sorted_triv_list: "l \<ge> r \<Longrightarrow> sorted (sublist' l (r + 1) xs)"
+@proof
+  @case "l \<ge> length xs" @then @case "l = r" @then @have "l > r"
+@qed
+setup {* add_forward_prfstep_cond @{thm sorted_triv_list} [with_term "sublist' ?l (?r + 1) ?xs"] *}
 
 end
