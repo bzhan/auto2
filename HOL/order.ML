@@ -254,14 +254,9 @@ fun dest_plus' (Const (@{const_name plus}, _) $ A $ B) =
     if is_numc A andalso dest_numc A > 0 then SOME (B, dest_numc A) else NONE
   | dest_plus' _ = NONE
 
-
 (* Whether t simplifies to a plus form. *)
-fun simp_in_plus_form (id, ctxt) t =
-    let
-      val t' = RewriteTable.simp_val_t id ctxt t
-    in
-      is_some (dest_plus t') orelse is_some (dest_plus' t')
-    end
+fun in_plus_form t =
+    is_some (dest_plus t) orelse is_some (dest_plus' t)
 
 (* eq_x is a meta equality. Use it to rewrite x in an order info. *)
 fun rewrite_info_x eq_x (cx, cy, diff, th) =
@@ -301,42 +296,25 @@ fun rewrite_info_y eq_y (cx, cy, diff, th) =
  *)
 fun to_nat_order_prfstep_templ (prfstep_name, pat, order_ty) =
     let
-      fun filt ctxt (id, inst) =
-          not (simp_in_plus_form (id, ctxt) (lookup_inst inst "x")) andalso
-          not (simp_in_plus_form (id, ctxt) (lookup_inst inst "y")) andalso
+      fun filt _ (_, inst) =
+          not (in_plus_form (lookup_inst inst "x")) andalso
+          not (in_plus_form (lookup_inst inst "y")) andalso
           (order_ty = LESS orelse order_ty = LE orelse lookup_numc0 inst > 0)
 
-      fun prfstep_fn ictxt item =
-          let
-            val ctxt = IncrContext.context_of ictxt
-            val {id, ...} = item
-            val insts = ProofStep.get_insts (TypedMatch (TY_PROP, pat))
-                                            item ictxt (id, fo_init)
-            fun inst_to_updt ((id', inst), th) =
-                if not (filt ctxt (id', inst)) then [] else
-                let
-                  val (x, y) = apply2 (lookup_inst inst) ("x", "y")
-                  val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
-                  val (simpx, simpy) =
-                      apply2 (RewriteTable.simplify id' ctxt)
-                             (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
-                  val diff = order_diffs_inst order_ty inst
-                  val th' = to_normal_th order_ty th
-                  val info = (cx, cy, diff, th') |> rewrite_info_x simpx
-                                                 |> rewrite_info_y simpy
-                                                 |> convert_const
-                in
-                  [AddItems {id = id', sc = NONE,
-                             raw_items = [get_nat_order_ritem info]}]
-                end
-          in
-            maps inst_to_updt insts
-          end
+     val descs = [WithProp pat, Filter filt]
+     fun prfstep_fn ((id, inst), ths) _ ctxt =
+         let
+           val (x, y) = apply2 (lookup_inst inst) ("x", "y")
+           val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
+           val diff = order_diffs_inst order_ty inst
+           val th' = to_normal_th order_ty (the_single ths)
+           val info = (cx, cy, diff, th') |> convert_const
+         in
+           [AddItems {id = id, sc = NONE,
+                      raw_items = [get_nat_order_ritem info]}]
+         end
     in
-      {name = prfstep_name,
-       args = [TypedMatch (TY_PROP, @{term_pat "?A::bool"})],
-       priority = PRIORITY_ADD,
-       func = OneStep prfstep_fn}
+      ProofStep.prfstep_custom prfstep_name descs PRIORITY_ADD prfstep_fn
     end
 
 val to_nat_order_prfsteps =
@@ -361,46 +339,30 @@ val nat_eq_diff_prfstep =
     let
       val pat = @{term_pat "(?x::nat) = ?y + ?NUMC"}
 
-      fun filt ctxt (id, inst) =
+      fun filt _ (_, inst) =
           let
             val (x, y) = apply2 (lookup_inst inst) ("x", "y")
           in
             lookup_numc0 inst > 0 andalso
-            not (simp_in_plus_form (id, ctxt) x) andalso
-            not (simp_in_plus_form (id, ctxt) y) andalso
+            not (in_plus_form x) andalso not (in_plus_form y) andalso
             not (is_numc x) andalso not (is_numc y)
           end
 
-      fun prfstep_fn ictxt item =
+      val descs = [WithFact pat, Filter filt]
+      fun prfstep_fn ((id, inst), ths) _ ctxt =
           let
-            val ctxt = IncrContext.context_of ictxt
-            val {id, ...} = item
-            val insts = ProofStep.get_insts (PropMatch pat) item ictxt
-                                            (id, fo_init)
-            fun inst_to_updt ((id', inst), th) =
-                if not (filt ctxt (id', inst)) then [] else
-                let
-                  val (x, y) = (lookup_inst inst "x", lookup_inst inst "y")
-                  val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
-                  val (simpx, simpy) = apply2 (RewriteTable.simplify id' ctxt) (cx, cy)
-                  val diff = lookup_numc0 inst
-                  val th' = [th] MRS @{thm nat_eq_to_ineqs}
-                  val info1 = (cx, cy, diff, th' RS @{thm conjunct1})
-                                  |> rewrite_info_x simpx |> rewrite_info_y simpy
-                  val info2 = (cy, cx, ~diff, th' RS @{thm conjunct2})
-                                  |> rewrite_info_x simpy |> rewrite_info_y simpx
-                in
-                  [AddItems {id = id', sc = NONE,
-                             raw_items = map get_nat_order_ritem [info1, info2]}]
-                end
+            val (x, y) = (lookup_inst inst "x", lookup_inst inst "y")
+            val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
+            val diff = lookup_numc0 inst
+            val th' = ths MRS @{thm nat_eq_to_ineqs}
+            val info1 = (cx, cy, diff, th' RS @{thm conjunct1})
+            val info2 = (cy, cx, ~diff, th' RS @{thm conjunct2})
           in
-            maps inst_to_updt insts
+            [AddItems {id = id, sc = NONE,
+                       raw_items = map get_nat_order_ritem [info1, info2]}]
           end
     in
-      {name = "nat_eq_diff",
-       args = [TypedMatch (TY_TERM, @{term_pat "?A"})],
-       priority = PRIORITY_ADD,
-       func = OneStep prfstep_fn}
+      ProofStep.prfstep_custom "nat_eq_diff" descs PRIORITY_ADD prfstep_fn
     end
 
 (* Obtain quadruple x, y, diff, and theorem from item. *)

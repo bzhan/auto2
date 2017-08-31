@@ -362,11 +362,15 @@ definition idx_pqueue_pop :: "'a::heap indexed_pqueue \<Rightarrow> ((nat \<time
    }"
 declare idx_pqueue_pop_def [sep_proc_defs]
 
+theorem index_of_pqueue_pop [backward2]:
+  "index_of_pqueue xs m \<Longrightarrow> length xs > 0 \<Longrightarrow>
+   index_of_pqueue (butlast xs) (delete_map (fst (last xs)) m)"
+@proof @have "length (butlast xs) < length xs" @qed
+
 theorem idx_pqueue_pop_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(length xs > 0)>
    idx_pqueue_pop p
-   <\<lambda>(x, r). idx_pqueue (butlast xs) r * \<up>(x = last xs)>"
-@proof @case "xs = []" @qed
+   <\<lambda>(x, r). idx_pqueue (butlast xs) r * \<up>(x = last xs)>" by auto2
 
 theorem index_of_pqueue_update:
   "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> index_of_pqueue (list_update xs i (k, v)) m" by auto2
