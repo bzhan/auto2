@@ -56,10 +56,4 @@ setup {* add_rewrite_rule @{thm execute_lookup} *}
 setup {* add_rewrite_rule @{thm execute_nth(1)} *}
 setup {* add_rewrite_rule @{thm execute_update} *}
 
-definition comment :: "assn \<Rightarrow> unit Heap" where
-  "comment P = Heap_Monad.Heap (\<lambda>h. Some ((), h))"
-
-theorem execute_comment [rewrite]:
-  "execute (comment P) h = Some ((), h)" by (simp add: comment_def)
-
 end

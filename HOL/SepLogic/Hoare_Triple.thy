@@ -51,11 +51,6 @@ setup {* add_backward_prfstep (equiv_backward_th @{thm hoare_triple_def}) *}
 (* First, those that do not modify the heap. *)
 
 (* Avoid variables P and Q since they are pre- and post-condition. *)
-lemma comment_rule:
-  "<R> comment R <\<lambda>r. R>" by auto2
-
-lemma comment_rule2:
-  "<R x> comment (\<exists>\<^sub>Ax. R x) <\<lambda>r. R x>" by auto2
 
 lemma assert_rule:
   "<\<up>(R x)> assert R x <\<lambda>r. \<up>(r = x)>" by auto2

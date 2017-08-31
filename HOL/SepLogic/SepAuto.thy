@@ -74,18 +74,14 @@ theorem basic_heap_preserving_thms [heap_presv_thms]:
   "heap_preserving (Array.len a)"
 by (smt effect_lookupE effect_returnE effect_nthE effect_lengthE heap_preserving_def)+
 
-theorem heap_preserve_comment [heap_presv_thms]: "heap_preserving (comment P)"
-  by (simp add: comment_def effect_def heap_preserving_def)
-
 theorem heap_preserve_assert [heap_presv_thms]: "heap_preserving (assert P x)"
   using effect_assertE heap_preserving_def by fastforce
 
 setup {* fold add_hoare_triple_prfstep [
-  @{thm comment_rule}, @{thm comment_rule2}, @{thm assert_rule}, @{thm update_rule},
-  @{thm nth_rule}, @{thm upd_rule}] *}
+  @{thm assert_rule}, @{thm update_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
 
 setup {* fold add_match_hoare_create_case [
-  @{thm comment_rule2}, @{thm assert_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
+  @{thm assert_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
 
 setup {* fold add_hoare_triple_direct_prfstep [
   @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule}, @{thm length_rule}] *}
@@ -101,6 +97,5 @@ theorem "<a \<mapsto>\<^sub>r x> do { a := y; !a } <\<lambda>r. a \<mapsto>\<^su
 theorem "<a \<mapsto>\<^sub>r x> do { a := y; a := z; !a } <\<lambda>r. a \<mapsto>\<^sub>r z * \<up>(r = z)>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> do { y \<leftarrow> !a; ref y} <\<lambda>r. a \<mapsto>\<^sub>r x * r \<mapsto>\<^sub>r x>" by auto2
 theorem "<emp> return x <\<lambda>r. \<up>(r = x)>" by auto2
-theorem "<a \<mapsto>\<^sub>r x * b \<mapsto>\<^sub>r y> comment (a \<mapsto>\<^sub>r x) <\<lambda>r. a \<mapsto>\<^sub>r x * b \<mapsto>\<^sub>r y>" by auto2
 
 end
