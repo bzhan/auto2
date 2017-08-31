@@ -125,6 +125,8 @@ theorem array_length_rule [hoare_triple_direct]:
 theorem array_length_heap_preserving [heap_presv_thms]:
   "heap_preserving (array_length d)" by auto2
 
+setup {* del_prfstep_thm @{thm dynamic_array.collapse} *}
+
 definition array_swap :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "array_swap d i j = do {
     x \<leftarrow> array_nth d i;
@@ -139,7 +141,5 @@ theorem array_swap_rule [hoare_triple, hoare_create_case]:
   "<dyn_array xs p * \<up>(i < length xs) * \<up>(j < length xs)>
    array_swap p i j
    <\<lambda>_. dyn_array (list_swap xs i j) p>" by auto2
-
-setup {* del_prfstep_thm @{thm dynamic_array.collapse} *}
 
 end

@@ -71,6 +71,7 @@ setup {* add_forward_prfstep_cond @{thm length_list_swap} [with_term "list_swap 
 lemma mset_list_swap [rewrite]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> mset (list_swap xs i j) = mset xs" by auto2
 setup {* del_prfstep_thm @{thm list_swap_def} *}
+setup {* add_rewrite_rule_back @{thm list_swap_def} *}
 
 section {* Definition of rev in terms of swaps *}
   

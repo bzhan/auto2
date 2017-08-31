@@ -4,18 +4,8 @@ begin
 
 section {* More on take, drop, and update *}
 
-theorem take_update [rewrite]: "i < length l \<Longrightarrow> take (1 + i) (list_update l i x) = take i l @ [x]"
+theorem take_update [rewrite]: "i < length l \<Longrightarrow> take (i + 1) (list_update l i x) = take i l @ [x]"
   by (simp add: take_Suc_conv_app_nth)
-
-theorem take_update' [rewrite]: "i < length l \<Longrightarrow> take (i + 1) (list_update l i x) = take i l @ [x]"
-  by (simp add: take_Suc_conv_app_nth)
-
-theorem drop_update [rewrite]: "drop (1 + i + n) (list_update l i x) = drop (1 + i + n) l" by simp
-
-theorem take_drop_shift_one [rewrite]:
-  "i + len \<le> length l \<Longrightarrow> len \<noteq> 0 \<Longrightarrow> l ! i # take (len - 1) (drop (i + 1) l) = take len (drop i l)"
-  by (metis Cons_nth_drop_Suc One_nat_def add.right_neutral add_Suc_right add_diff_inverse_nat
-      add_eq_self_zero add_lessD1 diff_add_zero le_neq_implies_less take_Cons')
 
 setup {* add_rewrite_rule @{thm butlast_take} *}
 
