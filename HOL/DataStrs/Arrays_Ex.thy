@@ -1,4 +1,4 @@
-theory Reverse_Func
+theory Arrays_Ex
 imports "../Auto2_Main"
 begin
 

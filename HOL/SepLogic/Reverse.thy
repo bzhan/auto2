@@ -1,5 +1,5 @@
 theory Reverse
-imports SepAuto "../DataStrs/Reverse_Func"
+imports SepAuto "../DataStrs/Arrays_Ex"
 begin
 
 definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where

@@ -1,5 +1,5 @@
 theory Quicksort_Func
-imports Reverse_Func
+imports Arrays_Ex
 begin
 
 section {* Outer remains *}

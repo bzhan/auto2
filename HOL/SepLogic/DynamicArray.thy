@@ -1,5 +1,5 @@
 theory DynamicArray
-imports SepAuto More_Lists "../DataStrs/Reverse_Func"
+imports SepAuto More_Lists "../DataStrs/Arrays_Ex"
 begin
 
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (amax: nat) (defv: 'a) (aref: "'a array")
@@ -38,16 +38,16 @@ fun array_copy :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a array \<Rig
      })"
 declare array_copy.simps [sep_proc_defs]
 
-setup {* add_rewrite_rule @{thm Reverse_Func.array_copy.simps} *}
+setup {* add_rewrite_rule @{thm Arrays_Ex.array_copy.simps} *}
 theorem array_copy_rule [hoare_triple, hoare_create_case]:
   "<src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a ldst * \<up>(si + len \<le> length lsrc) * \<up>(di + len \<le> length ldst)>
     array_copy src si dst di len
-   <\<lambda>_. src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a Reverse_Func.array_copy lsrc si ldst di len>"
+   <\<lambda>_. src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a Arrays_Ex.array_copy lsrc si ldst di len>"
 @proof @strong_induct len arbitrary si di ldst
   @case "len = 0"
   @apply_induct_hyp "len - 1" "si + 1" "di + 1" "list_update ldst di (lsrc ! si)"
 @qed
-setup {* del_prfstep_thm @{thm Reverse_Func.array_copy.simps} *}
+setup {* del_prfstep_thm @{thm Arrays_Ex.array_copy.simps} *}
 
 definition ensure_length :: "nat \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where
   "ensure_length nl d = (case d of
