@@ -53,28 +53,6 @@ theorem ineq_to_eqs1: "(x::nat) \<le> y + 0 \<Longrightarrow> y \<le> x + 0 \<Lo
 ML_file "arith.ML"
 ML_file "order.ML"
 
-(* General rings. *)
-theorem double_neg [rewrite]: "-b = (a::('a::ring)) \<Longrightarrow> -a = b" by auto
-theorem divide_cancel [rewrite]: "(a::('a::field)) \<noteq> 0 \<Longrightarrow> a * inverse a * bu = bu" by simp
-theorem ring_distrib: "((a::('a::{semiring,one})) + b) * c = a * c + b * c" by (simp add: ring_distribs)
-setup {* add_rewrite_rule_back_cond @{thm ring_distrib}
-  [with_cond "?c \<noteq> 1", with_filt (order_filter "a" "b")] *}
-theorem ring_distrib_minus: "((a::('a::{ring,one})) - b) * c = a * c - b * c" by (simp add: left_diff_distrib)
-setup {* add_rewrite_rule_back_cond @{thm ring_distrib_minus} [with_cond "?c \<noteq> 1"] *}
-
-theorem of_int_neg_one: "of_int (-1) = -1" by simp
-
-theorem of_rat_inverse_numeral: "of_rat (inverse (numeral x)) = inverse (numeral x)"
-  by (metis of_rat_inverse of_rat_numeral_eq)
-
-theorem power_ge_0 [rewrite]: "m \<noteq> 0 \<Longrightarrow> p ^ m = p * (p ^ (m - 1))" by (simp add: power_eq_if)
-
-(* Functions used in split_polynomial_by_sign. *)
-theorem split_by_sign1: "((a::'a::comm_ring) - b) + c = (a + c) - b" by simp
-theorem split_by_sign2: "((a::'a::comm_ring) - b) + c * (-n) = a - (b + c * n)" by simp
-theorem split_by_sign3: "(a::'a::comm_ring) - 0 = a" by simp
-theorem split_by_sign4: "(c::'a::comm_ring) * (-n) = 0 - c * n" by simp
-
 (* Ordering on Nats. *)
 setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
 setup {* add_forward_prfstep_cond @{thm Nat.le0} [with_term "?n"] *}
@@ -101,10 +79,6 @@ theorem n_minus_1_less_n [backward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 
 setup {* add_rewrite_rule @{thm le_add_diff_inverse} *}
 setup {* add_rewrite_rule @{thm Nat.diff_diff_cancel} *}
 
-(* Set intervals. *)
-theorem interval_empty [rewrite]: "{a::nat. x \<le> a \<and> a < x} = {}" by simp
-theorem interval_single [rewrite]: "{a::nat. x \<le> a \<and> a < x + 1} = {x}" using Collect_cong by auto
-
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp
 theorem nat_add_eq_self_zero' [forward]: "(m::nat) = n + m \<Longrightarrow> n = 0" by simp
@@ -129,15 +103,11 @@ theorem diff_eq_zero' [forward]: "j - k + i = j \<Longrightarrow> (k::nat) \<le>
 
 (* Divides. *)
 theorem dvd_defD1 [resolve]: "(a::nat) dvd b \<Longrightarrow> \<exists>k. b = a * k" using dvdE by blast
-theorem dvd_defD2 [resolve]: "(a::nat) dvd b \<Longrightarrow> \<exists>k. b = k * a"
-  by (metis dvd_mult_div_cancel mult.commute)
+theorem dvd_defD2 [resolve]: "(a::nat) dvd b \<Longrightarrow> \<exists>k. b = k * a" by (metis dvd_mult_div_cancel mult.commute)
 setup {* add_forward_prfstep @{thm Nat.dvd_imp_le} *}
 theorem dvd_ineq2 [forward]: "(k::nat) dvd n \<Longrightarrow> n > 0 \<Longrightarrow> k \<ge> 1" by (simp add: Suc_leI dvd_pos_nat)
-  
-setup {* add_gen_prfstep ("shadow_exists_triv",
-  [WithFact @{term_pat "\<exists>x. (?a::nat) = ?a * x"}, ShadowFirst]) *}
-setup {* add_forward_prfstep_cond @{thm dvd_trans}
-  (with_conds ["?a \<noteq> ?b", "?b \<noteq> ?c", "?a \<noteq> ?c"]) *}
+
+setup {* add_forward_prfstep_cond @{thm dvd_trans} (with_conds ["?a \<noteq> ?b", "?b \<noteq> ?c", "?a \<noteq> ?c"]) *}
 setup {* add_forward_prfstep_cond @{thm Nat.dvd_antisym} [with_cond "?m \<noteq> ?n"] *}
 theorem dvd_cancel [backward1]: "c > 0 \<Longrightarrow> (a::nat) * c dvd b * c \<Longrightarrow> a dvd b" by simp
 setup {* add_forward_prfstep (equiv_forward_th @{thm dvd_add_right_iff}) *}
@@ -184,13 +154,13 @@ theorem coprime_dvd [forward]:
 
 (* Powers. *)
 setup {* add_rewrite_rule @{thm power_0} *}
+theorem power_ge_0 [rewrite]: "m \<noteq> 0 \<Longrightarrow> p ^ m = p * (p ^ (m - 1))" by (simp add: power_eq_if)
 setup {* add_rewrite_rule_cond @{thm power_one} [with_cond "?n \<noteq> 0"] *}
 setup {* add_rewrite_rule_cond @{thm power_one_right} [with_cond "?a \<noteq> 1"] *}
 setup {* add_gen_prfstep ("power_case_intro",
   [WithTerm @{term_pat "?p ^ (?FREE::nat)"}, CreateCase @{term_pat "(?FREE::nat) = 0"}]) *}
 
-theorem one_is_power_of_any: "\<exists>i. (1::nat) = a ^ i" by (metis power.simps(1))
-setup {* add_resolve_prfstep @{thm one_is_power_of_any} *}
+lemma one_is_power_of_any [resolve]: "\<exists>i. (1::nat) = a ^ i" by (metis power.simps(1))
 
 setup {* add_rewrite_rule @{thm power_Suc} *}
 
