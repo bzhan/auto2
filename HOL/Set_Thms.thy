@@ -117,6 +117,8 @@ theorem in_mset_append [forward]: "m \<in># mset (xs @ [x]) \<Longrightarrow> m 
 theorem in_multiset_single [forward]: "x \<in># {#y#} \<Longrightarrow> x = y" using not_gr0 by fastforce
 theorem mset_butlast [forward]: "p \<in># mset (butlast xs) \<Longrightarrow> p \<in># mset xs"
   by (simp add: in_set_butlastD)
+setup {* add_rewrite_rule_cond @{thm in_multiset_in_set} [with_term "set ?xs"] *}
+setup {* add_rewrite_rule_back_cond @{thm in_multiset_in_set} [with_term "mset ?xs"] *}
 
 subsection {* Case checking *}
 theorem multi_nonempty_split' [resolve]: "M \<noteq> {#} \<Longrightarrow> \<exists>M' m. M = M' + {#m#}"

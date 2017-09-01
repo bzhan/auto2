@@ -207,20 +207,6 @@ setup {* fold del_prfstep_thm [@{thm eq_pred_p1}, @{thm eq_pred_p2}, @{thm eq_pr
 setup {* del_prfstep_thm @{thm p_cases} *}
 setup {* del_prfstep_thm @{thm is_heap_partial2_def} *}
 
-section {* Delete-min *}
-
-theorem mset_butlast [rewrite]: "length xs > 0 \<Longrightarrow> mset (butlast xs) = mset xs - {# last xs #}"
-  by (metis add_diff_cancel_right' append_butlast_last_id length_greater_0_conv list.size(3)
-      mset.simps(2) size_eq_0_iff_empty size_mset union_code)
-
-lemma last_swap' [rewrite]:
-  "length xs > 0 \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
-@proof
-  @let "xs' = list_swap xs 0 (length xs - 1)"
-  @have "last xs' = xs' ! (length xs - 1)"
-  @have "hd xs = xs ! 0"
-@qed
-
 section {* Indexed priority queue *}
 
 datatype 'a indexed_pqueue =
@@ -240,15 +226,6 @@ lemma index_of_pqueueD1 [forward]:
 lemma index_of_pqueueD2 [forward]:
   "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> i < length xs \<and> fst (xs ! i) = k" by auto2
 setup {* del_prfstep_thm_eqforward @{thm index_of_pqueue_def} *}
-
-definition unique_keys :: "(nat \<times> 'a) list \<Rightarrow> bool" where [rewrite]:
-  "unique_keys xs = (\<forall>m n. m < length xs \<longrightarrow> n < length xs \<longrightarrow> m \<noteq> n \<longrightarrow> fst (xs ! m) \<noteq> fst (xs ! n))"
-setup {* add_property_const @{term unique_keys} *}
-
-lemma unique_keysD:
-  "unique_keys xs \<Longrightarrow> m < length xs \<Longrightarrow> n < length xs \<Longrightarrow> m \<noteq> n \<Longrightarrow> fst (xs ! m) \<noteq> fst (xs ! n)" by auto2
-setup {* add_forward_prfstep_cond @{thm unique_keysD} [with_term "?xs ! ?m", with_term "?xs ! ?n"] *}
-setup {* del_prfstep_thm_eqforward @{thm unique_keys_def} *}
   
 theorem has_index_unique_key [forward]:
   "index_of_pqueue xs m \<Longrightarrow> unique_keys xs" by auto2
@@ -284,7 +261,10 @@ theorem index_of_pqueue_empty [resolve]:
   "index_of_pqueue [] empty_map" by auto2
 
 theorem idx_pqueue_empty_rule [hoare_triple]:
-  "<emp> idx_pqueue_empty k x <\<lambda>r. idx_pqueue [] r * \<up>(alen (index r) = k)>" by auto2
+  "<emp>
+   idx_pqueue_empty k x
+   <\<lambda>r. idx_pqueue [] r * \<up>(alen (index r) = k)>" by auto2
+declare idx_pqueue_empty_def [sep_proc_defs del]
 
 definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where
   "idx_pqueue_nth p i = array_nth (pqueue p) i"
@@ -339,13 +319,6 @@ definition idx_pqueue_push :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a index
    }"
 declare idx_pqueue_push_def [sep_proc_defs]
 
-definition has_key :: "(nat \<times> 'a) list \<Rightarrow> nat \<Rightarrow> bool" where
-  "has_key xs k = (\<exists>v'. (k, v') \<in># mset xs)"
-setup {* add_rewrite_rule @{thm has_key_def} *}
-
-theorem not_has_key [forward, backward2]:
-  "\<not>(has_key xs k) \<Longrightarrow> p \<in># mset xs \<Longrightarrow> k \<noteq> fst p" by auto2
-
 theorem index_of_pqueue_push [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> \<not>has_key xs k \<Longrightarrow> index_of_pqueue (xs @ [(k, v)]) (m{k \<rightarrow> length xs})" by auto2
 
@@ -391,66 +364,6 @@ theorem array_upd_idx_pqueue_rule [hoare_triple]:
    <\<lambda>_. idx_pqueue (list_update xs i (k, v)) p>" by auto2
 
 setup {* del_prfstep_thm @{thm indexed_pqueue.collapse} *}
-
-section {* Mapping from list of kv-pairs. *}
-
-definition map_of_kv_set :: "('a \<times> 'b) set \<Rightarrow> ('a, 'b) map" where
-  "map_of_kv_set S = Map (\<lambda>a. THE_unique (\<lambda>b. (a, b) \<in> S))"
-setup {* add_rewrite_rule @{thm map_of_kv_set_def} *}
-
-setup {* add_gen_prfstep ("THE_unique_case",
-  [WithTerm @{term_pat "THE_unique (\<lambda>b. (?a, b) \<in> ?S)"},
-   CreateCase @{term_pat "\<exists>!b. (?a, b) \<in> ?S"}]) *}
-
-definition unique_keys_set :: "(nat \<times> 'a) set \<Rightarrow> bool" where
-  "unique_keys_set S = (\<forall>i x y. (i, x) \<in> S \<longrightarrow> (i, y) \<in> S \<longrightarrow> x = y)"
-setup {* add_rewrite_rule @{thm unique_keys_set_def} *}
-
-theorem unique_keys_imp [forward]:
-  "unique_keys_set S \<Longrightarrow> (i, x) \<in> S \<Longrightarrow> \<exists>!x. (i, x) \<in> S" by auto2
-
-theorem in_set_union_single: "x \<in> A \<union> {y} \<Longrightarrow> x = y \<or> x \<in> A" by auto
-setup {* add_forward_prfstep_cond @{thm in_set_union_single} [with_cond "?x \<noteq> ?y"] *}
-theorem member_union_single: "x \<in> A \<union> {x}" by simp
-setup {* add_forward_prfstep_cond @{thm member_union_single} [with_term "?A \<union> {?x}"] *}
-
-theorem map_of_kv_set_insert [rewrite]:
-  "unique_keys_set T \<Longrightarrow> \<forall>v. (k, v) \<notin> T \<Longrightarrow> map_of_kv_set (T \<union> { (k, v) }) = (map_of_kv_set T) {k \<rightarrow> v}"
-@proof
-  @let "S = T \<union> { (k, v) }" @then
-  @have "T \<subseteq> S" @then @have "unique_keys_set S"
-@qed
-
-theorem map_of_kv_set_delete [rewrite]:
-  "unique_keys_set T \<Longrightarrow> (k, v) \<in> T \<Longrightarrow> map_of_kv_set (T - { (k, v) }) = delete_map k (map_of_kv_set T)"
-@proof
-  @let "S = T - { (k, v) }" @then
-  @have "S \<subseteq> T" @then @have "unique_keys_set S"
-@qed
-
-theorem map_of_kv_set_update [rewrite]:
-  "unique_keys_set T \<Longrightarrow> (k, v) \<in> T \<Longrightarrow>
-   map_of_kv_set ((T - { (k, v) }) \<union> { (k, v') }) = (map_of_kv_set T) {k \<rightarrow> v'}"
-@proof
-  @have "unique_keys_set (T - { (k, v) })" @then
-  @have "\<forall>x. (k, x) \<notin> T - { (k, v) }"
-@qed
-
-setup {* fold del_prfstep_thm [@{thm in_set_union_single}, @{thm member_union_single}] *}
-
-definition map_of_kv_list :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) map" where
-  "map_of_kv_list xs = map_of_kv_set (set xs)"
-setup {* add_rewrite_rule @{thm map_of_kv_list_def} *}
-
-setup {* add_forward_prfstep_cond @{thm in_set_conv_nth'} [with_cond "?x \<noteq> ?xs ! ?i"] *}
-theorem unique_keys_to_set [forward]: "unique_keys xs \<Longrightarrow> unique_keys_set (set xs)" by auto2
-setup {* del_prfstep_thm_str "" @{thm in_set_conv_nth'} *}
-
-theorem unique_key_to_distinct [forward]: "unique_keys xs \<Longrightarrow> distinct xs"
-  using distinct_conv_nth unique_keys_def by fastforce
-
-lemma map_of_kv_list_empty [backward]:
-  "[] = xs \<Longrightarrow> map_of_kv_list xs = empty_map" by auto2
 
 section {* Heap operations on indexed_queue *}
 
@@ -527,11 +440,18 @@ definition delete_min_idx_pqueue ::
      })}"
 declare delete_min_idx_pqueue_def [sep_proc_defs]
 
+lemma hd_last_swap_eval_last [rewrite]:
+  "length xs > 0 \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
+@proof
+  @let "xs' = list_swap xs 0 (length xs - 1)"
+  @have "last xs' = xs' ! (length xs - 1)"
+  @have "hd xs = xs ! 0"
+@qed
+
 theorem delete_min_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(length xs > 0)>
    delete_min_idx_pqueue p
-   <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' r * \<up>(is_heap xs') * \<up>(x = hd xs) * \<up>(mset xs' = mset xs - {#x#})>"
-  by auto2
+   <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' r * \<up>(is_heap xs') * \<up>(x = hd xs) * \<up>(mset xs' = mset xs - {#x#})>" by auto2
 declare delete_min_idx_pqueue_def [sep_proc_defs del]
 
 setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
@@ -556,6 +476,7 @@ theorem insert_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(k < alen (index p)) * \<up>(\<not>has_key xs k)>
    insert_idx_pqueue k v p
    <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' r * \<up>(is_heap xs') * \<up>(map_of_kv_list xs' = map_of_kv_list xs {k \<rightarrow> v})>\<^sub>t" by auto2
+declare insert_idx_pqueue_def [sep_proc_defs del]
 
 definition update_idx_pqueue ::
   "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> unit Heap" where
@@ -571,10 +492,6 @@ definition update_idx_pqueue ::
    }"
 declare update_idx_pqueue_def [sep_proc_defs]
 
-theorem mset_update' [rewrite]:
-  "i < length ls \<Longrightarrow> mset (list_update ls i v) = {#v#} + (mset ls - {# ls ! i #})"
-  using mset_update by fastforce
-
 theorem update_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(has_key xs k)>
    update_idx_pqueue k v p
@@ -584,25 +501,13 @@ theorem update_idx_pqueue_rule [hoare_triple]:
   @obtain v' where "(k, v') \<in># mset xs" @then
   @obtain i where "i < length xs \<and> (k, v') = xs ! i"
 @qed
-setup {* del_prfstep_thm @{thm mset_update'} *}
+declare update_idx_pqueue_def [sep_proc_defs del]
 
 section {* Outer interface *}
 
 definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue_map M p = (\<exists>\<^sub>Axs. idx_pqueue xs p * \<up>(is_heap xs) * \<up>(M = map_of_kv_list xs))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
-
-theorem has_key_set [rewrite]:
-  "has_key xs k \<longleftrightarrow> (\<exists>v. (k, v) \<in> set xs)"
-@proof
-  @case "has_key xs k" @with
-    @obtain v where "(k, v) \<in># mset xs" @then @have "(k, v) \<in> set xs"
-  @end
-@qed
-
-theorem has_key_to_map_none [rewrite_bidir]:
-  "unique_keys xs \<Longrightarrow> has_key xs k \<longleftrightarrow> (map_of_kv_list xs) \<langle>k\<rangle> \<noteq> None" by auto2
-setup {* del_prfstep_thm @{thm has_key_set} *}
 
 theorem heap_implies_hd_min2 [backward1]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_kv_list xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
@@ -611,29 +516,21 @@ theorem heap_implies_hd_min2 [backward1]:
   @have "v = snd (k, v)"
 @qed
 
-theorem empty_list_to_empty_map [rewrite]:
-  "map_of_kv_list ([]::('a \<times> 'b) list) = empty_map" by auto2
-
-declare idx_pqueue_empty_def [sep_proc_defs del]
 theorem idx_pqueue_empty_map:
-  "<emp> idx_pqueue_empty k x <\<lambda>r. idx_pqueue_map empty_map r * \<up>(alen (index r) = k)>"
-  by auto2
-
-declare delete_min_idx_pqueue_def [sep_proc_defs del]
+  "<emp>
+   idx_pqueue_empty k x
+   <\<lambda>r. idx_pqueue_map empty_map r * \<up>(alen (index r) = k)>" by auto2
 
 theorem delete_min_idx_pqueue_map:
   "<idx_pqueue_map M p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
-   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) r * \<up>(\<forall>k v. M\<langle>k\<rangle> = Some v \<longrightarrow> snd x \<le> v)>"
-  by auto2
+   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) r * \<up>(\<forall>k v. M\<langle>k\<rangle> = Some v \<longrightarrow> snd x \<le> v)>" by auto2
 
-declare insert_idx_pqueue_def [sep_proc_defs del]
 theorem insert_idx_pqueue_map:
   "<idx_pqueue_map M p * \<up>(k < alen (index p)) * \<up>(M\<langle>k\<rangle> = None)>  
    insert_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v})>\<^sub>t" by auto2
 
-declare update_idx_pqueue_def [sep_proc_defs del]
 theorem update_idx_pqueue_map:
   "<idx_pqueue_map M p * \<up>(M\<langle>k\<rangle> \<noteq> None)>
    update_idx_pqueue k v p

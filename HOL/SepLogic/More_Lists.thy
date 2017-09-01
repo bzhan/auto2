@@ -39,8 +39,9 @@ setup {* add_forward_prfstep_cond @{thm last_in_mset} [with_term "last ?xs", wit
 
 section {* Relationship between mset and set of lists *}
 
-setup {* add_rewrite_rule_cond @{thm in_multiset_in_set} [with_term "set ?xs"] *}
-setup {* add_rewrite_rule_back_cond @{thm in_multiset_in_set} [with_term "mset ?xs"] *}
+theorem mset_butlast [rewrite]: "length xs > 0 \<Longrightarrow> mset (butlast xs) = mset xs - {# last xs #}"
+  by (metis add_diff_cancel_right' append_butlast_last_id length_greater_0_conv list.size(3)
+      mset.simps(2) size_eq_0_iff_empty size_mset union_code)
 
 theorem in_mset_conv_nth [resolve]: "x \<in># mset xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
   by (simp add: in_set_conv_nth')
