@@ -92,12 +92,10 @@ theorem member_notin_contra: "x \<in> S \<Longrightarrow> x \<noteq> y \<Longrig
 setup {* add_forward_prfstep_cond @{thm member_notin_contra} [with_term "?S - {?y}"] *}
 
 subsection {* Results on finite sets *}
-setup {* add_resolve_prfstep @{thm Set.insert_not_empty} *}
+
 setup {* add_resolve_prfstep @{thm Finite_Set.finite.emptyI} *}
 theorem set_finite_single [resolve]: "finite {x}" by simp
 setup {* add_rewrite_rule @{thm Finite_Set.finite_Un} *}
-setup {* add_resolve_prfstep @{thm List.finite_set} *}
-theorem Min_eqI' [backward1]: "finite A \<and> (\<forall>y\<in>A. y \<ge> x) \<Longrightarrow> x \<in> A \<Longrightarrow> Min A = x" using Min_eqI by auto
 theorem Max_ge' [forward]: "finite A \<Longrightarrow> x > Max A \<Longrightarrow> \<not>(x \<in> A)" using Max_ge leD by auto
 
 section {* Multiset *}
@@ -117,27 +115,11 @@ setup {* add_rewrite_rule @{thm prod_mset_empty} *}
 setup {* add_rewrite_rule @{thm prod_mset_singleton} *}
 setup {* add_rewrite_rule @{thm prod_mset_Un} *}
 
-subsection {* mset *}
+subsection {* Basic properties *}
 theorem mset_member_empty [resolve]: "\<not>p \<in># {#}" by simp
-theorem mset_single [rewrite]: "mset [x] = {#x#}" by simp
-theorem mset_simps_2: "mset (a # x) = mset x + {#a#}" by simp
-setup {* add_rewrite_rule @{thm mset.simps(1)} #>
-  add_rewrite_rule_cond @{thm mset_simps_2} [with_cond "?x \<noteq> []"] *} 
-setup {* add_rewrite_rule @{thm mset_eq_setD} *}
-theorem mset_append_one [rewrite]: "mset (xs @ [x]) = mset xs + {#x#}" by simp
-setup {* add_backward_prfstep @{thm Multiset.nth_mem_mset} *}
-theorem in_mset_append [forward]: "m \<in># mset (xs @ [x]) \<Longrightarrow> m \<in># mset xs \<or> m = x" by auto
 theorem in_multiset_single [forward]: "x \<in># {#y#} \<Longrightarrow> x = y" using not_gr0 by fastforce
-theorem mset_butlast [forward]: "p \<in># mset (butlast xs) \<Longrightarrow> p \<in># mset xs"
-  by (simp add: in_set_butlastD)
-setup {* add_rewrite_rule_cond @{thm in_multiset_in_set} [with_term "set ?xs"] *}
-setup {* add_rewrite_rule_back_cond @{thm in_multiset_in_set} [with_term "mset ?xs"] *}
-
-subsection {* Case checking *}
 theorem multi_nonempty_split' [resolve]: "M \<noteq> {#} \<Longrightarrow> \<exists>M' m. M = M' + {#m#}"
   using multi_nonempty_split by auto
-
-subsection {* Membership and ordering *}
 theorem multiset_eq_union_same [backward]: "(A::'a multiset) = B \<Longrightarrow> C + A = C + B" by simp
 setup {* add_backward2_prfstep @{thm subset_mset.antisym} *}
 setup {* add_resolve_prfstep @{thm Multiset.empty_le} *}
@@ -149,9 +131,6 @@ theorem multi_contain_add_self': "A \<subset># A + {#x#} \<and> x \<in># A + {#x
 setup {* add_forward_prfstep_cond @{thm multi_contain_add_self'} [with_term "?A + {#?x#}"] *}
 theorem multi_add_right [resolve]: "M \<subseteq># N \<Longrightarrow> M + {#x#} \<subseteq># N + {#x#}" by simp
 theorem multi_Ball_mono' [forward]: "M \<subset># N \<Longrightarrow> \<forall>x\<in>#N. P x \<Longrightarrow> \<forall>x\<in>#M. P x" by (simp add: mset_subsetD)
-
-subsection {* swap *}
-setup {* add_backward2_prfstep @{thm mset_swap} *}
 
 subsection {* induction *}
 setup {* add_strong_induct_rule @{thm full_multiset_induct} *}

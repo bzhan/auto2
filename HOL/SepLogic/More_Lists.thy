@@ -43,9 +43,6 @@ theorem mset_butlast [rewrite]: "length xs > 0 \<Longrightarrow> mset (butlast x
   by (metis add_diff_cancel_right' append_butlast_last_id length_greater_0_conv list.size(3)
       mset.simps(2) size_eq_0_iff_empty size_mset union_code)
 
-theorem in_mset_conv_nth [resolve]: "x \<in># mset xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
-  by (simp add: in_set_conv_nth')
-
 theorem insert_mset_to_set [rewrite]: "mset xs' = mset xs + {# x #} \<Longrightarrow> set xs' = set xs \<union> {x}"
   by (metis set_mset_mset set_mset_single set_mset_union)
 

@@ -57,8 +57,8 @@ lemma is_heapD:
 setup {* add_forward_prfstep_cond @{thm is_heapD} [with_term "?xs ! ?j"] *}
 setup {* del_prfstep_thm_eqforward @{thm is_heap_def} *}
 
-theorem is_heap_butlast: "is_heap xs \<Longrightarrow> is_heap (butlast xs)" by auto2
-setup {* add_forward_prfstep_cond @{thm is_heap_butlast} [with_term "butlast ?xs"] *}
+lemma is_heap_butlast [forward]: "is_heap xs \<Longrightarrow> is_heap (butlast xs)"
+@proof @let "xs' = butlast xs" @have (@rule) "\<forall>i<length xs'. xs' ! i = xs ! i" @qed
 
 section {* Bubble-down *}
 
@@ -72,6 +72,7 @@ theorem swap_zero_is_heap_partial1:
   @have "\<forall>i j. eq_pred i j \<longrightarrow> i \<noteq> 0 \<longrightarrow> j < length xs - 1 \<longrightarrow> snd (xs' ! i) \<le> snd (xs' ! j)" @with
     @case "j = 0"
   @end
+  @let "xs'' = butlast xs'" @have (@rule) "\<forall>i<length xs''. xs'' ! i = xs' ! i"
 @qed
 setup {* add_forward_prfstep_cond @{thm swap_zero_is_heap_partial1} [with_term "butlast ?xs'"] *}
 
@@ -512,7 +513,7 @@ setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
 theorem heap_implies_hd_min2 [backward1]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_kv_list xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
 @proof
-  @obtain i where "i < length xs \<and> (k, v) = xs ! i" @with @have "(k, v) \<in> set xs" @end
+  @obtain i where "i < length xs \<and> xs ! i = (k, v)"
   @have "v = snd (k, v)"
 @qed
 

@@ -87,6 +87,8 @@ theorem nat_le_prod_with_le [backward1]: "k \<noteq> 0 \<Longrightarrow> (n::nat
   using le_trans nat_le_prod_with_same by blast
 theorem nat_plus_le_to_less [backward1]: "b \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> a < c" by simp
 theorem nat_plus_le_to_less2 [backward1]: "a \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> b < c" by simp
+setup {* add_forward_prfstep @{thm add_right_imp_eq} *}
+setup {* add_forward_prfstep @{thm add_left_imp_eq} *}
 
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Nat.le_diff_conv}) [with_term "?i + ?k", with_cond "?k \<noteq> ?NUMC"] *}
 setup {* add_rewrite_rule_cond @{thm Nat.le_diff_conv2} [with_term "?i + ?k"] *}

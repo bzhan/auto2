@@ -2,6 +2,10 @@ theory Mapping
 imports "../Auto2_Main"
 begin
 
+setup {* add_rewrite_rule @{thm map_of.simps(1)} *}
+theorem map_of2 [rewrite]:
+  "map_of (p # ps) x = (if x = fst p then Some (snd p) else map_of ps x)" by simp
+
 datatype ('a, 'b) map = Map "'a \<Rightarrow> 'b option"
 fun meval :: "('a, 'b) map \<Rightarrow> 'a \<Rightarrow> 'b option" ("_\<langle>_\<rangle>" [90]) where
   "(Map f) \<langle>h\<rangle> = f h"
@@ -126,8 +130,8 @@ theorem unique_keys_to_set [forward]:
 @proof
   @let "S = set xs"
   @have "\<forall>k x y. (k, x) \<in> S \<longrightarrow> (k, y) \<in> S \<longrightarrow> x = y" @with
-    @obtain i where "i < length xs" "(k, x) = xs ! i"
-    @obtain j where "j < length xs" "(k, y) = xs ! j"
+    @obtain i where "i < length xs" "xs ! i = (k, x)"
+    @obtain j where "j < length xs" "xs ! j = (k, y)"
   @end
 @qed
 

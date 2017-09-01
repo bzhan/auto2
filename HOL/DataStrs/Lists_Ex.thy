@@ -10,32 +10,40 @@
 theory Lists_Ex
 imports "../Auto2_Main" Mapping
 begin
+  
+section {* Linear time version of rev *}
 
-section {* sorted function on lists *}
+fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+  "itrev []       ys = ys" |
+  "itrev (x # xs) ys = itrev xs (x # ys)"
+setup {* fold add_rewrite_rule @{thms itrev.simps} *}
+
+lemma itrev_eq_rev: "itrev x [] = rev x"
+@proof
+  @have (@rule) "\<forall>y. itrev x y = rev x @ y" @with
+    @induct x arbitrary y @with
+      @subgoal "x = a # b" @have "a # y = [a] @ y" @endgoal
+    @end
+  @end
+@qed
+
+section {* strict_sorted *}
 
 fun strict_sorted :: "'a::linorder list \<Rightarrow> bool" where
   "strict_sorted [] = True"
 | "strict_sorted (x # ys) = ((\<forall>y\<in>set ys. x < y) \<and> strict_sorted ys)"
+setup {* add_property_const @{term strict_sorted} *}
 setup {* fold add_rewrite_rule @{thms strict_sorted.simps} *}
 
-theorem strict_sorted_single [resolve]: "strict_sorted [x]" by auto2
-setup {* del_prfstep_thm @{thm strict_sorted.simps(2)} #>
-  add_rewrite_rule_cond @{thm strict_sorted.simps(2)} [with_cond "?ys \<noteq> []"] *}
-
-theorem strict_sorted_append [rewrite]:
+lemma strict_sorted_append [rewrite]:
   "strict_sorted (xs @ ys) =
     ((\<forall>x y. x \<in> set xs \<longrightarrow> y \<in> set ys \<longrightarrow> x < y) \<and> strict_sorted xs \<and> strict_sorted ys)"
 @proof @induct xs @qed
 
-theorem strict_sorted_append_one:
-  "strict_sorted (xs @ [y]) = ((\<forall>x\<in>set xs. x < y) \<and> strict_sorted xs)" by auto2
-
-theorem strict_sorted_distinct [resolve]: "strict_sorted l \<Longrightarrow> distinct l"
+lemma strict_sorted_distinct [resolve]: "strict_sorted l \<Longrightarrow> distinct l"
 @proof @induct l @qed
 
-theorem strict_sorted_min [rewrite]: "strict_sorted (x # xs) \<Longrightarrow> Min (set (x # xs)) = x" by auto2
-
-theorem strict_sorted_delmin [rewrite]:
+lemma strict_sorted_delmin [rewrite]:
   "strict_sorted (x # xs) \<Longrightarrow> set (x # xs) - {x} = set xs"
 @proof @have "distinct (x # xs)" @qed
 
