@@ -34,9 +34,7 @@ lemma frame_rule [backward]:
                      relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and> lim h \<le> lim (the \<sigma>))" @with
     @obtain as1 as2 where "set_partition as as1 as2" "(h, as1) \<Turnstile> P \<and> (h, as2) \<Turnstile> R" @then
     @have "relH as2 h (the \<sigma>)" @then
-    @have "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2" @with
-      @have "\<forall>x. x \<in> as2 \<longrightarrow> x \<notin> {a. lim h \<le> a \<and> a < lim (the \<sigma>)}"
-    @end
+    @have "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2"
   @end
 @qed
 
@@ -124,9 +122,8 @@ theorem norm_pre_pure_iff: "<P * \<up>b> c <Q> \<longleftrightarrow> (b \<longri
 
 section {* success_run and its properties. *}
 
-theorem new_addrs_bind [rewrite]: "lim h \<le> lim h' \<Longrightarrow> lim h' \<le> lim h'' \<Longrightarrow>
-  new_addrs h' (new_addrs h as h') h'' = new_addrs h as h''"
-@proof @have "\<forall>x. x \<in> new_addrs h' (new_addrs h as h') h'' \<longleftrightarrow> x \<in> new_addrs h as h''" @qed
+lemma new_addrs_bind [rewrite]:
+  "lim h \<le> lim h' \<Longrightarrow> lim h' \<le> lim h'' \<Longrightarrow> new_addrs h' (new_addrs h as h') h'' = new_addrs h as h''" by auto2
 
 fun success_run :: "'a Heap \<Rightarrow> pheap \<Rightarrow> pheap \<Rightarrow> 'a \<Rightarrow> bool" where
   "success_run f (h, as) (h', as') r \<longleftrightarrow>

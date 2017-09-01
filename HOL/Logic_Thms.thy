@@ -78,10 +78,6 @@ setup {* add_prfstep_custom ("ex_choice",
     handle THM _ => []))
 *}
 
-(* Extensionality. *)
-theorem set_ext [resolve]: "\<forall>a. a \<in> S \<longleftrightarrow> a \<in> T \<Longrightarrow> S = T" by auto
-theorem set_pair_ext [resolve]: "\<forall>a b. (a, b) \<in> S \<longleftrightarrow> (a, b) \<in> T \<Longrightarrow> S = T" by auto
-
 (* Least operator. *)
 theorem Least_equality' [backward1]:
   "P (x::('a::order)) \<Longrightarrow> \<forall>y. P y \<longrightarrow> x \<le> y \<Longrightarrow> Least P = x" by (simp add: Least_equality)

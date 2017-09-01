@@ -96,7 +96,7 @@ theorem one_assn_rule [rewrite]: "h \<Turnstile> emp \<longleftrightarrow> snd h
 setup {* del_prfstep_thm @{thm one_assn_def} *}
 
 definition set_partition :: "'a set \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
-  "set_partition S T1 T2 = (S = T1 \<union> T2 \<and> set_disjoint T1 T2)"
+  "set_partition S T1 T2 = (S = T1 \<union> T2 \<and> T1 \<inter> T2 = {})"
 setup {* add_rewrite_rule @{thm set_partition_def} *}
 
 instantiation assn :: times begin
