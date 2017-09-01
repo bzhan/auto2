@@ -30,15 +30,28 @@ theorem non_univ_exist_compl [backward]: "U \<noteq> UNIV \<Longrightarrow> \<ex
 theorem univ_member_all [resolve]: "U = UNIV \<Longrightarrow> x \<in> U" by simp
 
 subsection {* Union *}
-theorem set_not_in_union [forward]: "x \<notin> A \<union> B \<Longrightarrow> x \<notin> A \<and> x \<notin> B" by auto
-theorem set_in_union_mp [forward,backward2]: "x \<in> A \<union> B \<Longrightarrow> x \<notin> A \<Longrightarrow> x \<in> B" by auto
-theorem set_in_union_mp_single [forward]: "x \<in> {y} \<union> B \<Longrightarrow> x \<noteq> y \<Longrightarrow> x \<in> B" by auto
+
+setup {* add_rewrite_rule @{thm Set.Un_iff} *}
+setup {* add_fixed_sc ("Set.Un_iff@eqforward", 500) *}
+
+lemma UnD1 [forward]: "c \<in> A \<union> B \<Longrightarrow> c \<notin> A \<Longrightarrow> c \<in> B" by auto
+lemma UnD2 [forward]: "c \<in> A \<union> B \<Longrightarrow> c \<notin> B \<Longrightarrow> c \<in> A" by auto
+lemma UnD1_single [forward]: "c \<in> {a} \<union> B \<Longrightarrow> c \<noteq> a \<Longrightarrow> c \<in> B" by auto
+lemma UnD2_single [forward]: "c \<in> A \<union> {b} \<Longrightarrow> c \<noteq> b \<Longrightarrow> c \<in> A" by auto
+setup {* add_forward_prfstep_cond @{thm Set.UnI1} [with_term "?A \<union> ?B"] *}
+setup {* add_forward_prfstep_cond @{thm Set.UnI2} [with_term "?A \<union> ?B"] *}
+lemma UnI1_single: "a \<in> {a} \<union> B" by auto
+lemma UnI2_single: "b \<in> A \<union> {b}" by auto
+setup {* add_forward_prfstep_cond @{thm UnI1_single} [with_term "{?a} \<union> ?B"] *}
+setup {* add_forward_prfstep_cond @{thm UnI2_single} [with_term "?A \<union> {?b}"] *}
+  
 theorem union_single_eq [rewrite, backward]: "x \<in> p \<Longrightarrow> {x} \<union> p = p" by auto
 
 subsection {* Intersection *}
 setup {* add_rewrite_rule @{thm Set.Int_absorb} *}
 
 subsection {* Disjointness *}
+
 definition set_disjoint :: "'a set \<Rightarrow> 'a set \<Rightarrow> bool" where
   "set_disjoint U V = (U \<inter> V = {})"
 setup {* add_rewrite_rule_back @{thm set_disjoint_def} *}
@@ -54,7 +67,7 @@ theorem set_disjoint_intro [resolve]: "\<forall>x. x \<in> xs \<longrightarrow> 
 theorem disjoint_with_union [forward]: "set_disjoint A (B \<union> C) \<Longrightarrow> set_disjoint A B \<and> set_disjoint A C"
   by (simp add: Int_Un_distrib set_disjoint_def)
 theorem disjoint_with_union' [backward2]: "set_disjoint A B \<Longrightarrow> set_disjoint A C \<Longrightarrow> set_disjoint A (B \<union> C)"
-  by (meson set_disjoint_intro set_disjoint_mp set_in_union_mp)
+  by (meson UnD1 set_disjoint_intro set_disjoint_mp)
 
 subsection {* subset *}
 theorem subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in> B" by simp

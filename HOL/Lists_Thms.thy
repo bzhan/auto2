@@ -58,8 +58,19 @@ setup {* add_rewrite_rule @{thm List.nth_replicate} *}
 
 subsection {* sorted *}
 
+setup {* add_property_const @{term sorted} *}
 setup {* fold add_resolve_prfstep [@{thm sorted.Nil}, @{thm sorted_single}] *}
-setup {* add_rewrite_rule_cond @{thm sorted_Cons} [with_cond "?xs \<noteq> []"]*}
+  
+lemma sorted_ConsI [backward]: "sorted xs \<and> (\<forall>y\<in>set xs. x \<le> y) \<Longrightarrow> sorted (x # xs)"
+  by (simp add: sorted_Cons)
+
+lemma sorted_ConsD1 [forward]: "sorted (x # xs) \<Longrightarrow> sorted xs" using sorted_Cons by blast
+lemma sorted_ConsD2 [forward, backward2]: "sorted (x # xs) \<Longrightarrow> y \<in> set xs \<Longrightarrow> x \<le> y"
+  using sorted_Cons by blast  
+
+lemma sorted_appendI [forward]:
+  "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> \<forall>x\<in>set xs. \<forall>y\<in>set ys. x \<le> y \<Longrightarrow> sorted (xs @ ys)"
+  by (simp add: sorted_append)
 
 subsection {* distinct *}
 
@@ -84,17 +95,6 @@ setup {* add_rewrite_rule @{thm List.set_append} *}
 theorem in_set_conv_nth' [resolve]: "x \<in> set xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
   by (metis in_set_conv_nth)
 
-(* Apply just to the set of elements of a list for now. *)
-setup {* add_gen_prfstep ("Un_single_case_list",
-  [WithFact @{term_pat "?x \<in> {?a} \<union> set ?B"},
-   Filter (neq_filter @{term_pat "?x \<noteq> ?a"}),
-   CreateCase @{term_pat "?x = ?a"}]) *}
-
-section {* Splitting of lists *}
-
-setup {* add_resolve_prfstep @{thm split_list} *}
-theorem list_split_neq_second [resolve]: "xs \<noteq> as @ x # xs" by simp
-
 section {* Showing two lists are equal *}
 
 setup {* add_backward2_prfstep_cond @{thm nth_equalityI} [with_filt (order_filter "xs" "ys")] *}
@@ -106,10 +106,5 @@ theorem map_of2 [rewrite]:
   "map_of (p # ps) x = (if x = fst p then Some (snd p) else map_of ps x)" by simp
 setup {* fold add_rewrite_rule @{thms List.list.map} *}
 setup {* add_rewrite_rule @{thm List.map_append} *}
-
-section {* Other operations *}
-
-setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
-setup {* fold add_rewrite_rule @{thms sum_list_simps} *}
 
 end

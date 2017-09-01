@@ -124,11 +124,9 @@ theorem norm_pre_pure_iff: "<P * \<up>b> c <Q> \<longleftrightarrow> (b \<longri
 
 section {* success_run and its properties. *}
 
-theorem union_case [forward]: "x \<in> A \<union> B \<Longrightarrow> x \<in> A \<or> x \<in> B" by auto2
 theorem new_addrs_bind [rewrite]: "lim h \<le> lim h' \<Longrightarrow> lim h' \<le> lim h'' \<Longrightarrow>
   new_addrs h' (new_addrs h as h') h'' = new_addrs h as h''"
 @proof @have "\<forall>x. x \<in> new_addrs h' (new_addrs h as h') h'' \<longleftrightarrow> x \<in> new_addrs h as h''" @qed
-setup {* del_prfstep_thm @{thm union_case} *}
 
 fun success_run :: "'a Heap \<Rightarrow> pheap \<Rightarrow> pheap \<Rightarrow> 'a \<Rightarrow> bool" where
   "success_run f (h, as) (h', as') r \<longleftrightarrow>

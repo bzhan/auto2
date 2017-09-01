@@ -171,6 +171,8 @@ setup {* del_prfstep_thm @{thm os_is_it_def} *}
 
 subsubsection {* List-Sum *}
 
+setup {* fold add_rewrite_rule @{thms sum_list_simps} *}
+
 partial_function (heap) os_sum' :: "int os_list_it \<Rightarrow> int \<Rightarrow> int Heap"
   where [code]:
   "os_sum' it s = do {
@@ -227,6 +229,8 @@ declare os_reverse_def [sep_proc_defs]
 lemma os_reverse_rule: "<os_list xs p> os_reverse p <os_list (rev xs)>" by auto2
 
 subsubsection {* Remove *}
+
+setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
 
 partial_function (heap) os_rem
   :: "'a::heap \<Rightarrow> 'a node ref option \<Rightarrow> 'a node ref option Heap" 

@@ -73,7 +73,7 @@ lemma unique_keysD:
 setup {* add_forward_prfstep_cond @{thm unique_keysD} [with_term "?xs ! ?m", with_term "?xs ! ?n"] *}
 setup {* del_prfstep_thm_eqforward @{thm unique_keys_def} *}
 
-definition has_key :: "(nat \<times> 'a) list \<Rightarrow> nat \<Rightarrow> bool" where
+definition has_key :: "('a \<times> 'b) list \<Rightarrow> 'a \<Rightarrow> bool" where
   "has_key xs k = (\<exists>v'. (k, v') \<in># mset xs)"
 setup {* add_rewrite_rule @{thm has_key_def} *}
 
@@ -94,11 +94,6 @@ setup {* add_rewrite_rule @{thm unique_keys_set_def} *}
 
 theorem unique_keys_imp [forward]:
   "unique_keys_set S \<Longrightarrow> (i, x) \<in> S \<Longrightarrow> \<exists>!x. (i, x) \<in> S" by auto2
-
-theorem in_set_union_single: "x \<in> A \<union> {y} \<Longrightarrow> x = y \<or> x \<in> A" by auto
-setup {* add_forward_prfstep_cond @{thm in_set_union_single} [with_cond "?x \<noteq> ?y"] *}
-theorem member_union_single: "x \<in> A \<union> {x}" by simp
-setup {* add_forward_prfstep_cond @{thm member_union_single} [with_term "?A \<union> {?x}"] *}
 
 theorem map_of_kv_set_insert [rewrite]:
   "unique_keys_set T \<Longrightarrow> \<forall>v. (k, v) \<notin> T \<Longrightarrow> map_of_kv_set (T \<union> { (k, v) }) = (map_of_kv_set T) {k \<rightarrow> v}"
@@ -122,15 +117,19 @@ theorem map_of_kv_set_update [rewrite]:
   @have "\<forall>x. (k, x) \<notin> T - { (k, v) }"
 @qed
 
-setup {* fold del_prfstep_thm [@{thm in_set_union_single}, @{thm member_union_single}] *}
-
 definition map_of_kv_list :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) map" where
   "map_of_kv_list xs = map_of_kv_set (set xs)"
 setup {* add_rewrite_rule @{thm map_of_kv_list_def} *}
 
-setup {* add_forward_prfstep_cond @{thm in_set_conv_nth'} [with_cond "?x \<noteq> ?xs ! ?i"] *}
-theorem unique_keys_to_set [forward]: "unique_keys xs \<Longrightarrow> unique_keys_set (set xs)" by auto2
-setup {* del_prfstep_thm_str "" @{thm in_set_conv_nth'} *}
+theorem unique_keys_to_set [forward]:
+  "unique_keys xs \<Longrightarrow> unique_keys_set (set xs)"
+@proof
+  @let "S = set xs"
+  @have "\<forall>k x y. (k, x) \<in> S \<longrightarrow> (k, y) \<in> S \<longrightarrow> x = y" @with
+    @obtain i where "i < length xs" "(k, x) = xs ! i"
+    @obtain j where "j < length xs" "(k, y) = xs ! j"
+  @end
+@qed
 
 theorem unique_key_to_distinct [forward]: "unique_keys xs \<Longrightarrow> distinct xs"
   using distinct_conv_nth unique_keys_def by fastforce
