@@ -11,7 +11,6 @@ signature NAT_ORDER =
 sig
   val eq_info: (box_id * thm) * (box_id * thm) -> bool
 
-  val is_plus: term -> bool
   val is_plus_const: term -> bool
   val is_standard_ineq: term -> bool
   val dest_ineq: term -> ineq_info
@@ -60,25 +59,13 @@ structure Data = Proof_Data
 fun eq_info ((id, th), (id', th')) =
     id = id' andalso Thm.eq_thm_prop (th, th')
 
-(* Check whether t is in the form a + b. *)
-fun is_plus t =
-    case t of
-        Const (@{const_name plus}, _) $ _ $ _ => true
-      | _ => false
-
-(* Check whether t is in the form a - b. *)
-fun is_minus t =
-    case t of
-        Const (@{const_name minus}, _) $ _ $ _ => true
-      | _ => false
-
 (* Check whether t is in the form a + n, where n is a constant. *)
 fun is_plus_const t =
-    is_plus t andalso UtilArith.is_numc (dest_arg t)
+    Nat_Arith.is_plus t andalso UtilArith.is_numc (dest_arg t)
 
 (* Check whether t is in the form a - n, where n is a constant. *)
 fun is_minus_const t =
-    is_minus t andalso UtilArith.is_numc (dest_arg t)
+    Nat_Arith.is_minus t andalso UtilArith.is_numc (dest_arg t)
 
 (* Check whether t is in the form a <= b (boolean value). *)
 fun is_less_eq t =
