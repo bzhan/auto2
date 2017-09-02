@@ -12,8 +12,6 @@ datatype proofstep_fn
 type proofstep =
      {name: string, args: match_arg list, priority: int, func: proofstep_fn}
 
-type prfstep_filter = Proof.context -> id_inst -> bool
-
 datatype prfstep_descriptor = WithFact of term
                             | WithItem of string * term
                             | WithProperty of term
@@ -32,10 +30,6 @@ sig
   val WithProp: term -> prfstep_descriptor
   val string_of_desc: theory -> prfstep_descriptor -> string
   val string_of_descs: theory -> prfstep_descriptor list -> string
-  val get_insts_filt: match_arg -> box_item -> incr_context -> id_inst ->
-                      prfstep_filter -> id_inst_th list
-  val get_insts: match_arg -> box_item -> incr_context -> id_inst ->
-                 id_inst_th list
 
   (* prfstep_filter *)
   val all_insts: prfstep_filter
@@ -126,23 +120,6 @@ fun string_of_descs thy descs =
       (if length filts > 0 then
          (" + " ^ (string_of_int (length filts)) ^ " filters") else "")
     end
-
-(* Obtain list of incremental matches (taking into account ictxt)
-   between item and pattern specified by arg. Apply list of filters
-   filt.
- *)
-fun get_insts_filt arg item ictxt (id, inst) filt =
-    let
-      val ctxt = IncrContext.context_of ictxt
-    in
-      (ItemIO.match_arg ctxt arg item (id, inst))
-          |> IncrContext.filter_id_for_type ictxt
-          |> filter (filt ctxt o fst)
-          |> IncrContext.replace_id_for_type ictxt
-    end
-
-fun get_insts arg item ictxt (id, inst) =
-    get_insts_filt arg item ictxt (id, inst) (K (K true))
 
 (* prfstep_filter *)
 
@@ -421,7 +398,7 @@ fun prfstep_pre_conv name descs pre_cv =
           let
             val ctxt = IncrContext.context_of ictxt
             val inst_ths =
-                get_insts_filt (the_single args) item ictxt ([], fo_init) filt
+                ItemIO.get_insts_filt (the_single args) item ictxt ([], fo_init) filt
             fun inst_to_updt ((id, _), eq1) =
                 (* Here eq1 is meta_eq from pat(inst) to item. *)
                 let

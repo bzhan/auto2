@@ -60,8 +60,8 @@ fun lookup_wellform_data thy t =
                let
                  val (_, vars) = Term.strip_comb t'
                in
-                 if length vars <> length args then []
-                 else let
+                 if length vars <> length args then [] else
+                 let
                    val tys = map fastype_of vars ~~ map fastype_of args
                    val tyinst = fold (Sign.typ_match thy) tys Vartab.empty
                    val vars' = map (Envir.subst_term_types tyinst) vars
@@ -71,6 +71,7 @@ fun lookup_wellform_data thy t =
                  in
                    distinct (op aconv) (map subst_fun reqs)
                  end
+                 handle Type.TYPE_MATCH => []
                end)
         | _ => []
     end

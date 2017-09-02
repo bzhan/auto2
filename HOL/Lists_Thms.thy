@@ -107,7 +107,7 @@ setup {* register_wellform_data ("take n xs", ["n \<le> length xs"]) *}
 setup {* add_prfstep_check_req ("take n xs", "n \<le> length xs") *}
 
 lemma length_take: "n \<le> length xs \<Longrightarrow> length (take n xs) = n" by simp
-setup {* add_rewrite_rule_cond @{thm length_take} [with_term "take ?n ?xs"] *}
+setup {* add_forward_prfstep_cond @{thm length_take} [with_term "take ?n ?xs"] *}
 
 lemma nth_take [rewrite]: "i < length (take n xs) \<Longrightarrow> take n xs ! i = xs ! i" by simp
 
@@ -115,7 +115,7 @@ setup {* add_rewrite_rule @{thm List.take_0} *}
 
 section {* drop *}
 
-setup {* add_rewrite_rule_cond @{thm List.length_drop} [with_term "drop ?n ?xs"] *}
+setup {* add_forward_prfstep_cond @{thm List.length_drop} [with_term "drop ?n ?xs"] *}
 
 lemma nth_drop [rewrite]: "i < length (drop n xs) \<Longrightarrow> drop n xs ! i = xs ! (n + i)" by simp
 

@@ -14,14 +14,10 @@ sig
   val invoke_match: term -> Proof.context -> (box_id * thm) list
   val invoke_resolve: Proof.context -> (box_id * thm) list
   val invoke_clean_resolved: box_id -> Proof.context -> Proof.context
-  val classify_th: theory -> thm -> string
-  val relevant_terms_single: theory -> thm -> cterm list
-  val add_terms: (box_id * thm) list -> (box_id * cterm) list ->
-                 Proof.context -> Proof.context
-  val add_infos: (box_id * thm) list -> box_id * thm list -> Proof.context ->
-                 Proof.context
-  val get_incr_type:
-      Proof.context -> (box_id * thm) list -> box_id * thm list -> incr_context
+  val relevant_terms_single: box_item -> cterm list
+  val add_terms: box_item list -> (box_id * cterm) list -> Proof.context -> Proof.context
+  val add_infos: box_item list -> box_item list -> Proof.context -> Proof.context
+  val get_incr_type: box_item list -> box_item list -> Proof.context -> incr_context
 end;
 
 structure Auto2Data : AUTO2_DATA =
@@ -40,22 +36,6 @@ structure Data = Theory_Data
 
 fun add_custom_data (nm, data) thy =
     Data.map (Symtab.update (nm, data)) thy
-(* Use strings normally reserved for ty_str for convenience only. Does
-   not indicate the original ty_str of the item.
- *)
-fun classify_th thy th =
-    if is_eq_term (prop_of' th) then "EQ"
-    else if Property.is_property_const thy (prop_of' th) then "PROPERTY"
-    else "PROP"
-
-(* Helper function for the two functions below. *)
-fun relevant_terms_single thy th =
-    if classify_th thy th <> "EQ" then [] else
-    let
-      val (lhs, rhs) = cdest_eq (cprop_of' th)
-    in
-      [lhs, rhs]
-    end
 
 fun get_custom_data ctxt =
     ctxt |> Proof_Context.theory_of |> Data.get
@@ -103,7 +83,7 @@ fun invoke_clean_resolved id ctxt =
       ctxt |> fold invoke1 (get_custom_data ctxt)
     end
 
-fun add_terms infos term_infos ctxt =
+fun add_terms old_items term_infos ctxt =
     let
       val ts = map (Thm.term_of o snd) term_infos
       val (edges, ctxt') = RewriteTable.add_term_list term_infos ctxt
@@ -115,85 +95,99 @@ fun add_terms infos term_infos ctxt =
       ctxt' |> PropertyData.process_update_property imm_properties
             |> fold PropertyData.process_rewrite_property edges
             |> fold WellformData.initialize_wellform_data ts
-            |> WellformData.complete_wellform_data_for_terms infos new_ts
+            |> WellformData.complete_wellform_data_for_terms old_items new_ts
             |> fold invoke_add_term term_infos
             |> fold invoke_add_rewrite edges
+    end
+
+(* Helper function for the two functions below. *)
+fun relevant_terms_single item =
+    let
+      val {ty_str, tname, ...} = item
+    in
+      if ty_str = "EQ" then tname else []
     end
 
 (* Add the given (id, th) pairs to the rewrite table. Consider three
    cases: where th is an equalitiy, a property, and an ordinary
    theorem.
  *)
-fun add_infos infos (id, new_infos) ctxt =
-    if exists (fn th => not (is_Trueprop (Thm.prop_of th))) new_infos then
-      raise Fail "add_info"
-    else let
-      val thy = Proof_Context.theory_of ctxt
-
+fun add_infos old_items items ctxt =
+    let
       val relevant_terms =
-          new_infos |> maps (relevant_terms_single thy)
-                    |> RewriteTable.get_reachable_terms true ctxt
-                    |> map Thm.term_of
+          items |> maps relevant_terms_single
+                |> RewriteTable.get_reachable_terms true ctxt
+                |> map Thm.term_of
 
-      val relevant_props =
-          filter (fn (_, th) => classify_th thy th = "PROP")
-                 (map (pair id) new_infos) @
-          filter (fn (_, th) => Util.has_subterm relevant_terms (prop_of' th)) infos
-
-      fun add_one_info th ctxt =
-          case classify_th thy th of
-              "EQ" =>
+      fun add_one_info item ctxt =
+          let
+            val {ty_str, id, prop, ...} = item
+          in
+            if ty_str = "EQ" then
               let
-                val (edges, ctxt') = RewriteTable.add_rewrite (id, th) ctxt
+                val (edges, ctxt') = RewriteTable.add_rewrite (id, prop) ctxt
               in
                 ctxt' |> fold PropertyData.process_rewrite_property edges
                       |> fold invoke_add_rewrite edges
               end
-            | "PROPERTY" => PropertyData.add_property (id, th) ctxt
-            | _ => invoke_add_fact (id, th) ctxt
+            else if ty_str = "PROPERTY" then
+              PropertyData.add_property (id, prop) ctxt
+            else if ty_str = "PROP" then
+              invoke_add_fact (id, prop) ctxt
+            else ctxt
+          end
+
+      val match_items =
+          items @
+          filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
+                                            (map Thm.term_of tname)) old_items
     in
-      ctxt |> fold add_one_info new_infos
-           |> WellformData.complete_wellform_data relevant_props
+      ctxt |> fold add_one_info items
+           |> WellformData.complete_wellform_data match_items
     end
 
 (* Obtain the incremental context corresponding to the given (id, th)
    pairs. Consider three cases: when th is an equality, a property,
    and an ordinary theorem.
  *)
-fun get_incr_type ctxt infos (id, new_infos) =
-    if exists (fn th => not (is_Trueprop (Thm.prop_of th))) new_infos then
-      raise Fail "get_incr_type"
-    else let
-      val thy = Proof_Context.theory_of ctxt
+fun get_incr_type old_items items ctxt =
+    let
+      val id = #id (hd items)
 
       val (prim_id, ctxt') = BoxID.add_prim_id [] ctxt
 
       val relevant_terms =
-          new_infos |> maps (relevant_terms_single thy)
-                    |> RewriteTable.get_reachable_terms true ctxt
-                    |> map Thm.term_of
+          items |> maps relevant_terms_single
+                |> RewriteTable.get_reachable_terms true ctxt
+                |> map Thm.term_of
 
-      val relevant_props =
-          filter (fn (_, th) => classify_th thy th = "PROP")
-                 (map (pair [prim_id]) new_infos) @
-          filter (fn (_, th) => Util.has_subterm relevant_terms (prop_of' th)) infos
-
-      fun add_one_info th ctxt =
-          case classify_th thy th of
-              "EQ" =>
+      fun add_one_info item ctxt =
+          let
+            val {ty_str, prop, ...} = item
+          in
+            if ty_str = "EQ" then
               let
-                val (edges, ctxt') = RewriteTable.add_rewrite ([prim_id], th) ctxt
+                val (edges, ctxt') = RewriteTable.add_rewrite ([prim_id], prop) ctxt
               in
                 ctxt' |> fold PropertyData.process_rewrite_property edges
                       |> fold invoke_add_rewrite edges
               end
-            | "PROPERTY" => PropertyData.add_property ([prim_id], th) ctxt
-            | _ => invoke_add_fact (id, th) ctxt
+            else if ty_str = "PROPERTY" then
+              PropertyData.add_property ([prim_id], prop) ctxt
+            else if ty_str = "PROP" then
+              invoke_add_fact ([prim_id], prop) ctxt
+            else ctxt
+          end
 
-      val ctxt'' = ctxt' |> fold add_one_info new_infos
-                         |> WellformData.complete_wellform_data relevant_props
+      val match_items =
+          map (BoxItem.item_with_id [prim_id]) items @
+          filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
+                                            (map Thm.term_of tname)) old_items
 
-      val new_ts = (maps (relevant_terms_single thy) new_infos @
+      val ctxt'' = ctxt' |> fold add_one_info items
+                         |> WellformData.complete_wellform_data match_items
+
+      val new_ts = (maps relevant_terms_single items @
                     maps (Property.get_property_arg_th_gen o snd o snd)
                          (PropertyData.get_new_property prim_id ctxt'') @
                     map (Thm.cterm_of ctxt o fst)

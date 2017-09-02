@@ -23,12 +23,10 @@ sig
   (* Update to wellform table. *)
   val add_wellform_data_raw:
       term * (box_id * thm) -> Proof.context -> Proof.context
-  val rewrite_find_fact: Proof.context -> (box_id * thm) list ->
-                         box_id * cterm -> (box_id * thm) list
+  val find_fact: Proof.context -> box_item list -> box_id * cterm -> (box_id * thm) list
   val complete_wellform_data_for_terms:
-      (box_id * thm) list -> term list -> Proof.context -> Proof.context
-  val complete_wellform_data:
-      (box_id * thm) list -> Proof.context -> Proof.context
+      box_item list -> term list -> Proof.context -> Proof.context
+  val complete_wellform_data: box_item list -> Proof.context -> Proof.context
 
   (* Get changes to wellform table. *)
   val get_new_wellform_data:
@@ -223,40 +221,32 @@ fun add_wellform_data_raw (t, (id, th)) ctxt =
       end
     end
 
-(* Given a list of (id, th) pairs, attempt to justify t (of type bool)
+(* Given a list of items, attempt to justify t (of type bool)
    using the theorems, or equalities / properties in the rewrite
-   table. Return a list of (id', th') pairs, where the statement of
+   table. Return a list of (id, th) pairs, where the statement of
    th' is t.
  *)
-fun rewrite_find_fact ctxt infos (id, ct) =
+fun find_fact ctxt items (id, ct) =
     let
-      fun match_fact (id', th) =
-          if not (is_Trueprop (Thm.prop_of th)) then [] else
-          let
-            val id'' = BoxID.merge_boxes ctxt (id, id')
-            val ct' = cprop_of' th
-            val eq_info = RewriteTable.equiv_info ctxt id'' (ct', ct)
-
-            fun process_info (id''', eq_th) =
-                let
-                  val eq_th' = make_trueprop_eq eq_th
-                in
-                  (id''', Thm.equal_elim eq_th' th)
-                end
-          in
-            map process_info eq_info
-          end
-
       val t = Thm.term_of ct
+      val thy = Proof_Context.theory_of ctxt
+      val ictxt = SINGLE ctxt
+
+      fun match_item item =
+          let
+            fun process_inst ((id', _), th) = (id', th)
+            val insts = ItemIO.get_insts (PropMatch t) item ictxt (id, fo_init)
+          in
+            map process_inst insts
+          end
     in
       if is_eq_term t then  (* Equality case *)
         map (apsnd to_obj_eq)
             (RewriteTable.equiv_info ctxt id (cdest_eq ct))
-      else if Property.is_property_const (Proof_Context.theory_of ctxt) t then
-        (* Property case *)
+      else if Property.is_property_const thy t then  (* Property case *)
         PropertyData.get_property ctxt (id, ct)
       else  (* General case *)
-        maps match_fact infos
+        maps match_item items
     end
 
 (* Given a list of (id, th), complete the wellform data. New wellform
@@ -268,7 +258,7 @@ fun rewrite_find_fact ctxt infos (id, ct) =
 
    - There are new equalities added.
  *)
-fun complete_wellform_data_for_terms infos ts ctxt =
+fun complete_wellform_data_for_terms items ts ctxt =
     let
       fun get_for_t t =
           let
@@ -286,7 +276,7 @@ fun complete_wellform_data_for_terms infos ts ctxt =
             val targets = (Util.all_pairs (target_ids, map fst cur_data))
                               |> filter is_target
           in
-            targets |> maps (rewrite_find_fact ctxt infos)
+            targets |> maps (find_fact ctxt items)
                     |> map (pair t)
           end
 
@@ -295,12 +285,12 @@ fun complete_wellform_data_for_terms infos ts ctxt =
       fold add_wellform_data_raw all_data ctxt
     end
 
-fun complete_wellform_data infos ctxt =
+fun complete_wellform_data items ctxt =
     let
       val wellform = Data.get ctxt
       val ts = Termtab.keys wellform
     in
-      complete_wellform_data_for_terms infos ts ctxt
+      complete_wellform_data_for_terms items ts ctxt
     end
 
 (* Return the list of new wellform data (added under id prim or

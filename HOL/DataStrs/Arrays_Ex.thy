@@ -60,10 +60,7 @@ lemma rev_swap_eval [rewrite]:
 @proof
   @strong_induct j arbitrary i xs
   @case "i < j" @with
-    @let "xs' = list_swap xs i j"
-    @apply_induct_hyp "j - 1" "i + 1" xs'
-    @case "k < i + 1" @then @case "j - 1 < k" @then
-    @have "i \<noteq> j - (k - i)"
+    @apply_induct_hyp "j - 1" "i + 1" "list_swap xs i j"
   @end
 @qed
 
@@ -97,7 +94,6 @@ lemma array_copy_eval [rewrite]:
   @strong_induct n arbitrary i j xs'
   @case "n = 0" @then
   @apply_induct_hyp "n - 1" "i + 1" "j + 1" "xs' [j := xs ! i]"
-  @case "k < j" @then @case "k \<ge> j + n" @then @have "k < length xs'"
 @qed
 
 setup {* del_prfstep_thm @{thm array_copy.simps} *}
@@ -188,8 +184,8 @@ lemma set_sublist [resolve]:
 lemma list_take_sublist_drop_eq [rewrite]:
   "l \<le> r \<Longrightarrow> r \<le> length xs \<Longrightarrow> take l xs @ sublist l r xs @ drop r xs = xs"
 @proof
-  @have "take l xs = sublist 0 l xs" @with @have "length (take l xs) = l" @end
-  @have "drop r xs = sublist r (length xs) xs" @with @have "length (drop r xs) = length xs - r" @end
+  @have "take l xs = sublist 0 l xs"
+  @have "drop r xs = sublist r (length xs) xs"
 @qed
 
 end

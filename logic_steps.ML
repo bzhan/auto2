@@ -112,7 +112,7 @@ val shadow_term_item =
 fun eq_elim_fn ictxt (item1 as {id, prop, ...}) item2 =
     let
       val (A, B) = dest_eq (prop_of' prop)
-      fun inst_t t = ProofStep.get_insts (PropMatch t) item2 ictxt (id, fo_init)
+      fun inst_t t = ItemIO.get_insts (PropMatch t) item2 ictxt (id, fo_init)
       val (inst_A, inst_B) = (inst_t A, inst_t B)
       val (inst_nA, inst_nB) = (inst_t (get_neg A), inst_t (get_neg B))
 
@@ -786,7 +786,7 @@ fun match_prop ictxt (id, item2) pat =
             ((id, inst), patT)
           end
     in
-      ProofStep.get_insts (PropMatch pat) item2 ictxt (id, fo_init) @
+      ItemIO.get_insts (PropMatch pat) item2 ictxt (id, fo_init) @
       (if length disj_pats > 1 then
          map process_inst (maps (match_prop ictxt (id, item2)) disj_pats)
        else [])
@@ -922,8 +922,8 @@ fun match_one_sch_fn ictxt item1 item2 =
             if count_var (nth args i) < nvar then [] else
             let
               val arg = nth args i
-              val insts = ProofStep.get_insts (TypedMatch (TY_TERM, arg)) item2 ictxt
-                                              (id, fo_init)
+              val insts = ItemIO.get_insts (TypedMatch (TY_TERM, arg)) item2 ictxt
+                                           (id, fo_init)
               fun inst_to_updt ((id', inst), _) =
                   let
                     val th1' = Util.subst_thm_thy thy inst th1

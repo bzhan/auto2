@@ -33,6 +33,7 @@ sig
       Proof.context * raw_item list -> Proof.context * (cterm * cterm) list
 
   val null_item: box_item
+  val item_with_id: box_id -> box_item -> box_item
   val eq_item: box_item * box_item -> bool
   val match_ty_str: string -> box_item -> bool
   val match_ty_strs: string list -> box_item -> bool
@@ -115,6 +116,8 @@ fun instantiate subst ritem =
 
 val null_item = {uid = 0, id = [], sc = 0, ty_str = TY_NULL,
                  tname = [], prop = true_th}
+fun item_with_id id {uid, sc, ty_str, tname, prop, ...} =
+    {uid = uid, id = id, sc = sc, ty_str = ty_str, tname = tname, prop = prop}
 fun eq_item (item1, item2) = (#uid item1 = #uid item2)
 fun match_ty_str s {ty_str, ...} = (s = "" orelse s = ty_str)
 fun match_ty_strs slist {ty_str, ...} = member (op =) slist ty_str
@@ -176,6 +179,8 @@ datatype match_arg = PropMatch of term
                    | PropertyMatch of term
                    | WellFormMatch of term * term
 
+type prfstep_filter = Proof.context -> id_inst -> bool
+
 signature ITEM_IO =
 sig
   val pat_of_match_arg: match_arg -> term
@@ -203,6 +208,11 @@ sig
   val pre_match_arg: Proof.context -> match_arg -> box_item -> bool
   val match_arg: Proof.context -> match_arg -> box_item -> id_inst ->
                  id_inst_th list
+  val get_insts_filt: match_arg -> box_item -> incr_context -> id_inst ->
+                      prfstep_filter -> id_inst_th list
+  val get_insts: match_arg -> box_item -> incr_context -> id_inst ->
+                 id_inst_th list
+
   val no_rewr_terms: term list -> term list
   val rewr_terms_of_item: Proof.context -> string * term list -> term list
   val output_prop_fn: item_output
@@ -569,6 +579,23 @@ fun match_arg ctxt arg (item as {id, ty_str, ...}) (id', inst) =
         | WellFormMatch _ =>
           raise Fail "match_arg: should not be called on WellFormMatch."
     end
+
+(* Obtain list of incremental matches (taking into account ictxt)
+   between item and pattern specified by arg. Apply list of filters
+   filt.
+ *)
+fun get_insts_filt arg item ictxt (id, inst) filt =
+    let
+      val ctxt = IncrContext.context_of ictxt
+    in
+      (match_arg ctxt arg item (id, inst))
+          |> IncrContext.filter_id_for_type ictxt
+          |> filter (filt ctxt o fst)
+          |> IncrContext.replace_id_for_type ictxt
+    end
+
+fun get_insts arg item ictxt (id, inst) =
+    get_insts_filt arg item ictxt (id, inst) (K (K true))
 
 val no_rewr_terms = K []
 

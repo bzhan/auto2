@@ -334,12 +334,11 @@ fun process_add_terms item (st as {ctxt, ...}) =
 
       val term_infos = map (pair id o Thm.cterm_of ctxt) (headt @ terms)
 
-      val infos =
+      val old_items =
           (maps (Status.get_items false st) (Status.get_unresolved st))
               |> remove BoxItem.eq_item item
-              |> map (fn {id, prop, ...} => (id, prop))
 
-      val ctxt' = ctxt |> Auto2Data.add_terms infos term_infos
+      val ctxt' = ctxt |> Auto2Data.add_terms old_items term_infos
 
       (* Add new terms as updates. *)
       fun exists_item t =
@@ -377,14 +376,10 @@ fun process_fact_all items (st as {ctxt, ...}) =
          relevant terms for that increment.
        *)
       val items' = maps (Status.get_items false st) (Status.get_unresolved st)
-      val infos = (subtract BoxItem.eq_item items items')
-                      |> map (fn {id, prop, ...} => (id, prop))
-                      |> filter (is_Trueprop o Thm.prop_of o snd)
-      val props = items |> filter (BoxItem.match_ty_strs [TY_PROP, TY_EQ, TY_PROPERTY])
-                        |> map #prop
-      val ctxt' = Auto2Data.add_infos infos (id, props) ctxt
+      val old_items = subtract BoxItem.eq_item items items'
+      val ctxt' = Auto2Data.add_infos old_items items ctxt
       val init_ctxt = SINGLE ctxt'
-      val incr_ctxt = Auto2Data.get_incr_type ctxt infos (id, props)
+      val incr_ctxt = Auto2Data.get_incr_type old_items items ctxt
       val ts = case incr_ctxt of
                    LAST (_, _, ts) => map Thm.term_of ts
                  | _ => raise Fail "process_fact_all"

@@ -524,9 +524,9 @@ fun get_resolve_th st id = Box.get_resolve_th (get_box st id)
  *)
 fun find_fact (st as {ctxt, ...}) id t =
     let
-      val infos = (get_all_items false st id)
-                      |> map (fn {id, prop, ...} => (id, prop))
-      val res = (WellformData.rewrite_find_fact ctxt infos (id, Thm.cterm_of ctxt t))
+      val ct = Thm.cterm_of ctxt t
+      val items = get_all_items false st id
+      val res = (WellformData.find_fact ctxt items (id, ct))
                     |> filter (fn (id', _) => id' = id)
     in
       case res of

@@ -206,8 +206,7 @@ lemma quicksort_sorts:
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
   @let "xs3 = quicksort xs l r"
-  @have "length xs3 = length xs"
-  @case "l \<ge> r" @with @have "r + 1 \<le> length xs" @end
+  @case "l \<ge> r"
   @have "l < r \<and> r < length xs"
   @have "sublist l p xs2 = sublist l p xs3"
   @have "set (sublist l p xs1) = set (sublist l p xs2)" @with @case "p = 0" @end
@@ -229,7 +228,6 @@ lemma quicksort_sorts:
       @have "r - (p + 1) < r - l"
       @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2
     @end
-    @have "r + 1 \<le> length xs"
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm quicksort_sorts} [with_term "quicksort ?xs ?l ?r"] *}
