@@ -17,8 +17,6 @@ ML_file "order_test.ML"
 ML_file "nat_order.ML"
 ML_file "nat_order_test.ML"
 
-setup {* register_wellform_data ("(a::nat) - b", ["a \<ge> b"]) *}
-
 (* Normalize any expression to "a - b" form. *)
 lemma nat_sub_norm:
   "(a::nat) = a - 0 \<and> a \<ge> 0" by simp

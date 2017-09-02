@@ -190,7 +190,7 @@ definition subtract_slowly_dec :: "nat \<Rightarrow> nat \<Rightarrow> dcom" whe
        BNot (BEq (AId X) (ANum 0)) }}) \<rightarrow>
     {{ Assert (\<lambda>st. eval st Z = p - m) }})
 "
-theorem cancel_sub_1 [rewrite]: "x \<noteq> 0 \<Longrightarrow> ((y::nat) - 1) - (x - 1) = y - x" by simp
+lemma cancel_sub_1 [rewrite]: "x \<ge> 1 \<Longrightarrow> ((y::nat) - 1) - (x - 1) = y - x" by simp
 
 setup {* add_rewrite_rule @{thm subtract_slowly_dec_def} *}
 theorem subtract_slowly_dec_correct: "dec_correct (subtract_slowly_dec m p)" by auto2

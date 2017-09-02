@@ -53,29 +53,30 @@ theorem ineq_to_eqs1: "(x::nat) \<le> y + 0 \<Longrightarrow> y \<le> x + 0 \<Lo
 ML_file "arith.ML"
 ML_file "order.ML"
 
+setup {* register_wellform_data ("(a::nat) - b", ["a \<ge> b"]) *}
+
 (* Ordering on Nats. *)
 setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
 setup {* add_forward_prfstep_cond @{thm Nat.le0} [with_term "?n"] *}
 setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_term "?k", with_cond "?k \<noteq> 1"] *}
 setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_term "?i"] *}
-theorem not_minus_less: "\<not>(i::nat) < (i - j)" by simp
-setup {* add_resolve_prfstep @{thm not_minus_less} *}
-theorem nat_le_prod_with_same [backward]: "m \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m * n" by simp
-theorem nat_le_prod_with_le [backward1]: "k \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m \<Longrightarrow> (n::nat) \<le> k * m"
+lemma not_minus_less [resolve]: "\<not>(i::nat) < (i - j)" by simp
+lemma nat_le_prod_with_same [backward]: "m \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m * n" by simp
+lemma nat_le_prod_with_le [backward1]: "k \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m \<Longrightarrow> (n::nat) \<le> k * m"
   using le_trans nat_le_prod_with_same by blast
-theorem nat_plus_le_to_less [backward1]: "b \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> a < c" by simp
-theorem nat_plus_le_to_less2 [backward1]: "a \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> b < c" by simp
+lemma nat_plus_le_to_less [backward1]: "b \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> a < c" by simp
+lemma nat_plus_le_to_less2 [backward1]: "a \<noteq> 0 \<Longrightarrow> (a::nat) + b \<le> c \<Longrightarrow> b < c" by simp
 setup {* add_forward_prfstep @{thm add_right_imp_eq} *}
 setup {* add_forward_prfstep @{thm add_left_imp_eq} *}
 
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Nat.le_diff_conv}) [with_term "?i + ?k", with_cond "?k \<noteq> ?NUMC"] *}
 setup {* add_rewrite_rule_cond @{thm Nat.le_diff_conv2} [with_term "?i + ?k"] *}
-theorem nat_less_diff_conv: "(i::nat) < j - k \<Longrightarrow> i + k < j" by simp
+lemma nat_less_diff_conv: "(i::nat) < j - k \<Longrightarrow> i + k < j" by simp
 setup {* add_forward_prfstep_cond @{thm nat_less_diff_conv} [with_cond "?k \<noteq> ?NUMC", with_term "?i + ?k"]*}
-theorem Nat_le_diff_conv2_same [forward]: "(i::nat) \<le> i - j \<Longrightarrow> j \<le> i \<Longrightarrow> j = 0" by simp
-theorem Nat_le_diff1_conv [forward]: "(n::nat) \<le> n - 1 \<Longrightarrow> n = 0" by simp
-theorem nat_gt_zero [forward]: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
-theorem n_minus_1_less_n [backward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 < n" by simp
+lemma Nat_le_diff_conv2_same [forward]: "i \<ge> j \<Longrightarrow> (i::nat) \<le> i - j \<Longrightarrow> j = 0" by simp
+lemma Nat_le_diff1_conv [forward]: "(n::nat) \<le> n - 1 \<Longrightarrow> n = 0" by simp
+lemma nat_gt_zero [forward]: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
+lemma n_minus_1_less_n [backward]: "(n::nat) \<ge> 1 \<Longrightarrow> n - 1 < n" by simp
 setup {* add_rewrite_rule @{thm le_add_diff_inverse} *}
 setup {* add_rewrite_rule @{thm Nat.diff_diff_cancel} *}
 
@@ -91,15 +92,15 @@ setup {* add_rewrite_rule @{thm Nat.minus_nat.diff_0} *}
 setup {* add_rewrite_rule @{thm Nat.diff_self_eq_0} *}
 setup {* add_rewrite_rule @{thm Nat.diff_add_inverse} *}
 setup {* add_rewrite_rule @{thm Nat.diff_add_inverse2} *}
-theorem n_minus_1_eq_0 [forward]: "(n::nat) \<noteq> 0 \<Longrightarrow> n - 1 = 0 \<Longrightarrow> n = 1" by simp
-theorem diff_distrib: "(i::nat) \<le> k \<Longrightarrow> k \<le> j \<Longrightarrow> j - (k - i) = j - k + i" by simp
+lemma n_minus_1_eq_0 [forward]: "(n::nat) \<ge> 1 \<Longrightarrow> n - 1 = 0 \<Longrightarrow> n = 1" by simp
+lemma diff_distrib: "(i::nat) \<le> k \<Longrightarrow> k \<le> j \<Longrightarrow> j - (k - i) = j - k + i" by simp
 setup {* add_rewrite_rule_cond @{thm diff_distrib} (with_filts [size1_filter "j", size1_filter "k", size1_filter "i"]) *}
-theorem nat_minus_add_1 [rewrite]: "(n::nat) \<noteq> 0 \<Longrightarrow> (n - 1) + 1 = n" by simp
-theorem plus_1_plus_minus_1 [rewrite]: "(b::nat) \<noteq> 0 \<Longrightarrow> (a + 1) + (b - 1) = a + b" by simp
-theorem nat_same_minus_ge [forward]: "(c::nat) - a \<ge> c - b \<Longrightarrow> a \<le> c \<Longrightarrow> a \<le> b" by arith
+lemma nat_minus_add_1 [rewrite]: "(n::nat) \<ge> 1 \<Longrightarrow> (n - 1) + 1 = n" by simp
+lemma plus_1_plus_minus_1 [rewrite]: "(b::nat) \<ge> 1 \<Longrightarrow> (a + 1) + (b - 1) = a + b" by simp
+lemma nat_same_minus_ge [forward]: "(c::nat) - a \<ge> c - b \<Longrightarrow> a \<le> c \<Longrightarrow> a \<le> b" by arith
 
-theorem diff_eq_zero [forward]: "j - k = 0 \<Longrightarrow> (k::nat) \<le> j \<Longrightarrow> j = k" by simp
-theorem diff_eq_zero' [forward]: "j - k + i = j \<Longrightarrow> (k::nat) \<le> j \<Longrightarrow> k = i" by simp
+lemma diff_eq_zero [forward]: "(k::nat) \<le> j \<Longrightarrow> j - k = 0 \<Longrightarrow> j = k" by simp
+lemma diff_eq_zero' [forward]: "(k::nat) \<le> j \<Longrightarrow> j - k + i = j \<Longrightarrow> k = i" by simp
 
 (* Divides. *)
 theorem dvd_defD1 [resolve]: "(a::nat) dvd b \<Longrightarrow> \<exists>k. b = a * k" using dvdE by blast
