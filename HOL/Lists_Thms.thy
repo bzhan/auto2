@@ -25,15 +25,6 @@ setup {* ACUtil.add_ac_data {
 
 lemma append_is_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
 
-section {* length *}
-
-setup {* add_rewrite_rule @{thm List.list.size(3)} *}
-theorem length_one [rewrite]: "length [x] = 1" by simp
-lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
-setup {* add_rewrite_rule @{thm length_tl} *}
-setup {* add_rewrite_rule @{thm List.length_append} *}
-lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
-
 section {* Showing two lists are equal *}
 
 setup {* add_backward2_prfstep_cond @{thm nth_equalityI} [with_filt (order_filter "xs" "ys")] *}
@@ -94,6 +85,7 @@ section {* butlast *}
 
 setup {* add_rewrite_rule @{thm length_butlast} *}
 setup {* add_rewrite_rule @{thm nth_butlast} *}
+setup {* add_rewrite_rule @{thm List.butlast_conv_take} *}
 
 section {* List update *}
 

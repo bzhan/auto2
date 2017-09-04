@@ -101,9 +101,9 @@ setup {* add_rewrite_rule_cond @{thm Nat.le_diff_conv2} [with_term "?i + ?k"] *}
 lemma nat_less_diff_conv: "(i::nat) < j - k \<Longrightarrow> i + k < j" by simp
 setup {* add_forward_prfstep_cond @{thm nat_less_diff_conv} [with_cond "?k \<noteq> ?NUMC", with_term "?i + ?k"]*}
 lemma Nat_le_diff_conv2_same [forward]: "i \<ge> j \<Longrightarrow> (i::nat) \<le> i - j \<Longrightarrow> j = 0" by simp
-lemma Nat_le_diff1_conv [forward]: "(n::nat) \<le> n - 1 \<Longrightarrow> n = 0" by simp
 lemma nat_gt_zero [forward]: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
-lemma n_minus_1_less_n [backward]: "(n::nat) \<ge> 1 \<Longrightarrow> n - 1 < n" by simp
+lemma n_minus_1_less_n: "(n::nat) \<ge> 1 \<Longrightarrow> n - 1 < n" by simp
+setup {* add_forward_prfstep_cond @{thm n_minus_1_less_n} [with_term "?n - 1"] *}
 
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp

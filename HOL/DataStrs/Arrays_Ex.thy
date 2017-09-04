@@ -2,6 +2,15 @@ theory Arrays_Ex
 imports "../Auto2_Main"
 begin
 
+section {* length *}
+
+setup {* add_rewrite_rule @{thm List.list.size(3)} *}
+theorem length_one [rewrite]: "length [x] = 1" by simp
+lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
+setup {* add_rewrite_rule @{thm length_tl} *}
+setup {* add_forward_prfstep_cond @{thm List.length_append} [with_term "?xs @ ?ys"] *}
+lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
+
 section {* List swap *}
 
 definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
@@ -92,12 +101,6 @@ lemma array_copy_eval [rewrite]:
 @qed
 
 setup {* del_prfstep_thm @{thm array_copy.simps} *}
-
-lemma array_copy_take [backward]:
-  "n \<le> length xs' \<Longrightarrow> n \<le> length xs \<Longrightarrow> take n (array_copy xs 0 xs' 0 n) = take n xs"
-@proof
-  @have "length (take n (array_copy xs 0 xs' 0 n)) = length (take n xs)"
-@qed
 
 section {* Sublist *}
 
