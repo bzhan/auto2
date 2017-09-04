@@ -3,7 +3,7 @@
 signature AC_PROOFSTEPS =
 sig
   val max_ac: int Config.T
-  val simp_ac_expr: Proof.context -> ac_info -> cterm -> (box_id * thm) list
+  val simp_ac_expr: Proof.context -> ac_info -> box_id * cterm -> (box_id * thm) list
   val get_ac_head_equiv:
       Proof.context -> ac_info -> box_id * cterm -> (box_id * thm) list
   val ac_expand_once:
@@ -22,10 +22,11 @@ struct
 val max_ac = Attrib.setup_config_int @{binding "max_ac"} (K 20)
 
 (* Simplify each term of the AC expression. *)
-fun simp_ac_expr ctxt ac_info cu =
+fun simp_ac_expr ctxt ac_info (id, cu) =
     let
       val cus = ACUtil.cdest_ac ac_info cu
     in
+      if null id then [(id, Thm.reflexive cu)] else
       cus |> map (RewriteTable.simplify_info ctxt)
           |> BoxID.get_all_merges_info ctxt
           |> map (apsnd (ACUtil.comb_ac_equiv ac_info))
@@ -36,7 +37,7 @@ fun get_ac_head_equiv ctxt ac_info (id, cu) =
     let
       fun process_head_equiv (id', eq_th) =
           let
-            val infos = simp_ac_expr ctxt ac_info (Thm.rhs_of eq_th)
+            val infos = simp_ac_expr ctxt ac_info (id', Thm.rhs_of eq_th)
           in
             map (BoxID.merge_eq_infos ctxt (id', eq_th)) infos
           end

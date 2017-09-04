@@ -35,7 +35,7 @@ sig
   (* More queries on the wellform table.*)
   val simplify_info:
       Proof.context -> term list -> cterm -> (box_id * (wfterm * thm)) list
-  val simplify: Proof.context -> term list -> cterm list -> wfterm ->
+  val simplify: Proof.context -> term list -> cterm list -> box_id * wfterm ->
                 (box_id * (wfterm * thm)) list
   val get_head_equiv:
       Proof.context -> term list -> box_id * cterm -> (box_id * (wfterm * thm)) list
@@ -338,10 +338,12 @@ fun simplify_info ctxt fheads ct =
 (* Assume cts are distinct subterms of wft, find all combinations of
    simplifying the terms ts.
  *)
-fun simplify ctxt fheads cts wft =
-    cts |> map (simplify_info ctxt fheads)
-        |> BoxID.get_all_merges_info ctxt
-        |> map (fn (id, wf_eqs) => (id, WfTerm.rewrite_on_eqs fheads wf_eqs wft))
+fun simplify ctxt fheads cts (id, wft) =
+    if null cts then [(id, (wft, Thm.reflexive (WfTerm.cterm_of wft)))]
+    else
+      cts |> map (simplify_info ctxt fheads)
+          |> BoxID.get_all_merges_info ctxt
+          |> map (fn (id, wf_eqs) => (id, WfTerm.rewrite_on_eqs fheads wf_eqs wft))
 
 (* Find all well-formed head equivalences of ct. Return as a list of
    (id, (wft, eq_th)) pairs.

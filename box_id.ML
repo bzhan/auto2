@@ -151,13 +151,17 @@ fun get_all_merges ctxt id_lsts =
    id_{pq} and putting x_{pq} into a list.
  *)
 fun get_all_merges_info ctxt lsts =
-    let
-      fun merge (id1, x) (id2, xs) = (merge_boxes ctxt (id1, id2), x :: xs)
-      fun merge2 (lst1, lst2) =
-          maps (fn i2 => map (fn i1 => merge i1 i2) lst1) lst2
-    in
-      Library.foldr merge2 (lsts, [([], [])])
-    end
+    if null lsts then
+      raise Fail "get_all_merges_info: lsts is empty."
+    else
+      let
+        fun merge ((id1, x), (id2, xs))
+            = (merge_boxes ctxt (id1, id2), x :: xs)
+
+        fun merge2 (lst1, lst2) = map merge (Util.all_pairs (lst1, lst2))
+      in
+        Library.foldr merge2 (lsts, [([], [])])
+      end
 
 (* Returns whether id is an ancestor / descendent of id'. *)
 fun is_eq_ancestor ctxt id id' = (id' = merge_boxes ctxt (id, id'))

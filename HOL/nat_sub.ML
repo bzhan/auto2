@@ -262,7 +262,7 @@ fun get_sub_head_equiv ctxt (id, ct) =
       fun process_wf_head_equiv (id', (wft, eq_th)) =
           let
             val cts = subterms_of (Thm.rhs_of eq_th)
-            val simps = WellformData.simplify ctxt fheads cts wft
+            val simps = WellformData.simplify ctxt fheads cts (id', wft)
 
             fun process_simp (id'', (wft', eq_th')) =
                 (BoxID.merge_boxes ctxt (id', id''),
