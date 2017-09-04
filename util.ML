@@ -47,6 +47,8 @@ sig
   val subsets: 'a list -> 'a list list
   val all_permutes: 'a list -> 'a list list
   val all_pairs: 'a list * 'b list -> ('a * 'b) list
+  val remove_dup_lists: ('a * 'a -> order) -> 'a list * 'a list -> 'a list * 'a list
+  val is_subseq: ('a * 'a -> bool) -> 'a list * 'a list -> bool
 
   (* Strings. *)
   val is_prefix_str: string -> string -> bool
@@ -218,6 +220,31 @@ fun filter_split _ [] = ([], [])
 (* Form the Cartesian product of two lists. *)
 fun all_pairs (l1, l2) =
     maps (fn y => (map (fn x => (x, y)) l1)) l2
+
+(* Given two sorted lists, remove all pairs of terms that appear in
+   both lists, counting multiplicity.
+ *)
+fun remove_dup_lists ord (xs, ys) =
+    case xs of
+        [] => ([], ys)
+     | x :: xs' =>
+       case ys of
+           [] => (xs, [])
+         | y :: ys' =>
+           case ord (x, y) of
+               LESS => apfst (cons x) (remove_dup_lists ord (xs', ys))
+             | EQUAL => remove_dup_lists ord (xs', ys')
+             | GREATER => apsnd (cons y) (remove_dup_lists ord (xs, ys'))
+
+(* Whether l1 is a subsequence of l2. *)
+fun is_subseq eq (l1, l2) =
+    case l1 of
+        [] => true
+      | x :: l1' =>
+        case l2 of
+            [] => false
+          | y :: l2' => if eq (x, y) then is_subseq eq (l1', l2')
+                        else is_subseq eq (l1, l2')
 
 (* Whether pre is a prefix of str. *)
 fun is_prefix_str pre str =

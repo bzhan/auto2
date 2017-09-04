@@ -31,6 +31,14 @@ sig
   (* Get changes to wellform table. *)
   val get_new_wellform_data:
       int -> Proof.context -> (term * (box_id * thm)) list
+
+  (* More queries on the wellform table.*)
+  val simplify_info:
+      Proof.context -> term list -> cterm -> (box_id * (wfterm * thm)) list
+  val simplify: Proof.context -> term list -> cterm list -> wfterm ->
+                (box_id * (wfterm * thm)) list
+  val get_head_equiv:
+      Proof.context -> term list -> box_id * cterm -> (box_id * (wfterm * thm)) list
 end;
 
 structure WellformData : WELLFORM_DATA =
@@ -157,16 +165,22 @@ fun get_complete_wellform ctxt (id, ct) =
       val thy = Proof_Context.theory_of ctxt
       val t = Thm.term_of ct
       val targets = WellForm.lookup_wellform_data thy t
-      val data = (get_wellform ctxt (id, ct))
-                     |> map (fn (id', th) => (prop_of' th, (id', th)))
-                     |> AList.group (op aconv)
-                     |> map snd
-      val _ = assert (length data <= length targets)
-                     "get_complete_wellform: unexpected length data"
     in
-      if length data < length targets then []
-      else data |> BoxID.get_all_merges_info ctxt
-                |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+      case targets of
+          [] => [(id, [])]
+        | _ =>
+          let
+            val data = (get_wellform ctxt (id, ct))
+                           |> map (fn (id', th) => (prop_of' th, (id', th)))
+                           |> AList.group (op aconv)
+                           |> map snd
+            val _ = assert (length data <= length targets)
+                           "get_complete_wellform: unexpected length data"
+          in
+            if length data < length targets then []
+            else data |> BoxID.get_all_merges_info ctxt
+                      |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+          end
     end
 
 (* Given a regular term, construct a wellformed term by adding
@@ -303,6 +317,51 @@ fun get_new_wellform_data prim_id ctxt =
       wellform |> Termtab.dest
                |> maps (fn (t, vals) => map (pair t) (maps snd vals))
                |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
+    end
+
+(* Find simplifications of ct that are well-formed. *)
+fun simplify_info ctxt fheads ct =
+    let
+      val infos = RewriteTable.simplify_info ctxt ct
+
+      fun process_info (id, eq_th) =
+          let
+            val rhs = Thm.rhs_of eq_th
+            val wfts = cterm_to_wfterm ctxt fheads (id, rhs)
+          in
+            map (fn (id', wft) => (id', (wft, eq_th))) wfts
+          end
+    in
+      maps process_info infos
+    end
+
+(* Assume cts are distinct subterms of wft, find all combinations of
+   simplifying the terms ts.
+ *)
+fun simplify ctxt fheads cts wft =
+    cts |> map (simplify_info ctxt fheads)
+        |> BoxID.get_all_merges_info ctxt
+        |> map (fn (id, wf_eqs) => (id, WfTerm.rewrite_on_eqs fheads wf_eqs wft))
+
+(* Find all well-formed head equivalences of ct. Return as a list of
+   (id, (wft, eq_th)) pairs.
+ *)
+fun get_head_equiv ctxt fheads (id, ct) =
+    let
+      val head_equivs =
+          ct |> RewriteTable.get_head_equiv ctxt
+             |> maps snd
+             |> BoxID.merge_box_with_info ctxt id
+
+      fun process_head_equiv (id', eq_th) =
+          let
+            val rhs = Thm.rhs_of eq_th
+            val wfts = cterm_to_wfterm ctxt fheads (id', rhs)
+          in
+            map (fn (id'', wft) => (id'', (wft, eq_th))) wfts
+          end
+    in
+      maps process_head_equiv head_equivs
     end
 
 end  (* WellformData *)

@@ -30,12 +30,10 @@ setup {* add_rewrite_rule_back @{thm list_swap_def} *}
 
 section {* Reverse *}
 
-lemma nat_sub1 [rewrite]: "(a::nat) - n - 1 = a - 1 - n" by simp
-
 lemma rev_nth [rewrite]:
   "n < length xs \<Longrightarrow> rev xs ! n = xs ! (length xs - 1 - n)"
 @proof @induct xs @qed
-  
+
 fun rev_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "rev_swap xs i j = (if i < j then rev_swap (list_swap xs i j) (i + 1) (j - 1) else xs)"
 setup {* add_rewrite_rule_cond @{thm rev_swap.simps} [with_filt (size1_filter "i"), with_filt (size1_filter "j")] *}
@@ -52,8 +50,6 @@ lemma rev_swap_length:
 @qed
 setup {* add_forward_prfstep_cond @{thm rev_swap_length} [with_term "rev_swap ?xs ?i ?j"] *}
 
-lemma nat_sub2 [rewrite]: "(k::nat) \<ge> i + 1 \<Longrightarrow> j - 1 - (k - (i + 1)) = j - (k - i)" by simp
-
 lemma rev_swap_eval [rewrite]:
   "j < length xs \<Longrightarrow> (rev_swap xs i j) ! k =
     (if k < i then xs ! k else if k > j then xs ! k else xs ! (j - (k - i)))"
@@ -61,6 +57,7 @@ lemma rev_swap_eval [rewrite]:
   @strong_induct j arbitrary i xs
   @case "i < j" @with
     @apply_induct_hyp "j - 1" "i + 1" "list_swap xs i j"
+    @case "k < i" @then @case "k > j" @then @have "j - (k - i) = j - k + i"
   @end
 @qed
 
@@ -84,8 +81,6 @@ lemma array_copy_length:
   @apply_induct_hyp "n - 1" "i + 1" "j + 1" "xs' [j := xs ! i]"
 @qed
 setup {* add_forward_prfstep_cond @{thm array_copy_length} [with_term "array_copy ?xs ?i ?xs' ?j ?n"] *}
-
-lemma nat_sub6 [rewrite]: "(a::nat) + (b + 1) - (c + 1) = a + b - c" by simp
 
 lemma array_copy_eval [rewrite]:
   "i + n \<le> length xs \<Longrightarrow> j + n \<le> length xs' \<Longrightarrow>
@@ -126,9 +121,6 @@ setup {* del_prfstep_thm @{thm sublist_def} *}
 lemma sublist_single [rewrite]:
   "l + 1 \<le> length xs \<Longrightarrow> sublist l (l + 1) xs = [xs ! l]"
 @proof @have "length [xs ! l] = 1" @qed
-
-lemma nat_sub7 [rewrite]: "b \<le> a \<Longrightarrow> c \<le> b \<Longrightarrow> ((a::nat) - b) + (b - c) = a - c" by simp
-lemma nat_sub8 [rewrite]: "b \<ge> c \<Longrightarrow> a \<ge> b - c \<Longrightarrow> (a::nat) - (b - c) + b = a + c" by simp
 
 lemma sublist_append [rewrite]:
   "l \<le> m \<Longrightarrow> m \<le> r \<Longrightarrow> r \<le> length xs \<Longrightarrow> sublist l m xs @ sublist m r xs = sublist l r xs"

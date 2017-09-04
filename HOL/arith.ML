@@ -145,6 +145,22 @@ val add_arith_proofsteps =
                    lookup_numc1 inst <> lookup_numc2 inst)],
        PRIORITY_RESOLVE,
        fn ((id, _), ths) => fn _ => fn ctxt =>
+          [Update.thm_update (id, UtilArith.contra_by_arith ctxt ths)]),
+
+      ("compare_consts_le",
+       [WithFact @{term_pat "(?NUMC1::nat) <= ?NUMC2"},
+        Filter (fn _ => fn (_, inst) =>
+                   lookup_numc1 inst > lookup_numc2 inst)],
+       PRIORITY_RESOLVE,
+       fn ((id, _), ths) => fn _ => fn ctxt =>
+          [Update.thm_update (id, UtilArith.contra_by_arith ctxt ths)]),
+
+      ("compare_consts_less",
+       [WithFact @{term_pat "(?NUMC1::nat) < ?NUMC2"},
+        Filter (fn _ => fn (_, inst) =>
+                   lookup_numc1 inst >= lookup_numc2 inst)],
+       PRIORITY_RESOLVE,
+       fn ((id, _), ths) => fn _ => fn ctxt =>
           [Update.thm_update (id, UtilArith.contra_by_arith ctxt ths)])
 
     ] #> fold add_prfstep_conv [

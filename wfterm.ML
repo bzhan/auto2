@@ -41,6 +41,14 @@ sig
   val first_conv: wfconv list -> wfconv
   val every_conv: wfconv list -> wfconv
   val binop_conv: wfconv -> wfconv
+  val conv_of: conv -> wfconv
+
+  (* Some debugging facilities. *)
+  val string_of_wfterm: Proof.context -> wfterm -> string
+  val test_wfconv: Proof.context -> term list -> wfconv -> string -> string * string -> unit
+
+  (* Rewriting a wellformed expression. *)
+  val rewrite_on_eqs: term list -> (wfterm * thm) list -> wfconv
 end;
 
 structure WfTerm : WFTERM =
@@ -235,6 +243,65 @@ fun repeat_conv wfcv wft = try_conv (wfcv then_wfconv repeat_conv wfcv) wft
 fun first_conv wfcvs = fold_rev (curry op else_wfconv) wfcvs no_conv
 fun every_conv wfcvs = fold_rev (curry op then_wfconv) wfcvs all_conv
 fun binop_conv wfcv = arg1_conv wfcv then_wfconv arg_conv wfcv
+
+(* Transforming a regular conversion to a well-formed conversion. This
+   should be used only when the output of the conversion is guaranteed
+   to not have further wellform structure.
+ *)
+fun conv_of cv wft =
+    let
+      val ct = cterm_of wft
+      val eq_th = cv ct
+    in
+      (WfTerm (Thm.rhs_of eq_th), eq_th)
+    end
+
+fun string_of_wfterm ctxt wft =
+    case wft of
+        WfTerm ct => "@(" ^ Syntax.string_of_term ctxt (Thm.term_of ct) ^ ")"
+      | WfComb (ct, wfts, _) =>
+        Syntax.string_of_term ctxt (Thm.term_of ct) ^ " $ " ^
+        (space_implode " $ " (map (string_of_wfterm ctxt) wfts))
+
+(* Apply wfcv on the term given by str_t, and compare the result to
+   the term given by str_res.
+ *)
+fun test_wfconv ctxt fheads wfcv err_str (str1, str2) =
+    let
+      val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
+      val wft = cterm_to_wfterm_assume fheads (Thm.cterm_of ctxt t1)
+      val th = snd (wfcv wft)
+               handle Fail err =>
+                      let val _ = trace_t ctxt "Input:" t1 in
+                        raise Fail (err ^ " -- " ^ err_str)
+                      end
+    in
+      if t1 aconv (Util.lhs_of th) andalso t2 aconv (Util.rhs_of th) then ()
+      else let
+        val _ = trace_t ctxt "Input:" t1
+        val _ = trace_t ctxt "Expected:" t2
+        val _ = trace_t ctxt "Actual:" (Thm.prop_of th)
+      in
+        raise Fail err_str
+      end
+    end
+
+(* Given a well-formed term wft, and a list of equations to
+   well-formed terms, rewrite all subterms of wft that are equal to
+   the left side of one of the equations. Assume that all fheads are
+   binary functions.
+ *)
+fun rewrite_on_eqs fheads wf_eqs wft =
+    let
+      val t = term_of wft
+    in
+      if member (op aconv) fheads (Term.head_of t) then
+        binop_conv (rewrite_on_eqs fheads wf_eqs) wft
+      else
+        case find_first (fn (_, eq) => t aconv (Util.lhs_of eq)) wf_eqs of
+            NONE => all_conv wft
+          | SOME (wft, eq_th) => (wft, eq_th)
+    end
 
 end  (* structure WfTerm *)
 

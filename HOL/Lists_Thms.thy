@@ -31,6 +31,7 @@ theorem length_one [rewrite]: "length [x] = 1" by simp
 lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
 setup {* add_rewrite_rule @{thm length_tl} *}
 setup {* add_rewrite_rule @{thm List.length_append} *}
+lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
 
 section {* Showing two lists are equal *}
 

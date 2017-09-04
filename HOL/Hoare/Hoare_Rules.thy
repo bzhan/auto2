@@ -173,26 +173,4 @@ definition dec_while :: dcom where "dec_while =
 setup {* add_rewrite_rule @{thm dec_while_def} *}
 theorem dec_while_correct: "dec_correct dec_while" by auto2
 
-definition subtract_slowly_dec :: "nat \<Rightarrow> nat \<Rightarrow> dcom" where
-"subtract_slowly_dec p m =
-  {{ Assert (\<lambda>st. eval st X = m \<and> eval st Z = p) }} (
-  {{ Assert (\<lambda>st. eval st Z - eval st X = p - m) }} (
-  WHILE (BNot (BEq (AId X) (ANum 0)))
-  DO  {{ Assert (\<lambda>st. eval st Z - eval st X = p - m) &&
-         BNot (BEq (AId X) (ANum 0)) }} (
-        {{ Assert (\<lambda>st. (eval st Z - 1) - (eval st X - 1) = p - m) }}
-      (Z ::= AMinus (AId Z) (ANum 1)
-        {{ Assert (\<lambda>st. (eval st Z) - (eval st X - 1) = p - m) }}) ;;
-      (X ::= AMinus (AId X) (ANum 1)
-        {{ Assert (\<lambda>st. (eval st Z) - (eval st X) = p - m) }}))
-  OD
-    {{ Assert (\<lambda>st. eval st Z - eval st X = p - m) &~
-       BNot (BEq (AId X) (ANum 0)) }}) \<rightarrow>
-    {{ Assert (\<lambda>st. eval st Z = p - m) }})
-"
-lemma cancel_sub_1 [rewrite]: "x \<ge> 1 \<Longrightarrow> ((y::nat) - 1) - (x - 1) = y - x" by simp
-
-setup {* add_rewrite_rule @{thm subtract_slowly_dec_def} *}
-theorem subtract_slowly_dec_correct: "dec_correct (subtract_slowly_dec m p)" by auto2
-
 end

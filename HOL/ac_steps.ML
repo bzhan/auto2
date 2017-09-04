@@ -3,11 +3,15 @@
 signature AC_PROOFSTEPS =
 sig
   val max_ac: int Config.T
+  val simp_ac_expr: Proof.context -> ac_info -> cterm -> (box_id * thm) list
+  val get_ac_head_equiv:
+      Proof.context -> ac_info -> box_id * cterm -> (box_id * thm) list
   val ac_expand_once:
       Proof.context -> ac_info -> box_id * cterm -> (box_id * thm) list
   val ac_expand:
       Proof.context -> ac_info -> box_id * cterm -> (box_id * thm) list
   val ac_expand_equiv: proofstep
+  val ac_expand_unit: proofstep
 
   val add_ac_proofsteps: theory -> theory
 end;
@@ -17,20 +21,24 @@ struct
 
 val max_ac = Attrib.setup_config_int @{binding "max_ac"} (K 20)
 
+(* Simplify each term of the AC expression. *)
+fun simp_ac_expr ctxt ac_info cu =
+    let
+      val cus = ACUtil.cdest_ac ac_info cu
+    in
+      cus |> map (RewriteTable.simplify_info ctxt)
+          |> BoxID.get_all_merges_info ctxt
+          |> map (apsnd (ACUtil.comb_ac_equiv ac_info))
+    end
+
+(* Obtain head equivalences of cu, where each term is simplified. *)
 fun get_ac_head_equiv ctxt ac_info (id, cu) =
     let
-      fun process_equiv_list (id', eq_th) (id'', eq_ths) =
-          (BoxID.merge_boxes ctxt (id', id''),
-           Util.transitive_list [eq_th, ACUtil.comb_ac_equiv ac_info eq_ths])
-
-      (* Simplify each term of the AC expression on the right side. *)
       fun process_head_equiv (id', eq_th) =
           let
-            val cus = ACUtil.cdest_ac ac_info (Thm.rhs_of eq_th)
+            val infos = simp_ac_expr ctxt ac_info (Thm.rhs_of eq_th)
           in
-            cus |> map (RewriteTable.simplify_info ctxt)
-                |> BoxID.get_all_merges_info ctxt
-                |> map (process_equiv_list (id', eq_th))
+            map (BoxID.merge_eq_infos ctxt (id', eq_th)) infos
           end
     in
       cu |> RewriteTable.get_head_equiv ctxt
@@ -39,15 +47,6 @@ fun get_ac_head_equiv ctxt ac_info (id, cu) =
          |> maps process_head_equiv
          |> filter_out (Thm.is_reflexive o snd)
     end
-
-fun is_subseq eq (l1, l2) =
-    case l1 of
-        [] => true
-      | x :: l1' =>
-        case l2 of
-            [] => false
-          | y :: l2' => if eq (x, y) then is_subseq eq (l1', l2')
-                        else is_subseq eq (l1, l2')
 
 (* Find ways to modify ct once by rewriting one of the subterms. *)
 fun ac_expand_once ctxt ac_info (id, ct) =
@@ -79,7 +78,7 @@ fun ac_expand ctxt ac_info (id, ct) =
             val seq1 = ACUtil.dest_ac ac_info (Util.rhs_of th)
             val seq2 = ACUtil.dest_ac ac_info (Util.rhs_of th')
           in
-            is_subseq (op aconv) (seq1, seq2) andalso
+            Util.is_subseq (op aconv) (seq1, seq2) andalso
             BoxID.is_eq_ancestor ctxt id id'
           end
 
@@ -95,7 +94,7 @@ fun ac_expand ctxt ac_info (id, ct) =
               else let
                 val old' = ((id', eq_th) :: old)
                 val rhs_expand =
-                    (ac_expand_once ctxt ac_info (id, Thm.rhs_of eq_th))
+                    (ac_expand_once ctxt ac_info (id', Thm.rhs_of eq_th))
                         |> Util.max_partial ac_equiv_eq_better
                         |> map (BoxID.merge_eq_infos ctxt (id', eq_th))
                         |> filter_out (has_ac_equiv_eq_better (old' @ rest))

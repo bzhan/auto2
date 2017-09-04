@@ -54,10 +54,37 @@ ML_file "arith.ML"
 ML_file "order.ML"
 
 setup {* register_wellform_data ("(a::nat) - b", ["a \<ge> b"]) *}
+setup {* add_prfstep_check_req ("(a::nat) - b", "(a::nat) \<ge> b") *}
+
+(* Normalize any expression to "a - b" form. *)
+lemma nat_sub_norm:
+  "(a::nat) = a - 0 \<and> a \<ge> 0" by simp
+
+(* Adding and subtracting two normalized expressions. *)
+lemma nat_sub1:
+  "(a::nat) \<ge> b \<Longrightarrow> c \<ge> d \<Longrightarrow> (a - b) + (c - d) = (a + c) - (b + d) \<and> a + c \<ge> b + d" by simp
+
+lemma nat_sub2:
+  "(a::nat) \<ge> b \<Longrightarrow> c \<ge> d \<Longrightarrow> a - b \<ge> c - d \<Longrightarrow> (a - b) - (c - d) = (a + d) - (b + c) \<and> a + d \<ge> b + c" by simp
+
+(* Cancel identical terms on two sides, yielding a normalized expression. *)
+lemma nat_sub3:
+  "(a::nat) + b \<ge> c + b \<Longrightarrow> (a + b) - (c + b) = a - c \<and> a \<ge> c" by simp
+
+(* Cancel constants on two sides, yielding a normalized expression. *)
+lemma nat_sub4:
+  "n \<ge> m \<Longrightarrow> (a::nat) + n \<ge> c + m \<Longrightarrow> (a + n) - (c + m) = (a + (n - m)) - c \<and> a + (n - m) \<ge> c \<and> n \<ge> m" by arith
+
+lemma nat_sub5:
+  "n \<le> m \<Longrightarrow> (a::nat) + n \<ge> c + m \<Longrightarrow> (a + n) - (c + m) = a - (c + (m - n)) \<and> a \<ge> c + (m - n) \<and> m \<ge> n" by simp
+
+ML_file "nat_sub.ML"
+ML_file "nat_sub_test.ML"
 
 (* Ordering on Nats. *)
 setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
 setup {* add_forward_prfstep_cond @{thm Nat.le0} [with_term "?n"] *}
+lemma le1_to_equal_zero [forward]: "(n::nat) < 1 \<Longrightarrow> n = 0" by simp
 setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_term "?k", with_cond "?k \<noteq> 1"] *}
 setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_term "?i"] *}
 lemma not_minus_less [resolve]: "\<not>(i::nat) < (i - j)" by simp
@@ -77,8 +104,6 @@ lemma Nat_le_diff_conv2_same [forward]: "i \<ge> j \<Longrightarrow> (i::nat) \<
 lemma Nat_le_diff1_conv [forward]: "(n::nat) \<le> n - 1 \<Longrightarrow> n = 0" by simp
 lemma nat_gt_zero [forward]: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
 lemma n_minus_1_less_n [backward]: "(n::nat) \<ge> 1 \<Longrightarrow> n - 1 < n" by simp
-setup {* add_rewrite_rule @{thm le_add_diff_inverse} *}
-setup {* add_rewrite_rule @{thm Nat.diff_diff_cancel} *}
 
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp
@@ -88,17 +113,7 @@ setup {* add_rewrite_rule_cond @{thm nat_mult_2} [with_cond "?a \<noteq> 0"] *}
 theorem plus_one_non_zero [resolve]: "\<not>(n::nat) + 1 = 0" by simp
 
 (* Diff. *)
-setup {* add_rewrite_rule @{thm Nat.minus_nat.diff_0} *}
-setup {* add_rewrite_rule @{thm Nat.diff_self_eq_0} *}
-setup {* add_rewrite_rule @{thm Nat.diff_add_inverse} *}
-setup {* add_rewrite_rule @{thm Nat.diff_add_inverse2} *}
-lemma n_minus_1_eq_0 [forward]: "(n::nat) \<ge> 1 \<Longrightarrow> n - 1 = 0 \<Longrightarrow> n = 1" by simp
-lemma diff_distrib: "(i::nat) \<le> k \<Longrightarrow> k \<le> j \<Longrightarrow> j - (k - i) = j - k + i" by simp
-setup {* add_rewrite_rule_cond @{thm diff_distrib} (with_filts [size1_filter "j", size1_filter "k", size1_filter "i"]) *}
-lemma nat_minus_add_1 [rewrite]: "(n::nat) \<ge> 1 \<Longrightarrow> (n - 1) + 1 = n" by simp
-lemma plus_1_plus_minus_1 [rewrite]: "(b::nat) \<ge> 1 \<Longrightarrow> (a + 1) + (b - 1) = a + b" by simp
 lemma nat_same_minus_ge [forward]: "(c::nat) - a \<ge> c - b \<Longrightarrow> a \<le> c \<Longrightarrow> a \<le> b" by arith
-
 lemma diff_eq_zero [forward]: "(k::nat) \<le> j \<Longrightarrow> j - k = 0 \<Longrightarrow> j = k" by simp
 lemma diff_eq_zero' [forward]: "(k::nat) \<le> j \<Longrightarrow> j - k + i = j \<Longrightarrow> k = i" by simp
 

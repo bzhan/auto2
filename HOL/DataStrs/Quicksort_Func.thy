@@ -27,8 +27,6 @@ setup {* add_rewrite_rule_cond @{thm part1.simps} [with_filt (size1_filter "l"),
 setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
 setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 
-lemma nat_sub3 [rewrite]: "(r::nat) - (l + 1) = r - l - 1" by simp
-
 lemma part1_basic: "r < length xs \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
   length xs' = length xs \<and> outer_remains xs xs' l r \<and> mset xs' = mset xs"
 @proof
@@ -172,22 +170,22 @@ lemma quicksort_basic:
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
   @case "l \<ge> r"
+  @have "l < r \<and> r < length xs"
   @have "length xs2 = length xs1 \<and> mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
     @case "p - 1 \<le> l" @then
     @have "p - 1 - l < r - l" @with @have "p - 1 < r" @end
-    @apply_induct_hyp "p - 1 - l" l "p - 1" xs1
+    @apply_induct_hyp "p - 1 - l" l "p - 1" xs1 xs2
   @end
   @have "length xs3 = length xs2 \<and> mset xs3 = mset xs2 \<and> outer_remains xs2 xs3 l r" @with
     @case "p + 1 \<ge> r" @then
-    @have "r - (p + 1) < r - l"
-    @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2
+    @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2 xs3
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm quicksort_basic} [with_term "?xs3.0"] *}
 
-lemma quicksort_permutes:
+lemma quicksort_permutes [rewrite]:
   "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> xs' = quicksort xs l r \<Longrightarrow>
-   mset (sublist l (r + 1) xs') = mset (sublist l (r + 1) xs)"
+   set (sublist l (r + 1) xs') = set (sublist l (r + 1) xs)"
 @proof
   @case "l \<ge> r"
   @have "xs = take l xs @ sublist l (r + 1) xs @ drop (r + 1) xs"
@@ -195,7 +193,6 @@ lemma quicksort_permutes:
   @have "take l xs = take l xs'"
   @have "drop (r + 1) xs = drop (r + 1) xs'"
 @qed
-setup {* add_forward_prfstep_cond @{thm quicksort_permutes} [with_term "?xs'"] *}
 
 lemma quicksort_sorts:
   "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> sorted (sublist l (r + 1) (quicksort xs l r))"
@@ -208,9 +205,10 @@ lemma quicksort_sorts:
   @let "xs3 = quicksort xs l r"
   @case "l \<ge> r"
   @have "l < r \<and> r < length xs"
-  @have "sublist l p xs2 = sublist l p xs3"
-  @have "set (sublist l p xs1) = set (sublist l p xs2)" @with @case "p = 0" @end
   @have "xs1 ! p = xs3 ! p" @then
+  @have "sublist l p xs2 = sublist l p xs3"
+  @have "set (sublist l p xs1) = set (sublist l p xs2)" @with
+    @case "p = 0" @have "p = p - 1 + 1" @end
   @have "sublist (p + 1) (r + 1) xs1 = sublist (p + 1) (r + 1) xs2"
   @have "set (sublist (p + 1) (r + 1) xs2) = set (sublist (p + 1) (r + 1) xs3)"
   @have "\<forall>x\<in>set (sublist l p xs3). x \<le> xs3 ! p"
@@ -225,7 +223,6 @@ lemma quicksort_sorts:
   @end
   @have "sorted (sublist (p + 1) (r + 1) xs3)" @with
     @case "p + 1 < r" @with
-      @have "r - (p + 1) < r - l"
       @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2
     @end
   @end

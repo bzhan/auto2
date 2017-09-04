@@ -7,27 +7,23 @@ local
 
 in
 
-val fheads = NatSub.fheads
-val wfterm_of = WfTerm.cterm_to_wfterm_assume fheads o Thm.cterm_of ctxt
-
-(* Apply wfcv on the term given by str_t, and compare the result to
-   the term given by str_res.
- *)
-fun test_wfconv wfcv err_str (str1, str2) =
+fun test_norm_t err_str (str1, str2) =
     let
-      val (t1, t2) = (Syntax.read_term ctxt str1, Syntax.read_term ctxt str2)
-      val wft = wfterm_of t1
-      val th = snd (wfcv wft)
-               handle Fail err =>
-                      let val _ = trace_t ctxt "Input:" t1 in
-                        raise Fail (err ^ " -- " ^ err_str)
-                      end
+      val (t1, t2) = apply2 (Syntax.read_term ctxt) (str1, str2)
+      val (ct1, ct2) = apply2 (Thm.cterm_of ctxt) (t1, t2)
+      val (p1, m1, n1) = NatSub.norm_minus_ct ct1
+      val (p2, m2, n2) = NatSub.norm_minus_ct ct2
     in
-      if t1 aconv (Util.lhs_of th) andalso t2 aconv (Util.rhs_of th) then ()
+      if eq_list (op aconvc) (p1, p2) andalso
+         eq_list (op aconvc) (m1, m2) andalso n1 = n2 then ()
       else let
-        val _ = trace_t ctxt "Input:" t1
-        val _ = trace_t ctxt "Expected:" t2
-        val _ = trace_t ctxt "Actual:" (Thm.prop_of th)
+        val _ = trace_tlist ctxt "Inputs" [t1, t2]
+        val _ = trace_tlist ctxt "p1" (map Thm.term_of p1)
+        val _ = trace_tlist ctxt "m1" (map Thm.term_of m1)
+        val _ = trace_tlist ctxt "p2" (map Thm.term_of p2)
+        val _ = trace_tlist ctxt "m2" (map Thm.term_of m2)
+        val _ = tracing ("n1 " ^ string_of_int n1)
+        val _ = tracing ("n2 " ^ string_of_int n2)
       in
         raise Fail err_str
       end
@@ -37,8 +33,8 @@ val test =
     let
       val test_data = [
         (* No repeated terms. *)
-        ("a", "a - 0"),
-        ("a + b", "a + b - 0"),
+        ("a", "a"),
+        ("a + b", "a + b"),
         ("a - b", "a - b"),
         ("a - b + c", "a + c - b"),
         ("a - b - c", "a - (b + c)"),
@@ -48,33 +44,37 @@ val test =
         ("a - b + c - d + e - f", "a + c + e - (b + d + f)"),
 
         (* Numerical constants (on one side only). *)
-        ("0::nat", "(0::nat) - 0"),
-        ("2::nat", "(2::nat) - 0"),
-        ("a + 2 + 3", "a + 5 - 0"),
+        ("0::nat", "0::nat"),
+        ("2::nat", "2::nat"),
+        ("a + 2 + 3", "a + 5"),
         ("a - b - 2 - 3", "a - (b + 5)"),
-        ("2 + 3 + a", "a + 5 - 0"),
+        ("2 + 3 + a", "a + 5"),
         ("a - 2 - b - 3", "a - (b + 5)"),
         ("0 + a - 0 - b", "a - b"),
 
         (* Cancellation needed. *)
-        ("a - a", "(0::nat) - 0"),
-        ("a + b - a", "b - 0"),
+        ("a - a", "(0::nat)"),
+        ("a + b - a", "b"),
         ("a + b - a - c", "b - c"),
-        ("a + b - a - b", "(0::nat) - 0"),
-        ("a + b + c - a - b", "c - 0"),
+        ("a + b - a - b", "0::nat"),
+        ("a + b + c - a - b", "c"),
+        ("c + (b + (b + a - b) - b)", "a + c"),
 
         (* Cancellation of constants needed. *)
         ("a + 5 - b - 3", "a + 2 - b"),
         ("a + 3 - b - 5", "a - (b + 2)"),
         ("a + 5 - b - 5", "a - b"),
-        ("a + 5 - 3", "a + 2 - 0"),
+        ("a - 5 - (b - 3)", "a - (b + 2)"),
+        ("a - 3 - (b - 5)", "(a + 2) - b"),
+        ("a + 5 - 3", "a + 2"),
         ("5 - a - 3", "2 - a"),
         ("3 - a - 3", "0 - a"),
-        ("(5::nat) - 3", "(2::nat) - 0"),
-        ("(3::nat) - 3", "(0::nat) - 0")
+        ("(5::nat) - 3", "2::nat"),
+        ("(3::nat) - 3", "0::nat")
       ]
     in
-      map (test_wfconv NatSub.norm_minus "test") test_data
+      map (WfTerm.test_wfconv ctxt NatSub.fheads NatSub.norm_minus "test") test_data @
+      map (test_norm_t "test_norm") test_data
     end
 
 end
