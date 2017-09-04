@@ -22,7 +22,6 @@ sig
   val convert_const: order_info -> order_info
   val to_nat_order_prfstep_templ: string * term * order_type -> proofstep
   val to_nat_order_prfsteps: proofstep list
-  val nat_eq_diff_prfstep: proofstep
 
   val get_nat_order_info: box_item -> order_info
   val nat_order_typed_matcher: item_matcher
@@ -328,40 +327,6 @@ val to_nat_order_prfsteps =
       ("cv_nat_le_rplus", @{term_pat "(?x::nat) <= ?y + ?NUMC"}, LE_RPLUS),
       ("cv_nat_le", @{term_pat "(?x::nat) <= ?y"}, LE)
     ]
-
-(* Proofstep creating x <= y + n and x >= y + n from x = y +
-   n. Simplifies x and y, and checks that the simplified terms are not
-   constants, not are they in plus form.
- *)
-val nat_eq_diff_prfstep =
-    let
-      val pat = @{term_pat "(?x::nat) = ?y + ?NUMC"}
-
-      fun filt _ (_, inst) =
-          let
-            val (x, y) = apply2 (lookup_inst inst) ("x", "y")
-          in
-            lookup_numc0 inst > 0 andalso
-            not (in_plus_form x) andalso not (in_plus_form y) andalso
-            not (is_numc x) andalso not (is_numc y)
-          end
-
-      val descs = [WithFact pat, Filter filt]
-      fun prfstep_fn ((id, inst), ths) _ ctxt =
-          let
-            val (x, y) = (lookup_inst inst "x", lookup_inst inst "y")
-            val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
-            val diff = lookup_numc0 inst
-            val th' = ths MRS @{thm nat_eq_to_ineqs}
-            val info1 = (cx, cy, diff, th' RS @{thm conjunct1})
-            val info2 = (cy, cx, ~diff, th' RS @{thm conjunct2})
-          in
-            [AddItems {id = id, sc = NONE,
-                       raw_items = map get_nat_order_ritem [info1, info2]}]
-          end
-    in
-      ProofStep.prfstep_custom "nat_eq_diff" descs PRIORITY_ADD prfstep_fn
-    end
 
 (* Obtain quadruple x, y, diff, and theorem from item. *)
 fun get_nat_order_info {tname, prop, ...} =
@@ -939,8 +904,7 @@ val add_nat_order_proofsteps =
 
     ] #> fold add_prfstep (
       to_nat_order_prfsteps @
-      [nat_eq_diff_prfstep,
-       transitive, transitive_resolve, single_resolve, single_resolve_zero,
+      [transitive, transitive_resolve, single_resolve, single_resolve_zero,
        shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero])
 
 end
