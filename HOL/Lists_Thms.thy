@@ -18,7 +18,8 @@ setup {* add_rewrite_rule @{thm List.append.simps(2)} *}
 setup {* add_rewrite_rule @{thm List.hd_append2} *}
 
 setup {* ACUtil.add_ac_data {
-  cfhead = @{cterm "op @"}, assoc_th = @{thm List.append_assoc}, comm_th = true_th,
+  cfhead = @{cterm "op @"}, unit = SOME @{cterm "[]"},
+  assoc_th = @{thm List.append_assoc}, comm_th = true_th,
   unitl_th = @{thm List.append.append_Nil}, unitr_th = @{thm List.append_Nil2}}
 *}
 

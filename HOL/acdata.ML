@@ -3,6 +3,7 @@
 (* Data for an AC function. *)
 type ac_info = {
   cfhead: cterm,
+  unit: cterm option,
   assoc_th: thm,  (* (a . b) . c = a . (b . c) *)
   comm_th: thm,   (* a . b = b . a *)
   unitl_th: thm,  (* e . a = a *)
@@ -13,6 +14,7 @@ signature ACUTIL =
 sig
   val inst_ac_info: theory -> typ -> ac_info -> ac_info option
   val head_agrees: ac_info -> term -> bool
+  val eq_unit: ac_info -> term -> bool
   val add_ac_data: ac_info -> theory -> theory
   val get_head_ac_info: theory -> term -> ac_info option
 
@@ -70,16 +72,22 @@ fun inst_ac_info thy T {assoc_th, comm_th, unitl_th, unitr_th, ...} =
           end
 
       val assoc_th' = inst_th assoc_th
+      val unitl_th' = inst_th unitl_th
     in
       if is_true_th assoc_th' then NONE else
-      SOME {cfhead = assoc_th' |> cprop_of' |> Thm.dest_arg |> Thm.dest_fun2,
+      SOME {cfhead = assoc_th' |> cprop_of' |> Thm.dest_arg1 |> Thm.dest_fun2,
+            unit = if is_true_th unitl_th' then NONE
+                   else SOME (unitl_th' |>  cprop_of' |> Thm.dest_arg1 |> Thm.dest_arg1),
             assoc_th = assoc_th',
             comm_th = inst_th comm_th,
-            unitl_th = inst_th unitl_th,
+            unitl_th = unitl_th',
             unitr_th = inst_th unitr_th}
     end
 
 fun head_agrees {cfhead, ...} t = Util.is_head (Thm.term_of cfhead) t
+
+fun eq_unit {unit, ...} t =
+    case unit of NONE => false | SOME ct' => t aconv (Thm.term_of ct')
 
 (* Add the given ac_info under the given name. *)
 fun add_ac_data info thy =

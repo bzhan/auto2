@@ -9,10 +9,12 @@ section {* Set *}
 subsection {* AC property of intersection and union *}
 
 setup {* fold ACUtil.add_ac_data [
-  {cfhead = @{cterm inf}, assoc_th = @{thm inf_assoc}, comm_th = @{thm inf_commute},
+  {cfhead = @{cterm inf}, unit = SOME @{cterm inf},
+   assoc_th = @{thm inf_assoc}, comm_th = @{thm inf_commute},
    unitl_th = @{thm inf_top_left}, unitr_th = @{thm inf_top_right}},
 
-  {cfhead = @{cterm sup}, assoc_th = @{thm sup_assoc}, comm_th = @{thm sup_commute},
+  {cfhead = @{cterm sup}, unit = SOME @{cterm bot},
+   assoc_th = @{thm sup_assoc}, comm_th = @{thm sup_commute},
    unitl_th = @{thm sup_bot_left}, unitr_th = @{thm sup_bot_right}}]
 *}
 

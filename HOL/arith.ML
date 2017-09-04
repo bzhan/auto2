@@ -111,17 +111,17 @@ val nat_fold_rec_conv =
 fun nat_fold_rec_thm ctxt = apply_to_thm (nat_fold_rec_conv ctxt)
 
 val plus_ac =
-    {cfhead = @{cterm plus},
+    {cfhead = @{cterm plus}, unit = SOME @{cterm 0},
      assoc_th = @{thm add_ac(1)}, comm_th = @{thm add_ac(2)},
      unitl_th = @{thm add_0}, unitr_th = @{thm add_0_right}}
 
 val times_ac =
-    {cfhead = @{cterm times},
+    {cfhead = @{cterm times}, unit = SOME @{cterm 1},
      assoc_th = @{thm mult_ac(1)}, comm_th = @{thm mult_ac(2)},
      unitl_th = @{thm mult_1}, unitr_th = @{thm mult_1_right}}
 
 val gcd_ac =
-    {cfhead = @{cterm gcd},
+    {cfhead = @{cterm gcd}, unit = SOME @{cterm 0},
      assoc_th = @{thm gcd.assoc}, comm_th = @{thm gcd.commute},
      unitl_th = @{thm gcd_0_left_nat}, unitr_th = @{thm gcd_0_nat}}
 

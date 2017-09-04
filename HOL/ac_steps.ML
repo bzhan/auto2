@@ -21,15 +21,40 @@ struct
 
 val max_ac = Attrib.setup_config_int @{binding "max_ac"} (K 20)
 
+fun rewrite_on_eqs ac_info eqs ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if ACUtil.head_agrees ac_info t then
+        Conv.binop_conv (rewrite_on_eqs ac_info eqs) ct
+      else
+        case find_first (fn eq => t aconv (Util.lhs_of eq)) eqs of
+            NONE => Conv.all_conv ct
+          | SOME eq_th => eq_th
+    end
+
+fun dest_ac_full ac_info ct =
+    if ACUtil.head_agrees ac_info (Thm.term_of ct) then
+      let
+        val (a1, a2) = Util.dest_binop_cargs ct
+        val sort_opt = if ACUtil.has_comm_th ac_info then
+                         sort (Term_Ord.term_ord o apply2 Thm.term_of) else I
+      in
+        sort_opt (dest_ac_full ac_info a1 @ dest_ac_full ac_info a2)
+      end
+    else if ACUtil.eq_unit ac_info (Thm.term_of ct) then []
+    else [ct]
+
 (* Simplify each term of the AC expression. *)
 fun simp_ac_expr ctxt ac_info (id, cu) =
     let
-      val cus = ACUtil.cdest_ac ac_info cu
+      val cus = dest_ac_full ac_info cu
     in
-      if null id then [(id, Thm.reflexive cu)] else
+      if null cus then [(id, Thm.reflexive cu)] else
       cus |> map (RewriteTable.simplify_info ctxt)
           |> BoxID.get_all_merges_info ctxt
-          |> map (apsnd (ACUtil.comb_ac_equiv ac_info))
+          |> BoxID.merge_box_with_info ctxt id
+          |> map (fn (id', eqs) => (id', rewrite_on_eqs ac_info eqs cu))
     end
 
 (* Obtain head equivalences of cu, where each term is simplified. *)
@@ -52,21 +77,13 @@ fun get_ac_head_equiv ctxt ac_info (id, cu) =
 (* Find ways to modify ct once by rewriting one of the subterms. *)
 fun ac_expand_once ctxt ac_info (id, ct) =
     let
-      val cus = ACUtil.cdest_ac ac_info ct
-      val refls = map Thm.reflexive cus
+      val cus = dest_ac_full ac_info ct
       fun get_equiv cu = get_ac_head_equiv ctxt ac_info (id, cu)
 
-      fun equivs_i i =
-          let
-            val u_equivs = get_equiv (nth cus i)
-            fun get_head_equiv_th eq_i =
-                (ACUtil.comb_ac_equiv ac_info (nth_map i (K eq_i) refls))
-                    |> apply_to_rhs (ACUtil.normalize_all_ac ac_info)
-          in
-            map (apsnd get_head_equiv_th) u_equivs
-          end
+      fun process_info (id', eq) =
+          (id', rewrite_on_eqs ac_info [eq] ct)
     in
-      maps equivs_i (0 upto (length cus - 1))
+      map process_info (maps get_equiv cus)
     end
 
 (* Find all ways to write ct, up to a certain limit. *)
@@ -76,10 +93,10 @@ fun ac_expand ctxt ac_info (id, ct) =
 
       fun ac_equiv_eq_better (id, th) (id', th') =
           let
-            val seq1 = ACUtil.dest_ac ac_info (Util.rhs_of th)
-            val seq2 = ACUtil.dest_ac ac_info (Util.rhs_of th')
+            val seq1 = dest_ac_full ac_info (Thm.rhs_of th)
+            val seq2 = dest_ac_full ac_info (Thm.rhs_of th')
           in
-            Util.is_subseq (op aconv) (seq1, seq2) andalso
+            Util.is_subseq (op aconv o apply2 Thm.term_of) (seq1, seq2) andalso
             BoxID.is_eq_ancestor ctxt id id'
           end
 
@@ -104,12 +121,9 @@ fun ac_expand ctxt ac_info (id, ct) =
               end
 
       (* Start term *)
-      val cts = ACUtil.cdest_ac ac_info ct
-      val ths = map (RewriteTable.simplify id ctxt) cts
-      val eq_th = (ACUtil.comb_ac_equiv ac_info ths)
-                      |> apply_to_rhs (ACUtil.normalize_all_ac ac_info)
+      val start = simp_ac_expr ctxt ac_info (id, ct)
     in
-      helper ([], [(id, eq_th)])
+      helper ([], start)
     end
 
 fun ac_expand_equiv_fn ictxt item1 item2 =
@@ -133,10 +147,24 @@ fun ac_expand_equiv_fn ictxt item1 item2 =
             val expand2 = ac_expand ctxt ac_info (id, ct2)
 
             fun get_equiv ((id1, eq_th1), (id2, eq_th2)) =
-                if Util.rhs_of eq_th1 aconv Util.rhs_of eq_th2 then
-                  [(BoxID.merge_boxes ctxt (id1, id2),
-                    to_obj_eq (Util.transitive_list [eq_th1, meta_sym eq_th2]))]
-                else []
+                let
+                  val ct1 = Thm.rhs_of eq_th1
+                  val ct2 = Thm.rhs_of eq_th2
+                  val ts1 = dest_ac_full ac_info ct1
+                  val ts2 = dest_ac_full ac_info ct2
+                in
+                  if eq_list (op aconv o apply2 Thm.term_of) (ts1, ts2) then
+                    let
+                      val eq_th1' = ACUtil.normalize_all_ac ac_info ct1
+                      val eq_th2' = ACUtil.normalize_all_ac ac_info ct2
+                      val id' = BoxID.merge_boxes ctxt (id1, id2)
+                      val eq = Util.transitive_list [
+                            eq_th1, eq_th1', meta_sym eq_th2', meta_sym eq_th2]
+                    in
+                      [(id', to_obj_eq eq)]
+                    end
+                  else []
+                end
           in
             (maps get_equiv (Util.all_pairs (expand1, expand2)))
                 |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
@@ -167,9 +195,19 @@ fun ac_expand_unit_fn ictxt item =
             val expand = ac_expand ctxt ac_info (id, ct)
 
             fun process_expand (id', eq_th) =
-                if not (ACUtil.head_agrees ac_info (Util.rhs_of eq_th)) then
-                  [(id', to_obj_eq eq_th)]
-                else []
+                let
+                  val ct = Thm.rhs_of eq_th
+                  val ts = dest_ac_full ac_info ct
+                in
+                  if length ts <= 1 then
+                    let
+                      val eq' = ACUtil.normalize_all_ac ac_info ct
+                      val eq = Util.transitive_list [eq_th, eq']
+                    in
+                      [(id', to_obj_eq eq)]
+                    end
+                  else []
+                end
           in
             (maps process_expand expand)
                 |> IncrContext.replace_id_for_type' ictxt

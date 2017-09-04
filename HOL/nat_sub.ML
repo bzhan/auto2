@@ -372,11 +372,11 @@ fun nat_sub_expand_equiv_fn ictxt item1 item2 =
                   val (wft2', eq2) = norm_minus wft2
                   val _ = assert (WfTerm.term_of wft1' aconv WfTerm.term_of wft2')
                                  "nat_sub_expand_equiv_fn"
-                  val id = BoxID.merge_boxes ctxt (id1, id2)
+                  val id' = BoxID.merge_boxes ctxt (id1, id2)
                   val eq = Util.transitive_list [
                         eq_th1, eq1, meta_sym eq2, meta_sym eq_th2]
                 in
-                  [(id, to_obj_eq eq)]
+                  [(id', to_obj_eq eq)]
                 end
               else []
             end
