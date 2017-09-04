@@ -26,8 +26,6 @@ sig
 
   val get_nat_order_info: box_item -> order_info
   val nat_order_typed_matcher: item_matcher
-  val convert_const_x_prfstep: proofstep
-  val convert_const_y_prfstep: proofstep
   val transitive: proofstep
   val transitive_resolve: proofstep
   val single_resolve: proofstep
@@ -406,41 +404,6 @@ val nat_order_typed_matcher =
     in
       {pre_match = pre_match, match = match}
     end
-
-(* Proofstep reducing NAT_ORDER with one side newly found to be
-   constant to a NAT_ORDER with one side zero.
- *)
-val convert_const_x_prfstep =
-    ProofStep.prfstep_custom
-        "nat_order_convert_const_x"
-        [WithItem (TY_NAT_ORDER, @{term_pat "(?NUMC, ?y, ?n)"})]
-        PRIORITY_ADD
-        (fn ((id, inst), ths) => fn _ => fn ctxt =>
-            let
-              val cx = Thm.cterm_of ctxt (lookup_inst inst "NUMC")
-              val cy = Thm.cterm_of ctxt (lookup_inst inst "y")
-              val n = dest_numc (lookup_inst inst "n")
-              val info = convert_const_x (cx, cy, n, the_single ths)
-            in
-              [AddItems {id = id, sc = NONE,
-                         raw_items = [get_nat_order_ritem info]}]
-            end)
-
-val convert_const_y_prfstep =
-    ProofStep.prfstep_custom
-        "nat_order_convert_const_y"
-        [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?NUMC, ?n)"})]
-        PRIORITY_ADD
-        (fn ((id, inst), ths) => fn _ => fn ctxt =>
-            let
-              val cx = Thm.cterm_of ctxt (lookup_inst inst "x")
-              val cy = Thm.cterm_of ctxt (lookup_inst inst "NUMC")
-              val n = dest_numc (lookup_inst inst "n")
-              val info = convert_const_y (cx, cy, n, the_single ths)
-            in
-              [AddItems {id = id, sc = NONE,
-                         raw_items = [get_nat_order_ritem info]}]
-            end)
 
 (* Helper function for transitive. *)
 fun trans d1 d2 th1 th2 =
@@ -976,7 +939,7 @@ val add_nat_order_proofsteps =
 
     ] #> fold add_prfstep (
       to_nat_order_prfsteps @
-      [nat_eq_diff_prfstep, convert_const_x_prfstep, convert_const_y_prfstep,
+      [nat_eq_diff_prfstep,
        transitive, transitive_resolve, single_resolve, single_resolve_zero,
        shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero])
 
