@@ -34,9 +34,12 @@ sig
       Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
   val add_ineq: box_id * thm -> Proof.context -> Proof.context
 
-  val norm_ineq_th: thm -> thm
+  val norm_ineq_th': thm -> thm
   val convert_const_x: thm -> thm
   val convert_const_y: thm -> thm
+  val norm_ineq_th: thm -> thm
+  val norm_ineq_minus_th': thm -> thm option
+  val norm_ineq_minus_th: thm -> thm option
   val add_ineq_general: box_id * thm -> Proof.context -> Proof.context
 
   val derive_contradiction: Proof.context -> thm -> (box_id * thm) list
@@ -325,7 +328,7 @@ fun add_ineq (id, th) ctxt =
 (* Normalize inequality to standard form. This function is able to
    process any theorem of the form a </<= b.
  *)
-fun norm_ineq_th th =
+fun norm_ineq_th' th =
     let
       val t = prop_of' th
       val _ = assert (is_less_eq t orelse is_less t) "norm_ineq_th"
@@ -360,11 +363,11 @@ fun norm_ineq_th th =
             if n1 <= n2 then
               (th RS @{thm reduce_less_plus_consts}) |> fold_const_right
                                                      |> apply_to_thm' try_fold0
-                                                     |> norm_ineq_th
+                                                     |> norm_ineq_th'
             else
               ([Nat_Arith.nat_le_th n2 n1, th]
                    MRS @{thm reduce_less_plus_consts'}) |> fold_const_left
-                                                        |> norm_ineq_th
+                                                        |> norm_ineq_th'
           end
         else if is_plus_const lhs then
           (th RS @{thm norm_less_lplus}) |> fold_const_left
@@ -417,6 +420,34 @@ fun convert_const_y th =
       else th
     end
 
+fun norm_ineq_th th =
+    th |> norm_ineq_th' |> convert_const_x |> convert_const_y
+
+fun norm_ineq_minus_th' th =
+    let
+      val t = prop_of' th
+      val _ = assert (is_less_eq t orelse is_less t) "norm_ineq_minus_th"
+      val (lhs, rhs) = Util.dest_binop_args t
+    in
+      if is_less_eq t then
+        if is_minus_const lhs andalso not (is_plus_const rhs) then
+          SOME (th RS @{thm norm_le})
+        else if is_minus_const rhs andalso not (is_plus_const lhs) then
+          SOME (th RS @{thm norm_le})
+        else NONE
+      else  (* is_less t *)
+        if is_minus_const lhs andalso not (is_plus_const rhs) then
+          SOME (th RS @{thm norm_less})
+        else if is_minus_const rhs andalso not (is_plus_const lhs) then
+          SOME (th RS @{thm norm_less})
+        else NONE
+    end
+
+fun norm_ineq_minus_th th =
+    case norm_ineq_minus_th' th of
+        NONE => NONE
+      | SOME th' => SOME (th' |> convert_const_x |> convert_const_y)
+
 (* Add any inequality in the form a </<= b to the table, by first
    converting to the normal form.
  *)
@@ -426,8 +457,7 @@ fun add_ineq_general (id, th) ctxt =
     in
       if is_less_eq t orelse is_less t then
         let
-          val ctxt' = add_ineq (id, th |> norm_ineq_th |> convert_const_x
-                                       |> convert_const_y) ctxt
+          val ctxt' = add_ineq (id, norm_ineq_th th) ctxt
         in
           ctxt'
         end
@@ -467,7 +497,6 @@ fun justify_neg_ineq ctxt t =
       val ct' = t |> UtilLogic.get_neg
                   |> UtilLogic.mk_Trueprop |> Thm.cterm_of ctxt
       val infos = ct' |> Thm.assume |> norm_ineq_th
-                      |> convert_const_x |> convert_const_y
                       |> derive_contradiction ctxt
       fun process_info (id, th) =
           (id, th |> Thm.implies_intr ct'
@@ -627,4 +656,4 @@ val setup_nat_order =
 
 end  (* NatOrder *)
 
-val _ = Theory.setup NatOrder.setup_nat_order
+(* val _ = Theory.setup NatOrder.setup_nat_order *)

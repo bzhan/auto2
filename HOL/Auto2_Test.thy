@@ -14,7 +14,4 @@ ML_file "logic_steps_test.ML"
 ML_file "acdata_test.ML"
 ML_file "order_test.ML"
 
-ML_file "nat_order.ML"
-ML_file "nat_order_test.ML"
-
 end

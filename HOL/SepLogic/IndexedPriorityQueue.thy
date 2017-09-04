@@ -196,7 +196,14 @@ theorem bubble_up3 [forward]: "is_heap_partial2 xs 0 \<Longrightarrow> is_heap x
 theorem bubble_up4 [forward]: "is_heap_partial2 xs k \<Longrightarrow> k \<ge> length xs \<Longrightarrow> is_heap xs" by auto2
 
 theorem append_is_heap_partial2:
-  "is_heap xs \<Longrightarrow> is_heap_partial2 (xs @ [x]) (length xs)" by auto2
+  "is_heap xs \<Longrightarrow> is_heap_partial2 (xs @ [x]) (length xs)"
+@proof
+  @let "xs' = xs @ [x]"
+  @have "\<forall>i j. eq_pred i j \<longrightarrow> j < length xs' \<longrightarrow> j \<noteq> length xs \<longrightarrow> snd (xs' ! i) \<le> snd (xs' ! j)" @with
+    (* Need to make explicit rewriting into x + n form, where n is a constant. *)
+    @have "length xs' = length xs + 1"
+  @end  
+@qed
 setup {* add_forward_prfstep_cond @{thm append_is_heap_partial2} [with_term "?xs @ [?x]"] *}
 
 theorem desc_is_heap_partial2:
@@ -321,7 +328,9 @@ definition idx_pqueue_push :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a index
 declare idx_pqueue_push_def [sep_proc_defs]
 
 theorem index_of_pqueue_push [backward2]:
-  "index_of_pqueue xs m \<Longrightarrow> \<not>has_key xs k \<Longrightarrow> index_of_pqueue (xs @ [(k, v)]) (m{k \<rightarrow> length xs})" by auto2
+  "index_of_pqueue xs m \<Longrightarrow> \<not>has_key xs k \<Longrightarrow> index_of_pqueue (xs @ [(k, v)]) (m{k \<rightarrow> length xs})"
+(* Again, need to make rewriting into x + n form explicit. *)
+@proof @have "length (xs @ [(k, v)]) = length xs + 1" @qed
 
 theorem idx_pqueue_push_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(k < alen (index p)) * \<up>(\<not>has_key xs k)>
@@ -339,7 +348,8 @@ declare idx_pqueue_pop_def [sep_proc_defs]
 theorem index_of_pqueue_pop [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> length xs > 0 \<Longrightarrow>
    index_of_pqueue (butlast xs) (delete_map (fst (last xs)) m)"
-@proof @have "length (butlast xs) < length xs" @qed
+(* Again, need to make rewriting into x + n form explicit. *)
+@proof @have "length xs = length (butlast xs) + 1" @qed
 
 theorem idx_pqueue_pop_rule [hoare_triple]:
   "<idx_pqueue xs p * \<up>(length xs > 0)>

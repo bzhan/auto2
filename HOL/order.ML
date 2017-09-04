@@ -6,22 +6,17 @@ signature NAT_ORDER =
 sig
   val is_order: term -> bool
 
-  val add_reduce_plus_consts: theory -> theory
-
   datatype order_type =
            LESS | LESS_LMINUS | LESS_LPLUS | LESS_RMINUS | LESS_RPLUS |
            LE | LE_LMINUS | LE_LPLUS | LE_RMINUS | LE_RPLUS
   type order_info
   val order_diffs: order_type -> int -> int
-  val order_diffs_inst: order_type -> Type.tyenv * Envir.tenv -> int
   val to_normal_th: order_type -> thm -> thm
-  val order_info_to_prop: term * term * int -> term
-  val get_nat_order_ritem: order_info -> raw_item
-  val convert_const_x: order_info -> order_info
-  val convert_const_y: order_info -> order_info
-  val convert_const: order_info -> order_info
-  val to_nat_order_prfstep_templ: string * term * order_type -> proofstep
+  val th_to_ritem: thm -> raw_item
+  val th_to_normed_ritems: thm -> raw_item list
+  val to_nat_order_prfstep_templ: string * term -> proofstep
   val to_nat_order_prfsteps: proofstep list
+  val nat_eq_diff_prfstep: proofstep
 
   val get_nat_order_info: box_item -> order_info
   val nat_order_typed_matcher: item_matcher
@@ -79,53 +74,6 @@ fun is_order t =
               | _ => false
     end
 
-(* Reduce facts of the form x + m <= y + n and x + m < y + n, where m
-   and n are numerical constants.
- *)
-val add_reduce_plus_consts =
-    fold add_prfstep_custom [
-      ("reduce_le_plus_consts",
-       [WithProp @{term_pat "(?x::nat) + ?NUMC1 <= ?y + ?NUMC2"},
-        Filter (fn _ => fn (_, inst) =>
-                   lookup_numc1 inst <> 0 andalso lookup_numc2 inst <> 0)],
-       PRIORITY_ADD,
-       (fn ((id, inst), ths) => fn _ => fn _ =>
-           let
-             val (n1, n2) = (lookup_numc1 inst, lookup_numc2 inst)
-             (* Fold x + 0 <= y to x <= y. *)
-             val try_fold0 = Conv.try_conv (Conv.arg1_conv nat_fold_conv0_right)
-             val res_th =
-                 if n1 >= n2 then
-                   ((nat_le_th n2 n1 :: ths)
-                        MRS @{thm reduce_le_plus_consts'})
-                       |> fold_const_left |> apply_to_thm' try_fold0
-                 else  (* n1 < n2 *)
-                   (ths MRS @{thm reduce_le_plus_consts}) |> fold_const_right
-           in
-             [Update.thm_update (id, res_th)]
-           end)),
-
-      ("reduce_less_plus_consts",
-       [WithProp @{term_pat "(?x::nat) + ?NUMC1 < ?y + ?NUMC2"},
-        Filter (fn _ => fn (_, inst) =>
-                   lookup_numc1 inst <> 0 andalso lookup_numc2 inst <> 0)],
-       PRIORITY_ADD,
-       (fn ((id, inst), ths) => fn _ => fn _ =>
-           let
-             val (n1, n2) = (lookup_numc1 inst, lookup_numc2 inst)
-             (* Fold x + 0 < y to x < y. *)
-             val try_fold0 = Conv.try_conv (Conv.arg1_conv nat_fold_conv0_right)
-             val res_th =
-                 if n1 >= n2 then
-                   ((nat_le_th n2 n1 :: ths)
-                        MRS @{thm reduce_less_plus_consts'})
-                       |> fold_const_left |> apply_to_thm' try_fold0
-                 else  (* n1 < n2 *)
-                   (ths MRS @{thm reduce_less_plus_consts}) |> fold_const_right
-           in
-             [Update.thm_update (id, res_th)]
-           end))]
-
 datatype order_type =
          LESS_LMINUS | LESS_LPLUS | LESS_RMINUS | LESS_RPLUS | LESS |
          LE_LMINUS | LE_LPLUS | LE_RMINUS | LE_RPLUS | LE
@@ -153,16 +101,6 @@ fun order_diffs order_ty n =
       | LE_RPLUS => n
       | LE => 0
 
-(* Given inst (containing value for ?NUMC for cases other than LESS
-   and LE), return the signed difference in the normal form of the
-   theorem.
- *)
-fun order_diffs_inst order_ty inst =
-    case order_ty of
-        LESS => ~1
-      | LE => 0
-      | _ => order_diffs order_ty (lookup_numc0 inst)
-
 (* Conversion from a theorem to its normal form. *)
 fun to_normal_th order_ty th =
     case order_ty of
@@ -176,72 +114,6 @@ fun to_normal_th order_ty th =
       | LE => th RS @{thm norm_le}
       | _ => th
 
-(* Obtain the normal form statement for given (x, y, diff). Returns
-   term of type bool.
- *)
-fun order_info_to_prop (x, y, diff) =
-    let
-      val inst = fo_init |> Util.update_env (("x",0), x) |> Util.update_env (("y",0), y)
-                         |> Util.update_env (("n",0), mk_nat (Int.abs diff))
-    in
-      if diff >= 0 then Envir.subst_term inst @{term_pat "(?x::nat) <= ?y + ?n"}
-      else Envir.subst_term inst @{term_pat "(?x::nat) + ?n <= ?y"}
-    end
-
-(* Given information for a NAT_ORDER item and its theorem, form the
-   NAT_ORDER item. Verify that the theorem is in the right form.
- *)
-fun get_nat_order_ritem (cx, cy, diff, th) =
-    let
-      val (x, y) = apply2 Thm.term_of (cx, cy)
-      val prop = mk_Trueprop (order_info_to_prop (x, y, diff))
-    in
-      if prop aconv Thm.prop_of th then
-        Fact (TY_NAT_ORDER, [x, y, mk_int diff], th)
-      else let
-        val _ = trace_thm_global "Given:" th
-      in
-        raise Fail "get_nat_order_ritem: wrong form of theorem."
-      end
-    end
-
-(* Convert any NAT_ORDER info with comparison to a constant to one
-   with comparison to zero.
- *)
-fun convert_const_x (info as (cx, cy, diff, th)) =
-    if not (is_numc (Thm.term_of cx)) then info else
-    let
-      val xn = dest_numc (Thm.term_of cx)
-    in
-      (* Over integers, x <= y + diff means 0 <= y + (diff - x). *)
-      if xn = 0 then info
-      else if diff < 0 then
-        (cnat0, cy, diff - xn, (th RS @{thm cv_const1}) |> fold_const_left)
-      else (* diff >= 0 *) if diff - xn < 0 then
-        (cnat0, cy, diff - xn, (th RS @{thm cv_const4}) |> fold_const_left)
-      else (* diff - xn >= 0 *)
-        (cnat0, cy, diff - xn, (th RS @{thm cv_const5}) |> fold_const_right)
-    end
-
-fun convert_const_y (info as (cx, cy, diff, th)) =
-    if not (is_numc (Thm.term_of cy)) then info else
-    let
-      val yn = dest_numc (Thm.term_of cy)
-    in
-      (* Over integers, x <= y + diff means x <= 0 + (y + diff). *)
-      if yn = 0 then info
-      else if diff < 0 andalso yn + diff >= 0 then
-        (cx, cnat0, yn + diff, (th RS @{thm cv_const2}) |> fold_const_right)
-      else if diff < 0 andalso yn + diff < 0 then
-        (cx, cnat0, yn + diff,
-         ([nat_less_th yn (~diff), th] MRS @{thm cv_const3})
-             |> fold_const_left)
-      else  (* diff >= 0 *)
-        (cx, cnat0, yn + diff, (th RS @{thm cv_const6}) |> fold_const_right)
-    end
-
-val convert_const = convert_const_x #> convert_const_y
-
 (* Decompose a term into A + n or n + A (without matching). *)
 fun dest_plus (Const (@{const_name plus}, _) $ A $ B) =
     if is_numc B andalso dest_numc B > 0 then SOME (A, dest_numc B) else NONE
@@ -250,10 +122,6 @@ fun dest_plus (Const (@{const_name plus}, _) $ A $ B) =
 fun dest_plus' (Const (@{const_name plus}, _) $ A $ B) =
     if is_numc A andalso dest_numc A > 0 then SOME (B, dest_numc A) else NONE
   | dest_plus' _ = NONE
-
-(* Whether t simplifies to a plus form. *)
-fun in_plus_form t =
-    is_some (dest_plus t) orelse is_some (dest_plus' t)
 
 (* eq_x is a meta equality. Use it to rewrite x in an order info. *)
 fun rewrite_info_x eq_x (cx, cy, diff, th) =
@@ -285,48 +153,62 @@ fun rewrite_info_y eq_y (cx, cy, diff, th) =
       (cx, Thm.rhs_of eq_y, diff, th')
     end
 
+fun th_to_ritem th =
+    let
+      val (x, y, n) = NatOrder.dest_ineq (prop_of' th)
+    in
+      Fact (TY_NAT_ORDER, [x, y, mk_int n], th)
+    end
+
+fun th_to_normed_ritems th =
+    let
+      val th' = NatOrder.norm_ineq_th th
+      val minus_th = the_list (NatOrder.norm_ineq_minus_th th)
+    in
+      map th_to_ritem (th' :: minus_th)
+    end
+
 (* Template for proofsteps converting a PROP item to a NAT_ORDER
    item. The proofstep simplifies the instantiations of x and y, and
    verifies that the simplified terms are not in plus form. If the
    result is a comparison with a constant, it is converted to a
    comparison with zero.
  *)
-fun to_nat_order_prfstep_templ (prfstep_name, pat, order_ty) =
-    let
-      fun filt _ (_, inst) =
-          not (in_plus_form (lookup_inst inst "x")) andalso
-          not (in_plus_form (lookup_inst inst "y")) andalso
-          (order_ty = LESS orelse order_ty = LE orelse lookup_numc0 inst > 0)
-
-     val descs = [WithProp pat, Filter filt]
-     fun prfstep_fn ((id, inst), ths) _ ctxt =
-         let
-           val (x, y) = apply2 (lookup_inst inst) ("x", "y")
-           val (cx, cy) = (Thm.cterm_of ctxt x, Thm.cterm_of ctxt y)
-           val diff = order_diffs_inst order_ty inst
-           val th' = to_normal_th order_ty (the_single ths)
-           val info = (cx, cy, diff, th') |> convert_const
-         in
-           [AddItems {id = id, sc = NONE,
-                      raw_items = [get_nat_order_ritem info]}]
-         end
-    in
-      ProofStep.prfstep_custom prfstep_name descs PRIORITY_ADD prfstep_fn
-    end
+fun to_nat_order_prfstep_templ (prfstep_name, pat) =
+    ProofStep.prfstep_custom
+        prfstep_name
+        [WithProp pat]
+        PRIORITY_ADD
+        (fn ((id, _), ths) => fn _ => fn _ =>
+            [AddItems {id = id, sc = NONE,
+                       raw_items = maps th_to_normed_ritems ths}])
 
 val to_nat_order_prfsteps =
     map to_nat_order_prfstep_templ [
-      ("cv_nat_less_lminus", @{term_pat "(?x::nat) - ?NUMC < ?y"}, LESS_LMINUS),
-      ("cv_nat_less_lplus", @{term_pat "(?x::nat) + ?NUMC < ?y"}, LESS_LPLUS),
-      ("cv_nat_less_rminus", @{term_pat "(?x::nat) < ?y - ?NUMC"}, LESS_RMINUS),
-      ("cv_nat_less_rplus", @{term_pat "(?x::nat) < ?y + ?NUMC"}, LESS_RPLUS),
-      ("cv_nat_less", @{term_pat "(?x::nat) < ?y"}, LESS),
-      ("cv_nat_le_lminus", @{term_pat "(?x::nat) - ?NUMC <= ?y"}, LE_LMINUS),
-      ("cv_nat_le_lplus", @{term_pat "(?x::nat) + ?NUMC <= ?y"}, LE_LPLUS),
-      ("cv_nat_le_rminus", @{term_pat "(?x::nat) <= ?y - ?NUMC"}, LE_RMINUS),
-      ("cv_nat_le_rplus", @{term_pat "(?x::nat) <= ?y + ?NUMC"}, LE_RPLUS),
-      ("cv_nat_le", @{term_pat "(?x::nat) <= ?y"}, LE)
+      ("cv_nat_order", @{term_pat "(?x::nat) < ?y"}),
+      ("cv_nat_order2", @{term_pat "(?x::nat) <= ?y"})
     ]
+
+val nat_eq_diff_prfstep =
+    ProofStep.prfstep_custom
+      "nat_eq_diff"
+      [WithItem (TY_EQ, @{term_pat "(?x::nat) = ?y"})]
+      PRIORITY_ADD
+      (fn ((id, _), _) => fn items => fn _ =>
+          let
+            val {prop, ...} = the_single items
+            val (lhs, rhs) = prop |> prop_of' |> Util.dest_binop_args
+          in
+            if NatOrder.is_plus_const lhs orelse NatOrder.is_plus_const rhs then
+              let
+                val prop' = to_meta_eq prop
+                val ths = (prop' RS @{thm eq_to_ineqs}) |> UtilLogic.split_conj_th
+              in
+                [AddItems {id = id, sc = NONE,
+                           raw_items = maps th_to_normed_ritems ths}]
+              end
+            else []
+          end)
 
 (* Obtain quadruple x, y, diff, and theorem from item. *)
 fun get_nat_order_info {tname, prop, ...} =
@@ -397,15 +279,12 @@ val transitive =
          Filter (neq_filter @{term_pat "?y ~= ?z"}),
          Filter (neq_filter @{term_pat "?x ~= ?z"})]
         PRIORITY_ADD
-        (fn ((id, inst), ths) => fn _ => fn ctxt =>
+        (fn ((id, inst), ths) => fn _ => fn _ =>
             let
-              val (cx, cz) = (Thm.cterm_of ctxt (lookup_inst inst "x"),
-                            Thm.cterm_of ctxt (lookup_inst inst "z"))
               val m = dest_numc (lookup_inst inst "m")
               val n = dest_numc (lookup_inst inst "n")
               val (th1, th2) = the_pair ths
-              val res = trans m n th1 th2
-              val item' = get_nat_order_ritem (cx, cz, m + n, res)
+              val item' = th_to_ritem (trans m n th1 th2)
             in
               [AddItems {id = id, sc = NONE, raw_items = [item']}]
             end)
@@ -904,12 +783,12 @@ val add_nat_order_proofsteps =
 
     ] #> fold add_prfstep (
       to_nat_order_prfsteps @
-      [transitive, transitive_resolve, single_resolve, single_resolve_zero,
+      [nat_eq_diff_prfstep,
+       transitive, transitive_resolve, single_resolve, single_resolve_zero,
        shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero])
 
 end
 
 end
 
-val _ = Theory.setup (Nat_Order.add_reduce_plus_consts)
 val _ = Theory.setup (Nat_Order.add_nat_order_proofsteps)
