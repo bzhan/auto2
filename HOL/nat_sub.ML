@@ -332,8 +332,9 @@ fun nat_sub_expand ctxt (id, ct) =
               end
 
       (* Start term *)
+      val ts = subterms_of ct
       val start = (WellformData.cterm_to_wfterm ctxt fheads (id, ct))
-                      |> map (fn (id, wft) => (id, (wft, Thm.reflexive (WfTerm.cterm_of wft))))
+                      |> maps (WellformData.simplify ctxt fheads ts)
     in
       helper ([], start)
     end

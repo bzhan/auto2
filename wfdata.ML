@@ -343,7 +343,9 @@ fun simplify ctxt fheads cts (id, wft) =
     else
       cts |> map (simplify_info ctxt fheads)
           |> BoxID.get_all_merges_info ctxt
-          |> map (fn (id, wf_eqs) => (id, WfTerm.rewrite_on_eqs fheads wf_eqs wft))
+          |> BoxID.merge_box_with_info ctxt id
+          |> map (fn (id', wf_eqs) =>
+                     (id', WfTerm.rewrite_on_eqs fheads wf_eqs wft))
 
 (* Find all well-formed head equivalences of ct. Return as a list of
    (id, (wft, eq_th)) pairs.
