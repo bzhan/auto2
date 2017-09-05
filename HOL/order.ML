@@ -64,14 +64,15 @@ val fold_const_right =
     apply_to_thm' (Conv.arg_conv (Conv.arg_conv nat_fold_conv))
 
 (* Whether the given term is < or <= on natural numbers. *)
-fun is_order t =
-    let
-      val _ = assert (fastype_of t = boolT) "is_order: wrong type"
-    in
-      case t of Const (@{const_name less}, _) $ _ $ _ => true
-              | Const (@{const_name less_eq}, _) $ _ $ _ => true
-              | _ => false
-    end
+fun is_less t =
+    case t of Const (@{const_name less}, _) $ _ $ _ => true
+            | _ => false
+
+fun is_less_eq t =
+    case t of Const (@{const_name less_eq}, _) $ _ $ _ => true
+            | _ => false
+
+fun is_order t = is_less t orelse is_less_eq t
 
 datatype order_type =
          LESS_LMINUS | LESS_LPLUS | LESS_RMINUS | LESS_RPLUS | LESS |
@@ -437,23 +438,18 @@ fun nat_order_match' pat (cx, cy) ctxt (id, inst) =
     let
       (* Classify pat into A < B or A <= B. *)
       val (f, (patA, patB)) = Util.dest_binop pat
-      val is_strict =
-          case f of
-              Const (@{const_name less}, _) => true
-            | Const (@{const_name less_eq}, _) => false
-            | _ => raise Fail "match_order: input should be inequality."
 
       (* Given nA and nB (the value of n on the two sides), return
          order_type. Assume at least one of nA and nB is zero.
        *)
       fun order_info (nA, nB) =
           if nB = 0 then
-            if nA = 0 then if is_strict then LESS else LE
-            else if nA > 0 then if is_strict then LESS_LPLUS else LE_LPLUS
-            else (* nA < 0 *) if is_strict then LESS_LMINUS else LE_LMINUS
+            if nA = 0 then if is_less pat then LESS else LE
+            else if nA > 0 then if is_less pat then LESS_LPLUS else LE_LPLUS
+            else (* nA < 0 *) if is_less pat then LESS_LMINUS else LE_LMINUS
           else  (* nA = 0 *)
-            if nB > 0 then if is_strict then LESS_RPLUS else LE_RPLUS
-            else (* nB < 0 *) if is_strict then LESS_RMINUS else LE_RMINUS
+            if nB > 0 then if is_less pat then LESS_RPLUS else LE_RPLUS
+            else (* nB < 0 *) if is_less pat then LESS_RMINUS else LE_RMINUS
 
       (* Match A and B in sequence. *)
       val insts_A = nat_order_match_side ctxt (patA, cx) (id, inst)
@@ -498,6 +494,16 @@ fun is_order_pat ctxt pat =
     (is_order pat andalso valid_arg_type ctxt pat) orelse
     (is_order (get_neg pat) andalso valid_arg_type ctxt (get_neg pat))
 
+val less_nat = @{term "op <::nat => nat => bool"}
+val le_nat = @{term "op <=::nat => nat => bool"}
+
+(* Assuming t is an order. Return the simplified form of the negation of t. *)
+fun get_neg_order t =
+    if is_neg t then dest_not t
+    else if is_less t then le_nat $ dest_arg t $ dest_arg1 t
+    else if is_less_eq t then less_nat $ dest_arg t $ dest_arg1 t
+    else raise Fail "get_neg_order"
+
 (* Main matching function: pat is a pattern of form either A (</<=) B
    or ~ A (</<=) B, where A and B can possibly contain schematic
    variables. Try to use theorem contained in item to justify an
@@ -508,44 +514,40 @@ fun nat_order_match pat item ctxt (id, inst) =
     let
       (* is_neg records whether pat is originally a negation. *)
       val is_neg = is_neg pat
+      val neg_pat = get_neg_order pat
 
       (* Obtain the two sides (x, y) of the inequality contained in
          item. Then (y, x) will be matched with two sides of ~pat.
        *)
       val (x, y, diff1, th1) = get_nat_order_info item
 
-      (* Obtain ~pat in non-negated form. *)
-      val neg_t = get_neg pat |> Thm.cterm_of ctxt |> neg_ineq_cv |> Util.rhs_of
-      val neg_tp = mk_Trueprop neg_t
-      val negt_th = neg_tp |> Thm.cterm_of ctxt |> Thm.trivial
-
       (* Match ~pat against inequality with (y, x) on the two
          sides. If diff1 + diff2 < 0, obtain a contradiction from th1
          and the normalized version of negt_th (~pat).
        *)
-      val insts = nat_order_match' neg_t (y, x) ctxt (id, inst)
+      val insts = nat_order_match' neg_pat (y, x) ctxt (id, inst)
+
       fun process_inst ((id', inst'), (order_ty, diff2, eq_th)) =
           if diff1 + diff2 >= 0 then [] else
           let
-            (* Instantiate ~pat with inst' *)
-            val negt_th' = negt_th |> Util.subst_thm ctxt inst'
-                                   |> Util.send_first_to_hyps
+            val neg_pat_th = neg_pat |> Util.subst_term_norm inst'
+                                     |> mk_Trueprop |> Thm.cterm_of ctxt
+                                     |> Thm.assume
+            val assum = Thm.cprop_of neg_pat_th
 
-            (* th2 is the normal form of negt_th', after rewriting to
-               become an inequality in y and x.
+            (* th2 is the normal form of neg_pat_th, after rewriting
+               to become an inequality in y and x.
              *)
-            val th2 = (Thm.equal_elim (make_trueprop_eq eq_th) negt_th')
-                          |> to_normal_th order_ty
+            val th2 = neg_pat_th |> apply_to_thm' (Conv.rewr_conv eq_th)
+                                 |> to_normal_th order_ty
 
             (* Attempt to obtain a contradiction from item1 and th2. *)
-            val contra_th = trans_resolve diff1 diff2 th1 th2
-            val neg_tp' = Util.subst_term_norm inst' neg_tp
-            val pat_th =
-                contra_th |> Thm.implies_intr (Thm.cterm_of ctxt neg_tp')
+            val res = (trans_resolve diff1 diff2 th1 th2)
+                          |> Thm.implies_intr assum
                           |> apply_to_thm UtilLogic.rewrite_from_contra_form
                           |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
           in
-            [((id', inst'), pat_th)]
+            [((id', inst'), res)]
           end
     in
       maps process_inst insts
@@ -557,11 +559,12 @@ fun nat_order_pre_match pat _ ctxt = is_order_pat ctxt pat
 val nat_order_matcher =
     {pre_match = nat_order_pre_match, match = nat_order_match}
 
-(* Use x < y to match x <= y. *)
+(* Use x < y to match x ~= y. *)
 val nat_order_noteq_matcher =
     let
       fun get_insts pat item ctxt (id, inst) =
-          let
+          if not (is_neg pat andalso is_eq_term (dest_not pat)) then ([], [])
+          else let
             val (A, B) = pat |> dest_not |> dest_eq
             val (cx, cy, n, _) = get_nat_order_info item
           in
@@ -571,11 +574,10 @@ val nat_order_noteq_matcher =
                   Matcher.rewrite_match_list
                       ctxt [(false, (B, cx)), (false, (A, cy))] (id, inst))
           end
-          handle Fail "dest_not" => ([], [])
-               | Fail "dest_eq" => ([], [])
 
       fun pre_match pat item ctxt =
-          let
+          if not (is_neg pat andalso is_eq_term (dest_not pat)) then false
+          else let
             val (A, B) = pat |> dest_not |> dest_eq
             val (cx, cy, n, _) = get_nat_order_info item
           in
@@ -584,8 +586,6 @@ val nat_order_noteq_matcher =
                            (Matcher.pre_match ctxt (A, cy) andalso
                             Matcher.pre_match ctxt (A, cx)))
           end
-          handle Fail "dest_not" => false
-               | Fail "dest_eq" => false
 
       fun match pat item ctxt (id, inst) =
           if Util.has_vars pat then [] else
@@ -614,55 +614,48 @@ val nat_order_noteq_matcher =
    n >= 0. This follows the same general outline as nat_order_match.
  *)
 fun nat_order_single_match pat _ ctxt (id, inst) =
-    if not (is_order_pat ctxt pat) orelse
-       Util.has_vars pat then [] else
+    if not (is_order_pat ctxt pat) orelse Util.has_vars pat then [] else
     let
       val is_neg = is_neg pat
-      val neg_ct = get_neg pat |> Thm.cterm_of ctxt |> neg_ineq_cv |> Thm.rhs_of
-      val neg_t = Thm.term_of neg_ct
-      val neg_tp = neg_t |> mk_Trueprop
-      val negt_th = neg_tp |> Thm.cterm_of ctxt |> Thm.trivial
-      val (cA, cB) = Util.dest_binop_cargs neg_ct
-      val (f, (A, B)) = Util.dest_binop neg_t
+      val neg_pat = get_neg_order pat
+      val (A, B) = Util.dest_binop_args neg_pat
+      val (cA, cB) = apply2 (Thm.cterm_of ctxt) (A, B)
 
       fun contra_to_pat_th assum contra_th =
-          contra_th |> Thm.implies_intr (Thm.cterm_of ctxt assum)
+          contra_th |> Thm.implies_intr assum
                     |> apply_to_thm UtilLogic.rewrite_from_contra_form
                     |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
 
-      val insts_A = nat_order_match' neg_t (cA, cA) ctxt (id, inst)
-      val insts_B = nat_order_match' neg_t (cB, cB) ctxt (id, inst)
+      val insts_A = nat_order_match' neg_pat (cA, cA) ctxt (id, inst)
+      val insts_B = nat_order_match' neg_pat (cB, cB) ctxt (id, inst)
 
       fun process_inst ((id', inst'), (order_ty, diff, eq_th)) =
           if diff >= 0 then [] else
           let
-            val neg_tp' = Util.subst_term_norm inst' neg_tp
-            val negt_th' = negt_th |> Util.subst_thm ctxt inst'
-                                   |> Util.send_first_to_hyps
-            val th2 = (Thm.equal_elim (make_trueprop_eq eq_th) negt_th')
-                          |> to_normal_th order_ty
+            val neg_pat_th = neg_pat |> Util.subst_term_norm inst'
+                                     |> mk_Trueprop |> Thm.cterm_of ctxt
+                                     |> Thm.assume
+            val assum = Thm.cprop_of neg_pat_th
+            val th2 = neg_pat_th |> apply_to_thm' (Conv.rewr_conv eq_th)
+                                 |> to_normal_th order_ty
             val contra_th =
                 [nat_less_th 0 (~diff), th2] MRS @{thm single_resolve}
           in
-            [((id', inst'), contra_to_pat_th neg_tp' contra_th)]
+            [((id', inst'), contra_to_pat_th assum contra_th)]
           end
 
+      val (_, (A, B)) = Util.dest_binop neg_pat
       val const_ineqs =
           if not (is_numc A andalso is_numc B) then [] else
-          let
-            val (nA, nB) = (dest_numc A, dest_numc B)
-            val negt_th' = negt_th |> Util.subst_thm ctxt inst
-                                   |> Util.send_first_to_hyps
-            val contra_ths =
-                case f of
-                    Const (@{const_name less}, _) =>
-                    if nA >= nB then [contra_by_arith ctxt [negt_th']] else []
-                  | Const (@{const_name less_eq}, _) =>
-                    if nA > nB then [contra_by_arith ctxt [negt_th']] else []
-                  | _ => []
+          if not (is_less neg_pat andalso dest_numc A >= dest_numc B) andalso
+             not (is_less_eq neg_pat andalso dest_numc A > dest_numc B) then []
+          else let
+            val neg_pat_th = neg_pat |> mk_Trueprop |> Thm.cterm_of ctxt
+                                     |> Thm.assume
+            val assum = Thm.cprop_of neg_pat_th
+            val contra_th = contra_by_arith ctxt [neg_pat_th]
           in
-            map (fn contra_th =>
-                    ((id, inst), contra_to_pat_th neg_tp contra_th)) contra_ths
+            [((id, inst), contra_to_pat_th assum contra_th)]
           end
     in
       (maps process_inst (insts_A @ insts_B) @ const_ineqs)
