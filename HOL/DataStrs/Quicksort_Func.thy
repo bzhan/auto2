@@ -5,13 +5,22 @@ begin
 section {* Outer remains *}
   
 definition outer_remains :: "'a list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
-  "outer_remains xs xs' l r \<longleftrightarrow> (\<forall>i. i < l \<or> r < i \<longrightarrow> xs ! i = xs' ! i)"
+  "outer_remains xs xs' l r \<longleftrightarrow> (length xs = length xs' \<and> (\<forall>i. i < l \<or> r < i \<longrightarrow> xs ! i = xs' ! i))"
 
 lemma outer_remainsD1: "outer_remains xs xs' l r \<Longrightarrow> i < l \<Longrightarrow> xs ! i = xs' ! i" by auto2
 setup {* add_forward_prfstep_cond @{thm outer_remainsD1} [with_term "?xs' ! ?i"] *}
 
 lemma outer_remainsD2: "outer_remains xs xs' l r \<Longrightarrow> r < i \<Longrightarrow> xs ! i = xs' ! i" by auto2
 setup {* add_forward_prfstep_cond @{thm outer_remainsD2} [with_term "?xs' ! ?i"] *}
+  
+lemma outer_remainsD3 [forward]: "outer_remains xs xs' l r \<Longrightarrow> length xs = length xs'" by auto2
+
+lemma outer_remainsD_take [rewrite]:
+  "i \<le> length xs \<Longrightarrow> outer_remains xs xs' l r \<Longrightarrow> i < l \<Longrightarrow> take i xs = take i xs'" by auto2
+
+lemma outer_remainsD_drop [rewrite]:
+  "outer_remains xs xs' l r \<Longrightarrow> r < i \<Longrightarrow> drop i xs = drop i xs'" by auto2
+
 setup {* del_prfstep_thm_eqforward @{thm outer_remains_def} *}
 
 section {* part1 function *}  
@@ -27,8 +36,8 @@ setup {* add_rewrite_rule_cond @{thm part1.simps} [with_filt (size1_filter "l"),
 setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
 setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 
-lemma part1_basic: "r < length xs \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
-  length xs' = length xs \<and> outer_remains xs xs' l r \<and> mset xs' = mset xs"
+lemma part1_basic:
+  "r < length xs \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow> outer_remains xs xs' l r \<and> mset xs' = mset xs"
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs
@@ -95,7 +104,7 @@ setup {* add_forward_prfstep_cond @{thm partition_return_in_bounds} [with_term "
 
 lemma partition_basic:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   length xs' = length xs \<and> outer_remains xs xs' l r \<and> mset xs' = mset xs" by auto2
+   outer_remains xs xs' l r \<and> mset xs' = mset xs" by auto2
 setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "?xs'"] *}
 
 lemma partition_partitions1':
@@ -161,8 +170,7 @@ lemma quicksort_trivial [rewrite]:
   "r < length xs \<Longrightarrow> l \<ge> r \<Longrightarrow> quicksort xs l r = xs" by auto2
 
 lemma quicksort_basic:
-  "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> xs3 = quicksort xs l r \<Longrightarrow>
-   length xs3 = length xs \<and> mset xs3 = mset xs \<and> outer_remains xs xs3 l r"
+  "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> xs3 = quicksort xs l r \<Longrightarrow> mset xs3 = mset xs \<and> outer_remains xs xs3 l r"
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs xs3
@@ -171,12 +179,12 @@ lemma quicksort_basic:
   @let "xs2 = quicksort xs1 l (p - 1)"
   @case "l \<ge> r"
   @have "l < r \<and> r < length xs"
-  @have "length xs2 = length xs1 \<and> mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
+  @have "mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
     @case "p - 1 \<le> l" @then
     @have "p - 1 - l < r - l" @with @have "p - 1 < r" @end
     @apply_induct_hyp "p - 1 - l" l "p - 1" xs1 xs2
   @end
-  @have "length xs3 = length xs2 \<and> mset xs3 = mset xs2 \<and> outer_remains xs2 xs3 l r" @with
+  @have "mset xs3 = mset xs2 \<and> outer_remains xs2 xs3 l r" @with
     @case "p + 1 \<ge> r" @then
     @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2 xs3
   @end

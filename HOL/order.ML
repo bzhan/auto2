@@ -118,10 +118,6 @@ fun dest_plus (Const (@{const_name plus}, _) $ A $ B) =
     if is_numc B andalso dest_numc B > 0 then SOME (A, dest_numc B) else NONE
   | dest_plus _ = NONE
 
-fun dest_plus' (Const (@{const_name plus}, _) $ A $ B) =
-    if is_numc A andalso dest_numc A > 0 then SOME (B, dest_numc A) else NONE
-  | dest_plus' _ = NONE
-
 (* eq_x is a meta equality. Use it to rewrite x in an order info. *)
 fun rewrite_info_x eq_x (cx, cy, diff, th) =
     let
@@ -199,7 +195,9 @@ val nat_eq_diff_prfstep =
             val {prop, ...} = the_single items
             val (lhs, rhs) = prop |> prop_of' |> Util.dest_binop_args
           in
-            if NatOrder.is_plus_const lhs orelse NatOrder.is_plus_const rhs then
+            if NatOrder.is_plus_const lhs orelse
+               NatOrder.is_plus_const rhs orelse
+               is_numc lhs orelse is_numc rhs then
               let
                 val prop' = to_meta_eq prop
                 val ths = (prop' RS @{thm eq_to_ineqs}) |> UtilLogic.split_conj_th
@@ -362,9 +360,6 @@ fun nat_n_refl n = Thm.reflexive (Thm.cterm_of @{context} (mk_nat n))
 (* From a == b, get a + n == b + n. *)
 fun plus_n_eq eq n = Util.comb_equiv (plus_nat_ct, [eq, nat_n_refl n])
 
-(* From a == b, get n + a == n + b. *)
-fun plus_n_eq_left n eq = Util.comb_equiv (plus_nat_ct, [nat_n_refl n, eq])
-
 (* From a == b, get a - n == b - n. *)
 fun minus_n_eq eq n = Util.comb_equiv (minus_nat_ct, [eq, nat_n_refl n])
 
@@ -386,18 +381,6 @@ fun nat_order_match_side ctxt (pat, cx) (id, inst) =
         fun process_inst ((id', inst'), eq_th) =
             (* eq_th: p(env) = x, return p(env) + n = x + n. *)
             ((id', inst'), n, plus_n_eq eq_th n)
-      in
-        map process_inst insts
-      end
-    (* Match pat with n + x. *)
-    else if is_some (dest_plus' pat) then
-      let
-        val (p, n) = the (dest_plus' pat)
-        val insts = Matcher.rewrite_match ctxt (p, cx) (id, inst)
-        val comm_cv = rewr_obj_eq @{thm add_ac(2)}
-        fun process_inst ((id', inst'), eq_th) =
-            (* eq_th: p(env) = x, return n + p(env) = x + n. *)
-            ((id', inst'), n, plus_n_eq_left n eq_th |> apply_to_rhs comm_cv)
       in
         map process_inst insts
       end

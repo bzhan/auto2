@@ -129,7 +129,6 @@ val test_nat_order_match_side =
       val test_data = [
         ("?x", "x", ["x"]),
         ("?x + 1", "x", ["x + 1"]),
-        ("1 + ?x", "x", ["x + 1"]),
         ("?x - 1", "x", ["x - 1"]),
         ("min ?a ?b + 1", "min x y", ["min x y + 1"]),
         ("3::nat", "0::nat", ["(0::nat) + 3"]),

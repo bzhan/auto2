@@ -87,8 +87,8 @@ ML_file "nat_sub_test.ML"
 lemma le_neq_implies_less' [forward]: "(m::nat) \<noteq> n \<Longrightarrow> m \<le> n \<Longrightarrow> m < n" by simp
 setup {* add_forward_prfstep_cond @{thm Nat.le0} [with_term "?n"] *}
 lemma le1_to_equal_zero [forward]: "(n::nat) < 1 \<Longrightarrow> n = 0" by simp
-setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_term "?k", with_cond "?k \<noteq> 1"] *}
-setup {* add_resolve_prfstep_cond @{thm Nat.not_add_less1} [with_term "?i"] *}
+setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_cond "?k \<noteq> 1"] *}
+setup {* add_resolve_prfstep @{thm Nat.not_add_less1} *}
 lemma not_minus_less [resolve]: "\<not>(i::nat) < (i - j)" by simp
 lemma nat_le_prod_with_same [backward]: "m \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m * n" by simp
 lemma nat_le_prod_with_le [backward1]: "k \<noteq> 0 \<Longrightarrow> (n::nat) \<le> m \<Longrightarrow> (n::nat) \<le> k * m"
