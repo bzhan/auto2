@@ -388,22 +388,16 @@ fun nat_order_match_side ctxt (pat, cx) (id, inst) =
       let
         (* Match pat with n (where input is x = 0). *)
         val numc_insts =
-            if Util.has_vars pat orelse not (cx aconvc cnat0) then [] else
-            let
+            if not (is_numc pat andalso cx aconvc cnat0) then []
+            else let
               val cpat = Thm.cterm_of ctxt pat
-              val insts = Matcher.rewrite_match
-                              ctxt (@{term_pat "?NUMC::nat"}, cpat) (id, fo_init)
-              fun process_inst ((id', inst'), eq_th) =
-                  let
-                    (* eq_th: n = pat, return pat = 0 or pat = n + 0. *)
-                    val n = lookup_numc0 inst'
-                    val th' = if n = 0 then meta_sym eq_th
-                              else apply_to_rhs add_0_eq (meta_sym eq_th)
-                  in
-                    ((id', inst), n, th')
-                  end
+
+              (* eq_th: n = pat, return pat = 0 or pat = n + 0. *)
+              val n = dest_numc pat
+              val th' = if n = 0 then Thm.reflexive cpat
+                        else apply_to_rhs add_0_eq (Thm.reflexive cpat)
             in
-              map process_inst insts
+              [((id, inst), n, th')]
             end
 
         (* Match pat with x - n. *)
