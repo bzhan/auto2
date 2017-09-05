@@ -84,7 +84,7 @@ ML_file "nat_sub.ML"
 ML_file "nat_sub_test.ML"
 
 (* Ordering on Nats. *)
-setup {* add_forward_prfstep_cond @{thm Nat.le_neq_implies_less} [with_cond "?m \<noteq> ?n"] *}
+lemma le_neq_implies_less' [forward]: "(m::nat) \<noteq> n \<Longrightarrow> m \<le> n \<Longrightarrow> m < n" by simp
 setup {* add_forward_prfstep_cond @{thm Nat.le0} [with_term "?n"] *}
 lemma le1_to_equal_zero [forward]: "(n::nat) < 1 \<Longrightarrow> n = 0" by simp
 setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_term "?k", with_cond "?k \<noteq> 1"] *}

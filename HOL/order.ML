@@ -39,7 +39,6 @@ sig
 
   val shadow_nat_order: proofstep
   val shadow_nat_order_single: proofstep
-  val shadow_nat_order_single_zero: proofstep
 
   val string_of_nat_order: Proof.context -> term * term * int * thm -> string
   val output_nat_order: Proof.context -> term list * thm -> string
@@ -178,10 +177,11 @@ fun to_nat_order_prfstep_templ (prfstep_name, pat) =
     ProofStep.prfstep_custom
         prfstep_name
         [WithProp pat]
-        PRIORITY_ADD
-        (fn ((id, _), ths) => fn _ => fn _ =>
+        PRIORITY_SHADOW
+        (fn ((id, _), ths) => fn items => fn _ =>
             [AddItems {id = id, sc = NONE,
-                       raw_items = maps th_to_normed_ritems ths}])
+                       raw_items = maps th_to_normed_ritems ths},
+             ShadowItem {id = id, item = hd items}])
 
 val to_nat_order_prfsteps =
     map to_nat_order_prfstep_templ [
@@ -741,13 +741,6 @@ val shadow_nat_order_single =
          Filter (fn _ => fn (_, inst) => dest_numc (lookup_inst inst "n") >= 0),
          ShadowFirst]
 
-val shadow_nat_order_single_zero =
-    ProofStep.gen_prfstep
-        "shadow_nat_order_single_zero"
-        [WithItem (TY_NAT_ORDER, @{term_pat "(0, ?x, ?n)"}),
-         Filter (fn _ => fn (_, inst) => dest_numc (lookup_inst inst "n") >= 0),
-         ShadowFirst]
-
 fun string_of_nat_order ctxt (x, y, diff, th) =
     if x aconv nat0 andalso diff < 0 then  (* 0 + n <= y *)
       th |> apply_to_thm' (Conv.arg1_conv nat_fold_conv0_left)
@@ -785,7 +778,7 @@ val add_nat_order_proofsteps =
       to_nat_order_prfsteps @
       [nat_eq_diff_prfstep,
        transitive, transitive_resolve, single_resolve, single_resolve_zero,
-       shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero])
+       shadow_nat_order, shadow_nat_order_single])
 
 end
 

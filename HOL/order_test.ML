@@ -24,7 +24,6 @@ in
  *)
 fun convert_prop_to_nat_order prop =
     let
-      val err_str = "convert_prop_to_nat_order: "
       val th = prop |> mk_Trueprop |> Util.assume_thm ctxt'
       val mk_box_item = BoxItem.mk_box_item ctxt'
       val item = mk_box_item (0, [], 0, Fact (TY_PROP, [prop], th))
@@ -36,7 +35,7 @@ fun convert_prop_to_nat_order prop =
           case updt of
               AddItems {raw_items, ...} =>
               map (fn ritem => mk_box_item (0, [], 0, ritem)) raw_items
-            | _ => raise Fail (err_str ^ "unexpected update.")
+            | _ => []
     in
       maps process_raw_update (apply_prfsteps item)
     end
