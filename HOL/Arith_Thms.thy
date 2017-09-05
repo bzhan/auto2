@@ -86,8 +86,8 @@ ML_file "nat_sub_test.ML"
 
 (* Ordering on Nats. *)
 lemma le_neq_implies_less' [forward]: "(m::nat) \<noteq> n \<Longrightarrow> m \<le> n \<Longrightarrow> m < n" by simp
-lemma le_zero_to_equal_zero [forward]: "(n::nat) \<le> 0 \<Longrightarrow> n = 0" by auto2
-lemma less_one_to_equal_zero [forward]: "(n::nat) < 1 \<Longrightarrow> n = 0" by auto2
+lemma le_zero_to_equal_zero [forward]: "(n::nat) \<le> 0 \<Longrightarrow> n = 0" by simp
+lemma less_one_to_equal_zero [forward]: "(n::nat) < 1 \<Longrightarrow> n = 0" by simp
 setup {* add_backward_prfstep_cond @{thm Nat.mult_le_mono1} [with_cond "?k \<noteq> 1"] *}
 setup {* add_resolve_prfstep @{thm Nat.not_add_less1} *}
 lemma not_minus_less [resolve]: "\<not>(i::nat) < (i - j)" by simp

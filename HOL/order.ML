@@ -447,7 +447,22 @@ fun nat_order_match pat item ctxt (id, inst) =
       else res |> map (apsnd (apply_to_thm' neg_ineq_cv))
     end
 
-fun nat_order_pre_match pat _ ctxt = is_order_pat ctxt pat
+fun nat_order_pre_match pat item ctxt =
+    if not (is_order_pat ctxt pat) then false else
+    let
+      val neg_pat = get_neg_order pat
+      val (x, y, _, _) = get_nat_order_info item
+
+      fun process_pattern (pat_l, pat_r, _) =
+          Matcher.pre_match ctxt (pat_l, y) andalso
+          Matcher.pre_match ctxt (pat_r, x)
+
+      val match1 = process_pattern (analyze_pattern neg_pat)
+      val match2 = case analyze_pattern2 neg_pat of
+                       NONE => false | SOME pattern => process_pattern pattern
+    in
+      match1 orelse match2
+    end
 
 (* Prop-matching with a NAT_ORDER item. *)
 val nat_order_matcher =
@@ -602,7 +617,8 @@ fun nat_order_single_match pat _ ctxt (id, inst) =
     end
 
 val nat_order_single_matcher =
-    {pre_match = nat_order_pre_match, match = nat_order_single_match}
+    {pre_match = (fn pat => fn _ => fn ctxt => is_order_pat ctxt pat),
+     match = nat_order_single_match}
 
 (* Shadow the second item if it is looser than the first (same x and
    y, but larger diff.
