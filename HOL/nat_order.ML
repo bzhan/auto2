@@ -12,6 +12,7 @@ sig
   val eq_info: (box_id * thm) * (box_id * thm) -> bool
 
   val is_plus_const: term -> bool
+  val is_minus_const: term -> bool
   val is_standard_ineq: term -> bool
   val dest_ineq: term -> ineq_info
   val is_refl_ineq: thm -> bool

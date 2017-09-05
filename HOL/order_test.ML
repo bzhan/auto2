@@ -101,46 +101,6 @@ val test_parse_prop =
       ()
     end
 
-val test_nat_order_match_side =
-    let
-      fun test (pat_str, x_str, res_strs) =
-          let
-            val pat = Proof_Context.read_term_pattern ctxt' pat_str
-            val cx = Thm.cterm_of ctxt' (Syntax.read_term ctxt' x_str)
-            val res = Syntax.read_terms ctxt' res_strs
-            val res' = Nat_Order.nat_order_match_side ctxt' (pat, cx) ([], fo_init)
-            fun check_inst ((_, inst), _, eq_th) =
-                (Util.subst_term_norm inst pat) aconv (Util.lhs_of eq_th)
-            fun eq_th_of (_, _, eq_th) = eq_th
-            val check_res =
-                eq_list (op aconv) (res, map (Util.rhs_of o eq_th_of) res')
-          in
-            if forall check_inst res' andalso check_res then ()
-            else let
-              val _ = trace_tlist ctxt' "pat, x:" [pat, x]
-              val _ = trace_tlist ctxt' "Expected:" res
-              val _ = trace_tlist ctxt' "Actual:"
-                                       (map (Thm.prop_of o eq_th_of) res')
-            in
-              raise Fail "test_nat_order_match_side"
-            end
-          end
-
-      val test_data = [
-        ("?x", "x", ["x"]),
-        ("?x + 1", "x", ["x + 1"]),
-        ("?x - 1", "x", ["x - 1"]),
-        ("min ?a ?b + 1", "min x y", ["min x y + 1"]),
-        ("3::nat", "0::nat", ["(0::nat) + 3"]),
-        ("0::nat", "0::nat", ["0::nat"]),
-        ("?x", "0::nat", []),
-        ("min ?a ?b", "0::nat", [])
-      ]
-      val _ = map test test_data
-    in
-      ()
-    end
-
 val test_nat_order_match =
     let
       fun test match_fn (pat_str, prop_str, res_strs) =
@@ -192,6 +152,8 @@ val test_nat_order_match =
         ("?x <= 0", "x < 2", []),
         ("~ x < y", "x >= y", ["~ x < y"]),
         ("~ x < 3", "x > 3", ["~ x < 3"]),
+        ("x <= 3", "x < 3", ["x <= 3"]),
+        ("x <= 3", "x < 4", ["x <= 3"]),
         ("~ ?x < ?y", "x >= y", ["~ x < y"]),
         ("~ x <= y", "x > y", ["~ x <= y"]),
         ("~ min (?a::nat) ?b <= min ?c ?d", "min x y < min z w",

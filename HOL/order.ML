@@ -10,7 +10,6 @@ sig
            LESS | LESS_LMINUS | LESS_LPLUS | LESS_RMINUS | LESS_RPLUS |
            LE | LE_LMINUS | LE_LPLUS | LE_RMINUS | LE_RPLUS
   type order_info
-  val order_diffs: order_type -> int -> int
   val to_normal_th: order_type -> thm -> thm
   val th_to_ritem: thm -> raw_item
   val th_to_normed_ritems: thm -> raw_item list
@@ -25,10 +24,6 @@ sig
   val single_resolve: proofstep
   val single_resolve_zero: proofstep
 
-  val nat_order_match_side: Proof.context -> term * cterm -> id_inst ->
-                            (id_inst * int * thm) list
-  val nat_order_match': term -> cterm * cterm -> Proof.context -> id_inst ->
-                        (id_inst * (order_type * int * thm)) list
   val nat_order_match: term -> box_item -> Proof.context -> id_inst ->
                        id_inst_th list
   val nat_order_matcher: item_matcher
@@ -84,23 +79,6 @@ datatype order_type =
  *)
 type order_info = cterm * cterm * int * thm
 
-(* For the given order_ty, convert the natural number n > 0 appearing
-   in the expression to the signed difference in the normal form of
-   the theorem.
- *)
-fun order_diffs order_ty n =
-    case order_ty of
-        LESS_LMINUS => n - 1
-      | LESS_LPLUS => ~(n + 1)
-      | LESS_RMINUS => ~(n + 1)
-      | LESS_RPLUS => n - 1
-      | LESS => ~1
-      | LE_LMINUS => n
-      | LE_LPLUS => ~n
-      | LE_RMINUS => 0  (* special *)
-      | LE_RPLUS => n
-      | LE => 0
-
 (* Conversion from a theorem to its normal form. *)
 fun to_normal_th order_ty th =
     case order_ty of
@@ -113,11 +91,6 @@ fun to_normal_th order_ty th =
       | LE_RMINUS => th RS @{thm norm_le_rminus}
       | LE => th RS @{thm norm_le}
       | _ => th
-
-(* Decompose a term into A + n or n + A (without matching). *)
-fun dest_plus (Const (@{const_name plus}, _) $ A $ B) =
-    if is_numc B andalso dest_numc B > 0 then SOME (A, dest_numc B) else NONE
-  | dest_plus _ = NONE
 
 (* eq_x is a meta equality. Use it to rewrite x in an order info. *)
 fun rewrite_info_x eq_x (cx, cy, diff, th) =
@@ -270,13 +243,18 @@ val transitive =
             end)
 
 (* Helper function for transitive resolve. *)
-fun trans_resolve d1 d2 th1 th2 =
-    if d1 < 0 andalso d2 < 0 then
-      [nat_less_th 0 (~d1), th1, th2] MRS @{thm trans_resolve1}
-    else if d1 < 0 andalso d2 >= 0 then
-      [nat_less_th d2 (~d1), th1, th2] MRS @{thm trans_resolve2}
-    else (* d1 >= 0 andalso d2 < 0 *)
-      [nat_less_th d1 (~d2), th2, th1] MRS @{thm trans_resolve2}
+fun trans_resolve th1 th2 =
+    let
+      val (_, _, d1) = NatOrder.dest_ineq (prop_of' th1)
+      val (_, _, d2) = NatOrder.dest_ineq (prop_of' th2)
+    in
+      if d1 < 0 andalso d2 < 0 then
+        [nat_less_th 0 (~d1), th1, th2] MRS @{thm trans_resolve1}
+      else if d1 < 0 andalso d2 >= 0 then
+        [nat_less_th d2 (~d1), th1, th2] MRS @{thm trans_resolve2}
+      else (* d1 >= 0 andalso d2 < 0 *)
+        [nat_less_th d1 (~d2), th2, th1] MRS @{thm trans_resolve2}
+    end
 
 (* Try to derive a contradiction from two NAT_ORDER items. *)
 val transitive_resolve =
@@ -294,7 +272,7 @@ val transitive_resolve =
               val fold0 = apply_to_thm' (Conv.arg_conv nat_fold_conv0_right)
               val try_fold0l = Conv.try_conv nat_fold_conv0_left
               val res_ths =
-                  if m + n < 0 then [trans_resolve m n th1 th2]
+                  if m + n < 0 then [trans_resolve th1 th2]
                   else if m = 0 andalso n = 0 then
                     [(map fold0 [th1, th2]) MRS @{thm Orderings.order_antisym}]
                   else if m + n = 0 then
@@ -343,138 +321,6 @@ val single_resolve_zero =
               else []
             end)
 
-(* Decompose a term into A - n (without matching). *)
-fun dest_minus (Const (@{const_name minus}, _) $ A $ B) =
-    if is_numc B andalso dest_numc B > 0 then SOME (A, dest_numc B) else NONE
-  | dest_minus _ = NONE
-
-(* Add 0 on the left. *)
-fun add_0_eq ct = rewr_obj_eq (obj_sym @{thm Nat.plus_nat.add_0}) ct
-
-(* Plus and minus operators. *)
-val plus_nat_ct = @{cterm "op +::nat=>nat=>nat"}
-val minus_nat_ct = @{cterm "op -::nat=>nat=>nat"}
-
-(* From n, get n = n. *)
-fun nat_n_refl n = Thm.reflexive (Thm.cterm_of @{context} (mk_nat n))
-
-(* From a == b, get a + n == b + n. *)
-fun plus_n_eq eq n = Util.comb_equiv (plus_nat_ct, [eq, nat_n_refl n])
-
-(* From a == b, get a - n == b - n. *)
-fun minus_n_eq eq n = Util.comb_equiv (minus_nat_ct, [eq, nat_n_refl n])
-
-(* Match one side of an inequality on natural numbers. Input pattern
-   is pat. Goal is to instantiate schematic variables in pat, so that
-   pat is equal to either x + n, n + x (converted to x + n), or x -
-   (~n). Returns the tuple ((id', inst'), n, eq_th), where eq_th is
-   pat(env) = x + n (or other forms).
-
-   First try to match pat with x + n or n + x, and then with other
-   forms.
- *)
-fun nat_order_match_side ctxt (pat, cx) (id, inst) =
-    (* Match pat with x + n. *)
-    if is_some (dest_plus pat) then
-      let
-        val (p, n) = the (dest_plus pat)
-        val insts = Matcher.rewrite_match ctxt (p, cx) (id, inst)
-        fun process_inst ((id', inst'), eq_th) =
-            (* eq_th: p(env) = x, return p(env) + n = x + n. *)
-            ((id', inst'), n, plus_n_eq eq_th n)
-      in
-        map process_inst insts
-      end
-    else
-      let
-        (* Match pat with n (where input is x = 0). *)
-        val numc_insts =
-            if not (is_numc pat andalso cx aconvc cnat0) then []
-            else let
-              val cpat = Thm.cterm_of ctxt pat
-
-              (* eq_th: n = pat, return pat = 0 or pat = n + 0. *)
-              val n = dest_numc pat
-              val th' = if n = 0 then Thm.reflexive cpat
-                        else apply_to_rhs add_0_eq (Thm.reflexive cpat)
-            in
-              [((id, inst), n, th')]
-            end
-
-        (* Match pat with x - n. *)
-        val minus_insts =
-            if is_none (dest_minus pat) then [] else
-            let
-              val (p, n) = the (dest_minus pat)
-              val insts = Matcher.rewrite_match ctxt (p, cx) (id, inst)
-              fun process_inst ((id', inst'), eq_th) =
-                  (* eq_th: p(env) = x, return p(env) - n = x - n. *)
-                  ((id', inst'), ~n, minus_n_eq eq_th n)
-            in
-              map process_inst insts
-            end
-
-        (* Match pat with x (x = 0 case already covered. *)
-        val self_insts =
-            if cx aconvc cnat0 then [] else
-            let
-              val insts = Matcher.rewrite_match ctxt (pat, cx) (id, inst)
-              fun process_inst ((id', inst'), eq_th) =
-                  (* eq_th: p(env) = x, return the same. *)
-                  ((id', inst'), 0, eq_th)
-            in
-              map process_inst insts
-            end
-      in
-        numc_insts @ minus_insts @ self_insts
-      end
-
-(* Match the two sides of pat against x and y, respectively. Here pat
-   is a boolean inequality. Returns ((id', inst'), (order_type, n,
-   eq_th)), where eq_th is the equality between pat(env) and x (+/-) n
-   (</<=) y or x (</<=) y (+/-) n.
- *)
-fun nat_order_match' pat (cx, cy) ctxt (id, inst) =
-    let
-      (* Classify pat into A < B or A <= B. *)
-      val (f, (patA, patB)) = Util.dest_binop pat
-
-      (* Given nA and nB (the value of n on the two sides), return
-         order_type. Assume at least one of nA and nB is zero.
-       *)
-      fun order_info (nA, nB) =
-          if nB = 0 then
-            if nA = 0 then if is_less pat then LESS else LE
-            else if nA > 0 then if is_less pat then LESS_LPLUS else LE_LPLUS
-            else (* nA < 0 *) if is_less pat then LESS_LMINUS else LE_LMINUS
-          else  (* nA = 0 *)
-            if nB > 0 then if is_less pat then LESS_RPLUS else LE_RPLUS
-            else (* nB < 0 *) if is_less pat then LESS_RMINUS else LE_RMINUS
-
-      (* Match A and B in sequence. *)
-      val insts_A = nat_order_match_side ctxt (patA, cx) (id, inst)
-      fun process_inst_A ((id', inst'), nA, eqA) =
-          let
-            val insts_B = nat_order_match_side ctxt (patB, cy) (id', inst')
-            fun process_inst_B ((id'', inst''), nB, eqB) =
-                if nA <> 0 andalso nB <> 0 then [] else
-                let
-                  (* n is the Abs of either nA or nB. *)
-                  val n = if nA = 0 then Int.abs nB else Int.abs nA
-                  val cf = f |> Util.subst_term_norm inst'' |> Thm.cterm_of ctxt
-                  val eq_th = Util.comb_equiv (cf, [eqA, eqB])
-                  val order_ty = order_info (nA, nB)
-                  val diff = order_diffs order_ty n
-                in
-                  [((id'', inst''), (order_ty, diff, eq_th))]
-                end
-          in
-            maps process_inst_B insts_B
-          end
-    in
-      maps process_inst_A insts_A
-    end
-
 (* Returns true if ty is either natT or a schematic type of sort
    linorder.
  *)
@@ -504,53 +350,101 @@ fun get_neg_order t =
     else if is_less_eq t then less_nat $ dest_arg t $ dest_arg1 t
     else raise Fail "get_neg_order"
 
-(* Main matching function: pat is a pattern of form either A (</<=) B
-   or ~ A (</<=) B, where A and B can possibly contain schematic
-   variables. Try to use theorem contained in item to justify an
-   instantiated version of pat.
- *)
+fun is_plus_const_gen t =
+    NatOrder.is_plus_const t orelse (is_numc t andalso not (t aconv nat0))
+
+fun plus_const_of_gen t =
+    if NatOrder.is_plus_const t then dest_arg1 t else nat0
+
+fun rewr_side eq_th ct =
+    if Thm.lhs_of eq_th aconvc ct then
+      Conv.rewr_conv eq_th ct
+    else if is_numc (Thm.term_of ct) then
+      Conv.every_conv [rewr_obj_eq (obj_sym @{thm Nat.plus_nat.add_0}),
+                       Conv.arg1_conv (Conv.rewr_conv eq_th)] ct
+    else
+      Conv.arg1_conv (Conv.rewr_conv eq_th) ct
+
+(* Return a pair of terms to be matched. *)
+fun analyze_pattern t =
+    let
+      val (lhs, rhs) = Util.dest_binop_args t
+    in
+      if is_plus_const_gen lhs then
+        (plus_const_of_gen lhs, rhs,
+         if is_less t then LESS_LPLUS else LE_LPLUS)
+      else if is_plus_const_gen rhs then
+        (lhs, plus_const_of_gen rhs,
+         if is_less t then LESS_RPLUS else LE_RPLUS)
+      else if NatOrder.is_minus_const lhs then
+        (dest_arg1 lhs, rhs,
+         if is_less t then LESS_LMINUS else LE_LMINUS)
+      else if NatOrder.is_minus_const rhs then
+        (lhs, dest_arg1 rhs,
+         if is_less t then LESS_RMINUS else LE_RMINUS)
+      else
+        (lhs, rhs, if is_less t then LESS else LE)
+    end
+
+fun analyze_pattern2 t =
+    let
+      val (lhs, rhs) = Util.dest_binop_args t
+    in
+      if NatOrder.is_minus_const lhs andalso not (is_plus_const_gen rhs) then
+        SOME (lhs, rhs, if is_less t then LESS else LE)
+      else if NatOrder.is_minus_const rhs andalso not (is_plus_const_gen lhs) then
+        SOME (lhs, rhs, if is_less t then LESS else LE)
+      else NONE
+    end
+
+(* Matching function. *)
+fun find_contradiction_item pat item ctxt (id, inst) =
+    let
+      val (x, y, d1, th1) = get_nat_order_info item
+
+      fun process_pattern (pat_l, pat_r, order_ty) =
+          let
+            val pairs = [(false, (pat_l, y)), (false, (pat_r, x))]
+          in
+            map (pair order_ty)
+                (Matcher.rewrite_match_list ctxt pairs (id, inst))
+          end
+
+      val insts = process_pattern (analyze_pattern pat)
+      val insts2 = case analyze_pattern2 pat of
+                       NONE => [] | SOME pattern => process_pattern pattern
+
+      fun process_inst (order_ty, ((id', inst'), eq_ths)) =
+          let
+            val (eq_th1, eq_th2) = the_pair eq_ths
+            val assum = pat |> Util.subst_term_norm inst'
+                            |> mk_Trueprop |> Thm.cterm_of ctxt
+            val th2 = assum |> Thm.assume
+                            |> apply_to_thm' (Conv.arg1_conv (rewr_side eq_th1))
+                            |> apply_to_thm' (Conv.arg_conv (rewr_side eq_th2))
+                            |> to_normal_th order_ty
+            val (_, _, d2) = NatOrder.dest_ineq (prop_of' th2)
+          in
+            if d1 + d2 < 0 then
+              [((id', inst'),
+                (trans_resolve th1 th2)
+                    |> Thm.implies_intr assum
+                    |> apply_to_thm UtilLogic.rewrite_from_contra_form)]
+            else []
+          end
+    in
+      maps process_inst (insts @ insts2)
+    end
+
 fun nat_order_match pat item ctxt (id, inst) =
     if not (is_order_pat ctxt pat) then [] else
     let
-      (* is_neg records whether pat is originally a negation. *)
       val is_neg = is_neg pat
       val neg_pat = get_neg_order pat
-
-      (* Obtain the two sides (x, y) of the inequality contained in
-         item. Then (y, x) will be matched with two sides of ~pat.
-       *)
-      val (x, y, diff1, th1) = get_nat_order_info item
-
-      (* Match ~pat against inequality with (y, x) on the two
-         sides. If diff1 + diff2 < 0, obtain a contradiction from th1
-         and the normalized version of negt_th (~pat).
-       *)
-      val insts = nat_order_match' neg_pat (y, x) ctxt (id, inst)
-
-      fun process_inst ((id', inst'), (order_ty, diff2, eq_th)) =
-          if diff1 + diff2 >= 0 then [] else
-          let
-            val neg_pat_th = neg_pat |> Util.subst_term_norm inst'
-                                     |> mk_Trueprop |> Thm.cterm_of ctxt
-                                     |> Thm.assume
-            val assum = Thm.cprop_of neg_pat_th
-
-            (* th2 is the normal form of neg_pat_th, after rewriting
-               to become an inequality in y and x.
-             *)
-            val th2 = neg_pat_th |> apply_to_thm' (Conv.rewr_conv eq_th)
-                                 |> to_normal_th order_ty
-
-            (* Attempt to obtain a contradiction from item1 and th2. *)
-            val res = (trans_resolve diff1 diff2 th1 th2)
-                          |> Thm.implies_intr assum
-                          |> apply_to_thm UtilLogic.rewrite_from_contra_form
-                          |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
-          in
-            [((id', inst'), res)]
-          end
+      val res = find_contradiction_item neg_pat item ctxt (id, inst)
     in
-      maps process_inst insts
+      if is_neg then res
+      else res |> map (apsnd (apply_to_thm' neg_ineq_cv))
     end
 
 fun nat_order_pre_match pat _ ctxt = is_order_pat ctxt pat
@@ -615,30 +509,40 @@ val nat_order_noteq_matcher =
  *)
 fun find_contradiction pat ctxt (id, inst) =
     let
-      val (A, B) = Util.dest_binop_args pat
-      val (cA, cB) = apply2 (Thm.cterm_of ctxt) (A, B)
+      fun process_pattern (pat_l, pat_r, order_ty) =
+          map (fn (id', eq_th) =>
+                  (order_ty,
+                   (id', eq_th, Thm.reflexive (Thm.cterm_of ctxt pat_r))))
+              (RewriteTable.equiv_info_t ctxt id (pat_l, pat_r))
 
-      val insts_A = nat_order_match' pat (cA, cA) ctxt (id, inst)
-      val insts_B = nat_order_match' pat (cB, cB) ctxt (id, inst)
+      val insts = process_pattern (analyze_pattern pat)
+      val insts2 = case analyze_pattern2 pat of
+                       NONE => [] | SOME pattern => process_pattern pattern
 
-      fun process_inst ((id', inst'), (order_ty, diff, eq_th)) =
-          if diff >= 0 then [] else
+      fun process_inst (order_ty, (id', eq_th1, eq_th2)) =
           let
-            val assum = pat |> Util.subst_term_norm inst'
+            val assum = pat |> Util.subst_term_norm inst
                             |> mk_Trueprop |> Thm.cterm_of ctxt
-            val norm_th = assum |> Thm.assume
-                                |> apply_to_thm' (Conv.rewr_conv eq_th)
-                                |> to_normal_th order_ty
+            val norm_th =
+                assum |> Thm.assume
+                      |> apply_to_thm' (Conv.arg1_conv (rewr_side eq_th1))
+                      |> apply_to_thm' (Conv.arg_conv (rewr_side eq_th2))
+                      |> to_normal_th order_ty
+            val (lhs, rhs) = Util.dest_binop_args (prop_of' norm_th)
           in
-            [((id', inst'),
-              ([nat_less_th 0 (~diff), norm_th] MRS @{thm single_resolve})
-                  |> Thm.implies_intr assum
-                  |> apply_to_thm UtilLogic.rewrite_from_contra_form)]
+            if NatOrder.is_plus_const lhs andalso dest_arg1 lhs aconv rhs then
+              let
+                val d = dest_numc (dest_arg lhs)
+              in
+                [((id', inst),
+                  ([nat_less_th 0 d, norm_th] MRS @{thm single_resolve})
+                      |> Thm.implies_intr assum
+                      |> apply_to_thm UtilLogic.rewrite_from_contra_form)]
+              end
+            else []
           end
     in
-      (maps process_inst (insts_A @ insts_B))
-          |> Util.max_partial (fn ((i,_),_) => fn ((j,_),_) =>
-                                  BoxID.is_eq_ancestor ctxt i j)
+      maps process_inst (insts @ insts2)
     end
 
 (* For patterns in the form m < n, where m and n are constants. *)
