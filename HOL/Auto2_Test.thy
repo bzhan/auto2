@@ -12,6 +12,5 @@ ML_file "normalize_test.ML"
 ML_file "logic_steps_test.ML"
 
 ML_file "acdata_test.ML"
-ML_file "order_test.ML"
 
 end

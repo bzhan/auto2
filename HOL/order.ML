@@ -610,6 +610,72 @@ val nat_order_noteq_matcher =
       {pre_match = pre_match, match = match}
     end
 
+(* Given pattern pat, find substitutions of pat that give rise to a
+   contradiction.
+ *)
+fun find_contradiction pat ctxt (id, inst) =
+    let
+      val (A, B) = Util.dest_binop_args pat
+      val (cA, cB) = apply2 (Thm.cterm_of ctxt) (A, B)
+
+      val insts_A = nat_order_match' pat (cA, cA) ctxt (id, inst)
+      val insts_B = nat_order_match' pat (cB, cB) ctxt (id, inst)
+
+      fun process_inst ((id', inst'), (order_ty, diff, eq_th)) =
+          if diff >= 0 then [] else
+          let
+            val assum = pat |> Util.subst_term_norm inst'
+                            |> mk_Trueprop |> Thm.cterm_of ctxt
+            val norm_th = assum |> Thm.assume
+                                |> apply_to_thm' (Conv.rewr_conv eq_th)
+                                |> to_normal_th order_ty
+          in
+            [((id', inst'),
+              ([nat_less_th 0 (~diff), norm_th] MRS @{thm single_resolve})
+                  |> Thm.implies_intr assum
+                  |> apply_to_thm UtilLogic.rewrite_from_contra_form)]
+          end
+    in
+      (maps process_inst (insts_A @ insts_B))
+          |> Util.max_partial (fn ((i,_),_) => fn ((j,_),_) =>
+                                  BoxID.is_eq_ancestor ctxt i j)
+    end
+
+(* For patterns in the form m < n, where m and n are constants. *)
+fun find_contradiction_trivial pat ctxt (id, inst) =
+    let
+      val (A, B) = Util.dest_binop_args pat
+    in
+      if not (is_numc A andalso is_numc B) then [] else
+      if not (is_less pat andalso dest_numc A >= dest_numc B) andalso
+         not (is_less_eq pat andalso dest_numc A > dest_numc B) then []
+      else let
+        val assum = pat |> mk_Trueprop |> Thm.cterm_of ctxt
+      in
+        [((id, inst),
+          (contra_by_arith ctxt [Thm.assume assum])
+              |> Thm.implies_intr assum
+              |> apply_to_thm UtilLogic.rewrite_from_contra_form)]
+      end
+    end
+
+(* For patterns in the form x < 0. *)
+fun find_contradiction_trivial2 pat ctxt (id, inst) =
+    let
+      val (_, B) = Util.dest_binop_args pat
+    in
+      if is_less pat andalso B aconv nat0 then
+        let
+          val assum = pat |> mk_Trueprop |> Thm.cterm_of ctxt
+        in
+          [((id, inst),
+            ([@{thm Nat.not_less0}, Thm.assume assum] MRS UtilBase.contra_triv_th)
+                |> Thm.implies_intr assum
+                |> apply_to_thm UtilLogic.rewrite_from_contra_form)]
+        end
+      else []
+    end
+
 (* Using term x to justify propositions of the form x <= x + n, where
    n >= 0. This follows the same general outline as nat_order_match.
  *)
@@ -619,48 +685,16 @@ fun nat_order_single_match pat _ ctxt (id, inst) =
       val is_neg = is_neg pat
       val neg_pat = get_neg_order pat
       val (A, B) = Util.dest_binop_args neg_pat
-      val (cA, cB) = apply2 (Thm.cterm_of ctxt) (A, B)
-
-      fun contra_to_pat_th assum contra_th =
-          contra_th |> Thm.implies_intr assum
-                    |> apply_to_thm UtilLogic.rewrite_from_contra_form
-                    |> (if is_neg then I else apply_to_thm' neg_ineq_cv)
-
-      val insts_A = nat_order_match' neg_pat (cA, cA) ctxt (id, inst)
-      val insts_B = nat_order_match' neg_pat (cB, cB) ctxt (id, inst)
-
-      fun process_inst ((id', inst'), (order_ty, diff, eq_th)) =
-          if diff >= 0 then [] else
-          let
-            val neg_pat_th = neg_pat |> Util.subst_term_norm inst'
-                                     |> mk_Trueprop |> Thm.cterm_of ctxt
-                                     |> Thm.assume
-            val assum = Thm.cprop_of neg_pat_th
-            val th2 = neg_pat_th |> apply_to_thm' (Conv.rewr_conv eq_th)
-                                 |> to_normal_th order_ty
-            val contra_th =
-                [nat_less_th 0 (~diff), th2] MRS @{thm single_resolve}
-          in
-            [((id', inst'), contra_to_pat_th assum contra_th)]
-          end
-
-      val (_, (A, B)) = Util.dest_binop neg_pat
-      val const_ineqs =
-          if not (is_numc A andalso is_numc B) then [] else
-          if not (is_less neg_pat andalso dest_numc A >= dest_numc B) andalso
-             not (is_less_eq neg_pat andalso dest_numc A > dest_numc B) then []
-          else let
-            val neg_pat_th = neg_pat |> mk_Trueprop |> Thm.cterm_of ctxt
-                                     |> Thm.assume
-            val assum = Thm.cprop_of neg_pat_th
-            val contra_th = contra_by_arith ctxt [neg_pat_th]
-          in
-            [((id, inst), contra_to_pat_th assum contra_th)]
-          end
+      val res =
+          if is_less neg_pat andalso B aconv nat0 then
+            find_contradiction_trivial2 neg_pat ctxt (id, inst)
+          else if is_numc A andalso is_numc B then
+            find_contradiction_trivial neg_pat ctxt (id, inst)
+          else
+            find_contradiction neg_pat ctxt (id, inst)
     in
-      (maps process_inst (insts_A @ insts_B) @ const_ineqs)
-          |> Util.max_partial (fn ((i,_),_) => fn ((j,_),_) =>
-                               BoxID.is_eq_ancestor ctxt i j)
+      if is_neg then res
+      else res |> map (apsnd (apply_to_thm' neg_ineq_cv))
     end
 
 val nat_order_single_matcher =
@@ -687,6 +721,13 @@ val shadow_nat_order_single =
     ProofStep.gen_prfstep
         "shadow_nat_order_single"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?x, ?n)"}),
+         Filter (fn _ => fn (_, inst) => dest_numc (lookup_inst inst "n") >= 0),
+         ShadowFirst]
+
+val shadow_nat_order_single_zero =
+    ProofStep.gen_prfstep
+        "shadow_nat_order_single_zero"
+        [WithItem (TY_NAT_ORDER, @{term_pat "(0, ?x, ?n)"}),
          Filter (fn _ => fn (_, inst) => dest_numc (lookup_inst inst "n") >= 0),
          ShadowFirst]
 
@@ -727,7 +768,7 @@ val add_nat_order_proofsteps =
       to_nat_order_prfsteps @
       [nat_eq_diff_prfstep,
        transitive, transitive_resolve, single_resolve, single_resolve_zero,
-       shadow_nat_order, shadow_nat_order_single])
+       shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero])
 
 end
 
