@@ -252,23 +252,6 @@ val nat_order_typed_matcher =
       {pre_match = pre_match, match = match}
     end
 
-(* Helper function for transitive. *)
-fun trans d1 d2 th1 th2 =
-    if d1 < 0 andalso d2 < 0 then
-      ([th1, th2] MRS @{thm trans1}) |> fold_const_left
-    else if d1 >= 0 andalso d2 >= 0 then
-      ([th1, th2] MRS @{thm trans2}) |> fold_const_right
-    else if d1 < 0 andalso d2 >= 0 then
-      if d2 >= (~d1) then
-        ([th1, th2] MRS @{thm trans3}) |> fold_const_right
-      else  (* d2 < (~d1) *)
-        ([nat_less_th d2 (~d1), th1, th2] MRS @{thm trans4}) |> fold_const_left
-    else  (* d1 >= 0 andalso d2 < 0 *)
-      if d1 >= (~d2) then
-        ([th1, th2] MRS @{thm trans5}) |> fold_const_right
-      else
-        ([nat_less_th d1 (~d2), th1, th2] MRS @{thm trans6}) |> fold_const_left
-
 (* Apply transitivity to two NAT_ORDER infos. *)
 val transitive =
     ProofStep.prfstep_custom
@@ -279,12 +262,10 @@ val transitive =
          Filter (neq_filter @{term_pat "?y ~= ?z"}),
          Filter (neq_filter @{term_pat "?x ~= ?z"})]
         PRIORITY_ADD
-        (fn ((id, inst), ths) => fn _ => fn _ =>
+        (fn ((id, _), ths) => fn _ => fn _ =>
             let
-              val m = dest_numc (lookup_inst inst "m")
-              val n = dest_numc (lookup_inst inst "n")
               val (th1, th2) = the_pair ths
-              val item' = th_to_ritem (trans m n th1 th2)
+              val item' = th_to_ritem (NatOrder.combine_ineqs th1 th2)
             in
               [AddItems {id = id, sc = NONE, raw_items = [item']}]
             end)
@@ -536,15 +517,17 @@ fun valid_type ctxt ty =
  *)
 fun valid_arg_type ctxt t = valid_type ctxt (fastype_of (dest_arg t))
 
+fun is_order_pat ctxt pat =
+    (is_order pat andalso valid_arg_type ctxt pat) orelse
+    (is_order (get_neg pat) andalso valid_arg_type ctxt (get_neg pat))
+
 (* Main matching function: pat is a pattern of form either A (</<=) B
    or ~ A (</<=) B, where A and B can possibly contain schematic
    variables. Try to use theorem contained in item to justify an
    instantiated version of pat.
  *)
 fun nat_order_match pat item ctxt (id, inst) =
-    if not ((is_order pat andalso valid_arg_type ctxt pat) orelse
-            (is_order (get_neg pat) andalso valid_arg_type ctxt (get_neg pat)))
-    then [] else
+    if not (is_order_pat ctxt pat) then [] else
     let
       (* is_neg records whether pat is originally a negation. *)
       val is_neg = is_neg pat
@@ -591,9 +574,7 @@ fun nat_order_match pat item ctxt (id, inst) =
       maps process_inst insts
     end
 
-fun nat_order_pre_match pat _ ctxt =
-    (is_order pat andalso valid_arg_type ctxt pat) orelse
-    (is_order (get_neg pat) andalso valid_arg_type ctxt (get_neg pat))
+fun nat_order_pre_match pat _ ctxt = is_order_pat ctxt pat
 
 (* Prop-matching with a NAT_ORDER item. *)
 val nat_order_matcher =
@@ -656,10 +637,8 @@ val nat_order_noteq_matcher =
    n >= 0. This follows the same general outline as nat_order_match.
  *)
 fun nat_order_single_match pat _ ctxt (id, inst) =
-    if not ((is_order pat andalso fastype_of (dest_arg pat) = natT) orelse
-            (is_order (get_neg pat) andalso fastype_of (dest_arg (get_neg pat)) = natT))
-    then [] else
-    if Util.has_vars pat then [] else
+    if not (is_order_pat ctxt pat) orelse
+       Util.has_vars pat then [] else
     let
       val is_neg = is_neg pat
       val neg_ct = get_neg pat |> Thm.cterm_of ctxt |> neg_ineq_cv |> Thm.rhs_of
