@@ -91,7 +91,7 @@ setup {* add_rewrite_rule @{thm case_prod_conv} *}
 setup {* add_rewrite_rule_cond @{thm case_prod_beta} [with_cond "?p \<noteq> (?s, ?t)"] *}
 
 (* Let. *)
-setup {* add_rewrite_rule (to_obj_eq_th @{thm Let_def}) *}
+setup {* Normalizer.add_rewr_normalizer ("rewr_let", @{thm Let_def}) *}
 
 (* Equivalence relation *)
 setup {* add_rewrite_rule @{thm symp_def} *}
