@@ -50,6 +50,7 @@ lemma execute_return': "execute (return x) h = Some (x, h)" by (metis comp_eq_de
 setup {* add_rewrite_rule @{thm execute_return'} *}
 setup {* add_rewrite_rule @{thm execute_len} *}
 setup {* add_rewrite_rule @{thm execute_new} *}
+setup {* add_rewrite_rule @{thm execute_of_list} *}
 setup {* add_rewrite_rule @{thm execute_upd(1)} *}
 setup {* add_rewrite_rule @{thm execute_ref} *}
 setup {* add_rewrite_rule @{thm execute_lookup} *}

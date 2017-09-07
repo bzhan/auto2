@@ -177,9 +177,9 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
       val _ = if inst_new aconv (Thm.prop_of th') then () else
               raise Fail "apply_pat_r: conclusion mismatch"
 
-      (* Rewrite on subterms, top order. *)
+      (* Rewrite on subterms, top sweep order. *)
       fun rewr_top eq_th =
-          Conv.top_conv (K (Conv.try_conv (Conv.rewr_conv eq_th))) ctxt
+          Conv.top_sweep_conv (K (Conv.rewr_conv eq_th)) ctxt
     in
       th' |> apply_to_thm (Conv.every_conv (map rewr_top eqs))
     end

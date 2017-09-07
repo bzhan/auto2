@@ -135,7 +135,12 @@ fun forward_ent_shadowing_prfstep ent_th =
      func = OneStep (forward_ent_prfstep_fn true ent_th)}
 
 fun add_forward_ent_prfstep ent_th =
-    add_prfstep (forward_ent_prfstep ent_th)
+    let
+      val prfstep = forward_ent_prfstep ent_th
+      val _ = writeln (#name prfstep)
+    in
+      add_prfstep prfstep
+    end
 
 fun add_forward_ent_shadowing_prfstep ent_th =
     add_prfstep (forward_ent_shadowing_prfstep ent_th)
@@ -169,7 +174,12 @@ fun backward_ent_prfstep ent_th =
      func = OneStep (backward_ent_prfstep_fn ent_th)}
 
 fun add_backward_ent_prfstep ent_th =
-    add_prfstep (backward_ent_prfstep ent_th)
+    let
+      val prfstep = backward_ent_prfstep ent_th
+      val _ = writeln (#name prfstep)
+    in
+      add_prfstep prfstep
+    end
 
 fun entail_equiv_forward_th th =
     (th RS @{thm entail_equiv_forward})

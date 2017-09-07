@@ -111,6 +111,9 @@ theorem refs_on_Ref_alloc [rewrite]: "i < lim h \<Longrightarrow> refs (snd (Ref
 lemma new_rule:
   "<emp> Array.new n x <\<lambda>r. r \<mapsto>\<^sub>a replicate n x>" by auto2
 
+lemma of_list_rule:
+  "<emp> Array.of_list xs <\<lambda>r. r \<mapsto>\<^sub>a xs>" by auto2
+
 lemma ref_rule:
   "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 

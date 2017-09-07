@@ -57,6 +57,8 @@ lemma ufa_invarD:
 setup {* add_forward_prfstep_cond @{thm ufa_invarD} [with_term "?l ! ?i"] *}
 setup {* del_prfstep_thm_eqforward @{thm ufa_invar_def} *}
 
+lemma rep_of_id [rewrite]: "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> l ! i = i \<Longrightarrow> rep_of l i = i" by auto2
+
 lemma rep_of_iff [rewrite]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of l i = (if l ! i = i then i else rep_of l (l ! i))" by auto2
 
@@ -108,6 +110,9 @@ lemma ufa_\<alpha>_equiv [forward]: "part_equiv (ufa_\<alpha> l)" by auto2
 
 lemma ufa_\<alpha>_refl [rewrite]: "(i, i) \<in> ufa_\<alpha> l \<longleftrightarrow> i < length l" by auto2
 
+lemma ufa_\<alpha>_dom [rewrite]: "x \<in> Domain (ufa_\<alpha> l) \<longleftrightarrow> x < length l"
+  by (meson Domain.simps ufa_\<alpha>_memD ufa_\<alpha>_refl)
+
 section {* Operations on rep_of array *}
 
 lemma ufa_init_invar [resolve]: "ufa_invar [0..<n]" by auto2
@@ -116,7 +121,7 @@ lemma ufa_init_correct [rewrite]:
   "(x, y) \<in> ufa_\<alpha> [0..<n] \<longleftrightarrow> (x = y \<and> x < n)"
 @proof @have "ufa_invar [0..<n]" @qed
 
-definition ufa_union :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list" where [rewrite]:
+definition ufa_union :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list" where [rewrite_bidir]:
   "ufa_union l x y = l[rep_of l x := rep_of l y]"
 setup {* register_wellform_data ("ufa_union l x y", ["x < length l", "y < length l"]) *}
 
@@ -139,7 +144,7 @@ lemma ufa_union_aux [rewrite]:
   @prop_induct "ufa_invar l \<and> i < length l" "rep_of l' i = (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
 @qed
   
-lemma ufa_union_correct:
+lemma ufa_union_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> a < length l \<Longrightarrow> b < length l \<Longrightarrow>
    ufa_\<alpha> (ufa_union l a b) = per_union (ufa_\<alpha> l) a b"
 @proof
@@ -152,7 +157,7 @@ lemma ufa_union_correct:
   @end
 @qed
 
-definition ufa_compress :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where [rewrite]:
+definition ufa_compress :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where [rewrite_bidir]:
   "ufa_compress l x = l[x := rep_of l x]"
 setup {* register_wellform_data ("ufa_compress l x", ["x < length l"]) *}
 
@@ -169,12 +174,16 @@ lemma ufa_compress_invar:
 setup {* add_forward_prfstep_cond @{thm ufa_compress_invar} [with_term "ufa_compress ?l ?x"] *}
   
 lemma ufa_compress_aux [rewrite]:
-  "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> i < length l \<Longrightarrow> rep_of (ufa_compress l x) i = rep_of l i"
+  "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> l' = ufa_compress l x \<Longrightarrow> i < length l' \<Longrightarrow>
+   rep_of (ufa_compress l x) i = rep_of l i"
 @proof
   @prop_induct "ufa_invar l \<and> i < length l" "rep_of (ufa_compress l x) i = rep_of l i"
 @qed
 
 lemma ufa_compress_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> ufa_\<alpha> (ufa_compress l x) = ufa_\<alpha> l" by auto2
+
+setup {* del_prfstep_thm @{thm rep_of_iff} *}
+setup {* del_prfstep_thm @{thm rep_of.psimps} *}
 
 end

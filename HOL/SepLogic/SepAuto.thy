@@ -84,7 +84,8 @@ setup {* fold add_match_hoare_create_case [
   @{thm assert_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
 
 setup {* fold add_hoare_triple_direct_prfstep [
-  @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule}, @{thm length_rule}] *}
+  @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule},
+  @{thm of_list_rule}, @{thm length_rule}] *}
 
 (* Some simple tests *)
 
