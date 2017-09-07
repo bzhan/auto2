@@ -372,6 +372,8 @@ fun to_obj_conv_on_horn ctxt ct =
         @{const Pure.imp} $ _ $ _ =>
         Conv.every_conv [Conv.arg1_conv (to_obj_conv ctxt),
                          Conv.arg_conv (to_obj_conv_on_horn ctxt)] ct
+      | Const (@{const_name Pure.all}, _) $ Abs _ =>
+        Conv.binder_conv (to_obj_conv_on_horn o snd) ctxt ct
       | _ => Conv.all_conv ct
 
 (* Convert !! and ==> on the outermost level. Pull all !! to the front. *)

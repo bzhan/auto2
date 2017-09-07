@@ -53,17 +53,17 @@ fun get_typed_ind_th thy ind_type ty =
 
 fun get_term_ind_th thy ind_type t =
     let
-      val tab = Data.get thy
-      fun term_can_match t' =
-          let val _ = Pattern.first_order_match thy (t', t) fo_init in true end
-          handle Pattern.MATCH => false
+      val data = Symtab.lookup_list (Data.get thy) ind_type
+
+      fun match_data (pat, th) =
+          let
+            val inst = Pattern.first_order_match thy (pat, t) fo_init
+          in
+            SOME (Util.subst_thm_thy thy inst th)
+          end
+          handle Pattern.MATCH => NONE
     in
-      case Symtab.lookup tab ind_type of
-          NONE => NONE
-        | SOME lst =>
-          case find_first (fn (t', _) => term_can_match t') lst of
-              NONE => NONE
-            | SOME (_, ind_th) => SOME ind_th
+      get_first match_data data
     end
 
 (* Check a strong induction theorem ind_th is of the right form, and
@@ -116,22 +116,16 @@ fun add_strong_induct_rule ind_th thy =
 
 fun add_case_induct_rule ind_th thy =
     let
-      (* Initial assumption is of form f ?a_1 ... ?a_n. *)
-      val init_assum = hd (Thm.prems_of ind_th)
-      val (f, pat_vars) = Term.strip_comb (dest_Trueprop init_assum)
-      val _ = assert (forall Term.is_Var pat_vars) "add_case_induct_rule"
+      val init_assum = ind_th |> Thm.prems_of |> hd |> dest_Trueprop
     in
-      thy |> add_induct_data "case_induct" (f, ind_th)
+      thy |> add_induct_data "case_induct" (init_assum, ind_th)
     end
 
 fun add_prop_induct_rule ind_th thy =
     let
-      (* Initial assumption is of form f ?a_1 ... ?a_n. *)
-      val (init_assum, _) = Logic.dest_implies (Thm.prop_of ind_th)
-      val (f, pat_vars) = Term.strip_comb (dest_Trueprop init_assum)
-      val _ = assert (forall Term.is_Var pat_vars) "add_prop_induct_rule"
+      val init_assum = ind_th |> Thm.prems_of |> hd |> dest_Trueprop
     in
-      thy |> add_induct_data "prop_induct" (f, ind_th)
+      thy |> add_induct_data "prop_induct" (init_assum, ind_th)
     end
 
 fun add_var_induct_rule ind_th thy =
@@ -247,8 +241,7 @@ fun case_induct_cmd s state =
       val thy = Proof_Context.theory_of ctxt
 
       val start = Syntax.read_term ctxt s
-      val (f, args) = Term.strip_comb start
-      val ind_th = the (get_term_ind_th thy "case_induct" f)
+      val ind_th = the (get_term_ind_th thy "case_induct" start)
                    handle Option.Option =>
                           raise Fail "case_induct: cannot find theorem."
 
@@ -258,11 +251,8 @@ fun case_induct_cmd s state =
       val cAs = map (Thm.cterm_of ctxt) As
 
       (* Instantiate the induction theorem *)
-      val (_, vars) = ind_th |> Thm.prems_of |> hd |> dest_Trueprop
-                             |> Term.strip_comb
-      val var_P = ind_th |> concl_of'
-      val inst = fold (Pattern.match thy)
-                      ((var_P, dest_Trueprop C) :: (vars ~~ args)) fo_init
+      val var_P = concl_of' ind_th
+      val inst = Pattern.match thy (var_P, dest_Trueprop C) fo_init
       val ind_th = Util.subst_thm_thy thy inst ind_th
 
       val ind_goals =
@@ -293,16 +283,16 @@ fun prop_induct_cmd (s, t) state =
       val thy = Proof_Context.theory_of ctxt
 
       val (start, stmt) = the_pair (Syntax.read_terms ctxt [s, t])
-      val (f, args) = Term.strip_comb start
-      val ind_th = the (get_term_ind_th thy "prop_induct" f)
+      val ind_th = the (get_term_ind_th thy "prop_induct" start)
                    handle Option.Option =>
                           raise Fail "prop_induct: cannot find theorem."
 
-      (* Instantiate the induction theorem *)
+      val (var_P, args) = ind_th |> Thm.concl_of |> dest_Trueprop |> Term.strip_comb
       val P = fold Util.lambda_abstract (rev args) stmt
-      val (var_P, vars) = ind_th |> concl_of' |> Term.strip_comb
-      val inst = fold (Pattern.match thy) ((var_P, P) :: (vars ~~ args)) fo_init
-      val ind_th = Util.subst_thm_thy thy inst ind_th
+      val inst = Pattern.match thy (var_P, P) fo_init
+
+      (* Instantiate the induction theorem *)
+      val ind_th = ind_th |> Util.subst_thm_thy thy inst
 
       (* Obtain list of assumptions *)
       val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
@@ -319,6 +309,7 @@ fun prop_induct_cmd (s, t) state =
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
                              |> fold Thm.implies_intr (rev cAs)
+      val _ = writeln ("Obtained " ^ (ind_concl |> Thm.concl_of |> Syntax.string_of_term ctxt))
 
       val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
     in

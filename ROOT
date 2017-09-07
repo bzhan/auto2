@@ -46,6 +46,7 @@ session SepLogic_BasicStr = SepLogic_Base +
   theories
     "HOL/SepLogic/LinkedList"
     "HOL/SepLogic/BinaryTree"
+    "HOL/DataStrs/Union_Find_Func"
 
 session SepLogic_Arrays = SepLogic_Base +
   description {*

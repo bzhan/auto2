@@ -93,9 +93,14 @@ setup {* add_rewrite_rule_cond @{thm case_prod_beta} [with_cond "?p \<noteq> (?s
 (* Let. *)
 setup {* Normalizer.add_rewr_normalizer ("rewr_let", @{thm Let_def}) *}
 
-(* Equivalence relation *)
-setup {* add_rewrite_rule @{thm symp_def} *}
-setup {* add_rewrite_rule @{thm transp_def} *}
+(* Equivalence relations *)  
+setup {* add_property_const @{term sym} *}
+setup {* add_forward_prfstep @{thm Relation.symD} *}
+setup {* add_backward_prfstep @{thm Relation.symI} *}
+
+setup {* add_property_const @{term trans} *}
+setup {* add_forward_prfstep @{thm Relation.transD} *}
+setup {* add_backward_prfstep @{thm Relation.transI} *}
 
 (* Options *)
 theorem option_not_none [forward, backward]: "x \<noteq> None \<Longrightarrow> \<exists>p. x = Some p" by auto

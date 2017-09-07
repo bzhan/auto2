@@ -138,4 +138,9 @@ setup {* add_backward_prfstep @{thm Multiset.nth_mem_mset} *}
 lemma in_mset_conv_nth [resolve]: "x \<in># mset xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
   by (metis in_multiset_in_set in_set_conv_nth)
 
+section {* upto lists *}
+
+lemma upt_zero_length [rewrite]: "length [0..<n] = n" by simp
+lemma nth_upt_zero [rewrite]: "i < length [0..<n] \<Longrightarrow> [0..<n] ! i = i" by simp
+
 end
