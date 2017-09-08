@@ -7,88 +7,57 @@ begin
 section {* Balancing function on RBT *}
 
 fun balanceR :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
-  "balanceR (Node a B k1 v1 (Node (Node b R k3 v3 c) R k2 v2 d)) = Node (Node a B k1 v1 b) R k3 v3 (Node c B k2 v2 d)"
-| "balanceR (Node a B k1 v1 (Node b R k2 v2 (Node c R k3 v3 d))) = Node (Node a B k1 v1 b) R k2 v2 (Node c B k3 v3 d)"
-| "balanceR t = t"
-setup {* fold add_rewrite_rule @{thms balanceR.simps(1,4-5)} *}
-
-theorem balanceR_def' [rewrite]:
-  "cl b = B \<Longrightarrow> balanceR (Node a B k1 v1 (Node b R k2 v2 (Node c R k3 v3 d))) = Node (Node a B k1 v1 b) R k2 v2 (Node c B k3 v3 d)"
-  "cl r = B \<Longrightarrow> balanceR (Node l B k v r) = Node l B k v r"
-  "cl r = R \<Longrightarrow> cl (lsub r) = B \<Longrightarrow> cl (rsub r) = B \<Longrightarrow> balanceR (Node l B k v r) = Node l B k v r"
-  apply (metis balanceR.simps(2) balanceR.simps(3) pre_rbt.collapse)
-  apply (metis balanceR.simps(15) balanceR.simps(6) pre_rbt.collapse)
-  by (smt balanceR.simps(10) balanceR.simps(13) balanceR.simps(14) balanceR.simps(9) pre_rbt.collapse red_not_leaf)
-
+  "balanceR Leaf = Leaf"
+| "balanceR (Node l c k v r) =
+   (if c = R then Node l c k v r
+    else if cl r = R then
+      let lr = lsub r; rr = rsub r in
+      if cl lr = R then Node (Node l B k v (lsub lr)) R (key lr) (val lr) (Node (rsub lr) B (key r) (val r) rr)
+      else if cl rr = R then Node (Node l B k v lr) R (key r) (val r) (Node (lsub rr) B (key rr) (val rr) (rsub rr))
+      else Node l c k v r
+    else Node l c k v r)"
+setup {* fold add_rewrite_rule @{thms balanceR.simps} *}
+  
 fun balance :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
-  "balance (Node (Node (Node a R k3 v3 b) R k2 v2 c) B k1 v1 d) = Node (Node a B k3 v3 b) R k2 v2 (Node c B k1 v1 d)"
-| "balance (Node (Node a R k2 v2 (Node b R k3 v3 c)) B k1 v1 d) = Node (Node a B k2 v2 b) R k3 v3 (Node c B k1 v1 d)"
-| "balance t = balanceR t"
-setup {* fold add_rewrite_rule @{thms balance.simps(1,4)} *}
-
-theorem balance_def' [rewrite]:
-  "balance (Node l R k v r) = Node l R k v r"
-  "cl a = B \<Longrightarrow> balance (Node (Node a R k2 v2 (Node b R k3 v3 c)) B k1 v1 d) = Node (Node a B k2 v2 b) R k3 v3 (Node c B k1 v1 d)"
-  "cl l = B \<Longrightarrow> balance (Node l B k v r) = balanceR (Node l B k v r)"
-  "cl l = R \<Longrightarrow> cl (lsub l) = B \<Longrightarrow> cl (rsub l) = B \<Longrightarrow> balance (Node l B k v r) = balanceR (Node l B k v r)"
-  apply simp apply (metis balance.simps(2) balance.simps(3) pre_rbt.collapse)
-  apply (metis balance.simps(14) balance.simps(5) pre_rbt.collapse)
-  by (smt balance.simps(11) balance.simps(12) balance.simps(4) balance.simps(7) balance.simps(8) pre_rbt.collapse red_not_leaf)
+  "balance Leaf = Leaf"
+| "balance (Node l c k v r) =
+   (if c = R then Node l c k v r
+    else if cl l = R then
+      let ll = lsub l; rl = rsub l in
+      if cl ll = R then Node (Node (lsub ll) B (key ll) (val ll) (rsub ll)) R (key l) (val l) (Node (rsub l) B k v r)
+      else if cl rl = R then Node (Node (lsub l) B (key l) (val l) (lsub rl)) R (key rl) (val rl) (Node (rsub rl) B k v r)
+      else balanceR (Node l c k v r)
+    else balanceR (Node l c k v r))"
+setup {* fold add_rewrite_rule @{thms balance.simps} *}
 
 subsection {* balance function preserves bd_inv *}
 
-theorem balance_bd': "bd_inv t \<Longrightarrow> bd_inv (balanceR t) \<and> black_depth t = black_depth (balanceR t)"
-@proof
-  @case "t = Leaf" @then
-  @case "cl t = B" @with
-    @case "cl (rsub t) = R" @with
-      @case "cl (lsub (rsub t)) = R" @then @case "cl (rsub (rsub t)) = R" @end @end
-@qed
-setup {* fold add_backward_prfstep [conj_left_th @{thm balance_bd'}, conj_right_th @{thm balance_bd'}] *}
+lemma balanceR_bd: "bd_inv t \<Longrightarrow> bd_inv (balanceR t) \<and> black_depth t = black_depth (balanceR t)"
+@proof @case "t = Leaf" @qed
+
+setup {* fold add_backward_prfstep [conj_left_th @{thm balanceR_bd}, conj_right_th @{thm balanceR_bd}] *}
 
 theorem balance_bd: "bd_inv t \<Longrightarrow> bd_inv (balance t) \<and> black_depth (balance t) = black_depth t"
-@proof
-  @case "t = Leaf" @then
-  @case "cl t = B" @with
-    @case "cl (lsub t) = R" @with
-      @case "cl (lsub (lsub t)) = R" @then @case "cl (rsub (lsub t)) = R" @end @end
-@qed
+@proof @case "t = Leaf" @qed
 setup {* add_backward_prfstep (conj_left_th @{thm balance_bd}) #> add_rewrite_rule (conj_right_th @{thm balance_bd}) *}
 
 subsection {* balance function preserves cl_inv *}
 
-theorem balanceR [backward1, backward2]:
-  "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balanceR (Node l B k v r))"
-@proof
-  @case "cl r = R" @with @case "cl (lsub r) = R" @then @case "cl (rsub r) = R" @end
-@qed
+lemma balanceR_cl [backward1, backward2]:
+  "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balanceR (Node l B k v r))" by auto2
 
-theorem balance1 [backward1, backward2]:
-  "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (balance (Node l B k v r))"
-@proof
-  @case "cl l = R" @with @case "cl (lsub l) = R" @then @case "cl (rsub l) = R" @end
-@qed
+lemma balance1 [backward1, backward2]:
+  "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (balance (Node l B k v r))" by auto2
 
-theorem balance2 [backward1, backward2]:
-  "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balance (Node l B k v r))"
-@proof
-  @case "cl l = R" @with @case "cl (lsub l) = R" @then @case "cl (rsub l) = R" @end
-@qed
-setup {* del_prfstep_thm @{thm balanceR} *}
+lemma balance2 [backward1, backward2]:
+  "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balance (Node l B k v r))" by auto2
+setup {* del_prfstep_thm @{thm balanceR_cl} *}
 
 subsection {* Balance function takes non-leafs to non-leafs *}
 
-theorem balanceR_non_Leaf [resolve]: "balanceR (Node l c k v r) \<noteq> Leaf"
-@proof
-  @case "c = R" @then
-  @case "cl r = R" @with @case "cl (lsub r) = R" @then @case "cl (rsub r) = R" @end
-@qed
+lemma balanceR_non_Leaf [resolve]: "balanceR (Node l c k v r) \<noteq> Leaf" by auto2
 
-theorem balance_non_Leaf: "balance (Node l c k v r) \<noteq> Leaf"
-@proof
-  @case "c = R" @then
-  @case "cl l = R" @with @case "cl (lsub l) = R" @then @case "cl (rsub l) = R" @end
-@qed
+lemma balance_non_Leaf: "balance (Node l c k v r) \<noteq> Leaf" by auto2
 setup {* add_forward_prfstep_cond @{thm balance_non_Leaf} [with_term "balance (Node ?l ?c ?k ?v ?r)"] *}
 
 section {* ins function *}
@@ -148,25 +117,13 @@ theorem is_rbt_insert: "is_rbt t \<Longrightarrow> is_rbt (rbt_insert x v t)" by
 section {* Sortedness, sets, and maps *}
 
 theorem balanceR_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balanceR t) = rbt_in_traverse_pairs t"
-@proof
-  @case "t = Leaf" @then
-  @case "cl t = B" @with
-    @case "cl (rsub t) = R" @with
-      @case "cl (lsub (rsub t)) = R" @then @case "cl (rsub (rsub t)) = R" @end @end
-@qed
+@proof @case "t = Leaf" @qed
 
 theorem balance_inorder_pairs [rewrite]: "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t"
-@proof
-  @case "t = Leaf" @then
-  @case "cl t = B" @with
-    @case "cl (lsub t) = R" @with
-      @case "cl (lsub (lsub t)) = R" @then @case "cl (rsub (lsub t)) = R" @end @end
-@qed
+@proof @case "t = Leaf" @qed
 
 theorem balance_inorder [rewrite]: "rbt_in_traverse (balance t) = rbt_in_traverse t"
-@proof
-  @have "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t" @then
-@qed
+@proof @have "rbt_in_traverse_pairs (balance t) = rbt_in_traverse_pairs t" @qed
 
 theorem ins_inorder [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse (ins x v t) = ordered_insert x (rbt_in_traverse t)"
