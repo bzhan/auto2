@@ -227,9 +227,6 @@ lemma balL_in_traverse_pairs [rewrite]:
 lemma balR_in_traverse_pairs [rewrite]:
   "rbt_in_traverse_pairs (balR l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
 
-setup {* del_prfstep_thm @{thm balL_def} *}
-setup {* del_prfstep_thm @{thm balR_def} *}
-
 fun combine :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
   "combine Leaf t = t"
 | "combine t Leaf = t"
@@ -259,10 +256,55 @@ lemma combine_bd:
   "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
    bd_inv (combine lt rt) \<and> black_depth (combine lt rt) = black_depth lt"
 @proof @double_induct lt rt @qed
+setup {* add_forward_prfstep_cond @{thm combine_bd} [with_term "combine ?lt ?rt"] *}
 
 lemma combine_cl:
   "cl_inv lt \<Longrightarrow> cl_inv rt \<Longrightarrow>
    (cl lt = B \<longrightarrow> cl rt = B \<longrightarrow> cl_inv (combine lt rt)) \<and> cl_inv' (combine lt rt)"
 @proof @double_induct lt rt @qed
+setup {* add_forward_prfstep_cond @{thm combine_cl} [with_term "combine ?lt ?rt"] *}
+setup {* fold del_prfstep_thm @{thms combine.simps} *}
+
+fun del :: "'a::linorder \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+  "del x y Leaf = Leaf"
+| "del x y (Node l _ k v r) =
+    (if x = k then combine l r
+     else if x < k then
+       if l = Leaf then Node Leaf R k v r
+       else if cl l = B then balL (del x y l) k v r
+       else Node (del x y l) R k v r
+     else
+       if r = Leaf then Node l R k v Leaf
+       else if cl r = B then balR l k v (del x y r)
+       else Node l R k v (del x y r))"
+setup {* fold add_rewrite_rule @{thms del.simps} *}
+
+lemma del_bd:
+  "bd_inv t \<Longrightarrow> cl_inv t \<Longrightarrow> bd_inv (del x y t) \<and> (
+    if cl t = R then black_depth (del x y t) = black_depth t
+    else black_depth (del x y t) = black_depth t - 1)"
+@proof @induct t @with @subgoal "t = Node l c k v r"
+  @case "x = k" @case "x < k" @with
+    @case "l = Leaf" @case "cl l = B" @end
+  @case "x > k" @with
+    @case "r = Leaf" @case "cl r = B" @end
+  @endgoal @end
+@qed
+
+lemma del_cl:
+  "cl_inv t \<Longrightarrow> if cl t = R then cl_inv (del x y t) else cl_inv' (del x y t)"
+@proof @induct t @with @subgoal "t = Node l c k v r"
+  @case "x = k" @case "x < k" @with
+    @case "l = Leaf" @case "cl l = B" @end
+  @endgoal @end
+@qed
+
+setup {* add_forward_prfstep_cond @{thm del_bd} [with_term "del ?x ?y ?t"] *}
+setup {* add_forward_prfstep_cond @{thm del_cl} [with_term "del ?x ?y ?t"] *}
+
+definition delete :: "'a::linorder \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+  "delete x y t = paint B (del x y t)"
+
+lemma rbt_delete [forward]: "is_rbt t \<Longrightarrow> is_rbt (delete x y t)" by auto2
 
 end
