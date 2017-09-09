@@ -12,6 +12,7 @@ sig
   val add_case_induct_rule: thm -> theory -> theory
   val add_prop_induct_rule: thm -> theory -> theory
   val add_var_induct_rule: thm -> theory -> theory
+  val add_double_induct_rule: thm -> theory -> theory
 
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
   val apply_induct_hyp_cmd: string list -> Proof.state -> Proof.state
@@ -135,6 +136,15 @@ fun add_var_induct_rule ind_th thy =
                      "add_var_induct_rule: concl of ind_th must be ?P ?var"
     in
       thy |> add_typed_induct_data "var_induct" (type_of n, ind_th)
+    end
+
+fun add_double_induct_rule ind_th thy =
+    let
+      val (P, (m, n)) = ind_th |> concl_of' |> Term.strip_comb |> apsnd the_pair
+      val _ = assert (forall Term.is_Var [P, m, n])
+                     "add_double_induct_rule: concl must be ?P ?m ?n"
+    in
+      thy |> add_typed_induct_data "double_induct" (type_of m, ind_th)
     end
 
 fun strong_induct_cmd (s, t) state =
@@ -430,9 +440,70 @@ val _ =
         (fn (((s, t), u), v) =>
             Toplevel.proof (fn state => induct_cmd (s, t, these u, v) state)))
 
+fun double_induct_cmd (s1, s2) state =
+    let
+      val {context = ctxt, ...} = Proof.goal state
+      val thy = Proof_Context.theory_of ctxt
+      val (var1, var2) = apply2 (Syntax.read_term ctxt) (s1, s2)
+
+      (* Obtain statement *)
+      val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                              |> Thm.term_of |> Util.strip_meta_horn
+      val all_vars = [var1, var2]
+      val obj_As = map dest_Trueprop (filter (Util.occurs_frees all_vars) As)
+      val obj_C = dest_Trueprop C
+      val stmt = UtilLogic.list_obj_horn ([], (obj_As, obj_C))
+
+      val ty = type_of var1
+      val ind_th = the (get_typed_ind_th thy "double_induct" ty)
+                       handle Option.Option =>
+                              raise Fail "double_induct: cannot find theorem."
+
+      (* Instantiate the induction theorem *)
+      val concl = concl_of' ind_th
+      val (var_P, (var_n1, var_n2)) = concl |> Term.strip_comb |> apsnd the_pair
+
+      val P_inst = fold Term.lambda [var2, var1] stmt
+      val inst = fold (Pattern.match thy) [
+            (var_P, P_inst), (var_n1, var1), (var_n2, var2)] fo_init
+      val ind_th' = Util.subst_thm_thy thy inst ind_th
+
+      val cAs = map (Thm.cterm_of ctxt) As
+      val use_As = As |> filter_out (Util.occurs_frees all_vars)
+
+      val ind_goals =
+          ind_th' |> Thm.prems_of
+                  |> map (fn t => Logic.list_implies (use_As, t))
+                  |> map (Thm.cterm_of ctxt)
+                  |> map (UtilLogic.to_meta_conv ctxt)
+
+      fun solve_eq eq =
+          let
+            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
+          in
+            Thm.equal_elim (meta_sym eq) th
+          end
+    in
+      let
+        val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
+        val ind_concl = ind_th' |> fold Thm.elim_implies ths
+                                |> fold Thm.implies_intr (rev cAs)
+        val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+      in
+        state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+      end
+    end
+
+val _ =
+  Outer_Syntax.command @{command_keyword "@double_induct"} "apply induction"
+    ((Parse.term -- Parse.term) >>
+        (fn (s1, s2) =>
+            Toplevel.proof (fn state => double_induct_cmd (s1, s2) state)))
+
 end  (* structure Induct_ProofSteps. *)
 
 val add_strong_induct_rule = Induct_ProofSteps.add_strong_induct_rule
 val add_case_induct_rule = Induct_ProofSteps.add_case_induct_rule
 val add_prop_induct_rule = Induct_ProofSteps.add_prop_induct_rule
 val add_var_induct_rule = Induct_ProofSteps.add_var_induct_rule
+val add_double_induct_rule = Induct_ProofSteps.add_double_induct_rule

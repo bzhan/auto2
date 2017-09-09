@@ -98,7 +98,8 @@ val test_disj_prop_match =
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
             val (cvar_u, cus) = (map Term.dest_Var var_u', map (Thm.cterm_of ctxt) us')
-            val res = Logic_ProofSteps.disj_prop_match ctxt ([], fo_init) (t, (cvar_u, cus))
+            val (var_t, ts) = (Logic_ProofSteps.strip_all_disj t) |> Logic_ProofSteps.replace_disj_vars ctxt
+            val res = Logic_ProofSteps.disj_prop_match ctxt ([], fo_init) (t, (var_t, ts), (cvar_u, cus))
             val u' = Logic_ProofSteps.mk_all_disj (var_u, us)
           in
             case res of
@@ -167,7 +168,8 @@ val test_disj_prop_no_match =
             val var_u' = map free_to_var var_u
             val us' = map (subst_atomic (var_u ~~ var_u')) us
             val (cvar_u, cus) = (map Term.dest_Var var_u', map (Thm.cterm_of ctxt) us')
-            val res = Logic_ProofSteps.disj_prop_match ctxt ([], fo_init) (t, (cvar_u, cus))
+            val (var_t, ts) = (Logic_ProofSteps.strip_all_disj t) |> Logic_ProofSteps.replace_disj_vars ctxt
+            val res = Logic_ProofSteps.disj_prop_match ctxt ([], fo_init) (t, (var_t, ts), (cvar_u, cus))
           in
             if null res then ()
             else let

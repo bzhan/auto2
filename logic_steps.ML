@@ -14,8 +14,11 @@ sig
   val mk_all_disj: term list * term list -> term
   val strip_all_disj: term -> term list * term list
   val norm_all_disj: Proof.context -> conv
+  val replace_disj_vars:
+      Proof.context -> term list * term list -> term list * term list
   val disj_prop_match:
-      Proof.context -> id_inst -> term * ((indexname * typ) list * cterm list) ->
+      Proof.context -> id_inst ->
+      term * (term list * term list) * ((indexname * typ) list * cterm list) ->
       id_inst_th list
   val norm_conj: conv
 
@@ -502,11 +505,10 @@ fun replace_disj_vars ctxt (vars, disjs) =
     end
 
 (* Matching for all-disj propositions *)
-fun disj_prop_match ctxt (id, (tyinst, inst)) (t, (var_u, cus)) =
+fun disj_prop_match ctxt (id, (tyinst, inst)) (t, (var_t, ts), (var_u, cus)) =
     let
       val thy = Proof_Context.theory_of ctxt
       val us = map Thm.term_of cus
-      val (var_t, ts) = (strip_all_disj t) |> replace_disj_vars ctxt
     in
       if length var_t <> length var_u orelse length ts <> length us then [] else
       let
@@ -716,10 +718,11 @@ val disj_prop_matcher =
             val (_, cus) = dest_tname_of_disj tname
             val us = map Thm.term_of cus
             val var_u = fold Term.add_vars us []
+            val (var_t, ts) = (strip_all_disj pat) |> replace_disj_vars ctxt
 
             fun process_perm perm =
                 map (pair (map Var perm))
-                    (disj_prop_match ctxt (id, instsp) (pat, (perm, cus)))
+                    (disj_prop_match ctxt (id, instsp) (pat, (var_t, ts), (perm, cus)))
 
             fun process_inst (var_u, ((id', instsp'), eq_th)) =
                 let
@@ -731,8 +734,9 @@ val disj_prop_matcher =
                   ((id', instsp'), Thm.equal_elim eq_th' forall_th)
                 end
           in
-            var_u |> Util.all_permutes |> maps process_perm
-                  |> map process_inst
+            if length var_t <> length var_u orelse length ts <> length us then []
+            else var_u |> Util.all_permutes |> maps process_perm
+                       |> map process_inst
           end
     in
       {pre_match = pre_match, match = match}

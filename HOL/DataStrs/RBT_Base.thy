@@ -44,8 +44,8 @@ fun max_depth :: "('a, 'b) pre_rbt \<Rightarrow> nat" where
 
 fun black_depth :: "('a, 'b) pre_rbt \<Rightarrow> nat" where
   "black_depth Leaf = 0"
-| "black_depth (Node l R k v r) = min (black_depth l) (black_depth r)"
-| "black_depth (Node l B k v r) = min (black_depth l) (black_depth r) + 1"
+| "black_depth (Node l R k v r) = black_depth l"
+| "black_depth (Node l B k v r) = black_depth l + 1"
 
 fun cl_inv :: "('a, 'b) pre_rbt \<Rightarrow> bool" where
   "cl_inv Leaf = True"
@@ -65,16 +65,14 @@ setup {* add_property_const @{term is_rbt} *}
 setup {* fold add_rewrite_rule (
   @{thms min_depth.simps} @ @{thms max_depth.simps} @ @{thms black_depth.simps} @
   @{thms cl_inv.simps} @ @{thms bd_inv.simps} @ [@{thm is_rbt_def}]) *}
-theorem cl_invI: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (Node l B k v r)" by auto2
-setup {* add_forward_prfstep_cond @{thm cl_invI} [with_term "cl_inv (Node ?l B ?k ?v ?r)"] *}
+
+lemma cl_invI: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (Node l B k v r)" by auto2
+setup {* add_forward_prfstep_cond @{thm cl_invI} [with_term "Node ?l B ?k ?v ?r"] *}
 
 subsection {* Properties of bd_inv *}
 
-theorem bd_inv_elimR [rewrite]:
-  "bd_inv (Node l R k v r) \<Longrightarrow> black_depth (Node l R k v r) = black_depth l" by auto2
-theorem bd_inv_elimB [rewrite]:
-  "bd_inv (Node l B k v r) \<Longrightarrow> black_depth (Node l B k v r) = black_depth l + 1" by auto2
-theorem bd_inv_intro: "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (Node l c k v r)" by auto2
+lemma bd_inv_intro:
+  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (Node l c k v r)" by auto2
 setup {* add_forward_prfstep_cond @{thm bd_inv_intro} [with_term "Node ?l ?c ?k ?v ?r"] *}
 
 subsection {* is_rbt is recursive *}

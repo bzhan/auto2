@@ -25,36 +25,28 @@ definition balance :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Righ
       else balanceR l k v r
     else balanceR l k v r)"
 setup {* add_rewrite_rule @{thm balance_def} *}
+setup {* register_wellform_data ("balance l k v r", ["black_depth l = black_depth r"]) *}
+setup {* add_prfstep_check_req ("balance l k v r", "black_depth l = black_depth r") *}
 
 subsection {* balance function preserves bd_inv *}
 
-lemma balanceR_bd [rewrite]:
-  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow>
-   black_depth (balanceR l k v r) = black_depth l + 1" by auto2
-
-lemma balanceR_bdinv:
-  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (balanceR l k v r)" by auto2
-setup {* add_forward_prfstep_cond @{thm balanceR_bdinv} [with_term "balanceR ?l ?k ?v ?r"] *}
+lemma balance_bdinv:
+  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (balance l k v r)"
+@proof @have "bd_inv (balanceR l k v r)" @qed
+setup {* add_forward_prfstep_cond @{thm balance_bdinv} [with_term "balance ?l ?k ?v ?r"] *}
 
 lemma balance_bd [rewrite]:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow>
-   black_depth (balance l k v r) = black_depth l + 1" by auto2
-
-lemma balance_bdinv:
-  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (balance l k v r)" by auto2
-setup {* add_forward_prfstep_cond @{thm balance_bdinv} [with_term "balance ?l ?k ?v ?r"] *}
+   black_depth (balance l k v r) = black_depth l + 1"
+@proof @have "black_depth (balanceR l k v r) = black_depth l + 1" @qed
 
 subsection {* balance function preserves cl_inv *}
 
-lemma balanceR_cl [backward1, backward2]:
-  "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balanceR l k v r)" by auto2
-
-lemma balance1 [backward1, backward2]:
+lemma balance1 [forward]:
   "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (balance l k v r)" by auto2
 
-lemma balance2 [backward1, backward2]:
+lemma balance2 [forward]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balance l k v r)" by auto2
-setup {* del_prfstep_thm @{thm balanceR_cl} *}
 
 section {* ins function *}
 
@@ -73,20 +65,17 @@ setup {* fold add_rewrite_rule @{thms ins.simps} *}
 
 subsection {* ins function takes non-leaf to non-leafs *}
 
-lemma balanceR_non_Leaf [resolve]: "balanceR l k v r \<noteq> Leaf" by auto2
+lemma balance_non_Leaf [resolve]: "balance l k v r \<noteq> Leaf" by auto2
 
-lemma balance_non_Leaf: "balance l k v r \<noteq> Leaf" by auto2
-setup {* add_forward_prfstep_cond @{thm balance_non_Leaf} [with_term "balance (Node ?l ?c ?k ?v ?r)"] *}
-
-lemma ins_non_Leaf: "ins x v t \<noteq> Leaf" @proof @case "t = Leaf" @qed
-setup {* add_forward_prfstep_cond @{thm ins_non_Leaf} [with_term "ins ?x ?v ?t"] *}
+lemma ins_non_Leaf [resolve]: "ins x v t \<noteq> Leaf"
+@proof @case "t = Leaf" @qed
 
 subsection {* Properties of ins function on cl_inv and bd_inv *}
 
 lemma cl_inv_ins [forward]:
   "cl_inv t \<Longrightarrow> cl_inv' (ins x v t)"
 @proof
-  @have "if cl t = B then cl_inv (ins x v t) else cl (ins x v t) = R \<and> cl_inv' (ins x v t)" @with
+  @have "if cl t = B then cl_inv (ins x v t) else cl_inv' (ins x v t)" @with
     @induct t
   @end
 @qed
@@ -96,19 +85,26 @@ lemma bd_inv_ins:
 @proof @induct t @qed
 setup {* add_forward_prfstep_cond (conj_left_th @{thm bd_inv_ins}) [with_term "ins ?x ?v ?t"] *}
 
+section {* Paint function *}
+
+fun paint :: "color \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+  "paint c Leaf = Leaf"
+| "paint c (Node l c' x v r) = Node l c x v r"
+setup {* fold add_rewrite_rule @{thms paint.simps} *}
+setup {* register_wellform_data ("paint c t", ["t \<noteq> Leaf"]) *}
+setup {* add_prfstep_check_req ("paint c t", "t \<noteq> Leaf") *}
+
+lemma paint_cl_inv' [forward]: "cl_inv' t \<Longrightarrow> cl_inv' (paint c t)" by auto2
+
+lemma paint_bd_inv [forward]: "bd_inv t \<Longrightarrow> bd_inv (paint c t)" by auto2
+
+lemma paint_bd [rewrite]:
+  "bd_inv t \<Longrightarrow> t \<noteq> Leaf \<Longrightarrow> cl t = B \<Longrightarrow> black_depth (paint R t) = black_depth t - 1" by auto2
+
 section {* Insert function *}
 
-fun makeBlack :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
-  "makeBlack Leaf = Leaf"
-| "makeBlack (Node l c x v r) = Node l B x v r"
-
-definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
-  "rbt_insert x v t = makeBlack (ins x v t)"
-
-setup {* fold add_rewrite_rule (@{thms makeBlack.simps} @ [@{thm rbt_insert_def}]) *}
-
-lemma rbt_set_makeBlack [rewrite]: "rbt_set (makeBlack t) = rbt_set t"
-@proof @case "t = Leaf" @qed
+definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+  "rbt_insert x v t = paint B (ins x v t)"
 
 lemma is_rbt_insert [forward]: "is_rbt t \<Longrightarrow> is_rbt (rbt_insert x v t)" by auto2
 
@@ -161,5 +157,112 @@ setup {* fold add_rewrite_rule @{thms rbt_search.simps} *}
 theorem rbt_search_correct [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
 @proof @induct t @qed
+    
+section {* Deletion *}
+    
+definition balL :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+  "balL l k v r = (let lr = lsub r in
+   if cl l = R then Node (Node (lsub l) B (key l) (val l) (rsub l)) R k v r
+   else if r = Leaf then Node l R k v r
+   else if cl r = B then balance l k v (Node (lsub r) R (key r) (val r) (rsub r))
+   else if lr = Leaf then Node l R k v r
+   else if cl lr = B then
+     Node (Node l B k v (lsub lr)) R (key lr) (val lr) (balance (rsub lr) (key r) (val r) (paint R (rsub r)))
+   else Node l R k v r)"
+setup {* add_rewrite_rule @{thm balL_def} *}
+setup {* register_wellform_data ("balL l k v r", ["black_depth l + 1 = black_depth r"]) *}
+setup {* add_prfstep_check_req ("balL l k v r", "black_depth l + 1 = black_depth r") *}
+  
+definition balR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+  "balR l k v r = (let rl = rsub l in
+   if cl r = R then Node l R k v (Node (lsub r) B (key r) (val r) (rsub r))
+   else if l = Leaf then Node l R k v r
+   else if cl l = B then balance (Node (lsub l) R (key l) (val l) (rsub l)) k v r
+   else if rl = Leaf then Node l R k v r
+   else if cl rl = B then
+     Node (balance (paint R (lsub l)) (key l) (val l) (lsub rl)) R (key rl) (val rl) (Node (rsub rl) B k v r)
+   else Node l R k v r)"
+setup {* add_rewrite_rule @{thm balR_def} *}
+setup {* register_wellform_data ("balR l k v r", ["black_depth l = black_depth r + 1"]) *}
+setup {* add_prfstep_check_req ("balR l k v r", "black_depth l = black_depth r + 1") *}
+
+lemma balL_bd:
+  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl_inv r \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow>
+   bd_inv (balL l k v r) \<and> black_depth (balL l k v r) = black_depth l + 1" by auto2
+setup {* add_forward_prfstep_cond @{thm balL_bd} [with_term "balL ?l ?k ?v ?r"] *}
+
+lemma balL_bd':
+  "bd_inv l \<Longrightarrow> r = Node r1 B k1 v1 r2 \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow> bd_inv r \<Longrightarrow>
+   bd_inv (balL l k v r) \<and> black_depth (balL l k v r) = black_depth r" by auto2
+setup {* add_forward_prfstep_cond @{thm balL_bd'} [with_term "balL ?l ?k ?v ?r"] *}
+
+lemma balL_cl:
+  "cl_inv' l \<Longrightarrow> r = Node r1 B k1 v1 r2 \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (balL l k v r)" by auto2
+setup {* add_forward_prfstep_cond @{thm balL_cl} [with_term "balL ?l ?k ?v ?r"] *}
+
+lemma balL_cl' [forward]:
+  "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (balL l k v r)" by auto2
+
+lemma balR_bd:
+  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl_inv l \<Longrightarrow> black_depth l = black_depth r + 1 \<Longrightarrow>
+   bd_inv (balR l k v r) \<and> black_depth (balR l k v r) = black_depth l" by auto2
+setup {* add_forward_prfstep_cond @{thm balR_bd} [with_term "balR ?l ?k ?v ?r"] *}
+
+lemma balR_cl:
+  "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl l = B \<Longrightarrow> cl_inv (balR l k v r)" by auto2
+setup {* add_forward_prfstep_cond @{thm balR_cl} [with_term "balR ?l ?k ?v ?r"] *}
+
+lemma balR_cl' [forward]:
+  "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv' (balR l k v r)" by auto2
+
+lemma balL_in_traverse [rewrite]:
+  "rbt_in_traverse (balL l k v r) = rbt_in_traverse l @ [k] @ rbt_in_traverse r" by auto2
+
+lemma balR_in_traverse [rewrite]:
+  "rbt_in_traverse (balR l k v r) = rbt_in_traverse l @ [k] @ rbt_in_traverse r" by auto2
+
+lemma balL_in_traverse_pairs [rewrite]:
+  "rbt_in_traverse_pairs (balL l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+
+lemma balR_in_traverse_pairs [rewrite]:
+  "rbt_in_traverse_pairs (balR l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+
+setup {* del_prfstep_thm @{thm balL_def} *}
+setup {* del_prfstep_thm @{thm balR_def} *}
+
+fun combine :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+  "combine Leaf t = t"
+| "combine t Leaf = t"
+| "combine (Node l1 c1 k1 v1 r1) (Node l2 c2 k2 v2 r2) = (
+   if c1 = R then
+     if c2 = R then
+       let tm = combine r1 l2 in
+         if cl tm = R then
+           Node (Node l1 R k1 v1 (lsub tm)) R (key tm) (val tm) (Node (rsub tm) R k2 v2 r2)
+         else
+           Node l1 R k1 v1 (Node tm R k2 v2 r2)
+     else
+       Node l1 R k1 v1 (combine r1 (Node l2 c2 k2 v2 r2))
+   else
+     if c2 = B then
+       let tm = combine r1 l2 in
+         if cl tm = R then
+           Node (Node l1 B k1 v1 (lsub tm)) R (key tm) (val tm) (Node (rsub tm) B k2 v2 r2)
+         else
+           balL l1 k1 v1 (Node tm B k2 v2 r2)
+     else
+       Node (combine (Node l1 c1 k1 v1 r1) l2) R k2 v2 r2)"
+setup {* fold add_rewrite_rule @{thms combine.simps} *}
+setup {* add_double_induct_rule @{thm combine.induct} *}
+
+lemma combine_bd:
+  "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
+   bd_inv (combine lt rt) \<and> black_depth (combine lt rt) = black_depth lt"
+@proof @double_induct lt rt @qed
+
+lemma combine_cl:
+  "cl_inv lt \<Longrightarrow> cl_inv rt \<Longrightarrow>
+   (cl lt = B \<longrightarrow> cl rt = B \<longrightarrow> cl_inv (combine lt rt)) \<and> cl_inv' (combine lt rt)"
+@proof @double_induct lt rt @qed
 
 end
