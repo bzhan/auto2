@@ -196,10 +196,9 @@ definition btree_balanceR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) 
 declare btree_balanceR_def [sep_proc_defs]
 
 theorem balanceR_to_fun [hoare_triple]:
-  "<btree t p>
+  "<btree (pre_rbt.Node l B k v r) p>
    btree_balanceR p
-   <\<lambda>r. btree (balanceR t) r>"
-@proof @case "t = Leaf" @qed
+   <\<lambda>q. btree (balanceR l k v r) q>" by auto2
 declare btree_balanceR_def [sep_proc_defs del]
 
 definition btree_balance :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -233,10 +232,9 @@ definition btree_balance :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) b
 declare btree_balance_def [sep_proc_defs]
 
 theorem balance_to_fun [hoare_triple]:
-  "<btree t p>
+  "<btree (pre_rbt.Node l B k v r) p>
    btree_balance p
-   <\<lambda>r. btree (balance t) r>"
-@proof @case "t = Leaf" @qed
+   <\<lambda>q. btree (balance l k v r) q>" by auto2
 declare btree_balance_def [sep_proc_defs del]
 
 subsection {* Insertion *}
@@ -247,17 +245,30 @@ partial_function (heap) rbt_ins ::
      None \<Rightarrow> btree_constr None R k v None
    | Some pp \<Rightarrow> do {
       t \<leftarrow> !pp;
-      (if k = key t then do {
-         pp := Node (lsub t) (cl t) k v (rsub t);
-         return (Some pp) }
-       else if k < key t then do {
-         q \<leftarrow> rbt_ins k v (lsub t);
-         pp := Node q (cl t) (key t) (val t) (rsub t);
-         btree_balance p }
-       else do {
-         q \<leftarrow> rbt_ins k v (rsub t);
-         pp := Node (lsub t) (cl t) (key t) (val t) q;
-         btree_balance p })} )"
+      (if cl t = B then
+        (if k = key t then do {
+           pp := Node (lsub t) (cl t) k v (rsub t);
+           return (Some pp) }
+         else if k < key t then do {
+           q \<leftarrow> rbt_ins k v (lsub t);
+           pp := Node q (cl t) (key t) (val t) (rsub t);
+           btree_balance p }
+         else do {
+           q \<leftarrow> rbt_ins k v (rsub t);
+           pp := Node (lsub t) (cl t) (key t) (val t) q;
+           btree_balance p })
+       else
+        (if k = key t then do {
+           pp := Node (lsub t) (cl t) k v (rsub t);
+           return (Some pp) }
+         else if k < key t then do {
+           q \<leftarrow> rbt_ins k v (lsub t);
+           pp := Node q (cl t) (key t) (val t) (rsub t);
+           return (Some pp) }
+         else do {
+           q \<leftarrow> rbt_ins k v (rsub t);
+           pp := Node (lsub t) (cl t) (key t) (val t) q;
+           return (Some pp) }))})"
 declare rbt_ins.simps [sep_proc_defs]
 
 theorem rbt_ins_to_fun [hoare_triple]:

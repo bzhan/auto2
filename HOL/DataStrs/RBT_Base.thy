@@ -163,14 +163,6 @@ definition rbt_map :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) map" where
   "rbt_map t = map_of_alist (rbt_in_traverse_pairs t)"
 setup {* add_rewrite_rule @{thm rbt_map_def} *}
 
-theorem rbt_in_traverse_non_empty: "rbt_in_traverse (Node l c k v r) \<noteq> []" by auto2
-setup {* add_forward_prfstep_cond @{thm rbt_in_traverse_non_empty}
-  [with_term "rbt_in_traverse (Node ?l ?c ?k ?v ?r)"] *}
-
-theorem rbt_in_traverse_pairs_non_empty: "rbt_in_traverse_pairs (Node l c k v r) \<noteq> []" by auto2
-setup {* add_forward_prfstep_cond @{thm rbt_in_traverse_pairs_non_empty}
-  [with_term "rbt_in_traverse_pairs (Node ?l ?c ?k ?v ?r)"] *}
-
 fun rbt_sorted :: "('a::linorder, 'b) pre_rbt \<Rightarrow> bool" where
   "rbt_sorted Leaf = True"
 | "rbt_sorted (Node l c k v r) = ((\<forall>x\<in>rbt_set l. x < k) \<and> (\<forall>x\<in>rbt_set r. k < x)
