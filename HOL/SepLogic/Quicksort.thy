@@ -2,8 +2,7 @@ theory Quicksort
 imports Reverse "../DataStrs/Quicksort_Func"
 begin
 
-function part1 :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap"
-where
+function part1 :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "part1 a left right p = (
      if (right \<le> left) then return right
      else do {
@@ -15,15 +14,9 @@ where
      })"
   by auto
   termination by (relation "measure (\<lambda>(_,l,r,_). r - l )") auto
-
-theorem part1_induct': "(\<forall>a left right p.
-    ((\<not> right \<le> left \<longrightarrow> (\<forall>v.  v \<le> p \<longrightarrow> P a (left + 1) right p)) \<and>
-     (\<not> right \<le> left \<longrightarrow> (\<forall>v. \<not>v \<le> p \<longrightarrow> P a left (right - 1) p))) \<longrightarrow> P a left right p) \<Longrightarrow>
-    P (a::nat array) (left::nat) (right::nat) (p::nat)"
-  apply (induct rule: part1.induct) by blast
-setup {* add_hoare_induct_rule (@{term part1}, @{thm part1_induct'}) *}
-
 declare part1.simps [sep_proc_defs]
+setup {* add_hoare_induct_rule (@{term part1}, @{thm part1.induct}) *}
+
 setup {* add_rewrite_rule_cond @{thm Quicksort_Func.part1.simps}
   [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
 lemma part1_to_fun [hoare_triple]:
@@ -66,18 +59,11 @@ function quicksort :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarro
      else return ())"
   by auto
   termination by (relation "measure (\<lambda>(a, l, r). (r - l))") auto
-
-theorem quicksort_induct': "(\<forall>arr left right.
-    ((left < right \<longrightarrow> (\<forall>p. left \<le> p \<longrightarrow> p \<le> right \<longrightarrow> P arr left (p - 1))) \<and>
-     (left < right \<longrightarrow> (\<forall>p. left \<le> p \<longrightarrow> p \<le> right \<longrightarrow> P arr (p + 1) right))) \<longrightarrow> P arr left right) \<Longrightarrow>
-    P (arr::nat array) (left::nat) (right::nat)"
-  by (induct rule: quicksort.induct) metis
-setup {* add_hoare_induct_rule (@{term quicksort}, @{thm quicksort_induct'}) *}
-
 declare quicksort.simps [sep_proc_defs]
+setup {* add_hoare_induct_rule (@{term quicksort}, @{thm quicksort.induct}) *}
+
 setup {* add_rewrite_rule_cond @{thm Quicksort_Func.quicksort.simps}
   [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
-
 theorem quicksort_trivial [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l \<ge> r)>
    quicksort a l r
@@ -100,7 +86,7 @@ theorem quicksort_to_fun [hoare_triple]:
 
 declare quicksort.simps [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort_Func.quicksort.simps} *}
-  
+
 theorem quicksort_sorts:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
    quicksort a l r

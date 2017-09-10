@@ -24,10 +24,7 @@ fun rev :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uni
    }
    else return ())"
 declare rev.simps [sep_proc_defs]
-
-theorem rev_induct': "(\<forall>a i j. (i < j \<longrightarrow> P a (i + 1) (j - 1)) \<longrightarrow> P a i j) \<Longrightarrow> P (a::'a::heap array) (i::nat) (j::nat)"
-  apply (induct rule: rev.induct) by blast
-setup {* add_hoare_induct_rule (@{term_pat Reverse.rev}, @{thm rev_induct'}) *}
+setup {* add_hoare_induct_rule (@{term_pat Reverse.rev}, @{thm rev.induct}) *}
 
 lemma rev_to_fun [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(j < length xs)>
