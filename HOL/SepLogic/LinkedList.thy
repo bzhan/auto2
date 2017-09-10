@@ -2,7 +2,7 @@
    based on List_Seg and Open_List theories in Separation_Logic_Imperative_HOL/Examples. *)
 
 theory LinkedList
-imports SepAuto
+imports SepAuto "../DataStrs/Lists_Ex"
 begin
 
 subsection {* Nodes *}
@@ -351,21 +351,13 @@ lemma merge_list_keys [hoare_triple]:
   "<os_list xs p * os_list ys q>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(set zs = set xs \<union> set ys)>"
-@proof
-  @induct xs arbitrary ys p q @with
-    @subgoal "xs = x # xs'" @induct ys arbitrary p q @endgoal
-  @end
-@qed
+@proof @fun_induct "merge_list xs ys" arbitrary p q @qed
 
 lemma merge_list_sorted [hoare_triple]:
   "<os_list xs p * os_list ys q * \<up>(sorted xs) * \<up>(sorted ys)>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(sorted zs)>"
-@proof
-  @induct xs arbitrary ys p q @with
-    @subgoal "xs = x # xs'" @induct ys arbitrary p q @endgoal
-  @end
-@qed
+@proof @fun_induct "merge_list xs ys" arbitrary p q @qed
 
 subsection {* List copy *}
 

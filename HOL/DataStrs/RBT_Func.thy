@@ -353,4 +353,8 @@ lemma delete_sorted: "rbt_sorted t \<Longrightarrow> rbt_sorted (delete x v t)" 
 
 lemma delete_rbt_map: "rbt_sorted t \<Longrightarrow> rbt_map (delete x v t) = delete_map x (rbt_map t)" by auto2
 
+setup {* del_prfstep "RBT_Func.balance_case" *}
+setup {* del_prfstep "RBT_Func.balL_case" *}
+setup {* del_prfstep "RBT_Func.balR_case" *}
+
 end

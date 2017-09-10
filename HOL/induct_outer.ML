@@ -327,14 +327,14 @@ val _ =
             Toplevel.proof (fn state => prop_induct_cmd (s, t) state)))
 
 (* Obtain the induction statement. *)
-fun get_induct_stmt ctxt (var, stmt, arbitrary) =
+fun get_induct_stmt ctxt (ind_vars, stmt, arbitrary) =
     if is_some stmt then
       UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt (the stmt)))
     else
       let
         val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
                                 |> Thm.term_of |> Util.strip_meta_horn
-        val all_vars = var :: arbitrary
+        val all_vars = ind_vars @ arbitrary
         val obj_As = map dest_Trueprop (filter (Util.occurs_frees all_vars) As)
         val obj_C = dest_Trueprop C
       in
@@ -362,7 +362,7 @@ fun induct_cmd (s, t, u, v) state =
       val thy = Proof_Context.theory_of ctxt
       val var = Syntax.read_term ctxt s
       val arbitraries = map (Syntax.read_term ctxt) u
-      val stmt = get_induct_stmt ctxt (var, t, arbitraries)
+      val stmt = get_induct_stmt ctxt ([var], t, arbitraries)
       val ty = type_of var
       val (arbitraries, _) = UtilLogic.strip_obj_horn stmt
 
@@ -439,32 +439,29 @@ val _ =
         (fn (((s, t), u), v) =>
             Toplevel.proof (fn state => induct_cmd (s, t, these u, v) state)))
 
-fun fun_induct_cmd (s, u) state =
+fun fun_induct_cmd (s, t, u) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
-      val t = Syntax.read_term ctxt s
+      val expr = Syntax.read_term ctxt s
+      val arbitraries = map (Syntax.read_term ctxt) t
 
-      val ind_th = the (get_term_ind_th thy "fun_induct" t)
+      val ind_th = the (get_term_ind_th thy "fun_induct" expr)
                        handle Option.Option =>
                               raise Fail "fun_induct: cannot find theorem."
       val (var_P, vars) = ind_th |> Thm.concl_of |> dest_Trueprop
                                  |> Term.strip_comb
-
-      (* Obtain statement *)
-      val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
-      val obj_As = map dest_Trueprop (filter (Util.occurs_frees vars) As)
-      val obj_C = dest_Trueprop C
-      val stmt = UtilLogic.list_obj_horn ([], (obj_As, obj_C))
+      val stmt = get_induct_stmt ctxt (vars, NONE, arbitraries)
 
       (* Instantiate the induction theorem *)
       val P = fold Util.lambda_abstract (rev vars) stmt
       val inst = Pattern.match thy (var_P, P) fo_init
       val ind_th' = Util.subst_thm_thy thy inst ind_th
 
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                              |> Thm.term_of |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
-      val use_As = As |> filter_out (Util.occurs_frees vars)
+      val use_As = As |> filter_out (Util.occurs_frees (vars @ arbitraries))
 
       val ind_goals =
           ind_th' |> Thm.prems_of
@@ -515,9 +512,9 @@ fun fun_induct_cmd (s, u) state =
 
 val _ =
   Outer_Syntax.command @{command_keyword "@fun_induct"} "apply induction"
-    (Parse.term -- Scan.option @{keyword "@with"} >>
-        (fn (s, u) =>
-            Toplevel.proof (fn state => fun_induct_cmd (s, u) state)))
+    (Parse.term -- arbitrary -- Scan.option @{keyword "@with"} >>
+        (fn ((s, t), u) =>
+            Toplevel.proof (fn state => fun_induct_cmd (s, these t, u) state)))
 
 end  (* structure Induct_ProofSteps. *)
 

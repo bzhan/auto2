@@ -126,6 +126,21 @@ theorem get_color_rule [hoare_triple_direct]:
 @proof @case "t = Leaf" @qed
 declare get_color_def [sep_proc_defs del]
 
+definition paint :: "color \<Rightarrow> ('a::heap, 'b::heap) btree \<Rightarrow> unit Heap" where
+  "paint c p = (case p of
+    None \<Rightarrow> return ()
+  | Some pp \<Rightarrow> do {
+     t \<leftarrow> !pp;
+     pp := Node (lsub t) c (key t) (val t) (rsub t)
+   })"
+declare paint_def [sep_proc_defs]
+  
+lemma paint_rule [hoare_triple]:
+  "<btree t p>
+   paint c p
+   <\<lambda>r. btree (RBT_Func.paint c t) p>" by auto2
+setup {* del_prfstep "RBT_Func.paint_case" *}
+
 subsection {* Rotation *}
 
 definition btree_rotate_l :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -171,28 +186,25 @@ subsection {* Balance *}
 definition btree_balanceR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balanceR p = (case p of None \<Rightarrow> return None | Some pp \<Rightarrow> do {
      t \<leftarrow> !pp;
-     if cl t = R then return p
-     else do {
-       cl_r \<leftarrow> get_color (rsub t);
-       if cl_r = R then do {
-         rt \<leftarrow> !(the (rsub t));
-         cl_lr \<leftarrow> get_color (lsub rt);
-         cl_rr \<leftarrow> get_color (rsub rt);
-         if cl_lr = R then do {
-           rp' \<leftarrow> btree_rotate_r (rsub t);
-           pp := Node (lsub t) (cl t) (key t) (val t) rp';
-           p' \<leftarrow> btree_rotate_l p;
-           t' \<leftarrow> !(the p');
-           set_color B (rsub t');
-           return p'
-         } else if cl_rr = R then do {
-           p' \<leftarrow> btree_rotate_l p;
-           t' \<leftarrow> !(the p');
-           set_color B (rsub t');
-           return p'
-          } else return p }
-       else return p
-     }})"
+     cl_r \<leftarrow> get_color (rsub t);
+     if cl_r = R then do {
+       rt \<leftarrow> !(the (rsub t));
+       cl_lr \<leftarrow> get_color (lsub rt);
+       cl_rr \<leftarrow> get_color (rsub rt);
+       if cl_lr = R then do {
+         rp' \<leftarrow> btree_rotate_r (rsub t);
+         pp := Node (lsub t) (cl t) (key t) (val t) rp';
+         p' \<leftarrow> btree_rotate_l p;
+         t' \<leftarrow> !(the p');
+         set_color B (rsub t');
+         return p'
+       } else if cl_rr = R then do {
+         p' \<leftarrow> btree_rotate_l p;
+         t' \<leftarrow> !(the p');
+         set_color B (rsub t');
+         return p'
+        } else return p }
+     else return p})"
 declare btree_balanceR_def [sep_proc_defs]
 
 theorem balanceR_to_fun [hoare_triple]:
@@ -204,31 +216,27 @@ declare btree_balanceR_def [sep_proc_defs del]
 definition btree_balance :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balance p = (case p of None \<Rightarrow> return None | Some pp \<Rightarrow> do {
      t \<leftarrow> !pp;
-     if cl t = R then return p
-     else do {
-       cl_l \<leftarrow> get_color (lsub t);
-       if cl_l = R then do {
-         lt \<leftarrow> !(the (lsub t));
-         cl_rl \<leftarrow> get_color (rsub lt);
-         cl_ll \<leftarrow> get_color (lsub lt);
-         if cl_ll = R then do {
-           p' \<leftarrow> btree_rotate_r p;
-           t' \<leftarrow> !(the p');
-           set_color B (lsub t');
-           return p' }
-         else if cl_rl = R then do {
-           lp' \<leftarrow> btree_rotate_l (lsub t);
-           pp := Node lp' (cl t) (key t) (val t) (rsub t);
-           p' \<leftarrow> btree_rotate_r p;
-           t' \<leftarrow> !(the p');
-           set_color B (lsub t');
-           return p'
-         } else btree_balanceR p }
-       else do {
-         p' \<leftarrow> btree_balanceR p;
+     cl_l \<leftarrow> get_color (lsub t);
+     if cl_l = R then do {
+       lt \<leftarrow> !(the (lsub t));
+       cl_rl \<leftarrow> get_color (rsub lt);
+       cl_ll \<leftarrow> get_color (lsub lt);
+       if cl_ll = R then do {
+         p' \<leftarrow> btree_rotate_r p;
+         t' \<leftarrow> !(the p');
+         set_color B (lsub t');
+         return p' }
+       else if cl_rl = R then do {
+         lp' \<leftarrow> btree_rotate_l (lsub t);
+         pp := Node lp' (cl t) (key t) (val t) (rsub t);
+         p' \<leftarrow> btree_rotate_r p;
+         t' \<leftarrow> !(the p');
+         set_color B (lsub t');
          return p'
-       }
-     }})"
+       } else btree_balanceR p }
+     else do {
+       p' \<leftarrow> btree_balanceR p;
+       return p'}})"
 declare btree_balance_def [sep_proc_defs]
 
 theorem balance_to_fun [hoare_triple]:
@@ -236,6 +244,7 @@ theorem balance_to_fun [hoare_triple]:
    btree_balance p
    <\<lambda>q. btree (balance l k v r) q>" by auto2
 declare btree_balance_def [sep_proc_defs del]
+setup {* del_prfstep_thm @{thm balance_def} *}
 
 subsection {* Insertion *}
 
@@ -281,7 +290,7 @@ declare rbt_ins.simps [sep_proc_defs del]
 definition rbt_insert :: "'a::{heap,ord} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "rbt_insert k v p = do {
     p' \<leftarrow> rbt_ins k v p;
-    set_color B p';
+    paint B p';
     return p' }"
 declare rbt_insert_def [sep_proc_defs]
   
@@ -310,6 +319,90 @@ lemma btree_search_correct [hoare_triple]:
    <\<lambda>r. btree t b * \<up>(r = RBT_Func.rbt_search t x)>"
 @proof @induct t arbitrary b @qed
 declare rbt_search.simps [sep_proc_defs del]
+  
+subsection {* Delete *}
+  
+definition btree_balL :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "btree_balL p = (case p of
+     None \<Rightarrow> return None
+   | Some pp \<Rightarrow> do {
+      t \<leftarrow> !pp;
+      cl_l \<leftarrow> get_color (lsub t);
+      if cl_l = R then do {
+        set_color B (lsub t);  (* case 1 *)
+        return p}
+      else case rsub t of
+        None \<Rightarrow> return p  (* case 2 *)
+      | Some rp \<Rightarrow> do {  
+         rt \<leftarrow> !rp;
+         if cl rt = B then do {
+           set_color R (rsub t);  (* case 3 *)
+           set_color B p;
+           btree_balance p}
+         else case lsub rt of
+           None \<Rightarrow> return p  (* case 4 *)
+         | Some lrp \<Rightarrow> do {
+            lrt \<leftarrow> !lrp;
+            if cl lrt = B then do {
+              set_color R (lsub rt);  (* case 5 *)
+              paint R (rsub rt);
+              set_color B (rsub t); 
+              rp' \<leftarrow> btree_rotate_r (rsub t);
+              pp := Node (lsub t) (cl t) (key t) (val t) rp';
+              p' \<leftarrow> btree_rotate_l p;
+              t' \<leftarrow> !(the p');
+              set_color B (lsub t');
+              rp'' \<leftarrow> btree_balance (rsub t');
+              the p' := Node (lsub t') (cl t') (key t') (val t') rp'';
+              return p'}
+            else return p}}})"
+declare btree_balL_def [sep_proc_defs]
+
+lemma balL_to_fun [hoare_triple]:
+  "<btree (pre_rbt.Node l R k v r) p>
+   btree_balL p
+   <\<lambda>q. btree (balL l k v r) q>" by auto2
+
+definition btree_balR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "btree_balR p = (case p of
+     None \<Rightarrow> return None
+   | Some pp \<Rightarrow> do {
+      t \<leftarrow> !pp;
+      cl_r \<leftarrow> get_color (rsub t);
+      if cl_r = R then do {
+        set_color B (rsub t);  (* case 1 *)
+        return p}
+      else case lsub t of
+        None \<Rightarrow> return p  (* case 2 *)
+      | Some lp \<Rightarrow> do {  
+         lt \<leftarrow> !lp;
+         if cl lt = B then do {
+           set_color R (lsub t);  (* case 3 *)
+           set_color B p;
+           btree_balance p}
+         else case rsub lt of
+           None \<Rightarrow> return p  (* case 4 *)
+         | Some rlp \<Rightarrow> do {
+            rlt \<leftarrow> !rlp;
+            if cl rlt = B then do {
+              set_color R (rsub lt);  (* case 5 *)
+              paint R (lsub lt);
+              set_color B (lsub t); 
+              lp' \<leftarrow> btree_rotate_l (lsub t);
+              pp := Node lp' (cl t) (key t) (val t) (rsub t);
+              p' \<leftarrow> btree_rotate_r p;
+              t' \<leftarrow> !(the p');
+              set_color B (rsub t');
+              lp'' \<leftarrow> btree_balance (lsub t');
+              the p' := Node lp'' (cl t') (key t') (val t') (rsub t');
+              return p'}
+            else return p}}})"
+declare btree_balR_def [sep_proc_defs]
+
+lemma balR_to_fun [hoare_triple]:
+  "<btree (pre_rbt.Node l R k v r) p>
+   btree_balR p
+   <\<lambda>q. btree (balR l k v r) q>" by auto2
 
 section {* Outer interface *}
 
