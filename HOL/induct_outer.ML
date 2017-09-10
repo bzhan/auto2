@@ -12,7 +12,7 @@ sig
   val add_case_induct_rule: thm -> theory -> theory
   val add_prop_induct_rule: thm -> theory -> theory
   val add_var_induct_rule: thm -> theory -> theory
-  val add_double_induct_rule: thm -> theory -> theory
+  val add_fun_induct_rule: term * thm -> theory -> theory
 
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
   val apply_induct_hyp_cmd: string list -> Proof.state -> Proof.state
@@ -138,14 +138,8 @@ fun add_var_induct_rule ind_th thy =
       thy |> add_typed_induct_data "var_induct" (type_of n, ind_th)
     end
 
-fun add_double_induct_rule ind_th thy =
-    let
-      val (P, (m, n)) = ind_th |> concl_of' |> Term.strip_comb |> apsnd the_pair
-      val _ = assert (forall Term.is_Var [P, m, n])
-                     "add_double_induct_rule: concl must be ?P ?m ?n"
-    in
-      thy |> add_typed_induct_data "double_induct" (type_of m, ind_th)
-    end
+fun add_fun_induct_rule (t, ind_th) thy =
+    thy |> add_induct_data "fun_induct" (t, ind_th)
 
 fun strong_induct_cmd (s, t) state =
     let
@@ -347,6 +341,21 @@ fun get_induct_stmt ctxt (var, stmt, arbitrary) =
         UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
       end
 
+(* Given an induction subgoal of the form !!x_i. A_i ==> C, retrieve
+   the list of induction patterns.
+ *)
+fun retrieve_pat ind_vars t =
+    let
+      val (vars, (_, C)) = Util.strip_meta_horn t
+      fun free_to_var t =
+          let val (x, T) = Term.dest_Free t in Var ((x,0), T) end
+      val pat_vars = map free_to_var vars
+      val args = C |> dest_Trueprop |> Util.dest_args
+                   |> map (Term.subst_atomic (vars ~~ pat_vars))
+    in
+      HOLogic.mk_tuple (map mk_eq (ind_vars ~~ args))
+    end
+
 fun induct_cmd (s, t, u, v) state =
     let
       val {context = ctxt, ...} = Proof.goal state
@@ -375,16 +384,6 @@ fun induct_cmd (s, t, u, v) state =
       val cAs = map (Thm.cterm_of ctxt) As
       val use_As = As |> filter_out (Util.occurs_frees (var :: arbitraries))
 
-      fun retrieve_pat t =
-          let
-            val (vars, (_, C)) = Util.strip_meta_horn t
-            val pat_vars = map (fn t => let val (x, T) = Term.dest_Free t in Var ((x,0), T) end) vars
-            val arg = C |> dest_Trueprop |> dest_arg |> Term.subst_atomic (vars ~~ pat_vars)
-          in
-            mk_eq (var, arg)
-          end
-      val pats = ind_th |> Thm.prems_of |> map retrieve_pat
-
       val ind_goals =
           ind_th' |> Thm.prems_of
                   |> map (fn t => Logic.list_implies (use_As, t))
@@ -397,9 +396,6 @@ fun induct_cmd (s, t, u, v) state =
           in
             Thm.equal_elim (meta_sym eq) th
           end
-
-      val _ = assert (length pats = length ind_goals)
-                     "var_induct: unexpected number of patterns"
   in
     if is_none v then
       let
@@ -424,8 +420,11 @@ fun induct_cmd (s, t, u, v) state =
               Auto2_Outer.have_after_qed ctxt ind_concl prop
             end
 
-          val new_frame =
-              Auto2_State.multiple_frame (pats ~~ map Thm.rhs_of ind_goals, SOME ([], after_qed))
+        val pats = ind_th |> Thm.prems_of |> map (retrieve_pat [var])
+        val _ = writeln ("Patterns: " ^ (Util.string_of_terms ctxt pats))
+        val new_frame =
+            Auto2_State.multiple_frame (
+              pats ~~ map Thm.rhs_of ind_goals, SOME ([], after_qed))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
@@ -440,36 +439,32 @@ val _ =
         (fn (((s, t), u), v) =>
             Toplevel.proof (fn state => induct_cmd (s, t, these u, v) state)))
 
-fun double_induct_cmd (s1, s2) state =
+fun fun_induct_cmd (s, u) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
-      val (var1, var2) = apply2 (Syntax.read_term ctxt) (s1, s2)
+      val t = Syntax.read_term ctxt s
+
+      val ind_th = the (get_term_ind_th thy "fun_induct" t)
+                       handle Option.Option =>
+                              raise Fail "fun_induct: cannot find theorem."
+      val (var_P, vars) = ind_th |> Thm.concl_of |> dest_Trueprop
+                                 |> Term.strip_comb
 
       (* Obtain statement *)
       val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
                               |> Thm.term_of |> Util.strip_meta_horn
-      val all_vars = [var1, var2]
-      val obj_As = map dest_Trueprop (filter (Util.occurs_frees all_vars) As)
+      val obj_As = map dest_Trueprop (filter (Util.occurs_frees vars) As)
       val obj_C = dest_Trueprop C
       val stmt = UtilLogic.list_obj_horn ([], (obj_As, obj_C))
 
-      val ty = type_of var1
-      val ind_th = the (get_typed_ind_th thy "double_induct" ty)
-                       handle Option.Option =>
-                              raise Fail "double_induct: cannot find theorem."
-
       (* Instantiate the induction theorem *)
-      val concl = concl_of' ind_th
-      val (var_P, (var_n1, var_n2)) = concl |> Term.strip_comb |> apsnd the_pair
-
-      val P_inst = fold Term.lambda [var2, var1] stmt
-      val inst = fold (Pattern.match thy) [
-            (var_P, P_inst), (var_n1, var1), (var_n2, var2)] fo_init
+      val P = fold Util.lambda_abstract (rev vars) stmt
+      val inst = Pattern.match thy (var_P, P) fo_init
       val ind_th' = Util.subst_thm_thy thy inst ind_th
 
       val cAs = map (Thm.cterm_of ctxt) As
-      val use_As = As |> filter_out (Util.occurs_frees all_vars)
+      val use_As = As |> filter_out (Util.occurs_frees vars)
 
       val ind_goals =
           ind_th' |> Thm.prems_of
@@ -484,21 +479,45 @@ fun double_induct_cmd (s1, s2) state =
             Thm.equal_elim (meta_sym eq) th
           end
     in
-      let
-        val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
-        val ind_concl = ind_th' |> fold Thm.elim_implies ths
-                                |> fold Thm.implies_intr (rev cAs)
-        val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
-      in
-        state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
-      end
+      if is_none u then
+        let
+          val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
+          val ind_concl = ind_th' |> fold Thm.elim_implies ths
+                                  |> fold Thm.implies_intr (rev cAs)
+          val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+        in
+          state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+        end
+      else
+        let
+          (* Create new block with the subgoals *)
+          fun after_qed ths prop =
+              let
+                val ths' =
+                    (ind_goals ~~ ths)
+                        |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
+                        |> map Util.send_all_to_hyps
+                val ind_concl = ind_th' |> fold Thm.elim_implies ths'
+                                        |> fold Thm.implies_intr (rev cAs)
+              in
+                Auto2_Outer.have_after_qed ctxt ind_concl prop
+              end
+
+          val pats = ind_th |> Thm.prems_of |> map (retrieve_pat vars)
+          val _ = writeln ("Patterns: " ^ (Util.string_of_terms ctxt pats))
+          val new_frame =
+              Auto2_State.multiple_frame (
+                pats ~~ map Thm.rhs_of ind_goals, SOME ([], after_qed))
+        in
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
+        end
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@double_induct"} "apply induction"
-    ((Parse.term -- Parse.term) >>
-        (fn (s1, s2) =>
-            Toplevel.proof (fn state => double_induct_cmd (s1, s2) state)))
+  Outer_Syntax.command @{command_keyword "@fun_induct"} "apply induction"
+    (Parse.term -- Scan.option @{keyword "@with"} >>
+        (fn (s, u) =>
+            Toplevel.proof (fn state => fun_induct_cmd (s, u) state)))
 
 end  (* structure Induct_ProofSteps. *)
 
@@ -506,4 +525,4 @@ val add_strong_induct_rule = Induct_ProofSteps.add_strong_induct_rule
 val add_case_induct_rule = Induct_ProofSteps.add_case_induct_rule
 val add_prop_induct_rule = Induct_ProofSteps.add_prop_induct_rule
 val add_var_induct_rule = Induct_ProofSteps.add_var_induct_rule
-val add_double_induct_rule = Induct_ProofSteps.add_double_induct_rule
+val add_fun_induct_rule = Induct_ProofSteps.add_fun_induct_rule

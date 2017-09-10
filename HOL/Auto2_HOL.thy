@@ -4,7 +4,7 @@ theory Auto2_HOL
 imports HOL_Base
 keywords "@proof" :: prf_block % "proof"
   and "@have" "@case" "@obtain" "@let" "@contradiction" "@strong_induct" :: prf_decl % "proof"
-  and "@induct" "@double_induct" "@case_induct" "@prop_induct" :: prf_decl % "proof"
+  and "@induct" "@fun_induct" "@case_induct" "@prop_induct" :: prf_decl % "proof"
   and "@apply_induct_hyp" :: prf_decl % "proof"
   and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
   and "@qed" :: prf_decl % "proof"

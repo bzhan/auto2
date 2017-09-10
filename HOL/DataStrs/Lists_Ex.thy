@@ -198,18 +198,12 @@ fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" w
     if x \<le> y then x # (merge_list xs (y # ys))
     else y # (merge_list (x # xs) ys))"
 setup {* fold add_rewrite_rule @{thms merge_list.simps} *}
-
-theorem merge_list_simp2' [rewrite]: "merge_list [] ys = ys" @proof @case "ys = []" @qed
-setup {* del_prfstep_thm @{thm merge_list.simps(2)} *}
+setup {* add_fun_induct_rule (@{term_pat "merge_list (?a0.0::?'a::ord list) ?a1.0"}, @{thm merge_list.induct}) *}
 
 theorem merge_list_correct [rewrite]: "set (merge_list xs ys) = set xs \<union> set ys"
-@proof
-  @induct xs arbitrary ys @with @subgoal "xs = x # xs'" @induct ys @endgoal @end
-@qed
+@proof @fun_induct "merge_list xs ys" @qed
 
 theorem merge_list_sorted [backward2]: "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> sorted (merge_list xs ys)"
-@proof
-  @induct xs arbitrary ys @with @subgoal "xs = x # xs'" @induct ys @endgoal @end
-@qed
+@proof @fun_induct "merge_list xs ys" @qed
 
 end

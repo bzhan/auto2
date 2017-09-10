@@ -100,6 +100,12 @@ lemma paint_bd_inv [forward]: "bd_inv t \<Longrightarrow> bd_inv (paint c t)" by
 
 lemma paint_bd [rewrite]:
   "bd_inv t \<Longrightarrow> t \<noteq> Leaf \<Longrightarrow> cl t = B \<Longrightarrow> black_depth (paint R t) = black_depth t - 1" by auto2
+    
+lemma paint_in_traverse [rewrite]:
+  "rbt_in_traverse (paint c t) = rbt_in_traverse t" by auto2
+
+lemma paint_in_traverse_pairs [rewrite]:
+  "rbt_in_traverse_pairs (paint c t) = rbt_in_traverse_pairs t" by auto2
 
 section {* Insert function *}
 
@@ -250,20 +256,40 @@ fun combine :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('
      else
        Node (combine (Node l1 c1 k1 v1 r1) l2) R k2 v2 r2)"
 setup {* fold add_rewrite_rule @{thms combine.simps} *}
-setup {* add_double_induct_rule @{thm combine.induct} *}
+setup {* add_fun_induct_rule (@{term_pat "combine (?a0.0::(?'a,?'b) pre_rbt) ?a1.0"}, @{thm combine.induct}) *}
 
 lemma combine_bd:
   "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
    bd_inv (combine lt rt) \<and> black_depth (combine lt rt) = black_depth lt"
-@proof @double_induct lt rt @qed
+@proof @fun_induct "combine lt rt" @qed
 setup {* add_forward_prfstep_cond @{thm combine_bd} [with_term "combine ?lt ?rt"] *}
 
 lemma combine_cl:
   "cl_inv lt \<Longrightarrow> cl_inv rt \<Longrightarrow>
    (cl lt = B \<longrightarrow> cl rt = B \<longrightarrow> cl_inv (combine lt rt)) \<and> cl_inv' (combine lt rt)"
-@proof @double_induct lt rt @qed
+@proof @fun_induct "combine lt rt" @qed
 setup {* add_forward_prfstep_cond @{thm combine_cl} [with_term "combine ?lt ?rt"] *}
-setup {* fold del_prfstep_thm @{thms combine.simps} *}
+
+lemma combine_in_traverse_pairs [rewrite]:
+  "rbt_in_traverse_pairs (combine lt rt) = rbt_in_traverse_pairs lt @ rbt_in_traverse_pairs rt"
+@proof @fun_induct "combine lt rt" @with
+  @subgoal "(lt = Node l1 c1 k1 v1 r1, rt = Node l2 c2 k2 v2 r2)"
+    @case "c1 = R" @with @case "c2 = R" @with @case "cl (combine r1 l2) = R" @with
+      @have "rbt_in_traverse_pairs (combine (Node l1 c1 k1 v1 r1) (Node l2 c2 k2 v2 r2)) =
+             rbt_in_traverse_pairs l1 @ [(k1, v1)] @ rbt_in_traverse_pairs (combine r1 l2) @ [(k2, v2)] @ rbt_in_traverse_pairs r2"
+    @end @end @end
+    @case "c1 = B" @with @case "c2 = B" @with @case "cl (combine r1 l2) = R" @with
+      @have "rbt_in_traverse_pairs (combine (Node l1 c1 k1 v1 r1) (Node l2 c2 k2 v2 r2)) =
+             rbt_in_traverse_pairs l1 @ [(k1, v1)] @ rbt_in_traverse_pairs (combine r1 l2) @ [(k2, v2)] @ rbt_in_traverse_pairs r2"
+    @end @end @end
+  @endgoal @end
+@qed
+
+lemma combine_in_traverse [rewrite]:
+  "rbt_in_traverse (combine lt rt) = rbt_in_traverse lt @ rbt_in_traverse rt"
+@proof
+  @have "rbt_in_traverse_pairs (combine lt rt) = rbt_in_traverse_pairs lt @ rbt_in_traverse_pairs rt"
+@qed
 
 fun del :: "'a::linorder \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
   "del x y Leaf = Leaf"
@@ -301,10 +327,30 @@ lemma del_cl:
 
 setup {* add_forward_prfstep_cond @{thm del_bd} [with_term "del ?x ?y ?t"] *}
 setup {* add_forward_prfstep_cond @{thm del_cl} [with_term "del ?x ?y ?t"] *}
+  
+lemma del_in_traverse [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (del x y t) = remove_elt_list x (rbt_in_traverse t)"
+@proof @induct t @qed
+
+lemma del_in_traverse_pairs [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (del x y t) = remove_elt_pairs x (rbt_in_traverse_pairs t)"
+@proof @induct t @qed
 
 definition delete :: "'a::linorder \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
   "delete x y t = paint B (del x y t)"
 
 lemma rbt_delete [forward]: "is_rbt t \<Longrightarrow> is_rbt (delete x y t)" by auto2
+
+lemma delete_in_traverse [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (delete x y t) = remove_elt_list x (rbt_in_traverse t)" by auto2
+
+lemma delete_in_traverse_pairs [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (delete x y t) = remove_elt_pairs x (rbt_in_traverse_pairs t)" by auto2
+
+lemma delete_rbt_set: "rbt_sorted t \<Longrightarrow> rbt_set (delete x v t) = rbt_set t - {x}" by auto2
+
+lemma delete_sorted: "rbt_sorted t \<Longrightarrow> rbt_sorted (delete x v t)" by auto2
+
+lemma delete_rbt_map: "rbt_sorted t \<Longrightarrow> rbt_map (delete x v t) = delete_map x (rbt_map t)" by auto2
 
 end
