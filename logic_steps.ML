@@ -742,12 +742,6 @@ val disj_prop_matcher =
       {pre_match = pre_match, match = match}
     end
 
-fun is_priority_term t =
-    if is_neg t then
-      exists (is_ex orf is_bex) (strip_conj (dest_not t))
-    else
-      exists (is_obj_all orf is_ball) (strip_disj t)
-
 (* Given ct in the form p_1 | ... | p_n, apply cv to each of p_i. *)
 fun ac_disj_conv cv ct =
     if is_disj (Thm.term_of ct) then
@@ -807,23 +801,21 @@ fun disj_cancel_cv ctxt th ct =
     else
       Conv.all_conv ct
 
-(* Given theorem ~P and a disjuncion theorem, return new disjunction
-   theorem with P cancelled. If all disjuncts can be cancelled, return
-   False.
+(* Given theorem P and a disjuncion theorem, return new disjunction
+   theorem with ~P cancelled. If all disjuncts can be cancelled,
+   return False.
  *)
 fun disj_cancel_prop ctxt th prop =
     let
-      val prop' = prop |> apply_to_thm' (disj_cancel_cv ctxt th)
-      val P = th |> prop_of' |> dest_not
+      val th' = if is_neg (prop_of' th) then th
+                else th RS UtilBase.nn_create_th
+      val prop' = prop |> apply_to_thm' (disj_cancel_cv ctxt th')
+      val P = th' |> prop_of' |> dest_not
     in
       if prop_of' prop' aconv P then
-        [th, prop'] MRS UtilBase.contra_triv_th
+        [th', prop'] MRS UtilBase.contra_triv_th
       else prop'
     end
-
-fun is_avoid_term t =
-    is_mem t andalso Term.is_Var (dest_arg1 t) andalso
-    null (Term.add_frees (dest_arg t) [])
 
 (* Reduce a disjunction p_1 | ... | t | ... | p_n by matching ~t with
    the second item. If the disjunction contains schematic variables, t
@@ -839,13 +831,19 @@ fun match_update_fn ictxt item1 item2 =
       val subs = map Thm.term_of csubs
       fun count_var t = length (Term.add_vars t [])
       val max_nvar = fold (curry Int.max) (map count_var subs) 0
+
+      fun is_priority_term t =
+          if is_neg t then
+            exists (is_ex orf is_bex) (strip_conj (dest_not t))
+          else
+            exists (is_obj_all orf is_ball) (strip_disj t)
+
       val has_priority_term = exists is_priority_term (map get_neg subs)
 
       val (NO_MATCH, FREE_ONLY, SLOW_MATCH, YES_MATCH) = (0, 1, 2, 3)
       (* Test whether to perform matching on pattern. *)
       fun test_do_match (i, sub, nvar) =
-          if max_nvar = 0 then YES_MATCH
-          else let
+          let
             val nsub = get_neg sub
           in
             if not (Util.is_pattern sub) then NO_MATCH
@@ -853,7 +851,8 @@ fun match_update_fn ictxt item1 item2 =
                     Property.is_property_prem thy nsub then NO_MATCH
             else if has_priority_term andalso
                     not (is_priority_term nsub) then SLOW_MATCH
-            else if is_avoid_term nsub then SLOW_MATCH
+            else if is_mem nsub andalso Term.is_Var (dest_arg1 nsub) andalso
+                    null (Term.add_frees (dest_arg nsub) []) then SLOW_MATCH
             else if nvar = 0 orelse nvar = max_nvar then YES_MATCH
             else if i > 0 then NO_MATCH else FREE_ONLY
           end
@@ -870,12 +869,9 @@ fun match_update_fn ictxt item1 item2 =
             val do_match = test_do_match (i, t, nvar)
             fun process_inst ((id', inst), th) =
                 let
-                  val th' = if is_neg (prop_of' th) then th
-                            else th RS UtilBase.nn_create_th
                   val prop' = prop |> Util.subst_thm_thy thy inst
-                                   |> disj_cancel_prop ctxt th'
-                  val sc = if max_nvar = 0 then 1
-                           else if do_match = SLOW_MATCH then 200 else 10
+                                   |> disj_cancel_prop ctxt th
+                  val sc = if do_match = SLOW_MATCH then 200 else 10
                 in
                   disj_to_update false disj_head (id', SOME sc, prop') ::
                   (if nvar > 0 then [] else
@@ -893,8 +889,41 @@ fun match_update_fn ictxt item1 item2 =
               t |> get_neg |> match_prop ictxt (id, item2)
                 |> maps process_inst
           end
+
+      fun get_matches_no_var () =
+          let
+            fun process_inst (id', ths) =
+                let
+                  val prop' = prop |> fold (disj_cancel_prop ctxt) ths
+                in
+                  disj_to_update false disj_head (id', SOME 1, prop') ::
+                  [ShadowItem {id = id', item = item1}]
+                end
+
+            fun get_match_at_id id' insts =
+                insts |> filter (fn ((id, _), _) =>
+                                    BoxID.is_eq_ancestor ctxt id id')
+                      |> map snd |> take 1
+
+            fun get_matches_at_id all_insts id' =
+                (id', maps (get_match_at_id id') all_insts)
+
+            fun merge_matches all_insts =
+                let
+                  val ids = distinct (op =) (maps (map (fst o fst)) all_insts)
+                in
+                  map (get_matches_at_id all_insts) ids
+                end
+          in
+            subs |> map get_neg |> map (match_prop ictxt (id, item2))
+                 |> merge_matches
+                 |> maps process_inst
+          end
     in
-      maps get_matches (0 upto (length subs - 1))
+      if max_nvar = 0 then
+        get_matches_no_var ()
+      else
+        maps get_matches (0 upto (length subs - 1))
     end
 
 val match_update_prfstep =

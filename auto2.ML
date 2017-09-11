@@ -621,9 +621,11 @@ fun auto2_tac ctxt state =
         val subgoal_norm = Conv.every_conv [
             Util.normalize_meta_horn ctxt, UtilLogic.to_obj_conv_on_horn ctxt] c_subgoal
         val st = ProofStatus.init_status ctxt (Util.rhs_of subgoal_norm)
-        val (_, st') =
+        val (steps', st') =
             Util.timer ("Total time: ",
                         fn _ => ProofStatus.solve_root (steps, st))
+        val _ = writeln ("Finished in " ^
+                         (string_of_int (steps - steps')) ^ " steps.")
         val th = Status.get_resolve_th st' [0]
         val vars = map Free (Term.add_frees subgoal [])
         val th' = th |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)
