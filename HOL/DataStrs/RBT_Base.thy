@@ -106,9 +106,6 @@ theorem depth_max: "is_rbt t \<Longrightarrow> if cl t = R then max_depth t \<le
 @qed
 
 setup {* fold add_forward_prfstep [@{thm depth_min}, @{thm depth_max}] *}
-  
-setup {* add_backward_prfstep @{thm Nat.add_le_mono1} *}
-setup {* add_backward_prfstep @{thm Nat.mult_le_mono2} *}
 
 theorem balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_depth t + 1"
 @proof @have "max_depth t \<le> 2 * black_depth t + 1" @qed

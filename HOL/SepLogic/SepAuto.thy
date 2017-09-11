@@ -67,14 +67,19 @@ attribute_setup hoare_create_case = {* setup_attrib add_match_hoare_create_case 
 attribute_setup hoare_triple = {* setup_attrib add_hoare_triple_prfstep *}
 attribute_setup hoare_triple_direct = {* setup_attrib add_hoare_triple_direct_prfstep *}
 
-theorem basic_heap_preserving_thms [heap_presv_thms]:
-  "heap_preserving (!p)"
-  "heap_preserving (return x)"
-  "heap_preserving (Array.nth a i)"
-  "heap_preserving (Array.len a)"
-by (smt effect_lookupE effect_returnE effect_nthE effect_lengthE heap_preserving_def)+
+lemma heap_preserving_lookup [heap_presv_thms]: "heap_preserving (!p)"
+  using effect_lookupE heap_preserving_def by fastforce
 
-theorem heap_preserve_assert [heap_presv_thms]: "heap_preserving (assert P x)"
+lemma heap_preserving_return [heap_presv_thms]: "heap_preserving (return x)"
+  using effect_returnE heap_preserving_def by fastforce
+
+lemma heap_preserving_nth [heap_presv_thms]: "heap_preserving (Array.nth a i)"
+  using effect_nthE heap_preserving_def by fastforce
+
+lemma heap_preserving_len [heap_presv_thms]: "heap_preserving (Array.len a)"
+  using effect_lengthE heap_preserving_def by fastforce
+
+lemma heap_preserve_assert [heap_presv_thms]: "heap_preserving (assert P x)"
   using effect_assertE heap_preserving_def by fastforce
 
 setup {* fold add_hoare_triple_prfstep [

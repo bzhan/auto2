@@ -143,6 +143,14 @@ lemma partition_partitions2 [forward]:
 setup {* del_prfstep_thm @{thm partition_partitions2'} *}
 setup {* del_prfstep_thm @{thm partition_def} *}
 
+lemma quicksort_term1 [resolve]:
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> fst (partition xs l r) - (l + 1) < r - l"
+@proof @have "fst (partition xs l r) - l - 1 < r - l" @qed
+
+lemma quicksort_term2 [resolve]:
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> r - (fst (partition xs l r) + 1) < r - l"
+@proof @have "r - fst (partition xs l r) - 1 < r - l" @qed
+
 function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "quicksort xs l r = (
     if l < r \<and> r < length xs then
@@ -154,10 +162,7 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
     else xs)"
   by auto
   termination apply (relation "measure (\<lambda>(a, l, r). (r - l))")
-  apply auto
-  apply (smt Suc_diff_Suc Suc_le_lessD diff_is_0_eq le_diff_iff less_imp_diff_less less_imp_le
-             not_less partition_return_in_bounds)
-  by (simp add: diff_less_mono2 less_Suc_eq_le partition_return_in_bounds)
+  apply auto by auto2+
 
 setup {* add_rewrite_rule_cond @{thm quicksort.simps}
   [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}

@@ -107,6 +107,11 @@ lemma Nat_le_diff_conv2_same [forward]: "i \<ge> j \<Longrightarrow> (i::nat) \<
 lemma nat_gt_zero [forward]: "b - a > 0 \<Longrightarrow> b > (a::nat)" by simp
 lemma n_minus_1_less_n: "(n::nat) \<ge> 1 \<Longrightarrow> n - 1 < n" by simp
 setup {* add_forward_prfstep_cond @{thm n_minus_1_less_n} [with_term "?n - 1"] *}
+  
+(* Monotonicity of ordering *)
+setup {* add_backward_prfstep @{thm Nat.diff_le_mono} *}
+setup {* add_backward_prfstep @{thm Nat.add_le_mono1} *}
+setup {* add_backward_prfstep @{thm Nat.mult_le_mono2} *}
 
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp
