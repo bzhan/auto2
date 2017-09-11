@@ -362,6 +362,7 @@ lemma balL_to_fun [hoare_triple]:
   "<btree (pre_rbt.Node l R k v r) p>
    btree_balL p
    <\<lambda>q. btree (balL l k v r) q>" by auto2
+setup {* del_prfstep_thm @{thm balL_def} *}
 
 definition btree_balR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balR p = (case p of
@@ -403,6 +404,114 @@ lemma balR_to_fun [hoare_triple]:
   "<btree (pre_rbt.Node l R k v r) p>
    btree_balR p
    <\<lambda>q. btree (balR l k v r) q>" by auto2
+setup {* del_prfstep_thm @{thm balR_def} *}
+
+partial_function (heap) btree_combine ::
+  "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "btree_combine lp rp =
+   (if lp = None then return rp
+    else if rp = None then return lp
+    else do {
+      lt \<leftarrow> !(the lp);
+      rt \<leftarrow> !(the rp);
+      if cl lt = R then
+        if cl rt = R then do {
+          tmp \<leftarrow> btree_combine (rsub lt) (lsub rt);
+          cl_tm \<leftarrow> get_color tmp;
+          if cl_tm = R then do {
+            tmt \<leftarrow> !(the tmp);
+            the lp := Node (lsub lt) R (key lt) (val lt) (lsub tmt);
+            the rp := Node (rsub tmt) R (key rt) (val rt) (rsub rt);
+            the tmp := Node lp R (key tmt) (val tmt) rp;
+            return tmp}
+          else do {
+            the rp := Node tmp R (key rt) (val rt) (rsub rt);
+            the lp := Node (lsub lt) R (key lt) (val lt) rp;
+            return lp}}
+        else do {
+          tmp \<leftarrow> btree_combine (rsub lt) rp;
+          the lp := Node (lsub lt) R (key lt) (val lt) tmp;
+          return lp}
+      else if cl rt = B then do {
+        tmp \<leftarrow> btree_combine (rsub lt) (lsub rt);
+        cl_tm \<leftarrow> get_color tmp;
+        if cl_tm = R then do {
+          tmt \<leftarrow> !(the tmp);
+          the lp := Node (lsub lt) B (key lt) (val lt) (lsub tmt);
+          the rp := Node (rsub tmt) B (key rt) (val rt) (rsub rt);
+          the tmp := Node lp R (key tmt) (val tmt) rp;
+          return tmp}
+        else do {
+          the rp := Node tmp B (key rt) (val rt) (rsub rt);
+          the lp := Node (lsub lt) R (key lt) (val lt) rp;
+          btree_balL lp}}
+      else do {
+        tmp \<leftarrow> btree_combine lp (lsub rt);
+        the rp := Node tmp R (key rt) (val rt) (rsub rt);
+        return rp}})"
+declare btree_combine.simps [sep_proc_defs]
+
+lemma combine_to_fun [hoare_triple]:
+  "<btree lt lp * btree rt rp>
+   btree_combine lp rp
+   <\<lambda>q. btree (combine lt rt) q>"
+@proof @fun_induct "combine lt rt" arbitrary lp rp @qed
+    
+partial_function (heap) rbt_del ::
+  "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "rbt_del x p = (case p of
+     None \<Rightarrow> return None
+   | Some pp \<Rightarrow> do {
+      t \<leftarrow> !pp;
+      (if x = key t then btree_combine (lsub t) (rsub t)
+       else if x < key t then case lsub t of
+         None \<Rightarrow> do {
+           set_color R p;
+           return p}
+       | Some lp \<Rightarrow> do {
+           lt \<leftarrow> !lp;
+           if cl lt = B then do {
+             q \<leftarrow> rbt_del x (lsub t);
+             pp := Node q R (key t) (val t) (rsub t);
+             btree_balL p }
+           else do {
+             q \<leftarrow> rbt_del x (lsub t);
+             pp := Node q R (key t) (val t) (rsub t);
+             return p }}
+       else case rsub t of
+         None \<Rightarrow> do {
+           set_color R p;
+           return p}
+       | Some rp \<Rightarrow> do {
+           rt \<leftarrow> !rp;
+           if cl rt = B then do {
+             q \<leftarrow> rbt_del x (rsub t);
+             pp := Node (lsub t) R (key t) (val t) q;
+             btree_balR p }
+           else do {
+             q \<leftarrow> rbt_del x (rsub t);
+             pp := Node (lsub t) R (key t) (val t) q;
+             return p }})})"
+declare rbt_del.simps [sep_proc_defs]
+
+lemma rbt_del_to_fun [hoare_triple]:
+  "<btree t p>
+   rbt_del x p
+   <\<lambda>r. btree (del x t) r * true>"
+@proof @induct t arbitrary p @qed
+    
+definition rbt_delete :: "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
+  "rbt_delete k p = do {
+    p' \<leftarrow> rbt_del k p;
+    paint B p';
+    return p'}"
+declare rbt_delete_def [sep_proc_defs]
+  
+lemma rbt_delete_to_fun [hoare_triple]:
+  "<btree t p>
+   rbt_delete k p
+   <\<lambda>r. btree (RBT_Func.delete k t) r * true>" by auto2
+declare rbt_delete_def [sep_proc_defs del]
 
 section {* Outer interface *}
 
@@ -432,5 +541,11 @@ lemma rbt_insert_rule2:
 
 lemma rbt_search:
   "<rbt_map_assn M b> rbt_search x b <\<lambda>r. rbt_map_assn M b * \<up>(r = M\<langle>x\<rangle>)>" by auto2
+
+lemma rbt_delete_rule1:
+  "<rbt_set_assn S b> rbt_delete k b <\<lambda>r. rbt_set_assn (S - {k}) r * true>" by auto2
+
+lemma rbt_delete_rule2:
+  "<rbt_map_assn M b> rbt_delete k b <\<lambda>r. rbt_map_assn (delete_map k M) r * true>" by auto2
 
 end
