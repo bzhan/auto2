@@ -35,6 +35,8 @@ setup {* add_backward2_prfstep @{thm min.boundedI} *}
 setup {* add_resolve_prfstep @{thm min.coboundedI1} *}
 setup {* add_resolve_prfstep @{thm min.strict_coboundedI1} *}
 setup {* add_backward2_prfstep @{thm min.mono} *}
+setup {* add_rewrite_rule @{thm min.absorb1} *}
+setup {* add_rewrite_rule @{thm min.absorb2} *}
 theorem min_boundedE: "(a::('a::linorder)) \<le> min b c \<Longrightarrow> a \<le> b" by simp
 setup {* add_forward_prfstep_cond @{thm min_boundedE} [with_cond "?a \<noteq> ?b"]*}
 

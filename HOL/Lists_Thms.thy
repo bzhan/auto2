@@ -81,11 +81,16 @@ section {* Replicate *}
 setup {* add_rewrite_rule @{thm length_replicate} *}
 setup {* add_rewrite_rule @{thm List.nth_replicate} *}
 
+section {* last *}
+
+setup {* add_rewrite_rule @{thm List.last_snoc} *}
+
 section {* butlast *}
 
 setup {* add_rewrite_rule @{thm length_butlast} *}
 setup {* add_rewrite_rule @{thm nth_butlast} *}
 setup {* add_rewrite_rule @{thm List.butlast_conv_take} *}
+setup {* add_rewrite_rule @{thm List.butlast_snoc} *}
 
 section {* List update *}
 
@@ -142,5 +147,14 @@ section {* upto lists *}
 
 lemma upt_zero_length [rewrite]: "length [0..<n] = n" by simp
 lemma nth_upt_zero [rewrite]: "i < length [0..<n] \<Longrightarrow> [0..<n] ! i = i" by simp
+
+section {* Lambda lists *}
+
+definition list :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a list" where
+  "list s n = map s [0 ..< n]"
+
+lemma list_length: "length (list s n) = n" by (simp add: list_def)
+setup {* add_forward_prfstep_cond @{thm list_length} [with_term "list ?s ?n"] *}
+lemma list_nth [rewrite]: "i < length (list s n) \<Longrightarrow> (list s n) ! i = s i" by (simp add: list_def)
 
 end

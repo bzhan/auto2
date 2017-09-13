@@ -70,6 +70,13 @@ session SepLogic_PQueue = SepLogic_Base +
   theories
     "HOL/SepLogic/IndexedPriorityQueue"
 
+session SepLogic_Graph = AUTO2 +
+  description {*
+    Graph theory.
+  *}
+  theories
+    "HOL/DataStrs/Graph"
+
 session Auto2_FOL = FOL +
   description {*
     Example in first order logic.

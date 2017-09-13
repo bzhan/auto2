@@ -76,6 +76,9 @@ theorem subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in
 setup {* add_resolve_prfstep @{thm Set.basic_monos(1)} *}
 setup {* add_resolve_prfstep @{thm Set.Un_upper1} *}
 setup {* add_resolve_prfstep @{thm Set.Un_upper2} *}
+lemma union_is_subset [forward]: "A \<union> B \<subseteq> C \<Longrightarrow> A \<subseteq> C \<and> B \<subseteq> C" by simp
+setup {* add_backward1_prfstep @{thm Set.Un_least} *}
+setup {* add_backward2_prfstep @{thm Set.Un_least} *}
 lemma subset_union_same1 [backward]: "B \<subseteq> C \<Longrightarrow> A \<union> B \<subseteq> A \<union> C" by auto
 lemma subset_union_same2 [backward]: "A \<subseteq> B \<Longrightarrow> A \<union> C \<subseteq> B \<union> C" by auto
 
