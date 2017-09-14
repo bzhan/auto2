@@ -53,12 +53,11 @@ definition joinable :: "graph \<Rightarrow> nat list \<Rightarrow> nat list \<Ri
 
 definition path_join :: "graph \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat list" where [rewrite]:
   "path_join G p q = p @ tl q"
-setup {* register_wellform_data ("path_join G p q", ["is_path G p", "is_path G q", "joinable G p q"]) *}
+setup {* register_wellform_data ("path_join G p q", ["joinable G p q"]) *}
 setup {* add_prfstep_check_req ("path_join G p q", "joinable G p q") *}
 
 lemma path_join_is_path:
-  "is_path G p \<Longrightarrow> is_path G q \<Longrightarrow> joinable G p q \<Longrightarrow> is_path G (path_join G p q)"
-@proof @have "set (tl q) \<subseteq> set q" @qed
+  "joinable G p q \<Longrightarrow> is_path G (path_join G p q)" by auto2
 setup {* add_forward_prfstep_cond @{thm path_join_is_path} [with_term "path_join ?G ?p ?q"] *}
 
 fun path_weight :: "graph \<Rightarrow> nat list \<Rightarrow> nat" where
@@ -66,15 +65,6 @@ fun path_weight :: "graph \<Rightarrow> nat list \<Rightarrow> nat" where
 | "path_weight G [x] = 0"
 | "path_weight G (x # y # ys) = weight G x y + path_weight G (y # ys)"
 setup {* fold add_rewrite_rule @{thms path_weight.simps} *}
-
-lemma is_path_Cons [forward]: "as \<noteq> [] \<Longrightarrow> is_path G (a # as) \<Longrightarrow> is_path G as"
-@proof @have "set as \<subseteq> set (a # as)" @qed
-
-lemma is_path_append1 [forward]: "xs \<noteq> [] \<Longrightarrow> is_path G (xs @ ys) \<Longrightarrow> is_path G xs"
-@proof @have "set xs \<subseteq> set (xs @ ys)" @qed
-
-lemma is_path_append2 [forward]: "ys \<noteq> [] \<Longrightarrow> is_path G (xs @ ys) \<Longrightarrow> is_path G ys"
-@proof @have "set ys \<subseteq> set (xs @ ys)" @qed
 
 lemma path_weight_sum [rewrite]:
   "joinable G p q \<Longrightarrow> path_weight G (path_join G p q) = path_weight G p + path_weight G q"
@@ -216,18 +206,15 @@ lemma derive_dist [backward2]:
   @end
 @qed
 
-lemma path_set_on_next [backward1]:
-  "V \<subseteq> verts G \<Longrightarrow> m \<in> verts G \<Longrightarrow> n \<in> verts G \<Longrightarrow>
-   p \<in> path_set_on G k m V \<Longrightarrow> path_join G p [m, n] \<in> path_set_on G k n (V \<union> {m})"
+lemma join_def' [resolve]: "joinable G p q \<Longrightarrow> path_join G p q = butlast p @ q"
 @proof
-  @let "q = [m, n]"
-  @let "pq = path_join G p q"
-  @have "butlast pq = butlast p @ [m]"
-  @have "set (butlast pq) = set (butlast p) \<union> {m}"
-  @have "set (butlast p) \<subseteq> V"
-  @have "V \<subseteq> V \<union> {m}"
-  @have "{m} \<subseteq> V \<union> {m}"
+  @have "p = butlast p @ [last p]"
+  @have "path_join G p q = butlast p @ [last p] @ tl q"
 @qed
+
+lemma int_pts_join [rewrite]:
+  "joinable G p q \<Longrightarrow> int_pts (path_join G p q) = int_pts p \<union> int_pts q"
+@proof @have "path_join G p q = butlast p @ q" @qed
 
 lemma dist_on_triangle_ineq [backward]:
   "has_dist_on G k m V \<Longrightarrow> has_dist_on G k n V \<Longrightarrow> V \<subseteq> verts G \<Longrightarrow> n \<in> verts G \<Longrightarrow> m \<in> V \<Longrightarrow>
@@ -253,10 +240,7 @@ lemma derive_dist_on [backward2]:
   @have "\<forall>p\<in>path_set_on G 0 n V'. path_weight G p \<ge> M" @with
     @obtain q n' where "joinable G q [n', n]" "p = path_join G q [n', n]"
     @have "q \<in> path_set G 0 n'"
-    @have "n' \<in> V'" @with
-      @have "tl [n', n] \<noteq> []" @have "set q \<subseteq> V'" @have "n' = last q" @have "n' \<in> set q"
-    @end
-    @have "q \<in> path_set G 0 n'"
+    @have "n' \<in> V'"
     @case "n' \<in> V" @with
       @have "dist_on G 0 n' V = dist G 0 n'"
       @have "path_weight G q \<ge> dist_on G 0 n' V"
@@ -277,6 +261,7 @@ lemma derive_dist_on [backward2]:
   @obtain pm where "is_shortest_path_on G 0 m pm V"
   @have "path_weight G pm = dist G 0 m"
   @let "p = path_join G pm [m, n]"
+  @have "joinable G pm [m, n]"
   @have "path_weight G p = path_weight G pm + weight G m n"
   @have "is_shortest_path_on G 0 n p V'"
 @qed
@@ -319,7 +304,6 @@ lemma has_dist_on_larger [backward1]:
    has_dist_on G m n (V \<union> {x}) \<and> dist_on G m n (V \<union> {x}) = dist G m n"
 @proof
   @obtain p where "is_shortest_path_on G m n p V"
-  @have "p \<in> path_set_on G m n V"
   @let "V' = V \<union> {x}"
   @have "p \<in> path_set_on G m n V'" @with @have "V \<subseteq> V'" @end
   @have "is_shortest_path_on G m n p V'"
