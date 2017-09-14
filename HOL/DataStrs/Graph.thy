@@ -7,6 +7,7 @@ lemma last_eval2 [rewrite]: "last [u, v] = v" by simp
 lemma last_cons [rewrite]: "xs \<noteq> [] \<Longrightarrow> last (x # xs) = last xs" by simp
 lemma last_append [rewrite]: "ys \<noteq> [] \<Longrightarrow> last (xs @ ys) = last ys" by simp
 
+lemma butlast_eval1 [rewrite]: "butlast [x] = []" by simp
 lemma butlast_eval2 [rewrite]: "butlast [x, y] = [x]" by simp
 lemma butlast_cons [rewrite]: "as \<noteq> [] \<Longrightarrow> butlast (a # as) = a # butlast as" by simp
 lemma butlast_append' [rewrite]: "bs \<noteq> [] \<Longrightarrow> butlast (as @ bs) = as @ butlast bs"
@@ -19,6 +20,9 @@ lemma last_mem [resolve]: "xs \<noteq> [] \<Longrightarrow> last xs \<in> set xs
 lemma set_two [rewrite]: "set [u, v] = {u, v}" by simp
 lemma set_two_mem [rewrite]: "{u, v} \<subseteq> S \<longleftrightarrow> u \<in> S \<and> v \<in> S" by simp
 lemma mem_diff [rewrite]: "x \<in> A - B \<longleftrightarrow> x \<in> A \<and> x \<notin> B" by simp
+
+setup {* add_resolve_prfstep @{thm Nat.le_add1} *}
+setup {* add_resolve_prfstep @{thm Nat.le_add2} *}
 
 section {* Graphs *}
 
@@ -323,5 +327,35 @@ lemma dijkstra_step_preserves_inv:
   @have "has_dist_on G 0 m V' \<and> dist_on G 0 m V' = dist G 0 m"
   @have (@rule) "\<forall>i\<in>verts G - V'. has_dist_on G 0 i V' \<and> dist_on G 0 i V' = min (dist_on G 0 i V) (dist_on G 0 m V + weight G m i)"
 @qed
+
+definition dijkstra_start_state :: "graph \<Rightarrow> state" where [rewrite]:
+  "dijkstra_start_state G =
+     State (list (\<lambda>i. if i = 0 then 0 else weight G 0 i) (size G)) {0}"
+    
+lemma dijkstra_start_inv [backward]:
+  "size G > 0 \<Longrightarrow> inv G (dijkstra_start_state G)"
+@proof
+  @let "V = {0::nat}"
+  @have "has_dist G 0 0 \<and> dist G 0 0 = 0" @with
+    @have "is_shortest_path G 0 0 [0]" @end
+  @have "has_dist_on G 0 0 V \<and> dist_on G 0 0 V = 0" @with
+    @have "is_shortest_path_on G 0 0 [0] V" @end
+  @have "V \<subseteq> verts G \<and> 0 \<in> V"
+  @have (@rule) "\<forall>i\<in>verts G. i \<noteq> 0 \<longrightarrow> has_dist_on G 0 i V \<and> dist_on G 0 i V = weight G 0 i" @with
+    @let "p = [0, i]"
+    @have "is_shortest_path_on G 0 i p V" @with
+      @have "p \<in> path_set_on G 0 i V"
+      @have "\<forall>p'\<in>path_set_on G 0 i V. path_weight G p' \<ge> weight G 0 i" @with
+        @obtain q n where "joinable G q [n, last p']" "p' = path_join G q [n, last p']"
+        @have "n \<in> V" @have "n = 0"
+        @have "path_weight G p' = path_weight G q + weight G 0 i"
+      @end
+    @end
+  @end
+@qed
+
+lemma dijkstra_end_inv:
+  "inv G S \<Longrightarrow> known S = verts G \<Longrightarrow> \<forall>i\<in>verts G. has_dist G 0 i \<and> est_of S i = dist G 0 i"
+  by auto2
 
 end
