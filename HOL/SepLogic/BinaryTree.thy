@@ -130,11 +130,7 @@ lemma btree_del_min_to_fun [hoare_triple]:
   "<btree t b * \<up>(b \<noteq> None)>
    btree_del_min b
    <\<lambda>r. btree (snd (del_min t)) (snd r) * true * \<up>(fst(r) = fst (del_min t))>"
-@proof
-  @induct t arbitrary b @with
-    @subgoal "t = tree.Node l x v r" @case "l = Tip" @endgoal
-  @end
-@qed
+@proof @induct t arbitrary b @qed
 declare btree_del_min.simps [sep_proc_defs del]
 
 definition btree_del_elt :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -153,8 +149,7 @@ declare btree_del_elt_def [sep_proc_defs]
 lemma btree_del_elt_to_fun [hoare_triple]:
   "<btree (tree.Node lt x v rt) b>
    btree_del_elt b
-   <\<lambda>r. btree (delete_elt_tree (tree.Node lt x v rt)) r * true>"
-@proof @case "lt = Tip" @then @case "rt = Tip" @qed
+   <\<lambda>r. btree (delete_elt_tree (tree.Node lt x v rt)) r * true>" by auto2
 declare btree_del_elt_def [sep_proc_defs del]
 
 partial_function (heap) btree_delete ::

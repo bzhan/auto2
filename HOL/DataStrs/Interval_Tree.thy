@@ -184,6 +184,92 @@ lemma tree_insert_max_inv [forward]:
 lemma tree_insert_all_inv [forward]:
   "is_interval_tree t \<Longrightarrow> is_interval it \<Longrightarrow> is_interval_tree (tree_insert it t)" by auto2
 
+section {* Deletion on trees *}
+
+fun del_min :: "interval_tree \<Rightarrow> nat interval \<times> interval_tree" where
+  "del_min Tip = undefined"
+| "del_min (Node lt v m rt) =
+   (if lt = Tip then (v, rt) else
+    let lt' = snd (del_min lt) in
+    (fst (del_min lt), Node lt' v (max3 (high v) (tmax lt') (tmax rt)) rt))"
+setup {* add_rewrite_rule @{thm del_min.simps(2)} *}
+setup {* register_wellform_data ("del_min t", ["t \<noteq> Tip"]) *}
+
+lemma delete_min_del_hd:
+  "t \<noteq> Tip \<Longrightarrow> fst (del_min t) # in_traverse (snd (del_min t)) = in_traverse t"
+@proof @induct t @qed
+setup {* add_forward_prfstep_cond @{thm delete_min_del_hd} [with_term "in_traverse (snd (del_min ?t))"] *}
+
+lemma delete_min_max_inv:
+  "tree_max_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_max_inv (snd (del_min t))"
+@proof @induct t @qed
+setup {* add_forward_prfstep_cond @{thm delete_min_max_inv} [with_term "snd (del_min ?t)"] *}
+
+lemma delete_min_on_set:
+  "t \<noteq> Tip \<Longrightarrow> {fst (del_min t)} \<union> tree_set (snd (del_min t)) = tree_set t" by auto2
+setup {* add_forward_prfstep_cond @{thm delete_min_on_set} [with_term "tree_set (snd (del_min ?t))"] *}
+
+lemma delete_min_interval_inv:
+  "tree_interval_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_interval_inv (snd (del_min t))" by auto2
+setup {* add_forward_prfstep_cond @{thm delete_min_interval_inv} [with_term "snd (del_min ?t)"] *}
+
+lemma delete_min_all_inv:
+  "is_interval_tree t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> is_interval_tree (snd (del_min t))" by auto2
+setup {* add_forward_prfstep_cond @{thm delete_min_all_inv} [with_term "snd (del_min ?t)"] *}
+
+fun delete_elt_tree :: "interval_tree \<Rightarrow> interval_tree" where
+  "delete_elt_tree Tip = undefined"
+| "delete_elt_tree (Node lt x m rt) =
+    (if lt = Tip then rt else if rt = Tip then lt else
+     let x' = fst (del_min rt);
+         rt' = snd (del_min rt);
+         m' = max3 (high x') (tmax lt) (tmax rt') in
+       Node lt (fst (del_min rt)) m' rt')"
+setup {* add_rewrite_rule @{thm delete_elt_tree.simps(2)} *}
+
+lemma delete_elt_in_traverse [rewrite]:
+  "in_traverse (delete_elt_tree (Node lt x m rt)) = in_traverse lt @ in_traverse rt" by auto2
+
+lemma delete_elt_max_inv:
+  "tree_max_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_max_inv (delete_elt_tree t)" by auto2
+setup {* add_forward_prfstep_cond @{thm delete_elt_max_inv} [with_term "delete_elt_tree ?t"] *}
+
+lemma delete_elt_on_set [rewrite]:
+  "t \<noteq> Tip \<Longrightarrow> tree_set (delete_elt_tree (Node lt x m rt)) = tree_set lt \<union> tree_set rt" by auto2
+
+lemma delete_elt_interval_inv:
+  "tree_interval_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_interval_inv (delete_elt_tree t)" by auto2
+setup {* add_forward_prfstep_cond @{thm delete_elt_interval_inv} [with_term "delete_elt_tree ?t"] *}
+
+lemma delete_elt_all_inv:
+  "is_interval_tree t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> is_interval_tree (delete_elt_tree t)" by auto2
+
+fun tree_delete :: "nat interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
+  "tree_delete x Tip = Tip"
+| "tree_delete x (Node l y m r) =
+    (if x = y then delete_elt_tree (Node l y m r)
+     else if x < y then
+       let l' = tree_delete x l;
+           m' = max3 (high y) (tmax l') (tmax r) in Node l' y m' r
+     else
+       let r' = tree_delete x r;
+           m' = max3 (high y) (tmax l) (tmax r') in Node l y m' r')"
+setup {* fold add_rewrite_rule @{thms tree_delete.simps} *}
+
+lemma tree_delete_in_traverse [rewrite]:
+  "tree_sorted t \<Longrightarrow> in_traverse (tree_delete x t) = remove_elt_list x (in_traverse t)"
+@proof @induct t @qed
+
+lemma tree_delete_max_inv [forward]:
+  "tree_max_inv t \<Longrightarrow> tree_max_inv (tree_delete x t)"
+@proof @induct t @qed
+    
+lemma tree_delete_all_inv [forward]:
+  "is_interval_tree t \<Longrightarrow> is_interval_tree (tree_delete x t)" by auto2
+
+lemma tree_delete_on_set [rewrite]:
+  "tree_sorted t \<Longrightarrow> tree_set (tree_delete x t) = tree_set t - {x}" by auto2
+
 section {* Search on interval trees *}
 
 fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" where
