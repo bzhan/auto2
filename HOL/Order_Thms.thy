@@ -30,25 +30,21 @@ section {* Properties of max and min (in linorder) *}
 
 setup {* add_rewrite_rule @{thm min.commute} *}
 setup {* add_rewrite_rule @{thm min.idem} *}
-setup {* add_resolve_prfstep @{thm min.cobounded1} *}
+setup {* add_forward_prfstep_cond @{thm min.cobounded1} [with_term "min ?a ?b"] *}
+setup {* add_forward_prfstep_cond @{thm min.cobounded2} [with_term "min ?a ?b"] *}
 setup {* add_backward2_prfstep @{thm min.boundedI} *}
-setup {* add_resolve_prfstep @{thm min.coboundedI1} *}
-setup {* add_resolve_prfstep @{thm min.strict_coboundedI1} *}
 setup {* add_backward2_prfstep @{thm min.mono} *}
 setup {* add_rewrite_rule @{thm min.absorb1} *}
 setup {* add_rewrite_rule @{thm min.absorb2} *}
-theorem min_boundedE: "(a::('a::linorder)) \<le> min b c \<Longrightarrow> a \<le> b" by simp
-setup {* add_forward_prfstep_cond @{thm min_boundedE} [with_cond "?a \<noteq> ?b"]*}
 
 setup {* add_rewrite_rule @{thm max.commute} *}
 setup {* add_rewrite_rule @{thm max.idem} *}
-setup {* add_resolve_prfstep @{thm max.cobounded1} *}
+setup {* add_forward_prfstep_cond @{thm max.cobounded1} [with_term "max ?a ?b"] *}
+setup {* add_forward_prfstep_cond @{thm max.cobounded2} [with_term "max ?a ?b"] *}
 setup {* add_backward2_prfstep @{thm max.boundedI} *}
-setup {* add_resolve_prfstep @{thm max.coboundedI1} *}
-setup {* add_resolve_prfstep @{thm max.strict_coboundedI1} *}
 setup {* add_backward2_prfstep @{thm max.mono} *}
-theorem max_boundedE: "(a::('a::linorder)) \<ge> max b c \<Longrightarrow> a \<ge> b" by simp
-setup {* add_forward_prfstep_cond @{thm max_boundedE} [with_cond "?a \<noteq> ?b"] *}
+setup {* add_rewrite_rule @{thm max.absorb1} *}
+setup {* add_rewrite_rule @{thm max.absorb2} *}
 
 subsection {* Existence of numbers satisfying inequalities *}
 

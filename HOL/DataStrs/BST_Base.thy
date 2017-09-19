@@ -41,14 +41,6 @@ definition tree_map :: "('a, 'b) tree \<Rightarrow> ('a, 'b) map" where
   "tree_map t = map_of_alist (in_traverse_pairs t)"
 setup {* add_rewrite_rule @{thm tree_map_def} *}
 
-theorem in_traverse_non_empty: "in_traverse (Node lt k v rt) \<noteq> []" by auto2
-setup {* add_forward_prfstep_cond @{thm in_traverse_non_empty}
-  [with_term "in_traverse (Node ?lt ?k ?v ?rt)"] *}
-
-theorem in_traverse_pair_non_empty: "in_traverse_pairs (Node lt k v rt) \<noteq> []" by auto2
-setup {* add_forward_prfstep_cond @{thm in_traverse_pair_non_empty}
-  [with_term "in_traverse_pairs (Node ?lt ?k ?v ?rt)"] *}
-
 section {* Sortedness on trees *}
 
 fun tree_sorted :: "('a::linorder, 'b) tree \<Rightarrow> bool" where
@@ -56,6 +48,7 @@ fun tree_sorted :: "('a::linorder, 'b) tree \<Rightarrow> bool" where
 | "tree_sorted (Node l k v r) = ((\<forall>x\<in>tree_set l. x < k) \<and> (\<forall>x\<in>tree_set r. k < x)
                               \<and> tree_sorted l \<and> tree_sorted r)"
 setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
+setup {* add_property_const @{term tree_sorted} *}
 
 theorem tree_sorted_lr [forward]:
   "tree_sorted (Node l k v r) \<Longrightarrow> tree_sorted l \<and> tree_sorted r" by auto2
@@ -77,23 +70,20 @@ setup {* fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps
 
 section {* Rotation on trees *}
 
-fun rotateL :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where
-  "rotateL Tip = Tip"
-| "rotateL (Node a k v Tip) = Node a k v Tip"
-| "rotateL (Node a k1 v1 (Node b k2 v2 c)) = Node (Node a k1 v1 b) k2 v2 c"
+definition rotateL :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where [rewrite]:
+  "rotateL t = (if t = Tip then t else if rsub t = Tip then t else
+    (let rt = rsub t in
+     Node (Node (lsub t) (key t) (nval t) (lsub rt)) (key rt) (nval rt) (rsub rt)))"
 
-fun rotateR :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where
-  "rotateR Tip = Tip"
-| "rotateR (Node Tip k v a) = Node Tip k v a"
-| "rotateR (Node (Node a k1 v1 b) k2 v2 c) = Node a k1 v1 (Node b k2 v2 c)"
-setup {* fold add_rewrite_rule (@{thms rotateL.simps} @ @{thms rotateR.simps}) *}
+definition rotateR :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where [rewrite]:
+  "rotateR t = (if t = Tip then t else if lsub t = Tip then t else
+    (let lt = lsub t in
+     Node (lsub lt) (key lt) (nval lt) (Node (rsub lt) (key t) (nval t) (rsub t))))"
 
-theorem rotateL_in_trav [rewrite]: "in_traverse (rotateL t) = in_traverse t"
-  @proof @case "t = Tip" @then @case "rsub t = Tip" @qed
-theorem rotateR_in_trav [rewrite]: "in_traverse (rotateR t) = in_traverse t"
-  @proof @case "t = Tip" @then @case "lsub t = Tip" @qed
+lemma rotateL_in_trav [rewrite]: "in_traverse (rotateL t) = in_traverse t" by auto2
+lemma rotateR_in_trav [rewrite]: "in_traverse (rotateR t) = in_traverse t" by auto2
 
-theorem rotateL_sorted [rewrite]: "tree_sorted (rotateL t) = tree_sorted t" by auto2
-theorem rotateR_sorted [rewrite]: "tree_sorted (rotateR t) = tree_sorted t" by auto2
+lemma rotateL_sorted [forward]: "tree_sorted t \<Longrightarrow> tree_sorted (rotateL t)" by auto2
+lemma rotateR_sorted [forward]: "tree_sorted t \<Longrightarrow> tree_sorted (rotateR t)" by auto2
 
 end
