@@ -31,6 +31,13 @@ instance proof
     by (meson Interval_Tree.less_eq leI not_less_iff_gr_or_eq)
 qed end
 
+definition is_interval :: "('a::linorder) interval \<Rightarrow> bool" where [rewrite]:
+  "is_interval it \<longleftrightarrow> (low it \<le> high it)"
+setup {* add_property_const @{term is_interval} *}
+
+definition is_overlap :: "nat interval \<Rightarrow> nat interval \<Rightarrow> bool" where [rewrite]:
+  "is_overlap x y \<longleftrightarrow> (high x \<ge> low y \<or> high y \<ge> low x)"
+
 section {* Definition of an interval tree *}
 
 datatype interval_tree =
@@ -83,8 +90,8 @@ section {* Invariant on the maximum *}
 fun tree_max_inv :: "interval_tree \<Rightarrow> bool" where
   "tree_max_inv Tip = True"
 | "tree_max_inv (Node l it m r) \<longleftrightarrow> (tree_max_inv l \<and> tree_max_inv r \<and> m = max3 (high it) (tmax l) (tmax r))"
-setup {* fold add_rewrite_rule @{thms tree_max_inv.simps} *}
 setup {* add_property_const @{term tree_max_inv} *}
+setup {* fold add_rewrite_rule @{thms tree_max_inv.simps} *}
 
 lemma tree_max_is_max [resolve]:
   "tree_max_inv t \<Longrightarrow> it \<in> tree_set t \<Longrightarrow> high it \<le> tmax t"
@@ -99,39 +106,55 @@ lemma tmax_exists [backward]:
   @endgoal @end
 @qed
 
+section {* Condition on the values *}
+
+fun tree_interval_inv :: "interval_tree \<Rightarrow> bool" where
+  "tree_interval_inv Tip = True"
+| "tree_interval_inv (Node l it m r) = (is_interval it \<and> tree_interval_inv l \<and> tree_interval_inv r)"
+setup {* add_property_const @{term tree_interval_inv} *}
+setup {* fold add_rewrite_rule @{thms tree_interval_inv.simps} *}
+
+lemma tree_interval_inv_def' [rewrite]:
+  "tree_interval_inv t \<longleftrightarrow> (\<forall>p\<in>tree_set t. is_interval p)"
+@proof @induct t @qed
+
+definition is_interval_tree :: "interval_tree \<Rightarrow> bool" where [rewrite]:
+  "is_interval_tree t \<longleftrightarrow> (tree_sorted t \<and> tree_max_inv t \<and> tree_interval_inv t)"
+setup {* add_property_const @{term is_interval_tree} *}
+
 section {* Rotation on trees *}
-  
-fun rotateL :: "interval_tree \<Rightarrow> interval_tree" where
-  "rotateL Tip = Tip"
-| "rotateL (Node l it m Tip) = Node l it m Tip"
-| "rotateL (Node l it m (Node lr itr mr rr)) =
-  (let ml = max3 (high it) (tmax l) (tmax lr) in
-   Node (Node l it ml lr) itr (max3 (high itr) ml (tmax rr)) rr)"
-setup {* fold add_rewrite_rule @{thms rotateL.simps} *}
 
-lemma rotateL_in_trav [rewrite]: "in_traverse (rotateL t) = in_traverse t"
-@proof @case "t = Tip" @then @case "rsub t = Tip" @qed
+definition rotateL :: "interval_tree \<Rightarrow> interval_tree" where [rewrite]:
+  "rotateL t =
+    (if t = Tip then t else if rsub t = Tip then t else
+     let rt = rsub t;
+         ml = max3 (high (val t)) (tmax (lsub t)) (tmax (lsub rt));
+         m' = max3 (high (val (rsub t))) ml (tmax (rsub rt)) in
+     Node (Node (lsub t) (val t) ml (lsub rt)) (val rt) m' (rsub rt))"
 
-lemma rotateL_sorted [forward]: "tree_sorted t \<Longrightarrow> tree_sorted (rotateL t)" by auto2
+lemma rotateL_in_trav [rewrite]: "in_traverse (rotateL t) = in_traverse t" by auto2
 
-lemma rotateL_max_inv [forward]: "tree_max_inv t \<Longrightarrow> tree_max_inv (rotateL t)"
-@proof @case "t = Tip" @then @case "rsub t = Tip" @qed
+lemma rotateL_set [rewrite]: "tree_set (rotateL t) = tree_set t" by auto2
 
-fun rotateR :: "interval_tree \<Rightarrow> interval_tree" where
-  "rotateR Tip = Tip"
-| "rotateR (Node Tip it m r) = Node Tip it m r"
-| "rotateR (Node (Node ll itl ml rl) it m r) =
-   (let mr = max3 (high it) (tmax rl) (tmax r) in
-    Node ll itl (max3 (high itl) (tmax ll) mr) (Node rl it mr r))"
-setup {* fold add_rewrite_rule @{thms rotateR.simps} *}
+lemma rotateL_max_inv [forward]: "tree_max_inv t \<Longrightarrow> tree_max_inv (rotateL t)" by auto2
 
-lemma rotateR_in_trav [rewrite]: "in_traverse (rotateR t) = in_traverse t"
-@proof @case "t = Tip" @then @case "lsub t = Tip" @qed
+lemma rotateL_all_inv [forward]: "is_interval_tree t \<Longrightarrow> is_interval_tree (rotateL t)" by auto2
 
-lemma rotateR_sorted [forward]: "tree_sorted t \<Longrightarrow> tree_sorted (rotateR t)" by auto2
+definition rotateR :: "interval_tree \<Rightarrow> interval_tree" where [rewrite]:
+  "rotateR t =
+    (if t = Tip then t else if lsub t = Tip then t else
+     let lt = lsub t;
+         mr = max3 (high (val t)) (tmax (rsub lt)) (tmax (rsub t));
+         m' = max3 (high (val lt)) (tmax (lsub lt)) mr in
+     Node (lsub lt) (val lt) m' (Node (rsub lt) (val t) mr (rsub t)))"
 
-lemma rotateR_max_inv [forward]: "tree_max_inv t \<Longrightarrow> tree_max_inv (rotateR t)"
-@proof @case "t = Tip" @then @case "lsub t = Tip" @qed
+lemma rotateR_in_trav [rewrite]: "in_traverse (rotateR t) = in_traverse t" by auto2
+
+lemma rotateR_set [rewrite]: "tree_set (rotateR t) = tree_set t" by auto2
+
+lemma rotateR_max_inv [forward]: "tree_max_inv t \<Longrightarrow> tree_max_inv (rotateR t)" by auto2
+
+lemma rotateR_all_inv [forward]: "is_interval_tree t \<Longrightarrow> is_interval_tree (rotateR t)" by auto2
 
 section {* Insertion on trees *}
 
@@ -154,18 +177,14 @@ lemma tree_insert_in_traverse [rewrite]:
 lemma tree_insert_on_set [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_set (tree_insert it t) = {it} \<union> tree_set t" by auto2
 
-lemma tree_insert_sorted [backward]:
-  "tree_sorted t \<Longrightarrow> tree_sorted (tree_insert x t)" by auto2
-
-lemma tree_insert_max_inv:
+lemma tree_insert_max_inv [forward]:
   "tree_max_inv t \<Longrightarrow> tree_max_inv (tree_insert x t)"
 @proof @induct t @qed
 
-section {* Search on interval trees *}
+lemma tree_insert_all_inv [forward]:
+  "is_interval_tree t \<Longrightarrow> is_interval it \<Longrightarrow> is_interval_tree (tree_insert it t)" by auto2
 
-fun is_overlap :: "nat interval \<Rightarrow> nat interval \<Rightarrow> bool" where
-  "is_overlap (Interval a b) (Interval c d) \<longleftrightarrow> (b \<ge> c \<or> d \<ge> a)"
-setup {* add_rewrite_rule @{thm is_overlap.simps} *}
+section {* Search on interval trees *}
 
 fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" where
   "tree_search Tip x = False"
@@ -175,14 +194,8 @@ fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool"
     else tree_search r x)"
 setup {* fold add_rewrite_rule @{thms tree_search.simps} *}
 
-fun tree_interval_inv :: "interval_tree \<Rightarrow> bool" where
-  "tree_interval_inv Tip = True"
-| "tree_interval_inv (Node l (Interval a b) m r) = (a \<le> b \<and> tree_interval_inv l \<and> tree_interval_inv r)"
-setup {* fold add_rewrite_rule @{thms tree_interval_inv.simps} *}
-
 lemma tree_search_correct [rewrite]:
-  "tree_sorted t \<Longrightarrow> tree_interval_inv t \<Longrightarrow> tree_max_inv t \<Longrightarrow> a \<le> b \<Longrightarrow>
-   tree_search t (Interval a b) \<longleftrightarrow> (\<exists>p\<in>tree_set t. is_overlap (Interval a b) p)"
+  "is_interval_tree t \<Longrightarrow> is_interval it \<Longrightarrow> tree_search t it \<longleftrightarrow> (\<exists>p\<in>tree_set t. is_overlap it p)"
 @proof @induct t @qed
 
 end

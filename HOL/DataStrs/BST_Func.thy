@@ -25,7 +25,7 @@ theorem insert_in_traverse_pairs [rewrite]:
 theorem insert_on_set [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_set (tree_insert x v t) = {x} \<union> tree_set t" by auto2
 
-theorem insert_sorted [backward]:
+theorem insert_sorted [forward]:
   "tree_sorted t \<Longrightarrow> tree_sorted (tree_insert x v t)" by auto2
 
 theorem insert_on_map:
@@ -86,7 +86,7 @@ theorem tree_delete_in_traverse_pairs [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse_pairs (tree_delete x t) = remove_elt_pairs x (in_traverse_pairs t)"
 @proof @induct t @qed
 
-theorem tree_delete_sorted [backward]:
+theorem tree_delete_sorted [forward]:
   "tree_sorted t \<Longrightarrow> tree_sorted (tree_delete x t)" by auto2
 
 theorem tree_delete_map [rewrite]:
