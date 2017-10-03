@@ -116,6 +116,13 @@ session FOL_Homotopy = FOL_Topology +
   theories
     "FOL/FundamentalGroup"
 
+session FOL_Algebra = Auto2_FOL +
+  description {*
+    Abstract algebra.
+  *}
+  theories
+    "FOL/Module"
+
 session FOL_Arrow = Auto2_FOL +
   description {*
     Arrow's theorem.
