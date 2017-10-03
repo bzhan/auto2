@@ -440,4 +440,59 @@ lemma nfold_type [typing]:
   "is_function(f) \<Longrightarrow> source(f) = target(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> n \<in> nat \<Longrightarrow> nfold(f,n,x) \<in> source(f)" by auto2
 setup {* del_prfstep_thm @{thm nfold_def} *}
 
+section {* Action of natural numbers on an abelian group *}
+
+(* Recursion on n:
+    nat_act(R,0,x) = 0
+  | nat_act(R,n + 1,x) = nat_act(R,n,x) + x
+*)
+definition nat_act :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
+  "nat_act(R,n,x) = nat_rec(\<zero>\<^sub>R, \<lambda>_ p. p +\<^sub>R x, n)"
+setup {* register_wellform_data ("nat_act(R,n,x)", ["n \<in> nat", "x \<in>. R"]) *}
+
+lemma nat_act_zero [rewrite]: "is_abgroup(R) \<Longrightarrow> nat_act(R,0,x) = \<zero>\<^sub>R" by auto2
+lemma nat_act_Suc [rewrite]: "is_abgroup(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> nat_act(R,n +\<^sub>\<nat> 1,x) = nat_act(R,n,x) +\<^sub>R x" by auto2
+lemma nat_act_one [rewrite]: "is_abgroup(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> nat_act(R,1,x) = x"
+  @proof @have "1 = 0 +\<^sub>\<nat> 1" @qed
+lemma nat_act_type [typing]: "is_abgroup(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> x \<in>. R \<Longrightarrow> nat_act(R,n,x) \<in>. R"
+  @proof @var_induct "n \<in> nat" @qed
+
+setup {* del_prfstep_thm @{thm nat_act_def} *}
+
+lemma nat_act_add [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> nat_act(R,m +\<^sub>\<nat> n,x) = nat_act(R,m,x) +\<^sub>R nat_act(R,n,x)"
+@proof
+  @var_induct "m \<in> nat" @with
+    @subgoal "m = m' +\<^sub>\<nat> 1"    
+      @have "nat_act(R,m',x) +\<^sub>R x +\<^sub>R nat_act(R,n,x) = nat_act(R,m',x) +\<^sub>R nat_act(R,n,x) +\<^sub>R x"
+      @have "m' +\<^sub>\<nat> 1 +\<^sub>\<nat> n = m' +\<^sub>\<nat> n +\<^sub>\<nat> 1"
+    @endgoal
+  @end
+@qed
+
+lemma nat_act_zero_right [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> m \<in> nat \<Longrightarrow> nat_act(R,m,\<zero>\<^sub>R) = \<zero>\<^sub>R"
+@proof @var_induct "m \<in> nat" @qed
+
+lemma nat_act_add_right [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> m \<in> nat \<Longrightarrow> nat_act(R,m,x +\<^sub>R y) = nat_act(R,m,x) +\<^sub>R nat_act(R,m,y)"
+@proof
+  @var_induct "m \<in> nat" @with
+    @subgoal "m = m' +\<^sub>\<nat> 1"
+      @have "(nat_act(R,m',x) +\<^sub>R nat_act(R,m',y)) +\<^sub>R (nat_act(R,1,x) +\<^sub>R nat_act(R,1,y)) =
+             (nat_act(R,m',x) +\<^sub>R nat_act(R,1,x)) +\<^sub>R (nat_act(R,m',y) +\<^sub>R nat_act(R,1,y))"
+    @endgoal
+  @end
+@qed
+
+lemma nat_act_mult [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> nat_act(R,m *\<^sub>\<nat> n,x) = nat_act(R,m,nat_act(R,n,x))"
+@proof
+  @var_induct "m \<in> nat" @with
+    @subgoal "m = m' +\<^sub>\<nat> 1"
+      @have "(m' +\<^sub>\<nat> 1) *\<^sub>\<nat> n = m' *\<^sub>\<nat> n +\<^sub>\<nat> 1 *\<^sub>\<nat> n"
+    @endgoal
+  @end
+@qed
+
 end

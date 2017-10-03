@@ -92,16 +92,13 @@ section {* of_nat on rings *}
     of_nat(0) = 0
   | of_nat(n + 1) = of_nat(n) + 1
 *)
-definition of_nat :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "of_nat(R,x) = nat_rec(\<zero>\<^sub>R, \<lambda>x' p. p +\<^sub>R \<one>\<^sub>R, x)"
+definition of_nat :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite_bidir]:
+  "of_nat(R,x) = nat_act(R,x,\<one>\<^sub>R)"
 setup {* register_wellform_data ("of_nat(R,x)", ["x \<in> nat"]) *}
 
 lemma of_nat_zero [rewrite_bidir]: "is_ring(R) \<Longrightarrow> of_nat(R,0) = \<zero>\<^sub>R" by auto2
-lemma of_nat_Suc [rewrite]: "n \<in> nat \<Longrightarrow> of_nat(R,n +\<^sub>\<nat> 1) = of_nat(R,n) +\<^sub>R \<one>\<^sub>R" by auto2
-lemma of_nat_one [rewrite_bidir]: "is_ring(R) \<Longrightarrow> of_nat(R,1) = \<one>\<^sub>R"
-  @proof @have "1 = 0 +\<^sub>\<nat> 1" @qed
-lemma of_nat_type [typing]: "is_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_nat(R,n) \<in>. R"
-  @proof @var_induct "n \<in> nat" @qed
+lemma of_nat_one [rewrite_bidir]: "is_ring(R) \<Longrightarrow> of_nat(R,1) = \<one>\<^sub>R" by auto2
+lemma of_nat_type [typing]: "is_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_nat(R,n) \<in>. R" by auto2
 
 abbreviation ZeroR ("0\<^sub>_" [91] 90) where "0\<^sub>R \<equiv> of_nat(R,0)"
 abbreviation OneR ("1\<^sub>_" [91] 90) where "1\<^sub>R \<equiv> of_nat(R,1)"
@@ -111,22 +108,16 @@ abbreviation FourR ("4\<^sub>_" [91] 90) where "4\<^sub>R \<equiv> of_nat(R,4)"
 abbreviation FiveR ("5\<^sub>_" [91] 90) where "5\<^sub>R \<equiv> of_nat(R,5)"
 abbreviation NegOneR ("-1\<^sub>_" [91] 90) where "-1\<^sub>R \<equiv> -\<^sub>R of_nat(R,1)"
 
-setup {* del_prfstep_thm @{thm of_nat_def} *}
-
-lemma of_nat_add_aux [backward]:
-  "is_comm_ring(R) \<Longrightarrow> x \<in> nat \<Longrightarrow> y \<in> nat \<Longrightarrow> of_nat(R,x) +\<^sub>R of_nat(R,y) = of_nat(R, x +\<^sub>\<nat> y) \<Longrightarrow>
-   of_nat(R,x +\<^sub>\<nat> 1) +\<^sub>R of_nat(R,y) = of_nat(R, x +\<^sub>\<nat> 1 +\<^sub>\<nat> y)"
-@proof
-  @have "of_nat(R,x) +\<^sub>R 1\<^sub>R +\<^sub>R of_nat(R,y) = of_nat(R,x) +\<^sub>R of_nat(R,y) +\<^sub>R 1\<^sub>R" @then
-  @have "x +\<^sub>\<nat> 1 +\<^sub>\<nat> y = x +\<^sub>\<nat> y +\<^sub>\<nat> 1"
-@qed
-
 lemma of_nat_add:
-  "is_comm_ring(R) \<Longrightarrow> x \<in> nat \<Longrightarrow> y \<in> nat \<Longrightarrow> of_nat(R,x) +\<^sub>R of_nat(R,y) = of_nat(R, x +\<^sub>\<nat> y) \<and> x +\<^sub>\<nat> y \<in> nat"
-@proof @var_induct "x \<in> nat" @qed
+  "is_comm_ring(R) \<Longrightarrow> x \<in> nat \<Longrightarrow> y \<in> nat \<Longrightarrow> of_nat(R,x) +\<^sub>R of_nat(R,y) = of_nat(R, x +\<^sub>\<nat> y) \<and> x +\<^sub>\<nat> y \<in> nat" by auto2
 setup {* add_rewrite_rule_cond @{thm of_nat_add}
   (with_conds ["?x \<noteq> 0", "?x \<noteq> Suc(?z)", "?y \<noteq> 0", "?y \<noteq> Suc(?z)"]) *}
-setup {* del_prfstep_thm @{thm of_nat_add_aux} *}
+
+lemma add_monomial_same:
+  "is_ring(R) \<Longrightarrow> p \<in>. R \<Longrightarrow> p +\<^sub>R p = p *\<^sub>R 2\<^sub>R \<and> 2 \<in> nat \<and> 2\<^sub>R \<in>. R"
+@proof @have "2 = 1 +\<^sub>\<nat> 1" @qed
+
+setup {* del_prfstep_thm_str "" @{thm of_nat_def} *}
 
 lemma of_nat_add_back [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> of_nat(R, x +\<^sub>\<nat> y) = of_nat(R,x) +\<^sub>R of_nat(R,y)" by auto2  
@@ -156,15 +147,11 @@ lemma of_nat_sub_back [rewrite]:
 lemma add_monomial_l [rewrite]:
   "is_ring(R) \<Longrightarrow> p \<in>. R \<Longrightarrow> r \<in>. R \<Longrightarrow> p +\<^sub>R p *\<^sub>R r = p *\<^sub>R (1\<^sub>R +\<^sub>R r) \<and>
    1 \<in> nat \<and> 1\<^sub>R \<in>. R \<and> 1\<^sub>R +\<^sub>R r \<in>. R" by auto2
-
-lemma add_monomial_same:
-  "is_ring(R) \<Longrightarrow> p \<in>. R \<Longrightarrow> p +\<^sub>R p = p *\<^sub>R 2\<^sub>R \<and> 2 \<in> nat \<and> 2\<^sub>R \<in>. R"
-@proof @have "2 = 1 +\<^sub>\<nat> 1" @qed
     
 lemma neg_is_minus_1:
   "is_ring(R) \<Longrightarrow> p \<in>. R \<Longrightarrow> -\<^sub>R p = p *\<^sub>R -1\<^sub>R \<and> 1 \<in> nat \<and> 1\<^sub>R \<in>. R \<and> -1\<^sub>R \<in>. R" by auto2
 
-setup {* fold del_prfstep_thm [@{thm of_nat_Suc}, @{thm of_nat_sub1}, @{thm add_monomial_l}] *}
+setup {* fold del_prfstep_thm [@{thm of_nat_sub1}, @{thm add_monomial_l}] *}
 
 section {* Division in commutative rings *}
   

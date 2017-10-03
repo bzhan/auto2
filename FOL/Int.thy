@@ -227,45 +227,52 @@ lemma int_is_diff [backward]:
   @have "n = of_nat(\<int>,fst(p)) -\<^sub>\<int> of_nat(\<int>,snd(p))"
 @qed
 
-section {* Definition of of_int *}
+section {* Definition of int_act *}
 
-definition of_int_raw :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "of_int_raw(R,p) = of_nat(R,fst(p)) -\<^sub>R of_nat(R,snd(p))"
-  
-lemma of_int_raw_eval [rewrite]: "of_int_raw(R,\<langle>a,b\<rangle>) = of_nat(R,a) -\<^sub>R of_nat(R,b)" by auto2
-setup {* del_prfstep_thm @{thm of_int_raw_def} *}
+definition int_act_raw :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
+  "int_act_raw(R,p,x) = nat_act(R,fst(p),x) -\<^sub>R nat_act(R,snd(p),x)"
+
+lemma int_act_raw_eval [rewrite]:
+  "int_act_raw(R,\<langle>a,b\<rangle>,x) = nat_act(R,a,x) -\<^sub>R nat_act(R,b,x)" by auto2
+setup {* del_prfstep_thm @{thm int_act_raw_def} *}
 
 lemma comm_ring_switch_sides4 [resolve]:
-  "is_comm_ring(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> d \<in>. R \<Longrightarrow>
+  "is_abgroup(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> d \<in>. R \<Longrightarrow>
    a +\<^sub>R d = b +\<^sub>R c \<Longrightarrow> a -\<^sub>R b = c -\<^sub>R d"
 @proof @have "a -\<^sub>R b +\<^sub>R (b +\<^sub>R d) = c -\<^sub>R d +\<^sub>R (b +\<^sub>R d)" @qed
 
-lemma of_int_raw_compat [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> of_int_raw(R,\<langle>a,b\<rangle>) = of_int_raw(R,\<langle>c,d\<rangle>)"
-@proof @have "of_nat(R,a) +\<^sub>R of_nat(R,d) = of_nat(R,b) +\<^sub>R of_nat(R,c)" @qed
+lemma int_act_raw_compat [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> x \<in>. R \<Longrightarrow> int_act_raw(R,\<langle>a,b\<rangle>,x) = int_act_raw(R,\<langle>c,d\<rangle>,x)"
+@proof @have "nat_act(R,a,x) +\<^sub>R nat_act(R,d,x) = nat_act(R,b,x) +\<^sub>R nat_act(R,c,x)" @qed
 
-definition of_int :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "of_int(R,z) = of_int_raw(R,rep(\<R>,z))"
-setup {* register_wellform_data ("of_int(R,z)", ["z \<in>. \<int>"]) *}
+definition int_act :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
+  "int_act(R,z,x) = int_act_raw(R,rep(\<R>,z),x)"
+setup {* register_wellform_data ("int_act(R,z,x)", ["z \<in>. \<int>"]) *}
+  
+lemma int_act_eval [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> p \<in>. \<R> \<Longrightarrow> x \<in>. R \<Longrightarrow> int_act(R,Int(p),x) = int_act_raw(R,p,x)" by auto2
+setup {* del_prfstep_thm @{thm int_act_def} *}
 
-lemma of_int_eval [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> x \<in>. \<R> \<Longrightarrow> of_int(R,Int(x)) = of_int_raw(R,x)" by auto2
-setup {* del_prfstep_thm @{thm of_int_def} *}
+lemma int_act_type [typing]:
+  "is_abgroup(R) \<Longrightarrow> a \<in>. \<int> \<Longrightarrow> x \<in>. R \<Longrightarrow> int_act(R,a,x) \<in>. R" by auto2
 
-lemma of_int_type [typing]:
-  "is_comm_ring(R) \<Longrightarrow> a \<in>. \<int> \<Longrightarrow> of_int(R,a) \<in>. R" by auto2
+lemma int_act_eval_diff [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> a \<in> nat \<Longrightarrow> b \<in> nat \<Longrightarrow> x \<in>. R \<Longrightarrow>
+   int_act(R,of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b),x) = nat_act(R,a,x) -\<^sub>R nat_act(R,b,x)" by auto2
 
-lemma of_int_eval_diff [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> a \<in> nat \<Longrightarrow> b \<in> nat \<Longrightarrow> of_int(R,of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)) = of_nat(R,a) -\<^sub>R of_nat(R,b)"
-@proof
-  @let "z = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
-  @let "p = rep(\<R>,z)" @then @have "rep(\<R>,z) \<sim>\<^sub>\<R> \<langle>a,b\<rangle>"
-@qed
+lemma int_act_of_nat [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> x \<in>. R \<Longrightarrow> int_act(R,of_nat(\<int>,n),x) = nat_act(R,n,x)" by auto2
+  
+lemma int_act_zero [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,\<zero>\<^sub>\<int>,r) = \<zero>\<^sub>R" by auto2
 
-lemma of_int_of_nat [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_int(R,of_nat(\<int>,n)) = of_nat(R,n)" by auto2
+lemma int_act_one [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,\<one>\<^sub>\<int>,r) = r" by auto2
 
-setup {* fold del_prfstep_thm [@{thm of_int_eval}, @{thm int_of_nat}] *}
+lemma int_act_zero_right [rewrite]:
+  "is_abgroup(R) \<Longrightarrow> n \<in>. \<int> \<Longrightarrow> int_act(R,n,\<zero>\<^sub>R) = \<zero>\<^sub>R" by auto2
+
+setup {* del_prfstep_thm @{thm int_of_nat} *}
 setup {* fold del_prfstep_thm [@{thm int_def}, @{thm int_rel_spaceI}, @{thm int_rel_spaceD}] *}
 setup {* fold del_prfstep_thm @{thms int_evals(1-2)} *}
 setup {* fold del_prfstep_thm [@{thm int_choose_rep}, @{thm int_neg_eval}, @{thm int_add_eval},
@@ -273,27 +280,75 @@ setup {* fold del_prfstep_thm [@{thm int_choose_rep}, @{thm int_neg_eval}, @{thm
 no_notation int_rel ("\<R>")
 hide_const Int
 
-section {* Further properties *}
+section {* Further properties of int_act *}
 
-lemma of_int_add [rewrite_bidir]:
-  "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) +\<^sub>R of_int(R,y) = of_int(R,x +\<^sub>\<int> y)"
+lemma int_act_add [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x +\<^sub>\<int> y,r) = int_act(R,x,r) +\<^sub>R int_act(R,y,r)"
 @proof
   @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
   @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
   @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)" @then
-  @let "ra = of_nat(R,a)" "rb = of_nat(R,b)" "rc = of_nat(R,c)" "rd = of_nat(R,d)" @then
+  @let "ra = nat_act(R,a,r)" "rb = nat_act(R,b,r)" "rc = nat_act(R,c,r)" "rd = nat_act(R,d,r)" @then
   @have "(za -\<^sub>\<int> zb) +\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za +\<^sub>\<int> zc) -\<^sub>\<int> (zb +\<^sub>\<int> zd)" @then
   @have "(ra -\<^sub>R rb) +\<^sub>R (rc -\<^sub>R rd) = (ra +\<^sub>R rc) -\<^sub>R (rb +\<^sub>R rd)"
 @qed
 
+lemma int_act_uminus [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,-\<^sub>\<int> x, r) = -\<^sub>R int_act(R,x,r)"
+@proof @have "int_act(R,-\<^sub>\<int> x,r) +\<^sub>R int_act(R,x,r) = \<zero>\<^sub>R" @qed
+
+lemma int_act_minus [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x -\<^sub>\<int> y,r) = int_act(R,x,r) -\<^sub>R int_act(R,y,r)"
+@proof @have "int_act(R,x,r) -\<^sub>R int_act(R,y,r) = int_act(R,x,r) +\<^sub>R (-\<^sub>R int_act(R,y,r))" @qed
+
+lemma int_act_add_right [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> s \<in>. R \<Longrightarrow> int_act(R,x,r +\<^sub>R s) = int_act(R,x,r) +\<^sub>R int_act(R,x,s)"
+@proof
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @have "(nat_act(R,a,r) +\<^sub>R nat_act(R,a,s)) -\<^sub>R (nat_act(R,b,r) +\<^sub>R nat_act(R,b,s)) =
+         (nat_act(R,a,r) -\<^sub>R nat_act(R,b,r)) +\<^sub>R (nat_act(R,a,s) -\<^sub>R nat_act(R,b,s))"
+@qed
+
+lemma int_act_uminus_right [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x,-\<^sub>R r) = -\<^sub>R int_act(R,x,r)"
+@proof @have "int_act(R,x,-\<^sub>R r) +\<^sub>R int_act(R,x,r) = \<zero>\<^sub>R" @qed
+
+lemma int_act_sub_right [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> s \<in>. R \<Longrightarrow> int_act(R,x,r -\<^sub>R s) = int_act(R,x,r) -\<^sub>R int_act(R,x,s)"
+@proof @have "int_act(R,x,r) -\<^sub>R int_act(R,x,s) = int_act(R,x,r) +\<^sub>R (-\<^sub>R int_act(R,x,s))" @qed
+
+lemma int_act_mult [rewrite_bidir]:
+  "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x *\<^sub>\<int> y, r) = int_act(R,x,int_act(R,y,r))"
+@proof
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
+  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)" @then
+  @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)" @then
+@qed
+
+section {* Definition of of_int *}
+
+definition of_int :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite_bidir]:
+  "of_int(R,z) = int_act(R,z,\<one>\<^sub>R)"
+setup {* register_wellform_data ("of_int(R,z)", ["z \<in>. \<int>"]) *}
+
+lemma of_int_type [typing]:
+  "is_comm_ring(R) \<Longrightarrow> a \<in>. \<int> \<Longrightarrow> of_int(R,a) \<in>. R" by auto2
+
+lemma of_int_of_nat [rewrite]:
+  "is_comm_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_int(R,of_nat(\<int>,n)) = of_nat(R,n)" by auto2
+
+lemma of_int_add [rewrite_bidir]:
+  "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) +\<^sub>R of_int(R,y) = of_int(R,x +\<^sub>\<int> y)" by auto2
+
 lemma of_int_uminus [rewrite_bidir]:
-  "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> -\<^sub>R of_int(R,x) = of_int(R,-\<^sub>\<int> x)"
-@proof @have "of_int(R,-\<^sub>\<int> x) +\<^sub>R of_int(R,x) = 0\<^sub>R" @qed
+  "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> -\<^sub>R of_int(R,x) = of_int(R,-\<^sub>\<int> x)" by auto2
 
 lemma of_int_sub [rewrite_bidir]:
-  "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) -\<^sub>R of_int(R,y) = of_int(R,x -\<^sub>\<int> y)"
-@proof @have "of_int(R,x) -\<^sub>R of_int(R,y) = of_int(R,x) +\<^sub>R (-\<^sub>R of_int(R,y))" @qed
+  "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) -\<^sub>R of_int(R,y) = of_int(R,x -\<^sub>\<int> y)" by auto2
       
+setup {* del_prfstep_thm_str "" @{thm of_int_def} *}
+
 lemma of_int_mult [rewrite_bidir]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) *\<^sub>R of_int(R,y) = of_int(R,x *\<^sub>\<int> y)"
 @proof
