@@ -31,12 +31,12 @@ instance proof
     by (meson Interval_Tree.less_eq leI not_less_iff_gr_or_eq)
 qed end
 
+lemma interval_less_to_le_low [forward]:
+  "(a::('a::linorder interval)) < b \<Longrightarrow> low a \<le> low b" by (metis eq_refl less less_imp_le)
+
 definition is_interval :: "('a::linorder) interval \<Rightarrow> bool" where [rewrite]:
   "is_interval it \<longleftrightarrow> (low it \<le> high it)"
 setup {* add_property_const @{term is_interval} *}
-
-definition is_overlap :: "nat interval \<Rightarrow> nat interval \<Rightarrow> bool" where [rewrite]:
-  "is_overlap x y \<longleftrightarrow> (high x \<ge> low y \<or> high y \<ge> low x)"
 
 section {* Definition of an interval tree *}
 
@@ -73,6 +73,12 @@ setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
 
 lemma tree_sorted_lr [forward]:
   "tree_sorted (Node l it m r) \<Longrightarrow> tree_sorted l \<and> tree_sorted r" by auto2
+
+lemma tree_sortedD1 [forward]:
+  "tree_sorted (Node l it m r) \<Longrightarrow> x \<in> tree_set l \<Longrightarrow> x < it" by auto2
+
+lemma tree_sortedD2 [forward]:
+  "tree_sorted (Node l it m r) \<Longrightarrow> x \<in> tree_set r \<Longrightarrow> x > it" by auto2
 
 lemma inorder_preserve_set [rewrite_back]:
   "set (in_traverse t) = tree_set t"
@@ -114,13 +120,20 @@ fun tree_interval_inv :: "interval_tree \<Rightarrow> bool" where
 setup {* add_property_const @{term tree_interval_inv} *}
 setup {* fold add_rewrite_rule @{thms tree_interval_inv.simps} *}
 
-lemma tree_interval_inv_def' [rewrite]:
-  "tree_interval_inv t \<longleftrightarrow> (\<forall>p\<in>tree_set t. is_interval p)"
+lemma tree_interval_invI [backward]:
+  "\<forall>p\<in>tree_set t. is_interval p \<Longrightarrow> tree_interval_inv t"
+@proof @induct t @qed
+
+lemma tree_interval_invD [forward]:
+  "tree_interval_inv t \<Longrightarrow> p \<in> tree_set t \<Longrightarrow> is_interval p"
 @proof @induct t @qed
 
 definition is_interval_tree :: "interval_tree \<Rightarrow> bool" where [rewrite]:
   "is_interval_tree t \<longleftrightarrow> (tree_sorted t \<and> tree_max_inv t \<and> tree_interval_inv t)"
 setup {* add_property_const @{term is_interval_tree} *}
+
+lemma is_interval_tree_lr [forward]:
+  "is_interval_tree (Node l x m r) \<Longrightarrow> is_interval_tree l \<and> is_interval_tree r" by auto2
 
 section {* Rotation on trees *}
 
@@ -265,12 +278,19 @@ lemma tree_delete_max_inv [forward]:
 @proof @induct t @qed
     
 lemma tree_delete_all_inv [forward]:
-  "is_interval_tree t \<Longrightarrow> is_interval_tree (tree_delete x t)" by auto2
+  "is_interval_tree t \<Longrightarrow> is_interval_tree (tree_delete x t)"
+@proof @have "tree_set (tree_delete x t) \<subseteq> tree_set t" @qed
 
 lemma tree_delete_on_set [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_set (tree_delete x t) = tree_set t - {x}" by auto2
 
 section {* Search on interval trees *}
+
+definition is_overlap :: "('a::linorder) interval \<Rightarrow> 'a interval \<Rightarrow> bool" where [rewrite]:
+  "is_overlap x y \<longleftrightarrow> (high x \<ge> low y \<and> high y \<ge> low x)"
+
+definition has_overlap :: "('a::linorder) interval set \<Rightarrow> 'a interval \<Rightarrow> bool" where [rewrite]:
+  "has_overlap xs y \<longleftrightarrow> (\<exists>x\<in>xs. is_overlap x y)"
 
 fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" where
   "tree_search Tip x = False"
@@ -281,7 +301,20 @@ fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool"
 setup {* fold add_rewrite_rule @{thms tree_search.simps} *}
 
 lemma tree_search_correct [rewrite]:
-  "is_interval_tree t \<Longrightarrow> is_interval it \<Longrightarrow> tree_search t it \<longleftrightarrow> (\<exists>p\<in>tree_set t. is_overlap it p)"
-@proof @induct t @qed
+  "is_interval_tree t \<Longrightarrow> is_interval x \<Longrightarrow> tree_search t x \<longleftrightarrow> has_overlap (tree_set t) x"
+@proof
+  @induct t @with
+    @subgoal "t = Node l y m r"
+      @let "t = Node l y m r"
+      @case "is_overlap x y" @then
+      @case "l \<noteq> Tip \<and> tmax l \<ge> low x" @with
+        @case "tree_search t x" @then
+        @obtain "p\<in>tree_set l" where "high p = tmax l"
+        @case "is_overlap p x"
+      @end
+      @case "l = Tip"
+    @endgoal
+  @end
+@qed
 
 end

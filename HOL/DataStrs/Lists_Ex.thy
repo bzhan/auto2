@@ -35,9 +35,16 @@ fun strict_sorted :: "'a::linorder list \<Rightarrow> bool" where
 setup {* add_property_const @{term strict_sorted} *}
 setup {* fold add_rewrite_rule @{thms strict_sorted.simps} *}
 
-lemma strict_sorted_append [rewrite]:
-  "strict_sorted (xs @ ys) =
-    ((\<forall>x y. x \<in> set xs \<longrightarrow> y \<in> set ys \<longrightarrow> x < y) \<and> strict_sorted xs \<and> strict_sorted ys)"
+lemma strict_sorted_appendI [backward]:
+  "strict_sorted xs \<and> strict_sorted ys \<and> (\<forall>x\<in>set xs. \<forall>y\<in>set ys. x < y) \<Longrightarrow> strict_sorted (xs @ ys)"
+@proof @induct xs @qed
+
+lemma strict_sorted_appendE1 [forward]:
+  "strict_sorted (xs @ ys) \<Longrightarrow> strict_sorted xs \<and> strict_sorted ys"
+@proof @induct xs @qed
+
+lemma strict_sorted_appendE2 [forward]:
+  "strict_sorted (xs @ ys) \<Longrightarrow> x \<in> set xs \<Longrightarrow> \<forall>y\<in>set ys. x < y"
 @proof @induct xs @qed
 
 lemma strict_sorted_distinct [resolve]: "strict_sorted l \<Longrightarrow> distinct l"

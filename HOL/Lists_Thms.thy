@@ -44,6 +44,7 @@ setup {* add_rewrite_rule @{thm List.set_append} *}
 setup {* add_resolve_prfstep @{thm List.finite_set} *}
 
 setup {* add_resolve_prfstep (equiv_forward_th @{thm in_set_conv_nth}) *}
+setup {* add_resolve_prfstep @{thm nth_mem} *}
 
 section {* sorted *}
 
@@ -59,6 +60,18 @@ lemma sorted_appendI [backward]:
   "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> \<forall>x\<in>set xs. \<forall>y\<in>set ys. x \<le> y \<Longrightarrow> sorted (xs @ ys)"
   by (simp add: sorted_append)
 
+lemma sorted_nth_mono' [backward]:
+  "sorted xs \<Longrightarrow> j < length xs \<Longrightarrow> i \<le> j \<Longrightarrow> xs ! i \<le> xs ! j" using sorted_nth_mono by auto
+
+lemma sorted_nth_mono_less [forward]:
+  "sorted xs \<Longrightarrow> i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> xs ! i < xs ! j \<Longrightarrow> i < j"
+  by (meson leD not_le_imp_less sorted_nth_mono)
+
+section {* sort *}
+
+setup {* add_forward_prfstep_cond @{thm sorted_sort} [with_term "sort ?xs"] *}
+setup {* add_rewrite_rule @{thm set_sort} *}
+
 section {* distinct *}
 
 setup {* add_property_const @{term distinct} *}
@@ -70,6 +83,18 @@ lemma distinct_ConsI [backward]: "distinct xs \<Longrightarrow> \<forall>y\<in>s
 
 lemma distinct_ConsD1 [forward]: "distinct (x # xs) \<Longrightarrow> distinct xs" by auto
 lemma distinct_ConsD2 [forward]: "distinct (x # xs) \<Longrightarrow> x \<notin> set xs" by auto
+
+setup {* add_resolve_prfstep (equiv_backward_th @{thm distinct_conv_nth}) *}
+
+lemma distinct_nthE [forward]:
+  "distinct xs \<Longrightarrow> i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> xs ! i = xs ! j \<Longrightarrow> i = j"
+  using nth_eq_iff_index_eq by blast
+
+lemma distinct_appendI [backward]:
+  "distinct xs \<Longrightarrow> distinct ys \<Longrightarrow> set xs \<inter> set ys = {} \<Longrightarrow> distinct (xs @ ys)" by simp
+
+lemma distinct_sort: "distinct xs \<Longrightarrow> distinct (sort xs)" by simp
+setup {* add_forward_prfstep_cond @{thm distinct_sort} [with_term "sort ?xs"] *}
 
 section {* map function *}
 
@@ -111,6 +136,14 @@ setup {* add_forward_prfstep_cond @{thm length_take} [with_term "take ?n ?xs"] *
 lemma nth_take [rewrite]: "i < length (take n xs) \<Longrightarrow> take n xs ! i = xs ! i" by simp
 
 setup {* add_rewrite_rule @{thm List.take_0} *}
+
+lemma in_set_first_k_conv_nthI [resolve]:
+  "k \<le> length xs \<Longrightarrow> i < k \<Longrightarrow> xs ! i \<in> set (take k xs)"
+  using in_set_conv_nth by fastforce
+
+lemma in_set_first_k_conv_nthE [resolve]:
+  "k \<le> length xs \<Longrightarrow> x \<in> set (take k xs) \<Longrightarrow> \<exists>i<k. xs ! i = x"
+  by (metis in_set_conv_nth length_take nth_take)
 
 section {* drop *}
 
