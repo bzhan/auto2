@@ -4,6 +4,10 @@ theory Set_Thms
 imports Logic_Thms "~~/src/HOL/Library/Multiset"
 begin
 
+section {* Functions *}
+
+setup {* add_backward_prfstep @{thm injI} *}
+
 section {* Set *}
 
 subsection {* AC property of intersection and union *}
@@ -102,6 +106,11 @@ setup {* add_resolve_prfstep @{thm Finite_Set.finite.emptyI} *}
 theorem set_finite_single [resolve]: "finite {x}" by simp
 setup {* add_rewrite_rule @{thm Finite_Set.finite_Un} *}
 theorem Max_ge' [forward]: "finite A \<Longrightarrow> x > Max A \<Longrightarrow> \<not>(x \<in> A)" using Max_ge leD by auto
+
+subsection {* image_set *}
+
+setup {* add_rewrite_rule @{thm Set.image_Un} *}
+setup {* add_rewrite_rule @{thm image_set_diff} *}
 
 section {* Multiset *}
 

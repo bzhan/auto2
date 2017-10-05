@@ -31,8 +31,8 @@ definition has_rect_overlap :: "('a::linorder) rectangle list \<Rightarrow> bool
 section {* INS / DEL operations *}
 
 datatype ('a::linorder) operation =
-  INS (pos: 'a) (idx: nat) (int: "'a interval")
-| DEL (pos: 'a) (idx: nat) (int: "'a interval")
+  INS (pos: 'a) (op_idx: nat) (op_int: "'a interval")
+| DEL (pos: 'a) (op_idx: nat) (op_int: "'a interval")
 setup {* fold add_rewrite_rule_back @{thms operation.collapse} *}
 setup {* fold add_rewrite_rule @{thms operation.sel} *}
 setup {* fold add_rewrite_rule @{thms operation.case} *}
@@ -45,10 +45,10 @@ instantiation operation :: (linorder) linorder begin
 
 definition less: "(a < b) = (if pos a \<noteq> pos b then pos a < pos b else
                              if is_INS a \<noteq> is_INS b then is_INS a > is_INS b
-                             else if idx a \<noteq> idx b then idx a < idx b else int a < int b)"
+                             else if op_idx a \<noteq> op_idx b then op_idx a < op_idx b else op_int a < op_int b)"
 definition less_eq: "(a \<le> b) = (if pos a \<noteq> pos b then pos a < pos b else
                               if is_INS a \<noteq> is_INS b then is_INS a > is_INS b
-                              else if idx a \<noteq> idx b then idx a < idx b else int a \<le> int b)"
+                              else if op_idx a \<noteq> op_idx b then op_idx a < op_idx b else op_int a \<le> op_int b)"
 
 instance proof
   fix x y z :: "'a operation"
@@ -107,21 +107,21 @@ lemma del_ops_distinct [forward]: "distinct (del_ops rects)"
 @qed
 
 lemma set_ins_ops [rewrite]:
-  "oper \<in> set (ins_ops rects) \<longleftrightarrow> idx oper < length rects \<and> oper = ins_op rects (idx oper)"
+  "oper \<in> set (ins_ops rects) \<longleftrightarrow> op_idx oper < length rects \<and> oper = ins_op rects (op_idx oper)"
 @proof
   @case "oper \<in> set (ins_ops rects)" @with
     @obtain i where "i < length rects" "ins_ops rects ! i = oper" @end
-  @case "idx oper < length rects \<and> oper = ins_op rects (idx oper)" @with
-    @have "oper = (ins_ops rects) ! (idx oper)" @end
+  @case "op_idx oper < length rects \<and> oper = ins_op rects (op_idx oper)" @with
+    @have "oper = (ins_ops rects) ! (op_idx oper)" @end
 @qed
 
 lemma set_del_ops [rewrite]:
-  "oper \<in> set (del_ops rects) \<longleftrightarrow> idx oper < length rects \<and> oper = del_op rects (idx oper)"
+  "oper \<in> set (del_ops rects) \<longleftrightarrow> op_idx oper < length rects \<and> oper = del_op rects (op_idx oper)"
 @proof
   @case "oper \<in> set (del_ops rects)" @with
     @obtain i where "i < length rects" "del_ops rects ! i = oper" @end
-  @case "idx oper < length rects \<and> oper = del_op rects (idx oper)" @with
-    @have "oper = (del_ops rects) ! (idx oper)" @end
+  @case "op_idx oper < length rects \<and> oper = del_op rects (op_idx oper)" @with
+    @have "oper = (del_ops rects) ! (op_idx oper)" @end
 @qed
 
 definition all_ops :: "'a rectangle list \<Rightarrow> ('a::linorder) operation list" where [rewrite]:
@@ -131,7 +131,7 @@ lemma all_ops_distinct [forward]: "distinct (all_ops rects)"
 @proof @have "distinct (ins_ops rects @ del_ops rects)" @qed
 
 lemma set_all_ops_idx [forward]:
-  "oper \<in> set (all_ops rects) \<Longrightarrow> idx oper < length rects" by auto2
+  "oper \<in> set (all_ops rects) \<Longrightarrow> op_idx oper < length rects" by auto2
 
 lemma set_all_ops_ins [forward]:
   "INS p n i \<in> set (all_ops rects) \<Longrightarrow> INS p n i = ins_op rects n" by auto2
@@ -163,16 +163,20 @@ lemma apply_ops_set_mem [rewrite]:
   by auto2
 setup {* del_prfstep_thm @{thm apply_ops_k_def} *}
 
-definition xints_of :: "'a rectangle list \<Rightarrow> nat set \<Rightarrow> ('a::linorder) interval set" where
-  "xints_of rect is = (\<lambda>i. xint (rect ! i)) ` is"
+definition xints_of :: "'a rectangle list \<Rightarrow> nat set \<Rightarrow> (('a::linorder) idx_interval) set" where [rewrite]:
+  "xints_of rect is = (\<lambda>i. IdxInterval (xint (rect ! i)) i) ` is"
 
 lemma xints_of_mem [rewrite]:
-  "it \<in> xints_of rect is \<longleftrightarrow> (\<exists>i\<in>is. xint (rect ! i) = it)" using xints_of_def by auto
+  "IdxInterval it i \<in> xints_of rect is \<longleftrightarrow> (i \<in> is \<and> xint (rect ! i) = it)" using xints_of_def by auto
+
+lemma xints_diff [rewrite]:
+  "xints_of rects (A - B) = xints_of rects A - xints_of rects B"
+@proof @have "inj (\<lambda>i. IdxInterval (xint (rects ! i)) i)" @qed
 
 definition has_overlap_at_k :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "has_overlap_at_k rects k \<longleftrightarrow> (
     let S = apply_ops_k rects k; ops = all_ops rects in
-      is_INS (ops ! k) \<and> has_overlap (xints_of rects S) (int (ops ! k)))"
+      is_INS (ops ! k) \<and> has_overlap (xints_of rects S) (op_int (ops ! k)))"
 setup {* register_wellform_data ("has_overlap_at_k rects k", ["k < length (all_ops rects)"]) *}
 
 lemma has_overlap_at_k_equiv [forward]:
@@ -180,10 +184,10 @@ lemma has_overlap_at_k_equiv [forward]:
    has_overlap_at_k rects k \<Longrightarrow> has_rect_overlap rects"
 @proof
   @let "S = apply_ops_k rects k"
-  @have "has_overlap (xints_of rects S) (int (ops ! k))"
-  @obtain "xs \<in> xints_of rects S" where "is_overlap xs (int (ops ! k))"
-  @obtain "i \<in> S" where "xint (rects ! i) = xs"
-  @let "j = idx (ops ! k)"
+  @have "has_overlap (xints_of rects S) (op_int (ops ! k))"
+  @obtain "xs' \<in> xints_of rects S" where "is_overlap (int xs') (op_int (ops ! k))"
+  @let "xs = int xs'" "i = idx xs'"
+  @let "j = op_idx (ops ! k)"
   @have "ops ! k \<in> set ops"
   @have "ops ! k = ins_op rects j"
   @have "i \<noteq> j" @with @contradiction
@@ -215,11 +219,13 @@ lemma has_overlap_at_k_equiv2 [resolve]:
   @case "ins_op rects i < ins_op rects j" @with
     @have "i1 < j1"
     @have "j1 < i2" @with @have "ops ! j1 < ops ! i2" @end
+    @have "is_overlap (int (IdxInterval (xint (rects ! i)) i)) (xint (rects ! j))"
     @have "has_overlap_at_k rects j1"
   @end
   @case "ins_op rects j < ins_op rects i" @with
     @have "j1 < i1"
     @have "i1 < j2" @with @have "ops ! i1 < ops ! j2" @end
+    @have "is_overlap (int (IdxInterval (xint (rects ! j)) j)) (xint (rects ! i))"
     @have "has_overlap_at_k rects i1"
   @end
 @qed
@@ -234,15 +240,13 @@ section {* Implementation of apply_ops_k *}
 
 lemma apply_ops_k_next1 [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> is_INS (ops ! n) \<Longrightarrow>
-   apply_ops_k rects (Suc n) = apply_ops_k rects n \<union> {idx (ops ! n)}"
+   apply_ops_k rects (Suc n) = apply_ops_k rects n \<union> {op_idx (ops ! n)}"
 @proof
-  @have "\<forall>i. i\<in>apply_ops_k rects (Suc n) \<longleftrightarrow> i\<in>apply_ops_k rects n \<union> {idx (ops ! n)}" @with
-    @case "i \<in> apply_ops_k rects n \<union> {idx (ops ! n)}" @with
-      @case "i = idx (ops ! n)" @with
-        @have "ops ! n \<in> set (all_ops rects)"
-        @have "\<forall>j<Suc n. del_op rects i \<noteq> ops ! j" @with
-          @have "ins_op rects i < del_op rects i"
-        @end
+  @have "\<forall>i. i\<in>apply_ops_k rects (Suc n) \<longleftrightarrow> i\<in>apply_ops_k rects n \<union> {op_idx (ops ! n)}" @with
+    @case "i \<in> apply_ops_k rects n \<union> {op_idx (ops ! n)}" @with
+      @case "i = op_idx (ops ! n)" @with
+        @have "ops ! n \<in> set ops"
+        @have "ins_op rects i < del_op rects i"
       @end
     @end
   @end
@@ -250,27 +254,29 @@ lemma apply_ops_k_next1 [rewrite]:
 
 lemma apply_ops_k_next2 [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> \<not>is_INS (ops ! n) \<Longrightarrow>
-   apply_ops_k rects (Suc n) = apply_ops_k rects n - {idx (ops ! n)}"
+   apply_ops_k rects (Suc n) = apply_ops_k rects n - {op_idx (ops ! n)}"
 @proof
-  @have "\<forall>i. i\<in>apply_ops_k rects (Suc n) \<longleftrightarrow> i\<in>apply_ops_k rects n - {idx (ops ! n)}" @with
+  @have "\<forall>i. i\<in>apply_ops_k rects (Suc n) \<longleftrightarrow> i\<in>apply_ops_k rects n - {op_idx (ops ! n)}" @with
     @case "i \<in> apply_ops_k rects (Suc n)" @with
       @have "i \<in> apply_ops_k rects n"
-      @have "i \<noteq> idx (ops ! n)" @with @have "ops ! n \<in> set ops" @end
+      @have "i \<noteq> op_idx (ops ! n)" @with @have "ops ! n \<in> set ops" @end
     @end
   @end
 @qed
 
-fun apply_ops_k_impl :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> nat set" where
+fun apply_ops_k_impl :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> 'a idx_interval set" where
   "apply_ops_k_impl rects 0 = {}"
 | "apply_ops_k_impl rects (Suc k) =
-   (case all_ops rects ! k of INS p n i \<Rightarrow> apply_ops_k_impl rects k \<union> {n}
-                            | DEL p n i \<Rightarrow> apply_ops_k_impl rects k - {n})"
+   (case all_ops rects ! k of INS p n i \<Rightarrow> apply_ops_k_impl rects k \<union> {IdxInterval i n}
+                            | DEL p n i \<Rightarrow> apply_ops_k_impl rects k - {IdxInterval i n})"
 setup {* fold add_rewrite_rule @{thms apply_ops_k_impl.simps} *}
 
 lemma apply_on_k_is_impl [rewrite]:
-  "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> apply_ops_k_impl rects n = apply_ops_k rects n"
+  "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow>
+   apply_ops_k_impl rects n = xints_of rects (apply_ops_k rects n)"
 @proof
   @induct n @with @subgoal "n = Suc m"
+    @have "ops ! m \<in> set ops"
     @case "is_INS (ops ! m)"
   @endgoal @end
 @qed
