@@ -35,6 +35,7 @@ datatype ('a::linorder) operation =
 | DEL (pos: 'a) (idx: nat) (int: "'a interval")
 setup {* fold add_rewrite_rule_back @{thms operation.collapse} *}
 setup {* fold add_rewrite_rule @{thms operation.sel} *}
+setup {* fold add_rewrite_rule @{thms operation.case} *}
 setup {* fold add_rewrite_rule @{thms operation.simps(1-2)} *}
 setup {* add_resolve_prfstep @{thm operation.simps(3)} *}
 setup {* add_forward_prfstep_cond @{thm operation.disc(1)} [with_term "INS ?x11.0 ?x12.0 ?x13.0"] *}
@@ -228,5 +229,50 @@ definition has_overlap_lst :: "('a::linorder) rectangle list \<Rightarrow> bool"
 
 lemma has_overlap_equiv [rewrite]:
   "is_rect_list rects \<Longrightarrow> has_overlap_lst rects \<longleftrightarrow> has_rect_overlap rects" by auto2
+    
+section {* Implementation of apply_ops_k *}
+
+lemma apply_ops_k_next1 [rewrite]:
+  "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> is_INS (ops ! n) \<Longrightarrow>
+   apply_ops_k rects (Suc n) = apply_ops_k rects n \<union> {idx (ops ! n)}"
+@proof
+  @have "\<forall>i. i\<in>apply_ops_k rects (Suc n) \<longleftrightarrow> i\<in>apply_ops_k rects n \<union> {idx (ops ! n)}" @with
+    @case "i \<in> apply_ops_k rects n \<union> {idx (ops ! n)}" @with
+      @case "i = idx (ops ! n)" @with
+        @have "ops ! n \<in> set (all_ops rects)"
+        @have "\<forall>j<Suc n. del_op rects i \<noteq> ops ! j" @with
+          @have "ins_op rects i < del_op rects i"
+        @end
+      @end
+    @end
+  @end
+@qed
+
+lemma apply_ops_k_next2 [rewrite]:
+  "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> \<not>is_INS (ops ! n) \<Longrightarrow>
+   apply_ops_k rects (Suc n) = apply_ops_k rects n - {idx (ops ! n)}"
+@proof
+  @have "\<forall>i. i\<in>apply_ops_k rects (Suc n) \<longleftrightarrow> i\<in>apply_ops_k rects n - {idx (ops ! n)}" @with
+    @case "i \<in> apply_ops_k rects (Suc n)" @with
+      @have "i \<in> apply_ops_k rects n"
+      @have "i \<noteq> idx (ops ! n)" @with @have "ops ! n \<in> set ops" @end
+    @end
+  @end
+@qed
+
+fun apply_ops_k_impl :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> nat set" where
+  "apply_ops_k_impl rects 0 = {}"
+| "apply_ops_k_impl rects (Suc k) =
+   (case all_ops rects ! k of INS p n i \<Rightarrow> apply_ops_k_impl rects k \<union> {n}
+                            | DEL p n i \<Rightarrow> apply_ops_k_impl rects k - {n})"
+setup {* fold add_rewrite_rule @{thms apply_ops_k_impl.simps} *}
+
+lemma apply_on_k_is_impl [rewrite]:
+  "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> apply_ops_k_impl rects n = apply_ops_k rects n"
+@proof
+  @induct n @with @subgoal "n = Suc m"
+    @case "is_INS (ops ! m)"
+  @endgoal @end
+@qed
 
 end
