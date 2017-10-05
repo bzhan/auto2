@@ -86,9 +86,6 @@ definition ins_ops :: "'a rectangle list \<Rightarrow> ('a::linorder) operation 
 definition del_ops :: "'a rectangle list \<Rightarrow> ('a::linorder) operation list" where [rewrite]:
   "del_ops rects = list (\<lambda>i. del_op rects i) (length rects)"
 
-definition all_ops :: "'a rectangle list \<Rightarrow> ('a::linorder) operation list" where [rewrite]:
-  "all_ops rects = ins_ops rects @ del_ops rects"
-
 lemma ins_ops_distinct [forward]: "distinct (ins_ops rects)"
 @proof
   @let "xs = ins_ops rects"
@@ -119,7 +116,11 @@ lemma set_del_ops [rewrite]:
     @have "oper = (del_ops rects) ! (idx oper)" @end
 @qed
 
-lemma all_ops_distinct [forward]: "distinct (all_ops rects)" by auto2
+definition all_ops :: "'a rectangle list \<Rightarrow> ('a::linorder) operation list" where [rewrite]:
+  "all_ops rects = sort (ins_ops rects @ del_ops rects)"
+
+lemma all_ops_distinct [forward]: "distinct (all_ops rects)"
+@proof @have "distinct (ins_ops rects @ del_ops rects)" @qed
 
 lemma set_all_ops_idx [forward]:
   "oper \<in> set (all_ops rects) \<Longrightarrow> idx oper < length rects" by auto2
@@ -138,14 +139,21 @@ lemma del_in_set_all_ops:
   "i < length rects \<Longrightarrow> del_op rects i \<in> set (all_ops rects)" by auto2
 setup {* add_forward_prfstep_cond @{thm del_in_set_all_ops} [with_term "del_op ?rects ?i"] *}
 
+lemma all_ops_sorted [forward]: "sorted (all_ops rects)" by auto2
+setup {* del_prfstep_thm @{thm all_ops_def} *}
+
 section {* Applying a set of operations *}
 
-definition apply_ops_set :: "'a rectangle list \<Rightarrow> ('a::linorder) operation set \<Rightarrow> nat set" where
-  "apply_ops_set rects ops = {i. i < length rects \<and> ins_op rects i \<in> ops \<and> del_op rects i \<notin> ops}"
+definition apply_ops_k :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> nat set" where [rewrite]:
+  "apply_ops_k rects k = (let ops = all_ops rects in
+     {i. i < length rects \<and> (\<exists>j<k. ins_op rects i = ops ! j) \<and> \<not>(\<exists>j<k. del_op rects i = ops ! j)})"
+setup {* register_wellform_data ("apply_ops_k rects k", ["k < length (all_ops rects)"]) *}
 
 lemma apply_ops_set_mem [rewrite]:
-  "i \<in> apply_ops_set rects ops \<longleftrightarrow> (i < length rects \<and> ins_op rects i \<in> ops \<and> del_op rects i \<notin> ops)"
-  using apply_ops_set_def by auto
+  "ops = all_ops rects \<Longrightarrow>
+   i \<in> apply_ops_k rects k \<longleftrightarrow> (i < length rects \<and> (\<exists>j<k. ins_op rects i = ops ! j) \<and> \<not>(\<exists>j<k. del_op rects i = ops ! j))"
+  by auto2
+setup {* del_prfstep_thm @{thm apply_ops_k_def} *}
 
 definition xints_of :: "'a rectangle list \<Rightarrow> nat set \<Rightarrow> ('a::linorder) interval set" where
   "xints_of rect is = (\<lambda>i. xint (rect ! i)) ` is"
@@ -154,37 +162,32 @@ lemma xints_of_mem [rewrite]:
   "it \<in> xints_of rect is \<longleftrightarrow> (\<exists>i\<in>is. xint (rect ! i) = it)" using xints_of_def by auto
 
 lemma apply_ops_set_mem2 [forward]:
-  "ops = sort (all_ops rects) \<Longrightarrow> k < length ops \<Longrightarrow>
-   i \<in> apply_ops_set rects (set (take k ops)) \<Longrightarrow>
-   low (yint (rects ! i)) \<le> pos (ops ! k)"
+  "ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
+   i \<in> apply_ops_k rects k \<Longrightarrow> low (yint (rects ! i)) \<le> pos (ops ! k)"
 @proof
   @obtain k' where "k' < k" "ops ! k' = ins_op rects i"
   @have "ops ! k' \<le> ops ! k"
 @qed
 
 lemma apply_ops_set_mem3 [forward]:
-  "ops = sort (all_ops rects) \<Longrightarrow> k < length ops \<Longrightarrow>
-   i \<in> apply_ops_set rects (set (take k ops)) \<Longrightarrow>
-   high (yint (rects ! i)) \<ge> pos (ops ! k)"
+  "ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
+   i \<in> apply_ops_k rects k \<Longrightarrow> high (yint (rects ! i)) \<ge> pos (ops ! k)"
 @proof
-  @have "set ops = set (all_ops rects)"
-  @have "del_op rects i \<notin> set (take k ops)"
   @obtain k' where "k' < length ops" "ops ! k' = del_op rects i"
-  @have "k' \<ge> k"
   @have "ops ! k' \<ge> ops ! k"
 @qed
 
-definition has_overlap_at_k :: "'a rectangle list \<Rightarrow> ('a::linorder) operation list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
-  "has_overlap_at_k rects ops k \<longleftrightarrow> (
-    let S = apply_ops_set rects (set (take k ops)) in
+definition has_overlap_at_k :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
+  "has_overlap_at_k rects k \<longleftrightarrow> (
+    let S = apply_ops_k rects k; ops = all_ops rects in
       \<not>ty (ops ! k) \<and> has_overlap (xints_of rects S) (int (ops ! k)))"
-setup {* register_wellform_data ("has_overlap_at_k rects ops k", ["k < length ops"]) *}
+setup {* register_wellform_data ("has_overlap_at_k rects k", ["k < length (all_ops rects)"]) *}
 
 lemma has_overlap_at_k_equiv [forward]:
-  "is_rect_list rects \<Longrightarrow> ops = sort (all_ops rects) \<Longrightarrow> k < length ops \<Longrightarrow>
-   has_overlap_at_k rects ops k \<Longrightarrow> has_rect_overlap rects"
+  "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
+   has_overlap_at_k rects k \<Longrightarrow> has_rect_overlap rects"
 @proof
-  @let "S = apply_ops_set rects (set (take k ops))"
+  @let "S = apply_ops_k rects k"
   @have "has_overlap (xints_of rects S) (int (ops ! k))"
   @obtain "xs \<in> xints_of rects S" where "is_overlap xs (int (ops ! k))"
   @obtain "i \<in> S" where "xint (rects ! i) = xs"
@@ -192,7 +195,7 @@ lemma has_overlap_at_k_equiv [forward]:
   @let "j = idx (ops ! k)"
   @have "ops ! k \<in> set ops"
   @have "ops ! k = ins_op rects j"
-  @case "i = j" @with
+  @have "i \<noteq> j" @with @contradiction
     @obtain k' where "k' < k" "ops ! k' = ins_op rects i"
     @have "ops ! k = ops ! k'"
   @end
@@ -200,13 +203,12 @@ lemma has_overlap_at_k_equiv [forward]:
 @qed
 
 lemma has_overlap_at_k_equiv2 [resolve]:
-  "is_rect_list rects \<Longrightarrow> ops = sort (all_ops rects) \<Longrightarrow> has_rect_overlap rects \<Longrightarrow>
-   \<exists>k<length ops. has_overlap_at_k rects ops k"
+  "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> has_rect_overlap rects \<Longrightarrow>
+   \<exists>k<length ops. has_overlap_at_k rects k"
 @proof
   @obtain i j where "i < length rects" "j < length rects" "i \<noteq> j"
                     "is_rect_overlap (rects ! i) (rects ! j)"
   @have "is_rect_overlap (rects ! j) (rects ! i)"
-  @have "set ops = set (all_ops rects)"
   @obtain i1 where "i1 < length ops" "ops ! i1 = ins_op rects i"
   @obtain j1 where "j1 < length ops" "ops ! j1 = ins_op rects j"
   @obtain i2 where "i2 < length ops" "ops ! i2 = del_op rects i"
@@ -216,22 +218,22 @@ lemma has_overlap_at_k_equiv2 [resolve]:
     @have "j1 < i2" @with @have "ops ! j1 < ops ! i2" @end
     @case "ops ! i2 \<in> set (take j1 ops)" @with
       @obtain k' where "k' < j1" "ops ! k' = ops ! i2" @end
-    @have "has_overlap_at_k rects ops j1"
+    @have "has_overlap_at_k rects j1"
   @end
   @case "ins_op rects j < ins_op rects i" @with
     @have "j1 < i1"
-    @have "i1 < j2" @with @have "ops ! i1 < ops ! j2" @end
+    @have "i1 < j2" @with @have "ops ! i1 < ops ! j2" @with
+      @case "pos (ops ! i1) = pos (ops ! j2)" @end @end
     @case "ops ! j2 \<in> set (take i1 ops)" @with
       @obtain k' where "k' < i1" "ops ! k' = ops ! j2" @end
-    @have "has_overlap_at_k rects ops i1"
+    @have "has_overlap_at_k rects i1"
   @end
 @qed
 
-definition has_overlap_lst :: "'a rectangle list \<Rightarrow> ('a::linorder) operation list \<Rightarrow> bool" where [rewrite]:
-  "has_overlap_lst rects ops = (\<exists>k<length ops. has_overlap_at_k rects ops k)"
+definition has_overlap_lst :: "('a::linorder) rectangle list \<Rightarrow> bool" where [rewrite]:
+  "has_overlap_lst rects = (let ops = all_ops rects in (\<exists>k<length ops. has_overlap_at_k rects k))"
 
 lemma has_overlap_equiv [rewrite]:
-  "is_rect_list rects \<Longrightarrow> ops = sort (all_ops rects) \<Longrightarrow>
-   has_overlap_lst rects ops \<longleftrightarrow> has_rect_overlap rects" by auto2
+  "is_rect_list rects \<Longrightarrow> has_overlap_lst rects \<longleftrightarrow> has_rect_overlap rects" by auto2
 
 end
