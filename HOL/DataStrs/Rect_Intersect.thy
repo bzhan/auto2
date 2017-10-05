@@ -168,22 +168,6 @@ definition xints_of :: "'a rectangle list \<Rightarrow> nat set \<Rightarrow> ('
 lemma xints_of_mem [rewrite]:
   "it \<in> xints_of rect is \<longleftrightarrow> (\<exists>i\<in>is. xint (rect ! i) = it)" using xints_of_def by auto
 
-lemma apply_ops_set_mem2 [forward]:
-  "ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
-   i \<in> apply_ops_k rects k \<Longrightarrow> low (yint (rects ! i)) \<le> pos (ops ! k)"
-@proof
-  @obtain k' where "k' < k" "ops ! k' = ins_op rects i"
-  @have "ops ! k' \<le> ops ! k"
-@qed
-
-lemma apply_ops_set_mem3 [forward]:
-  "ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
-   i \<in> apply_ops_k rects k \<Longrightarrow> high (yint (rects ! i)) \<ge> pos (ops ! k)"
-@proof
-  @obtain k' where "k' < length ops" "ops ! k' = del_op rects i"
-  @have "ops ! k' \<ge> ops ! k"
-@qed
-
 definition has_overlap_at_k :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "has_overlap_at_k rects k \<longleftrightarrow> (
     let S = apply_ops_k rects k; ops = all_ops rects in
@@ -198,13 +182,20 @@ lemma has_overlap_at_k_equiv [forward]:
   @have "has_overlap (xints_of rects S) (int (ops ! k))"
   @obtain "xs \<in> xints_of rects S" where "is_overlap xs (int (ops ! k))"
   @obtain "i \<in> S" where "xint (rects ! i) = xs"
-  @have "ins_op rects i \<in> set (take k ops)"
   @let "j = idx (ops ! k)"
   @have "ops ! k \<in> set ops"
   @have "ops ! k = ins_op rects j"
   @have "i \<noteq> j" @with @contradiction
     @obtain k' where "k' < k" "ops ! k' = ins_op rects i"
     @have "ops ! k = ops ! k'"
+  @end
+  @have "low (yint (rects ! i)) \<le> pos (ops ! k)" @with
+    @obtain k' where "k' < k" "ops ! k' = ins_op rects i"
+    @have "ops ! k' \<le> ops ! k"
+  @end
+  @have "high (yint (rects ! i)) \<ge> pos (ops ! k)" @with
+    @obtain k' where "k' < length ops" "ops ! k' = del_op rects i"
+    @have "ops ! k' \<ge> ops ! k"
   @end
   @have "is_rect_overlap (rects ! i) (rects ! j)"
 @qed

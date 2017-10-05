@@ -137,14 +137,6 @@ lemma nth_take [rewrite]: "i < length (take n xs) \<Longrightarrow> take n xs ! 
 
 setup {* add_rewrite_rule @{thm List.take_0} *}
 
-lemma in_set_first_k_conv_nthI [resolve]:
-  "k \<le> length xs \<Longrightarrow> i < k \<Longrightarrow> xs ! i \<in> set (take k xs)"
-  using in_set_conv_nth by fastforce
-
-lemma in_set_first_k_conv_nthE [resolve]:
-  "k \<le> length xs \<Longrightarrow> x \<in> set (take k xs) \<Longrightarrow> \<exists>i<k. xs ! i = x"
-  by (metis in_set_conv_nth length_take nth_take)
-
 section {* drop *}
 
 setup {* add_forward_prfstep_cond @{thm List.length_drop} [with_term "drop ?n ?xs"] *}

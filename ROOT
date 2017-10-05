@@ -47,7 +47,6 @@ session SepLogic_BasicStr = SepLogic_Base +
     "HOL/SepLogic/LinkedList"
     "HOL/SepLogic/BinaryTree"
     "HOL/SepLogic/Union_Find"
-    "HOL/DataStrs/Rect_Intersect"
 
 session SepLogic_Arrays = SepLogic_Base +
   description {*
@@ -63,6 +62,13 @@ session SepLogic_RBT = SepLogic_Base +
   *}
   theories
     "HOL/SepLogic/RBT"
+
+session SepLogic_Rectinter = SepLogic_BasicStr +
+  description {*
+    Separation logic: rectangle intersection.
+  *}
+  theories
+    "HOL/DataStrs/Rect_Intersect"
 
 session SepLogic_PQueue = SepLogic_Base +
   description {*
