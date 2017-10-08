@@ -79,7 +79,7 @@ definition btree_constr :: "('a::heap, 'b::heap) btree \<Rightarrow> 'a \<Righta
   "btree_constr lp k v rp = do { p \<leftarrow> ref (Node lp k v rp); return (Some p) }"
 declare btree_constr_def [sep_proc_defs]
 
-lemma btree_constr_rule [hoare_triple, resolve]:
+lemma btree_constr_rule [hoare_triple]:
   "<btree lt lp * btree rt rp> btree_constr lp k v rp <btree (tree.Node lt k v rt)>" by auto2
 declare btree_constr_def [sep_proc_defs del]
 

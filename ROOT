@@ -62,14 +62,15 @@ session SepLogic_RBT = SepLogic_Base +
   theories
     "HOL/SepLogic/RBT"
 
-session SepLogic_Rectinter = SepLogic_BasicStr +
+session SepLogic_Rectinter = SepLogic_Base +
   description {*
     Separation logic: rectangle intersection.
   *}
   theories
+    "HOL/SepLogic/IntervalTree_Impl"
     "HOL/DataStrs/Rect_Intersect"
 
-session SepLogic_UnionFind = SepLogic_BasicStr +
+session SepLogic_UnionFind = SepLogic_Base +
   description {*
     Union-find and applications.
   *}
