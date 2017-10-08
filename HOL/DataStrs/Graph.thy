@@ -2,28 +2,6 @@ theory Graph
 imports "../Auto2_Main"
 begin
 
-lemma last_eval1 [rewrite]: "last [x] = x" by simp
-lemma last_eval2 [rewrite]: "last [u, v] = v" by simp
-lemma last_cons [rewrite]: "xs \<noteq> [] \<Longrightarrow> last (x # xs) = last xs" by simp
-lemma last_append [rewrite]: "ys \<noteq> [] \<Longrightarrow> last (xs @ ys) = last ys" by simp
-
-lemma butlast_eval1 [rewrite]: "butlast [x] = []" by simp
-lemma butlast_eval2 [rewrite]: "butlast [x, y] = [x]" by simp
-lemma butlast_cons [rewrite]: "as \<noteq> [] \<Longrightarrow> butlast (a # as) = a # butlast as" by simp
-lemma butlast_append' [rewrite]: "bs \<noteq> [] \<Longrightarrow> butlast (as @ bs) = as @ butlast bs"
-  by (simp add: butlast_append)
-
-lemma butlast_last [rewrite]: "as \<noteq> [] \<Longrightarrow> butlast as @ [last as] = as" by simp
-
-lemma last_mem [resolve]: "xs \<noteq> [] \<Longrightarrow> last xs \<in> set xs" by simp
-
-lemma set_two [rewrite]: "set [u, v] = {u, v}" by simp
-lemma set_two_mem [rewrite]: "{u, v} \<subseteq> S \<longleftrightarrow> u \<in> S \<and> v \<in> S" by simp
-lemma mem_diff [rewrite]: "x \<in> A - B \<longleftrightarrow> x \<in> A \<and> x \<notin> B" by simp
-
-setup {* add_resolve_prfstep @{thm Nat.le_add1} *}
-setup {* add_resolve_prfstep @{thm Nat.le_add2} *}
-
 section {* Graphs *}
 
 datatype graph = Graph "nat list list"

@@ -40,6 +40,7 @@ section {* Set of elements of a list *}
 
 setup {* add_rewrite_rule @{thm List.set_simps(1)} *}
 lemma set_simps2 [rewrite]: "set (x # xs) = {x} \<union> set xs" by simp
+lemma set_two [rewrite]: "set [u, v] = {u, v}" by simp
 setup {* add_rewrite_rule @{thm List.set_append} *}
 setup {* add_resolve_prfstep @{thm List.finite_set} *}
 
@@ -108,7 +109,12 @@ setup {* add_rewrite_rule @{thm List.nth_replicate} *}
 
 section {* last *}
 
+lemma last_eval1 [rewrite]: "last [x] = x" by simp
+lemma last_eval2 [rewrite]: "last [u, v] = v" by simp
+setup {* add_rewrite_rule @{thm List.last_ConsR} *}
+setup {* add_rewrite_rule @{thm List.last_appendR} *}
 setup {* add_rewrite_rule @{thm List.last_snoc} *}
+lemma last_mem [resolve]: "xs \<noteq> [] \<Longrightarrow> last xs \<in> set xs" by simp
 
 section {* butlast *}
 
@@ -116,6 +122,13 @@ setup {* add_rewrite_rule @{thm length_butlast} *}
 setup {* add_rewrite_rule @{thm nth_butlast} *}
 setup {* add_rewrite_rule @{thm List.butlast_conv_take} *}
 setup {* add_rewrite_rule @{thm List.butlast_snoc} *}
+lemma butlast_eval1 [rewrite]: "butlast [x] = []" by simp
+lemma butlast_eval2 [rewrite]: "butlast [x, y] = [x]" by simp
+lemma butlast_cons [rewrite]: "as \<noteq> [] \<Longrightarrow> butlast (a # as) = a # butlast as" by simp
+lemma butlast_append' [rewrite]: "bs \<noteq> [] \<Longrightarrow> butlast (as @ bs) = as @ butlast bs"
+  by (simp add: butlast_append)
+
+lemma butlast_last [rewrite]: "as \<noteq> [] \<Longrightarrow> butlast as @ [last as] = as" by simp
 
 section {* List update *}
 

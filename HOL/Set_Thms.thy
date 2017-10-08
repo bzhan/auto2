@@ -30,6 +30,7 @@ lemma ball_single [rewrite]: "(\<forall>x\<in>{x}. P x) = P x" by auto
 subsection {* Membership *}
 
 setup {* add_rewrite_rule @{thm Set.singleton_iff} *} 
+lemma set_two_mem [rewrite]: "{u, v} \<subseteq> S \<longleftrightarrow> u \<in> S \<and> v \<in> S" by simp
 setup {* add_forward_prfstep (equiv_forward_th @{thm Set.empty_iff}) *}
 lemma set_membership_distinct [forward]: "x \<in> s \<Longrightarrow> y \<notin> s \<Longrightarrow> x \<noteq> y" by auto
 lemma non_empty_exist_elt [backward]: "U \<noteq> {} \<Longrightarrow> \<exists>x. x \<in> U" by blast
@@ -88,7 +89,11 @@ lemma subset_union_same2 [backward]: "A \<subseteq> B \<Longrightarrow> A \<unio
 
 subsection {* Diff *}
 
+setup {* add_rewrite_rule @{thm Set.Diff_iff} *}
+setup {* add_fixed_sc ("Set.Diff_iff@invbackward", 500) *}
+
 setup {* add_rewrite_rule @{thm Set.empty_Diff} *}
+lemma mem_diff [rewrite]: "x \<in> A - B \<longleftrightarrow> x \<in> A \<and> x \<notin> B" by simp
 lemma set_union_minus_same1 [rewrite]: "(A \<union> B) - B = A - B" by auto
 lemma set_union_minus_same2 [rewrite]: "(B \<union> A) - B = A - B" by auto
 lemma set_union_minus_distinct [rewrite]: "a \<noteq> c \<Longrightarrow> {a} \<union> (B - {c}) = {a} \<union> B - {c}" by auto

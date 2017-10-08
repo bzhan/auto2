@@ -46,7 +46,6 @@ session SepLogic_BasicStr = SepLogic_Base +
   theories
     "HOL/SepLogic/LinkedList"
     "HOL/SepLogic/BinaryTree"
-    "HOL/SepLogic/Union_Find"
 
 session SepLogic_Arrays = SepLogic_Base +
   description {*
@@ -69,6 +68,14 @@ session SepLogic_Rectinter = SepLogic_BasicStr +
   *}
   theories
     "HOL/DataStrs/Rect_Intersect"
+
+session SepLogic_UnionFind = SepLogic_BasicStr +
+  description {*
+    Union-find and applications.
+  *}
+  theories
+    "HOL/SepLogic/Union_Find"
+    "HOL/DataStrs/Percolation_Func"
 
 session SepLogic_PQueue = SepLogic_Base +
   description {*
