@@ -2,7 +2,7 @@ theory Quicksort
 imports Reverse "../DataStrs/Quicksort_Func"
 begin
 
-function part1 :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
+function part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> nat Heap" where
   "part1 a left right p = (
      if (right \<le> left) then return right
      else do {
@@ -28,7 +28,7 @@ declare part1.simps [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort_Func.part1.simps} *}
 
 (* Partition function. *)
-definition partition :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "partition a left right = do {
      pivot \<leftarrow> Array.nth a right;
      middle \<leftarrow> part1 a left (right - 1) pivot;
@@ -48,7 +48,7 @@ declare partition_def [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort_Func.partition_def} *}
 
 (* Quicksort function *)
-function quicksort :: "nat array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+function quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "quicksort a left right =
      (if left < right then do {
         pivot \<leftarrow> partition a left right;
@@ -87,9 +87,26 @@ theorem quicksort_to_fun [hoare_triple]:
 declare quicksort.simps [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort_Func.quicksort.simps} *}
 
-theorem quicksort_sorts:
+theorem quicksort_sorts [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
    quicksort a l r
    <\<lambda>rs. \<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(sorted (sublist l (r + 1) xs'))>" by auto2
+
+definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where
+  "quicksort_all a = do {
+     n \<leftarrow> Array.len a;
+     if n = 0 then return ()
+     else quicksort a 0 (n - 1) }"
+declare quicksort_all_def [sep_proc_defs]
+
+theorem quicksort_sorts_basic [hoare_triple]:
+  "<a \<mapsto>\<^sub>a xs>
+   quicksort_all a
+   <\<lambda>_. a \<mapsto>\<^sub>a sort xs>"
+@proof
+  @case "xs = []"
+  @have "Quicksort_Func.quicksort xs 0 (length xs - 1) = sort xs"
+@qed
+declare quicksort_all_def [sep_proc_defs del]
 
 end

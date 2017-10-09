@@ -2,15 +2,6 @@ theory Arrays_Ex
 imports "../Auto2_Main"
 begin
 
-section {* length *}
-
-setup {* add_rewrite_rule @{thm List.list.size(3)} *}
-theorem length_one [rewrite]: "length [x] = 1" by simp
-lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
-setup {* add_rewrite_rule @{thm length_tl} *}
-setup {* add_forward_prfstep_cond @{thm List.length_append} [with_term "?xs @ ?ys"] *}
-lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
-
 section {* List swap *}
 
 definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where

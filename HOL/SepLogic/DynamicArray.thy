@@ -73,7 +73,8 @@ definition push_array :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 
 declare push_array_def [sep_proc_defs]
 
 theorem push_array_rule [hoare_triple]:
-  "<dyn_array xs p> push_array x p <\<lambda>r. dyn_array (xs @ [x]) r>\<^sub>t" by auto2
+  "<dyn_array xs p> push_array x p <\<lambda>r. dyn_array (xs @ [x]) r>\<^sub>t"
+@proof @have "length (xs @ [x]) = length xs + 1" @qed
 
 definition pop_array :: "'a::heap dynamic_array \<Rightarrow> ('a \<times> 'a dynamic_array) Heap" where
   "pop_array d = (case d of

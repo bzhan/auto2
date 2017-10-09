@@ -12,8 +12,17 @@ setup {* fold add_rewrite_rule @{thms List.list.sel(1,3)} *}
 setup {* add_forward_prfstep @{thm list.collapse} *}
 setup {* add_var_induct_rule @{thm list.induct} *}
 
+section {* Length *}
+
+setup {* add_rewrite_rule @{thm List.list.size(3)} *}
+theorem length_one [rewrite]: "length [x] = 1" by simp
+lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
+setup {* add_rewrite_rule @{thm length_tl} *}
+lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
+
 section {* Append *}
 
+setup {* add_rewrite_rule @{thm List.length_append} *}
 setup {* add_rewrite_rule @{thm List.append.simps(2)} *}
 setup {* add_rewrite_rule @{thm List.hd_append2} *}
 
@@ -71,7 +80,9 @@ lemma sorted_nth_mono_less [forward]:
 section {* sort *}
 
 setup {* add_forward_prfstep_cond @{thm sorted_sort} [with_term "sort ?xs"] *}
+setup {* add_rewrite_rule @{thm length_sort} *}
 setup {* add_rewrite_rule @{thm set_sort} *}
+setup {* add_backward_prfstep @{thm properties_for_sort} *}
 
 section {* distinct *}
 

@@ -55,20 +55,19 @@ session SepLogic_Arrays = SepLogic_Base +
     "HOL/SepLogic/Reverse"
     "HOL/SepLogic/Quicksort"
 
+session SepLogic_Rectinter = SepLogic_Arrays +
+  description {*
+    Separation logic: rectangle intersection.
+  *}
+  theories
+    "HOL/SepLogic/Rect_Intersect_Impl"
+
 session SepLogic_RBT = SepLogic_Base +
   description {*
     Separation logic: red-black tree.
   *}
   theories
     "HOL/SepLogic/RBT"
-
-session SepLogic_Rectinter = SepLogic_Base +
-  description {*
-    Separation logic: rectangle intersection.
-  *}
-  theories
-    "HOL/SepLogic/IntervalTree_Impl"
-    "HOL/DataStrs/Rect_Intersect"
 
 session SepLogic_UnionFind = SepLogic_Base +
   description {*

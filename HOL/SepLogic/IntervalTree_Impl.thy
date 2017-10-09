@@ -81,21 +81,23 @@ section {* Operations *}
 
 subsection {* Basic operation *}
 
-definition tree_empty :: "int_tree Heap" where
-  "tree_empty \<equiv> return None"
-declare tree_empty_def [sep_proc_defs]
+definition int_tree_empty :: "int_tree Heap" where
+  "int_tree_empty \<equiv> return None"
+declare int_tree_empty_def [sep_proc_defs]
 
-lemma tree_empty_rule [hoare_triple]:
-  "<emp> tree_empty <int_tree Tip>" by auto2
-declare tree_empty_def [sep_proc_defs del]
+lemma int_tree_empty_to_fun [hoare_triple]:
+  "<emp> int_tree_empty <int_tree Tip>" by auto2
+declare int_tree_empty_def [sep_proc_defs del]
 
-definition tree_is_empty :: "int_tree \<Rightarrow> bool Heap" where
-  "tree_is_empty b \<equiv> return (b = None)"
-declare tree_is_empty_def [sep_proc_defs]
+definition int_tree_is_empty :: "int_tree \<Rightarrow> bool Heap" where
+  "int_tree_is_empty b \<equiv> return (b = None)"
+declare int_tree_is_empty_def [sep_proc_defs]
 
-lemma tree_is_empty_rule:
-  "<int_tree t b> tree_is_empty b <\<lambda>r. int_tree t b * \<up>(r \<longleftrightarrow> t = Tip)>" by auto2
-declare tree_is_empty_def [sep_proc_defs del]
+lemma int_tree_is_empty_rule:
+  "<int_tree t b>
+   int_tree_is_empty b
+   <\<lambda>r. int_tree t b * \<up>(r \<longleftrightarrow> t = Tip)>" by auto2
+declare int_tree_is_empty_def [sep_proc_defs del]
 
 definition get_tmax :: "int_tree \<Rightarrow> nat Heap" where
   "get_tmax b = (case b of
@@ -275,12 +277,12 @@ definition int_tree_set :: "nat idx_interval set \<Rightarrow> int_tree \<Righta
 setup {* add_rewrite_ent_rule @{thm int_tree_set_def} *}
 
 lemma int_tree_empty_rule [hoare_triple]:
-  "<emp> tree_empty <int_tree_set {}>" by auto2
+  "<emp> int_tree_empty <int_tree_set {}>" by auto2
 
 lemma int_tree_insert_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
    int_tree_insert x b
-   <int_tree_set ({x} \<union> S)>" by auto2
+   <int_tree_set (S \<union> {x})>" by auto2
 
 lemma int_tree_delete_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
@@ -291,5 +293,6 @@ lemma int_tree_search_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval x)>
    int_tree_search x b
    <\<lambda>r. int_tree_set S b * \<up>(r \<longleftrightarrow> has_overlap S x)>" by auto2
+setup {* del_prfstep_thm @{thm int_tree_set_def} *}
 
 end

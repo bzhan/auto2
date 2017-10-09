@@ -244,4 +244,11 @@ setup {* add_forward_prfstep_cond @{thm quicksort_sorts} [with_term "quicksort ?
 
 setup {* del_prfstep_thm @{thm quicksort.simps} *}
 
+lemma quicksort_sorts_all [rewrite]:
+  "xs \<noteq> [] \<Longrightarrow> quicksort xs 0 (length xs - 1) = sort xs"
+@proof
+  @let "xs' = quicksort xs 0 (length xs - 1)"
+  @have "sublist 0 (length xs) xs' = xs'"
+@qed
+
 end
