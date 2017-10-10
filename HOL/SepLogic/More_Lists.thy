@@ -24,6 +24,9 @@ setup {* add_forward_prfstep_cond @{thm last_in_mset} [with_term "last ?xs", wit
 
 section {* Relationship between mset and set of lists *}
 
+lemma set_butlast [resolve]: "set (butlast xs) \<subseteq> set xs"
+  by (simp add: in_set_butlastD subsetI)
+
 theorem mset_butlast [rewrite]: "length xs > 0 \<Longrightarrow> mset (butlast xs) = mset xs - {# last xs #}"
   by (metis add_diff_cancel_right' append_butlast_last_id length_greater_0_conv list.size(3)
       mset.simps(2) size_eq_0_iff_empty size_mset union_code)
@@ -38,5 +41,9 @@ theorem delete_mset_to_set [rewrite]:
 theorem update_mset_to_set [rewrite]:
   "distinct xs \<Longrightarrow> mset xs' = {# y #} + (mset xs - {# x #}) \<Longrightarrow> set xs' = (set xs - {x}) \<union> {y}"
   by (metis insert_mset_to_set mset_remove1 set_remove1_eq union_commute)
+
+theorem mset_update' [rewrite]:
+  "i < length ls \<Longrightarrow> mset (list_update ls i v) = {#v#} + (mset ls - {# ls ! i #})"
+  using mset_update by fastforce
 
 end

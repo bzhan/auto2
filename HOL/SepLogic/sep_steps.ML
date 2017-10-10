@@ -823,9 +823,10 @@ fun use_prec_thms ctxt base_th ex_th =
             val pairs = [(prem1, base_th'), (prem2, new_th)]
             val insts = AssnMatcher.mod_matches ctxt pairs ([], fo_init)
 
-            fun process_inst (_, ths) = ths MRS prec_th
+            fun process_inst (_, ths) =
+                UtilLogic.split_conj_th (ths MRS prec_th)
 
-            val eqs = map process_inst insts
+            val eqs = maps process_inst insts
           in
             new_th |> apply_to_thm (
               Conv.every_conv (map (rewr_obj_eq_bottom ctxt o obj_sym) eqs))

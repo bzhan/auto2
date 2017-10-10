@@ -163,4 +163,8 @@ setup {* add_rewrite_rule @{thm prod_mset_empty} *}
 setup {* add_rewrite_rule @{thm prod_mset_singleton} *}
 setup {* add_rewrite_rule @{thm prod_mset_Un} *}
 
+subsection {* Set interval *}
+
+setup {* add_rewrite_rule @{thm Set_Interval.ord_class.lessThan_iff} *}
+
 end

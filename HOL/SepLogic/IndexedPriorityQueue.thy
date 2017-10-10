@@ -236,24 +236,36 @@ lemma index_of_pqueueD2 [forward]:
 setup {* del_prfstep_thm_eqforward @{thm index_of_pqueue_def} *}
   
 theorem has_index_unique_key [forward]:
-  "index_of_pqueue xs m \<Longrightarrow> unique_keys xs" by auto2
+  "index_of_pqueue xs m \<Longrightarrow> unique_keys_set (set xs)"
+@proof
+  @have "\<forall>a x y. (a, x) \<in> set xs \<longrightarrow> (a, y) \<in> set xs \<longrightarrow> x = y" @with
+    @obtain i where "i < length xs" "xs ! i = (a, x)"
+    @obtain j where "j < length xs" "xs ! j = (a, y)"
+  @end
+@qed
+
+lemma has_index_distinct [forward]:
+  "index_of_pqueue xs m \<Longrightarrow> distinct xs"
+@proof
+  @have "\<forall>i<length xs. \<forall>j<length xs. i \<noteq> j \<longrightarrow> xs ! i \<noteq> xs ! j"
+@qed
 
 definition key_within_range :: "(nat \<times> 'a) list \<Rightarrow> nat \<Rightarrow> bool" where
-  "key_within_range xs n = (\<forall>p. p \<in># mset xs \<longrightarrow> fst p < n)"
+  "key_within_range xs n = (\<forall>p\<in>set xs. fst p < n)"
 setup {* add_rewrite_rule @{thm key_within_range_def} *}
 
 theorem key_within_range_on_index:
   "i < length xs \<Longrightarrow> key_within_range xs n \<Longrightarrow> fst (xs ! i) < n" by auto2
 setup {* add_forward_prfstep_cond @{thm key_within_range_on_index} [with_term "?xs ! ?i"] *}
 
-fun idx_pqueue :: "(nat \<times> 'a::{heap,linorder}) list \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
-  "idx_pqueue xs (Indexed_PQueue pq idx) =
-    (\<exists>\<^sub>Am. dyn_array xs pq * amap m idx * \<up>(index_of_pqueue xs m) * \<up>(key_within_range xs (alen idx)))"
+fun idx_pqueue :: "(nat \<times> 'a::{heap,linorder}) list \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
+  "idx_pqueue xs n (Indexed_PQueue pq idx) =
+    (\<exists>\<^sub>Am. dyn_array xs pq * amap m idx * \<up>(n = alen idx) * \<up>(index_of_pqueue xs m) * \<up>(key_within_range xs n))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue.simps} *}
 
 setup {* add_forward_prfstep @{thm dyn_array_prec} *}
 theorem idx_pqueue_prec [sep_prec_thms]:
-  "h \<Turnstile> idx_pqueue xs p * F1 \<Longrightarrow> h \<Turnstile> idx_pqueue ys p * F2 \<Longrightarrow> xs = ys" by auto2
+  "h \<Turnstile> idx_pqueue xs m p * F1 \<Longrightarrow> h \<Turnstile> idx_pqueue ys n p * F2 \<Longrightarrow> xs = ys \<and> m = n" by auto2
 setup {* del_prfstep_thm @{thm dyn_array_prec} *}
 
 section {* Basic operations on indexed_queue *}
@@ -269,9 +281,7 @@ theorem index_of_pqueue_empty [resolve]:
   "index_of_pqueue [] empty_map" by auto2
 
 theorem idx_pqueue_empty_rule [hoare_triple]:
-  "<emp>
-   idx_pqueue_empty k x
-   <\<lambda>r. idx_pqueue [] r * \<up>(alen (index r) = k)>" by auto2
+  "<emp> idx_pqueue_empty n x <\<lambda>r. idx_pqueue [] n r>" by auto2
 declare idx_pqueue_empty_def [sep_proc_defs del]
 
 definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where
@@ -279,9 +289,9 @@ definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Righta
 declare idx_pqueue_nth_def [sep_proc_defs]
 
 theorem idx_pqueue_nth_rule [hoare_triple, hoare_create_case]:
-  "<idx_pqueue xs p * \<up>(i < length xs)>
+  "<idx_pqueue xs n p * \<up>(i < length xs)>
    idx_pqueue_nth p i
-   <\<lambda>r. idx_pqueue xs p * \<up>(r = xs ! i)>" by auto2
+   <\<lambda>r. idx_pqueue xs n p * \<up>(r = xs ! i)>" by auto2
 
 theorem idx_pqueue_nth_heap_preserving [heap_presv_thms]:
   "heap_preserving (idx_pqueue_nth p i)" by auto2
@@ -291,9 +301,9 @@ definition idx_pqueue_length :: "'a indexed_pqueue \<Rightarrow> nat Heap" where
 declare idx_pqueue_length_def [sep_proc_defs]
 
 theorem idx_pqueue_length_rule [hoare_triple_direct]:
-  "<idx_pqueue xs p>
+  "<idx_pqueue xs n p>
    idx_pqueue_length p
-   <\<lambda>r. idx_pqueue xs p * \<up>(r = length xs)>" by auto2
+   <\<lambda>r. idx_pqueue xs n p * \<up>(r = length xs)>" by auto2
 
 theorem idx_pqueue_length_heap_preserving [heap_presv_thms]:
   "heap_preserving (idx_pqueue_length a)" by auto2
@@ -314,9 +324,13 @@ theorem index_of_pqueue_swap [backward]:
    index_of_pqueue (list_swap xs i j) (m {fst (xs ! i) \<rightarrow> j} {fst (xs ! j) \<rightarrow> i})" by auto2
 
 theorem idx_pqueue_swap_rule [hoare_triple, hoare_create_case]:
-  "<idx_pqueue xs p * \<up>(i < length xs) * \<up>(j < length xs)>
+  "<idx_pqueue xs n p * \<up>(i < length xs) * \<up>(j < length xs)>
    idx_pqueue_swap p i j
-   <\<lambda>_. idx_pqueue (list_swap xs i j) p>" by auto2
+   <\<lambda>_. idx_pqueue (list_swap xs i j) n p>"
+@proof @contradiction
+  @have "mset xs = mset (list_swap xs i j)"
+  @have "set xs = set (list_swap xs i j)"
+@qed
 
 definition idx_pqueue_push :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where
   "idx_pqueue_push k v p = do {
@@ -328,14 +342,14 @@ definition idx_pqueue_push :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a index
 declare idx_pqueue_push_def [sep_proc_defs]
 
 theorem index_of_pqueue_push [backward2]:
-  "index_of_pqueue xs m \<Longrightarrow> \<not>has_key xs k \<Longrightarrow> index_of_pqueue (xs @ [(k, v)]) (m{k \<rightarrow> length xs})"
+  "index_of_pqueue xs m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow> index_of_pqueue (xs @ [(k, v)]) (m{k \<rightarrow> length xs})"
 (* Again, need to make rewriting into x + n form explicit. *)
 @proof @have "length (xs @ [(k, v)]) = length xs + 1" @qed
 
 theorem idx_pqueue_push_rule [hoare_triple]:
-  "<idx_pqueue xs p * \<up>(k < alen (index p)) * \<up>(\<not>has_key xs k)>
+  "<idx_pqueue xs n p * \<up>(k < n) * \<up>(\<not>has_key_alist xs k)>
    idx_pqueue_push k v p
-   <\<lambda>r. idx_pqueue (xs @ [(k, v)]) r>\<^sub>t" by auto2
+   <\<lambda>r. idx_pqueue (xs @ [(k, v)]) n r>\<^sub>t" by auto2
 
 definition idx_pqueue_pop :: "'a::heap indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where
   "idx_pqueue_pop p = do {
@@ -352,9 +366,10 @@ theorem index_of_pqueue_pop [backward2]:
 @proof @have "length xs = length (butlast xs) + 1" @qed
 
 theorem idx_pqueue_pop_rule [hoare_triple]:
-  "<idx_pqueue xs p * \<up>(length xs > 0)>
+  "<idx_pqueue xs n p * \<up>(length xs > 0)>
    idx_pqueue_pop p
-   <\<lambda>(x, r). idx_pqueue (butlast xs) r * \<up>(x = last xs)>" by auto2
+   <\<lambda>(x, r). idx_pqueue (butlast xs) n r * \<up>(x = last xs)>"
+@proof @have "set (butlast xs) \<subseteq> set xs" @qed
 
 theorem index_of_pqueue_update:
   "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> index_of_pqueue (list_update xs i (k, v)) m" by auto2
@@ -364,15 +379,15 @@ theorem key_within_range_update [backward2]:
   "key_within_range xs n \<Longrightarrow> i < length xs \<Longrightarrow> k < n \<Longrightarrow> key_within_range (list_update xs i (k, v)) n"
 @proof
   @let "xs' = list_update xs i (k, v)" @then
-  @have "\<forall>p. p \<in># mset xs' \<longrightarrow> fst p < n" @with
-    @obtain j where "j < length xs' \<and> p = xs' ! j" @then @case "j = i"
+  @have "\<forall>p\<in>set xs'. fst p < n" @with
+    @obtain j where "j < length xs' \<and> xs' ! j = p" @then @case "j = i"
   @end
 @qed
 
 theorem array_upd_idx_pqueue_rule [hoare_triple]:
-  "<idx_pqueue xs p * \<up>(i < length xs) * \<up>(k = fst (xs ! i))>
+  "<idx_pqueue xs n p * \<up>(i < length xs) * \<up>(k = fst (xs ! i))>
    array_upd i (k, v) (pqueue p)
-   <\<lambda>_. idx_pqueue (list_update xs i (k, v)) p>" by auto2
+   <\<lambda>_. idx_pqueue (list_update xs i (k, v)) n p>" by auto2
 
 setup {* del_prfstep_thm @{thm indexed_pqueue.collapse} *}
 
@@ -404,15 +419,21 @@ partial_function (heap) idx_bubble_down ::
 declare idx_bubble_down.simps [sep_proc_defs]
 
 theorem idx_bubble_down_rule [hoare_triple]:
-  "<idx_pqueue xs a * \<up>(is_heap_partial1 xs k)>
+  "<idx_pqueue xs n a * \<up>(is_heap_partial1 xs k)>
    idx_bubble_down a k
-   <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs) * \<up>(map_of_kv_list xs' = map_of_kv_list xs)>"
+   <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' n a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs)>"
 @proof
   @let "d = length xs - k"
   @strong_induct d arbitrary k xs
-  @contradiction
-  @apply_induct_hyp "length xs - s1 k" @have "length xs - s1 k < d"
-  @apply_induct_hyp "length xs - s2 k" @have "length xs - s2 k < d"
+  @case "s2 k < length xs" @with
+    @case "snd (xs ! s1 k) \<le> snd (xs ! s2 k)" @with
+      @apply_induct_hyp "length xs - s1 k" "s1 k" "list_swap xs k (s1 k)"
+    @end
+    @apply_induct_hyp "length xs - s2 k" "s2 k" "list_swap xs k (s2 k)"
+  @end
+  @case "s1 k < length xs" @with
+    @apply_induct_hyp "length xs - s1 k" "s1 k" "list_swap xs k (s1 k)"
+  @end
 @qed
 
 partial_function (heap) idx_bubble_up ::
@@ -430,12 +451,15 @@ partial_function (heap) idx_bubble_up ::
 declare idx_bubble_up.simps [sep_proc_defs]
 
 theorem idx_bubble_up_rule [hoare_triple]:
-  "<idx_pqueue xs a * \<up>(is_heap_partial2 xs k)>
+  "<idx_pqueue xs n a * \<up>(is_heap_partial2 xs k)>
    idx_bubble_up a k
-   <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs) * \<up>(map_of_kv_list xs' = map_of_kv_list xs)>"
+   <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' n a * \<up>(is_heap xs') * \<up>(mset xs' = mset xs)>"
 @proof
   @strong_induct k arbitrary xs
-  @apply_induct_hyp "par k"
+  @case "k = 0" @then
+  @case "k < length xs" @with
+    @apply_induct_hyp "par k" "list_swap xs k (par k)"
+  @end
 @qed
 
 definition delete_min_idx_pqueue ::
@@ -459,19 +483,14 @@ lemma hd_last_swap_eval_last [rewrite]:
   @have "hd xs = xs ! 0"
 @qed
 
-theorem delete_min_idx_pqueue_rule [hoare_triple]:
-  "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(length xs > 0)>
-   delete_min_idx_pqueue p
-   <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' r * \<up>(is_heap xs') * \<up>(x = hd xs) * \<up>(mset xs' = mset xs - {#x#})>" by auto2
-declare delete_min_idx_pqueue_def [sep_proc_defs del]
-
 setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
 
-theorem delete_min_idx_pqueue_map' [hoare_triple, hoare_create_case]:
-  "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(length xs > 0)>
+theorem delete_min_idx_pqueue_rule [hoare_triple, hoare_create_case]:
+  "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(length xs > 0)>
    delete_min_idx_pqueue p
-   <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' r * \<up>(map_of_kv_list xs' = delete_map (fst x) (map_of_kv_list xs))>"
-  by auto2
+   <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(x = hd xs) * \<up>(set xs' = set xs - {x})
+                                       * \<up>(map_of_alist xs' = delete_map (fst x) (map_of_alist xs))>" by auto2
+declare delete_min_idx_pqueue_def [sep_proc_defs del]
 
 definition insert_idx_pqueue ::
   "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where
@@ -479,14 +498,13 @@ definition insert_idx_pqueue ::
      p' \<leftarrow> idx_pqueue_push k v p;
      len \<leftarrow> idx_pqueue_length p';
      idx_bubble_up p' (len - 1);
-     return p'
-   }"
+     return p' }"
 declare insert_idx_pqueue_def [sep_proc_defs]
 
 theorem insert_idx_pqueue_rule [hoare_triple]:
-  "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(k < alen (index p)) * \<up>(\<not>has_key xs k)>
+  "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(k < n) * \<up>(\<not>has_key_alist xs k)>
    insert_idx_pqueue k v p
-   <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' r * \<up>(is_heap xs') * \<up>(map_of_kv_list xs' = map_of_kv_list xs {k \<rightarrow> v})>\<^sub>t" by auto2
+   <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>\<^sub>t" by auto2
 declare insert_idx_pqueue_def [sep_proc_defs del]
 
 definition update_idx_pqueue ::
@@ -499,52 +517,49 @@ definition update_idx_pqueue ::
         x \<leftarrow> array_nth (pqueue p) i;
         array_upd i (k, v) (pqueue p);
         (if snd x \<le> v then idx_bubble_down p i
-         else idx_bubble_up p i) })
-   }"
+         else idx_bubble_up p i) })}"
 declare update_idx_pqueue_def [sep_proc_defs]
 
 theorem update_idx_pqueue_rule [hoare_triple]:
-  "<idx_pqueue xs p * \<up>(is_heap xs) * \<up>(has_key xs k)>
+  "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(has_key_alist xs k)>
    update_idx_pqueue k v p
-   <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' p * \<up>(is_heap xs') * \<up>(map_of_kv_list xs' = map_of_kv_list xs {k \<rightarrow> v})>"
+   <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' n p * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>"
 @proof
   @contradiction
-  @obtain v' where "(k, v') \<in># mset xs" @then
-  @obtain i where "i < length xs \<and> (k, v') = xs ! i"
+  @obtain v' where "(k, v') \<in> set xs" @then
+  @obtain i where "i < length xs \<and> xs ! i = (k, v')"
 @qed
 declare update_idx_pqueue_def [sep_proc_defs del]
 
 section {* Outer interface *}
 
-definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
-  "idx_pqueue_map M p = (\<exists>\<^sub>Axs. idx_pqueue xs p * \<up>(is_heap xs) * \<up>(M = map_of_kv_list xs))"
+definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
+  "idx_pqueue_map M n p = (\<exists>\<^sub>Axs. idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(M = map_of_alist xs))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
 
 theorem heap_implies_hd_min2 [backward1]:
-  "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_kv_list xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
+  "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_alist xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
 @proof
-  @obtain i where "i < length xs \<and> xs ! i = (k, v)"
-  @have "v = snd (k, v)"
+  @obtain i where "i < length xs" "xs ! i = (k, v)"
+  @have "snd (hd xs) \<le> snd (xs ! i)"
 @qed
 
 theorem idx_pqueue_empty_map:
-  "<emp>
-   idx_pqueue_empty k x
-   <\<lambda>r. idx_pqueue_map empty_map r * \<up>(alen (index r) = k)>" by auto2
+  "<emp> idx_pqueue_empty n x <\<lambda>r. idx_pqueue_map empty_map n r>" by auto2
 
 theorem delete_min_idx_pqueue_map:
-  "<idx_pqueue_map M p * \<up>(M \<noteq> empty_map)>
+  "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
-   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) r * \<up>(\<forall>k v. M\<langle>k\<rangle> = Some v \<longrightarrow> snd x \<le> v)>" by auto2
+   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(\<forall>k v. M\<langle>k\<rangle> = Some v \<longrightarrow> snd x \<le> v)>" by auto2
 
 theorem insert_idx_pqueue_map:
-  "<idx_pqueue_map M p * \<up>(k < alen (index p)) * \<up>(M\<langle>k\<rangle> = None)>  
+  "<idx_pqueue_map M n p * \<up>(k < n) * \<up>(M\<langle>k\<rangle> = None)>
    insert_idx_pqueue k v p
-   <idx_pqueue_map (M {k \<rightarrow> v})>\<^sub>t" by auto2
+   <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 
 theorem update_idx_pqueue_map:
-  "<idx_pqueue_map M p * \<up>(M\<langle>k\<rangle> \<noteq> None)>
+  "<idx_pqueue_map M n p * \<up>(M\<langle>k\<rangle> \<noteq> None)>
    update_idx_pqueue k v p
-   <\<lambda>_. idx_pqueue_map (M {k \<rightarrow> v}) p>" by auto2
+   <\<lambda>_. idx_pqueue_map (M {k \<rightarrow> v}) n p>" by auto2
 
 end

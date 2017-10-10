@@ -174,4 +174,32 @@ lemma list_take_sublist_drop_eq [rewrite]:
   @have "drop r xs = sublist r (length xs) xs"
 @qed
 
+section {* Updating a set of elements in an array *}
+
+definition list_update_set :: "nat set \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
+  "list_update_set S f xs = list (\<lambda>i. if i \<in> S then f i else xs ! i) (length xs)"
+
+lemma list_update_set_length: "length (list_update_set S f xs) = length xs" by auto2
+setup {* add_forward_prfstep_cond @{thm list_update_set_length} [with_term "list_update_set ?S ?f ?xs"] *}
+
+lemma list_update_set_nth [rewrite]:
+  "xs' = list_update_set S f xs \<Longrightarrow> i < length xs' \<Longrightarrow> xs' ! i = (if i \<in> S then f i else xs ! i)" by auto2
+setup {* del_prfstep_thm @{thm list_update_set_def} *}
+
+fun list_update_set_impl :: "nat set \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> 'a list" where
+  "list_update_set_impl S f xs 0 = xs"
+| "list_update_set_impl S f xs (Suc k) =
+   (let xs' = list_update_set_impl S f xs k in
+      if k \<in> S then xs' [k := f k] else xs')"
+setup {* fold add_rewrite_rule @{thms list_update_set_impl.simps} *}
+setup {* register_wellform_data ("list_update_set_impl S f xs n", ["n \<le> length xs"]) *}
+
+lemma list_update_set_impl_ind [rewrite]:
+  "n \<le> length xs \<Longrightarrow> list_update_set_impl S f xs n =
+   list (\<lambda>i. if i < n then if i \<in> S then f i else xs ! i else xs ! i) (length xs)"
+@proof @induct n arbitrary xs @qed
+
+lemma list_update_set_impl_correct [rewrite]:
+  "list_update_set_impl S f xs (length xs) = list_update_set S f xs" by auto2
+
 end

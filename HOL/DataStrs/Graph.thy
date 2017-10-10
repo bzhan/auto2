@@ -1,5 +1,5 @@
 theory Graph
-imports "../Auto2_Main"
+imports Mapping Arrays_Ex
 begin
 
 section {* Graphs *}
@@ -277,7 +277,8 @@ setup {* del_prfstep_thm_str "@eqforward" @{thm inv_def} *}
 fun dijkstra_step :: "graph \<Rightarrow> nat \<Rightarrow> state \<Rightarrow> state" where
   "dijkstra_step G m (State e V) =
     (let V' = V \<union> {m};
-         e' = list (\<lambda>i. if i \<in> V' then e ! i else min (e ! m + weight G m i) (e ! i)) (size G)
+         W' = {..< size G} - V';
+         e' = list_update_set W' (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e
      in State e' V')"
 setup {* add_rewrite_rule @{thm dijkstra_step.simps} *}
 
