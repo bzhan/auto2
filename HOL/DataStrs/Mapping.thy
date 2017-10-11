@@ -118,27 +118,45 @@ lemma map_of_alist_update [rewrite]:
    map_of_alist xs' = (map_of_alist xs) {k \<rightarrow> v'}"
 @proof @have "map_of_alist xs' = map_of_aset (set xs')" @qed
 
-section {* General update function on a mapping *}
+section {* General construction and update of maps *}
 
-definition map_update_set :: "nat set \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> (nat, 'a) map \<Rightarrow> (nat, 'a) map" where [rewrite]:
-  "map_update_set S f m = Map (\<lambda>i. if i \<in> S then Some (f i) else m\<langle>i\<rangle>)"
+fun map_constr :: "(nat \<Rightarrow> bool) \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> (nat, 'a) map" where
+  "map_constr S f 0 = empty_map"
+| "map_constr S f (Suc k) = (let M = map_constr S f k in if S k then M {k \<rightarrow> f k} else M)"
+setup {* fold add_rewrite_rule @{thms map_constr.simps} *}
 
-fun map_update_set_impl :: "nat set \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> (nat, 'a) map \<Rightarrow> nat \<Rightarrow> (nat, 'a) map" where
-  "map_update_set_impl S f m 0 = m"
-| "map_update_set_impl S f m (Suc k) =
-   (let m' = map_update_set_impl S f m k in
-      if k \<in> S then m' { k \<rightarrow> f k } else m')"
-setup {* fold add_rewrite_rule @{thms map_update_set_impl.simps} *}
+lemma map_constr_eval [rewrite]:
+  "map_constr S f n = Map (\<lambda>i. if i < n then if S i then Some (f i) else None else None)"
+@proof @induct n @qed
 
-lemma map_update_set_impl_ind [rewrite]:
-  "map_update_set_impl S f m n =
-   Map (\<lambda>i. if i < n then if i \<in> S then Some (f i) else m\<langle>i\<rangle> else m\<langle>i\<rangle>)"
-@proof @induct n arbitrary m @qed
+definition map_update_all :: "(nat \<Rightarrow> 'a) \<Rightarrow> (nat, 'a) map \<Rightarrow> (nat, 'a) map" where [rewrite]:
+  "map_update_all f M = Map (\<lambda>i. if M\<langle>i\<rangle> \<noteq> None then Some (f i) else M\<langle>i\<rangle>)"
 
-lemma map_update_set_impl_correct [rewrite]:
-  "\<forall>i\<in>S. i < n \<Longrightarrow> map_update_set_impl S f m n = map_update_set S f m" by auto2
+fun map_update_all_impl :: "(nat \<Rightarrow> 'a) \<Rightarrow> (nat, 'a) map \<Rightarrow> nat \<Rightarrow> (nat, 'a) map" where
+  "map_update_all_impl f M 0 = M"
+| "map_update_all_impl f M (Suc k) =
+   (let M' = map_update_all_impl f M k in if M\<langle>k\<rangle> \<noteq> None then M' {k \<rightarrow> f k} else M')"
+setup {* fold add_rewrite_rule @{thms map_update_all_impl.simps} *}
 
-definition map_constr_set :: "nat set \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> (nat, 'a) map" where [rewrite]:
-  "map_constr_set S f = map_update_set S f empty_map"
+lemma map_update_all_impl_ind [rewrite]:
+  "map_update_all_impl f M n = Map (\<lambda>i. if i < n then if M\<langle>i\<rangle> \<noteq> None then Some (f i) else None else M\<langle>i\<rangle>)"
+@proof @induct n arbitrary M @qed
+
+lemma map_update_all_impl_correct [rewrite]:
+  "\<forall>i. M\<langle>i\<rangle> \<noteq> None \<longrightarrow> i < n \<Longrightarrow> map_update_all_impl f M n = map_update_all f M" by auto2
+
+section {* Set of keys of a mapping *}
+
+definition keys_of :: "('a, 'b) map \<Rightarrow> 'a set" where [rewrite]:
+  "keys_of M = {x. M\<langle>x\<rangle> \<noteq> None}"
+
+lemma keys_of_iff [rewrite_bidir]: "x \<in> keys_of M \<longleftrightarrow> M\<langle>x\<rangle> \<noteq> None" by auto2
+setup {* del_prfstep_thm @{thm keys_of_def} *}
+
+lemma keys_of_delete [rewrite]:
+  "keys_of (delete_map x M) = keys_of M - {x}" by auto2
+
+lemma map_update_all_keys_of [rewrite]:
+  "keys_of (map_update_all f M) = keys_of M" by auto2
 
 end

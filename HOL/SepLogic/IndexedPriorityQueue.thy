@@ -244,6 +244,15 @@ theorem has_index_unique_key [forward]:
   @end
 @qed
 
+lemma has_index_keys_of [rewrite_bidir]:
+  "index_of_pqueue xs m \<Longrightarrow> has_key_alist xs k \<longleftrightarrow> k \<in> keys_of m"
+@proof
+  @case "has_key_alist xs k" @with
+    @obtain v' where "(k, v') \<in> set xs" @then
+    @obtain i where "i < length xs \<and> xs ! i = (k, v')"
+  @end
+@qed
+
 lemma has_index_distinct [forward]:
   "index_of_pqueue xs m \<Longrightarrow> distinct xs"
 @proof
@@ -488,8 +497,8 @@ setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
 theorem delete_min_idx_pqueue_rule [hoare_triple, hoare_create_case]:
   "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(length xs > 0)>
    delete_min_idx_pqueue p
-   <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(x = hd xs) * \<up>(set xs' = set xs - {x})
-                                       * \<up>(map_of_alist xs' = delete_map (fst x) (map_of_alist xs))>" by auto2
+   <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(x = hd xs) *
+                    \<up>(map_of_alist xs' = delete_map (fst x) (map_of_alist xs))>" by auto2
 declare delete_min_idx_pqueue_def [sep_proc_defs del]
 
 definition insert_idx_pqueue ::
@@ -507,28 +516,40 @@ theorem insert_idx_pqueue_rule [hoare_triple]:
    <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>\<^sub>t" by auto2
 declare insert_idx_pqueue_def [sep_proc_defs del]
 
+definition has_key_idx_pqueue ::
+  "nat \<Rightarrow> 'a::{heap,linorder} indexed_pqueue \<Rightarrow> bool Heap" where
+  "has_key_idx_pqueue k p = do {
+    i_opt \<leftarrow> amap_lookup (index p) k;
+    return (i_opt \<noteq> None) }"
+declare has_key_idx_pqueue_def [sep_proc_defs]
+
+lemma has_key_idx_pqueue_rule [hoare_triple]:
+  "<idx_pqueue xs n p * \<up>(is_heap xs)>
+   has_key_idx_pqueue k p
+   <\<lambda>r. idx_pqueue xs n p * \<up>(r \<longleftrightarrow> has_key_alist xs k)>" by auto2
+
+lemma has_key_idx_heap_preserving [heap_presv_thms]:
+  "heap_preserving (has_key_idx_pqueue k p)" by auto2
+
+declare has_key_idx_pqueue_def [sep_proc_defs del]
+
 definition update_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> unit Heap" where
+  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where
   "update_idx_pqueue k v p = do {
     i_opt \<leftarrow> amap_lookup (index p) k;
-    (case i_opt of
-      None \<Rightarrow> raise ''update_idx_pqueue''
-    | Some i \<Rightarrow> do {
-        x \<leftarrow> array_nth (pqueue p) i;
-        array_upd i (k, v) (pqueue p);
-        (if snd x \<le> v then idx_bubble_down p i
-         else idx_bubble_up p i) })}"
+    if i_opt = None then
+      insert_idx_pqueue k v p
+    else do {
+      x \<leftarrow> array_nth (pqueue p) (the i_opt);
+      array_upd (the i_opt) (k, v) (pqueue p);
+      (if snd x \<le> v then do {idx_bubble_down p (the i_opt); return p}
+       else do {idx_bubble_up p (the i_opt); return p}) }}"
 declare update_idx_pqueue_def [sep_proc_defs]
 
 theorem update_idx_pqueue_rule [hoare_triple]:
-  "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(has_key_alist xs k)>
+  "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(k < n)>
    update_idx_pqueue k v p
-   <\<lambda>_. \<exists>\<^sub>Axs'. idx_pqueue xs' n p * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>"
-@proof
-  @contradiction
-  @obtain v' where "(k, v') \<in> set xs" @then
-  @obtain i where "i < length xs \<and> xs ! i = (k, v')"
-@qed
+   <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>\<^sub>t" by auto2
 declare update_idx_pqueue_def [sep_proc_defs del]
 
 section {* Outer interface *}
@@ -537,29 +558,34 @@ definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> nat \
   "idx_pqueue_map M n p = (\<exists>\<^sub>Axs. idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(M = map_of_alist xs))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
 
-theorem heap_implies_hd_min2 [backward1]:
+lemma heap_implies_hd_min2 [backward1]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_alist xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
 @proof
   @obtain i where "i < length xs" "xs ! i = (k, v)"
   @have "snd (hd xs) \<le> snd (xs ! i)"
 @qed
 
-theorem idx_pqueue_empty_map:
+lemma idx_pqueue_empty_map [hoare_triple]:
   "<emp> idx_pqueue_empty n x <\<lambda>r. idx_pqueue_map empty_map n r>" by auto2
 
-theorem delete_min_idx_pqueue_map:
+lemma delete_min_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
    <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(\<forall>k v. M\<langle>k\<rangle> = Some v \<longrightarrow> snd x \<le> v)>" by auto2
 
-theorem insert_idx_pqueue_map:
-  "<idx_pqueue_map M n p * \<up>(k < n) * \<up>(M\<langle>k\<rangle> = None)>
+lemma insert_idx_pqueue_map [hoare_triple]:
+  "<idx_pqueue_map M n p * \<up>(k < n) * \<up>(k \<notin> keys_of M)>
    insert_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 
-theorem update_idx_pqueue_map:
-  "<idx_pqueue_map M n p * \<up>(M\<langle>k\<rangle> \<noteq> None)>
+lemma has_key_idx_pqueue_map [hoare_triple]:
+  "<idx_pqueue_map M n p>
+   has_key_idx_pqueue k p
+   <\<lambda>r. idx_pqueue_map M n p * \<up>(r \<longleftrightarrow> k \<in> keys_of M)>" by auto2
+
+lemma update_idx_pqueue_map [hoare_triple]:
+  "<idx_pqueue_map M n p * \<up>(k < n)>
    update_idx_pqueue k v p
-   <\<lambda>_. idx_pqueue_map (M {k \<rightarrow> v}) n p>" by auto2
+   <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 
 end
