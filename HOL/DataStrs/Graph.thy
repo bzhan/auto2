@@ -259,30 +259,39 @@ setup {* fold add_rewrite_rule @{thms state.sel} *}
 setup {* add_forward_prfstep_cond @{thm state.collapse} [with_term "?state"] *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm state.simps(1)}) *}
 
-fun known_set :: "state \<Rightarrow> nat set" where
-  "known_set (State e M) = {..<length e} - keys_of M"
-setup {* add_rewrite_rule @{thm known_set.simps} *}
+definition unknown_set :: "state \<Rightarrow> nat set" where [rewrite]:
+  "unknown_set S = keys_of (heap S)"
+
+definition known_set :: "state \<Rightarrow> nat set" where [rewrite]:
+  "known_set S = {..<length (est S)} - unknown_set S"
 
 (* Invariant: for every vertex, the estimate is at least the shortest distance.
    Furthermore, for the known vertices the estimate is exact. *)
 definition inv :: "graph \<Rightarrow> state \<Rightarrow> bool" where [rewrite]:
-  "inv G S \<longleftrightarrow> (let V = known_set S in
+  "inv G S \<longleftrightarrow> (let V = known_set S; W = unknown_set S; M = heap S in
       (length (est S) = size G \<and> known_dists G V \<and>
+      keys_of M \<subseteq> verts G \<and>
+      (\<forall>i\<in>W. M\<langle>i\<rangle> = Some (est S ! i)) \<and>
       (\<forall>i\<in>V. est S ! i = dist G 0 i) \<and>
       (\<forall>i\<in>verts G. est S ! i = dist_on G 0 i V)))"
 
-lemma invE1 [forward]: "inv G S \<Longrightarrow> length (est S) = size G \<and> known_dists G (known_set S)" by auto2
+lemma invE1 [forward]: "inv G S \<Longrightarrow> length (est S) = size G \<and> known_dists G (known_set S) \<and> unknown_set S \<subseteq> verts G" by auto2
 lemma invE2 [forward]: "inv G S \<Longrightarrow> i \<in> known_set S \<Longrightarrow> est S ! i = dist G 0 i" by auto2
 lemma invE3 [forward]: "inv G S \<Longrightarrow> i \<in> verts G \<Longrightarrow> est S ! i = dist_on G 0 i (known_set S)" by auto2
+lemma invE4 [rewrite]: "inv G S \<Longrightarrow> i \<in> unknown_set S \<Longrightarrow> (heap S)\<langle>i\<rangle> = Some (est S ! i)" by auto2
 setup {* del_prfstep_thm_str "@eqforward" @{thm inv_def} *}
+
+lemma inv_unknown_set [rewrite]:
+  "inv G S \<Longrightarrow> unknown_set S = verts G - known_set S" by auto2
 
 fun dijkstra_step :: "graph \<Rightarrow> nat \<Rightarrow> state \<Rightarrow> state" where
   "dijkstra_step G m (State e M) =
     (let M' = delete_map m M;
-         e' = list_update_set (\<lambda>i. M'\<langle>i\<rangle> \<noteq> None) (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e;
+         e' = list_update_set (\<lambda>i. i \<in> keys_of M') (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e;
          M'' = map_update_all (\<lambda>i. min (e ! m + weight G m i) (e ! i)) M'
      in State e' M'')"
 setup {* add_rewrite_rule @{thm dijkstra_step.simps} *}
+setup {* register_wellform_data ("dijkstra_step G m S", ["inv G S", "m \<in> unknown_set S"]) *}
 
 lemma has_dist_on_larger [backward1]:
   "has_dist G m n \<Longrightarrow> has_dist_on G m n V \<Longrightarrow> dist_on G m n V = dist G m n \<Longrightarrow>
@@ -294,24 +303,18 @@ lemma has_dist_on_larger [backward1]:
   @have "is_shortest_path_on G m n p V'"
 @qed
 
-lemma dijkstra_step_known_set [rewrite]:
-  "inv G S \<Longrightarrow> V = known_set S \<Longrightarrow> m \<in> verts G - V \<Longrightarrow>
-   known_set (dijkstra_step G m S) = known_set S \<union> {m}"
-@proof
-  @let "S' = dijkstra_step G m S"
-  @have "keys_of (heap S') = keys_of (heap S) - {m}"
-  @have "\<forall>i. i \<in> known_set S' \<longleftrightarrow> i \<in> known_set S \<union> {m}"
-@qed
+lemma dijkstra_step_unknown_set [rewrite]:
+  "inv G S \<Longrightarrow> m \<in> unknown_set S \<Longrightarrow> unknown_set (dijkstra_step G m S) = unknown_set S - {m}" by auto2
 
-lemma dijkstra_step_preserves_inv:
-  "inv G S \<Longrightarrow> V = known_set S \<Longrightarrow> m \<in> verts G - V \<Longrightarrow>
-   \<forall>i\<in>verts G - V. dist_on G 0 i V \<ge> dist_on G 0 m V \<Longrightarrow>
-   inv G (dijkstra_step G m S)"
+lemma dijkstra_step_known_set [rewrite]:
+  "inv G S \<Longrightarrow> m \<in> unknown_set S \<Longrightarrow> known_set (dijkstra_step G m S) = known_set S \<union> {m}" by auto2
+
+lemma dijkstra_step_preserves_inv [backward]:
+  "inv G S \<Longrightarrow> m \<in> unknown_set S \<Longrightarrow> M = heap S \<Longrightarrow>
+   \<forall>i\<in>unknown_set S. the (M\<langle>i\<rangle>) \<ge> the (M\<langle>m\<rangle>) \<Longrightarrow> inv G (dijkstra_step G m S)"
 @proof
-  @let "V' = V \<union> {m}"
-  @have (@rule) "\<forall>i\<in>V. has_dist G 0 i \<and> has_dist_on G 0 i V' \<and> dist_on G 0 i V' = dist G 0 i" @with
-    @have "has_dist_on G 0 i V' \<and> dist_on G 0 i V' = dist G 0 i"
-  @end
+  @let "V = known_set S" "V' = V \<union> {m}"
+  @have (@rule) "\<forall>i\<in>V. has_dist G 0 i \<and> has_dist_on G 0 i V' \<and> dist_on G 0 i V' = dist G 0 i"
   @have "has_dist G 0 m \<and> dist G 0 m = dist_on G 0 m V"
   @have "has_dist_on G 0 m V' \<and> dist_on G 0 m V' = dist G 0 m"
   @have (@rule) "\<forall>i\<in>verts G - V'. has_dist_on G 0 i V' \<and> dist_on G 0 i V' = min (dist_on G 0 i V) (dist_on G 0 m V + weight G m i)"
@@ -329,6 +332,9 @@ definition dijkstra_start_state :: "graph \<Rightarrow> state" where [rewrite]:
 lemma dijkstra_start_known_set [rewrite]:
   "size G > 0 \<Longrightarrow> known_set (dijkstra_start_state G) = {0}" by auto2
     
+lemma dijkstra_start_unknown_set [rewrite]:
+  "size G > 0 \<Longrightarrow> unknown_set (dijkstra_start_state G) = verts G - {0}" by auto2
+
 lemma dijkstra_start_inv [backward]:
   "size G > 0 \<Longrightarrow> inv G (dijkstra_start_state G)"
 @proof
@@ -352,6 +358,6 @@ lemma dijkstra_start_inv [backward]:
 @qed
 
 lemma dijkstra_end_inv:
-  "inv G S \<Longrightarrow> known_set S = verts G \<Longrightarrow> \<forall>i\<in>verts G. has_dist G 0 i \<and> est S ! i = dist G 0 i" by auto2
+  "inv G S \<Longrightarrow> unknown_set S = {} \<Longrightarrow> \<forall>i\<in>verts G. has_dist G 0 i \<and> est S ! i = dist G 0 i" by auto2
 
 end

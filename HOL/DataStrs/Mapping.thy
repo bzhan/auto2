@@ -156,7 +156,10 @@ setup {* del_prfstep_thm @{thm keys_of_def} *}
 lemma keys_of_delete [rewrite]:
   "keys_of (delete_map x M) = keys_of M - {x}" by auto2
 
-lemma map_update_all_keys_of [rewrite]:
+lemma keys_of_map_constr [rewrite]:
+  "i \<in> keys_of (map_constr S f n) \<longleftrightarrow> (S i \<and> i < n)" by auto2
+
+lemma keys_of_map_update_all [rewrite]:
   "keys_of (map_update_all f M) = keys_of M" by auto2
 
 end

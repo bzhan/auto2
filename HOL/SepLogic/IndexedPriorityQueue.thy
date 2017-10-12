@@ -571,7 +571,8 @@ lemma idx_pqueue_empty_map [hoare_triple]:
 lemma delete_min_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
-   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(\<forall>k v. M\<langle>k\<rangle> = Some v \<longrightarrow> snd x \<le> v)>" by auto2
+   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(fst x \<in> keys_of M) * \<up>(M\<langle>fst x\<rangle> = Some (snd x)) *
+             \<up>(\<forall>k\<in>keys_of M. snd x \<le> the (M\<langle>k\<rangle>))>" by auto2
 
 lemma insert_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(k < n) * \<up>(k \<notin> keys_of M)>
