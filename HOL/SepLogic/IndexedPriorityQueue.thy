@@ -558,6 +558,11 @@ definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> nat \
   "idx_pqueue_map M n p = (\<exists>\<^sub>Axs. idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(M = map_of_alist xs))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
 
+setup {* add_forward_prfstep @{thm idx_pqueue_prec} *}
+lemma idx_pqueue_map_prec [sep_prec_thms]:
+  "h \<Turnstile> idx_pqueue_map M n p * F1 \<Longrightarrow> h \<Turnstile> idx_pqueue_map M' n' p * F2 \<Longrightarrow> M = M' \<and> n = n'" by auto2
+setup {* del_prfstep_thm @{thm idx_pqueue_prec} *}
+
 lemma heap_implies_hd_min2 [backward1]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_alist xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
 @proof
@@ -571,15 +576,15 @@ lemma idx_pqueue_empty_map [hoare_triple]:
 lemma delete_min_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
-   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(fst x \<in> keys_of M) * \<up>(M\<langle>fst x\<rangle> = Some (snd x)) *
-             \<up>(\<forall>k\<in>keys_of M. snd x \<le> the (M\<langle>k\<rangle>))>" by auto2
+   <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(fst x < n) *
+                \<up>(is_heap_min (fst x) M) * \<up>(M\<langle>fst x\<rangle> = Some (snd x))>" by auto2
 
 lemma insert_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(k < n) * \<up>(k \<notin> keys_of M)>
    insert_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 
-lemma has_key_idx_pqueue_map [hoare_triple]:
+lemma has_key_idx_pqueue_map [hoare_triple_direct]:
   "<idx_pqueue_map M n p>
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue_map M n p * \<up>(r \<longleftrightarrow> k \<in> keys_of M)>" by auto2
@@ -588,5 +593,10 @@ lemma update_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(k < n)>
    update_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
+
+setup {* del_prfstep_thm @{thm indexed_pqueue.collapse} *}
+setup {* del_prfstep_thm @{thm has_key_idx_pqueue_rule} *}
+setup {* del_prfstep_thm @{thm update_idx_pqueue_rule} *}
+setup {* del_prfstep_thm @{thm idx_pqueue_map_def} *}
 
 end

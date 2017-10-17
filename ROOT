@@ -77,19 +77,12 @@ session SepLogic_UnionFind = SepLogic_Base +
     "HOL/SepLogic/Union_Find"
     "HOL/DataStrs/Percolation_Func"
 
-session SepLogic_PQueue = SepLogic_Base +
-  description {*
-    Separation logic: priority queue (using array heap).
-  *}
-  theories
-    "HOL/SepLogic/IndexedPriorityQueue"
-
-session SepLogic_Graph = AUTO2 +
+session SepLogic_Graph = SepLogic_Base +
   description {*
     Graph theory.
   *}
   theories
-    "HOL/DataStrs/Graph"
+    "HOL/SepLogic/Dijkstra"
 
 session Auto2_FOL = FOL +
   description {*
