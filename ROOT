@@ -74,8 +74,7 @@ session SepLogic_UnionFind = SepLogic_Base +
     Union-find and applications.
   *}
   theories
-    "HOL/SepLogic/Union_Find"
-    "HOL/DataStrs/Percolation_Func"
+    "HOL/SepLogic/Percolation"
 
 session SepLogic_Graph = SepLogic_Base +
   description {*

@@ -4,9 +4,9 @@ begin
 
 type_synonym uf = "nat array \<times> nat array"
   
-definition is_uf :: "(nat\<times>nat) set \<Rightarrow> uf \<Rightarrow> assn" where
-  "is_uf R u = (\<exists>\<^sub>Al szl. snd u \<mapsto>\<^sub>a l * fst u \<mapsto>\<^sub>a szl *
-        \<up>(ufa_invar l \<and> ufa_\<alpha> l = R \<and> length szl = length l))"
+definition is_uf :: "nat \<Rightarrow> (nat\<times>nat) set \<Rightarrow> uf \<Rightarrow> assn" where
+  "is_uf n R u = (\<exists>\<^sub>Al szl. snd u \<mapsto>\<^sub>a l * fst u \<mapsto>\<^sub>a szl *
+        \<up>(ufa_invar l \<and> ufa_\<alpha> l = R \<and> length l = n \<and> length szl = n))"
 setup {* add_rewrite_ent_rule @{thm is_uf_def} *}
 
 definition uf_init :: "nat \<Rightarrow> uf Heap" where
@@ -17,11 +17,8 @@ definition uf_init :: "nat \<Rightarrow> uf Heap" where
    }"
 declare uf_init_def [sep_proc_defs]
 
-lemma triv_equiv_rel_iff [rewrite]:
-  "(x,y) \<in> {(i,i) |i. i<n} \<longleftrightarrow> (x = y \<and> x < n)" by blast
-
 lemma uf_init_rule [hoare_triple]:
-  "<emp> uf_init n <is_uf {(i,i) |i. i<n}>" by auto2
+  "<emp> uf_init n <is_uf n (uf_init_rel n)>" by auto2
 declare uf_init_def [sep_proc_defs del]
   
 partial_function (heap) uf_rep_of :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where [code]: 
@@ -89,9 +86,9 @@ definition uf_cmp :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool 
 declare uf_cmp_def [sep_proc_defs]
 
 lemma uf_cmp_rule [hoare_triple]:
-  "<is_uf R u>
+  "<is_uf n R u>
    uf_cmp u i j
-   <\<lambda>r. is_uf R u * \<up>(r \<longleftrightarrow> (i,j)\<in>R)>" by auto2
+   <\<lambda>r. is_uf n R u * \<up>(r \<longleftrightarrow> (i,j)\<in>R)>" by auto2
 declare uf_cmp_def [sep_proc_defs del]
 
 definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf Heap" where 
@@ -115,10 +112,10 @@ definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf 
   }"
 declare uf_union_def [sep_proc_defs]
 
-lemma uf_union_rule:
-  "<is_uf R u * \<up>(i \<in> Domain R) * \<up>(j \<in> Domain R)>
+lemma uf_union_rule [hoare_triple, hoare_create_case]:
+  "<is_uf n R u * \<up>(i < n) * \<up>(j < n)>
    uf_union u i j
-   <is_uf (per_union R i j)>" by auto2
+   <is_uf n (per_union R i j)>" by auto2
 declare uf_union_def [sep_proc_defs del]
 
 end

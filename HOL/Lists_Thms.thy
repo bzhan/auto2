@@ -160,6 +160,10 @@ setup {* add_forward_prfstep_cond @{thm length_take} [with_term "take ?n ?xs"] *
 lemma nth_take [rewrite]: "i < length (take n xs) \<Longrightarrow> take n xs ! i = xs ! i" by simp
 
 setup {* add_rewrite_rule @{thm List.take_0} *}
+setup {* add_rewrite_rule @{thm take_Suc_conv_app_nth} *}
+lemma take_length [rewrite]: "take (length xs) xs = xs" by simp
+
+setup {* add_forward_prfstep_cond @{thm List.set_take_subset} [with_term "set (take ?n ?xs)"] *}
 
 section {* drop *}
 

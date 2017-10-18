@@ -109,10 +109,13 @@ lemma ufa_\<alpha>_dom [rewrite]: "x \<in> Domain (ufa_\<alpha> l) \<longleftrig
 
 section {* Operations on rep_of array *}
 
+definition uf_init_rel :: "nat \<Rightarrow> (nat \<times> nat) set" where [rewrite]:
+  "uf_init_rel n = ufa_\<alpha> [0..<n]"
+
 lemma ufa_init_invar [resolve]: "ufa_invar [0..<n]" by auto2
 
 lemma ufa_init_correct [rewrite]:
-  "(x, y) \<in> ufa_\<alpha> [0..<n] \<longleftrightarrow> (x = y \<and> x < n)"
+  "(x, y) \<in> uf_init_rel n \<longleftrightarrow> (x = y \<and> x < n)"
 @proof @have "ufa_invar [0..<n]" @qed
 
 definition ufa_union :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list" where [rewrite_bidir]:
