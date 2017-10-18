@@ -1,62 +1,6 @@
 theory Interval_Tree
-imports Lists_Ex
+imports Lists_Ex Interval
 begin
-
-section {* Definition of interval *}
-
-datatype 'a interval = Interval (low: 'a) (high: 'a)
-setup {* add_rewrite_rule_back @{thm interval.collapse} *}
-setup {* add_rewrite_rule @{thm interval.case} *}
-setup {* fold add_rewrite_rule @{thms interval.sel} *}
-
-instantiation interval :: (linorder) linorder begin
-
-definition int_less: "(a < b) = (low a < low b | (low a = low b \<and> high a < high b))"
-definition int_less_eq: "(a \<le> b) = (low a < low b | (low a = low b \<and> high a \<le> high b))"
-
-instance proof
-  fix x y z :: "'a interval"
-  show a: "(x < y) = (x \<le> y \<and> \<not> y \<le> x)"
-    using int_less int_less_eq by force
-  show b: "x \<le> x"
-    by (simp add: int_less_eq)
-  show c: "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
-    by (smt int_less_eq dual_order.trans less_trans)
-  show d: "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y"
-    using int_less_eq a interval.expand int_less by fastforce
-  show e: "x \<le> y \<or> y \<le> x"
-    by (meson int_less_eq leI not_less_iff_gr_or_eq)
-qed end
-
-definition is_interval :: "('a::linorder) interval \<Rightarrow> bool" where [rewrite]:
-  "is_interval it \<longleftrightarrow> (low it \<le> high it)"
-setup {* add_property_const @{term is_interval} *}
-
-section {* Definition of interval with an index *}
-
-datatype 'a idx_interval = IdxInterval (int: "'a interval") (idx: nat)
-setup {* add_rewrite_rule_back @{thm idx_interval.collapse} *}
-setup {* add_rewrite_rule @{thm idx_interval.case} *}
-setup {* fold add_rewrite_rule @{thms idx_interval.sel} *}
-
-instantiation idx_interval :: (linorder) linorder begin
-
-definition iint_less: "(a < b) = (int a < int b | (int a = int b \<and> idx a < idx b))"
-definition iint_less_eq: "(a \<le> b) = (int a < int b | (int a = int b \<and> idx a \<le> idx b))"
-
-instance proof
-  fix x y z :: "'a idx_interval"
-  show a: "(x < y) = (x \<le> y \<and> \<not> y \<le> x)"
-    using iint_less iint_less_eq by force
-  show b: "x \<le> x"
-    by (simp add: iint_less_eq)
-  show c: "x \<le> y \<Longrightarrow> y \<le> z \<Longrightarrow> x \<le> z"
-    by (smt iint_less_eq dual_order.trans less_trans)
-  show d: "x \<le> y \<Longrightarrow> y \<le> x \<Longrightarrow> x = y"
-    using a idx_interval.expand iint_less iint_less_eq by auto
-  show e: "x \<le> y \<or> y \<le> x"
-    by (meson iint_less_eq leI not_less_iff_gr_or_eq)
-qed end
 
 section {* Definition of an interval tree *}
 
@@ -142,19 +86,9 @@ setup {* del_prfstep_thm @{thm max3_def} *}
 
 section {* Condition on the values *}
 
-fun tree_interval_inv :: "interval_tree \<Rightarrow> bool" where
-  "tree_interval_inv Tip = True"
-| "tree_interval_inv (Node l it m r) = (is_interval (int it) \<and> tree_interval_inv l \<and> tree_interval_inv r)"
+definition tree_interval_inv :: "interval_tree \<Rightarrow> bool" where [rewrite]:
+  "tree_interval_inv t \<longleftrightarrow> (\<forall>p\<in>tree_set t. is_interval (int p))"
 setup {* add_property_const @{term tree_interval_inv} *}
-setup {* fold add_rewrite_rule @{thms tree_interval_inv.simps} *}
-
-lemma tree_interval_invI [backward]:
-  "\<forall>p\<in>tree_set t. is_interval (int p) \<Longrightarrow> tree_interval_inv t"
-@proof @induct t @qed
-
-lemma tree_interval_invD [forward]:
-  "tree_interval_inv t \<Longrightarrow> p \<in> tree_set t \<Longrightarrow> is_interval (int p)"
-@proof @induct t @qed
 
 definition is_interval_tree :: "interval_tree \<Rightarrow> bool" where [rewrite]:
   "is_interval_tree t \<longleftrightarrow> (tree_sorted t \<and> tree_max_inv t \<and> tree_interval_inv t)"
@@ -314,12 +248,6 @@ lemma tree_delete_on_set [rewrite]:
 
 section {* Search on interval trees *}
 
-definition is_overlap :: "('a::linorder) interval \<Rightarrow> 'a interval \<Rightarrow> bool" where [rewrite]:
-  "is_overlap x y \<longleftrightarrow> (high x \<ge> low y \<and> high y \<ge> low x)"
-
-definition has_overlap :: "('a::linorder) idx_interval set \<Rightarrow> 'a interval \<Rightarrow> bool" where [rewrite]:
-  "has_overlap xs y \<longleftrightarrow> (\<exists>x\<in>xs. is_overlap (int x) y)"
-
 fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" where
   "tree_search Tip x = False"
 | "tree_search (Node l y m r) x =
@@ -327,10 +255,6 @@ fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool"
     else if l \<noteq> Tip \<and> tmax l \<ge> low x then tree_search l x
     else tree_search r x)"
 setup {* fold add_rewrite_rule @{thms tree_search.simps} *}
-
-lemma interval_less_to_le_low [forward]:
-  "(a::('a::linorder idx_interval)) < b \<Longrightarrow> low (int a) \<le> low (int b)"
-  by (metis eq_iff iint_less int_less less_imp_le)
 
 lemma tree_search_correct [rewrite]:
   "is_interval_tree t \<Longrightarrow> is_interval x \<Longrightarrow> tree_search t x \<longleftrightarrow> has_overlap (tree_set t) x"
