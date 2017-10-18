@@ -85,9 +85,10 @@ definition pop_array :: "'a::heap dynamic_array \<Rightarrow> ('a \<times> 'a dy
 declare pop_array_def [sep_proc_defs]
 
 theorem pop_array_rule [hoare_triple]:
-  "<dyn_array xs p * \<up>(length xs > 0)>
+  "<dyn_array xs p * \<up>(xs \<noteq> [])>
    pop_array p
-   <\<lambda>(x, r). dyn_array (butlast xs) r * \<up>(x = last xs)>" by auto2
+   <\<lambda>(x, r). dyn_array (butlast xs) r * \<up>(x = last xs)>"
+@proof @contradiction @have "last xs = xs ! (length xs - 1)" @qed
 
 theorem pop_array_heap_preserving [heap_presv_thms]:
   "heap_preserving (pop_array d)" by auto2

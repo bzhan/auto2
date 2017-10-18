@@ -2,9 +2,9 @@
    "Programming and Proving in Isabelle/HOL".
 
    The development of insertion and deletion on lists is essential for
-   verifying binary search trees and RBTs (both functional and imperative).
-   This idea follows the paper "Automatic Functional Correctness Proofs for
-   Functional Search Trees" by Tobias Nipkow.
+   verifying functional binary search trees and RBTs. This idea follows
+   the paper "Automatic Functional Correctness Proofs for Functional
+   Search Trees" by Tobias Nipkow.
 *)
 
 theory Lists_Ex
@@ -24,25 +24,6 @@ lemma itrev_eq_rev: "itrev x [] = rev x"
     @subgoal "x = a # b" @have "a # y = [a] @ y" @endgoal
   @end
 @qed
-
-section {* Merge sort *}
-
-fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
-  "merge_list xs [] = xs"
-| "merge_list [] ys = ys"
-| "merge_list (x # xs) (y # ys) = (
-    if x \<le> y then x # (merge_list xs (y # ys))
-    else y # (merge_list (x # xs) ys))"
-setup {* fold add_rewrite_rule @{thms merge_list.simps} *}
-setup {* add_fun_induct_rule (@{term_pat "merge_list (?a0.0::?'a::ord list) ?a1.0"}, @{thm merge_list.induct}) *}
-
-lemma merge_list_correct [rewrite]:
-  "set (merge_list xs ys) = set xs \<union> set ys"
-@proof @fun_induct "merge_list xs ys" @qed
-
-lemma merge_list_sorted [forward]:
-  "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> sorted (merge_list xs ys)"
-@proof @fun_induct "merge_list xs ys" @qed
 
 section {* Strict sorted *}
 

@@ -6,8 +6,8 @@ section {* Connectedness for a set of undirected edges. *}
 
 fun is_path :: "nat \<Rightarrow> (nat \<times> nat) set \<Rightarrow> nat list \<Rightarrow> bool" where
   "is_path n S [] = False"
-| "is_path n S [x] = (x < n)"
-| "is_path n S (x # y # ys) = (((x, y) \<in> S \<or> (y, x) \<in> S) \<and> is_path n S (y # ys))"
+| "is_path n S (x # xs) =
+   (if xs = [] then x < n else ((x, hd xs) \<in> S \<or> (hd xs, x) \<in> S) \<and> is_path n S xs)"
 setup {* fold add_rewrite_rule @{thms is_path.simps} *}
 
 definition has_path :: "nat \<Rightarrow> (nat \<times> nat) set \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
@@ -18,9 +18,7 @@ lemma nonempty_is_not_path [resolve]: "\<not>is_path n S []" by auto2
 
 lemma is_path_extend [forward]:
   "is_path n S p \<Longrightarrow> S \<subseteq> T \<Longrightarrow> is_path n T p"
-@proof @induct p @with
-  @subgoal "p = x # xs" @case "xs = []" @endgoal @end
-@qed
+@proof @induct p @qed
 
 lemma has_path_extend [forward]:
   "has_path n S i j \<Longrightarrow> S \<subseteq> T \<Longrightarrow> has_path n T i j" by auto2
@@ -36,13 +34,11 @@ setup {* add_prfstep_check_req ("path_join p q", "joinable p q") *}
 lemma path_join_hd [rewrite]: "p \<noteq> [] \<Longrightarrow> hd (path_join p q) = hd p" by auto2
 
 lemma path_join_last [rewrite]: "joinable p q \<Longrightarrow> q \<noteq> [] \<Longrightarrow> last (path_join p q) = last q"
-@proof @case "tl q = []" @qed
+@proof @have "q = hd q # tl q" @case "tl q = []" @qed
 
 lemma path_join_is_path [backward]:
   "joinable p q \<Longrightarrow> is_path n S p \<Longrightarrow> is_path n S q \<Longrightarrow> is_path n S (path_join p q)"
-@proof @induct p @with
-  @subgoal "p = x # xs" @case "xs = []" @endgoal @end
-@qed
+@proof @induct p @qed
 
 lemma has_path_trans [forward]:
   "has_path n S i j \<Longrightarrow> has_path n S j k \<Longrightarrow> has_path n S i k"
@@ -99,7 +95,8 @@ lemma is_path_per_union [rewrite]:
       @subgoal "p = x # xs" @case "xs = []"
         @have "(x, hd xs) \<in> per_union R a b" @with
           @have "is_valid_graph n S"
-          @case "(x, hd xs) \<in> S'"
+          @case "(x, hd xs) \<in> S'" @with @case "(x, hd xs) \<in> S" @end
+          @case "(hd xs, x) \<in> S'" @with @case "(hd xs, x) \<in> S" @end
         @end
       @endgoal @end
     @end
@@ -118,7 +115,7 @@ lemma connected_rel_init [rewrite]:
   @have "\<forall>i j. has_path n {} i j \<longleftrightarrow> (i, j) \<in> uf_init_rel n" @with
     @case "has_path n {} i j" @with
       @obtain p where "is_path n {} p" "hd p = i" "last p = j"
-      @have "tl p = []"
+      @have "p = hd p # tl p"
     @end
   @end
 @qed

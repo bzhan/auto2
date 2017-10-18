@@ -9,7 +9,7 @@ section {* Definition of lists *}
 setup {* add_resolve_prfstep @{thm list.distinct(2)} *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm list.simps(1)}) *}
 setup {* fold add_rewrite_rule @{thms List.list.sel(1,3)} *}
-setup {* add_forward_prfstep @{thm list.collapse} *}
+setup {* add_rewrite_rule @{thm list.collapse} *}
 setup {* add_var_induct_rule @{thm list.induct} *}
 
 section {* Length *}
@@ -19,6 +19,7 @@ theorem length_one [rewrite]: "length [x] = 1" by simp
 lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
 setup {* add_rewrite_rule @{thm length_tl} *}
 lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
+lemma length_gt_zero [forward]: "length xs > 0 \<Longrightarrow> xs \<noteq> []" by simp
 
 section {* Append *}
 
@@ -55,6 +56,9 @@ setup {* add_resolve_prfstep @{thm List.finite_set} *}
 
 setup {* add_resolve_prfstep (equiv_forward_th @{thm in_set_conv_nth}) *}
 setup {* add_resolve_prfstep @{thm nth_mem} *}
+
+setup {* add_forward_prfstep_cond @{thm List.hd_in_set} [with_term "hd ?xs", with_term "set ?xs"] *}
+setup {* add_forward_prfstep_cond @{thm List.last_in_set} [with_term "last ?as", with_term "set ?as"] *}
 
 section {* sorted *}
 
@@ -126,6 +130,7 @@ setup {* add_rewrite_rule @{thm List.last_ConsR} *}
 setup {* add_rewrite_rule @{thm List.last_appendR} *}
 setup {* add_rewrite_rule @{thm List.last_snoc} *}
 lemma last_mem [resolve]: "xs \<noteq> [] \<Longrightarrow> last xs \<in> set xs" by simp
+setup {* add_rewrite_rule_back @{thm last_conv_nth} *}
 
 section {* butlast *}
 
@@ -195,6 +200,12 @@ setup {* add_backward_prfstep @{thm Multiset.nth_mem_mset} *}
 
 lemma in_mset_conv_nth [resolve]: "x \<in># mset xs \<Longrightarrow> \<exists>i<length xs. x = xs ! i"
   by (metis in_multiset_in_set in_set_conv_nth)
+
+lemma hd_in_mset: "xs \<noteq> [] \<Longrightarrow> hd xs \<in># mset xs" by simp
+setup {* add_forward_prfstep_cond @{thm hd_in_mset} [with_term "hd ?xs", with_term "mset ?xs"] *}
+
+lemma last_in_mset: "xs \<noteq> [] \<Longrightarrow> last xs \<in># mset xs" by simp
+setup {* add_forward_prfstep_cond @{thm last_in_mset} [with_term "last ?xs", with_term "mset ?xs"] *}
 
 section {* upto lists *}
 

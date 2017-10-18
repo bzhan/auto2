@@ -48,7 +48,7 @@ setup {* add_forward_prfstep_cond @{thm op_int_is_interval} [with_term "op_int (
 lemma rect_inter_next_rule [hoare_triple]:
   "<a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b * \<up>(is_rect_list rects) * \<up>(k < length (all_ops rects))>
    rect_inter_next a b k
-   <\<lambda>r. a \<mapsto>\<^sub>a all_ops rects * int_tree_set (apply_ops_k_next rects S k) r * true>" by auto2
+   <\<lambda>r. a \<mapsto>\<^sub>a all_ops rects * int_tree_set (apply_ops_k_next rects S k) r>\<^sub>t" by auto2
 
 partial_function (heap) rect_inter_impl ::
   "nat operation array \<Rightarrow> int_tree \<Rightarrow> nat \<Rightarrow> bool Heap" where
@@ -75,7 +75,7 @@ lemma rect_inter_to_fun_ind [hoare_triple]:
   "<a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b *
    \<up>(is_rect_list rects) * \<up>(k < length (all_ops rects))>
    rect_inter_impl a b k
-   <\<lambda>r. a \<mapsto>\<^sub>a all_ops rects * \<up>(r \<longleftrightarrow> rect_inter rects S k) * true>"
+   <\<lambda>r. a \<mapsto>\<^sub>a all_ops rects * \<up>(r \<longleftrightarrow> rect_inter rects S k)>\<^sub>t"
 @proof
   @let "d = length (all_ops rects) - k"
   @strong_induct d arbitrary k S b
@@ -104,7 +104,7 @@ declare rect_inter_all_def [sep_proc_defs]
 lemma rect_inter_all_correct:
   "<\<up>(is_rect_list rects)>
    rect_inter_all rects
-   <\<lambda>r. \<up>(r = has_rect_overlap rects) * true>"
+   <\<lambda>r. \<up>(r = has_rect_overlap rects)>\<^sub>t"
 @proof @case "length (all_ops rects) > 0" @qed
 
 end

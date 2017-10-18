@@ -2,7 +2,7 @@
    based on List_Seg and Open_List theories in Separation_Logic_Imperative_HOL/Examples. *)
 
 theory LinkedList
-imports SepAuto "../DataStrs/Lists_Ex"
+imports SepAuto
 begin
 
 subsection {* Nodes *}
@@ -54,7 +54,8 @@ lemma lseg_prec [forward]:
   "h \<Turnstile> lseg l p None * F1 \<Longrightarrow> h \<Turnstile> lseg l' p None * F2 \<Longrightarrow> l = l'"
 @proof
   @induct l arbitrary p l' F1 F2 @with
-    @subgoal "l = a # b" @case "l' = []" @endgoal
+    @subgoal "l = []" @induct l' @endgoal
+    @subgoal "l = a # b" @induct l' @endgoal
   @end
 @qed
 
@@ -106,7 +107,8 @@ definition os_is_empty :: "'a::heap os_list \<Rightarrow> bool Heap" where
 declare os_is_empty_def [sep_proc_defs]
 
 lemma os_is_empty_rule:
-  "<os_list xs b> os_is_empty b <\<lambda>r. os_list xs b * \<up>(r \<longleftrightarrow> xs = [])>" by auto2
+  "<os_list xs b> os_is_empty b <\<lambda>r. os_list xs b * \<up>(r \<longleftrightarrow> xs = [])>"
+@proof @case "xs = []" @have "xs = hd xs # tl xs" @qed
 
 definition os_prepend :: "'a \<Rightarrow> 'a::heap os_list \<Rightarrow> 'a os_list Heap" where
   "os_prepend a n = do { p \<leftarrow> ref (Node a n); return (Some p) }"
@@ -125,7 +127,7 @@ lemma os_pop_rule [hoare_triple]:
   "<os_list xs (Some p)>
    os_pop (Some p)
    <\<lambda>(x,r'). os_list (tl xs) r' * p \<mapsto>\<^sub>r (Node x r') * \<up>(x = hd xs)>"
-@proof @case "xs = []" @qed
+@proof @case "xs = []" @have "xs = hd xs # tl xs" @qed
 
 subsubsection {* Iterator *}
 
@@ -156,8 +158,8 @@ theorem os_it_init_rule [hoare_triple]:
 theorem os_is_it_rule [forward_ent]: "os_is_it l p l' it \<Longrightarrow>\<^sub>A os_list l p" by auto2
 
 theorem os_is_has_next_rule [hoare_triple]:
-  "<os_is_it l p l' it> os_it_has_next it <\<lambda>r. os_is_it l p l' it * \<up>(r = (l' \<noteq> []))>"
-  by auto2
+  "<os_is_it l p l' it> os_it_has_next it <\<lambda>r. os_is_it l p l' it * \<up>(r \<longleftrightarrow> (l' \<noteq> []))>"
+@proof @case "l' = []" @have "l' = hd l' # tl l'" @qed
 
 theorem os_is_has_next_rule' [forward_ent]:
   "os_is_it l p (x # xs) it \<Longrightarrow>\<^sub>A true * \<up>(it \<noteq> None)" by auto2
@@ -327,6 +329,25 @@ lemma insertion_sort_rule:
 
 subsection {* Merging two lists *}
 
+section {* Merge sort *}
+
+fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+  "merge_list xs [] = xs"
+| "merge_list [] ys = ys"
+| "merge_list (x # xs) (y # ys) = (
+    if x \<le> y then x # (merge_list xs (y # ys))
+    else y # (merge_list (x # xs) ys))"
+setup {* fold add_rewrite_rule @{thms merge_list.simps} *}
+setup {* add_fun_induct_rule (@{term_pat "merge_list (?a0.0::?'a::ord list) ?a1.0"}, @{thm merge_list.induct}) *}
+
+lemma merge_list_correct [rewrite]:
+  "set (merge_list xs ys) = set xs \<union> set ys"
+@proof @fun_induct "merge_list xs ys" @qed
+
+lemma merge_list_sorted [forward]:
+  "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> sorted (merge_list xs ys)"
+@proof @fun_induct "merge_list xs ys" @qed
+
 partial_function (heap) merge_os_list ::
   "('a::{heap, ord}) os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
 "merge_os_list p q = (
@@ -347,13 +368,13 @@ partial_function (heap) merge_os_list ::
      })"
 declare merge_os_list.simps [sep_proc_defs]
 
-lemma merge_list_keys [hoare_triple]:
+lemma merge_os_list_keys [hoare_triple]:
   "<os_list xs p * os_list ys q>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(set zs = set xs \<union> set ys)>"
 @proof @fun_induct "merge_list xs ys" arbitrary p q @qed
 
-lemma merge_list_sorted [hoare_triple]:
+lemma merge_os_list_sorted [hoare_triple]:
   "<os_list xs p * os_list ys q * \<up>(sorted xs) * \<up>(sorted ys)>
   merge_os_list p q
   <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(sorted zs)>"

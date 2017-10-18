@@ -149,7 +149,8 @@ setup {* add_forward_prfstep_cond @{thm del_in_set_all_ops} [with_term "del_op ?
 
 lemma all_ops_sorted [forward]: "sorted (all_ops rects)" by auto2
 
-lemma all_ops_nonempty [backward]: "rects \<noteq> [] \<Longrightarrow> length (all_ops rects) > 0" by auto2
+lemma all_ops_nonempty [backward]: "rects \<noteq> [] \<Longrightarrow> all_ops rects \<noteq> []"
+@proof @have "length (all_ops rects) > 0" @qed
 
 setup {* del_prfstep_thm @{thm all_ops_def} *}
 

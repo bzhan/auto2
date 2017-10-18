@@ -34,9 +34,8 @@ lemma rev_to_fun [hoare_triple]:
 declare rev.simps [sep_proc_defs del]
 
 lemma rev_is_rev:
-  "<p \<mapsto>\<^sub>a xs * \<up>(length xs > 0)>
+  "<p \<mapsto>\<^sub>a xs * \<up>(xs \<noteq> [])>
    rev p 0 (length xs - 1)
-   <\<lambda>_. p \<mapsto>\<^sub>a List.rev xs>"
-@proof @case "xs = []" @qed
+   <\<lambda>_. p \<mapsto>\<^sub>a List.rev xs>" by auto2
 
 end

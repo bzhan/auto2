@@ -65,7 +65,7 @@ definition is_heap_partial1 :: "('a \<times> 'b::linorder) list \<Rightarrow> na
   "is_heap_partial1 xs k = (\<forall>i j. eq_pred i j \<longrightarrow> i \<noteq> k \<longrightarrow> j < length xs \<longrightarrow> snd (xs ! i) \<le> snd (xs ! j))"
 
 theorem swap_zero_is_heap_partial1:
-  "is_heap xs \<Longrightarrow> length xs > 0 \<Longrightarrow> xs' = list_swap xs 0 (length xs - 1) \<Longrightarrow> is_heap_partial1 (butlast xs') 0"
+  "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> xs' = list_swap xs 0 (length xs - 1) \<Longrightarrow> is_heap_partial1 (butlast xs') 0"
 @proof
   @have "\<forall>i j. eq_pred i j \<longrightarrow> i \<noteq> 0 \<longrightarrow> j < length xs - 1 \<longrightarrow> snd (xs' ! i) \<le> snd (xs' ! j)" @with
     @case "j = 0"
@@ -367,13 +367,13 @@ definition idx_pqueue_pop :: "'a::heap indexed_pqueue \<Rightarrow> ((nat \<time
 declare idx_pqueue_pop_def [sep_proc_defs]
 
 theorem index_of_pqueue_pop [backward2]:
-  "index_of_pqueue xs m \<Longrightarrow> length xs > 0 \<Longrightarrow>
+  "index_of_pqueue xs m \<Longrightarrow> xs \<noteq> [] \<Longrightarrow>
    index_of_pqueue (butlast xs) (delete_map (fst (last xs)) m)"
 (* Again, need to make rewriting into x + n form explicit. *)
 @proof @have "length xs = length (butlast xs) + 1" @qed
 
 theorem idx_pqueue_pop_rule [hoare_triple]:
-  "<idx_pqueue xs n p * \<up>(length xs > 0)>
+  "<idx_pqueue xs n p * \<up>(xs \<noteq> [])>
    idx_pqueue_pop p
    <\<lambda>(x, r). idx_pqueue (butlast xs) n r * \<up>(x = last xs)>"
 @proof @have "set (butlast xs) \<subseteq> set xs" @qed
@@ -483,7 +483,7 @@ definition delete_min_idx_pqueue ::
 declare delete_min_idx_pqueue_def [sep_proc_defs]
 
 lemma hd_last_swap_eval_last [rewrite]:
-  "length xs > 0 \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
+  "xs \<noteq> [] \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
 @proof
   @let "xs' = list_swap xs 0 (length xs - 1)"
   @have "last xs' = xs' ! (length xs - 1)"
@@ -491,9 +491,9 @@ lemma hd_last_swap_eval_last [rewrite]:
 @qed
 
 setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
-
+    
 theorem delete_min_idx_pqueue_rule [hoare_triple, hoare_create_case]:
-  "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(length xs > 0)>
+  "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(xs \<noteq> [])>
    delete_min_idx_pqueue p
    <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(x = hd xs) *
                     \<up>(map_of_alist xs' = delete_map (fst x) (map_of_alist xs))>" by auto2

@@ -41,13 +41,13 @@ setup {* register_wellform_data ("path_join G p q", ["joinable G p q"]) *}
 setup {* add_prfstep_check_req ("path_join G p q", "joinable G p q") *}
 
 lemma path_join_is_path:
-  "joinable G p q \<Longrightarrow> is_path G (path_join G p q)" by auto2
+  "joinable G p q \<Longrightarrow> is_path G (path_join G p q)"
+@proof @have "q = hd q # tl q" @qed
 setup {* add_forward_prfstep_cond @{thm path_join_is_path} [with_term "path_join ?G ?p ?q"] *}
 
 fun path_weight :: "graph \<Rightarrow> nat list \<Rightarrow> nat" where
   "path_weight G [] = 0"
-| "path_weight G [x] = 0"
-| "path_weight G (x # y # ys) = weight G x y + path_weight G (y # ys)"
+| "path_weight G (x # xs) = (if xs = [] then 0 else weight G x (hd xs) + path_weight G xs)"
 setup {* fold add_rewrite_rule @{thms path_weight.simps} *}
 
 lemma path_weight_sum [rewrite]:
@@ -61,7 +61,7 @@ lemma path_set_mem [rewrite]:
   "p \<in> path_set G m n \<longleftrightarrow> is_path G p \<and> hd p = m \<and> last p = n" by simp
 
 lemma path_join_set: "joinable G p q \<Longrightarrow> path_join G p q \<in> path_set G (hd p) (last q)"
-@proof @case "tl q = []" @qed
+@proof @have "q = hd q # tl q" @case "tl q = []" @qed
 setup {* add_forward_prfstep_cond @{thm path_join_set} [with_term "path_join ?G ?p ?q"] *}
 
 section {* Shortest paths *}
@@ -258,7 +258,7 @@ section {* Invariant for the Dijkstra's algorithm *}
 datatype state = State (est: "nat list") (heap: "(nat, nat) map")
 
 setup {* fold add_rewrite_rule @{thms state.sel} *}
-setup {* add_forward_prfstep_cond @{thm state.collapse} [with_term "?state"] *}
+setup {* add_rewrite_rule_back_cond @{thm state.collapse} [with_cond "?state \<noteq> State ?e ?h"] *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm state.simps(1)}) *}
 
 definition unknown_set :: "state \<Rightarrow> nat set" where [rewrite]:
