@@ -6,7 +6,7 @@ begin
 
 section {* Balance function *}
 
-definition balanceR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+definition balanceR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balanceR l k v r =
    (if cl r = R then
       let lr = lsub r; rr = rsub r in
@@ -15,7 +15,7 @@ definition balanceR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rig
       else Node l B k v r
     else Node l B k v r)"
   
-definition balance :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+definition balance :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balance l k v r =
    (if cl l = R then
       let ll = lsub l; rl = rsub l in
@@ -54,7 +54,7 @@ setup {* fold del_prfstep_thm [@{thm balanceR_def}, @{thm balance_def}] *}
 
 section {* ins function *}
 
-fun ins :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+fun ins :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "ins x v Leaf = Node Leaf R x v Leaf"
 | "ins x v (Node l c y w r) =
    (if c = B then
@@ -87,7 +87,7 @@ lemma ins_inorder_pairs [rewrite]:
 
 section {* Paint function *}
 
-fun paint :: "color \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+fun paint :: "color \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "paint c Leaf = Leaf"
 | "paint c (Node l c' x v r) = Node l c x v r"
 setup {* fold add_rewrite_rule @{thms paint.simps} *}
@@ -106,7 +106,7 @@ lemma paint_in_traverse_pairs [rewrite]:
 
 section {* Insert function *}
 
-definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "rbt_insert x v t = paint B (ins x v t)"
 
 theorem insert_is_rbt [forward]:
@@ -120,7 +120,7 @@ theorem insert_rbt_map [rewrite]:
 
 section {* Search on sorted trees and its correctness *}
 
-fun rbt_search :: "('a::ord, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b option" where
+fun rbt_search :: "('a::ord, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b option" where
   "rbt_search Leaf x = None"
 | "rbt_search (Node l c y w r) x =
   (if x = y then Some w
@@ -134,7 +134,7 @@ theorem rbt_search_correct [rewrite]:
     
 section {* balL and balR *}
 
-definition balL :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+definition balL :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balL l k v r = (let lr = lsub r in
    if cl l = R then Node (Node (lsub l) B (key l) (val l) (rsub l)) R k v r
    else if r = Leaf then Node l R k v r
@@ -146,7 +146,7 @@ definition balL :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightar
 setup {* register_wellform_data ("balL l k v r", ["black_depth l + 1 = black_depth r"]) *}
 setup {* add_prfstep_check_req ("balL l k v r", "black_depth l + 1 = black_depth r") *}
   
-definition balR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+definition balR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balR l k v r = (let rl = rsub l in
    if cl r = R then Node l R k v (Node (lsub r) B (key r) (val r) (rsub r))
    else if l = Leaf then Node l R k v r
@@ -197,7 +197,7 @@ setup {* fold del_prfstep_thm [@{thm balL_def}, @{thm balR_def}] *}
 
 section {* Combine *}
 
-fun combine :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+fun combine :: "('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "combine Leaf t = t"
 | "combine t Leaf = t"
 | "combine (Node l1 c1 k1 v1 r1) (Node l2 c2 k2 v2 r2) = (
@@ -220,7 +220,7 @@ fun combine :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('
      else
        Node (combine (Node l1 c1 k1 v1 r1) l2) R k2 v2 r2)"
 setup {* fold add_rewrite_rule @{thms combine.simps} *}
-setup {* add_fun_induct_rule (@{term_pat "combine (?a0.0::(?'a,?'b) pre_rbt) ?a1.0"}, @{thm combine.induct}) *}
+setup {* add_fun_induct_rule (@{term_pat "combine (?a0.0::(?'a,?'b) rbt) ?a1.0"}, @{thm combine.induct}) *}
 
 lemma combine_bd:
   "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> cl_inv' lt \<Longrightarrow> cl_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
@@ -263,7 +263,7 @@ setup {* fold del_prfstep_thm @{thms combine.simps} *}
 
 section {* Deletion *}
 
-fun del :: "'a::linorder \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+fun del :: "'a::linorder \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "del x Leaf = Leaf"
 | "del x (Node l _ k v r) =
     (if x = k then combine l r
@@ -302,7 +302,7 @@ lemma del_in_traverse_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (del x t) = remove_elt_pairs x (rbt_in_traverse_pairs t)"
 @proof @induct t @qed
 
-definition delete :: "'a::linorder \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
+definition delete :: "'a::linorder \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "delete x t = paint B (del x t)"
 
 theorem delete_is_rbt [forward]:

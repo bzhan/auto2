@@ -100,12 +100,12 @@ lemma tree_sortedD1 [forward]:
 lemma tree_sortedD2 [forward]:
   "tree_sorted (Node l it m r) \<Longrightarrow> x \<in> tree_set r \<Longrightarrow> x > it" by auto2
 
-lemma inorder_preserve_set [rewrite_back]:
-  "set (in_traverse t) = tree_set t"
+lemma inorder_preserve_set [rewrite]:
+  "tree_set t = set (in_traverse t)"
 @proof @induct t @qed
 
-lemma inorder_sorted [rewrite_back]:
-  "strict_sorted (in_traverse t) \<longleftrightarrow> tree_sorted t"
+lemma inorder_sorted [rewrite]:
+  "tree_sorted t \<longleftrightarrow> strict_sorted (in_traverse t)"
 @proof @induct t @qed
 
 (* Use definition in terms of in_traverse from now on. *)
@@ -340,7 +340,6 @@ lemma tree_search_correct [rewrite]:
       @let "t = Node l y m r"
       @case "is_overlap (int y) x" @then
       @case "l \<noteq> Tip \<and> tmax l \<ge> low x" @with
-        @case "tree_search t x" @then
         @obtain "p\<in>tree_set l" where "high (int p) = tmax l"
         @case "is_overlap (int p) x"
       @end

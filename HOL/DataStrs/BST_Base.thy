@@ -33,7 +33,7 @@ fun in_traverse_pairs :: "('a, 'b) tree \<Rightarrow> ('a \<times> 'b) list" whe
 | "in_traverse_pairs (Node l k v r) = (in_traverse_pairs l) @ [(k, v)] @ (in_traverse_pairs r)"
 setup {* fold add_rewrite_rule @{thms in_traverse_pairs.simps} *}
 
-theorem in_traverse_fst [rewrite]:
+lemma in_traverse_fst [rewrite]:
   "map fst (in_traverse_pairs t) = in_traverse t"
 @proof @induct t @qed
 
@@ -50,20 +50,16 @@ fun tree_sorted :: "('a::linorder, 'b) tree \<Rightarrow> bool" where
 setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
 setup {* add_property_const @{term tree_sorted} *}
 
-theorem tree_sorted_lr [forward]:
+lemma tree_sorted_lr [forward]:
   "tree_sorted (Node l k v r) \<Longrightarrow> tree_sorted l \<and> tree_sorted r" by auto2
 
-theorem inorder_preserve_set [rewrite_back]:
-  "set (in_traverse t) = tree_set t"
+lemma inorder_preserve_set [rewrite]:
+  "tree_set t = set (in_traverse t)"
 @proof @induct t @qed
 
-theorem inorder_sorted [rewrite_back]:
-  "strict_sorted (in_traverse t) = tree_sorted t"
+lemma inorder_pairs_sorted [rewrite]:
+  "tree_sorted t \<longleftrightarrow> strict_sorted (map fst (in_traverse_pairs t))"
 @proof @induct t @qed
-
-theorem inorder_pairs_sorted:
-  "tree_sorted t \<Longrightarrow> strict_sorted (map fst (in_traverse_pairs t))" by auto2
-setup {* add_forward_prfstep_cond @{thm inorder_pairs_sorted} [with_term "in_traverse_pairs ?t"] *}
 
 (* Use definition in terms of in_traverse from now on. *)
 setup {* fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps}) *}

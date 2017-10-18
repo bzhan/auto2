@@ -107,7 +107,7 @@ declare btree_insert.simps [sep_proc_defs]
 lemma btree_insert_to_fun [hoare_triple]:
   "<btree t b>
    btree_insert k v b
-   <\<lambda>r. btree (tree_insert k v t) r>"
+   <btree (tree_insert k v t)>"
 @proof @induct t arbitrary b @qed
 declare btree_insert.simps [sep_proc_defs del]
 
@@ -129,7 +129,7 @@ declare btree_del_min.simps [sep_proc_defs]
 lemma btree_del_min_to_fun [hoare_triple]:
   "<btree t b * \<up>(b \<noteq> None)>
    btree_del_min b
-   <\<lambda>r. btree (snd (del_min t)) (snd r) * true * \<up>(fst(r) = fst (del_min t))>"
+   <\<lambda>r. btree (snd (del_min t)) (snd r) * \<up>(fst(r) = fst (del_min t))>\<^sub>t"
 @proof @induct t arbitrary b @qed
 declare btree_del_min.simps [sep_proc_defs del]
 
@@ -149,7 +149,7 @@ declare btree_del_elt_def [sep_proc_defs]
 lemma btree_del_elt_to_fun [hoare_triple]:
   "<btree (tree.Node lt x v rt) b>
    btree_del_elt b
-   <\<lambda>r. btree (delete_elt_tree (tree.Node lt x v rt)) r * true>" by auto2
+   <btree (delete_elt_tree (tree.Node lt x v rt))>\<^sub>t" by auto2
 declare btree_del_elt_def [sep_proc_defs del]
 
 partial_function (heap) btree_delete ::
@@ -174,7 +174,7 @@ declare btree_delete.simps [sep_proc_defs]
 lemma btree_delete_to_fun [hoare_triple]:
   "<btree t b>
    btree_delete x b
-   <\<lambda>r. btree (tree_delete x t) r * true>"
+   <btree (tree_delete x t)>\<^sub>t"
 @proof @induct t arbitrary b @qed
 declare btree_delete.simps [sep_proc_defs del]
 
@@ -200,33 +200,20 @@ declare btree_search.simps [sep_proc_defs del]
 
 section {* Outer interface *}
 
-definition btree_set :: "'a set \<Rightarrow> ('a::{heap,linorder}, 'b::heap) node ref option \<Rightarrow> assn" where
-  "btree_set S p = (\<exists>\<^sub>At. btree t p * \<up>(tree_sorted t) * \<up>(S = tree_set t))"
-setup {* add_rewrite_ent_rule @{thm btree_set_def} *}
-
-lemma btree_empty_rule_set:
-  "<emp> tree_empty <btree_set {}>" by auto2
-
-lemma btree_insert_rule_set:
-  "<btree_set S b> btree_insert k v b <btree_set ({k} \<union> S)>" by auto2
-
-lemma btree_delete_rule_set:
-  "<btree_set S b> btree_delete x b <btree_set (S - {x})>\<^sub>t" by auto2
-
 definition btree_map :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) node ref option \<Rightarrow> assn" where
   "btree_map M p = (\<exists>\<^sub>At. btree t p * \<up>(tree_sorted t) * \<up>(M = tree_map t))"
 setup {* add_rewrite_ent_rule @{thm btree_map_def} *}
 
-lemma btree_empty_rule_map:
+theorem btree_empty_rule_map [hoare_triple]:
   "<emp> tree_empty <btree_map empty_map>" by auto2
 
-lemma btree_insert_rule_map:
+theorem btree_insert_rule_map [hoare_triple]:
   "<btree_map M b> btree_insert k v b <btree_map (M {k \<rightarrow> v})>" by auto2
 
-lemma btree_delete_rule_map:
+theorem btree_delete_rule_map [hoare_triple]:
   "<btree_map M b> btree_delete x b <btree_map (delete_map x M)>\<^sub>t" by auto2
 
-lemma btree_search_rule_map:
+theorem btree_search_rule_map [hoare_triple]:
   "<btree_map M b> btree_search x b <\<lambda>r. btree_map M b * \<up>(r = M\<langle>x\<rangle>)>" by auto2
 
 end

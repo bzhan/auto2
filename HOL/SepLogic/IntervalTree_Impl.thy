@@ -137,7 +137,7 @@ declare int_tree_constr_def [sep_proc_defs]
 lemma int_tree_constr_rule [hoare_triple]:
   "<int_tree lt lp * int_tree rt rp>
    int_tree_constr lp v rp
-   <\<lambda>r. int_tree (interval_tree.Node lt v (max3 v (interval_tree.tmax lt) (interval_tree.tmax rt)) rt) r>"
+   <int_tree (interval_tree.Node lt v (max3 v (interval_tree.tmax lt) (interval_tree.tmax rt)) rt)>"
   by auto2
 declare int_tree_constr_def [sep_proc_defs del]
 
@@ -165,7 +165,7 @@ declare int_tree_insert.simps [sep_proc_defs]
 lemma int_tree_insert_to_fun [hoare_triple]:
   "<int_tree t b>
    int_tree_insert v b
-   <\<lambda>r. int_tree (tree_insert v t) r>"
+   <int_tree (tree_insert v t)>"
 @proof @induct t arbitrary b @qed
 declare int_tree_insert.simps [sep_proc_defs del]
 
@@ -188,7 +188,7 @@ declare int_tree_del_min.simps [sep_proc_defs]
 lemma int_tree_del_min_to_fun [hoare_triple]:
   "<int_tree t b * \<up>(b \<noteq> None)>
    int_tree_del_min b
-   <\<lambda>r. int_tree (snd (del_min t)) (snd r) * true * \<up>(fst(r) = fst (del_min t))>"
+   <\<lambda>r. int_tree (snd (del_min t)) (snd r) * \<up>(fst(r) = fst (del_min t))>\<^sub>t"
 @proof @induct t arbitrary b @qed
 declare int_tree_del_min.simps [sep_proc_defs del]
 
@@ -209,7 +209,7 @@ declare int_tree_del_elt_def [sep_proc_defs]
 lemma int_tree_del_elt_to_fun [hoare_triple]:
   "<int_tree (interval_tree.Node lt v m rt) b>
    int_tree_del_elt b
-   <\<lambda>r. int_tree (delete_elt_tree (interval_tree.Node lt v m rt)) r * true>" by auto2
+   <int_tree (delete_elt_tree (interval_tree.Node lt v m rt))>\<^sub>t" by auto2
 declare int_tree_del_elt_def [sep_proc_defs del]
 
 partial_function (heap) int_tree_delete ::
@@ -236,7 +236,7 @@ declare int_tree_delete.simps [sep_proc_defs]
 lemma int_tree_delete_to_fun [hoare_triple]:
   "<int_tree t b>
    int_tree_delete x b
-   <\<lambda>r. int_tree (tree_delete x t) r * true>"
+   <int_tree (tree_delete x t)>\<^sub>t"
 @proof @induct t arbitrary b @qed
 declare int_tree_delete.simps [sep_proc_defs del]
 
@@ -276,20 +276,20 @@ definition int_tree_set :: "nat idx_interval set \<Rightarrow> int_tree \<Righta
   "int_tree_set S p = (\<exists>\<^sub>At. int_tree t p * \<up>(is_interval_tree t) * \<up>(S = tree_set t))"
 setup {* add_rewrite_ent_rule @{thm int_tree_set_def} *}
 
-lemma int_tree_empty_rule [hoare_triple]:
+theorem int_tree_empty_rule [hoare_triple]:
   "<emp> int_tree_empty <int_tree_set {}>" by auto2
 
-lemma int_tree_insert_rule [hoare_triple]:
+theorem int_tree_insert_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
    int_tree_insert x b
    <int_tree_set (S \<union> {x})>" by auto2
 
-lemma int_tree_delete_rule [hoare_triple]:
+theorem int_tree_delete_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
    int_tree_delete x b
    <int_tree_set (S - {x})>\<^sub>t" by auto2
 
-lemma int_tree_search_rule [hoare_triple]:
+theorem int_tree_search_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval x)>
    int_tree_search x b
    <\<lambda>r. int_tree_set S b * \<up>(r \<longleftrightarrow> has_overlap S x)>" by auto2

@@ -13,17 +13,10 @@ fun tree_insert :: "'a::ord \<Rightarrow> 'b \<Rightarrow> ('a, 'b) tree \<Right
      else if x < y then Node (tree_insert x v l) y w r
      else Node l y w (tree_insert x v r))"
 setup {* fold add_rewrite_rule @{thms tree_insert.simps} *}
-
-theorem insert_in_traverse [rewrite]:
-  "tree_sorted t \<Longrightarrow> in_traverse (tree_insert x v t) = ordered_insert x (in_traverse t)"
-@proof @induct t @qed
  
-theorem insert_in_traverse_pairs [rewrite]:
+lemma insert_in_traverse_pairs [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse_pairs (tree_insert x v t) = ordered_insert_pairs x v (in_traverse_pairs t)"
 @proof @induct t @qed
-
-theorem insert_on_set [rewrite]:
-  "tree_sorted t \<Longrightarrow> tree_set (tree_insert x v t) = {x} \<union> tree_set t" by auto2
 
 theorem insert_sorted [forward]:
   "tree_sorted t \<Longrightarrow> tree_sorted (tree_insert x v t)" by auto2
@@ -40,10 +33,6 @@ fun del_min :: "('a, 'b) tree \<Rightarrow> ('a \<times> 'b) \<times> ('a, 'b) t
     (fst (del_min lt), Node (snd (del_min lt)) x v rt))"
 setup {* add_rewrite_rule @{thm del_min.simps(2)} *}
 
-lemma delete_min_del_hd [rewrite]:
-  "t \<noteq> Tip \<Longrightarrow> fst (fst (del_min t)) # in_traverse (snd (del_min t)) = in_traverse t"
-@proof @induct t @qed
-
 lemma delete_min_del_hd_pairs [rewrite]:
   "t \<noteq> Tip \<Longrightarrow> fst (del_min t) # in_traverse_pairs (snd (del_min t)) = in_traverse_pairs t"
 @proof @induct t @qed
@@ -54,9 +43,6 @@ fun delete_elt_tree :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where
     (if lt = Tip then rt else if rt = Tip then lt else
      Node lt (fst (fst (del_min rt))) (snd (fst (del_min rt))) (snd (del_min rt)))"
 setup {* add_rewrite_rule @{thm delete_elt_tree.simps(2)} *}
-
-lemma delete_elt_in_traverse [rewrite]:
-  "in_traverse (delete_elt_tree (Node lt x v rt)) = in_traverse lt @ in_traverse rt" by auto2
 
 lemma delete_elt_in_traverse_pairs [rewrite]:
   "in_traverse_pairs (delete_elt_tree (Node lt x v rt)) = in_traverse_pairs lt @ in_traverse_pairs rt" by auto2
@@ -69,18 +55,14 @@ fun tree_delete :: "'a::ord \<Rightarrow> ('a, 'b) tree \<Rightarrow> ('a, 'b) t
      else Node l y w (tree_delete x r))"
 setup {* fold add_rewrite_rule @{thms tree_delete.simps} *}
 
-lemma tree_delete_in_traverse [rewrite]:
-  "tree_sorted t \<Longrightarrow> in_traverse (tree_delete x t) = remove_elt_list x (in_traverse t)"
-@proof @induct t @qed
-
 lemma tree_delete_in_traverse_pairs [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse_pairs (tree_delete x t) = remove_elt_pairs x (in_traverse_pairs t)"
 @proof @induct t @qed
 
-lemma tree_delete_sorted [forward]:
+theorem tree_delete_sorted [forward]:
   "tree_sorted t \<Longrightarrow> tree_sorted (tree_delete x t)" by auto2
 
-lemma tree_delete_map [rewrite]:
+theorem tree_delete_map [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_map (tree_delete x t) = delete_map x (tree_map t)" by auto2
 
 section {* Search on sorted trees *}
