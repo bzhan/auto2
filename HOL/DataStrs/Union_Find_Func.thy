@@ -67,27 +67,18 @@ lemma rep_of_iff [rewrite]:
 
 lemma rep_of_min [rewrite]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> l ! (rep_of l i) = rep_of l i"
-@proof
-  @prop_induct "rep_of_dom (l, i)" "l ! (rep_of l i) = rep_of l i"
-@qed
+@proof @prop_induct "rep_of_dom (l, i)" @qed
 
 lemma rep_of_induct:
   "ufa_invar l \<and> i < length l \<Longrightarrow>
    \<forall>i<length l. l ! i = i \<longrightarrow> P l i \<Longrightarrow>
    \<forall>i<length l. l ! i \<noteq> i \<longrightarrow> P l (l ! i) \<longrightarrow> P l i \<Longrightarrow> P l i"
-@proof
-  @prop_induct "rep_of_dom (l, i)"
-    "ufa_invar l \<longrightarrow> i < length l \<longrightarrow>
-     (\<forall>i<length l. l ! i = i \<longrightarrow> P l i) \<longrightarrow>
-     (\<forall>i<length l. l ! i \<noteq> i \<longrightarrow> P l (l ! i) \<longrightarrow> P l i) \<longrightarrow> P l i"
-@qed
+@proof @prop_induct "rep_of_dom (l, i)" @qed
 setup {* add_prop_induct_rule @{thm rep_of_induct} *}
 
 lemma rep_of_bound:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of l i < length l"
-@proof
-  @prop_induct "ufa_invar l \<and> i < length l" "rep_of l i < length l"
-@qed
+@proof @prop_induct "ufa_invar l \<and> i < length l" @qed
 setup {* add_forward_prfstep_cond @{thm rep_of_bound} [with_term "rep_of ?l ?i"] *}
 
 lemma rep_of_idem [rewrite]:
@@ -135,7 +126,7 @@ lemma ufa_union_invar:
 @proof
   @let "l' = ufa_union l x y"
   @have "\<forall>i<length l'. rep_of_dom (l', i) \<and> l' ! i < length l'" @with
-    @prop_induct "ufa_invar l \<and> i < length l" "rep_of_dom (l', i)"
+    @prop_induct "ufa_invar l \<and> i < length l"
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm ufa_union_invar} [with_term "ufa_union ?l ?x ?y"] *}
@@ -143,9 +134,7 @@ setup {* add_forward_prfstep_cond @{thm ufa_union_invar} [with_term "ufa_union ?
 lemma ufa_union_aux [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow>
    i < length l' \<Longrightarrow> rep_of l' i = (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
-@proof
-  @prop_induct "ufa_invar l \<and> i < length l" "rep_of l' i = (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
-@qed
+@proof @prop_induct "ufa_invar l \<and> i < length l" @qed
   
 lemma ufa_union_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> a < length l \<Longrightarrow> b < length l \<Longrightarrow>
@@ -171,7 +160,7 @@ lemma ufa_compress_invar:
 @proof
   @let "l' = ufa_compress l x"
   @have "\<forall>i<length l'. rep_of_dom (l', i) \<and> l' ! i < length l'" @with
-    @prop_induct "ufa_invar l \<and> i < length l" "rep_of_dom (l', i)"
+    @prop_induct "ufa_invar l \<and> i < length l"
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm ufa_compress_invar} [with_term "ufa_compress ?l ?x"] *}
@@ -179,9 +168,7 @@ setup {* add_forward_prfstep_cond @{thm ufa_compress_invar} [with_term "ufa_comp
 lemma ufa_compress_aux [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> l' = ufa_compress l x \<Longrightarrow> i < length l' \<Longrightarrow>
    rep_of (ufa_compress l x) i = rep_of l i"
-@proof
-  @prop_induct "ufa_invar l \<and> i < length l" "rep_of (ufa_compress l x) i = rep_of l i"
-@qed
+@proof @prop_induct "ufa_invar l \<and> i < length l" @qed
 
 lemma ufa_compress_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> ufa_\<alpha> (ufa_compress l x) = ufa_\<alpha> l" by auto2

@@ -17,7 +17,7 @@ sig
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
   val apply_induct_hyp_cmd: string list -> Proof.state -> Proof.state
   val case_induct_cmd: string -> Proof.state -> Proof.state
-  val prop_induct_cmd: string * string -> Proof.state -> Proof.state
+  val prop_induct_cmd: string * string option -> Proof.state -> Proof.state
   val induct_cmd: string * string option * string list * string option -> Proof.state -> Proof.state
 end;
 
@@ -281,12 +281,30 @@ val _ =
         (fn s =>
             Toplevel.proof (fn state => case_induct_cmd s state)))
 
+val for_stmt =
+    Scan.option (@{keyword "for"} |-- Parse.term)
+
+fun get_prop_induct_stmt ctxt start =
+    let
+      val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
+                              |> Thm.term_of |> Util.strip_meta_horn
+      val start_As = strip_conj start
+      val As' = As |> map dest_Trueprop |> subtract (op aconv) start_As
+      val C' = dest_Trueprop C
+    in
+      UtilLogic.list_obj_imp (As', C')
+    end
+
 fun prop_induct_cmd (s, t) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
 
-      val (start, stmt) = the_pair (Syntax.read_terms ctxt [s, t])
+      val start = Syntax.read_term ctxt s
+      val stmt = if is_none t then get_prop_induct_stmt ctxt start
+                 else Syntax.read_term ctxt (the t)
+      val _ = writeln ("Induct statement: " ^ (stmt |> Syntax.string_of_term ctxt))
+
       val ind_th = the (get_term_ind_th thy "prop_induct" start)
                    handle Option.Option =>
                           raise Fail "prop_induct: cannot find theorem."
@@ -322,7 +340,7 @@ fun prop_induct_cmd (s, t) state =
 
 val _ =
   Outer_Syntax.command @{command_keyword "@prop_induct"} "apply induction"
-    ((Parse.term -- Parse.term) >>
+    ((Parse.term -- for_stmt) >>
         (fn (s, t) =>
             Toplevel.proof (fn state => prop_induct_cmd (s, t) state)))
 
@@ -429,9 +447,6 @@ fun induct_cmd (s, t, u, v) state =
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
     end
-
-val for_stmt =
-    Scan.option (@{keyword "for"} |-- Parse.term)
 
 val _ =
   Outer_Syntax.command @{command_keyword "@induct"} "apply induction"

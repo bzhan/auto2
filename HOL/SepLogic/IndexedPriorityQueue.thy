@@ -27,23 +27,21 @@ setup {* fold add_backward_prfstep @{thms eq_pred.intros(2,3)} *}
 theorem eq_pred_parent1 [forward]: "eq_pred i (s1 k) \<Longrightarrow> i \<noteq> s1 k \<Longrightarrow> eq_pred i k"
 @proof
   @let "v = s1 k" @then
-  @prop_induct "eq_pred i v" "v = s1 k \<longrightarrow> i \<noteq> s1 k \<longrightarrow> eq_pred i k"
+  @prop_induct "eq_pred i v"
 @qed
 
 theorem eq_pred_parent2 [forward]: "eq_pred i (s2 k) \<Longrightarrow> i \<noteq> s2 k \<Longrightarrow> eq_pred i k"
 @proof
   @let "v = s2 k" @then
-  @prop_induct "eq_pred i v" "v = s2 k \<longrightarrow> i \<noteq> s2 k \<longrightarrow> eq_pred i k"
+  @prop_induct "eq_pred i v"
 @qed
 
 theorem eq_pred_cases [forward]:
   "eq_pred i j \<Longrightarrow> \<not>eq_pred (s1 i) j \<Longrightarrow> \<not>eq_pred (s2 i) j \<Longrightarrow> j = i \<or> j = s1 i \<or> j = s2 i"
-@proof
-  @prop_induct "eq_pred i j" "\<not>eq_pred (s1 i) j \<longrightarrow> \<not>eq_pred (s2 i) j \<longrightarrow> j = i \<or> j = s1 i \<or> j = s2 i"
-@qed
+@proof @prop_induct "eq_pred i j" @qed
 
 theorem eq_pred_le [forward]: "eq_pred i j \<Longrightarrow> i \<le> j"
-@proof @prop_induct "eq_pred i j" "i \<le> j" @qed
+@proof @prop_induct "eq_pred i j" @qed
 
 section {* Heap property *}
 
@@ -163,7 +161,7 @@ theorem eq_pred_p1 [forward]: "eq_pred i j \<Longrightarrow> i \<noteq> j \<Long
 @proof @case_induct "eq_pred i j" @qed
 
 theorem eq_pred_p2 [forward]: "eq_pred i j \<Longrightarrow> i \<noteq> 0 \<Longrightarrow> eq_pred (par i) j"
-@proof @prop_induct "eq_pred i j" "i \<noteq> 0 \<longrightarrow> eq_pred (par i) j" @qed
+@proof @prop_induct "eq_pred i j" @qed
 
 theorem eq_pred_p3: "i \<noteq> 0 \<Longrightarrow> eq_pred (par i) i" by auto2
 setup {* add_forward_prfstep_cond @{thm eq_pred_p3} [with_term "par ?i"] *}

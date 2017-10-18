@@ -37,9 +37,6 @@ lemma uf_rep_of_rule [hoare_triple]:
    <\<lambda>r. p \<mapsto>\<^sub>a l * \<up>(r = rep_of l i)>"
 @proof @contradiction
   @prop_induct "ufa_invar l \<and> i < length l"
-    "<p \<mapsto>\<^sub>a l * \<up>(ufa_invar l) * \<up>(i < length l)>
-     uf_rep_of p i
-     <\<lambda>r. p \<mapsto>\<^sub>a l * \<up>(r = rep_of l i)>"
 @qed
 declare uf_rep_of.simps [sep_proc_defs]
 
@@ -60,9 +57,6 @@ lemma uf_compress_rule [hoare_triple]:
    <\<lambda>_. \<exists>\<^sub>Al'. p \<mapsto>\<^sub>a l' * \<up>(ufa_invar l' \<and> length l' = length l \<and> (\<forall>i<length l. rep_of l' i = rep_of l i))>"
 @proof @contradiction
   @prop_induct "ufa_invar l \<and> i < length l"
-    "<p \<mapsto>\<^sub>a l * \<up>(ufa_invar l) * \<up>(i < length l) * \<up>(ci = rep_of l i)>
-     uf_compress i ci p
-     <\<lambda>_. \<exists>\<^sub>Al'. p \<mapsto>\<^sub>a l' * \<up>(ufa_invar l' \<and> length l' = length l \<and> (\<forall>i<length l. rep_of l' i = rep_of l i))>"
 @qed
 declare uf_compress.simps [sep_proc_defs del]
 

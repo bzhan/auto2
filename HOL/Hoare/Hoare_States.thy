@@ -209,15 +209,14 @@ setup {* add_prop_induct_rule @{thm ceval.induct} *}
 (* ceval is deterministic. *)
 theorem ceval_deterministic: "ceval c st st1 \<Longrightarrow> ceval c st st2 \<Longrightarrow> st1 = st2"
 @proof
-  @prop_induct "ceval c st st1" "\<forall>st2. ceval c st st2 \<longrightarrow> st1 = st2"
+  @prop_induct "ceval c st st1" for "\<forall>st2. ceval c st st2 \<longrightarrow> st1 = st2"
 @qed
 
 setup {* add_rewrite_rule @{thm loop_def} *}
 theorem loop_never_stops: "\<not>(ceval loop st st')"
-@proof
-  @contradiction
+@proof @contradiction
   @let "v = loop" @then
-  @prop_induct "ceval v st st'" "v \<noteq> loop"
+  @prop_induct "ceval v st st'"
 @qed
 
 end

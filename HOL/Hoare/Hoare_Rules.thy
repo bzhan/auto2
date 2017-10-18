@@ -75,7 +75,7 @@ theorem hoare_while: "{{ P && b }} c {{ P }} \<Longrightarrow> {{ P }} (WHILE b 
 @proof
   @let "v = WHILE b DO c OD" @then
   @have "\<forall>st st'. ceval v st st' \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'" @with
-    @prop_induct "ceval v st st'" "v = WHILE b DO c OD \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'" @end
+    @prop_induct "ceval v st st'" @end
 @qed
 
 (* Formally decorated programs. *)
