@@ -1,7 +1,7 @@
-(* Binary search trees. *)
+(* Imperative version of binary search trees. *)
 
-theory BinaryTree
-imports SepAuto "../DataStrs/BST_Func"
+theory BST_Impl
+imports SepAuto "../DataStrs/BST"
 begin
 
 section {* Tree nodes *}

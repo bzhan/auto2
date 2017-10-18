@@ -1,7 +1,7 @@
 (* Red-black trees. *)
 
-theory RBT
-imports SepAuto "../DataStrs/RBT_Func"
+theory RBT_Impl
+imports SepAuto "../DataStrs/RBT"
 begin
 
 section {* Tree nodes *}
@@ -138,7 +138,7 @@ declare paint_def [sep_proc_defs]
 lemma paint_rule [hoare_triple]:
   "<btree t p>
    paint c p
-   <\<lambda>_. btree (RBT_Func.paint c t) p>"
+   <\<lambda>_. btree (RBT.paint c t) p>"
 @proof @case "t = Leaf" @qed
 declare paint_def [sep_proc_defs del]
 
@@ -303,7 +303,7 @@ declare rbt_insert_def [sep_proc_defs]
 lemma rbt_insert_to_fun [hoare_triple]:
   "<btree t p>
    rbt_insert k v p
-   <btree (RBT_Func.rbt_insert k v t)>" by auto2
+   <btree (RBT.rbt_insert k v t)>" by auto2
 declare rbt_insert_def [sep_proc_defs del]
 
 subsection {* Search *}
@@ -322,7 +322,7 @@ declare rbt_search.simps [sep_proc_defs]
 lemma btree_search_correct [hoare_triple]:
   "<btree t b * \<up>(rbt_sorted t)>
    rbt_search x b
-   <\<lambda>r. btree t b * \<up>(r = RBT_Func.rbt_search t x)>"
+   <\<lambda>r. btree t b * \<up>(r = RBT.rbt_search t x)>"
 @proof @induct t arbitrary b @qed
 declare rbt_search.simps [sep_proc_defs del]
   
@@ -524,7 +524,7 @@ declare rbt_delete_def [sep_proc_defs]
 lemma rbt_delete_to_fun [hoare_triple]:
   "<btree t p>
    rbt_delete k p
-   <btree (RBT_Func.delete k t)>\<^sub>t" by auto2
+   <btree (RBT.delete k t)>\<^sub>t" by auto2
 declare rbt_delete_def [sep_proc_defs del]
 
 section {* Outer interface *}

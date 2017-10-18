@@ -45,7 +45,7 @@ session SepLogic_BasicStr = SepLogic_Base +
   *}
   theories
     "HOL/SepLogic/LinkedList"
-    "HOL/SepLogic/BinaryTree"
+    "HOL/SepLogic/BST_Impl"
 
 session SepLogic_Arrays = SepLogic_Base +
   description {*
@@ -67,7 +67,7 @@ session SepLogic_RBT = SepLogic_Base +
     Separation logic: red-black tree.
   *}
   theories
-    "HOL/SepLogic/RBT"
+    "HOL/SepLogic/RBT_Impl"
 
 session SepLogic_UnionFind = SepLogic_Base +
   description {*
