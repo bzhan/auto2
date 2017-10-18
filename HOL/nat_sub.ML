@@ -204,7 +204,11 @@ fun cancel_const wft =
                   WfTerm.try_conv (wf_rewr_obj_eq @{thm add_0_left}),
                   WfTerm.try_conv (wf_rewr_obj_eq @{thm add_0_right})])
             else
-              WfTerm.arg_conv (WfTerm.arg_conv (WfTerm.conv_of nat_fold_conv))] wft
+              WfTerm.arg_conv (
+                WfTerm.every_conv [
+                  WfTerm.arg_conv (WfTerm.conv_of nat_fold_conv),
+                  WfTerm.try_conv (wf_rewr_obj_eq @{thm add_0_left})])
+          ] wft
         end
       else WfTerm.all_conv wft
     end

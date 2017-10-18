@@ -104,10 +104,10 @@ setup {* add_forward_prfstep @{thm Relation.transD} *}
 setup {* add_backward_prfstep @{thm Relation.transI} *}
 
 (* Options *)
-theorem option_not_none [forward, backward]: "x \<noteq> None \<Longrightarrow> \<exists>p. x = Some p" by auto
 setup {* add_resolve_prfstep @{thm option.distinct(1)} *}
 setup {* add_rewrite_rule @{thm Option.option.sel} *}
-theorem option_inject' [forward]: "Some i = Some j \<Longrightarrow> i = j" by simp
+setup {* add_rewrite_rule_back @{thm option.collapse} *}
+setup {* add_forward_prfstep (equiv_forward_th @{thm option.simps(1)}) *}
 setup {* fold add_rewrite_rule @{thms Option.option.case} *}
 setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2", 1)] *}
 

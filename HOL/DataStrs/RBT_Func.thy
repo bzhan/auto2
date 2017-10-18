@@ -4,9 +4,9 @@ theory RBT_Func
 imports RBT_Base
 begin
 
-section {* Balancing function on RBT *}
+section {* Balance function *}
 
-definition balanceR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+definition balanceR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
   "balanceR l k v r =
    (if cl r = R then
       let lr = lsub r; rr = rsub r in
@@ -14,9 +14,8 @@ definition balanceR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rig
       else if cl rr = R then Node (Node l B k v lr) R (key r) (val r) (Node (lsub rr) B (key rr) (val rr) (rsub rr))
       else Node l B k v r
     else Node l B k v r)"
-setup {* add_rewrite_rule @{thm balanceR_def} *}
   
-definition balance :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+definition balance :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
   "balance l k v r =
    (if cl l = R then
       let ll = lsub l; rl = rsub l in
@@ -24,11 +23,10 @@ definition balance :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Righ
       else if cl rl = R then Node (Node (lsub l) B (key l) (val l) (lsub rl)) R (key rl) (val rl) (Node (rsub rl) B k v r)
       else balanceR l k v r
     else balanceR l k v r)"
-setup {* add_rewrite_rule @{thm balance_def} *}
 setup {* register_wellform_data ("balance l k v r", ["black_depth l = black_depth r"]) *}
 setup {* add_prfstep_check_req ("balance l k v r", "black_depth l = black_depth r") *}
 
-subsection {* balance function preserves bd_inv *}
+lemma balance_non_Leaf [resolve]: "balance l k v r \<noteq> Leaf" by auto2
 
 lemma balance_bdinv:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (balance l k v r)"
@@ -40,13 +38,19 @@ lemma balance_bd [rewrite]:
    black_depth (balance l k v r) = black_depth l + 1"
 @proof @have "black_depth (balanceR l k v r) = black_depth l + 1" @qed
 
-subsection {* balance function preserves cl_inv *}
-
-lemma balance1 [forward]:
+lemma balance_cl1 [forward]:
   "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (balance l k v r)" by auto2
 
-lemma balance2 [forward]:
+lemma balance_cl2 [forward]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balance l k v r)" by auto2
+
+lemma balanceR_inorder_pairs [rewrite]:
+  "rbt_in_traverse_pairs (balanceR l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+
+lemma balance_inorder_pairs [rewrite]:
+  "rbt_in_traverse_pairs (balance l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+
+setup {* fold del_prfstep_thm [@{thm balanceR_def}, @{thm balance_def}] *}
 
 section {* ins function *}
 
@@ -63,27 +67,23 @@ fun ins :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarr
       else Node l R y w (ins x v r)))"
 setup {* fold add_rewrite_rule @{thms ins.simps} *}
 
-subsection {* ins function takes non-leaf to non-leafs *}
-
-lemma balance_non_Leaf [resolve]: "balance l k v r \<noteq> Leaf" by auto2
-
 lemma ins_non_Leaf [resolve]: "ins x v t \<noteq> Leaf"
 @proof @case "t = Leaf" @qed
-
-subsection {* Properties of ins function on cl_inv and bd_inv *}
 
 lemma cl_inv_ins [forward]:
   "cl_inv t \<Longrightarrow> cl_inv' (ins x v t)"
 @proof
-  @have "if cl t = B then cl_inv (ins x v t) else cl_inv' (ins x v t)" @with
-    @induct t
-  @end
+  @induct t for "cl_inv t \<longrightarrow> (if cl t = B then cl_inv (ins x v t) else cl_inv' (ins x v t))"
 @qed
 
 lemma bd_inv_ins:
   "bd_inv t \<Longrightarrow> bd_inv (ins x v t) \<and> black_depth t = black_depth (ins x v t)"
 @proof @induct t @qed
 setup {* add_forward_prfstep_cond (conj_left_th @{thm bd_inv_ins}) [with_term "ins ?x ?v ?t"] *}
+
+lemma ins_inorder_pairs [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
+@proof @induct t @qed
 
 section {* Paint function *}
 
@@ -100,9 +100,6 @@ lemma paint_bd_inv [forward]: "bd_inv t \<Longrightarrow> bd_inv (paint c t)" by
 
 lemma paint_bd [rewrite]:
   "bd_inv t \<Longrightarrow> t \<noteq> Leaf \<Longrightarrow> cl t = B \<Longrightarrow> black_depth (paint R t) = black_depth t - 1" by auto2
-    
-lemma paint_in_traverse [rewrite]:
-  "rbt_in_traverse (paint c t) = rbt_in_traverse t" by auto2
 
 lemma paint_in_traverse_pairs [rewrite]:
   "rbt_in_traverse_pairs (paint c t) = rbt_in_traverse_pairs t" by auto2
@@ -112,43 +109,14 @@ section {* Insert function *}
 definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
   "rbt_insert x v t = paint B (ins x v t)"
 
-lemma is_rbt_insert [forward]: "is_rbt t \<Longrightarrow> is_rbt (rbt_insert x v t)" by auto2
+theorem insert_is_rbt [forward]:
+  "is_rbt t \<Longrightarrow> is_rbt (rbt_insert x v t)" by auto2
 
-section {* Sortedness, sets, and maps *}
+theorem insert_sorted [forward]:
+  "rbt_sorted t \<Longrightarrow> rbt_sorted (rbt_insert x v t)" by auto2
 
-lemma balanceR_inorder_pairs [rewrite]:
-  "rbt_in_traverse_pairs (balanceR l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
-
-lemma balance_inorder_pairs [rewrite]:
-  "rbt_in_traverse_pairs (balance l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
-
-lemma balance_inorder [rewrite]:
-  "rbt_in_traverse (balance l k v r) = rbt_in_traverse l @ [k] @ rbt_in_traverse r"
-@proof
-  @have "rbt_in_traverse_pairs (balance l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r"
-@qed
-
-theorem ins_inorder [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (ins x v t) = ordered_insert x (rbt_in_traverse t)"
-@proof @induct t @qed
-
-theorem ins_inorder_pairs [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
-@proof @induct t @qed
-
-theorem insert_inorder [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (rbt_insert x v t) = ordered_insert x (rbt_in_traverse t)"
-@proof @have "rbt_in_traverse (rbt_insert x v t) = rbt_in_traverse (ins x v t)" @qed
-
-theorem insert_inorder_pairs [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (rbt_insert x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
-@proof @have "rbt_in_traverse_pairs (rbt_insert x v t) = rbt_in_traverse_pairs (ins x v t)" @qed
-
-theorem insert_rbt_set: "rbt_sorted t \<Longrightarrow> rbt_set (rbt_insert x v t) = {x} \<union> rbt_set t" by auto2
-
-theorem insert_sorted: "rbt_sorted t \<Longrightarrow> rbt_sorted (rbt_insert x v t)" by auto2
-
-theorem insert_rbt_map: "rbt_sorted t \<Longrightarrow> rbt_map (rbt_insert x v t) = (rbt_map t) {x \<rightarrow> v}" by auto2
+theorem insert_rbt_map [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_map (rbt_insert x v t) = (rbt_map t) {x \<rightarrow> v}" by auto2
 
 section {* Search on sorted trees and its correctness *}
 
@@ -164,9 +132,9 @@ theorem rbt_search_correct [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
 @proof @induct t @qed
     
-section {* Deletion *}
-    
-definition balL :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+section {* balL and balR *}
+
+definition balL :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
   "balL l k v r = (let lr = lsub r in
    if cl l = R then Node (Node (lsub l) B (key l) (val l) (rsub l)) R k v r
    else if r = Leaf then Node l R k v r
@@ -175,11 +143,10 @@ definition balL :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightar
    else if cl lr = B then
      Node (Node l B k v (lsub lr)) R (key lr) (val lr) (balance (rsub lr) (key r) (val r) (paint R (rsub r)))
    else Node l R k v r)"
-setup {* add_rewrite_rule @{thm balL_def} *}
 setup {* register_wellform_data ("balL l k v r", ["black_depth l + 1 = black_depth r"]) *}
 setup {* add_prfstep_check_req ("balL l k v r", "black_depth l + 1 = black_depth r") *}
   
-definition balR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
+definition balR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
   "balR l k v r = (let rl = rsub l in
    if cl r = R then Node l R k v (Node (lsub r) B (key r) (val r) (rsub r))
    else if l = Leaf then Node l R k v r
@@ -188,22 +155,21 @@ definition balR :: "('a, 'b) pre_rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightar
    else if cl rl = B then
      Node (balance (paint R (lsub l)) (key l) (val l) (lsub rl)) R (key rl) (val rl) (Node (rsub rl) B k v r)
    else Node l R k v r)"
-setup {* add_rewrite_rule @{thm balR_def} *}
 setup {* register_wellform_data ("balR l k v r", ["black_depth l = black_depth r + 1"]) *}
 setup {* add_prfstep_check_req ("balR l k v r", "black_depth l = black_depth r + 1") *}
 
 lemma balL_bd:
-  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl_inv r \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow>
+  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl r = B \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow>
    bd_inv (balL l k v r) \<and> black_depth (balL l k v r) = black_depth l + 1" by auto2
 setup {* add_forward_prfstep_cond @{thm balL_bd} [with_term "balL ?l ?k ?v ?r"] *}
 
 lemma balL_bd':
-  "bd_inv l \<Longrightarrow> r = Node r1 B k1 v1 r2 \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow> bd_inv r \<Longrightarrow>
-   bd_inv (balL l k v r) \<and> black_depth (balL l k v r) = black_depth r" by auto2
+  "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl_inv r \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow>
+   bd_inv (balL l k v r) \<and> black_depth (balL l k v r) = black_depth l + 1" by auto2
 setup {* add_forward_prfstep_cond @{thm balL_bd'} [with_term "balL ?l ?k ?v ?r"] *}
 
 lemma balL_cl:
-  "cl_inv' l \<Longrightarrow> r = Node r1 B k1 v1 r2 \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (balL l k v r)" by auto2
+  "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (balL l k v r)" by auto2
 setup {* add_forward_prfstep_cond @{thm balL_cl} [with_term "balL ?l ?k ?v ?r"] *}
 
 lemma balL_cl' [forward]:
@@ -221,17 +187,15 @@ setup {* add_forward_prfstep_cond @{thm balR_cl} [with_term "balR ?l ?k ?v ?r"] 
 lemma balR_cl' [forward]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv' (balR l k v r)" by auto2
 
-lemma balL_in_traverse [rewrite]:
-  "rbt_in_traverse (balL l k v r) = rbt_in_traverse l @ [k] @ rbt_in_traverse r" by auto2
-
-lemma balR_in_traverse [rewrite]:
-  "rbt_in_traverse (balR l k v r) = rbt_in_traverse l @ [k] @ rbt_in_traverse r" by auto2
-
 lemma balL_in_traverse_pairs [rewrite]:
   "rbt_in_traverse_pairs (balL l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
 
 lemma balR_in_traverse_pairs [rewrite]:
   "rbt_in_traverse_pairs (balR l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+
+setup {* fold del_prfstep_thm [@{thm balL_def}, @{thm balR_def}] *}
+
+section {* Combine *}
 
 fun combine :: "('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
   "combine Leaf t = t"
@@ -259,15 +223,25 @@ setup {* fold add_rewrite_rule @{thms combine.simps} *}
 setup {* add_fun_induct_rule (@{term_pat "combine (?a0.0::(?'a,?'b) pre_rbt) ?a1.0"}, @{thm combine.induct}) *}
 
 lemma combine_bd:
-  "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
+  "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> cl_inv' lt \<Longrightarrow> cl_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
    bd_inv (combine lt rt) \<and> black_depth (combine lt rt) = black_depth lt"
-@proof @fun_induct "combine lt rt" @qed
+@proof @fun_induct "combine lt rt" @with
+  @subgoal "(lt = Node l1 c1 k1 v1 r1, rt = Node l2 c2 k2 v2 r2)"
+  @case "c1 = B" @with @case "c2 = B" @with @case "cl (combine r1 l2) = B" @with
+    @have "cl (Node (combine r1 l2) B k2 v2 r2) = B" @end @end @end
+  @endgoal @end
+@qed
 setup {* add_forward_prfstep_cond @{thm combine_bd} [with_term "combine ?lt ?rt"] *}
 
 lemma combine_cl:
   "cl_inv lt \<Longrightarrow> cl_inv rt \<Longrightarrow>
    (cl lt = B \<longrightarrow> cl rt = B \<longrightarrow> cl_inv (combine lt rt)) \<and> cl_inv' (combine lt rt)"
-@proof @fun_induct "combine lt rt" @qed
+@proof @fun_induct "combine lt rt" @with
+  @subgoal "(lt = Node l1 c1 k1 v1 r1, rt = Node l2 c2 k2 v2 r2)"
+  @case "c1 = B" @with @case "c2 = B" @with @case "cl (combine r1 l2) = B" @with
+    @have "cl (Node (combine r1 l2) B k2 v2 r2) = B" @end @end @end
+  @endgoal @end
+@qed
 setup {* add_forward_prfstep_cond @{thm combine_cl} [with_term "combine ?lt ?rt"] *}
 
 lemma combine_in_traverse_pairs [rewrite]:
@@ -285,11 +259,9 @@ lemma combine_in_traverse_pairs [rewrite]:
   @endgoal @end
 @qed
 
-lemma combine_in_traverse [rewrite]:
-  "rbt_in_traverse (combine lt rt) = rbt_in_traverse lt @ rbt_in_traverse rt"
-@proof
-  @have "rbt_in_traverse_pairs (combine lt rt) = rbt_in_traverse_pairs lt @ rbt_in_traverse_pairs rt"
-@qed
+setup {* fold del_prfstep_thm @{thms combine.simps} *}
+
+section {* Deletion *}
 
 fun del :: "'a::linorder \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where
   "del x Leaf = Leaf"
@@ -316,21 +288,15 @@ lemma del_bd:
     @case "r = Leaf" @case "cl r = B" @end
   @endgoal @end
 @qed
+setup {* add_forward_prfstep_cond @{thm del_bd} [with_term "del ?x ?t"] *}
 
 lemma del_cl:
   "cl_inv t \<Longrightarrow> if cl t = R then cl_inv (del x t) else cl_inv' (del x t)"
 @proof @induct t @with @subgoal "t = Node l c k v r"
-  @case "x = k" @case "x < k" @with
-    @case "l = Leaf" @case "cl l = B" @end
+  @case "x = k" @case "x < k"
   @endgoal @end
 @qed
-
-setup {* add_forward_prfstep_cond @{thm del_bd} [with_term "del ?x ?t"] *}
 setup {* add_forward_prfstep_cond @{thm del_cl} [with_term "del ?x ?t"] *}
-  
-lemma del_in_traverse [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (del x t) = remove_elt_list x (rbt_in_traverse t)"
-@proof @induct t @qed
 
 lemma del_in_traverse_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (del x t) = remove_elt_pairs x (rbt_in_traverse_pairs t)"
@@ -339,22 +305,18 @@ lemma del_in_traverse_pairs [rewrite]:
 definition delete :: "'a::linorder \<Rightarrow> ('a, 'b) pre_rbt \<Rightarrow> ('a, 'b) pre_rbt" where [rewrite]:
   "delete x t = paint B (del x t)"
 
-lemma rbt_delete [forward]: "is_rbt t \<Longrightarrow> is_rbt (delete x t)" by auto2
+theorem delete_is_rbt [forward]:
+  "is_rbt t \<Longrightarrow> is_rbt (delete x t)" by auto2
 
-lemma delete_in_traverse [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse (delete x t) = remove_elt_list x (rbt_in_traverse t)" by auto2
+theorem delete_sorted [forward]:
+  "rbt_sorted t \<Longrightarrow> rbt_sorted (delete x t)" by auto2
 
-lemma delete_in_traverse_pairs [rewrite]:
-  "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (delete x t) = remove_elt_pairs x (rbt_in_traverse_pairs t)" by auto2
-
-lemma delete_rbt_set: "rbt_sorted t \<Longrightarrow> rbt_set (delete x t) = rbt_set t - {x}" by auto2
-
-lemma delete_sorted: "rbt_sorted t \<Longrightarrow> rbt_sorted (delete x t)" by auto2
-
-lemma delete_rbt_map: "rbt_sorted t \<Longrightarrow> rbt_map (delete x t) = delete_map x (rbt_map t)" by auto2
+theorem delete_rbt_map [rewrite]:
+  "rbt_sorted t \<Longrightarrow> rbt_map (delete x t) = delete_map x (rbt_map t)" by auto2
 
 setup {* del_prfstep "RBT_Func.balance_case" *}
 setup {* del_prfstep "RBT_Func.balL_case" *}
 setup {* del_prfstep "RBT_Func.balR_case" *}
+setup {* del_prfstep "RBT_Func.paint_case" *}
 
 end

@@ -102,7 +102,7 @@ definition set_color :: "color \<Rightarrow> ('a::heap, 'b::heap) btree \<Righta
     })"
 declare set_color_def [sep_proc_defs]
 
-theorem set_color_rule [hoare_triple]:
+lemma set_color_rule [hoare_triple]:
   "<btree (pre_rbt.Node a c x v b) p>
    set_color c' p
    <\<lambda>r. btree (pre_rbt.Node a c' x v b) p>" by auto2
@@ -117,11 +117,11 @@ definition get_color :: "('a::heap, 'b::heap) btree \<Rightarrow> color Heap" wh
      })"
 declare get_color_def [sep_proc_defs]
 
-theorem get_color_heap_preserving [heap_presv_thms]:
+lemma get_color_heap_preserving [heap_presv_thms]:
   "heap_preserving (get_color p)"
 @proof @case "p = None" @qed
 
-theorem get_color_rule [hoare_triple_direct]:
+lemma get_color_rule [hoare_triple_direct]:
   "<btree t p> get_color p <\<lambda>r. btree t p * \<up>(r = pre_rbt.cl t)>"
 @proof @case "t = Leaf" @qed
 declare get_color_def [sep_proc_defs del]
@@ -138,8 +138,9 @@ declare paint_def [sep_proc_defs]
 lemma paint_rule [hoare_triple]:
   "<btree t p>
    paint c p
-   <\<lambda>r. btree (RBT_Func.paint c t) p>" by auto2
-setup {* del_prfstep "RBT_Func.paint_case" *}
+   <\<lambda>r. btree (RBT_Func.paint c t) p>"
+@proof @case "t = Leaf" @qed
+declare paint_def [sep_proc_defs del]
 
 subsection {* Rotation *}
 
@@ -161,6 +162,7 @@ lemma btree_rotate_l_rule [hoare_triple]:
   "<btree (pre_rbt.Node a c1 x v (pre_rbt.Node b c2 y w c)) p>
    btree_rotate_l p
    <btree (pre_rbt.Node (pre_rbt.Node a c1 x v b) c2 y w c)>" by auto2
+declare btree_rotate_l_def [sep_proc_defs del]
 
 definition btree_rotate_r :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_rotate_r p = (case p of
@@ -180,6 +182,7 @@ lemma btree_rotate_r_rule [hoare_triple]:
   "<btree (pre_rbt.Node (pre_rbt.Node a c1 x v b) c2 y w c) p>
    btree_rotate_r p
    <btree (pre_rbt.Node a c1 x v (pre_rbt.Node b c2 y w c))>" by auto2
+declare btree_rotate_r_def [sep_proc_defs del]
 
 subsection {* Balance *}
 
@@ -207,10 +210,12 @@ definition btree_balanceR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) 
      else return p})"
 declare btree_balanceR_def [sep_proc_defs]
 
-theorem balanceR_to_fun [hoare_triple]:
+setup {* add_rewrite_rule @{thm balanceR_def} *}
+lemma balanceR_to_fun [hoare_triple]:
   "<btree (pre_rbt.Node l B k v r) p>
    btree_balanceR p
    <\<lambda>q. btree (balanceR l k v r) q>" by auto2
+setup {* del_prfstep_thm @{thm balanceR_def} *}
 declare btree_balanceR_def [sep_proc_defs del]
 
 definition btree_balance :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -239,12 +244,13 @@ definition btree_balance :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) b
        return p'}})"
 declare btree_balance_def [sep_proc_defs]
 
-theorem balance_to_fun [hoare_triple]:
+setup {* add_rewrite_rule @{thm balance_def} *}
+lemma balance_to_fun [hoare_triple]:
   "<btree (pre_rbt.Node l B k v r) p>
    btree_balance p
    <\<lambda>q. btree (balance l k v r) q>" by auto2
-declare btree_balance_def [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm balance_def} *}
+declare btree_balance_def [sep_proc_defs del]
 
 subsection {* Insertion *}
 
@@ -280,7 +286,7 @@ partial_function (heap) rbt_ins ::
            return (Some pp) }))})"
 declare rbt_ins.simps [sep_proc_defs]
 
-theorem rbt_ins_to_fun [hoare_triple]:
+lemma rbt_ins_to_fun [hoare_triple]:
   "<btree t p>
    rbt_ins k v p
    <\<lambda>r. btree (ins k v t) r>"
@@ -294,7 +300,7 @@ definition rbt_insert :: "'a::{heap,ord} \<Rightarrow> 'b::heap \<Rightarrow> ('
     return p' }"
 declare rbt_insert_def [sep_proc_defs]
   
-theorem rbt_insert_to_fun [hoare_triple]:
+lemma rbt_insert_to_fun [hoare_triple]:
   "<btree t p>
    rbt_insert k v p
    <\<lambda>r. btree (RBT_Func.rbt_insert k v t) r>" by auto2
@@ -358,11 +364,13 @@ definition btree_balL :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btre
             else return p}}})"
 declare btree_balL_def [sep_proc_defs]
 
+setup {* add_rewrite_rule @{thm balL_def} *}
 lemma balL_to_fun [hoare_triple]:
   "<btree (pre_rbt.Node l R k v r) p>
    btree_balL p
    <\<lambda>q. btree (balL l k v r) q>" by auto2
 setup {* del_prfstep_thm @{thm balL_def} *}
+declare btree_balL_def [sep_proc_defs del]
 
 definition btree_balR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balR p = (case p of
@@ -400,11 +408,13 @@ definition btree_balR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btre
             else return p}}})"
 declare btree_balR_def [sep_proc_defs]
 
+setup {* add_rewrite_rule @{thm balR_def} *}
 lemma balR_to_fun [hoare_triple]:
   "<btree (pre_rbt.Node l R k v r) p>
    btree_balR p
    <\<lambda>q. btree (balR l k v r) q>" by auto2
 setup {* del_prfstep_thm @{thm balR_def} *}
+declare btree_balR_def [sep_proc_defs del]
 
 partial_function (heap) btree_combine ::
   "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -451,12 +461,15 @@ partial_function (heap) btree_combine ::
         return rp}})"
 declare btree_combine.simps [sep_proc_defs]
 
+setup {* fold add_rewrite_rule @{thms combine.simps} *}
 lemma combine_to_fun [hoare_triple]:
   "<btree lt lp * btree rt rp>
    btree_combine lp rp
    <\<lambda>q. btree (combine lt rt) q>"
 @proof @fun_induct "combine lt rt" arbitrary lp rp @qed
-    
+setup {* fold del_prfstep_thm @{thms combine.simps} *}
+declare combine.simps [sep_proc_defs del]
+
 partial_function (heap) rbt_del ::
   "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "rbt_del x p = (case p of
@@ -499,7 +512,8 @@ lemma rbt_del_to_fun [hoare_triple]:
    rbt_del x p
    <\<lambda>r. btree (del x t) r * true>"
 @proof @induct t arbitrary p @qed
-    
+declare rbt_del.simps [sep_proc_defs del]
+
 definition rbt_delete :: "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "rbt_delete k p = do {
     p' \<leftarrow> rbt_del k p;
@@ -515,37 +529,20 @@ declare rbt_delete_def [sep_proc_defs del]
 
 section {* Outer interface *}
 
-definition rbt_set_assn :: "'a set \<Rightarrow> ('a::{heap,linorder}, 'b::heap) rbt_node ref option \<Rightarrow> assn" where
-  "rbt_set_assn S p = (\<exists>\<^sub>At. btree t p * \<up>(is_rbt t) * \<up>(rbt_sorted t) * \<up>(S = rbt_set t))"
-setup {* add_rewrite_ent_rule @{thm rbt_set_assn_def} *}
-
 definition rbt_map_assn :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) rbt_node ref option \<Rightarrow> assn" where
   "rbt_map_assn M p = (\<exists>\<^sub>At. btree t p * \<up>(is_rbt t) * \<up>(rbt_sorted t) * \<up>(M = rbt_map t))"
 setup {* add_rewrite_ent_rule @{thm rbt_map_assn_def} *}
 
-declare tree_empty_def [sep_proc_defs del]
-
-lemma rbt_empty_rule1:
-  "<emp> tree_empty <rbt_set_assn {}>" by auto2
-
-lemma rbt_empty_rule2:
+theorem rbt_empty_rule [hoare_triple]:
   "<emp> tree_empty <rbt_map_assn empty_map>" by auto2
 
-declare rbt_insert_def [sep_proc_defs del]
-
-lemma rbt_insert_rule1:
-  "<rbt_set_assn S b> rbt_insert k v b <rbt_set_assn ({k} \<union> S)>" by auto2
-
-lemma rbt_insert_rule2:
+theorem rbt_insert_rule [hoare_triple]:
   "<rbt_map_assn M b> rbt_insert k v b <rbt_map_assn (M {k \<rightarrow> v})>" by auto2
 
-lemma rbt_search:
+theorem rbt_search [hoare_triple]:
   "<rbt_map_assn M b> rbt_search x b <\<lambda>r. rbt_map_assn M b * \<up>(r = M\<langle>x\<rangle>)>" by auto2
 
-lemma rbt_delete_rule1:
-  "<rbt_set_assn S b> rbt_delete k b <\<lambda>r. rbt_set_assn (S - {k}) r * true>" by auto2
-
-lemma rbt_delete_rule2:
+theorem rbt_delete_rule [hoare_triple]:
   "<rbt_map_assn M b> rbt_delete k b <\<lambda>r. rbt_map_assn (delete_map k M) r * true>" by auto2
 
 end
