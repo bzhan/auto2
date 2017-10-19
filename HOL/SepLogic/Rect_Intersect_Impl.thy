@@ -1,5 +1,5 @@
 theory Rect_Intersect_Impl
-imports "../DataStrs/Rect_Intersect" IntervalTree_Impl Quicksort
+imports "../DataStrs/Rect_Intersect" IntervalTree_Impl Quicksort_Impl
 begin
 
 section {* Operations *}

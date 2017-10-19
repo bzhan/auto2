@@ -1,4 +1,4 @@
-theory Graph
+theory Dijkstra
 imports Mapping Arrays_Ex
 begin
 

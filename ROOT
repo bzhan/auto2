@@ -53,7 +53,7 @@ session SepLogic_Arrays = SepLogic_Base +
   *}
   theories
     "HOL/SepLogic/Reverse"
-    "HOL/SepLogic/Quicksort"
+    "HOL/SepLogic/Quicksort_Impl"
 
 session SepLogic_Rectinter = SepLogic_Arrays +
   description {*
@@ -71,17 +71,17 @@ session SepLogic_RBT = SepLogic_Base +
 
 session SepLogic_UnionFind = SepLogic_Base +
   description {*
-    Union-find and applications.
+    Union-find and connectivity on graphs.
   *}
   theories
-    "HOL/SepLogic/Percolation"
+    "HOL/SepLogic/Connectivity_Impl"
 
-session SepLogic_Graph = SepLogic_Base +
+session SepLogic_Dijkstra = SepLogic_Base +
   description {*
-    Graph theory.
+    Dijkstra's algorithm.
   *}
   theories
-    "HOL/SepLogic/Dijkstra"
+    "HOL/SepLogic/Dijkstra_Impl"
 
 session Auto2_FOL = FOL +
   description {*

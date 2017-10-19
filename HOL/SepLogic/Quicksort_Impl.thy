@@ -1,5 +1,5 @@
-theory Quicksort
-imports Reverse "../DataStrs/Quicksort_Func"
+theory Quicksort_Impl
+imports Reverse "../DataStrs/Quicksort"
 begin
 
 function part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> nat Heap" where
@@ -17,15 +17,15 @@ function part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat
 declare part1.simps [sep_proc_defs]
 setup {* add_hoare_induct_rule (@{term part1}, @{thm part1.induct}) *}
 
-setup {* add_rewrite_rule_cond @{thm Quicksort_Func.part1.simps}
+setup {* add_rewrite_rule_cond @{thm Quicksort.part1.simps}
   [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
 lemma part1_to_fun [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(r < length xs)>
    part1 p l r a
-   <\<lambda>rs. p \<mapsto>\<^sub>a snd (Quicksort_Func.part1 xs l r a) * \<up>(rs = fst (Quicksort_Func.part1 xs l r a))>"
+   <\<lambda>rs. p \<mapsto>\<^sub>a snd (Quicksort.part1 xs l r a) * \<up>(rs = fst (Quicksort.part1 xs l r a))>"
 @proof @hoare_induct @qed
 declare part1.simps [sep_proc_defs del]
-setup {* del_prfstep_thm @{thm Quicksort_Func.part1.simps} *}
+setup {* del_prfstep_thm @{thm Quicksort.part1.simps} *}
 
 (* Partition function. *)
 definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
@@ -39,13 +39,13 @@ definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarro
    }"
 
 declare partition_def [sep_proc_defs]
-setup {* add_rewrite_rule @{thm Quicksort_Func.partition_def} *}
+setup {* add_rewrite_rule @{thm Quicksort.partition_def} *}
 lemma partition_to_fun [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < r) * \<up>(r < length xs)>
    partition a l r
-   <\<lambda>rs. a \<mapsto>\<^sub>a snd (Quicksort_Func.partition xs l r) * \<up>(rs = fst (Quicksort_Func.partition xs l r))>" by auto2
+   <\<lambda>rs. a \<mapsto>\<^sub>a snd (Quicksort.partition xs l r) * \<up>(rs = fst (Quicksort.partition xs l r))>" by auto2
 declare partition_def [sep_proc_defs del]
-setup {* del_prfstep_thm @{thm Quicksort_Func.partition_def} *}
+setup {* del_prfstep_thm @{thm Quicksort.partition_def} *}
 
 (* Quicksort function *)
 function quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
@@ -62,22 +62,22 @@ function quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow>
 declare quicksort.simps [sep_proc_defs]
 setup {* add_hoare_induct_rule (@{term quicksort}, @{thm quicksort.induct}) *}
 
-setup {* add_rewrite_rule_cond @{thm Quicksort_Func.quicksort.simps}
+setup {* add_rewrite_rule_cond @{thm Quicksort.quicksort.simps}
   [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
 theorem quicksort_trivial [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l \<ge> r)>
    quicksort a l r
-   <\<lambda>_. a \<mapsto>\<^sub>a Quicksort_Func.quicksort xs l r>" by auto2
+   <\<lambda>_. a \<mapsto>\<^sub>a Quicksort.quicksort xs l r>" by auto2
 
 theorem quicksort_to_fun [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
    quicksort a l r
-   <\<lambda>_. a \<mapsto>\<^sub>a Quicksort_Func.quicksort xs l r>"
+   <\<lambda>_. a \<mapsto>\<^sub>a Quicksort.quicksort xs l r>"
 @proof @hoare_induct
   @contradiction
   @case "l < r" @with
     @have "l < r \<and> r < length xs"
-    @let "p = fst (Quicksort_Func.partition xs l r)"
+    @let "p = fst (Quicksort.partition xs l r)"
     @have "p \<ge> l \<and> p \<le> r"
     @case "p + 1 \<ge> r"
     @case "l \<ge> p - 1"
@@ -85,7 +85,7 @@ theorem quicksort_to_fun [hoare_triple]:
 @qed
 
 declare quicksort.simps [sep_proc_defs del]
-setup {* del_prfstep_thm @{thm Quicksort_Func.quicksort.simps} *}
+setup {* del_prfstep_thm @{thm Quicksort.quicksort.simps} *}
 
 theorem quicksort_sorts [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < length xs) * \<up>(r < length xs)>
@@ -105,7 +105,7 @@ theorem quicksort_sorts_basic [hoare_triple]:
    <\<lambda>_. a \<mapsto>\<^sub>a sort xs>"
 @proof
   @case "xs = []"
-  @have "Quicksort_Func.quicksort xs 0 (length xs - 1) = sort xs"
+  @have "Quicksort.quicksort xs 0 (length xs - 1) = sort xs"
 @qed
 declare quicksort_all_def [sep_proc_defs del]
 

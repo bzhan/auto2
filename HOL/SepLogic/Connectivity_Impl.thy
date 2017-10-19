@@ -1,5 +1,5 @@
-theory Percolation
-imports Union_Find "../DataStrs/Percolation_Func"
+theory Connectivity_Impl
+imports Union_Find_Impl "../DataStrs/Connectivity"
 begin
 
 section {* Constructing the connected relation *}

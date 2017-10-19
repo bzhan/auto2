@@ -1,4 +1,4 @@
-theory Union_Find_Func
+theory Union_Find
 imports "../Auto2_Main"
 begin
   

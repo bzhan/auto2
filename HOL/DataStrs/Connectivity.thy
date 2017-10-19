@@ -1,5 +1,5 @@
-theory Percolation_Func
-imports Union_Find_Func
+theory Connectivity
+imports Union_Find
 begin
 
 section {* Connectedness for a set of undirected edges. *}

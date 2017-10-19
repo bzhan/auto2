@@ -1,5 +1,5 @@
-theory Dijkstra
-imports IndexedPriorityQueue "../DataStrs/Graph"
+theory Dijkstra_Impl
+imports IndexedPriorityQueue "../DataStrs/Dijkstra"
 begin
 
 datatype dijkstra_state = Dijkstra_State (est_a: "nat array") (heap_pq: "nat indexed_pqueue")

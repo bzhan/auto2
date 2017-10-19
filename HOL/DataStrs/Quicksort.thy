@@ -1,4 +1,4 @@
-theory Quicksort_Func
+theory Quicksort
 imports Arrays_Ex
 begin
 
