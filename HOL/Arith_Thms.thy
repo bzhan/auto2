@@ -19,6 +19,7 @@ theorem norm_less:        "(x::nat) < y     \<Longrightarrow> x + 1 \<le> y"    
 theorem norm_le_lminus: "(x::nat) - n \<le> y \<Longrightarrow> x \<le> y + n"  by simp
 theorem norm_le_rminus: "(x::nat) \<le> y - n \<Longrightarrow> x \<le> y + 0"  by simp
 theorem norm_le: "(x::nat) \<le> y \<Longrightarrow> x \<le> y + 0" by simp
+theorem norm_le_lplus0: "(x::nat) + 0 \<le> y \<Longrightarrow> x \<le> y + 0" by simp
 
 (* Transitive resolve. *)
 theorem trans_resolve1: "n1 > 0 \<Longrightarrow> (x::nat) + n1 \<le> y \<Longrightarrow> (y::nat) + n2 \<le> x \<Longrightarrow> False" by simp

@@ -94,7 +94,8 @@ fun is_standard_ineq t =
         val (lhs, rhs) = Util.dest_binop_args t
       in
         fastype_of lhs = natT andalso
-        ((is_plus_const lhs andalso not (is_plus_const rhs)) orelse
+        ((is_plus_const lhs andalso not (is_plus_const rhs) andalso
+          UtilArith.dest_numc (dest_arg lhs) > 0) orelse
          (is_plus_const rhs andalso not (is_plus_const lhs)))
       end
     else false
@@ -348,7 +349,11 @@ fun norm_ineq_th' th =
               ([Nat_Arith.nat_le_th n2 n1, th]
                    MRS @{thm reduce_le_plus_consts'}) |> fold_const_left
           end
-        else if is_plus_const lhs orelse is_plus_const rhs then th
+        else if is_plus_const lhs then
+          if UtilArith.dest_numc (dest_arg lhs) = 0 then
+            th RS @{thm norm_le_lplus0}
+          else th
+        else if is_plus_const rhs then th
         else if is_minus_const lhs then
           th RS @{thm norm_le_lminus}
         else if is_minus_const rhs then
