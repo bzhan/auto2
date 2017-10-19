@@ -32,9 +32,10 @@ lemma eq_pred_parent2 [forward]:
   "eq_pred i (s2 k) \<Longrightarrow> i \<noteq> s2 k \<Longrightarrow> eq_pred i k"
 @proof @let "v = s2 k" @then @prop_induct "eq_pred i v" @qed
 
-lemma eq_pred_cases [forward]:
+lemma eq_pred_cases:
   "eq_pred i j \<Longrightarrow> eq_pred (s1 i) j \<or> eq_pred (s2 i) j \<or> j = i \<or> j = s1 i \<or> j = s2 i"
 @proof @prop_induct "eq_pred i j" @qed
+setup {* add_forward_prfstep_cond @{thm eq_pred_cases} [with_cond "?i \<noteq> s1 ?k", with_cond "?i \<noteq> s2 ?k"] *}
 
 lemma eq_pred_le [forward]: "eq_pred i j \<Longrightarrow> i \<le> j"
 @proof @prop_induct "eq_pred i j" @qed
@@ -72,41 +73,26 @@ setup {* add_forward_prfstep_cond @{thm incr_is_heap_partial1} [with_term "?xs'"
 
 (* Two cases of switching with s1 k. *)
 lemma bubble_down1:
-  "is_heap_partial1 xs k \<Longrightarrow> s2 k < length xs \<Longrightarrow> snd (xs ! (s1 k)) \<le> snd (xs ! (s2 k)) \<Longrightarrow>
-   snd (xs ! k) > snd (xs ! (s1 k)) \<Longrightarrow> is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
+  "s1 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) > snd (xs ! s1 k) \<Longrightarrow>
+   snd (xs ! s1 k) \<le> snd (xs ! s2 k) \<Longrightarrow> is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
 setup {* add_forward_prfstep_cond @{thm bubble_down1} [with_term "list_swap ?xs ?k (s1 ?k)"] *}
 
 lemma bubble_down2:
-  "is_heap_partial1 xs k \<Longrightarrow> s2 k \<ge> length xs \<Longrightarrow> s1 k < length xs \<Longrightarrow> snd (xs ! k) > snd (xs ! (s1 k)) \<Longrightarrow>
-   is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
+  "s1 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) > snd (xs ! s1 k) \<Longrightarrow>
+   s2 k \<ge> length xs \<Longrightarrow> is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
 setup {* add_forward_prfstep_cond @{thm bubble_down2} [with_term "list_swap ?xs ?k (s1 ?k)"] *}
 
 (* One case of switching with s2 k. *)
 lemma bubble_down3:
-  "s2 k < length xs \<Longrightarrow> snd (xs ! (s1 k)) > snd (xs ! (s2 k)) \<Longrightarrow> snd (xs ! k) > snd (xs ! (s2 k)) \<Longrightarrow>
-   is_heap_partial1 xs k \<Longrightarrow> xs' = list_swap xs k (s2 k) \<Longrightarrow> is_heap_partial1 xs' (s2 k)" by auto2
+  "s2 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! s1 k) > snd (xs ! s2 k) \<Longrightarrow>
+   snd (xs ! k) > snd (xs ! s2 k) \<Longrightarrow> xs' = list_swap xs k (s2 k) \<Longrightarrow> is_heap_partial1 xs' (s2 k)" by auto2
 setup {* add_forward_prfstep_cond @{thm bubble_down3} [with_term "?xs'"] *}
-
-(* Four trivial cases. *)
-lemma bubble_down4 [forward]:
-  "is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) \<le> snd (xs ! (s1 k)) \<Longrightarrow> s2 k < length xs \<Longrightarrow>
-   snd (xs ! (s1 k)) \<le> snd (xs ! (s2 k)) \<Longrightarrow> is_heap xs" by auto2
-
-lemma bubble_down5 [forward]:
-  "is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) \<le> snd (xs ! (s2 k)) \<Longrightarrow> s2 k < length xs \<Longrightarrow>
-   snd (xs ! (s1 k)) > snd (xs ! (s2 k)) \<Longrightarrow> is_heap xs" by auto2
-
-lemma bubble_down6 [forward]:
-  "is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) \<le> snd (xs ! (s1 k)) \<Longrightarrow> s2 k \<ge> length xs \<Longrightarrow>
-   s1 k < length xs \<Longrightarrow> is_heap xs" by auto2
-
-lemma bubble_down7 [forward]:
-  "is_heap_partial1 xs k \<Longrightarrow> s1 k \<ge> length xs \<Longrightarrow> is_heap xs" by auto2
-setup {* del_prfstep_thm @{thm is_heap_partial1_def} *}
 
 section {* Bubble-up *}
 
-fun par :: "nat \<Rightarrow> nat" where "par m = (m - 1) div 2"
+fun par :: "nat \<Rightarrow> nat" where
+  "par m = (m - 1) div 2"
+setup {* register_wellform_data ("par m", ["m \<noteq> 0"]) *}
 
 lemma ps_inverse [rewrite]: "par (s1 k) = k" "par (s2 k) = k" by simp+
 
@@ -116,42 +102,31 @@ setup {* add_forward_prfstep_cond @{thm p_basic} [with_term "par ?m"] *}
 lemma p_cases: "m \<noteq> 0 \<Longrightarrow> m = s1 (par m) \<or> m = s2 (par m)" by auto
 setup {* add_forward_prfstep_cond @{thm p_cases} [with_term "par ?m"] *}
 
-lemma eq_pred_p1 [forward]:
-  "eq_pred i j \<Longrightarrow> i \<noteq> j \<Longrightarrow> eq_pred i (par j)"
-@proof @case_induct "eq_pred i j" @qed
-
-lemma eq_pred_p2 [forward]:
-  "eq_pred i j \<Longrightarrow> i \<noteq> 0 \<Longrightarrow> eq_pred (par i) j"
+lemma eq_pred_p_next:
+  "i \<noteq> 0 \<Longrightarrow> eq_pred i j \<Longrightarrow> eq_pred (par i) j"
 @proof @prop_induct "eq_pred i j" @qed
+setup {* add_forward_prfstep_cond @{thm eq_pred_p_next} [with_term "par ?i"] *}
 
-lemma eq_pred_p3:
-  "i \<noteq> 0 \<Longrightarrow> eq_pred (par i) i" by auto2
-setup {* add_forward_prfstep_cond @{thm eq_pred_p3} [with_term "par ?i"] *}
-
-lemma heap_implies_hd_min [backward2]:
-  "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> i < length xs \<Longrightarrow> snd (hd xs) \<le> snd (xs ! i)"
+lemma heap_implies_hd_min [resolve]:
+  "is_heap xs \<Longrightarrow> i < length xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> snd (hd xs) \<le> snd (xs ! i)"
 @proof
   @strong_induct i
   @case "i = 0" @then @apply_induct_hyp "par i"
+  @have "eq_pred (par i) i"
 @qed
 
 (* The corresponding tree is a heap, except k is not necessarily greater than its ancestors. *)
-definition is_heap_partial2 :: "('a \<times> 'b::linorder) list \<Rightarrow> nat \<Rightarrow> bool" where
+definition is_heap_partial2 :: "('a \<times> 'b::linorder) list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "is_heap_partial2 xs k = (\<forall>i j. eq_pred i j \<longrightarrow> j < length xs \<longrightarrow> j \<noteq> k \<longrightarrow> snd (xs ! i) \<le> snd (xs ! j))"
-setup {* add_rewrite_rule @{thm is_heap_partial2_def} *}
 
 lemma bubble_up1 [forward]:
-  "is_heap_partial2 xs k \<Longrightarrow> snd (xs ! k) < snd (xs ! (par k)) \<Longrightarrow> k \<noteq> 0 \<Longrightarrow> k < length xs \<Longrightarrow>
+  "k < length xs \<Longrightarrow> is_heap_partial2 xs k \<Longrightarrow> snd (xs ! k) < snd (xs ! par k) \<Longrightarrow> k \<noteq> 0 \<Longrightarrow>
    is_heap_partial2 (list_swap xs k (par k)) (par k)" by auto2
 
 lemma bubble_up2 [forward]:
-  "is_heap_partial2 xs k \<Longrightarrow> snd (xs ! k) \<ge> snd (xs ! (par k)) \<Longrightarrow> k \<noteq> 0 \<Longrightarrow> k < length xs \<Longrightarrow> is_heap xs" by auto2
-
-lemma bubble_up3 [forward]:
-  "is_heap_partial2 xs 0 \<Longrightarrow> is_heap xs" by auto2
-
-lemma bubble_up4 [forward]:
-  "is_heap_partial2 xs k \<Longrightarrow> k \<ge> length xs \<Longrightarrow> is_heap xs" by auto2
+  "k < length xs \<Longrightarrow> is_heap_partial2 xs k \<Longrightarrow> snd (xs ! k) \<ge> snd (xs ! par k) \<Longrightarrow> k \<noteq> 0 \<Longrightarrow>
+   is_heap xs" by auto2
+setup {* del_prfstep_thm @{thm p_cases} *}
 
 lemma append_is_heap_partial2:
   "is_heap xs \<Longrightarrow> is_heap_partial2 (xs @ [x]) (length xs)" by auto2
@@ -161,10 +136,6 @@ lemma desc_is_heap_partial2:
   "is_heap xs \<Longrightarrow> k < length xs \<Longrightarrow> v < snd (xs ! k) \<Longrightarrow>
    xs' = list_update xs k (fst (xs ! k), v) \<Longrightarrow> is_heap_partial2 xs' k" by auto2
 setup {* add_forward_prfstep_cond @{thm desc_is_heap_partial2} [with_term "?xs'"] *}
-
-setup {* fold del_prfstep_thm [@{thm eq_pred_p1}, @{thm eq_pred_p2}, @{thm eq_pred_p3}] *}
-setup {* del_prfstep_thm @{thm p_cases} *}
-setup {* del_prfstep_thm @{thm is_heap_partial2_def} *}
 
 section {* Indexed priority queue *}
 
@@ -211,13 +182,8 @@ lemma has_index_distinct [forward]:
   @have "\<forall>i<length xs. \<forall>j<length xs. i \<noteq> j \<longrightarrow> xs ! i \<noteq> xs ! j"
 @qed
 
-definition key_within_range :: "(nat \<times> 'a) list \<Rightarrow> nat \<Rightarrow> bool" where
+definition key_within_range :: "(nat \<times> 'a) list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "key_within_range xs n = (\<forall>p\<in>set xs. fst p < n)"
-setup {* add_rewrite_rule @{thm key_within_range_def} *}
-
-lemma key_within_range_on_index:
-  "i < length xs \<Longrightarrow> key_within_range xs n \<Longrightarrow> fst (xs ! i) < n" by auto2
-setup {* add_forward_prfstep_cond @{thm key_within_range_on_index} [with_term "?xs ! ?i"] *}
 
 fun idx_pqueue :: "(nat \<times> 'a::{heap,linorder}) list \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue xs n (Indexed_PQueue pq idx) =
@@ -231,23 +197,21 @@ setup {* del_prfstep_thm @{thm dyn_array_prec} *}
 
 section {* Basic operations on indexed_queue *}
 
-definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue Heap" where
+definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
   "idx_pqueue_empty k x = do {
     pq \<leftarrow> dyn_array_new (0, x);
     idx \<leftarrow> amap_new k;
     return (Indexed_PQueue pq idx) }"
-declare idx_pqueue_empty_def [sep_proc_defs]
 
 lemma index_of_pqueue_empty [resolve]:
   "index_of_pqueue [] empty_map" by auto2
 
 lemma idx_pqueue_empty_rule [hoare_triple]:
-  "<emp> idx_pqueue_empty n x <\<lambda>r. idx_pqueue [] n r>" by auto2
+  "<emp> idx_pqueue_empty n x <idx_pqueue [] n>" by auto2
 declare idx_pqueue_empty_def [sep_proc_defs del]
 
-definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where
+definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where [sep_proc_defs]:
   "idx_pqueue_nth p i = array_nth (pqueue p) i"
-declare idx_pqueue_nth_def [sep_proc_defs]
 
 lemma idx_pqueue_nth_rule [hoare_triple, hoare_create_case]:
   "<idx_pqueue xs n p * \<up>(i < length xs)>
@@ -257,9 +221,8 @@ lemma idx_pqueue_nth_rule [hoare_triple, hoare_create_case]:
 lemma idx_pqueue_nth_heap_preserving [heap_presv_thms]:
   "heap_preserving (idx_pqueue_nth p i)" by auto2
 
-definition idx_pqueue_length :: "'a indexed_pqueue \<Rightarrow> nat Heap" where
+definition idx_pqueue_length :: "'a indexed_pqueue \<Rightarrow> nat Heap" where [sep_proc_defs]:
   "idx_pqueue_length a = array_length (pqueue a)"
-declare idx_pqueue_length_def [sep_proc_defs]
 
 lemma idx_pqueue_length_rule [hoare_triple_direct]:
   "<idx_pqueue xs n p>
@@ -269,16 +232,15 @@ lemma idx_pqueue_length_rule [hoare_triple_direct]:
 lemma idx_pqueue_length_heap_preserving [heap_presv_thms]:
   "heap_preserving (idx_pqueue_length a)" by auto2
 
-definition idx_pqueue_swap :: "'a::{heap,linorder} indexed_pqueue \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "idx_pqueue_swap p i j =
-   (case p of Indexed_PQueue pq idx \<Rightarrow> do {
-      pr_i \<leftarrow> array_nth pq i;
-      pr_j \<leftarrow> array_nth pq j;
-      amap_update (fst pr_i) j idx;
-      amap_update (fst pr_j) i idx;
-      array_swap pq i j
-    })"
-declare idx_pqueue_swap_def [sep_proc_defs]
+definition idx_pqueue_swap ::
+  "'a::{heap,linorder} indexed_pqueue \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where [sep_proc_defs]:
+  "idx_pqueue_swap p i j = do {
+     pr_i \<leftarrow> array_nth (pqueue p) i;
+     pr_j \<leftarrow> array_nth (pqueue p) j;
+     amap_update (fst pr_i) j (index p);
+     amap_update (fst pr_j) i (index p);
+     array_swap (pqueue p) i j
+   }"
 
 lemma index_of_pqueue_swap [backward]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> index_of_pqueue xs m \<Longrightarrow>
@@ -289,14 +251,14 @@ lemma idx_pqueue_swap_rule [hoare_triple, hoare_create_case]:
    idx_pqueue_swap p i j
    <\<lambda>_. idx_pqueue (list_swap xs i j) n p>" by auto2
 
-definition idx_pqueue_push :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where
+definition idx_pqueue_push ::
+  "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
   "idx_pqueue_push k v p = do {
-    len \<leftarrow> array_length (pqueue p);
-    d' \<leftarrow> push_array (k, v) (pqueue p);
-    amap_update k len (index p);
-    return (Indexed_PQueue d' (index p))
+     len \<leftarrow> array_length (pqueue p);
+     d' \<leftarrow> push_array (k, v) (pqueue p);
+     amap_update k len (index p);
+     return (Indexed_PQueue d' (index p))
    }"
-declare idx_pqueue_push_def [sep_proc_defs]
 
 lemma index_of_pqueue_push [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow>
@@ -307,13 +269,13 @@ lemma idx_pqueue_push_rule [hoare_triple]:
    idx_pqueue_push k v p
    <idx_pqueue (xs @ [(k, v)]) n>\<^sub>t" by auto2
 
-definition idx_pqueue_pop :: "'a::heap indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where
+definition idx_pqueue_pop ::
+  "'a::heap indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where [sep_proc_defs]:
   "idx_pqueue_pop p = do {
      (x, d') \<leftarrow> pop_array (pqueue p);
      amap_delete (fst x) (index p);
      return (x, Indexed_PQueue d' (index p))
    }"
-declare idx_pqueue_pop_def [sep_proc_defs]
 
 lemma index_of_pqueue_pop [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> xs \<noteq> [] \<Longrightarrow>
@@ -412,7 +374,7 @@ lemma idx_bubble_up_rule [hoare_triple]:
 @qed
 
 definition delete_min_idx_pqueue ::
-  "'a::{heap,linorder} indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where
+  "'a::{heap,linorder} indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where [sep_proc_defs]:
   "delete_min_idx_pqueue p = do {
     len \<leftarrow> idx_pqueue_length p;
     (if len = 0 then raise ''delete_min''
@@ -422,7 +384,6 @@ definition delete_min_idx_pqueue ::
        idx_bubble_down r 0;
        return (x', r)
      })}"
-declare delete_min_idx_pqueue_def [sep_proc_defs]
 
 lemma hd_last_swap_eval_last [rewrite]:
   "xs \<noteq> [] \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
@@ -440,13 +401,12 @@ lemma delete_min_idx_pqueue_rule [hoare_triple, hoare_create_case]:
 declare delete_min_idx_pqueue_def [sep_proc_defs del]
 
 definition insert_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where
+  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
   "insert_idx_pqueue k v p = do {
      p' \<leftarrow> idx_pqueue_push k v p;
      len \<leftarrow> idx_pqueue_length p';
      idx_bubble_up p' (len - 1);
      return p' }"
-declare insert_idx_pqueue_def [sep_proc_defs]
 
 lemma insert_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(k < n) * \<up>(\<not>has_key_alist xs k)>
@@ -455,11 +415,10 @@ lemma insert_idx_pqueue_rule [hoare_triple]:
 declare insert_idx_pqueue_def [sep_proc_defs del]
 
 definition has_key_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} indexed_pqueue \<Rightarrow> bool Heap" where
+  "nat \<Rightarrow> 'a::{heap,linorder} indexed_pqueue \<Rightarrow> bool Heap" where [sep_proc_defs]:
   "has_key_idx_pqueue k p = do {
     i_opt \<leftarrow> amap_lookup (index p) k;
     return (i_opt \<noteq> None) }"
-declare has_key_idx_pqueue_def [sep_proc_defs]
 
 lemma has_key_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs)>
@@ -468,11 +427,10 @@ lemma has_key_idx_pqueue_rule [hoare_triple]:
 
 lemma has_key_idx_heap_preserving [heap_presv_thms]:
   "heap_preserving (has_key_idx_pqueue k p)" by auto2
-
 declare has_key_idx_pqueue_def [sep_proc_defs del]
 
 definition update_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where
+  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
   "update_idx_pqueue k v p = do {
     i_opt \<leftarrow> amap_lookup (index p) k;
     if i_opt = None then
@@ -482,7 +440,6 @@ definition update_idx_pqueue ::
       array_upd (the i_opt) (k, v) (pqueue p);
       (if snd x \<le> v then do {idx_bubble_down p (the i_opt); return p}
        else do {idx_bubble_up p (the i_opt); return p}) }}"
-declare update_idx_pqueue_def [sep_proc_defs]
 
 lemma update_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(k < n)>
@@ -501,7 +458,7 @@ lemma idx_pqueue_map_prec [sep_prec_thms]:
   "h \<Turnstile> idx_pqueue_map M n p * F1 \<Longrightarrow> h \<Turnstile> idx_pqueue_map M' n' p * F2 \<Longrightarrow> M = M' \<and> n = n'" by auto2
 setup {* del_prfstep_thm @{thm idx_pqueue_prec} *}
 
-lemma heap_implies_hd_min2 [backward1]:
+lemma heap_implies_hd_min2 [resolve]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_alist xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
 @proof
   @obtain i where "i < length xs" "xs ! i = (k, v)"
