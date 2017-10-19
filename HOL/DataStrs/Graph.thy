@@ -50,6 +50,9 @@ fun path_weight :: "graph \<Rightarrow> nat list \<Rightarrow> nat" where
 | "path_weight G (x # xs) = (if xs = [] then 0 else weight G x (hd xs) + path_weight G xs)"
 setup {* fold add_rewrite_rule @{thms path_weight.simps} *}
 
+lemma path_weight_singleton [rewrite]: "path_weight G [x] = 0" by auto2
+lemma path_weight_doubleton [rewrite]: "path_weight G [m, n] = weight G m n" by auto2
+
 lemma path_weight_sum [rewrite]:
   "joinable G p q \<Longrightarrow> path_weight G (path_join G p q) = path_weight G p + path_weight G q"
 @proof @induct p @qed
@@ -103,6 +106,9 @@ section {* Interior points *}
 (* List of interior points *)
 definition int_pts :: "nat list \<Rightarrow> nat set" where [rewrite]:
   "int_pts p = set (butlast p)"
+
+lemma int_pts_singleton [rewrite]: "int_pts [x] = {}" by auto2
+lemma int_pts_doubleton [rewrite]: "int_pts [x, y] = {x}" by auto2
 
 definition path_set_on :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat set \<Rightarrow> nat list set" where
   "path_set_on G m n V = {p. p \<in> path_set G m n \<and> int_pts p \<subseteq> V}"
@@ -205,8 +211,7 @@ lemma dist_on_triangle_ineq [backward]:
    dist_on G k m V + weight G m n \<ge> dist_on G k n V"
 @proof
   @obtain p where "is_shortest_path_on G k m p V"
-  @let "q = [m, n]"
-  @let "pq = path_join G p q"
+  @let "pq = path_join G p [m, n]"
   @have "V \<union> {m} = V"
   @have "pq \<in> path_set_on G k n V"
 @qed
@@ -295,6 +300,7 @@ definition dijkstra_start_state :: "graph \<Rightarrow> state" where [rewrite]:
   "dijkstra_start_state G =
      State (list (\<lambda>i. if i = 0 then 0 else weight G 0 i) (size G))
            (map_constr (\<lambda>i. i > 0) (\<lambda>i. weight G 0 i) (size G))"
+setup {* register_wellform_data ("dijkstra_start_state G", ["size G > 0"]) *}
 
 lemma dijkstra_start_known_set [rewrite]:
   "size G > 0 \<Longrightarrow> known_set (dijkstra_start_state G) = {0}" by auto2

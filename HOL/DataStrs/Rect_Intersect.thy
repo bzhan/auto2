@@ -192,7 +192,6 @@ lemma has_overlap_at_k_equiv [forward]:
   @obtain "xs' \<in> xints_of rects S" where "is_overlap (int xs') (op_int (ops ! k))"
   @let "xs = int xs'" "i = idx xs'"
   @let "j = op_idx (ops ! k)"
-  @have "ops ! k \<in> set ops"
   @have "ops ! k = ins_op rects j"
   @have "i \<noteq> j" @with @contradiction
     @obtain k' where "k' < k" "ops ! k' = ins_op rects i"
@@ -249,7 +248,6 @@ lemma apply_ops_k_next1 [rewrite]:
   @have "\<forall>i. i\<in>apply_ops_k rects (n + 1) \<longleftrightarrow> i\<in>apply_ops_k rects n \<union> {op_idx (ops ! n)}" @with
     @case "i \<in> apply_ops_k rects n \<union> {op_idx (ops ! n)}" @with
       @case "i = op_idx (ops ! n)" @with
-        @have "ops ! n \<in> set ops"
         @have "ins_op rects i < del_op rects i"
       @end
     @end
@@ -258,15 +256,7 @@ lemma apply_ops_k_next1 [rewrite]:
 
 lemma apply_ops_k_next2 [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> \<not>is_INS (ops ! n) \<Longrightarrow>
-   apply_ops_k rects (n + 1) = apply_ops_k rects n - {op_idx (ops ! n)}"
-@proof
-  @have "\<forall>i. i\<in>apply_ops_k rects (n + 1) \<longleftrightarrow> i\<in>apply_ops_k rects n - {op_idx (ops ! n)}" @with
-    @case "i \<in> apply_ops_k rects (n + 1)" @with
-      @have "i \<in> apply_ops_k rects n"
-      @have "i \<noteq> op_idx (ops ! n)" @with @have "ops ! n \<in> set ops" @end
-    @end
-  @end
-@qed
+   apply_ops_k rects (n + 1) = apply_ops_k rects n - {op_idx (ops ! n)}" by auto2
 
 definition apply_ops_k_next :: "('a::linorder) rectangle list \<Rightarrow> 'a idx_interval set \<Rightarrow> nat \<Rightarrow> 'a idx_interval set" where
   "apply_ops_k_next rects S k = (let ops = all_ops rects in
@@ -279,7 +269,7 @@ lemma apply_ops_k_next_is_correct [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow>
    S = xints_of rects (apply_ops_k rects n) \<Longrightarrow>
    xints_of rects (apply_ops_k rects (n + 1)) = apply_ops_k_next rects S n"
-@proof @have "ops ! n \<in> set ops" @case "is_INS (ops ! n)" @qed
+@proof @case "is_INS (ops ! n)" @qed
 
 function rect_inter :: "nat rectangle list \<Rightarrow> nat idx_interval set \<Rightarrow> nat \<Rightarrow> bool" where
   "rect_inter rects S k = (let ops = all_ops rects in

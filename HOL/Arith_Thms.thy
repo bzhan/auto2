@@ -110,6 +110,7 @@ setup {* add_forward_prfstep_cond @{thm n_minus_1_less_n} [with_term "?n - 1"] *
   
 (* Monotonicity of ordering *)
 setup {* add_backward_prfstep @{thm Nat.diff_le_mono} *}
+setup {* add_backward2_prfstep @{thm Nat.diff_less_mono} *}
 setup {* add_backward_prfstep @{thm Nat.add_le_mono1} *}
 setup {* add_backward_prfstep @{thm Nat.mult_le_mono2} *}
 setup {* add_resolve_prfstep @{thm Nat.le_add1} *}

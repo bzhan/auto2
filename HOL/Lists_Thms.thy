@@ -17,6 +17,7 @@ section {* Length *}
 setup {* add_rewrite_rule @{thm List.list.size(3)} *}
 theorem length_one [rewrite]: "length [x] = 1" by simp
 lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
+lemma length_snoc [rewrite]: "length (xs @ [x]) = length xs + 1" by auto
 setup {* add_rewrite_rule @{thm length_tl} *}
 lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
 lemma length_gt_zero [forward]: "length xs > 0 \<Longrightarrow> xs \<noteq> []" by simp
@@ -39,26 +40,29 @@ section {* Showing two lists are equal *}
 
 setup {* add_backward2_prfstep_cond @{thm nth_equalityI} [with_filt (order_filter "xs" "ys")] *}
 
+section {* Set of elements of a list *}
+
+setup {* add_rewrite_rule @{thm List.set_simps(1)} *}
+lemma set_one [rewrite]: "set [u] = {u}" by simp
+lemma set_two [rewrite]: "set [u, v] = {u, v}" by simp
+lemma set_simps2: "set (x # xs) = {x} \<union> set xs" by simp
+setup {* add_rewrite_rule_cond @{thm set_simps2} [with_cond "?xs \<noteq> []", with_cond "?xs \<noteq> [?y]"] *}
+setup {* add_rewrite_rule @{thm List.set_append} *}
+setup {* add_resolve_prfstep @{thm List.finite_set} *}
+setup {* add_backward_prfstep (equiv_forward_th @{thm in_set_conv_nth}) *}
+
+section {* hd *}
+
+setup {* register_wellform_data ("hd xs", ["xs \<noteq> []"]) *}
+setup {* add_forward_prfstep_cond @{thm List.hd_in_set} [with_term "hd ?xs"] *}
+
 section {* nth *}
 
 setup {* register_wellform_data ("xs ! i", ["i < length xs"]) *}
 setup {* add_rewrite_rule_back @{thm hd_conv_nth} *}
 setup {* add_rewrite_rule @{thm List.nth_Cons'} *}
 setup {* add_rewrite_rule @{thm List.nth_append} *}
-
-section {* Set of elements of a list *}
-
-setup {* add_rewrite_rule @{thm List.set_simps(1)} *}
-lemma set_simps2 [rewrite]: "set (x # xs) = {x} \<union> set xs" by simp
-lemma set_two [rewrite]: "set [u, v] = {u, v}" by simp
-setup {* add_rewrite_rule @{thm List.set_append} *}
-setup {* add_resolve_prfstep @{thm List.finite_set} *}
-
-setup {* add_resolve_prfstep (equiv_forward_th @{thm in_set_conv_nth}) *}
-setup {* add_resolve_prfstep @{thm nth_mem} *}
-
-setup {* add_forward_prfstep_cond @{thm List.hd_in_set} [with_term "hd ?xs", with_term "set ?xs"] *}
-setup {* add_forward_prfstep_cond @{thm List.last_in_set} [with_term "last ?as", with_term "set ?as"] *}
+setup {* add_forward_prfstep_cond @{thm nth_mem} [with_term "?xs ! ?n"] *}
 
 section {* sorted *}
 
@@ -124,19 +128,20 @@ setup {* add_rewrite_rule @{thm List.nth_replicate} *}
 
 section {* last *}
 
+setup {* register_wellform_data ("last xs", ["xs \<noteq> []"]) *}
 lemma last_eval1 [rewrite]: "last [x] = x" by simp
 lemma last_eval2 [rewrite]: "last [u, v] = v" by simp
 setup {* add_rewrite_rule @{thm List.last_ConsR} *}
 setup {* add_rewrite_rule @{thm List.last_appendR} *}
 setup {* add_rewrite_rule @{thm List.last_snoc} *}
-lemma last_mem [resolve]: "xs \<noteq> [] \<Longrightarrow> last xs \<in> set xs" by simp
 setup {* add_rewrite_rule_back @{thm last_conv_nth} *}
+setup {* add_forward_prfstep_cond @{thm List.last_in_set} [with_term "last ?as"] *}
 
 section {* butlast *}
 
-setup {* add_rewrite_rule @{thm length_butlast} *}
-setup {* add_rewrite_rule @{thm nth_butlast} *}
-setup {* add_rewrite_rule @{thm List.butlast_conv_take} *}
+setup {* add_rewrite_rule @{thm List.length_butlast} *}
+setup {* add_rewrite_rule @{thm List.nth_butlast} *}
+setup {* add_rewrite_rule_back @{thm List.butlast_conv_take} *}
 setup {* add_rewrite_rule @{thm List.butlast_snoc} *}
 lemma butlast_eval1 [rewrite]: "butlast [x] = []" by simp
 lemma butlast_eval2 [rewrite]: "butlast [x, y] = [x]" by simp
@@ -144,7 +149,9 @@ lemma butlast_cons [rewrite]: "as \<noteq> [] \<Longrightarrow> butlast (a # as)
 lemma butlast_append' [rewrite]: "bs \<noteq> [] \<Longrightarrow> butlast (as @ bs) = as @ butlast bs"
   by (simp add: butlast_append)
 
-lemma butlast_last [rewrite]: "as \<noteq> [] \<Longrightarrow> butlast as @ [last as] = as" by simp
+setup {* add_rewrite_rule @{thm List.append_butlast_last_id} *}
+lemma set_butlast_is_subset: "set (butlast xs) \<subseteq> set xs" by (simp add: in_set_butlastD subsetI)
+setup {* add_forward_prfstep_cond @{thm set_butlast_is_subset} [with_term "set (butlast ?xs)"] *}
 
 section {* List update *}
 
@@ -190,10 +197,10 @@ section {* mset *}
 setup {* add_rewrite_rule @{thm mset.simps(1)} *}
 lemma mset_simps_2 [rewrite]: "mset (a # x) = mset x + {#a#}" by simp
 setup {* add_rewrite_rule @{thm mset_append} *}
-setup {* add_backward2_prfstep @{thm mset_swap} *}
 
 setup {* add_rewrite_rule @{thm mset_eq_setD} *}
-lemma mset_butlast [forward]: "p \<in># mset (butlast xs) \<Longrightarrow> p \<in># mset xs" by (simp add: in_set_butlastD)
+lemma in_mset_butlastD [forward]:
+  "p \<in># mset (butlast xs) \<Longrightarrow> p \<in># mset xs" by (simp add: in_set_butlastD)
 setup {* add_rewrite_rule_cond @{thm in_multiset_in_set} [with_term "set ?xs"] *}
 setup {* add_rewrite_rule_back_cond @{thm in_multiset_in_set} [with_term "mset ?xs"] *}
 setup {* add_backward_prfstep @{thm Multiset.nth_mem_mset} *}
@@ -206,6 +213,31 @@ setup {* add_forward_prfstep_cond @{thm hd_in_mset} [with_term "hd ?xs", with_te
 
 lemma last_in_mset: "xs \<noteq> [] \<Longrightarrow> last xs \<in># mset xs" by simp
 setup {* add_forward_prfstep_cond @{thm last_in_mset} [with_term "last ?xs", with_term "mset ?xs"] *}
+
+section {* Relationship between mset and set of lists *}
+
+lemma mset_butlast [rewrite]: "xs \<noteq> [] \<Longrightarrow> mset (butlast xs) = mset xs - {# last xs #}"
+  by (metis add_diff_cancel_right' append_butlast_last_id mset.simps(1) mset.simps(2) union_code)
+
+lemma insert_mset_to_set [rewrite]: "mset xs' = mset xs + {# x #} \<Longrightarrow> set xs' = set xs \<union> {x}"
+  by (metis set_mset_mset set_mset_single set_mset_union)
+
+lemma delete_mset_to_set [rewrite]:
+  "distinct xs \<Longrightarrow> mset xs' = mset xs - {# x #} \<Longrightarrow> set xs' = set xs - {x}"
+  by (metis mset_eq_setD mset_remove1 set_remove1_eq)
+
+lemma update_mset_to_set [rewrite]:
+  "distinct xs \<Longrightarrow> mset xs' = {# y #} + (mset xs - {# x #}) \<Longrightarrow> set xs' = (set xs - {x}) \<union> {y}"
+  by (metis insert_mset_to_set mset_remove1 set_remove1_eq union_commute)
+
+lemma mset_update' [rewrite]:
+  "i < length ls \<Longrightarrow> mset (ls[i := v]) = {#v#} + (mset ls - {# ls ! i #})"
+  using mset_update by fastforce
+
+section {* swap *}
+
+setup {* add_rewrite_rule @{thm mset_swap} *}
+setup {* add_rewrite_rule @{thm set_swap} *}
 
 section {* upto lists *}
 

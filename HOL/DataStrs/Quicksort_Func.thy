@@ -37,7 +37,8 @@ setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
 setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 
 lemma part1_basic:
-  "r < length xs \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow> outer_remains xs xs' l r \<and> mset xs' = mset xs"
+  "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
+   outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs
@@ -45,18 +46,7 @@ lemma part1_basic:
   @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
   @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
 @qed
-setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "?xs'"] *}
-
-lemma part1_returns_index_in_bounds:
-  "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> l \<le> r \<Longrightarrow> l \<le> rs \<and> rs \<le> r"
-@proof
-  @let "d = r - l"
-  @strong_induct d arbitrary l r xs
-  @case "r \<le> l"
-  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
-  @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
-@qed
-setup {* add_forward_prfstep_cond @{thm part1_returns_index_in_bounds} [with_term "?rs"] *}
+setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"] *}
 
 lemma part1_partitions1:
   "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
@@ -98,49 +88,34 @@ definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat
       (m', list_swap xs' m' r))"
 setup {* register_wellform_data ("partition xs l r", ["l < r", "r < length xs"]) *}
 
-lemma partition_return_in_bounds:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> l \<le> rs \<and> rs \<le> r" by auto2
-setup {* add_forward_prfstep_cond @{thm partition_return_in_bounds} [with_term "?rs"] *}
-
 lemma partition_basic:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   outer_remains xs xs' l r \<and> mset xs' = mset xs" by auto2
-setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "?xs'"] *}
-
-lemma partition_partitions1':
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   i \<ge> l \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> xs' ! rs"
+   outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r" by auto2
+setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "partition ?xs ?l ?r"] *}
+  
+lemma partition_partitions1 [forward]:
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
+   x \<in> set (sublist l rs xs') \<Longrightarrow> x \<le> xs' ! rs"
 @proof
+  @obtain i where "i \<ge> l" "i < rs" "x = xs' ! i"
   @let "p = xs ! r"
   @let "xs'' = snd (part1 xs l (r - 1) p)"
   @have "xs'' ! r = p"
   @have (@rule) "\<forall>j. j \<ge> l \<longrightarrow> j < rs \<longrightarrow> xs'' ! j \<le> p"
 @qed
-setup {* add_forward_prfstep_cond @{thm partition_partitions1'} [with_term "?xs' ! ?i"] *}
-  
-lemma partition_partitions1 [forward]:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   x \<in> set (sublist l rs xs') \<Longrightarrow> x \<le> xs' ! rs"
-@proof @obtain i where "i \<ge> l" "i < rs" "x = xs' ! i" @qed
-setup {* del_prfstep_thm @{thm partition_partitions1'} *}
 
-lemma partition_partitions2':
+declare [[print_trace]]
+lemma partition_partitions2 [forward]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   i \<ge> rs + 1 \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> xs' ! rs"
+   x \<in> set (sublist (rs + 1) (r + 1) xs') \<Longrightarrow> x \<ge> xs' ! rs"
 @proof
+  @obtain i where "i \<ge> rs + 1" "i < r + 1" "x = xs' ! i"
   @let "p = xs ! r"
   @let "m = fst (part1 xs l (r - 1) p)"
   @let "xs'' = snd (part1 xs l (r - 1) p)"
   @have "xs'' ! r = p"
   @have (@rule) "\<forall>j. rs \<le> j \<longrightarrow> j < r - 1 \<longrightarrow> xs'' ! j \<ge> p" @with @case "m = j" @end
 @qed
-setup {* add_forward_prfstep_cond @{thm partition_partitions2'} [with_term "?xs' ! ?i"] *}
-  
-lemma partition_partitions2 [forward]:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   x \<in> set (sublist (rs + 1) (r + 1) xs') \<Longrightarrow> x \<ge> xs' ! rs"
-@proof @obtain i where "i \<ge> rs + 1" "i < r + 1" "x = xs' ! i" @qed
-setup {* del_prfstep_thm @{thm partition_partitions2'} *}
 setup {* del_prfstep_thm @{thm partition_def} *}
 
 lemma quicksort_term1 [resolve]:
@@ -168,8 +143,6 @@ setup {* add_rewrite_rule_cond @{thm quicksort.simps}
   [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
 setup {* register_wellform_data ("quicksort xs l r", ["l < length xs", "r < length xs"]) *}
 setup {* add_prfstep_check_req ("quicksort xs l r", "l < length xs \<and> r < length xs") *}
-
-setup {* add_backward2_prfstep @{thm Nat.diff_less_mono} *}
 
 lemma quicksort_trivial [rewrite]:
   "r < length xs \<Longrightarrow> l \<ge> r \<Longrightarrow> quicksort xs l r = xs" by auto2

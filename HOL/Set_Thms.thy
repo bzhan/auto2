@@ -77,6 +77,7 @@ lemma set_disjoint_single [rewrite]: "{x} \<inter> B = {} \<longleftrightarrow> 
 subsection {* subset *}
 
 setup {* add_forward_prfstep @{thm subsetI} *}
+setup {* add_resolve_prfstep @{thm empty_subsetI} *}
 setup {* add_forward_prfstep @{thm set_mp} *}
 theorem subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in> B" by simp
 setup {* add_resolve_prfstep @{thm Set.basic_monos(1)} *}

@@ -1,5 +1,5 @@
 theory DynamicArray
-imports SepAuto More_Lists "../DataStrs/Arrays_Ex"
+imports SepAuto "../DataStrs/Arrays_Ex"
 begin
 
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (amax: nat) (defv: 'a) (aref: "'a array")
@@ -12,10 +12,10 @@ fun dyn_array :: "'a::heap list \<Rightarrow> 'a dynamic_array \<Rightarrow> ass
      (\<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(xs = take al xs') * \<up>(al \<le> length xs') * \<up>(am = length xs'))"
 setup {* add_rewrite_ent_rule @{thm dyn_array.simps} *}
 
-theorem dyn_array_length [forward_ent]:
+lemma dyn_array_length [forward_ent]:
   "dyn_array xs (Dyn_Array al am dv a) \<Longrightarrow>\<^sub>A true * \<up>(al = length xs)" by auto2
 
-theorem dyn_array_prec [sep_prec_thms]:
+lemma dyn_array_prec [sep_prec_thms]:
   "h \<Turnstile> dyn_array xs p * F1 \<Longrightarrow> h \<Turnstile> dyn_array ys p * F2 \<Longrightarrow> xs = ys" by auto2
 
 definition dyn_array_new :: "'a \<Rightarrow> 'a::heap dynamic_array Heap" where
@@ -25,7 +25,7 @@ definition dyn_array_new :: "'a \<Rightarrow> 'a::heap dynamic_array Heap" where
    }"
 declare dyn_array_new_def [sep_proc_defs]
 
-theorem dyn_array_new_rule [hoare_triple]:
+lemma dyn_array_new_rule [hoare_triple]:
   "<emp> dyn_array_new x <dyn_array []>" by auto2
 
 fun array_copy :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
@@ -39,7 +39,7 @@ fun array_copy :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a array \<Rig
 declare array_copy.simps [sep_proc_defs]
 
 setup {* add_rewrite_rule @{thm Arrays_Ex.array_copy.simps} *}
-theorem array_copy_rule [hoare_triple, hoare_create_case]:
+lemma array_copy_rule [hoare_triple, hoare_create_case]:
   "<src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a ldst * \<up>(si + len \<le> length lsrc) * \<up>(di + len \<le> length ldst)>
     array_copy src si dst di len
    <\<lambda>_. src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a Arrays_Ex.array_copy lsrc si ldst di len>"
@@ -59,7 +59,7 @@ definition ensure_length :: "nat \<Rightarrow> 'a::heap dynamic_array \<Rightarr
       } else return d)"
 declare ensure_length_def [sep_proc_defs]
 
-theorem ensure_length_rule [hoare_triple]:
+lemma ensure_length_rule [hoare_triple]:
   "<dyn_array xs p>
    ensure_length nl p
    <\<lambda>r. dyn_array xs r * \<up>(amax r \<ge> nl)>\<^sub>t" by auto2
@@ -72,8 +72,10 @@ definition push_array :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 
       return (Dyn_Array (alen p + 1) (amax p) (defv p) (aref p)) })"
 declare push_array_def [sep_proc_defs]
 
-theorem push_array_rule [hoare_triple]:
-  "<dyn_array xs p> push_array x p <\<lambda>r. dyn_array (xs @ [x]) r>\<^sub>t"
+lemma push_array_rule [hoare_triple]:
+  "<dyn_array xs p>
+   push_array x p
+   <dyn_array (xs @ [x])>\<^sub>t"
 @proof @have "length (xs @ [x]) = length xs + 1" @qed
 
 definition pop_array :: "'a::heap dynamic_array \<Rightarrow> ('a \<times> 'a dynamic_array) Heap" where
@@ -84,20 +86,22 @@ definition pop_array :: "'a::heap dynamic_array \<Rightarrow> ('a \<times> 'a dy
     })"
 declare pop_array_def [sep_proc_defs]
 
-theorem pop_array_rule [hoare_triple]:
+lemma pop_array_rule [hoare_triple]:
   "<dyn_array xs p * \<up>(xs \<noteq> [])>
    pop_array p
    <\<lambda>(x, r). dyn_array (butlast xs) r * \<up>(x = last xs)>"
-@proof @contradiction @have "last xs = xs ! (length xs - 1)" @qed
+@proof @contradiction
+  @have "last xs = xs ! (length xs - 1)"
+@qed
 
-theorem pop_array_heap_preserving [heap_presv_thms]:
+lemma pop_array_heap_preserving [heap_presv_thms]:
   "heap_preserving (pop_array d)" by auto2
 
 definition array_upd :: "nat \<Rightarrow> 'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> unit Heap" where
   "array_upd i x d = do { Array.upd i x (aref d); return () }"
 declare array_upd_def [sep_proc_defs]
 
-theorem array_upd_rule [hoare_triple, hoare_create_case]:
+lemma array_upd_rule [hoare_triple, hoare_create_case]:
   "<dyn_array l p * \<up>(i < length l)>
    array_upd i x p
    <\<lambda>_. dyn_array (list_update l i x) p>" by auto2
@@ -107,24 +111,24 @@ definition array_nth :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> 
   "array_nth d i = Array.nth (aref d) i"
 declare array_nth_def [sep_proc_defs]
 
-theorem array_nth_rule [hoare_triple, hoare_create_case]:
+lemma array_nth_rule [hoare_triple, hoare_create_case]:
   "<dyn_array xs p * \<up>(i < length xs)>
    array_nth p i
    <\<lambda>r. dyn_array xs p * \<up>(r = xs ! i)>" by auto2
 
-theorem array_nth_heap_preserving [heap_presv_thms]:
+lemma array_nth_heap_preserving [heap_presv_thms]:
   "heap_preserving (array_nth d i)" by auto2
 
 definition array_length :: "'a dynamic_array \<Rightarrow> nat Heap" where
   "array_length d = return (alen d)"
 declare array_length_def [sep_proc_defs]
 
-theorem array_length_rule [hoare_triple_direct]:
+lemma array_length_rule [hoare_triple_direct]:
   "<dyn_array xs p>
    array_length p
    <\<lambda>r. dyn_array xs p * \<up>(r = length xs)>" by auto2
 
-theorem array_length_heap_preserving [heap_presv_thms]:
+lemma array_length_heap_preserving [heap_presv_thms]:
   "heap_preserving (array_length d)" by auto2
 
 setup {* del_prfstep_thm @{thm dynamic_array.collapse} *}
@@ -139,7 +143,7 @@ definition array_swap :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow>
    }"
 declare array_swap_def [sep_proc_defs]
 
-theorem array_swap_rule [hoare_triple, hoare_create_case]:
+lemma array_swap_rule [hoare_triple, hoare_create_case]:
   "<dyn_array xs p * \<up>(i < length xs) * \<up>(j < length xs)>
    array_swap p i j
    <\<lambda>_. dyn_array (list_swap xs i j) p>" by auto2
