@@ -43,8 +43,7 @@ lemma per_union_is_part_equiv [forward]:
 section {* Representing a partial equivalence relation using rep_of array *}
   
 function (domintros) rep_of where
-  "rep_of l i = (if l ! i = i then i else rep_of l (l ! i))"
-  by auto
+  "rep_of l i = (if l ! i = i then i else rep_of l (l ! i))" by auto
 
 setup {* register_wellform_data ("rep_of l i", ["i < length l"]) *}
 setup {* add_backward_prfstep @{thm rep_of.domintros} *}
@@ -104,9 +103,6 @@ lemma ufa_\<alpha>_equiv [forward]: "part_equiv (ufa_\<alpha> l)" by auto2
 
 lemma ufa_\<alpha>_refl [rewrite]: "(i, i) \<in> ufa_\<alpha> l \<longleftrightarrow> i < length l" by auto2
 
-lemma ufa_\<alpha>_dom [rewrite]: "x \<in> Domain (ufa_\<alpha> l) \<longleftrightarrow> x < length l"
-  by (meson Domain.simps ufa_\<alpha>_memD ufa_\<alpha>_refl)
-
 section {* Operations on rep_of array *}
 
 definition uf_init_rel :: "nat \<Rightarrow> (nat \<times> nat) set" where [rewrite]:
@@ -122,17 +118,14 @@ definition ufa_union :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarr
   "ufa_union l x y = l[rep_of l x := rep_of l y]"
 setup {* register_wellform_data ("ufa_union l x y", ["x < length l", "y < length l"]) *}
 
-lemma ufa_union_length [rewrite]: "length (ufa_union l x y) = length l" by auto2
-
 lemma ufa_union_invar:
-  "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> ufa_invar (ufa_union l x y)"
+  "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow> ufa_invar l'"
 @proof
-  @let "l' = ufa_union l x y"
   @have "\<forall>i<length l'. rep_of_dom (l', i) \<and> l' ! i < length l'" @with
     @prop_induct "ufa_invar l \<and> i < length l"
   @end
 @qed
-setup {* add_forward_prfstep_cond @{thm ufa_union_invar} [with_term "ufa_union ?l ?x ?y"] *}
+setup {* add_forward_prfstep_cond @{thm ufa_union_invar} [with_term "?l'"] *}
 
 lemma ufa_union_aux [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow>
@@ -140,14 +133,13 @@ lemma ufa_union_aux [rewrite]:
 @proof @prop_induct "ufa_invar l \<and> i < length l" @qed
   
 lemma ufa_union_correct [rewrite]:
-  "ufa_invar l \<Longrightarrow> a < length l \<Longrightarrow> b < length l \<Longrightarrow>
-   ufa_\<alpha> (ufa_union l a b) = per_union (ufa_\<alpha> l) a b"
+  "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow>
+   ufa_\<alpha> l' = per_union (ufa_\<alpha> l) x y"
 @proof
-  @let "l' = ufa_union l a b"
-  @have "\<forall>x y. (x,y) \<in> ufa_\<alpha> l' \<longleftrightarrow> (x,y) \<in> per_union (ufa_\<alpha> l) a b" @with
-    @case "(x,y) \<in> ufa_\<alpha> l'" @with
-      @case "rep_of l x = rep_of l a"
-      @case "rep_of l y = rep_of l a"
+  @have "\<forall>a b. (a,b) \<in> ufa_\<alpha> l' \<longleftrightarrow> (a,b) \<in> per_union (ufa_\<alpha> l) x y" @with
+    @case "(a,b) \<in> ufa_\<alpha> l'" @with
+      @case "rep_of l a = rep_of l x"
+      @case "rep_of l a = rep_of l y"
     @end
   @end
 @qed
@@ -156,21 +148,18 @@ definition ufa_compress :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" w
   "ufa_compress l x = l[x := rep_of l x]"
 setup {* register_wellform_data ("ufa_compress l x", ["x < length l"]) *}
 
-lemma ufa_compress_length [rewrite]: "length (ufa_compress l x) = length l" by auto2
-
 lemma ufa_compress_invar:
-  "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> ufa_invar (ufa_compress l x)"
+  "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> l' = ufa_compress l x \<Longrightarrow> ufa_invar l'"
 @proof
-  @let "l' = ufa_compress l x"
   @have "\<forall>i<length l'. rep_of_dom (l', i) \<and> l' ! i < length l'" @with
     @prop_induct "ufa_invar l \<and> i < length l"
   @end
 @qed
-setup {* add_forward_prfstep_cond @{thm ufa_compress_invar} [with_term "ufa_compress ?l ?x"] *}
+setup {* add_forward_prfstep_cond @{thm ufa_compress_invar} [with_term "?l'"] *}
   
 lemma ufa_compress_aux [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> l' = ufa_compress l x \<Longrightarrow> i < length l' \<Longrightarrow>
-   rep_of (ufa_compress l x) i = rep_of l i"
+   rep_of l' i = rep_of l i"
 @proof @prop_induct "ufa_invar l \<and> i < length l" @qed
 
 lemma ufa_compress_correct [rewrite]:

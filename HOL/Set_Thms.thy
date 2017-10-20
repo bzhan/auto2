@@ -79,7 +79,7 @@ subsection {* subset *}
 setup {* add_forward_prfstep @{thm subsetI} *}
 setup {* add_resolve_prfstep @{thm empty_subsetI} *}
 setup {* add_forward_prfstep @{thm set_mp} *}
-theorem subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in> B" by simp
+lemma subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in> B" by simp
 setup {* add_resolve_prfstep @{thm Set.basic_monos(1)} *}
 setup {* add_resolve_prfstep @{thm Set.Un_upper1} *}
 setup {* add_resolve_prfstep @{thm Set.Un_upper2} *}

@@ -9,19 +9,18 @@ definition is_uf :: "nat \<Rightarrow> (nat\<times>nat) set \<Rightarrow> uf \<R
         \<up>(ufa_invar l \<and> ufa_\<alpha> l = R \<and> length l = n \<and> length szl = n))"
 setup {* add_rewrite_ent_rule @{thm is_uf_def} *}
 
-definition uf_init :: "nat \<Rightarrow> uf Heap" where
+definition uf_init :: "nat \<Rightarrow> uf Heap" where [sep_proc_defs]:
   "uf_init n = do {
      l \<leftarrow> Array.of_list [0..<n];
      szl \<leftarrow> Array.new n (1::nat);
      return (szl, l)
    }"
-declare uf_init_def [sep_proc_defs]
 
 lemma uf_init_rule [hoare_triple]:
   "<emp> uf_init n <is_uf n (uf_init_rel n)>" by auto2
 declare uf_init_def [sep_proc_defs del]
   
-partial_function (heap) uf_rep_of :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where [code]: 
+partial_function (heap) uf_rep_of :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "uf_rep_of p i = do {
      n \<leftarrow> Array.nth p i;
      if n = i then return i else uf_rep_of p n
@@ -37,7 +36,7 @@ lemma uf_rep_of_rule [hoare_triple]:
 @qed
 declare uf_rep_of.simps [sep_proc_defs]
 
-partial_function (heap) uf_compress :: "nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> unit Heap" where [code]: 
+partial_function (heap) uf_compress :: "nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> unit Heap" where
   "uf_compress i ci p = (
     if i = ci then return ()
     else do {
@@ -57,13 +56,12 @@ lemma uf_compress_rule [hoare_triple]:
 @qed
 declare uf_compress.simps [sep_proc_defs del]
 
-definition uf_rep_of_c :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
+definition uf_rep_of_c :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where [sep_proc_defs]:
   "uf_rep_of_c p i = do {
     ci \<leftarrow> uf_rep_of p i;
     uf_compress i ci p;
     return ci
   }"
-declare uf_rep_of_c_def [sep_proc_defs]
 
 lemma uf_rep_of_c_rule [hoare_triple]:
   "<p \<mapsto>\<^sub>a l * \<up>(ufa_invar l) * \<up>(i < length l)>
@@ -73,7 +71,7 @@ lemma uf_rep_of_c_rule [hoare_triple]:
   by auto2
 declare uf_rep_of_c_def [sep_proc_defs del]
 
-definition uf_cmp :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where 
+definition uf_cmp :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where [sep_proc_defs]:
   "uf_cmp u i j \<equiv> do {
     n \<leftarrow> Array.len (snd u);
     if (i\<ge>n \<or> j\<ge>n) then return False
@@ -83,7 +81,6 @@ definition uf_cmp :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool 
       return (ci = cj)
     }
   }"
-declare uf_cmp_def [sep_proc_defs]
 
 lemma uf_cmp_rule [hoare_triple]:
   "<is_uf n R u>
@@ -91,7 +88,7 @@ lemma uf_cmp_rule [hoare_triple]:
    <\<lambda>r. is_uf n R u * \<up>(r \<longleftrightarrow> (i,j)\<in>R)>" by auto2
 declare uf_cmp_def [sep_proc_defs del]
 
-definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf Heap" where 
+definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf Heap" where [sep_proc_defs]:
   "uf_union u i j \<equiv> do {
     ci \<leftarrow> uf_rep_of (snd u) i;
     cj \<leftarrow> uf_rep_of (snd u) j;
@@ -110,7 +107,6 @@ definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf 
       }
     }
   }"
-declare uf_union_def [sep_proc_defs]
 
 lemma uf_union_rule [hoare_triple, hoare_create_case]:
   "<is_uf n R u * \<up>(i < n) * \<up>(j < n)>

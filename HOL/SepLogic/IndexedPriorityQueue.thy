@@ -151,13 +151,6 @@ definition index_of_pqueue :: "(nat \<times> 'a) list \<Rightarrow> (nat, nat) m
     (\<forall>i<length xs. m\<langle>fst (xs ! i)\<rangle> = Some i) \<and>
     (\<forall>i k. m\<langle>k\<rangle> = Some i \<longrightarrow> i < length xs \<and> fst (xs ! i) = k))"
 
-lemma index_of_pqueueD1 [forward]:
-  "index_of_pqueue xs m \<Longrightarrow> \<forall>i. i < length xs \<longrightarrow> m \<langle>fst (xs ! i)\<rangle> = Some i" by auto2
-
-lemma index_of_pqueueD2 [forward]:
-  "index_of_pqueue xs m \<Longrightarrow> m\<langle>k\<rangle> = Some i \<Longrightarrow> i < length xs \<and> fst (xs ! i) = k" by auto2
-setup {* del_prfstep_thm_eqforward @{thm index_of_pqueue_def} *}
-  
 lemma has_index_unique_key [forward]:
   "index_of_pqueue xs m \<Longrightarrow> unique_keys_set (set xs)"
 @proof
@@ -285,8 +278,7 @@ lemma index_of_pqueue_pop [backward2]:
 lemma idx_pqueue_pop_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(xs \<noteq> [])>
    idx_pqueue_pop p
-   <\<lambda>(x, r). idx_pqueue (butlast xs) n r * \<up>(x = last xs)>"
-@proof @have "set (butlast xs) \<subseteq> set xs" @qed
+   <\<lambda>(x, r). idx_pqueue (butlast xs) n r * \<up>(x = last xs)>" by auto2
 
 lemma key_within_range_update [backward2]:
   "key_within_range xs n \<Longrightarrow> i < length xs \<Longrightarrow> k < n \<Longrightarrow> key_within_range (list_update xs i (k, v)) n"
@@ -406,7 +398,8 @@ definition insert_idx_pqueue ::
      p' \<leftarrow> idx_pqueue_push k v p;
      len \<leftarrow> idx_pqueue_length p';
      idx_bubble_up p' (len - 1);
-     return p' }"
+     return p'
+   }"
 
 lemma insert_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(k < n) * \<up>(\<not>has_key_alist xs k)>

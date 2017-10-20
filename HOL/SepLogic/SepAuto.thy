@@ -5,24 +5,24 @@ begin
 
 subsection {* Assertions *}
 
-theorem pure_conj:  "\<up>(P \<and> Q) = \<up>P * \<up>Q" by auto2
-theorem mod_false' [resolve]: "\<not> (h \<Turnstile> false * Ru)" by auto2
+lemma pure_conj:  "\<up>(P \<and> Q) = \<up>P * \<up>Q" by auto2
+lemma mod_false' [resolve]: "\<not> (h \<Turnstile> false * Ru)" by auto2
 
 subsection {* Entailment *}
 
-theorem entails_true: "A \<Longrightarrow>\<^sub>A true" by auto2
-theorem entail_equiv_forward: "P = Q \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q" by auto2
-theorem entail_equiv_backward: "P = Q \<Longrightarrow> Q \<Longrightarrow>\<^sub>A P" by auto2
-theorem entailsD_back: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> \<not>h \<Turnstile> Q * R \<Longrightarrow> \<not>h \<Turnstile> P * R" by auto2
-theorem entails_triv: "A \<Longrightarrow>\<^sub>A A" by auto2
-theorem entail_trans2: "A \<Longrightarrow>\<^sub>A D * B \<Longrightarrow> B \<Longrightarrow>\<^sub>A C \<Longrightarrow> A \<Longrightarrow>\<^sub>A D * C"
+lemma entails_true: "A \<Longrightarrow>\<^sub>A true" by auto2
+lemma entail_equiv_forward: "P = Q \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q" by auto2
+lemma entail_equiv_backward: "P = Q \<Longrightarrow> Q \<Longrightarrow>\<^sub>A P" by auto2
+lemma entailsD_back: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> \<not>h \<Turnstile> Q * R \<Longrightarrow> \<not>h \<Turnstile> P * R" by auto2
+lemma entails_triv: "A \<Longrightarrow>\<^sub>A A" by auto2
+lemma entail_trans2: "A \<Longrightarrow>\<^sub>A D * B \<Longrightarrow> B \<Longrightarrow>\<^sub>A C \<Longrightarrow> A \<Longrightarrow>\<^sub>A D * C"
   by (simp add: assn_times_comm entailsD' entails_def)
-theorem entail_trans2': "D * B \<Longrightarrow>\<^sub>A A \<Longrightarrow> C \<Longrightarrow>\<^sub>A B \<Longrightarrow> D * C \<Longrightarrow>\<^sub>A A"
+lemma entail_trans2': "D * B \<Longrightarrow>\<^sub>A A \<Longrightarrow> C \<Longrightarrow>\<^sub>A B \<Longrightarrow> D * C \<Longrightarrow>\<^sub>A A"
   by (simp add: assn_times_comm entailsD' entails_def)
-theorem entails_invD: "A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not>(h \<Turnstile> B) \<Longrightarrow> \<not>(h \<Turnstile> A)"
+lemma entails_invD: "A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not>(h \<Turnstile> B) \<Longrightarrow> \<not>(h \<Turnstile> A)"
   using entailsD by blast
 
-theorem mod_array_eq [backward1]: "xs = xs' \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>a xs \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>a xs'" by simp
+lemma mod_array_eq [backward1]: "xs = xs' \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>a xs \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>a xs'" by simp
 
 subsection {* outer_remains for Arrays *}
 

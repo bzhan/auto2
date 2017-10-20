@@ -15,7 +15,7 @@ setup {* add_var_induct_rule @{thm list.induct} *}
 section {* Length *}
 
 setup {* add_rewrite_rule @{thm List.list.size(3)} *}
-theorem length_one [rewrite]: "length [x] = 1" by simp
+lemma length_one [rewrite]: "length [x] = 1" by simp
 lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
 lemma length_snoc [rewrite]: "length (xs @ [x]) = length xs + 1" by auto
 setup {* add_rewrite_rule @{thm length_tl} *}
@@ -82,8 +82,7 @@ lemma sorted_nth_mono' [backward]:
   "sorted xs \<Longrightarrow> j < length xs \<Longrightarrow> i \<le> j \<Longrightarrow> xs ! i \<le> xs ! j" using sorted_nth_mono by auto
 
 lemma sorted_nth_mono_less [forward]:
-  "sorted xs \<Longrightarrow> i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> xs ! i < xs ! j \<Longrightarrow> i < j"
-  by (meson leD not_le_imp_less sorted_nth_mono)
+  "sorted xs \<Longrightarrow> i < length xs \<Longrightarrow> xs ! i < xs ! j \<Longrightarrow> i < j" by (meson leD not_le_imp_less sorted_nth_mono)
 
 section {* sort *}
 
@@ -123,7 +122,7 @@ setup {* add_rewrite_rule @{thm List.map_append} *}
 
 section {* Replicate *}
 
-setup {* add_rewrite_rule @{thm length_replicate} *}
+setup {* add_forward_prfstep_cond @{thm length_replicate} [with_term "replicate ?n ?x"] *}
 setup {* add_rewrite_rule @{thm List.nth_replicate} *}
 
 section {* last *}
