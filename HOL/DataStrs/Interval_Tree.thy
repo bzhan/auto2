@@ -97,40 +97,6 @@ setup {* add_property_const @{term is_interval_tree} *}
 lemma is_interval_tree_lr [forward]:
   "is_interval_tree (Node l x m r) \<Longrightarrow> is_interval_tree l \<and> is_interval_tree r" by auto2
 
-section {* Rotation on trees *}
-
-definition rotateL :: "interval_tree \<Rightarrow> interval_tree" where [rewrite]:
-  "rotateL t =
-    (if t = Tip then t else if rsub t = Tip then t else
-     let rt = rsub t;
-         ml = max3 (val t) (tmax (lsub t)) (tmax (lsub rt));
-         m' = max3 (val (rsub t)) ml (tmax (rsub rt)) in
-     Node (Node (lsub t) (val t) ml (lsub rt)) (val rt) m' (rsub rt))"
-
-lemma rotateL_in_trav [rewrite]: "in_traverse (rotateL t) = in_traverse t" by auto2
-
-lemma rotateL_set [rewrite]: "tree_set (rotateL t) = tree_set t" by auto2
-
-lemma rotateL_max_inv [forward]: "tree_max_inv t \<Longrightarrow> tree_max_inv (rotateL t)" by auto2
-
-lemma rotateL_all_inv [forward]: "is_interval_tree t \<Longrightarrow> is_interval_tree (rotateL t)" by auto2
-
-definition rotateR :: "interval_tree \<Rightarrow> interval_tree" where [rewrite]:
-  "rotateR t =
-    (if t = Tip then t else if lsub t = Tip then t else
-     let lt = lsub t;
-         mr = max3 (val t) (tmax (rsub lt)) (tmax (rsub t));
-         m' = max3 (val lt) (tmax (lsub lt)) mr in
-     Node (lsub lt) (val lt) m' (Node (rsub lt) (val t) mr (rsub t)))"
-
-lemma rotateR_in_trav [rewrite]: "in_traverse (rotateR t) = in_traverse t" by auto2
-
-lemma rotateR_set [rewrite]: "tree_set (rotateR t) = tree_set t" by auto2
-
-lemma rotateR_max_inv [forward]: "tree_max_inv t \<Longrightarrow> tree_max_inv (rotateR t)" by auto2
-
-lemma rotateR_all_inv [forward]: "is_interval_tree t \<Longrightarrow> is_interval_tree (rotateR t)" by auto2
-
 section {* Insertion on trees *}
 
 fun tree_insert :: "nat idx_interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
