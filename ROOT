@@ -4,9 +4,12 @@ session HOL_Base = HOL +
   description {*
     Theories in HOL needed by AUTO2.
   *}
+  sessions
+    "HOL-Library"
+    "HOL-Imperative_HOL"
   theories
-    "../src/HOL/Library/Multiset"
-    "../src/HOL/Imperative_HOL/Imperative_HOL"
+    "HOL-Library.Multiset"
+    "HOL-Imperative_HOL.Imperative_HOL"
 
 session AUTO2 = HOL_Base +
   description {*
