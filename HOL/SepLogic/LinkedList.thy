@@ -412,8 +412,6 @@ lemma map_os_list_rule [hoare_triple]:
   "<os_list xs b> map_os_list f b <os_list (map f xs)>"
 @proof @induct xs arbitrary b @qed
 
-setup {* fold add_rewrite_rule @{thms List.filter.simps} *}
-
 partial_function (heap) filter_os_list ::
   "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
 "filter_os_list f b = (case b of

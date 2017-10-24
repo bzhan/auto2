@@ -30,12 +30,18 @@ lemma ball_single [rewrite]: "(\<forall>x\<in>{x}. P x) = P x" by auto
 subsection {* Membership *}
 
 setup {* add_rewrite_rule @{thm Set.singleton_iff} *} 
-lemma set_two_mem [rewrite]: "{u, v} \<subseteq> S \<longleftrightarrow> u \<in> S \<and> v \<in> S" by simp
 setup {* add_forward_prfstep (equiv_forward_th @{thm Set.empty_iff}) *}
 lemma set_membership_distinct [forward]: "x \<in> s \<Longrightarrow> y \<notin> s \<Longrightarrow> x \<noteq> y" by auto
 lemma non_empty_exist_elt [backward]: "U \<noteq> {} \<Longrightarrow> \<exists>x. x \<in> U" by blast
 lemma non_univ_exist_compl [backward]: "U \<noteq> UNIV \<Longrightarrow> \<exists>x. x \<notin> U" by blast
 lemma univ_member_all [resolve]: "U = UNIV \<Longrightarrow> x \<in> U" by simp
+
+subsection {* Insert *}
+
+setup {* add_rewrite_rule_cond @{thm Set.insert_iff} [with_cond "?A \<noteq> {}"] *}
+setup {* add_fixed_sc ("Set.insert_iff@eqforward", 500) *}
+setup {* add_rewrite_rule_cond @{thm Set.insert_subset} [with_cond "?A \<noteq> {}"] *}
+setup {* add_fixed_sc ("Set.insert_subset@invbackward", 500) *}
 
 subsection {* Extensionality *}
 

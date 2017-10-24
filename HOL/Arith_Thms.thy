@@ -112,10 +112,11 @@ setup {* add_forward_prfstep_cond @{thm n_minus_1_less_n} [with_term "?n - 1"] *
 (* Monotonicity of ordering *)
 setup {* add_backward_prfstep @{thm Nat.diff_le_mono} *}
 setup {* add_backward2_prfstep @{thm Nat.diff_less_mono} *}
-setup {* add_backward_prfstep @{thm Nat.add_le_mono1} *}
 setup {* add_backward_prfstep @{thm Nat.mult_le_mono2} *}
 setup {* add_resolve_prfstep @{thm Nat.le_add1} *}
 setup {* add_resolve_prfstep @{thm Nat.le_add2} *}
+setup {* add_backward_prfstep @{thm add_left_mono} *}
+setup {* add_backward_prfstep @{thm add_right_mono} *}
 
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp
