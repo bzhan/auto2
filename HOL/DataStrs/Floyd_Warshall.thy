@@ -22,8 +22,8 @@ section {* Cycles in Lists *}
 definition cnt :: "'a \<Rightarrow> 'a list \<Rightarrow> nat" where [rewrite]:
   "cnt x xs = length (filter (\<lambda>y. x = y) xs)"
 
-lemma cnt_rev [rewrite]:
-  "cnt x (rev xs) = cnt x xs" by auto2
+lemma cnt_rev [rewrite]: "cnt x (rev xs) = cnt x xs" by auto2
+lemma cnt_append [rewrite]: "cnt x (xs @ ys) = cnt x xs + cnt x ys" by auto2
 
 (* remove_cycles xs x ys:
    If x does not appear in xs, return rev ys @ xs.
@@ -113,14 +113,9 @@ lemma start_remove_decomp [backward]:
 
 lemma start_remove_removes:
   "cnt x (start_remove xs x ys) \<le> cnt x ys + 1"
-@proof @induct xs arbitrary ys @with
-  @subgoal "xs = y # xs"
-    @case "x = y" @with
-      @have "cnt y (remove_cycles xs y [y]) \<le> 1"
-    @end
-  @endgoal @end
-@qed
-setup {* add_forward_prfstep_cond @{thm start_remove_removes} [with_term "start_remove ?xs ?x ?ys"] *}
+@proof @induct xs arbitrary ys @qed
+setup {* add_forward_prfstep_cond @{thm start_remove_removes}
+  [with_term "cnt ?x (start_remove ?xs ?x ?ys)"] *}
 
 lemma start_remove_id [rewrite]:
   "x \<notin> set xs \<Longrightarrow> start_remove xs x ys = rev ys @ xs"
@@ -130,5 +125,67 @@ lemma start_remove_cnt_id:
   "x \<noteq> y \<Longrightarrow> cnt y (start_remove xs x ys) \<le> cnt y ys + cnt y xs"
 @proof @induct xs arbitrary ys @qed
 setup {* add_forward_prfstep_cond @{thm start_remove_cnt_id} [with_term "start_remove ?xs ?x ?ys"] *}
+
+(* *)
+fun remove_all_cycles :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+  "remove_all_cycles [] xs = xs"
+| "remove_all_cycles (x # xs) ys = remove_all_cycles xs (start_remove ys x [])"
+setup {* fold add_rewrite_rule @{thms remove_all_cycles.simps} *}
+
+lemma cnt_remove_all_mono:
+  "cnt y (remove_all_cycles xs ys) \<le> max 1 (cnt y ys)"
+@proof @induct xs arbitrary ys @with
+  @subgoal "xs = x # xs"
+    @case "x = y"
+  @endgoal @end
+@qed
+setup {* add_forward_prfstep_cond @{thm cnt_remove_all_mono}
+  [with_term "cnt ?y (remove_all_cycles ?xs ?ys)"] *}
+
+lemma cnt_remove_all_cycles:
+  "x \<in> set xs \<Longrightarrow> cnt x (remove_all_cycles xs ys) \<le> 1"
+@proof @induct xs arbitrary ys @qed
+setup {* add_forward_prfstep_cond @{thm cnt_remove_all_cycles}
+  [with_term "cnt ?x (remove_all_cycles ?xs ?ys)"] *}
+
+lemma cnt_zero [forward]:
+  "cnt x xs = 0 \<Longrightarrow> x \<notin> set xs"
+@proof @induct xs @qed
+
+lemma cnt_distinct_intro [forward]:
+  "\<forall>x\<in>set xs. cnt x xs \<le> 1 \<Longrightarrow> distinct xs"
+@proof @induct xs @with
+  @subgoal "xs = x # xs"
+    @have "\<forall>x'\<in>set xs. cnt x' xs \<le> 1"
+    @have "cnt x xs = 0"
+  @endgoal @end
+@qed
+
+lemma remove_cycles_subs:
+  "set (remove_cycles xs x ys) \<subseteq> set xs \<union> set ys"
+@proof @induct xs arbitrary ys @qed
+setup {* add_forward_prfstep_cond @{thm remove_cycles_subs}
+  [with_term "set (remove_cycles ?xs ?x ?ys)"] *}
+
+lemma start_remove_subs:
+  "set (start_remove xs x ys) \<subseteq> set xs \<union> set ys"
+@proof @induct xs arbitrary ys @qed
+setup {* add_forward_prfstep_cond @{thm start_remove_subs}
+  [with_term "set (start_remove ?xs ?x ?ys)"] *}
+
+lemma remove_all_cycles_subs:
+  "set (remove_all_cycles xs ys) \<subseteq> set ys"
+@proof @induct xs arbitrary ys @qed
+setup {* add_forward_prfstep_cond @{thm remove_all_cycles_subs}
+  [with_term "set (remove_all_cycles ?xs ?ys)"] *}
+
+lemma remove_all_cycles_distinct:
+  "set ys \<subseteq> set xs \<Longrightarrow> zs = remove_all_cycles xs ys \<Longrightarrow> distinct zs"
+@proof @have "\<forall>x\<in>set zs. cnt x zs \<le> 1" @qed
+setup {* add_forward_prfstep_cond @{thm remove_all_cycles_distinct} [with_term "?zs"] *}
+
+lemma distinct_remove_cycles_inv [resolve]:
+  "distinct (xs @ ys) \<Longrightarrow> distinct (remove_cycles xs x ys)"
+@proof @induct xs arbitrary ys @qed
 
 end

@@ -47,6 +47,7 @@ lemma set_two [rewrite]: "set [u, v] = {u, v}" by simp
 lemma set_simps2: "set (x # xs) = {x} \<union> set xs" by simp
 setup {* add_rewrite_rule_cond @{thm set_simps2} [with_cond "?xs \<noteq> []", with_cond "?xs \<noteq> [?y]"] *}
 setup {* add_rewrite_rule @{thm List.set_append} *}
+setup {* add_rewrite_rule @{thm List.set_rev} *}
 setup {* add_resolve_prfstep @{thm List.finite_set} *}
 setup {* add_backward_prfstep (equiv_forward_th @{thm in_set_conv_nth}) *}
 
@@ -96,23 +97,15 @@ setup {* add_property_const @{term distinct} *}
   
 lemma distinct_Nil [resolve]: "distinct []" by simp
 setup {* add_resolve_prfstep @{thm List.distinct_singleton} *}
-
-lemma distinct_ConsI [backward]: "distinct xs \<Longrightarrow> \<forall>y\<in>set xs. x \<noteq> y \<Longrightarrow> distinct (x # xs)" by auto
-
-lemma distinct_ConsD1 [forward]: "distinct (x # xs) \<Longrightarrow> distinct xs" by auto
-lemma distinct_ConsD2 [forward]: "distinct (x # xs) \<Longrightarrow> x \<notin> set xs" by auto
-
+setup {* add_rewrite_rule_cond @{thm distinct.simps(2)} [with_cond "?xs \<noteq> []"] *}
+setup {* add_rewrite_rule @{thm distinct_append} *}
+setup {* add_rewrite_rule @{thm distinct_rev} *}
+setup {* add_rewrite_rule @{thm distinct_sort} *}
 setup {* add_resolve_prfstep (equiv_backward_th @{thm distinct_conv_nth}) *}
 
 lemma distinct_nthE [forward]:
   "distinct xs \<Longrightarrow> i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> xs ! i = xs ! j \<Longrightarrow> i = j"
   using nth_eq_iff_index_eq by blast
-
-lemma distinct_appendI [backward]:
-  "distinct xs \<Longrightarrow> distinct ys \<Longrightarrow> set xs \<inter> set ys = {} \<Longrightarrow> distinct (xs @ ys)" by simp
-
-lemma distinct_sort: "distinct xs \<Longrightarrow> distinct (sort xs)" by simp
-setup {* add_forward_prfstep_cond @{thm distinct_sort} [with_term "sort ?xs"] *}
 
 section {* map function *}
 

@@ -83,6 +83,9 @@ lemma set_disjoint_single [rewrite]: "{x} \<inter> B = {} \<longleftrightarrow> 
 subsection {* subset *}
 
 setup {* add_forward_prfstep @{thm subsetI} *}
+setup {* add_backward_prfstep @{thm subsetI} *}
+setup {* add_fixed_sc ("Set.subsetI@back", 500) *}
+
 setup {* add_resolve_prfstep @{thm empty_subsetI} *}
 setup {* add_forward_prfstep @{thm set_mp} *}
 lemma subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in> B" by simp
