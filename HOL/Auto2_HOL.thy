@@ -38,6 +38,7 @@ ML_file "../auto2_outer.ML"
 ML_file "acdata.ML"
 ML_file "ac_steps.ML"
 ML_file "induct_outer.ML"
+ML_file "extra_hol.ML"
 
 method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac) *} "auto2 prover"
 
@@ -49,5 +50,7 @@ attribute_setup resolve = {* setup_attrib add_resolve_prfstep *}
 attribute_setup rewrite = {* setup_attrib add_rewrite_rule *}
 attribute_setup rewrite_back = {* setup_attrib add_rewrite_rule_back *}
 attribute_setup rewrite_bidir = {* setup_attrib add_rewrite_rule_bidir *}
+attribute_setup forward_arg1 = {* setup_attrib add_forward_arg1_prfstep *}
+attribute_setup forward_arg = {* setup_attrib add_forward_arg_prfstep *}
 
 end
