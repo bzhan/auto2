@@ -17,7 +17,6 @@ fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "itrev []       ys = ys"
 | "itrev (x # xs) ys = itrev xs (x # ys)"
 setup {* fold add_rewrite_rule @{thms itrev.simps} *}
-declare [[print_trace]]
 
 lemma itrev_eq_rev: "itrev x [] = rev x"
 @proof

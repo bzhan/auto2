@@ -104,7 +104,6 @@ lemma partition_partitions1 [forward]:
   @have (@rule) "\<forall>j. j \<ge> l \<longrightarrow> j < rs \<longrightarrow> xs'' ! j \<le> p"
 @qed
 
-declare [[print_trace]]
 lemma partition_partitions2 [forward]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
    x \<in> set (sublist (rs + 1) (r + 1) xs') \<Longrightarrow> x \<ge> xs' ! rs"
