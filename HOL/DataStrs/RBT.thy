@@ -110,7 +110,7 @@ subsection {* Set of keys, sortedness *}
 
 fun rbt_in_traverse :: "('a, 'b) rbt \<Rightarrow> 'a list" where
   "rbt_in_traverse Leaf = []"
-| "rbt_in_traverse (Node l c k v r) = (rbt_in_traverse l) @ [k] @ (rbt_in_traverse r)"
+| "rbt_in_traverse (Node l c k v r) = rbt_in_traverse l @ k # rbt_in_traverse r"
 setup {* fold add_rewrite_rule @{thms rbt_in_traverse.simps} *}
 
 fun rbt_set :: "('a, 'b) rbt \<Rightarrow> 'a set" where
@@ -120,7 +120,7 @@ setup {* fold add_rewrite_rule @{thms rbt_set.simps} *}
 
 fun rbt_in_traverse_pairs :: "('a, 'b) rbt \<Rightarrow> ('a \<times> 'b) list" where
   "rbt_in_traverse_pairs Leaf = []"
-| "rbt_in_traverse_pairs (Node l c k v r) = (rbt_in_traverse_pairs l) @ [(k, v)] @ (rbt_in_traverse_pairs r)"
+| "rbt_in_traverse_pairs (Node l c k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r"
 setup {* fold add_rewrite_rule @{thms rbt_in_traverse_pairs.simps} *}
 
 lemma rbt_in_traverse_fst [rewrite]: "map fst (rbt_in_traverse_pairs t) = rbt_in_traverse t"
@@ -190,10 +190,10 @@ lemma balance_cl2 [forward]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv (balance l k v r)" by auto2
 
 lemma balanceR_inorder_pairs [rewrite]:
-  "rbt_in_traverse_pairs (balanceR l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+  "rbt_in_traverse_pairs (balanceR l k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r" by auto2
 
 lemma balance_inorder_pairs [rewrite]:
-  "rbt_in_traverse_pairs (balance l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+  "rbt_in_traverse_pairs (balance l k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r" by auto2
 
 setup {* fold del_prfstep_thm [@{thm balanceR_def}, @{thm balance_def}] *}
 
@@ -333,10 +333,10 @@ lemma balR_cl' [forward]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv' (balR l k v r)" by auto2
 
 lemma balL_in_traverse_pairs [rewrite]:
-  "rbt_in_traverse_pairs (balL l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+  "rbt_in_traverse_pairs (balL l k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r" by auto2
 
 lemma balR_in_traverse_pairs [rewrite]:
-  "rbt_in_traverse_pairs (balR l k v r) = rbt_in_traverse_pairs l @ [(k, v)] @ rbt_in_traverse_pairs r" by auto2
+  "rbt_in_traverse_pairs (balR l k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r" by auto2
 
 setup {* fold del_prfstep_thm [@{thm balL_def}, @{thm balR_def}] *}
 
@@ -395,11 +395,11 @@ lemma combine_in_traverse_pairs [rewrite]:
   @subgoal "(lt = Node l1 c1 k1 v1 r1, rt = Node l2 c2 k2 v2 r2)"
     @case "c1 = R" @with @case "c2 = R" @with @case "cl (combine r1 l2) = R" @with
       @have "rbt_in_traverse_pairs (combine (Node l1 c1 k1 v1 r1) (Node l2 c2 k2 v2 r2)) =
-             rbt_in_traverse_pairs l1 @ [(k1, v1)] @ rbt_in_traverse_pairs (combine r1 l2) @ [(k2, v2)] @ rbt_in_traverse_pairs r2"
+             rbt_in_traverse_pairs l1 @ (k1, v1) # rbt_in_traverse_pairs (combine r1 l2) @ (k2, v2) # rbt_in_traverse_pairs r2"
     @end @end @end
     @case "c1 = B" @with @case "c2 = B" @with @case "cl (combine r1 l2) = R" @with
       @have "rbt_in_traverse_pairs (combine (Node l1 c1 k1 v1 r1) (Node l2 c2 k2 v2 r2)) =
-             rbt_in_traverse_pairs l1 @ [(k1, v1)] @ rbt_in_traverse_pairs (combine r1 l2) @ [(k2, v2)] @ rbt_in_traverse_pairs r2"
+             rbt_in_traverse_pairs l1 @ (k1, v1) # rbt_in_traverse_pairs (combine r1 l2) @ (k2, v2) # rbt_in_traverse_pairs r2"
     @end @end @end
   @endgoal @end
 @qed

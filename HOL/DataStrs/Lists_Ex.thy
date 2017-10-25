@@ -65,10 +65,10 @@ lemma ordered_insert_sorted [forward]:
 @proof @induct ys @qed
 
 lemma ordered_insert_binary [rewrite]:
-  "strict_sorted (xs @ [a] @ ys) \<Longrightarrow> ordered_insert x (xs @ [a] @ ys) =
-    (if x < a then (ordered_insert x xs) @ [a] @ ys
-     else if x > a then xs @ [a] @ ordered_insert x ys
-     else xs @ [a] @ ys)"
+  "strict_sorted (xs @ a # ys) \<Longrightarrow> ordered_insert x (xs @ a # ys) =
+    (if x < a then ordered_insert x xs @ a # ys
+     else if x > a then xs @ a # ordered_insert x ys
+     else xs @ a # ys)"
 @proof @induct xs @qed
 
 section {* Deleting an element *}
@@ -91,9 +91,9 @@ lemma remove_elt_idem [rewrite]:
 @proof @induct ys @qed
 
 lemma remove_elt_list_binary [rewrite]:
-  "strict_sorted (xs @ [a] @ ys) \<Longrightarrow> remove_elt_list x (xs @ [a] @ ys) =
-    (if x < a then (remove_elt_list x xs) @ [a] @ ys
-     else if x > a then xs @ [a] @ remove_elt_list x ys else xs @ ys)"
+  "strict_sorted (xs @ a # ys) \<Longrightarrow> remove_elt_list x (xs @ a # ys) =
+    (if x < a then remove_elt_list x xs @ a # ys
+     else if x > a then xs @ a # remove_elt_list x ys else xs @ ys)"
 @proof @induct xs @with
   @subgoal "xs = []"
     @case "x < a" @with @have "x \<notin> set ys" @end
@@ -123,15 +123,11 @@ lemma ordered_insert_pairs_sorted [backward]:
 @proof @induct ys @qed
 
 lemma ordered_insert_pairs_binary [rewrite]:
-  "strict_sorted (map fst (xs @ [a] @ ys)) \<Longrightarrow> ordered_insert_pairs x v (xs @ [a] @ ys) =
-    (if x < fst a then (ordered_insert_pairs x v xs) @ [a] @ ys
-     else if x > fst a then xs @ [a] @ ordered_insert_pairs x v ys
-     else xs @ [(x, v)] @ ys)"
-@proof @induct xs @with
-  @subgoal "xs = x' # xs'"
-    @case "x < fst a" @then @have "fst a > fst x'"
-  @endgoal @end   
-@qed
+  "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> ordered_insert_pairs x v (xs @ a # ys) =
+    (if x < fst a then ordered_insert_pairs x v xs @ a # ys
+     else if x > fst a then xs @ a # ordered_insert_pairs x v ys
+     else xs @ (x, v) # ys)"
+@proof @induct xs @qed
 
 section {* Deleting from a list of pairs *}
 
@@ -161,9 +157,9 @@ lemma remove_elt_pairs_idem [rewrite]:
 @proof @induct ys @qed
 
 lemma remove_elt_pairs_binary [rewrite]:
-  "strict_sorted (map fst (xs @ [a] @ ys)) \<Longrightarrow> remove_elt_pairs x (xs @ [a] @ ys) =
-    (if x < fst a then (remove_elt_pairs x xs) @ [a] @ ys
-     else if x > fst a then xs @ [a] @ remove_elt_pairs x ys else xs @ ys)"
+  "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> remove_elt_pairs x (xs @ a # ys) =
+    (if x < fst a then remove_elt_pairs x xs @ a # ys
+     else if x > fst a then xs @ a # remove_elt_pairs x ys else xs @ ys)"
 @proof @induct xs @with
   @subgoal "xs = []"
     @case "x < fst a" @with @have "x \<notin> set (map fst ys)" @end
@@ -173,12 +169,12 @@ lemma remove_elt_pairs_binary [rewrite]:
 section {* Search in a list of pairs *}
 
 lemma map_of_alist_binary [rewrite]:
-  "strict_sorted (map fst (xs @ [a] @ ys)) \<Longrightarrow> (map_of_alist (xs @ [a] @ ys))\<langle>x\<rangle> =
+  "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> (map_of_alist (xs @ a # ys))\<langle>x\<rangle> =
    (if x < fst a then (map_of_alist xs)\<langle>x\<rangle>
     else if x > fst a then (map_of_alist ys)\<langle>x\<rangle> else Some (snd a))"
 @proof @induct xs @with
   @subgoal "xs = []"
-  @case "x \<notin> set (map fst ys)"
+    @case "x \<notin> set (map fst ys)"
   @endgoal @end
 @qed
 

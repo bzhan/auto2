@@ -98,18 +98,16 @@ setup {* fold add_rewrite_rule @{thms start_remove.simps} *}
 
 lemma start_remove_decomp [backward]:
   "x \<in> set xs \<Longrightarrow> \<exists>as bs. xs = as @ x # bs \<and> start_remove xs x ys = rev ys @ as @ remove_cycles bs x [x]"
-@proof
-  @induct xs arbitrary ys @with
-  @subgoal "xs = []" @endgoal
+@proof @induct xs arbitrary ys @with
   @subgoal "xs = y # xs"
-  @case "x = y" @with
-    @have "start_remove (x # xs) x ys = rev ys @ [] @ remove_cycles xs x [x]"
-  @end
-  @case "x \<noteq> y" @with
-    @obtain as bs where "xs = as @ x # bs"
-                        "start_remove xs x (y # ys) = rev (y # ys) @ as @ remove_cycles bs x [x]"
-    @have "start_remove xs x (y # ys) = rev ys @ ([y] @ as) @ remove_cycles bs x [x]"
-  @end
+    @case "x = y" @with
+      @have "start_remove (x # xs) x ys = rev ys @ [] @ remove_cycles xs x [x]"
+    @end
+    @case "x \<noteq> y" @with
+      @obtain as bs where "xs = as @ x # bs"
+                          "start_remove xs x (y # ys) = rev (y # ys) @ as @ remove_cycles bs x [x]"
+      @have "start_remove xs x (y # ys) = rev ys @ ([y] @ as) @ remove_cycles bs x [x]"
+    @end
   @endgoal @end
 @qed
 

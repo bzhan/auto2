@@ -19,7 +19,7 @@ section {* Inorder traversal, and set of elements of a tree *}
 
 fun in_traverse :: "('a, 'b) tree \<Rightarrow> 'a list" where
   "in_traverse Tip = []"
-| "in_traverse (Node l k v r) = (in_traverse l) @ [k] @ (in_traverse r)"
+| "in_traverse (Node l k v r) = in_traverse l @ k # in_traverse r"
 setup {* fold add_rewrite_rule @{thms in_traverse.simps} *}
 
 fun tree_set :: "('a, 'b) tree \<Rightarrow> 'a set" where
@@ -29,7 +29,7 @@ setup {* fold add_rewrite_rule @{thms tree_set.simps} *}
 
 fun in_traverse_pairs :: "('a, 'b) tree \<Rightarrow> ('a \<times> 'b) list" where
   "in_traverse_pairs Tip = []"
-| "in_traverse_pairs (Node l k v r) = (in_traverse_pairs l) @ [(k, v)] @ (in_traverse_pairs r)"
+| "in_traverse_pairs (Node l k v r) = in_traverse_pairs l @ (k, v) # in_traverse_pairs r"
 setup {* fold add_rewrite_rule @{thms in_traverse_pairs.simps} *}
 
 lemma in_traverse_fst [rewrite]:

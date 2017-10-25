@@ -20,7 +20,7 @@ section {* Inorder traversal, and set of elements of a tree *}
 
 fun in_traverse :: "interval_tree \<Rightarrow> nat idx_interval list" where
   "in_traverse Tip = []"
-| "in_traverse (Node l it m r) = (in_traverse l) @ [it] @ (in_traverse r)"
+| "in_traverse (Node l it m r) = in_traverse l @ it # in_traverse r"
 setup {* fold add_rewrite_rule @{thms in_traverse.simps} *}
 
 fun tree_set :: "interval_tree \<Rightarrow> nat idx_interval set" where
