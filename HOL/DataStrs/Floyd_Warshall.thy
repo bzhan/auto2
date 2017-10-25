@@ -41,11 +41,7 @@ setup {* add_forward_prfstep_cond @{thm remove_cycle_removes} [with_term "cnt ?x
 
 lemma remove_cycles_id [rewrite, backward]:
   "x \<notin> set xs \<Longrightarrow> remove_cycles xs x ys = rev ys @ xs"
-@proof @induct xs arbitrary ys @with
-  @subgoal "xs = x1 # x2"
-    @have "x1 # x2 = [x1] @ x2"
-  @endgoal @end
-@qed
+@proof @induct xs arbitrary ys @qed
 
 lemma remove_cycles_cnt_id:
   "x \<noteq> y \<Longrightarrow> cnt y (remove_cycles xs x ys) \<le> cnt y ys + cnt y xs"
@@ -107,7 +103,7 @@ lemma start_remove_decomp [backward]:
   @subgoal "xs = []" @endgoal
   @subgoal "xs = y # xs"
   @case "x = y" @with
-    @have "start_remove (y # xs) x ys = rev ys @ [] @ remove_cycles xs x [x]"
+    @have "start_remove (x # xs) x ys = rev ys @ [] @ remove_cycles xs x [x]"
   @end
   @case "x \<noteq> y" @with
     @obtain as bs where "xs = as @ x # bs"
@@ -130,11 +126,7 @@ setup {* add_forward_prfstep_cond @{thm start_remove_removes} [with_term "start_
 
 lemma start_remove_id [rewrite]:
   "x \<notin> set xs \<Longrightarrow> start_remove xs x ys = rev ys @ xs"
-@proof @induct xs arbitrary ys @with
-  @subgoal "xs = x1 # x2"
-    @have "x1 # x2 = [x1] @ x2"
-  @endgoal @end
-@qed
+@proof @induct xs arbitrary ys @qed
 
 lemma start_remove_cnt_id:
   "x \<noteq> y \<Longrightarrow> cnt y (start_remove xs x ys) \<le> cnt y ys + cnt y xs"

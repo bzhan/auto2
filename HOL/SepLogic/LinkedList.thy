@@ -217,10 +217,10 @@ declare os_reverse_aux.simps [sep_proc_defs]
 lemma os_reverse_aux_rule [hoare_triple]:
   "<os_list xs p * os_list ys q> 
     os_reverse_aux q p 
-  <os_list ((rev xs) @ ys)>"
+   <os_list ((rev xs) @ ys)>"
 @proof
   @induct xs arbitrary p q ys @with
-    @subgoal "xs = x # xs'" @have "[x] @ ys = x # ys" @endgoal
+    @subgoal "xs = x # xs'" @have "rev (x # xs') @ ys = rev xs' @ [x] @ ys" @endgoal
   @end
 @qed
 

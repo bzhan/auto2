@@ -24,7 +24,6 @@ val test_comb_ac_equiv =
             else raise Fail (err n)
           end
       val _ = test 0 (@{term "(a::nat) + b + c"}, @{term "(d::nat) + e + f"})
-      val _ = test 1 (@{term "A @ B @ C @ D"}, @{term "E @ F @ G @ H"})
     in () end
 
 (* Generic function for testing conv with ac_info argument. *)
@@ -46,7 +45,6 @@ val test_normalize_assoc =
     let
       val test_data = [
         ("(a::nat) + (b + d) + (c + e)", "(a::nat) + b + d + c + e"),
-        ("A @ (B @ D) @ (C @ E)", "(((A @ B) @ D) @ C) @ E"),
         ("((a::nat) + 0) + (b + 0)", "(a::nat) + 0 + b + 0")
       ]
     in

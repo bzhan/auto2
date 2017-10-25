@@ -25,14 +25,13 @@ lemma length_gt_zero [forward]: "length xs > 0 \<Longrightarrow> xs \<noteq> []"
 section {* Append *}
 
 setup {* add_rewrite_rule @{thm List.length_append} *}
-setup {* add_rewrite_rule @{thm List.append.simps(2)} *}
+setup {* add_rewrite_rule_cond @{thm List.append.simps(2)} [with_cond "?xs \<noteq> []"] *}
 setup {* add_rewrite_rule @{thm List.hd_append2} *}
 
-setup {* ACUtil.add_ac_data {
-  cfhead = @{cterm "op @"}, unit = SOME @{cterm "[]"},
-  assoc_th = @{thm List.append_assoc}, comm_th = true_th,
-  unitl_th = @{thm List.append.append_Nil}, unitr_th = @{thm List.append_Nil2}}
-*}
+lemma cons_to_append [rewrite_back]: "a # b = [a] @ b" by simp
+
+ML_file "list_ac.ML"
+ML_file "list_ac_test.ML"
 
 lemma append_is_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
 

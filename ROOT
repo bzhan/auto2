@@ -35,6 +35,13 @@ session Hoare = AUTO2 +
     "HOL/Hoare/Hoare_Equiv"
     "HOL/Hoare/Hoare_Rules"
 
+session Floyd_Warshall = AUTO2 +
+  description {*
+    Floyd-Warshall algorithm.
+  *}
+  theories
+    "HOL/DataStrs/Floyd_Warshall"
+
 session SepLogic_Base = AUTO2 +
   description {*
     Base of separation logic.
