@@ -101,7 +101,7 @@ lemma start_remove_decomp [backward]:
 @proof @induct xs arbitrary ys @with
   @subgoal "xs = y # xs"
     @case "x = y" @with
-      @have "start_remove (x # xs) x ys = rev ys @ [] @ remove_cycles xs x [x]"
+      @have "start_remove (y # xs) x ys = rev ys @ [] @ remove_cycles xs x [x]"
     @end
     @case "x \<noteq> y" @with
       @obtain as bs where "xs = as @ x # bs"

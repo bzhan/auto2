@@ -218,11 +218,7 @@ lemma os_reverse_aux_rule [hoare_triple]:
   "<os_list xs p * os_list ys q> 
     os_reverse_aux q p 
    <os_list ((rev xs) @ ys)>"
-@proof
-  @induct xs arbitrary p q ys @with
-    @subgoal "xs = x # xs'" @have "rev (x # xs') @ ys = rev xs' @ [x] @ ys" @endgoal
-  @end
-@qed
+@proof @induct xs arbitrary p q ys @qed
 
 definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
   "os_reverse p = os_reverse_aux None p"

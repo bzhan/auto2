@@ -75,9 +75,18 @@ fun dest_list_full ctxt T ct =
       | LIST_NIL => []
       | _ => [ct]
 
+fun dest_subs ctxt T ct =
+    case case_head T (Thm.term_of ct) of
+        LIST_APPEND => dest_subs ctxt T (Thm.dest_arg1 ct) @
+                       dest_subs ctxt T (Thm.dest_arg ct)
+      | LIST_CONS => Thm.dest_arg1 ct ::
+                     dest_subs ctxt T (Thm.dest_arg ct)
+      | LIST_NIL => []
+      | _ => [ct]
+
 fun simp_list_expr ctxt T (id, cu) =
     let
-      val cus = dest_list_full ctxt T cu
+      val cus = dest_subs ctxt T cu
     in
       if null cus then [(id, Thm.reflexive cu)] else
       cus |> map (RewriteTable.simplify_info ctxt)
@@ -106,7 +115,7 @@ fun get_list_head_equiv ctxt T (id, cu) =
 (* Find ways to modify ct once by rewriting one of the subterms. *)
 fun list_expand_once ctxt T (id, ct) =
     let
-      val cus = dest_list_full ctxt T ct
+      val cus = dest_subs ctxt T ct
       fun get_equiv cu = get_list_head_equiv ctxt T (id, cu)
 
       fun process_info (id', eq) =
@@ -236,27 +245,30 @@ fun list_expand_unit_fn ictxt item =
       val ct = the_single tname
       val t = Thm.term_of ct
       val T = the (get_list_ty t)
-
-      val expand = list_expand ctxt T (id, ct)
-
-      fun process_expand (id', eq_th) =
-          let
-            val ct = Thm.rhs_of eq_th
-            val ts = dest_list_full ctxt T ct
-          in
-            if length ts <= 1 then
-              let
-                val eq' = normalize_list T ct
-                val eq = Util.transitive_list [eq_th, eq']
-              in
-                [(id', to_obj_eq eq)]
-              end
-            else []
-          end
     in
-      (maps process_expand expand)
-          |> IncrContext.replace_id_for_type' ictxt
-          |> map (fn (id, th) => Update.thm_update (id, th))
+      if not (is_list_head T t) then []
+      else let
+        val expand = list_expand ctxt T (id, ct)
+
+        fun process_expand (id', eq_th) =
+            let
+              val ct = Thm.rhs_of eq_th
+              val ts = dest_list_full ctxt T ct
+            in
+              if length ts <= 1 then
+                let
+                  val eq' = normalize_list T ct
+                  val eq = Util.transitive_list [eq_th, eq']
+                in
+                  [(id', to_obj_eq eq)]
+                end
+              else []
+            end
+      in
+        (maps process_expand expand)
+            |> IncrContext.replace_id_for_type' ictxt
+            |> map (fn (id, th) => Update.thm_update (id, th))
+      end
     end
 
 val list_expand_unit =
