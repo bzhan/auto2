@@ -9,11 +9,9 @@ section {* Auxiliary *}
 lemma distinct_list_single_elem_decomp:
   "{xs. set xs \<subseteq> {0} \<and> distinct xs} = {[], [0::'a::zero]}"
 @proof
-  @have "\<forall>x. x\<in>{xs. set xs \<subseteq> {0} \<and> distinct xs} \<longleftrightarrow> x\<in>{[], [0::'a]}" @with
-    @case "x\<in>{xs. set xs \<subseteq> {0} \<and> distinct xs}" @with
-      @case "x = []" @then @have "x = hd x # tl x"
-      @case "tl x = []" @then @have "tl x = hd (tl x) # tl (tl x)"
-    @end
+  @have "\<forall>x\<in>{xs. set xs \<subseteq> {0} \<and> distinct xs}. x\<in>{[], [0::'a]}" @with
+    @case "x = []" @then @have "x = hd x # tl x"
+    @case "tl x = []" @then @have "tl x = hd (tl x) # tl (tl x)"
   @end
 @qed
 
@@ -43,7 +41,7 @@ lemma remove_cycles_id [rewrite, backward]:
 @proof @induct xs arbitrary ys @qed
 
 lemma remove_cycles_cnt_id [forward_arg1]:
-  "x \<noteq> y \<Longrightarrow> cnt y (remove_cycles xs x ys) \<le> cnt y ys + cnt y xs"
+  "cnt y (remove_cycles xs x ys) \<le> cnt y ys + cnt y xs"
 @proof @induct xs arbitrary ys x @qed
 
 lemma remove_cycles_begins_with [backward]:
@@ -118,12 +116,8 @@ lemma start_remove_id [rewrite]:
 @proof @induct xs arbitrary ys @qed
 
 lemma start_remove_cnt_id [forward_arg1]:
-  "x \<noteq> y \<Longrightarrow> cnt y (start_remove xs x ys) \<le> cnt y ys + cnt y xs"
-@proof @induct xs arbitrary ys @with
-  @subgoal "xs = x1 # x2"
-    @case "y = x1"
-  @endgoal @end
-@qed
+  "cnt y (start_remove xs x ys) \<le> cnt y ys + cnt y xs"
+@proof @induct xs arbitrary ys @qed
 
 (* *)
 fun remove_all_cycles :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
@@ -133,11 +127,7 @@ setup {* fold add_rewrite_rule @{thms remove_all_cycles.simps} *}
 
 lemma cnt_remove_all_mono [forward_arg1]:
   "cnt y (remove_all_cycles xs ys) \<le> max 1 (cnt y ys)"
-@proof @induct xs arbitrary ys @with
-  @subgoal "xs = x # xs"
-    @case "x = y"
-  @endgoal @end
-@qed
+@proof @induct xs arbitrary ys @qed
 
 lemma cnt_remove_all_cycles [forward_arg1]:
   "x \<in> set xs \<Longrightarrow> cnt x (remove_all_cycles xs ys) \<le> 1"
