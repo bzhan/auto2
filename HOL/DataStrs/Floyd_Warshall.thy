@@ -162,8 +162,78 @@ lemma remove_all_cycles_distinct [forward_arg]:
   "set ys \<subseteq> set xs \<Longrightarrow> zs = remove_all_cycles xs ys \<Longrightarrow> distinct zs"
 @proof @have "\<forall>x\<in>set zs. cnt x zs \<le> 1" @qed
 
-lemma distinct_remove_cycles_inv [resolve]:
+lemma distinct_remove_cycles_inv [backward]:
   "distinct (xs @ ys) \<Longrightarrow> distinct (remove_cycles xs x ys)"
 @proof @induct xs arbitrary ys @qed
+
+(* *)
+definition remove_all :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
+  "remove_all x xs = (if x \<in> set xs then tl (remove_cycles xs x []) else xs)"
+
+lemma remove_all_distinct [backward]:
+  "distinct xs \<Longrightarrow> distinct (x # remove_all x xs)"
+@proof
+  @case "x \<in> set xs" @with
+    @obtain zs where "remove_cycles xs x [] = x # zs" "x \<notin> set zs"
+  @end
+@qed
+
+lemma remove_all_removes [resolve]:
+  "x \<notin> set (remove_all x xs)"
+@proof @contradiction
+  @obtain zs where "remove_cycles xs x [] = x # zs" "x \<notin> set zs"
+@qed
+
+lemma remove_all_subs [forward_arg1]:
+  "set (remove_all x xs) \<subseteq> set xs" by auto2
+
+definition remove_all_rev :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
+  "remove_all_rev x xs = (if x \<in> set xs then rev (tl (remove_cycles (rev xs) x [])) else xs)"
+
+lemma remove_all_rev_distinct [backward]:
+  "distinct xs \<Longrightarrow> distinct (x # remove_all_rev x xs)"
+@proof
+  @case "x \<in> set xs" @with
+    @obtain zs where "remove_cycles (rev xs) x [] = x # zs" "x \<notin> set zs"  
+    @have "distinct (remove_cycles (rev xs) x [])"
+  @end
+@qed
+
+lemma remove_all_rev_removes [resolve]:
+  "x \<notin> set (remove_all_rev x xs)"
+@proof @contradiction
+  @obtain zs where "remove_cycles (rev xs) x [] = x # zs" "x \<notin> set zs"
+@qed
+
+lemma remove_all_rev_subs [forward_arg1]:
+  "set (remove_all_rev x xs) \<subseteq> set xs" by auto2
+
+definition rem_cycles :: "'a \<Rightarrow> 'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
+  "rem_cycles i j xs = remove_all i (remove_all_rev j (remove_all_cycles xs xs))"
+
+lemma rem_cycles_distinct' [backward]:
+  "i \<noteq> j \<Longrightarrow> distinct (i # j # rem_cycles i j xs)"
+@proof
+  @have "distinct (remove_all_cycles xs xs)" @with
+    @have "set xs \<subseteq> set xs" @end
+  @have "distinct (j # remove_all_rev j (remove_all_cycles xs xs))"
+  @have "distinct (i # rem_cycles i j xs)"
+@qed
+
+lemma rem_cycles_removes_last [resolve]:
+  "j \<notin> set (rem_cycles i j xs)" by auto2
+
+lemma rem_cycles_distinct [forward]:
+  "distinct (rem_cycles i j xs)"
+@proof
+  @case "i \<noteq> j" @with
+    @have "distinct (i # j # rem_cycles i j xs)" @end
+  @have "distinct (remove_all_cycles xs xs)" @with
+    @have "set xs \<subseteq> set xs" @end
+  @have "distinct (i # rem_cycles i j xs)"
+@qed
+
+lemma rem_cycles_subs [forward_arg1]:
+  "set (rem_cycles i j xs) \<subseteq> set xs" by auto2
 
 end

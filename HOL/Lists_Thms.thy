@@ -18,7 +18,6 @@ setup {* add_rewrite_rule @{thm List.list.size(3)} *}
 lemma length_one [rewrite]: "length [x] = 1" by simp
 lemma length_Cons [rewrite]: "length (a # b) = length b + 1" by simp
 lemma length_snoc [rewrite]: "length (xs @ [x]) = length xs + 1" by auto
-setup {* add_rewrite_rule @{thm length_tl} *}
 lemma length_zero_is_nil [forward]: "length xs = 0 \<Longrightarrow> xs = []" by simp
 lemma length_gt_zero [forward]: "length xs > 0 \<Longrightarrow> xs \<noteq> []" by simp
 
@@ -27,13 +26,12 @@ section {* Append *}
 setup {* add_rewrite_rule @{thm List.length_append} *}
 setup {* add_rewrite_rule_cond @{thm List.append.simps(2)} [with_cond "?xs \<noteq> []"] *}
 setup {* add_rewrite_rule @{thm List.hd_append2} *}
+lemma append_is_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
 
 lemma cons_to_append [rewrite_back]: "a # b = [a] @ b" by simp
 
 ML_file "list_ac.ML"
 ML_file "list_ac_test.ML"
-
-lemma append_is_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> ys = []" by simp
 
 section {* Showing two lists are equal *}
 
@@ -55,6 +53,15 @@ section {* hd *}
 
 setup {* register_wellform_data ("hd xs", ["xs \<noteq> []"]) *}
 setup {* add_forward_prfstep_cond @{thm List.hd_in_set} [with_term "hd ?xs"] *}
+
+section {* tl *}
+
+setup {* add_rewrite_rule @{thm List.list.sel(2)} *}
+setup {* add_rewrite_rule @{thm length_tl} *}
+lemma nth_tl' [rewrite]: "i < length (tl xs) \<Longrightarrow> tl xs ! i = xs ! (i + 1)"
+  by (simp add: nth_tl)
+lemma set_tl_subset [forward_arg1]: "set (tl xs) \<subseteq> set xs"
+  by (metis list.set_sel(2) subsetI tl_Nil)
 
 section {* nth *}
 
