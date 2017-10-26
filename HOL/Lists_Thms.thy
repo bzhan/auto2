@@ -8,7 +8,7 @@ section {* Definition of lists *}
 
 setup {* add_resolve_prfstep @{thm list.distinct(2)} *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm list.simps(1)}) *}
-setup {* fold add_rewrite_rule @{thms List.list.sel(1,3)} *}
+setup {* fold add_rewrite_rule @{thms List.list.sel} *}
 setup {* add_rewrite_rule @{thm list.collapse} *}
 setup {* add_var_induct_rule @{thm list.induct} *}
 
@@ -56,7 +56,6 @@ setup {* add_forward_prfstep_cond @{thm List.hd_in_set} [with_term "hd ?xs"] *}
 
 section {* tl *}
 
-setup {* add_rewrite_rule @{thm List.list.sel(2)} *}
 setup {* add_rewrite_rule @{thm length_tl} *}
 lemma nth_tl' [rewrite]: "i < length (tl xs) \<Longrightarrow> tl xs ! i = xs ! (i + 1)"
   by (simp add: nth_tl)
