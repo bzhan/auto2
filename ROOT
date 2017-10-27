@@ -47,7 +47,7 @@ session SepLogic_Base = AUTO2 +
     Base of separation logic.
   *}
   theories
-    "HOL/SepLogic/Hoare_Triple"
+    "HOL/SepLogic/SepAuto"
 
 session SepLogic_BasicStr = SepLogic_Base +
   description {*
