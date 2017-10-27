@@ -239,36 +239,28 @@ lemma rem_cycles_subs [forward_arg1]:
 section {* Matrices *}
 
 datatype 'c mat = Mat (eval_fun: "nat \<Rightarrow> nat \<Rightarrow> 'c")
+setup {* add_rewrite_rule_back @{thm mat.collapse} *}
 
 fun mat_eval :: "'c mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'c" ("_\<langle>_,_\<rangle>" [90,91]) where
   "(Mat f)\<langle>a,b\<rangle> = f a b"
+setup {* add_rewrite_rule @{thm mat_eval.simps} *}
 
 lemma mat_eval_ext: "\<forall>x y. M\<langle>x,y\<rangle> = N\<langle>x,y\<rangle> \<Longrightarrow> M = N"
   apply (cases M) apply (cases N) by auto
 setup {* add_backward_prfstep_cond @{thm mat_eval_ext} [with_filt (order_filter "M" "N")] *}
 
-fun mat_update :: "'c mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'c \<Rightarrow> 'c mat" ("_ { _,_ \<rightarrow> _}" [89,90,90,90] 90)  where
-  "(Mat m) {x,y \<rightarrow> v} = Mat (m (x := (m x) (y := v)))"
-
-lemma mat_update_eval1 [rewrite]: "M {x,y \<rightarrow> v} \<langle>x,y\<rangle> = v"
-  by (metis fun_upd_same mat.collapse mat_eval.simps mat_update.simps)
-
-lemma mat_update_eval2 [rewrite]: "x \<noteq> x' \<Longrightarrow> M {x,y \<rightarrow> v} \<langle>x',y'\<rangle> = M\<langle>x',y'\<rangle>"
-  by (smt fun_upd_other mat.collapse mat_eval.simps mat_update.simps)
-
-lemma mat_update_eval3 [rewrite]: "y \<noteq> y' \<Longrightarrow> M {x,y \<rightarrow> v} \<langle>x',y'\<rangle> = M\<langle>x',y'\<rangle>"
-proof -
-  assume a1: "y \<noteq> y'"
-  have "\<forall>m ma. (\<exists>n na. (m\<langle>n,na\<rangle>::'a) \<noteq> ma\<langle>n,na\<rangle>) \<or> m = ma"
-    by (meson mat_eval_ext)
-  then have "Mat (mat_eval (M { x,y \<rightarrow> v})) = Mat ((mat_eval M)(x := (mat_eval M x)(y := v)))"
-    by (metis (no_types) mat_eval.simps mat_update.simps)
-  then show ?thesis
-    using a1 by simp
-qed
+fun mat_update :: "'c mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'c \<Rightarrow> 'c mat" ("_ { _,_ \<rightarrow> _}" [89,90,90,90] 90) where
+  "(Mat f) {x,y \<rightarrow> v} = Mat (\<lambda>x' y'. if x = x' then if y = y' then v else f x' y' else f x' y')"
+setup {* add_rewrite_rule @{thm mat_update.simps} *}
 
 lemma mat_update_eval [rewrite]:
   "M {x,y \<rightarrow> v} \<langle>x',y'\<rangle> = (if x = x' then if y = y' then v else M\<langle>x',y'\<rangle> else M\<langle>x',y'\<rangle>)" by auto2
+
+lemma mat_update_eval' [rewrite]:
+  "M {x,y \<rightarrow> v} \<langle>x,y\<rangle> = v"
+  "x \<noteq> x' \<Longrightarrow> M {x,y \<rightarrow> v} \<langle>x',y'\<rangle> = M\<langle>x',y'\<rangle>"
+  "y \<noteq> y' \<Longrightarrow> M {x,y \<rightarrow> v} \<langle>x',y'\<rangle> = M\<langle>x',y'\<rangle>" by auto2+
+setup {* fold del_prfstep_thm [@{thm mat.collapse}, @{thm mat_eval.simps}, @{thm mat_update.simps}] *}
 
 section {* Definition of the Algorithm *}
 
@@ -284,7 +276,7 @@ fun fw :: "('a::linordered_ring) mat \<Rightarrow> nat \<Rightarrow> nat \<Right
   "fw M n k       (Suc i) 0        = fw_upd (fw M n k i n) k (Suc i) 0" |
   "fw M n k       i       (Suc j)  = fw_upd (fw M n k i j) k i (Suc j)"
 setup {* fold add_rewrite_rule @{thms fw.simps} *}
-setup {* register_wellform_data ("fw m n k i j", ["i \<le> n", "j \<le> n", "k \<le> n"]) *}
+setup {* register_wellform_data ("fw M n k i j", ["i \<le> n", "j \<le> n", "k \<le> n"]) *}
 
 lemma fw_invariant_aux_1 [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow> j'' \<le> j \<Longrightarrow> (fw M n k i j)\<langle>i',j'\<rangle> \<le> (fw M n k i j'')\<langle>i',j'\<rangle>"
@@ -308,32 +300,32 @@ lemma fw_invariant_aux_2 [backward]:
 
 lemma fw_invariant [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow> k' \<le> k \<Longrightarrow> j'' \<le> j \<Longrightarrow> i'' \<le> i \<Longrightarrow>
-   (fw m n k i j)\<langle>i', j'\<rangle> \<le> (fw m n k' i'' j'')\<langle>i',j'\<rangle>"
+   (fw M n k i j)\<langle>i', j'\<rangle> \<le> (fw M n k' i'' j'')\<langle>i',j'\<rangle>"
 @proof @induct k @with
   @subgoal "k = Suc k"
     @case "k' = Suc k" @then
-    @have "(fw m n (Suc k) i j)\<langle>i',j'\<rangle> \<le> (fw m n (Suc k) 0 0)\<langle>i',j'\<rangle>"
-    @have "(fw m n (Suc k) 0 0)\<langle>i',j'\<rangle> \<le> (fw m n k n n)\<langle>i',j'\<rangle>"
-    @have "(fw m n k n n)\<langle>i',j'\<rangle> \<le> (fw m n k i j)\<langle>i',j'\<rangle>"
+    @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> \<le> (fw M n (Suc k) 0 0)\<langle>i',j'\<rangle>"
+    @have "(fw M n (Suc k) 0 0)\<langle>i',j'\<rangle> \<le> (fw M n k n n)\<langle>i',j'\<rangle>"
+    @have "(fw M n k n n)\<langle>i',j'\<rangle> \<le> (fw M n k i j)\<langle>i',j'\<rangle>"
   @endgoal @end
 @qed
 
 lemma single_row_inv [backward]:
-  "j \<le> n \<Longrightarrow> i' \<le> n \<Longrightarrow> j' < j \<Longrightarrow> (fw m n k i' j) \<langle>i',j'\<rangle> = (fw m n k i' j') \<langle>i',j'\<rangle>"
+  "j \<le> n \<Longrightarrow> i' \<le> n \<Longrightarrow> j' < j \<Longrightarrow> (fw M n k i' j) \<langle>i',j'\<rangle> = (fw M n k i' j') \<langle>i',j'\<rangle>"
 @proof @induct j @qed
 
 lemma single_iteration_inv' [backward]:
-  "j \<le> n \<Longrightarrow> i \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> i' < i \<Longrightarrow> (fw m n k i j)\<langle>i',j'\<rangle> = (fw m n k i' j')\<langle>i',j'\<rangle>"
+  "j \<le> n \<Longrightarrow> i \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> i' < i \<Longrightarrow> (fw M n k i j)\<langle>i',j'\<rangle> = (fw M n k i' j')\<langle>i',j'\<rangle>"
 @proof @induct i arbitrary j @with
   @subgoal "i = Suc i" @induct j @endgoal @end
 @qed
 
 lemma single_iteration_inv [backward]:
-  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> i' \<le> i \<Longrightarrow> j' \<le> j \<Longrightarrow> (fw m n k i j)\<langle>i',j'\<rangle> = (fw m n k i' j')\<langle>i',j'\<rangle>"
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> i' \<le> i \<Longrightarrow> j' \<le> j \<Longrightarrow> (fw M n k i j)\<langle>i',j'\<rangle> = (fw M n k i' j')\<langle>i',j'\<rangle>"
 @proof @induct i arbitrary j @qed
 
 lemma fw_innermost_id [backward]:
-  "j' \<le> n \<Longrightarrow> i' < i \<Longrightarrow> (fw m n 0 i' j')\<langle>i,j\<rangle> = m\<langle>i,j\<rangle>"
+  "j' \<le> n \<Longrightarrow> i' < i \<Longrightarrow> (fw M n 0 i' j')\<langle>i,j\<rangle> = M\<langle>i,j\<rangle>"
 @proof
   @induct i' arbitrary j' @with
   @subgoal "i' = 0" @induct j' @endgoal
@@ -341,7 +333,7 @@ lemma fw_innermost_id [backward]:
 @qed
 
 lemma fw_middle_id [backward]:
-  "j' < j \<Longrightarrow> i' \<le> i \<Longrightarrow> (fw m n 0 i' j')\<langle>i,j\<rangle> = m\<langle>i,j\<rangle>"
+  "j' < j \<Longrightarrow> i' \<le> i \<Longrightarrow> (fw M n 0 i' j')\<langle>i,j\<rangle> = M\<langle>i,j\<rangle>"
 @proof
   @induct i' arbitrary j' @with
   @subgoal "i' = 0" @induct j' @endgoal
