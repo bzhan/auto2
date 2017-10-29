@@ -88,8 +88,8 @@ setup {* add_rewrite_rule @{thm fst_conv} *}
 setup {* add_rewrite_rule @{thm snd_conv} *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm prod.simps(1)}) *}
 setup {* add_rewrite_rule_cond @{thm surjective_pairing} [with_cond "?t \<noteq> (?a, ?b)"] *}
-setup {* add_rewrite_rule @{thm case_prod_conv} *}
-setup {* add_rewrite_rule_cond @{thm case_prod_beta} [with_cond "?p \<noteq> (?s, ?t)"] *}
+setup {* Normalizer.add_rewr_normalizer ("rewr_case", (to_meta_eq @{thm case_prod_beta})) *}
+setup {* add_rewrite_rule @{thm case_prod_beta} *}
 
 (* Let. *)
 setup {* Normalizer.add_rewr_normalizer ("rewr_let", @{thm Let_def}) *}

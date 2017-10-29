@@ -102,9 +102,10 @@ declare quicksort_all_def [sep_proc_defs]
 theorem quicksort_sorts_basic [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs>
    quicksort_all a
-   <\<lambda>_. a \<mapsto>\<^sub>a sort xs>"
+   <\<lambda>_. a \<mapsto>\<^sub>a sort (xs::('a::{heap,linorder}) list)>"
 @proof
-  @case "xs = []"
+  @case "xs = []" @with
+    @have "sort ([]::'a list) = []" @end
   @have "Quicksort.quicksort xs 0 (length xs - 1) = sort xs"
 @qed
 declare quicksort_all_def [sep_proc_defs del]

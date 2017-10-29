@@ -129,7 +129,7 @@ declare btree_del_min.simps [sep_proc_defs]
 lemma btree_del_min_to_fun [hoare_triple]:
   "<btree t b * \<up>(b \<noteq> None)>
    btree_del_min b
-   <\<lambda>r. btree (snd (del_min t)) (snd r) * \<up>(fst(r) = fst (del_min t))>\<^sub>t"
+   <\<lambda>(r,p). btree (snd (del_min t)) p * \<up>(r = fst (del_min t))>\<^sub>t"
 @proof @induct t arbitrary b @qed
 declare btree_del_min.simps [sep_proc_defs del]
 
