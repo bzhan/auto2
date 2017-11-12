@@ -122,7 +122,7 @@ session FOL_Topology = FOL_Real +
   *}
   theories
     "FOL/Closure"
-    "FOL/RealTopology"
+    "FOL/MetricSpaces"
 
 session FOL_Homotopy = FOL_Topology +
   description {*

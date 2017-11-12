@@ -244,12 +244,6 @@ translations
   "\<lambda>\<langle>x,y,zs\<rangle>.b" == "CONST split(\<lambda>x \<langle>y,zs\<rangle>.b)"
   "\<lambda>\<langle>x,y\<rangle>.b"    == "CONST split(\<lambda>x y. b)"
 
-lemma doubleton_eq1 [forward]: "{a,b} = {c,d} \<Longrightarrow> a \<noteq> c \<Longrightarrow> a = d \<and> b = c" by auto2
-lemma doubleton_eq2 [forward]: "{a,b} = {c,d} \<Longrightarrow> a = c \<Longrightarrow> b = d" by auto2
-setup {* add_gen_prfstep ("doubleton_eq_case",
-  [WithFact @{term_pat "{?a,?b} = {?c,?d}"}, Filter (neq_filter @{term_pat "(?a::i) \<noteq> ?c"}),
-   Filter (order_filter "a" "c"), CreateCase @{term_pat "?a = (?c::i)"}]) *}
-
 lemma pair_eqD [forward]: "\<langle>a, b\<rangle> = \<langle>c, d\<rangle> \<Longrightarrow> a = c \<and> b = d" by auto2
 lemma pair_eqI: "a = c \<Longrightarrow> b = d \<Longrightarrow> \<langle>a,b\<rangle> = \<langle>c,d\<rangle>" by auto2
 setup {* add_backward_prfstep_cond @{thm pair_eqI} [with_cond "?a \<noteq> ?c", with_cond "?b \<noteq> ?d"] *}
