@@ -25,6 +25,7 @@ lemma rep_of_id [rewrite]: "ufa_invar l \<Longrightarrow> i < length l \<Longrig
 
 lemma rep_of_iff [rewrite]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of l i = (if l ! i = i then i else rep_of l (l ! i))" by auto2
+setup {* del_prfstep_thm @{thm rep_of.psimps} *}
 
 lemma rep_of_min [rewrite]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> l ! (rep_of l i) = rep_of l i"
@@ -76,9 +77,8 @@ lemma ufa_init_correct [rewrite]:
   "(x, y) \<in> uf_init_rel n \<longleftrightarrow> (x = y \<and> x < n)"
 @proof @have "ufa_invar [0..<n]" @qed
 
-definition ufa_union :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list" where [rewrite_bidir]:
-  "ufa_union l x y = l[rep_of l x := rep_of l y]"
-setup {* register_wellform_data ("ufa_union l x y", ["x < length l", "y < length l"]) *}
+abbreviation ufa_union :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list" where
+  "ufa_union l x y \<equiv> l[rep_of l x := rep_of l y]"
 
 lemma ufa_union_invar:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow> ufa_invar l'"
@@ -106,9 +106,8 @@ lemma ufa_union_correct [rewrite]:
   @end
 @qed
 
-definition ufa_compress :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where [rewrite_bidir]:
-  "ufa_compress l x = l[x := rep_of l x]"
-setup {* register_wellform_data ("ufa_compress l x", ["x < length l"]) *}
+abbreviation ufa_compress :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where
+  "ufa_compress l x \<equiv> l[x := rep_of l x]"
 
 lemma ufa_compress_invar:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> l' = ufa_compress l x \<Longrightarrow> ufa_invar l'"
@@ -128,6 +127,5 @@ lemma ufa_compress_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> ufa_\<alpha> (ufa_compress l x) = ufa_\<alpha> l" by auto2
 
 setup {* del_prfstep_thm @{thm rep_of_iff} *}
-setup {* del_prfstep_thm @{thm rep_of.psimps} *}
 
 end

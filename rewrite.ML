@@ -120,8 +120,6 @@ sig
   (* equiv table. *)
   val add_equiv: box_id * thm -> Proof.context -> Proof.context
   val equiv_neighs: Proof.context -> term -> (box_id * thm) list
-  val compute_all_equiv: Proof.context -> cterm -> (box_id * thm) list
-  val index_all_equiv: cterm -> Proof.context -> Proof.context
   val get_all_equiv: Proof.context -> term -> (box_id * thm) list
 
   (* simp table. *)
@@ -397,37 +395,6 @@ fun equiv_neighs ctxt t =
           NONE => []
         | SOME infos => infos
     end
-
-(* Assume t is directly in table. Returns list of (id, t == t') pairs,
-   where id is the minimum assumption needed for t == t'.
- *)
-fun compute_all_equiv ctxt ct =
-    let
-      (* Each item in new / all is (id, th). *)
-      fun helper (new, all) =
-          case new of
-              [] => ([], all)
-            | (id, th) :: rest =>
-              let
-                val t' = Util.rhs_of th
-                fun process_new (id', th') =
-                    BoxID.merge_eq_infos ctxt (id, th) (id', th')
-                val new' = (equiv_neighs ctxt t')
-                               |> map process_new
-                               |> filter_out (has_equiv_eq_better ctxt all)
-                val all' = new' @
-                           (filter_out (has_equiv_eq_better ctxt new') all)
-              in
-                helper (rest @ new', all')
-              end
-      val init = ([], Thm.reflexive ct)
-    in
-      snd (helper ([init], [init]))
-    end
-
-fun index_all_equiv ct ctxt =
-    ctxt |> Data.map (map_all_equiv (
-      Termtab.update (Thm.term_of ct, compute_all_equiv ctxt ct)))
 
 fun get_all_equiv ctxt t =
     let
@@ -882,6 +849,41 @@ fun get_reachable_terms trav_contains ctxt cts =
       snd (helper (cts, cts))
     end
 
+fun add_all_equiv_raw (cur_info as (_, th)) ctxt =
+    let
+      val {all_equiv, ...} = Data.get ctxt
+      val t = Util.lhs_of th
+      val equiv_t = the_default [] (Termtab.lookup all_equiv t)
+    in
+      if exists (fn info => equiv_eq_better ctxt info cur_info) equiv_t then ctxt
+      else ctxt |> Data.map (map_all_equiv (
+          Termtab.update (
+            t, equiv_t |> filter_out (equiv_eq_better ctxt cur_info)
+                       |> cons cur_info)))
+    end
+
+fun update_all_equiv id th ctxt =
+    let
+      val (ct1, ct2) = (Thm.lhs_of th, Thm.rhs_of th)
+      val t1_equiv = get_all_equiv ctxt (Thm.term_of ct1)
+      val t2_equiv = get_all_equiv ctxt (Thm.term_of ct2)
+
+      (* eq1 is t1 == t1', eq2 is t2 == t2', add t1' == t2' and t2' ==
+         t1' to all_equiv.
+       *)
+      fun process_pair ((id1, eq1), (id2, eq2)) ctxt =
+          let
+            val id' = BoxID.merge_boxes
+                          ctxt (id, BoxID.merge_boxes ctxt (id1, id2))
+            val eq = Util.transitive_list [meta_sym eq1, th, eq2]
+          in
+            ctxt |> add_all_equiv_raw (id', eq)
+                 |> add_all_equiv_raw (id', meta_sym eq)
+          end
+    in
+      fold process_pair (Util.all_pairs (t1_equiv, t2_equiv)) ctxt
+    end
+
 (* Assume t1 and t2 are already in table. Add equiv edge th: t1 == t2 and
    work out all the consequences.
  *)
@@ -897,7 +899,7 @@ fun add_rewrite_raw id th ctxt =
     in
       ctxt |> add_equiv (id, th)
            |> process_update_simp (t1_news @ t2_news)
-           |> fold index_all_equiv (get_reachable_terms false ctxt [ct1, ct2])
+           |> update_all_equiv id th
     end
 
 (* Add equiv edges so the rewrite table is consistent. That is, any two nodes that
@@ -977,7 +979,7 @@ fun add_term' (id, ct) ctxt =
         ctxt' |> fold (add_contain ct) (map Thm.term_of imm_subterms)
               |> fold update_simp simps
               |> fold update_subsimp simps
-              |> index_all_equiv ct
+              |> add_all_equiv_raw ([], Thm.reflexive ct)
               |> index_head_equiv ct
       end
     end
