@@ -81,18 +81,15 @@ abbreviation one_assn :: assn ("emp") where "one_assn \<equiv> 1"
 lemma one_assn_rule [rewrite]: "h \<Turnstile> emp \<longleftrightarrow> snd h = {}" by auto2
 setup {* del_prfstep_thm @{thm one_assn_def} *}
 
-definition set_partition :: "'a set \<Rightarrow> 'a set \<Rightarrow> 'a set \<Rightarrow> bool" where [rewrite]:
-  "set_partition S T1 T2 = (S = T1 \<union> T2 \<and> T1 \<inter> T2 = {})"
-
 instantiation assn :: times begin
 definition times_assn where [rewrite]:
   "P * Q = Abs_assn (Assn (
-    \<lambda>(h, as). (\<exists>as1 as2. set_partition as as1 as2 \<and>
+    \<lambda>(h, as). (\<exists>as1 as2. as = as1 \<union> as2 \<and> as1 \<inter> as2 = {} \<and>
                    aseval (Rep_assn P) (h, as1) \<and> aseval (Rep_assn Q) (h, as2))))"
 instance .. end
 
 lemma mod_star_conv [rewrite]:
-  "(h, as) \<Turnstile> A * B \<longleftrightarrow> (\<exists>as1 as2. set_partition as as1 as2 \<and> (h, as1) \<Turnstile> A \<and> (h, as2) \<Turnstile> B)" by auto2
+  "(h, as) \<Turnstile> A * B \<longleftrightarrow> (\<exists>as1 as2. as = as1 \<union> as2 \<and> as1 \<inter> as2 = {} \<and> (h, as1) \<Turnstile> A \<and> (h, as2) \<Turnstile> B)" by auto2
 setup {* del_prfstep_thm @{thm times_assn_def} *}
 
 lemma aseval_ext [backward]: "\<forall>h. aseval P h = aseval P' h \<Longrightarrow> P = P'"
@@ -107,22 +104,39 @@ setup {* del_prfstep_thm @{thm aseval_ext} *}
 lemma assn_one_left: "1 * P = (P::assn)"
 @proof
   @have "\<forall>h as. (h, as) \<Turnstile> P \<longleftrightarrow> (h, as) \<Turnstile> 1 * P" @with
-    @have "set_partition as {} as"
+    @have "as = {} \<union> as"
   @end
 @qed
 
-lemma set_partition_comm [forward]:
-  "set_partition S T1 T2 \<Longrightarrow> set_partition S T2 T1" by auto2
+lemma assn_times_comm: "P * Q = Q * (P::assn)"
+@proof
+  @have "\<forall>h as. (h, as) \<Turnstile> P * Q \<longleftrightarrow> (h, as) \<Turnstile> Q * P" @with
+    @case "(h, as) \<Turnstile> P * Q" @with
+      @obtain as1 as2 where "as = as1 \<union> as2" "as1 \<inter> as2 = {}" "(h, as1) \<Turnstile> P" "(h, as2) \<Turnstile> Q"
+      @have "as = as2 \<union> as1"
+    @end
+    @case "(h, as) \<Turnstile> Q * P" @with
+      @obtain as1 as2 where "as = as1 \<union> as2" "as1 \<inter> as2 = {}" "(h, as1) \<Turnstile> Q" "(h, as2) \<Turnstile> P"
+      @have "as = as2 \<union> as1"
+    @end
+  @end
+@qed
 
-lemma assn_times_comm: "P * Q = Q * (P::assn)" by auto2
-
-lemma set_partition_assoc [forward]:
-  "set_partition S T1 T2 \<Longrightarrow> set_partition T1 T11 T12 \<Longrightarrow>
-   set_partition S T11 (T12 \<union> T2) \<and> set_partition (T12 \<union> T2) T12 T2" by auto2
-
-lemma assn_times_assoc: "(P * Q) * R = P * (Q * (R::assn))" by auto2
-setup {* del_prfstep_thm @{thm set_partition_comm} *}
-setup {* del_prfstep_thm @{thm set_partition_assoc} *}
+lemma assn_times_assoc: "(P * Q) * R = P * (Q * (R::assn))"
+@proof
+  @have "\<forall>h as. (h, as) \<Turnstile> (P * Q) * R \<longleftrightarrow> (h, as) \<Turnstile> P * (Q * R)" @with
+    @case "(h, as) \<Turnstile> (P * Q) * R" @with
+      @obtain as1 as2 where "as = as1 \<union> as2" "as1 \<inter> as2 = {}" "(h, as1) \<Turnstile> P * Q" "(h, as2) \<Turnstile> R"
+      @obtain as11 as12 where "as1 = as11 \<union> as12" "as11 \<inter> as12 = {}" "(h, as11) \<Turnstile> P" "(h, as12) \<Turnstile> Q"
+      @have "as = as11 \<union> (as12 \<union> as2)"
+    @end
+    @case "(h, as) \<Turnstile> P * (Q * R)" @with
+      @obtain as1 as2 where "as = as1 \<union> as2" "as1 \<inter> as2 = {}" "(h, as1) \<Turnstile> P" "(h, as2) \<Turnstile> Q * R"
+      @obtain as21 as22 where "as2 = as21 \<union> as22" "as21 \<inter> as22 = {}" "(h, as21) \<Turnstile> Q" "(h, as22) \<Turnstile> R"
+      @have "as = (as1 \<union> as21) \<union> as22"
+    @end
+  @end
+@qed
 
 instantiation assn :: comm_monoid_mult begin
   instance apply standard
@@ -141,7 +155,7 @@ lemma ex_distrib_star: "(\<exists>\<^sub>Ax. P x * Q) = (\<exists>\<^sub>Ax. P x
 @proof
   @have "\<forall>h as. (h, as) \<Turnstile> (\<exists>\<^sub>Ax. P x) * Q \<longleftrightarrow> (h, as) \<Turnstile> (\<exists>\<^sub>Ax. P x * Q)" @with
     @case "(h, as) \<Turnstile> (\<exists>\<^sub>Ax. P x) * Q" @with
-      @obtain as1 as2 where "set_partition as as1 as2" "(h, as1) \<Turnstile> (\<exists>\<^sub>Ax. P x)" "(h, as2) \<Turnstile> Q"
+      @obtain as1 as2 where "as = as1 \<union> as2" "as1 \<inter> as2 = {}" "(h, as1) \<Turnstile> (\<exists>\<^sub>Ax. P x)" "(h, as2) \<Turnstile> Q"
       @obtain x where "(h, as1) \<Turnstile> P x"
       @have "(h, as) \<Turnstile> P x * Q"
     @end
@@ -189,7 +203,7 @@ abbreviation bot_assn :: assn ("false") where "bot_assn \<equiv> \<up>False"
 lemma mod_false' [resolve]: "\<not> (h \<Turnstile> false * Ru)" by auto2
 
 lemma mod_star_trueI: "h \<Turnstile> P \<Longrightarrow> h \<Turnstile> P * true"
-@proof @have "set_partition (snd h) (snd h) {}" @qed
+@proof @have "snd h = snd h \<union> {}" @qed
 
 lemma sngr_same_false [resolve]: "\<not>h \<Turnstile> p \<mapsto>\<^sub>r x * p \<mapsto>\<^sub>r y * Qu" by auto2
 
@@ -203,7 +217,7 @@ lemma mod_pure_star_dist [rewrite]:
   "h \<Turnstile> P * \<up>b \<longleftrightarrow> (h \<Turnstile> P \<and> b)"
 @proof
   @case "h \<Turnstile> P \<and> b" @with
-    @have "set_partition (snd h) (snd h) {}"
+    @have "snd h = snd h \<union> {}"
   @end
 @qed
 
@@ -291,9 +305,9 @@ lemma frame_rule [backward]:
   @have "\<forall>h as \<sigma> r. (h, as) \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>
                     (\<sigma> \<noteq> None \<and> (the \<sigma>, new_addrs h as (the \<sigma>)) \<Turnstile> Q r * R \<and>
                      relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and> lim h \<le> lim (the \<sigma>))" @with
-    @obtain as1 as2 where "set_partition as as1 as2" "(h, as1) \<Turnstile> P \<and> (h, as2) \<Turnstile> R" @then
+    @obtain as1 as2 where "as = as1 \<union> as2" "as1 \<inter> as2 = {}" "(h, as1) \<Turnstile> P \<and> (h, as2) \<Turnstile> R" @then
     @have "relH as2 h (the \<sigma>)" @then
-    @have "set_partition (new_addrs h as (the \<sigma>)) (new_addrs h as1 (the \<sigma>)) as2"
+    @have "new_addrs h as (the \<sigma>) = new_addrs h as1 (the \<sigma>) \<union> as2"
   @end
 @qed
 
