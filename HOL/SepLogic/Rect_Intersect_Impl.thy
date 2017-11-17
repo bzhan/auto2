@@ -71,7 +71,7 @@ partial_function (heap) rect_inter_impl ::
             rect_inter_impl a b' (k + 1)})})}"
 declare rect_inter_impl.simps [sep_proc_defs]
 
-lemma rect_inter_to_fun_ind [hoare_triple]:
+lemma rect_inter_to_fun_ind [hoare_triple, hoare_create_case]:
   "<a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b *
    \<up>(is_rect_list rects) * \<up>(k < length (all_ops rects))>
    rect_inter_impl a b k
@@ -104,7 +104,6 @@ declare rect_inter_all_def [sep_proc_defs]
 lemma rect_inter_all_correct:
   "<\<up>(is_rect_list rects)>
    rect_inter_all rects
-   <\<lambda>r. \<up>(r = has_rect_overlap rects)>\<^sub>t"
-@proof @case "length (all_ops rects) > 0" @qed
+   <\<lambda>r. \<up>(r = has_rect_overlap rects)>\<^sub>t" by auto2
 
 end

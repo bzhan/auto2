@@ -501,7 +501,6 @@ attribute_setup forward_ent_shadow = {* setup_attrib add_forward_ent_shadowing_p
 attribute_setup rewrite_ent = {* setup_attrib add_rewrite_ent_rule *}
 attribute_setup hoare_create_case = {* setup_attrib add_match_hoare_create_case *}
 attribute_setup hoare_triple = {* setup_attrib add_hoare_triple_prfstep *}
-attribute_setup hoare_triple_direct = {* setup_attrib add_hoare_triple_direct_prfstep *}
 
 lemma heap_preserving_lookup [heap_presv_thms]: "heap_preserving (!p)"
   using effect_lookupE heap_preserving_def by fastforce
@@ -524,7 +523,7 @@ setup {* fold add_hoare_triple_prfstep [
 setup {* fold add_match_hoare_create_case [
   @{thm assert_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
 
-setup {* fold add_hoare_triple_direct_prfstep [
+setup {* fold add_hoare_triple_prfstep [
   @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule},
   @{thm of_list_rule}, @{thm length_rule}] *}
 

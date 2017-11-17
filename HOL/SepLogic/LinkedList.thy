@@ -298,7 +298,7 @@ partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list 
     })"
 declare extract_list.simps [sep_proc_defs]
 
-theorem extract_list_rule [hoare_triple_direct]:
+theorem extract_list_rule [hoare_triple]:
   "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
 @proof @induct l arbitrary p @qed
 
@@ -312,12 +312,10 @@ fun os_insert_list :: "'a::{ord,heap} list \<Rightarrow> 'a os_list \<Rightarrow
     })"
 declare os_insert_list.simps [sep_proc_defs]
 
-lemma os_insert_list_sorted [hoare_triple]:
-  "<os_list xs b * \<up>(sorted xs)> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
-@proof @induct ys arbitrary b xs @qed
-
-lemma os_insert_list_mset [hoare_triple]:
-  "<os_list xs b> os_insert_list ys b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = mset ys + mset xs)>"
+lemma os_insert_list_correct [hoare_triple, hoare_create_case]:
+  "<os_list xs b * \<up>(sorted xs)>
+   os_insert_list ys b
+   <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs') * \<up>(mset xs' = mset ys + mset xs)>"
 @proof @induct ys arbitrary b xs @qed
 
 definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where
@@ -328,10 +326,8 @@ definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" wh
   }"
 declare insertion_sort_def [sep_proc_defs]
 
-setup {* add_backward2_prfstep @{thm properties_for_sort} *}
 lemma insertion_sort_rule:
-  "<emp> insertion_sort (xs::'a::{heap,linorder} list) <\<lambda>ys. \<up>(ys = sort xs) * true>"
-@proof @have "sorted ([]::'a list)" @qed
+  "<emp> insertion_sort xs <\<lambda>ys. \<up>(ys = sort xs)>\<^sub>t" by auto2
 
 subsection {* Merging two lists *}
 

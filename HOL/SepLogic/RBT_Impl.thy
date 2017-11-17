@@ -121,7 +121,7 @@ lemma get_color_heap_preserving [heap_presv_thms]:
   "heap_preserving (get_color p)"
 @proof @case "p = None" @qed
 
-lemma get_color_rule [hoare_triple_direct]:
+lemma get_color_rule [hoare_triple]:
   "<btree t p> get_color p <\<lambda>r. btree t p * \<up>(r = rbt.cl t)>"
 @proof @case "t = Leaf" @qed
 declare get_color_def [sep_proc_defs del]

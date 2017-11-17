@@ -34,7 +34,6 @@ sig
   val match_assn_spatial: proofstep
   val hoare_triple_prfstep: thm -> proofstep
   val add_hoare_triple_prfstep: thm -> theory -> theory
-  val add_hoare_triple_direct_prfstep: thm -> theory -> theory
 
   val add_sep_logic_proofsteps: theory -> theory
 end;
@@ -855,7 +854,7 @@ fun add_match_hoare_create_case hoare_th =
 fun hoare_triple_prfstep hoare_th =
     let
       val (_, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val name = (Util.name_of_thm hoare_th) ^ "@hoare"
+      val name = Util.name_of_thm hoare_th ^ "@hoare"
       val code_pos_pat = HOLogic.mk_tuple [Var (("h", 0), pheapT), pat_c]
       val descs = [WithItem (TY_CODE_POS, code_pos_pat)]
       fun prfstep_fn ((id, inst), ths) _ ctxt =
@@ -875,12 +874,6 @@ fun hoare_triple_prfstep hoare_th =
     in
       ProofStep.prfstep_custom name descs PRIORITY_ADD prfstep_fn
     end
-
-(* Given hoare_th of the form <?P> ?c <?Q>, produce proofstep matching
-   item1 with CODE_POS (?h, ?c) and item2 with proposition ?h |= ?P *
-   ?Ru.
- *)
-val add_hoare_triple_prfstep = add_prfstep o hoare_triple_prfstep
 
 (* Proofstep for moving to next code position. Here hoare_th is the
    hoare triple <P> c <Q>, item1 is the CODE_POS item with parameters
@@ -903,7 +896,8 @@ fun hoare_triple_direct_prfstep_fn hoare_th ictxt item1 item2 =
 
       fun process_inst ((id', inst'), code_pos_th) =
           let
-            val insts' = mod_match_item ictxt (mod_pat, item2) (id', inst')
+            val mod_pat' = Util.subst_term_norm inst' mod_pat
+            val insts' = mod_match_item ictxt (mod_pat', item2) (id', inst')
             fun process_inst' ((id'', _), mod_th) =
                 let
                   val (modQ_th, ritems) =
@@ -927,8 +921,28 @@ fun hoare_triple_direct_prfstep hoare_th =
      priority = PRIORITY_SHADOW,
      func = TwoStep (hoare_triple_direct_prfstep_fn hoare_th)}
 
-fun add_hoare_triple_direct_prfstep hoare_th =
-    add_prfstep (hoare_triple_direct_prfstep hoare_th)
+(* Given hoare_th of the form <?P> ?c <?Q>, produce proofstep matching
+   item1 with CODE_POS (?h, ?c) and item2 with proposition ?h |= ?P *
+   ?Ru.
+ *)
+fun add_hoare_triple_prfstep hoare_th thy =
+    let
+      val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
+      val name = Util.name_of_thm hoare_th
+    in
+      if has_pure_assn P then
+        let
+          val _ = writeln ("Add Hoare triple " ^ name)
+        in
+          add_prfstep (hoare_triple_prfstep hoare_th) thy
+        end
+      else
+        let
+          val _ = writeln ("Add direct Hoare triple " ^ name)
+        in
+          add_prfstep (hoare_triple_direct_prfstep hoare_th) thy
+        end
+    end
 
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
@@ -956,4 +970,3 @@ val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
 val add_forward_ent_shadowing_prfstep = SepLogic.add_forward_ent_shadowing_prfstep
 val add_match_hoare_create_case = SepLogic.add_match_hoare_create_case
 val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep
-val add_hoare_triple_direct_prfstep = SepLogic.add_hoare_triple_direct_prfstep

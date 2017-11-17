@@ -45,7 +45,7 @@ lemma amap_new_rule [hoare_triple]:
 definition amap_lookup :: "('a::heap) array_map \<Rightarrow> nat \<Rightarrow> 'a option Heap" where [sep_proc_defs]:
   "amap_lookup p i = (if i < alen p then Array.nth (aref p) i else return None)"
 
-lemma amap_lookup_rule [hoare_triple_direct]:
+lemma amap_lookup_rule [hoare_triple]:
   "<amap m p>
    amap_lookup p k
    <\<lambda>r. amap m p * \<up>(r = m\<langle>k\<rangle>)>" by auto2

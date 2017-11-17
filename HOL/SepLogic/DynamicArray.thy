@@ -111,7 +111,7 @@ lemma array_nth_heap_preserving [heap_presv_thms]:
 definition array_length :: "'a dynamic_array \<Rightarrow> nat Heap" where [sep_proc_defs]:
   "array_length d = return (alen d)"
 
-lemma array_length_rule [hoare_triple_direct]:
+lemma array_length_rule [hoare_triple]:
   "<dyn_array xs p>
    array_length p
    <\<lambda>r. dyn_array xs p * \<up>(r = length xs)>" by auto2

@@ -217,7 +217,7 @@ lemma idx_pqueue_nth_heap_preserving [heap_presv_thms]:
 definition idx_pqueue_length :: "'a indexed_pqueue \<Rightarrow> nat Heap" where [sep_proc_defs]:
   "idx_pqueue_length a = array_length (pqueue a)"
 
-lemma idx_pqueue_length_rule [hoare_triple_direct]:
+lemma idx_pqueue_length_rule [hoare_triple]:
   "<idx_pqueue xs n p>
    idx_pqueue_length p
    <\<lambda>r. idx_pqueue xs n p * \<up>(r = length xs)>" by auto2
@@ -460,19 +460,22 @@ lemma heap_implies_hd_min2 [resolve]:
 
 lemma idx_pqueue_empty_map [hoare_triple]:
   "<emp> idx_pqueue_empty n x <idx_pqueue_map empty_map n>" by auto2
+setup {* del_prfstep_thm @{thm idx_pqueue_empty_rule} *}
 
 lemma delete_min_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
    <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(fst x < n) *
                 \<up>(is_heap_min (fst x) M) * \<up>(M\<langle>fst x\<rangle> = Some (snd x))>" by auto2
+setup {* del_prfstep_thm @{thm delete_min_idx_pqueue_rule} *}
 
 lemma insert_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(k < n) * \<up>(k \<notin> keys_of M)>
    insert_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
+setup {* del_prfstep_thm @{thm insert_idx_pqueue_rule} *}
 
-lemma has_key_idx_pqueue_map [hoare_triple_direct]:
+lemma has_key_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p>
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue_map M n p * \<up>(r \<longleftrightarrow> k \<in> keys_of M)>" by auto2

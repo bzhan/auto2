@@ -278,21 +278,25 @@ setup {* add_rewrite_ent_rule @{thm int_tree_set_def} *}
 
 theorem int_tree_empty_rule [hoare_triple]:
   "<emp> int_tree_empty <int_tree_set {}>" by auto2
+setup {* del_prfstep_thm @{thm int_tree_empty_to_fun} *}
 
 theorem int_tree_insert_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
    int_tree_insert x b
    <int_tree_set (S \<union> {x})>" by auto2
+setup {* del_prfstep_thm @{thm int_tree_insert_to_fun} *}
 
 theorem int_tree_delete_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
    int_tree_delete x b
    <int_tree_set (S - {x})>\<^sub>t" by auto2
+setup {* del_prfstep_thm @{thm int_tree_delete_to_fun} *}
 
 theorem int_tree_search_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval x)>
    int_tree_search x b
    <\<lambda>r. int_tree_set S b * \<up>(r \<longleftrightarrow> has_overlap S x)>" by auto2
+setup {* del_prfstep_thm @{thm int_tree_search_correct} *}
 setup {* del_prfstep_thm @{thm int_tree_set_def} *}
 
 end
