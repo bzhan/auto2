@@ -12,11 +12,9 @@ sig
 
   val TY_CODE_POS: string
   val TY_MATCH_POS: string
-  val TY_SUCCESS_RUN: string
   val output_code_pos_fn: item_output
   val code_pos_match_rewr_terms: term list -> term list
   val output_code_pos_match_fn: item_output
-  val output_success_run_fn: item_output
   val code_pos_typed_matcher: item_matcher
 
   val find_proc_def: Proof.context -> term -> thm option
@@ -30,9 +28,6 @@ sig
   val match_assn1: proofstep
   val rewrite_pos: proofstep
   val match_hoare_disj: proofstep
-  val convert_match_pos: proofstep
-  val use_prec_thms: Proof.context -> thm -> thm -> thm
-  val match_assn2: proofstep
   val match_assn_pure1: proofstep
   val match_assn_pure2: proofstep
   val match_hoare_create_case_gen: string * term -> proofstep
@@ -266,13 +261,6 @@ val TY_CODE_POS = "CODE_POS"
  *)
 val TY_MATCH_POS = "MATCH_POS"
 
-(* SUCCESS_RUN items indicate successful execution of a single
-   command. Here tname is the tuple (h, c). prop is the conjunction of
-   pre-condition, success_run fact, and post-condition. Note the
-   post-condition may contain new variables.
- *)
-val TY_SUCCESS_RUN = "SUCCESS_RUN"
-
 fun output_code_pos_fn ctxt (tname, th) =
     let
       val is_bind = th |> conj_left_th |> prop_of' |> Util.dest_args |> hd
@@ -287,11 +275,8 @@ fun code_pos_match_rewr_terms ts = take 2 ts @ drop 3 ts
 fun output_code_pos_match_fn ctxt (tname, _) =
     "MATCH_POS " ^ (Util.string_of_terms ctxt tname)
 
-fun output_success_run_fn ctxt (tname, _) =
-    "SUCCESS_RUN " ^ (Util.string_of_terms ctxt tname)
-
-(* Common matcher for CODE_POS, MATCH_POS, and SUCCESS_RUN. When
-   pattern is a tuple of n terms, match the first n terms of tname.
+(* Common matcher for CODE_POS and MATCH_POS. When pattern is a tuple
+   of n terms, match the first n terms of tname.
  *)
 val code_pos_typed_matcher =
     let
@@ -522,7 +507,6 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
       val mod_th' = if P aconv emp then
                       apply_to_thm' (mod_assn_conv mult_emp_left) mod_th
                     else mod_th
-      val h_t = heap_of_mod_th mod_th'
     in
       (* Case where the CODE_POS item has a composite command do { c1;
          c2 ; ... ; cn } (intermediate step).
@@ -570,18 +554,10 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
 
-        (* success_run item. *)
-        val (modQ_th'', modQ_rest) =
-            modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
-                     |> apfst the_single
-            handle List.Empty => raise Fail "next_code_pos: modQ_th''"
-        val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
-                       else modQ_rest
-        val prop_run = UtilLogic.mk_conjs_th [mod_th', success_th, modQ_th'']
-        val success_run_ritem = Fact (TY_SUCCESS_RUN, [h_t, c1], prop_run)
         val next_code_pos_ritem = Fact (TY_CODE_POS, tname, next_code_pos_th)
       in
-        (modQ_ths, ritems @ ritems_Q @ [success_run_ritem, next_code_pos_ritem])
+        (split_conj_all_th modQ_th',
+         ritems @ ritems_Q @ [next_code_pos_ritem])
       end
       (* Case where the command is not composite (last step). *)
       else let
@@ -615,26 +591,15 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
-
-        (* success_run item. *)
-        val success_th = conj_right_th rest_th
-        val (modQ_th'', modQ_rest) =
-            modQ_th' |> split_conj_all_th |> filter_split (is_mod o prop_of')
-                     |> apfst the_single
-            handle List.Empty => raise Fail "next_code_pos: modQ_th''"
-        val modQ_ths = if is_none heap_preserve_opt then modQ_th'' :: modQ_rest
-                       else modQ_rest
-        val prop_run = UtilLogic.mk_conjs_th [mod_th', success_th, modQ_th'']
-        val success_run_ritem = Fact (TY_SUCCESS_RUN, [h_t, c1], prop_run)
       in
-        (modQ_ths, ritems @ ritems_Q @
-                   [success_run_ritem, Update.thm_to_ritem Q_goal])
+        (split_conj_all_th modQ_th',
+         ritems @ ritems_Q @ [Update.thm_to_ritem Q_goal])
       end
     end
 
 (* Matching a MATCH_POS item with tname (h, c, false, P, Q) to
    propositions h |= P * Ru (or R if P is emp), and produce the next
-   CODE_POS and SUCCESS_RUN items.
+   CODE_POS item.
  *)
 fun match_assn1_fn ictxt item1 item2 =
     let
@@ -652,10 +617,11 @@ fun match_assn1_fn ictxt item1 item2 =
         val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
         fun inst_to_updt ((id', _), mod_th) =
             let
-              val (_, ritems) =
+              val (modQ_th, ritems) =
                   next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
+              val ritems' = ritems @ map Update.thm_to_ritem modQ_th
             in
-              AddItems {id = id', sc = SOME 1, raw_items = ritems}
+              AddItems {id = id', sc = SOME 1, raw_items = ritems'}
             end
       in
         map inst_to_updt insts
@@ -768,136 +734,6 @@ val match_hoare_prop =
             in
               [AddItems {id = id, sc = NONE, raw_items = [ritem]}]
             end)
-
-(* item1 is MATCH_POS item with tname (h, c, false, P, Q), item2 is
-   SUCCESS_RUN item with tname (h, c). If the pre-condition contained
-   in the SUCCESS_RUN item matches P (disregarding pure assertions),
-   convert the former item to (h, c, true, P, Q). Otherwise discard
-   the former item (this case to be implemented).
- *)
-val convert_match_pos =
-    ProofStep.prfstep_custom
-        "sep.convert_match_pos"
-        [WithItem (TY_MATCH_POS, @{term_pat "(?h, ?c, False, ?P, ?Q)"}),
-         WithItem (TY_SUCCESS_RUN, @{term_pat "(?h, ?c)"}),
-         ShadowFirst]
-        PRIORITY_SHADOW
-        (fn ((id, inst), ths) => fn _ => fn _ =>
-            let
-              val tname =
-                  (map (lookup_inst inst) ["h", "c"]) @ [UtilLogic.term_of_bool true] @
-                  (map (lookup_inst inst) ["P", "Q"])
-              val (th1, th2) = the_pair ths
-              val new_prop = UtilLogic.mk_conjs_th [conj_left_th th1, conj_right_th th2]
-              val ritem = Fact (TY_MATCH_POS, tname, new_prop)
-            in
-              [AddItems {id = id, sc = SOME 1, raw_items = [ritem]}]
-            end)
-
-(* Given ex_th of form EX v1 v2 ... vn. h |= P, instantiate the
-   variables v_i and equate them to existing variables in base_th,
-   using precision theorems (sep_prec_thms).
-
-   For example, if base_th is h |= os_list l p and ex_th is EX
-   l'. os_list l' p & length l' = 3, then return the theorem os_list l
-   p & length l = 3.
- *)
-fun use_prec_thms ctxt base_th ex_th =
-    let
-      val (vars, new_prop) = ex_th |> prop_of' |> UtilLogic.strip_exists
-                                   |> Util.replace_vars ctxt
-                                   |> Util.replace_internal_vars
-                                   |> apsnd mk_Trueprop
-      val new_th = new_prop |> Thm.cterm_of ctxt |> Thm.assume
-      val base_th' = base_th RS @{thm mod_star_trueI}
-
-      (* Use precision theorem prec_th to generate equalities between
-         new variables in new_th and original variables in base_th,
-         then perform replacement to original variables in new_th to
-         obtain result new_th'.
-       *)
-      fun apply_prec_thm prec_th new_th =
-          let
-            val (prem1, prem2) =
-                prec_th |> Thm.prems_of |> map dest_Trueprop |> the_pair
-            val pairs = [(prem1, base_th'), (prem2, new_th)]
-            val insts = AssnMatcher.mod_matches ctxt pairs ([], fo_init)
-
-            fun process_inst (_, ths) =
-                UtilLogic.split_conj_th (ths MRS prec_th)
-
-            val eqs = maps process_inst insts
-          in
-            new_th |> apply_to_thm (
-              Conv.every_conv (map (rewr_obj_eq_bottom ctxt o obj_sym) eqs))
-          end
-
-      val sep_prec_thms =
-          Named_Theorems.get ctxt @{named_theorems sep_prec_thms}
-      val new_th' = fold apply_prec_thm sep_prec_thms new_th
-
-      (* Check that all new variables in new_th' are replaced. *)
-      val _ = assert (not (Util.occurs_frees vars (Thm.prop_of new_th')))
-                     "use_prec_thms: failed to remove all new vars."
-    in
-      (* Remove assumptions involving original variables. Similar to
-         handler for apply_exists.
-       *)
-      new_th' |> Thm.implies_intr (Thm.cterm_of ctxt new_prop)
-              |> fold (UtilLogic.ex_elim ctxt) (rev vars)
-              |> Thm.elim_implies ex_th
-    end
-
-(* Match a MATCH_POS item with tname (h, c, true, P, Q) to
-   propositions h |= P * Ru (or R if P is emp), and produce the
-   proposition h |= Q * Ru.
- *)
-fun match_assn2_fn ictxt item1 item2 =
-    let
-      val ctxt = IncrContext.context_of ictxt
-      val {id, tname, prop, ...} = item1
-      val (hoare_th, success_ths) = (conj_left_th prop, conj_right_th prop)
-      val (success_th, post_th) =
-          (conj_left_th success_ths, conj_right_th success_ths)
-      val h_t = Thm.term_of (hd tname)
-      val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
-    in
-      if has_pure_assn P then []
-      else let
-        val P_pat = if P aconv emp then Var (("R", 0), assnT)
-                    else mk_star (P, Var (("Ru", 0), assnT))
-        val mod_pat = mk_mod (h_t, P_pat)
-        val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
-        fun process_inst ((id'', inst), mod_th) =
-            let
-              val mod_th' = if P aconv emp then
-                              apply_to_thm' (mod_assn_conv mult_emp_left) mod_th
-                            else mod_th
-              val hoare_th' = Util.subst_thm ctxt inst hoare_th
-              val res_th =
-                  [hoare_th', mod_th', success_th] MRS @{thm hoare_triple_mp}
-              val mod_cv = Conv.try_conv (rewr_obj_eq @{thm mod_ex_dist})
-              val res_th' =
-                  res_th |> apply_to_thm' (mod_assn_conv (
-                                              normalize_assn_cv ctxt))
-                         |> apply_to_thm' (Conv.top_conv (K mod_cv) ctxt)
-                         |> use_prec_thms ctxt post_th
-                         |> apply_to_thm' (normalize_mod_cv ctxt)
-                         |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
-            in
-              Update.thm_update (id'', res_th')
-            end
-      in
-        map process_inst insts
-      end
-    end
-
-val match_assn2 =
-    {name = "sep.match_assn2",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c, True)"}),
-             TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
-     priority = PRIORITY_ADD,
-     func = TwoStep match_assn2_fn}
 
 (* Match a MATCH_POS item with hoare triple <P * \<up>(b)> c <Q> with
    proposition b, resulting in a new MATCH_POS item (shadowing the
@@ -1049,8 +885,7 @@ fun hoare_triple_prfstep hoare_th =
 
 (* Given hoare_th of the form <?P> ?c <?Q>, produce proofstep matching
    item1 with CODE_POS (?h, ?c) and item2 with proposition ?h |= ?P *
-   ?Ru. Also, if the command is not heap preserving, produce proofstep
-   matching with SUCCESS_RUN (?h, ?c) and ?h |= ?P * ?ru.
+   ?Ru.
  *)
 val add_hoare_triple_prfstep = add_prfstep o hoare_triple_prfstep
 
@@ -1106,20 +941,18 @@ val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
       (TY_CODE_POS, NONE, SOME output_code_pos_fn),
       (TY_MATCH_POS, SOME code_pos_match_rewr_terms,
-       SOME output_code_pos_match_fn),
-      (TY_SUCCESS_RUN, NONE, SOME output_success_run_fn)
+       SOME output_code_pos_match_fn)
 
     ] #> fold ItemIO.add_typed_matcher [
       (TY_CODE_POS, code_pos_typed_matcher),
-      (TY_MATCH_POS, code_pos_typed_matcher),
-      (TY_SUCCESS_RUN, code_pos_typed_matcher)
+      (TY_MATCH_POS, code_pos_typed_matcher)
 
     ] #> fold add_prfstep (
       normalize_mod_cv_prfsteps @ [
       frame_entail, heap_preservingI,
       init_pos, match_assn1, rewrite_pos,
-      match_hoare_disj, match_hoare_prop, convert_match_pos,
-      match_assn2, match_assn_pure1, match_assn_pure2, match_assn_spatial
+      match_hoare_disj, match_hoare_prop,
+      match_assn_pure1, match_assn_pure2, match_assn_spatial
     ])
 
 end  (* structure SepLogic *)

@@ -227,13 +227,15 @@ fun apply_exists_ritems ctxt xs ex_th =
 
       fun handler (t, th) =
           let
-            val subst = (match_vars (Thm.hyps_of ex_th', Thm.hyps_of th))
-                            |> map (apply2 (Thm.cterm_of ctxt))
             val fvars = get_freevars t
+            val th' = th |> Thm.implies_intr (Thm.cterm_of ctxt t)
+                         |> fold (UtilLogic.ex_elim ctxt) (rev fvars)
+            (* Very messy *)
+            val subst = (match_vars (Thm.prop_of ex_th' :: Thm.hyps_of ex_th',
+                                     Thm.hyps_of th @ Thm.prems_of th'))
+                            |> map (apply2 (Thm.cterm_of ctxt))
           in
-            th |> Thm.implies_intr (Thm.cterm_of ctxt t)
-               |> fold (UtilLogic.ex_elim ctxt) (rev fvars)
-               |> Thm.elim_implies (Util.subst_thm_atomic subst ex_th')
+            th' |> Thm.elim_implies (Util.subst_thm_atomic subst ex_th')
           end
 
       val ritems = (map (BoxItem.var_to_fact) vars) @

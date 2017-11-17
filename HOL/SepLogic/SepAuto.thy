@@ -222,7 +222,7 @@ lemma mod_pure_star_dist [rewrite]:
 @qed
 
 lemma mod_pure': "h \<Turnstile> \<up>b \<longleftrightarrow> (h \<Turnstile> emp \<and> b)" by auto2
-lemma pure_conj:  "\<up>(P \<and> Q) = \<up>P * \<up>Q" by auto2
+lemma pure_conj: "\<up>(P \<and> Q) = \<up>P * \<up>Q" by auto2
 
 subsection {* Entailment and its properties *}
 

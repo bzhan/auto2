@@ -251,6 +251,24 @@ lemma os_rem_rule [hoare_triple]:
 
 subsubsection {* Insert in order *}
 
+fun list_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
+  "list_insert x [] = [x]"
+| "list_insert x (y # ys) = (
+    if x \<le> y then x # (y # ys) else y # list_insert x ys)"
+setup {* fold add_rewrite_rule @{thms list_insert.simps} *}
+
+lemma list_insert_mset [rewrite]:
+  "mset (list_insert x xs) = {#x#} + mset xs"
+@proof @induct xs @qed
+
+lemma list_insert_set [rewrite]:
+  "set (list_insert x xs) = {x} \<union> set xs"
+@proof @induct xs @qed
+
+lemma list_insert_sorted [forward]:
+  "sorted xs \<Longrightarrow> sorted (list_insert x xs)"
+@proof @induct xs @qed
+
 partial_function (heap) os_insert
   :: "'a::{ord,heap} \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "os_insert x b = (case b of
@@ -264,16 +282,8 @@ partial_function (heap) os_insert
            return (Some p) }) })"
 declare os_insert.simps [sep_proc_defs]
 
-lemma os_insert_mset_rule [hoare_triple]:
-  "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(mset xs' = {#x#} + mset xs)>"
-@proof @induct xs arbitrary b @qed
-
-lemma os_insert_set_rule [hoare_triple]:
-  "<os_list xs b> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(set xs' = {x} \<union> set xs)>"
-@proof @induct xs arbitrary b @qed
-
-lemma os_insert_sorted [hoare_triple]:
-  "<os_list xs b * \<up>(sorted xs)> os_insert x b <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs')>"
+lemma os_insert_to_fun [hoare_triple]:
+  "<os_list xs b> os_insert x b <os_list (list_insert x xs)>"
 @proof @induct xs arbitrary b @qed
 
 subsection {* Application: insertion sort *}
@@ -364,16 +374,10 @@ partial_function (heap) merge_os_list ::
      })"
 declare merge_os_list.simps [sep_proc_defs]
 
-lemma merge_os_list_keys [hoare_triple]:
+lemma merge_os_list_to_fun [hoare_triple]:
   "<os_list xs p * os_list ys q>
   merge_os_list p q
-  <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(set zs = set xs \<union> set ys)>"
-@proof @fun_induct "merge_list xs ys" arbitrary p q @qed
-
-lemma merge_os_list_sorted [hoare_triple]:
-  "<os_list xs p * os_list ys q * \<up>(sorted xs) * \<up>(sorted ys)>
-  merge_os_list p q
-  <\<lambda>r. \<exists>\<^sub>Azs. os_list zs r * \<up>(sorted zs)>"
+  <\<lambda>r. os_list (merge_list xs ys) r>"
 @proof @fun_induct "merge_list xs ys" arbitrary p q @qed
 
 subsection {* List copy *}
