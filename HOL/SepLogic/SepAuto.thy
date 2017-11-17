@@ -315,6 +315,7 @@ lemma frame_rule [backward]:
 setup {* del_prfstep_thm @{thm mod_star_conv} *}
 
 lemma norm_pre_pure_iff: "<P * \<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <P> c <Q>)" by auto2
+lemma norm_pre_pure_iff2: "<\<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <emp> c <Q>)" by auto2
 
 section {* Hoare triples for atomic commands *}
 

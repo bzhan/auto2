@@ -24,11 +24,10 @@ sig
   val find_heap_preserving_th: Proof.context -> term -> thm option
   val next_code_pos_ritems:
       Proof.context -> thm -> thm -> thm -> thm list * raw_item list
-  val match_assn1: proofstep
+  val match_assn: proofstep
   val rewrite_pos: proofstep
   val match_hoare_disj: proofstep
-  val match_assn_pure1: proofstep
-  val match_assn_pure2: proofstep
+  val match_assn_pure: proofstep
   val match_hoare_create_case_gen: string * term -> proofstep
   val add_match_hoare_create_case: thm -> theory -> theory
   val match_assn_spatial: proofstep
@@ -50,8 +49,10 @@ fun rewr_obj_eq_bottom ctxt eq_th =
 (* Proofsteps normalizing assertions. *)
 fun normalize_mod_cv_prfstep (prfstep_name, pat) =
     ProofStep.prfstep_custom
-        prfstep_name [WithItem (TY_PROP, pat)] PRIORITY_URGENT
-        (fn ((id, _), ths) => fn _ => fn ctxt =>
+        prfstep_name
+        [WithItem (TY_PROP, pat)]
+        PRIORITY_SHADOW
+        (fn ((id, _), ths) => fn items => fn ctxt =>
             let
               val th = the_single ths
               val th' =
@@ -61,7 +62,8 @@ fun normalize_mod_cv_prfstep (prfstep_name, pat) =
                     apply_to_thm' (normalize_mod_cv ctxt) th
             in
               if not (Thm.prop_of th aconv Thm.prop_of th') then
-                [Update.thm_update (id, th')]
+                [Update.thm_update (id, th'),
+                 ShadowItem {id = id, item = the_single items}]
               else []
             end)
 
@@ -594,7 +596,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 (* Matching a MATCH_POS item with tname (h, c, P, Q) to propositions h
    |= P * Ru (or R if P is emp), and produce the next CODE_POS item.
  *)
-fun match_assn1_fn ictxt item1 item2 =
+fun match_assn_fn ictxt item1 item2 =
     let
       val ctxt = IncrContext.context_of ictxt
       val {id, tname, prop, ...} = item1
@@ -621,12 +623,12 @@ fun match_assn1_fn ictxt item1 item2 =
       end
     end
 
-val match_assn1 =
-    {name = "sep.match_assn1",
+val match_assn =
+    {name = "sep.match_assn",
      args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c)"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_ADD,
-     func = TwoStep match_assn1_fn}
+     func = TwoStep match_assn_fn}
 
 (* Given CODE_POS item with parameters (h, c), where c can be
    rewritten as c1 ; c2 ; ... ; cn (for example, using rewriting rules
@@ -638,16 +640,11 @@ val rewrite_pos =
         [WithItem (TY_CODE_POS, @{term_pat "(?h, bind ?c ?c')"}),
          ShadowFirst]
         PRIORITY_SHADOW
-        (fn ((id, _), ths) => fn items => fn _ =>
+        (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val th = the_single ths
-              val (run_th, _) = (conj_left_th th, conj_right_th th)
-              val new_c = run_th |> prop_of' |> Util.dest_args |> hd
-              val new_is_bind = is_bind_cmd new_c
-              val new_c1 = if new_is_bind then fst (dest_bind new_c) else new_c
-              val {tname, ...} = the_single items
-              val h_t = Thm.term_of (hd tname)
-              val ritem = Fact (TY_CODE_POS, [h_t, new_c1], th)
+              val tname = map (lookup_inst inst) ["h", "c"]
+              val ritem = Fact (TY_CODE_POS, tname, th)
             in
               [AddItems {id = id, sc = SOME 1, raw_items = [ritem]}]
             end)
@@ -717,11 +714,7 @@ val match_hoare_prop =
         PRIORITY_ADD
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
-              val P = lookup_inst inst "P"
-              val Q = lookup_inst inst "Q"
-              val h_t = lookup_inst inst "h"
-              val c = lookup_inst inst "c"
-              val tname = [h_t, c, P, Q]
+              val tname = map (lookup_inst inst) ["h", "c", "P", "Q"]
               val prop = UtilLogic.mk_conjs_th ths
               val ritem = Fact (TY_MATCH_POS, tname, prop)
             in
@@ -733,44 +726,47 @@ val match_hoare_prop =
    original one) with hoare triple <P> c <Q>. Only work in the case
    where there are no schematic variables in b.
  *)
-fun match_assn_pure_fn ((id, inst), ths) items ctxt =
-    if Util.has_vars (lookup_inst inst "b") then []
-    else let
-      val (th1, th2) = the_pair ths
-      val hoare_th =
-          if not (Util.defined_instn inst ("P", 0)) then
-            apply_to_thm' (Util.argn_conv 0 mult_emp_left) (conj_left_th th1)
-          else conj_left_th th1
-      val success_ths = conj_right_th th1
-      val norm_th = @{thm norm_pre_pure_iff}
-      val hoare_th' = hoare_th |> apply_to_thm' (rewr_obj_eq norm_th)
-                               |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
-                               |> Thm.elim_implies th2
-      val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
-      val tname = map (lookup_inst inst) ["h", "c"] @ [P', Q']
-      val new_prop = UtilLogic.mk_conjs_th [hoare_th', success_ths]
-      val ritem = Fact (TY_MATCH_POS, tname, new_prop)
+fun match_assn_pure_fn ictxt item1 item2 =
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id, prop, tname, ...} = item1
+      val (h, c, P) = the_triple (take 3 (map Thm.term_of tname))
+      val Ps = ACUtil.dest_ac assn_ac_info P
+      val b = List.last Ps
     in
-      [AddItems {id = id, sc = SOME 1, raw_items = [ritem]},
-       ShadowItem {id = id, item = hd items}]
+      if Util.has_vars b orelse not (is_pure_assn b) then []
+      else let
+        val pat = dest_arg b
+        val insts = ItemIO.get_insts (PropMatch pat) item2 ictxt (id, fo_init)
+
+        fun process_inst ((id', _), th) =
+            let
+              val norm_th = if length Ps = 1 then @{thm norm_pre_pure_iff2}
+                            else @{thm norm_pre_pure_iff}
+              val hoare_th = conj_left_th prop
+              val hoare_th' =
+                  hoare_th |> apply_to_thm' (rewr_obj_eq norm_th)
+                           |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
+                           |> Thm.elim_implies th
+              val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
+              val new_prop =
+                  UtilLogic.mk_conjs_th [hoare_th', conj_right_th prop]
+              val ritem = Fact (TY_MATCH_POS, [h, c, P', Q'], new_prop)
+            in
+              [AddItems {id = id', sc = SOME 1, raw_items = [ritem]},
+               ShadowItem {id = id', item = item1}]
+            end
+      in
+        maps process_inst insts
+      end
     end
 
-val match_assn_pure1 =
-    ProofStep.prfstep_custom
-        "sep.match_assn_pure1"
-        [WithItem (TY_MATCH_POS,
-                   @{term_pat "(?h, ?c, ?P * \<up>(?b), ?Q)"}),
-         WithFact @{term_pat "?b::bool"}]
-        PRIORITY_URGENT
-        match_assn_pure_fn
-
-val match_assn_pure2 =
-    ProofStep.prfstep_custom
-        "sep.match_assn_pure2"
-        [WithItem (TY_MATCH_POS, @{term_pat "(?h, ?c, \<up>(?b), ?Q)"}),
-         WithFact @{term_pat "?b::bool"}]
-        PRIORITY_URGENT
-        match_assn_pure_fn
+val match_assn_pure =
+    {name = "sep.match_assn_pure",
+     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c, ?P, ?Q)"}),
+             PropMatch (@{term_pat "?b::bool"})],
+     priority = PRIORITY_SHADOW,
+     func = TwoStep match_assn_pure_fn}
 
 (* Given a MATCH_POS item with tname (h, c, P, Q), where P contains
    schematic variables. Let P' be the spatial (non-pure) part of
@@ -956,9 +952,9 @@ val add_sep_logic_proofsteps =
     ] #> fold add_prfstep (
       normalize_mod_cv_prfsteps @ [
       frame_entail, heap_preservingI,
-      init_pos, match_assn1, rewrite_pos,
+      init_pos, match_assn, rewrite_pos,
       match_hoare_disj, match_hoare_prop,
-      match_assn_pure1, match_assn_pure2, match_assn_spatial
+      match_assn_pure, match_assn_spatial
     ])
 
 end  (* structure SepLogic *)
