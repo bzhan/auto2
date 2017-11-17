@@ -13,7 +13,6 @@ sig
   val TY_CODE_POS: string
   val TY_MATCH_POS: string
   val output_code_pos_fn: item_output
-  val code_pos_match_rewr_terms: term list -> term list
   val output_code_pos_match_fn: item_output
   val code_pos_typed_matcher: item_matcher
 
@@ -252,12 +251,10 @@ val TY_CODE_POS = "CODE_POS"
 
 (* MATCH_POS item indicate current position together with a hoare
    triple (possibly with schematic variables; either from existing
-   theorem or induction hypothesis). The tname is (h, c, is_success,
-   P, Q), where is_success is a boolean term indicating whether the
-   current command is known to be successful, and (P, Q) are the
-   pre/post-condition of the hoare triple. Note Q is necessary to
-   distinguish between MATCH_POS items with same pre-condition but
-   differnt post-conditions.
+   theorem or induction hypothesis). The tname is (h, c, P, Q), where
+   (P, Q) are the pre/post-condition of the hoare triple. Note Q is
+   necessary to distinguish between MATCH_POS items with same
+   pre-condition but differnt post-conditions.
  *)
 val TY_MATCH_POS = "MATCH_POS"
 
@@ -269,8 +266,6 @@ fun output_code_pos_fn ctxt (tname, th) =
       "CODE_POS " ^ (if is_bind then "" else "(last) ") ^
       (Util.string_of_terms ctxt tname)
     end
-
-fun code_pos_match_rewr_terms ts = take 2 ts @ drop 3 ts
 
 fun output_code_pos_match_fn ctxt (tname, _) =
     "MATCH_POS " ^ (Util.string_of_terms ctxt tname)
@@ -305,14 +300,14 @@ val code_pos_typed_matcher =
                      contains rewrites for P and Q (MATCH_POS) or not.
                    *)
                   val cv =
-                      if ty_str = TY_MATCH_POS andalso length obj_eqs = 5 then
+                      if ty_str = TY_MATCH_POS andalso length obj_eqs = 4 then
                         Conv.every_conv [
                           rewr_obj_eq_bottom ctxt (hd obj_eqs),
                           rewr_obj_eq_bottom ctxt (nth obj_eqs 1),
                           Conv.arg1_conv (
-                            Util.argn_conv 0 (rewr_obj_eq (nth obj_eqs 3))),
+                            Util.argn_conv 0 (rewr_obj_eq (nth obj_eqs 2))),
                           Conv.arg1_conv (
-                            Util.argn_conv 2 (rewr_obj_eq (nth obj_eqs 4)))]
+                            Util.argn_conv 2 (rewr_obj_eq (nth obj_eqs 3)))]
                       else
                         Conv.every_conv (
                           map (rewr_obj_eq_bottom ctxt) obj_eqs)
@@ -597,9 +592,8 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
       end
     end
 
-(* Matching a MATCH_POS item with tname (h, c, false, P, Q) to
-   propositions h |= P * Ru (or R if P is emp), and produce the next
-   CODE_POS item.
+(* Matching a MATCH_POS item with tname (h, c, P, Q) to propositions h
+   |= P * Ru (or R if P is emp), and produce the next CODE_POS item.
  *)
 fun match_assn1_fn ictxt item1 item2 =
     let
@@ -630,7 +624,7 @@ fun match_assn1_fn ictxt item1 item2 =
 
 val match_assn1 =
     {name = "sep.match_assn1",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c, False)"}),
+     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c)"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_ADD,
      func = TwoStep match_assn1_fn}
@@ -691,7 +685,7 @@ fun match_hoare_disj_fn ictxt {id, tname, prop = th1, ...} item2 =
                   th1 |> Util.subst_thm_thy thy inst
                       |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
               val (P', _, Q') = dest_hoare_triple (prop_of' th1')
-              val new_tname = [h_t, c1, UtilLogic.term_of_bool false, P', Q']
+              val new_tname = [h_t, c1, P', Q']
               val new_prop = UtilLogic.mk_conjs_th [th1', th2]
               val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
             in
@@ -728,7 +722,7 @@ val match_hoare_prop =
               val Q = lookup_inst inst "Q"
               val h_t = lookup_inst inst "h"
               val c = lookup_inst inst "c"
-              val tname = [h_t, c, UtilLogic.term_of_bool false, P, Q]
+              val tname = [h_t, c, P, Q]
               val prop = UtilLogic.mk_conjs_th ths
               val ritem = Fact (TY_MATCH_POS, tname, prop)
             in
@@ -754,7 +748,7 @@ fun match_assn_pure_fn ((id, inst), ths) items ctxt =
                                |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
                                |> Thm.elim_implies th2
       val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
-      val tname = map (lookup_inst inst) ["h", "c", "s"] @ [P', Q']
+      val tname = map (lookup_inst inst) ["h", "c"] @ [P', Q']
       val new_prop = UtilLogic.mk_conjs_th [hoare_th', success_ths]
       val ritem = Fact (TY_MATCH_POS, tname, new_prop)
     in
@@ -766,7 +760,7 @@ val match_assn_pure1 =
     ProofStep.prfstep_custom
         "sep.match_assn_pure1"
         [WithItem (TY_MATCH_POS,
-                   @{term_pat "(?h, ?c, ?s, ?P * \<up>(?b), ?Q)"}),
+                   @{term_pat "(?h, ?c, ?P * \<up>(?b), ?Q)"}),
          WithFact @{term_pat "?b::bool"}]
         PRIORITY_URGENT
         match_assn_pure_fn
@@ -774,15 +768,15 @@ val match_assn_pure1 =
 val match_assn_pure2 =
     ProofStep.prfstep_custom
         "sep.match_assn_pure2"
-        [WithItem (TY_MATCH_POS, @{term_pat "(?h, ?c, ?s, \<up>(?b), ?Q)"}),
+        [WithItem (TY_MATCH_POS, @{term_pat "(?h, ?c, \<up>(?b), ?Q)"}),
          WithFact @{term_pat "?b::bool"}]
         PRIORITY_URGENT
         match_assn_pure_fn
 
-(* Given a MATCH_POS item with tname (h, c, is_success, P, Q), where P
-   contains schematic variables. Let P' be the spatial (non-pure) part
-   of P. Match with propositions h |= P' * Ru, and produce
-   instantiated version of MATCH_POS.
+(* Given a MATCH_POS item with tname (h, c, P, Q), where P contains
+   schematic variables. Let P' be the spatial (non-pure) part of
+   P. Match with propositions h |= P' * Ru, and produce instantiated
+   version of MATCH_POS.
  *)
 fun match_assn_spatial_fn ictxt item1 item2 =
     let
@@ -797,7 +791,7 @@ fun match_assn_spatial_fn ictxt item1 item2 =
         val P' = strip_pure_assn P
         val _ = assert (not (P' aconv emp)) "match_assn_spatial_fn"
 
-        val (h_t, c, is_success) = the_triple (take 3 (map Thm.term_of tname))
+        val (h_t, c) = the_pair (take 2 (map Thm.term_of tname))
 
         val P_pat = mk_star (P', Var (("Ru", 0), assnT))
         val mod_pat = mk_mod (h_t, P_pat)
@@ -806,7 +800,7 @@ fun match_assn_spatial_fn ictxt item1 item2 =
             let
               val hoare_th' = Util.subst_thm ctxt inst hoare_th
               val (P'', _, Q'') = dest_hoare_triple (prop_of' hoare_th')
-              val tname' = [h_t, c, is_success, P'', Q'']
+              val tname' = [h_t, c, P'', Q'']
               val prop' = UtilLogic.mk_conjs_th [hoare_th', success_ths]
               val ritem = Fact (TY_MATCH_POS, tname', prop')
             in
@@ -821,7 +815,7 @@ fun match_assn_spatial_fn ictxt item1 item2 =
 val match_assn_spatial =
     {name = "sep.match_assn_spatial",
      args = [TypedMatch (
-                TY_MATCH_POS, @{term_pat "(?h, ?c, ?s, ?P * \<up>(?b), ?Q)"}),
+                TY_MATCH_POS, @{term_pat "(?h, ?c, ?P * \<up>(?b), ?Q)"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P'"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_spatial_fn}
@@ -849,15 +843,14 @@ fun add_match_hoare_create_case hoare_th =
     let
       val name = (Util.name_of_thm hoare_th) ^ "@hoare_case"
       val (_, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val pat = HOLogic.mk_tuple [Var (("h", 0), pheapT), pat_c,
-                                  Var (("s", 0), boolT), Var (("P", 0), assnT)]
+      val pat = HOLogic.mk_tuple [Var (("h", 0), pheapT), pat_c, Var (("P", 0), assnT)]
       val prfstep = match_hoare_create_case_gen (name, pat)
     in
       add_prfstep prfstep
     end
 
 (* Given hoare triple theorem <P> c <Q>, match with CODE_POS item (h,
-   c), to produce MATCH_POS item with tname (h, c, false, P, Q).
+   c), to produce MATCH_POS item with tname (h, c, P, Q).
  *)
 fun hoare_triple_prfstep hoare_th =
     let
@@ -873,7 +866,7 @@ fun hoare_triple_prfstep hoare_th =
                 (Util.subst_thm ctxt inst hoare_th)
                     |> apply_to_thm' (Util.argn_conv 0 (normalize_assn_cv ctxt))
             val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
-            val new_tname = [h_t, c, UtilLogic.term_of_bool false, P', Q']
+            val new_tname = [h_t, c, P', Q']
             val new_prop = UtilLogic.mk_conjs_th [hoare_th', the_single ths]
             val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
           in
@@ -940,8 +933,7 @@ fun add_hoare_triple_direct_prfstep hoare_th =
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
       (TY_CODE_POS, NONE, SOME output_code_pos_fn),
-      (TY_MATCH_POS, SOME code_pos_match_rewr_terms,
-       SOME output_code_pos_match_fn)
+      (TY_MATCH_POS, NONE, SOME output_code_pos_match_fn)
 
     ] #> fold ItemIO.add_typed_matcher [
       (TY_CODE_POS, code_pos_typed_matcher),
