@@ -68,11 +68,6 @@ lemma int_tree_constr_ent:
   "p \<mapsto>\<^sub>r Node lp v m rp * int_tree lt lp * int_tree rt rp \<Longrightarrow>\<^sub>A int_tree (interval_tree.Node lt v m rt) (Some p)" by auto2
 
 setup {* fold add_entail_matcher [@{thm int_tree_none}, @{thm int_tree_constr_ent}] *}
-
-lemma int_tree_prec [sep_prec_thms]:
-  "h \<Turnstile> int_tree t p * F1 \<Longrightarrow> h \<Turnstile> int_tree t' p * F2 \<Longrightarrow> t = t'"
-@proof @induct t arbitrary p t' F1 F2 @qed
-
 setup {* fold del_prfstep_thm @{thms int_tree.simps} *}
 
 type_synonym int_tree = "nat node ref option"

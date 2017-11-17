@@ -46,11 +46,6 @@ lemma btree_constr_ent:
   "p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp \<Longrightarrow>\<^sub>A btree (tree.Node lt k v rt) (Some p)" by auto2
 
 setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
-
-lemma btree_prec [sep_prec_thms]:
-  "h \<Turnstile> btree t p * F1 \<Longrightarrow> h \<Turnstile> btree t' p * F2 \<Longrightarrow> t = t'"
-@proof @induct t arbitrary p t' F1 F2 @qed
-
 setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
 type_synonym ('a, 'b) btree = "('a, 'b) node ref option"

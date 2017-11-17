@@ -183,11 +183,6 @@ fun idx_pqueue :: "(nat \<times> 'a::{heap,linorder}) list \<Rightarrow> nat \<R
     (\<exists>\<^sub>Am. dyn_array xs pq * amap m idx * \<up>(n = alen idx) * \<up>(index_of_pqueue xs m) * \<up>(key_within_range xs n))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue.simps} *}
 
-setup {* add_forward_prfstep @{thm dyn_array_prec} *}
-lemma idx_pqueue_prec [sep_prec_thms]:
-  "h \<Turnstile> idx_pqueue xs m p * F1 \<Longrightarrow> h \<Turnstile> idx_pqueue ys n p * F2 \<Longrightarrow> xs = ys \<and> m = n" by auto2
-setup {* del_prfstep_thm @{thm dyn_array_prec} *}
-
 section {* Basic operations on indexed_queue *}
 
 definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
@@ -445,11 +440,6 @@ section {* Outer interface *}
 definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue_map M n p = (\<exists>\<^sub>Axs. idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(M = map_of_alist xs))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
-
-setup {* add_forward_prfstep @{thm idx_pqueue_prec} *}
-lemma idx_pqueue_map_prec [sep_prec_thms]:
-  "h \<Turnstile> idx_pqueue_map M n p * F1 \<Longrightarrow> h \<Turnstile> idx_pqueue_map M' n' p * F2 \<Longrightarrow> M = M' \<and> n = n'" by auto2
-setup {* del_prfstep_thm @{thm idx_pqueue_prec} *}
 
 lemma heap_implies_hd_min2 [resolve]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_alist xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"

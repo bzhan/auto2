@@ -12,11 +12,6 @@ fun dstate :: "state \<Rightarrow> dijkstra_state \<Rightarrow> assn" where
   "dstate (State e M) (Dijkstra_State a pq) = a \<mapsto>\<^sub>a e * idx_pqueue_map M (length e) pq"
 setup {* add_rewrite_ent_rule @{thm dstate.simps} *}
 
-setup {* add_forward_prfstep @{thm idx_pqueue_map_prec} *}
-lemma dstate_prec [sep_prec_thms]:
-  "h \<Turnstile> dstate S p * F1 \<Longrightarrow> h \<Turnstile> dstate S' p * F2 \<Longrightarrow> S = S'" by auto2
-setup {* del_prfstep_thm @{thm idx_pqueue_map_prec} *}
-
 fun dstate_pq_init :: "graph \<Rightarrow> nat \<Rightarrow> nat indexed_pqueue Heap" where
   "dstate_pq_init G 0 = idx_pqueue_empty (size G) 0"
 | "dstate_pq_init G (Suc k) = do {

@@ -475,12 +475,8 @@ setup {* del_prfstep_thm @{thm hoare_triple_def'} *}
 subsection {* Definition of procedures *}
 
 named_theorems sep_proc_defs "Seplogic: definitions of procedures"
-named_theorems sep_prec_thms "Seplogic: precision theorems"
 (* Note adding to sep_heap_presv_thms is taken care of by heap_presv_thms attribute. *)
 named_theorems sep_heap_presv_thms "Seplogic: heap preservation theorems"
-
-declare ref_prec [sep_prec_thms]
-declare array_prec [sep_prec_thms]
 
 (* ASCII abbreviations for ML files. *)
 abbreviation (input) ex_assn_ascii :: "('a \<Rightarrow> assn) \<Rightarrow> assn" (binder "EXA" 11)

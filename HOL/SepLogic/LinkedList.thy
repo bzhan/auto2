@@ -68,14 +68,11 @@ definition os_list :: "'a list \<Rightarrow> ('a::heap) os_list \<Rightarrow> as
 setup {* add_rewrite_ent_rule @{thm os_list_def} *}
 setup {* add_rewrite_ent_rule (obj_sym_th @{thm os_list_def}) *}
 
-theorem os_line_none_rewr [forward_ent]:
+lemma os_line_none_rewr [forward_ent]:
   "os_list [] b \<Longrightarrow>\<^sub>A \<up>(b = None)" by auto2
 
-theorem mod_os_list_eq [backward1]:
+lemma mod_os_list_eq [backward1]:
   "l1 = l2 \<Longrightarrow> h \<Turnstile> os_list l1 r \<Longrightarrow> h \<Turnstile> os_list l2 r" by simp
-
-lemma os_list_prec [sep_prec_thms]:
-  "h \<Turnstile> os_list l p * F1 \<Longrightarrow> h \<Turnstile> os_list l' p * F2 \<Longrightarrow> l = l'" by auto2
 
 lemma os_list_none: "emp \<Longrightarrow>\<^sub>A os_list [] None" by auto2
 

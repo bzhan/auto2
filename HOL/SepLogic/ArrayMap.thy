@@ -28,9 +28,6 @@ fun amap :: "(nat, 'a::heap) map \<Rightarrow> 'a array_map \<Rightarrow> assn" 
   "amap m (ArrayMap al a) = (\<exists>\<^sub>Axs. a \<mapsto>\<^sub>a xs * \<up>(al = length xs) * \<up>(m = amap_of_list xs))"
 setup {* add_rewrite_ent_rule @{thm amap.simps} *}
 
-lemma amap_prec [sep_prec_thms]:
-  "h \<Turnstile> amap m p * F1 \<Longrightarrow> h \<Turnstile> amap m' p * F2 \<Longrightarrow> m = m'" by auto2
-
 definition amap_new :: "nat \<Rightarrow> ('a::heap) array_map Heap" where [sep_proc_defs]:
   "amap_new n = do {
     a \<leftarrow> Array.new n None;

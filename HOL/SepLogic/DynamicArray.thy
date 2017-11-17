@@ -12,9 +12,6 @@ fun dyn_array :: "'a::heap list \<Rightarrow> 'a dynamic_array \<Rightarrow> ass
      (\<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(xs = take al xs') * \<up>(al \<le> length xs') * \<up>(am = length xs'))"
 setup {* add_rewrite_ent_rule @{thm dyn_array.simps} *}
 
-lemma dyn_array_prec [sep_prec_thms]:
-  "h \<Turnstile> dyn_array xs p * F1 \<Longrightarrow> h \<Turnstile> dyn_array ys p * F2 \<Longrightarrow> xs = ys" by auto2
-
 definition dyn_array_new :: "'a \<Rightarrow> 'a::heap dynamic_array Heap" where [sep_proc_defs]:
   "dyn_array_new x = do {
     p \<leftarrow> Array.new 5 x;
