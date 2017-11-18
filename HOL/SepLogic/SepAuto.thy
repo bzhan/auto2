@@ -207,12 +207,6 @@ lemma mod_star_trueI: "h \<Turnstile> P \<Longrightarrow> h \<Turnstile> P * tru
 
 lemma sngr_same_false [resolve]: "\<not>h \<Turnstile> p \<mapsto>\<^sub>r x * p \<mapsto>\<^sub>r y * Qu" by auto2
 
-lemma ref_prec: "h \<Turnstile> p \<mapsto>\<^sub>r x * Qu \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>r y * Ru \<Longrightarrow> x = y" by auto2
-setup {* add_forward_prfstep_cond @{thm ref_prec} [with_cond "?x \<noteq> ?y"] *}
-
-lemma array_prec: "h \<Turnstile> p \<mapsto>\<^sub>a x * Qu \<Longrightarrow> h \<Turnstile> p \<mapsto>\<^sub>a y * Ru \<Longrightarrow> x = y" by auto2
-setup {* add_forward_prfstep_cond @{thm array_prec} [with_cond "?x \<noteq> ?y"] *}
-
 lemma mod_pure_star_dist [rewrite]:
   "h \<Turnstile> P * \<up>b \<longleftrightarrow> (h \<Turnstile> P \<and> b)"
 @proof

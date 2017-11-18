@@ -50,15 +50,6 @@ lemma lseg_split:
   "lseg (l1 @ l2) p r \<Longrightarrow>\<^sub>A \<exists>\<^sub>Aq. lseg l1 p q * lseg l2 q r"
 @proof @induct l1 arbitrary p @qed
 
-lemma lseg_prec [forward]:
-  "h \<Turnstile> lseg l p None * F1 \<Longrightarrow> h \<Turnstile> lseg l' p None * F2 \<Longrightarrow> l = l'"
-@proof
-  @induct l arbitrary p l' F1 F2 @with
-    @subgoal "l = []" @induct l' @endgoal
-    @subgoal "l = a # b" @induct l' @endgoal
-  @end
-@qed
-
 subsection {* List assertion *}
 
 type_synonym 'a os_list = "'a node ref option"
