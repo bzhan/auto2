@@ -354,7 +354,6 @@ fun get_head_equiv ctxt fheads (id, ct) =
     let
       val head_equivs =
           ct |> RewriteTable.get_head_equiv ctxt
-             |> maps snd
              |> BoxID.merge_box_with_info ctxt id
 
       fun process_head_equiv (id', eq_th) =

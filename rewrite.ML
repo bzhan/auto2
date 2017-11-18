@@ -88,8 +88,6 @@ type rewrite_table = {
   equiv: ((box_id * thm) list) Termtab.table,
   (* Index of reachability under equiv. *)
   all_equiv: ((box_id * thm) list) Termtab.table,
-  (* Index of head equivs. *)
-  head_equiv: ((term * (box_id * thm) list) list) Termtab.table,
   (* contain[A] is the list of terms for which A is a direct subterm. *)
   contain: (cterm list) Termtab.table,
   (* Rewrite info of a term. *)
@@ -151,14 +149,9 @@ sig
   val is_equiv_t: box_id -> Proof.context -> term * term -> bool
   val is_subequiv: box_id -> Proof.context -> cterm * cterm -> bool
 
-  (* head_equiv table. *)
-  val reduce_equivs:
-      Proof.context -> term * (box_id * thm) list -> term * (box_id * thm) list
-  val compute_head_equiv:
-      Proof.context -> cterm -> (term * (box_id * thm) list) list
-  val index_head_equiv: cterm -> Proof.context -> Proof.context
-  val get_head_equiv:
-      Proof.context -> cterm -> (term * (box_id * thm) list) list
+  (* Computation of head equiv. *)
+  val reduce_equivs: Proof.context -> (box_id * thm) list -> (box_id * thm) list
+  val get_head_equiv: Proof.context -> cterm -> (box_id * thm) list
   val get_head_equiv_with_t:
       Proof.context -> box_id * cterm -> term -> (box_id * thm) list
 
@@ -173,8 +166,6 @@ sig
   val add_rewrite_raw: box_id -> thm -> Proof.context -> Proof.context
   val get_reachable_terms: bool -> Proof.context -> cterm list -> cterm list
   val complete_table: Proof.context -> (box_id * thm) list * Proof.context
-  val complete_table_with_edges:
-      (box_id * thm) list -> Proof.context -> (box_id * thm) list * Proof.context
   val add_term:
       box_id * cterm -> Proof.context -> (box_id * thm) list * Proof.context
   val add_term_list:
@@ -195,15 +186,15 @@ structure Data = Proof_Data
 (
   type T = rewrite_table
   fun init _ = {terms = Termtab.empty, equiv = Termtab.empty,
-                all_equiv = Termtab.empty, head_equiv = Termtab.empty,
-                contain = Termtab.empty, simp = Termtab.empty, subsimp = Termtab.empty,
+                all_equiv = Termtab.empty, contain = Termtab.empty,
+                simp = Termtab.empty, subsimp = Termtab.empty,
                 reps = Termtab.empty}
 )
 
 fun clean_resolved id ctxt =
     let
-      val {terms, equiv, all_equiv, head_equiv, contain, simp, subsimp,
-           reps} = Data.get ctxt
+      val {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
+          Data.get ctxt
 
       fun clean tb id_fun =
           tb |> Termtab.map
@@ -214,72 +205,41 @@ fun clean_resolved id ctxt =
 
       fun clean_terms tb =
           tb |> Termtab.map (fn _ => clean_terms_1)
-
-      fun clean_head_equiv_1 (fhead, infos) =
-          let
-            val infos' = filter_out (BoxID.is_eq_ancestor ctxt id o fst) infos
-          in
-            if null infos' then [] else [(fhead, infos')]
-          end
-
-      fun clean_head_equiv tb =
-          tb |> Termtab.map (fn _ => maps clean_head_equiv_1)
     in
       ctxt |> Data.map (
         K {terms = clean_terms terms, equiv = clean equiv fst,
            all_equiv = clean all_equiv fst,
-           head_equiv = clean_head_equiv head_equiv,
            contain = contain, simp = clean simp fst, subsimp = clean subsimp fst,
            reps = clean reps fst})
     end
 
-fun map_terms f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                 subsimp, reps} =
+fun map_terms f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = f terms, equiv = equiv, all_equiv = all_equiv,
-     head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps}
+     contain = contain, simp = simp, subsimp = subsimp, reps = reps}
 
-fun map_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                 subsimp, reps} =
+fun map_equiv f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = terms, equiv = f equiv, all_equiv = all_equiv,
-     head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps}
+     contain = contain, simp = simp, subsimp = subsimp, reps = reps}
 
-fun map_all_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                     subsimp, reps} =
+fun map_all_equiv f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = f all_equiv,
-     head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = reps}
+     contain = contain, simp = simp, subsimp = subsimp, reps = reps}
 
-fun map_head_equiv f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                      subsimp, reps} =
+fun map_contain f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
-     head_equiv = f head_equiv, contain = contain, simp = simp,
-     subsimp = subsimp, reps = reps}
+     contain = f contain, simp = simp, subsimp = subsimp, reps = reps}
 
-fun map_contain f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                   subsimp, reps} =
+fun map_simp f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
-     head_equiv = head_equiv, contain = f contain, simp = simp,
-     subsimp = subsimp, reps = reps}
+     contain = contain, simp = f simp, subsimp = subsimp, reps = reps}
 
-fun map_simp f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                subsimp, reps} =
+fun map_subsimp f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
-     head_equiv = head_equiv, contain = contain, simp = f simp,
-     subsimp = subsimp, reps = reps}
+     contain = contain, simp = simp, subsimp = f subsimp, reps = reps}
 
-fun map_subsimp f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                   subsimp, reps} =
+fun map_reps f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = terms, equiv = equiv, all_equiv = all_equiv,
-     head_equiv = head_equiv, contain = contain, simp = simp,
-     subsimp = f subsimp, reps = reps}
-
-fun map_reps f {terms, equiv, all_equiv, head_equiv, contain, simp,
-                subsimp, reps} =
-    {terms = terms, equiv = equiv, all_equiv = all_equiv,
-     head_equiv = head_equiv, contain = contain, simp = simp, subsimp = subsimp,
-     reps = f reps}
+     contain = contain, simp = simp, subsimp = subsimp, reps = f reps}
 
 (*** Basic manipulation of contain table. ***)
 
@@ -647,18 +607,23 @@ fun is_subequiv id ctxt (ct1, ct2) =
 (* infos is a list of (id, th), where the right side of each th is
    fhead as head.
  *)
-fun reduce_equivs ctxt (fhead, infos) =
-    if length infos <= 1 then (fhead, infos) else
+fun reduce_equivs ctxt infos =
+    if length infos <= 1 then infos else
     let
       fun args_of id cu =
           cu |> Util.dest_cargs |> map (simp_val id ctxt)
 
       fun head_equiv_eq_better (id1, th1) (id2, th2) =
-          BoxID.is_eq_ancestor ctxt id1 id2 andalso
-          eq_list (op aconvc) (args_of id2 (Thm.rhs_of th1),
-                               args_of id2 (Thm.rhs_of th2))
+          let
+            val (cu1, cu2) = (Thm.rhs_of th1, Thm.rhs_of th2)
+            val (u1, u2) = (Thm.term_of cu1, Thm.term_of cu2)
+          in
+            BoxID.is_eq_ancestor ctxt id1 id2 andalso
+            Term.head_of u1 aconv Term.head_of u2 andalso
+            eq_list (op aconvc) (args_of id2 cu1, args_of id2 cu2)
+          end
     in
-      (fhead, Util.max_partial head_equiv_eq_better infos)
+      Util.max_partial head_equiv_eq_better infos
     end
 
 (* No assumption on u. Get list of (id', u') pairs where id <= id', u'
@@ -669,16 +634,18 @@ fun reduce_equivs ctxt (fhead, infos) =
    function is much faster when u is in table (uses get_all_equiv
    directly).
  *)
-fun compute_head_equiv ctxt cu =
+fun get_head_equiv ctxt cu =
     let
       val u = Thm.term_of cu
-      val _ = if Term.is_open u then
-                raise Fail "get_all_head_equivs: u is open" else ()
+      val _ = assert (not (Term.is_open u)) "get_all_head_equivs: u is open"
+
       fun rep_eq_better (id1, th1) (id2, th2) =
           BoxID.is_eq_ancestor ctxt id1 id2 andalso
           is_equiv id2 ctxt (Thm.rhs_of th1, Thm.rhs_of th2)
+
       fun get_all_equiv_under_id (id', th') =
-          get_all_equiv ctxt (Util.rhs_of th') |> map (BoxID.merge_eq_infos ctxt (id', th'))
+          (get_all_equiv ctxt (Util.rhs_of th'))
+              |> map (BoxID.merge_eq_infos ctxt (id', th'))
 
       (* Get all equivs from table. *)
       val all_equiv =
@@ -689,50 +656,32 @@ fun compute_head_equiv ctxt cu =
                    |> maps get_all_equiv_under_id
                    |> cons ([], Thm.reflexive cu)
     in
-      (* Sort by head of term, and reduce at each head. *)
-      all_equiv |> map (fn (id, th) => (Term.head_of (Util.rhs_of th), (id, th)))
-                |> AList.group (op aconv)
-                |> map (reduce_equivs ctxt)
-    end
-
-fun index_head_equiv ct ctxt =
-    ctxt |> Data.map (map_head_equiv (
-      Termtab.update (Thm.term_of ct, compute_head_equiv ctxt ct)))
-
-(* Get list of head equivs for cu, indexed by head term. *)
-fun get_head_equiv ctxt cu =
-    let
-      val {head_equiv, ...} = Data.get ctxt
-    in
-      case Termtab.lookup head_equiv (Thm.term_of cu) of
-          NONE => compute_head_equiv ctxt cu
-        | SOME info => info
+      all_equiv |> reduce_equivs ctxt
     end
 
 (* Get list of head equivs for cu, whose head agrees (or matches) with t. *)
 fun get_head_equiv_with_t ctxt (id, cu) t =
     let
-      fun is_valid (uhead, infos) =
-          if Term.is_Var t then infos
-          else if Term.is_Var (Term.head_of t) then infos
-          else if Term.aconv_untyped (uhead, Term.head_of t) then infos
-          else []
+      fun is_valid (_, th) =
+          if Term.is_Var t then true
+          else if Term.is_Var (Term.head_of t) then true
+          else Term.aconv_untyped (Term.head_of (Util.rhs_of th), Term.head_of t)
     in
       (get_head_equiv ctxt cu)
-          |> maps is_valid
+          |> filter is_valid
           |> BoxID.merge_box_with_info ctxt id
     end
 
 (*** Adding rewrite rules and maintain invariants of the table. ***)
 
-(* Work out all consequences of updating simps in the rewrite table. This includes
-   updating simp of neighboring nodes, and updating simps / subsimps
-   of nodes for which the current node is a subterm. inits is a list
-   of simps to be added, where each element is of the form (id, t ==
-   t') updating simp of t. In this function we maintain a list of
-   simplifications (to_process) that have been added to the table, but
-   whose consequences (on neighboring terms and containing terms) need
-   to be processed.
+(* Work out all consequences of updating simps in the rewrite
+   table. This includes updating simp of neighboring nodes, and
+   updating simps / subsimps of nodes for which the current node is a
+   subterm. inits is a list of simps to be added, where each element
+   is of the form (id, t == t') updating simp of t. In this function
+   we maintain a list of simplifications (to_process) that have been
+   added to the table, but whose consequences (on neighboring terms
+   and containing terms) need to be processed.
  *)
 fun process_update_simp inits ctxt =
     let
@@ -934,23 +883,6 @@ fun complete_table ctxt =
           end
     end
 
-(* Call complete table, then call index_head_equiv on all terms
-   reachable from either side of any edges added, including
-   prev_edges.
- *)
-fun complete_table_with_edges prev_edges ctxt =
-    let
-      val (edges, ctxt') = complete_table ctxt
-      val all_edges = prev_edges @ edges
-      val update_terms =
-          all_edges |> map snd
-                    |> maps (fn th => [Thm.lhs_of th, Thm.rhs_of th])
-                    |> distinct (op aconvc)
-                    |> get_reachable_terms true ctxt'
-    in
-      (all_edges, ctxt' |> fold index_head_equiv update_terms)
-    end
-
 (* Add term t to rewrite table at box id. The primed version (used in
    add_rewrite_thm) add t and all its subterms to the table. The
    unprimed version also add new equiv edges if necessary, resulting
@@ -980,13 +912,12 @@ fun add_term' (id, ct) ctxt =
               |> fold update_simp simps
               |> fold update_subsimp simps
               |> add_all_equiv_raw ([], Thm.reflexive ct)
-              |> index_head_equiv ct
       end
     end
 
 fun add_term (id, ct) ctxt =
     if in_table_raw_for_id ctxt (id, Thm.term_of ct) then ([], ctxt)
-    else ctxt |> add_term' (id, ct) |> complete_table_with_edges []
+    else ctxt |> add_term' (id, ct) |> complete_table
 
 fun add_term_list term_infos ctxt =
     case term_infos of
@@ -1012,7 +943,8 @@ fun add_rewrite (id, eq_th) ctxt =
       else
         ctxt |> add_term' (id, ct1) |> add_term' (id, ct2)
              |> add_rewrite_raw id meta_eq
-             |> complete_table_with_edges [(id, meta_eq)]
+             |> complete_table
+             |> apfst (cons (id, meta_eq))
     end
 
 (* Returns the list of terms in ctxt' that is not in ctxt. *)

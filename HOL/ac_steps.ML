@@ -68,7 +68,6 @@ fun get_ac_head_equiv ctxt ac_info (id, cu) =
           end
     in
       cu |> RewriteTable.get_head_equiv ctxt
-         |> maps snd
          |> BoxID.merge_box_with_info ctxt id
          |> maps process_head_equiv
          |> filter_out (Thm.is_reflexive o snd)
