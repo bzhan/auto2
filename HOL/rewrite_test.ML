@@ -348,13 +348,13 @@ val test_head_equivs =
          |> add_rewrite [2] ("b", "a")
          |> assert_head_equivs ([], "c") [([], "c"), ([1], "d")]
          |> assert_head_equivs ([], "f b d") [([], "f b d"), ([0], "e")]
-         |> assert_head_equivs ([1], "f b c") [([1], "f b c"), ([1], "e")]
-         |> assert_head_equivs ([], "f b c") [([], "f b c"), ([1], "e")]
-         |> assert_head_equivs ([], "f a c") [([], "f a c"), ([1, 2], "e")]
+         |> assert_head_equivs ([1], "f b c") [([1], "f b c"), ([1], "e"), ([1], "f b d")]
+         |> assert_head_equivs ([], "f b c") [([], "f b c"), ([1], "e"), ([1], "f b d")]
+         |> assert_head_equivs ([], "f a c") [([], "f a c"), ([1, 2], "e"), ([1, 2], "f b d")]
          |> add_term "f a c"
-         |> assert_head_equivs ([], "f b d") [([], "f b d"), ([0], "e")]
-         |> assert_head_equivs ([], "f a c") [([], "f a c"), ([1, 2], "e")]
-         |> assert_head_equivs ([], "f b c") [([], "f b c"), ([1], "e")]
+         |> assert_head_equivs ([], "f b d") [([], "f b d"), ([0], "e"), ([1, 2], "f a c")]
+         |> assert_head_equivs ([], "f a c") [([], "f a c"), ([1, 2], "e"), ([1, 2], "f b d")]
+         |> assert_head_equivs ([], "f b c") [([], "f b c"), ([1], "e"), ([1], "f b d"), ([2], "f a c")]
          |> done "test_head_equivs"
 
 val test_head_equivs2 =
@@ -375,10 +375,8 @@ val test_head_equivs3 =
          |> add_rewrite [1] ("f b d", "e")
          |> add_rewrite [2] ("f a d", "e")
          (* Both fbd and fad are ok in the result. *)
-         |> assert_head_equivs ([], "f a d") [([], "f b d"), ([1], "e"),
-                                              ([2], "e")]
-         |> assert_head_equivs ([], "f b d") [([], "f a d"), ([1], "e"),
-                                              ([2], "e")]
+         |> assert_head_equivs ([], "f a d") [([], "f b d"), ([1], "e"), ([2], "e"), ([], "f a d")]
+         |> assert_head_equivs ([], "f b d") [([], "f a d"), ([1], "e"), ([2], "e"), ([], "f b d")]
          |> done "test_head_equivs3"
 
 val test_head_equivs4 =
@@ -387,10 +385,8 @@ val test_head_equivs4 =
          |> add_rewrite [1] ("b", "a")
          |> add_rewrite [] ("f b c", "e")
          |> add_rewrite [2] ("f a c", "e")  (* Note fbc ~ fac under 2. *)
-         |> assert_head_equivs ([], "f b c") [([], "f b c"), ([], "e"),
-                                              ([2], "f a c")]
-         |> assert_head_equivs ([], "f a c") [([], "f a c"), ([1], "e"),
-                                              ([2], "e"), ([2], "f b c")]
+         |> assert_head_equivs ([], "f b c") [([], "f b c"), ([], "e"), ([2], "f a c"), ([1], "f a c")]
+         |> assert_head_equivs ([], "f a c") [([], "f a c"), ([1], "e"), ([2], "e"), ([2], "f b c"), ([1], "f b c")]
          |> done "test_head_equivs4"
 
 (* Simplify with nat variables. *)

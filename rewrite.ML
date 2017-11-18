@@ -150,7 +150,6 @@ sig
   val is_subequiv: box_id -> Proof.context -> cterm * cterm -> bool
 
   (* Computation of head equiv. *)
-  val reduce_equivs: Proof.context -> (box_id * thm) list -> (box_id * thm) list
   val get_head_equiv: Proof.context -> cterm -> (box_id * thm) list
   val get_head_equiv_with_t:
       Proof.context -> box_id * cterm -> term -> (box_id * thm) list
@@ -604,28 +603,6 @@ fun is_subequiv id ctxt (ct1, ct2) =
     else (Util.rhs_of (subterm_simplify id ctxt ct1))
              aconv (Util.rhs_of (subterm_simplify id ctxt ct2))
 
-(* infos is a list of (id, th), where the right side of each th is
-   fhead as head.
- *)
-fun reduce_equivs ctxt infos =
-    if length infos <= 1 then infos else
-    let
-      fun args_of id cu =
-          cu |> Util.dest_cargs |> map (simp_val id ctxt)
-
-      fun head_equiv_eq_better (id1, th1) (id2, th2) =
-          let
-            val (cu1, cu2) = (Thm.rhs_of th1, Thm.rhs_of th2)
-            val (u1, u2) = (Thm.term_of cu1, Thm.term_of cu2)
-          in
-            BoxID.is_eq_ancestor ctxt id1 id2 andalso
-            Term.head_of u1 aconv Term.head_of u2 andalso
-            eq_list (op aconvc) (args_of id2 cu1, args_of id2 cu2)
-          end
-    in
-      Util.max_partial head_equiv_eq_better infos
-    end
-
 (* No assumption on u. Get list of (id', u') pairs where id <= id', u'
    is in the table equivalent to u under id', and the head of u' is
    the same as that for t. If (id1, u1) and (id2, u2) are such that
@@ -646,17 +623,17 @@ fun get_head_equiv ctxt cu =
       fun get_all_equiv_under_id (id', th') =
           (get_all_equiv ctxt (Util.rhs_of th'))
               |> map (BoxID.merge_eq_infos ctxt (id', th'))
-
-      (* Get all equivs from table. *)
-      val all_equiv =
-          if in_table_raw ctxt u then get_all_equiv ctxt u
-          else (subterm_simplify_info ctxt cu)
-                   |> maps (get_head_rep_with_id_th ctxt)
-                   |> Util.max_partial rep_eq_better
-                   |> maps get_all_equiv_under_id
-                   |> cons ([], Thm.reflexive cu)
     in
-      all_equiv |> reduce_equivs ctxt
+      if in_table_raw ctxt u then
+        (* Get all equivs from table. *)
+        get_all_equiv ctxt u
+      else
+        cu |> subterm_simplify_info ctxt
+           |> maps (get_head_rep_with_id_th ctxt)
+           |> Util.max_partial rep_eq_better
+           |> maps get_all_equiv_under_id
+           |> cons ([], Thm.reflexive cu)
+           |> Util.max_partial (equiv_eq_better ctxt)
     end
 
 (* Get list of head equivs for cu, whose head agrees (or matches) with t. *)
