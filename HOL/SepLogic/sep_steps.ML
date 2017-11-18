@@ -22,8 +22,7 @@ sig
   val add_heap_preserving_thm: thm -> theory -> theory
   val init_pos: proofstep
   val find_heap_preserving_th: Proof.context -> term -> thm option
-  val next_code_pos_ritems:
-      Proof.context -> thm -> thm -> thm -> thm list * raw_item list
+  val next_code_pos_ritems: Proof.context -> thm -> thm -> thm -> raw_item list
   val match_assn: proofstep
   val rewrite_pos: proofstep
   val match_hoare_disj: proofstep
@@ -493,12 +492,6 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
           apply_to_thm (
             Util.concl_conv (Trueprop_conv (Conv.try_conv reduce_emp_right)))
 
-      fun split_conj_all_th th =
-          case prop_of' th of
-              Const (@{const_name HOL.conj}, _) $ _ $ _ =>
-              maps split_conj_all_th [conj_left_th th, conj_right_th th]
-            | _ => [th]
-
       val mod_th' = if P aconv emp then
                       apply_to_thm' (mod_assn_conv mult_emp_left) mod_th
                     else mod_th
@@ -548,11 +541,10 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
-
-        val next_code_pos_ritem = Fact (TY_CODE_POS, tname, next_code_pos_th)
       in
-        (split_conj_all_th modQ_th',
-         ritems @ ritems_Q @ [next_code_pos_ritem])
+        ritems @ ritems_Q @
+        [Update.thm_to_ritem modQ_th',
+         Fact (TY_CODE_POS, tname, next_code_pos_th)]
       end
       (* Case where the command is not composite (last step). *)
       else let
@@ -587,8 +579,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
       in
-        (split_conj_all_th modQ_th',
-         ritems @ ritems_Q @ [Update.thm_to_ritem Q_goal])
+        ritems @ ritems_Q @ map (Update.thm_to_ritem) [modQ_th', Q_goal]
       end
     end
 
@@ -611,11 +602,9 @@ fun match_assn_fn ictxt item1 item2 =
         val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
         fun inst_to_updt ((id', _), mod_th) =
             let
-              val (modQ_th, ritems) =
-                  next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
-              val ritems' = ritems @ map Update.thm_to_ritem modQ_th
+              val ritems = next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
             in
-              AddItems {id = id', sc = SOME 1, raw_items = ritems'}
+              AddItems {id = id', sc = SOME 1, raw_items = ritems}
             end
       in
         map inst_to_updt insts
@@ -873,11 +862,10 @@ fun hoare_triple_prfstep_fn hoare_th ictxt item1 item2 =
                   end
                 else
                   let
-                    val (modQ_th, ritems) =
+                    val ritems =
                         next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
-                    val ritems' = ritems @ map Update.thm_to_ritem modQ_th
                   in
-                    [AddItems {id = id'', sc = SOME 1, raw_items = ritems'},
+                    [AddItems {id = id'', sc = SOME 1, raw_items = ritems},
                      ShadowItem {id = id'', item = item1}]
                   end
           in

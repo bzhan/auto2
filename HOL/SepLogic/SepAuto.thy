@@ -514,9 +514,7 @@ lemma heap_preserve_assert [heap_presv_thms]: "heap_preserving (assert P x)"
   using effect_assertE heap_preserving_def by fastforce
 
 setup {* fold add_hoare_triple_prfstep [
-  @{thm assert_rule}, @{thm update_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
-
-setup {* fold add_hoare_triple_prfstep [
+  @{thm assert_rule}, @{thm update_rule}, @{thm nth_rule}, @{thm upd_rule},
   @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule},
   @{thm of_list_rule}, @{thm length_rule}] *}
 

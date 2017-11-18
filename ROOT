@@ -35,62 +35,43 @@ session Hoare = AUTO2 +
     "HOL/Hoare/Hoare_Equiv"
     "HOL/Hoare/Hoare_Rules"
 
-session Floyd_Warshall = AUTO2 +
+session DataStrs_Basic = AUTO2 +
   description {*
-    Floyd-Warshall algorithm.
+    Functional data structures.
   *}
   theories
+    "HOL/DataStrs/Arrays_Ex"
+    "HOL/DataStrs/BST"
+    "HOL/DataStrs/Interval"
+    "HOL/DataStrs/Lists_Ex"
+    "HOL/DataStrs/Mapping"
+    "HOL/DataStrs/Partial_Equiv_Rel"
+    "HOL/DataStrs/Union_Find"
+
+session DataStrs_Advanced = DataStrs_Basic +
+  description {*
+    Functional data structures, advanced.
+  *}
+  theories
+    "HOL/DataStrs/Connectivity"
+    "HOL/DataStrs/Dijkstra"
     "HOL/DataStrs/Floyd_Warshall"
+    "HOL/DataStrs/Interval_Tree"
+    "HOL/DataStrs/Quicksort"
+    "HOL/DataStrs/RBT"
+    "HOL/DataStrs/Rect_Intersect"
 
-session SepLogic_Base = AUTO2 +
+session SepLogic = DataStrs_Advanced +
   description {*
-    Base of separation logic.
-  *}
-  theories
-    "HOL/SepLogic/SepAuto"
-
-session SepLogic_BasicStr = SepLogic_Base +
-  description {*
-    Separation logic: basic data structures.
+    Separation logic.
   *}
   theories
     "HOL/SepLogic/LinkedList"
     "HOL/SepLogic/BST_Impl"
-
-session SepLogic_Arrays = SepLogic_Base +
-  description {*
-    Separation logic: algorithms on arrays.
-  *}
-  theories
-    "HOL/SepLogic/Reverse"
     "HOL/SepLogic/Quicksort_Impl"
-
-session SepLogic_Rectinter = SepLogic_Arrays +
-  description {*
-    Separation logic: rectangle intersection.
-  *}
-  theories
     "HOL/SepLogic/Rect_Intersect_Impl"
-
-session SepLogic_RBT = SepLogic_Base +
-  description {*
-    Separation logic: red-black tree.
-  *}
-  theories
     "HOL/SepLogic/RBT_Impl"
-
-session SepLogic_UnionFind = SepLogic_Base +
-  description {*
-    Union-find and connectivity on graphs.
-  *}
-  theories
     "HOL/SepLogic/Connectivity_Impl"
-
-session SepLogic_Dijkstra = SepLogic_Base +
-  description {*
-    Dijkstra's algorithm.
-  *}
-  theories
     "HOL/SepLogic/Dijkstra_Impl"
 
 session Auto2_FOL = FOL +
