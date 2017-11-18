@@ -108,7 +108,7 @@ definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf 
     }
   }"
 
-lemma uf_union_rule [hoare_triple, hoare_create_case]:
+lemma uf_union_rule [hoare_triple]:
   "<is_uf n R u * \<up>(i < n) * \<up>(j < n)>
    uf_union u i j
    <is_uf n (per_union R i j)>" by auto2

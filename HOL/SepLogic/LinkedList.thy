@@ -309,7 +309,7 @@ fun os_insert_list :: "'a::{ord,heap} list \<Rightarrow> 'a os_list \<Rightarrow
     })"
 declare os_insert_list.simps [sep_proc_defs]
 
-lemma os_insert_list_correct [hoare_triple, hoare_create_case]:
+lemma os_insert_list_correct [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)>
    os_insert_list ys b
    <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs') * \<up>(mset xs' = mset ys + mset xs)>"

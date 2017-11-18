@@ -201,7 +201,7 @@ declare idx_pqueue_empty_def [sep_proc_defs del]
 definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where [sep_proc_defs]:
   "idx_pqueue_nth p i = array_nth (pqueue p) i"
 
-lemma idx_pqueue_nth_rule [hoare_triple, hoare_create_case]:
+lemma idx_pqueue_nth_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(i < length xs)>
    idx_pqueue_nth p i
    <\<lambda>r. idx_pqueue xs n p * \<up>(r = xs ! i)>" by auto2
@@ -234,7 +234,7 @@ lemma index_of_pqueue_swap [backward]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> index_of_pqueue xs m \<Longrightarrow>
    index_of_pqueue (list_swap xs i j) (m {fst (xs ! i) \<rightarrow> j} {fst (xs ! j) \<rightarrow> i})" by auto2
 
-lemma idx_pqueue_swap_rule [hoare_triple, hoare_create_case]:
+lemma idx_pqueue_swap_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(i < length xs) * \<up>(j < length xs)>
    idx_pqueue_swap p i j
    <\<lambda>_. idx_pqueue (list_swap xs i j) n p>" by auto2
@@ -380,7 +380,7 @@ lemma hd_last_swap_eval_last [rewrite]:
   @have "hd xs = xs ! 0"
 @qed
 
-lemma delete_min_idx_pqueue_rule [hoare_triple, hoare_create_case]:
+lemma delete_min_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(xs \<noteq> [])>
    delete_min_idx_pqueue p
    <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(x = hd xs) *

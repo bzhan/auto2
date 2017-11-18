@@ -28,8 +28,7 @@ sig
   val rewrite_pos: proofstep
   val match_hoare_disj: proofstep
   val match_assn_pure: proofstep
-  val match_hoare_create_case_gen: string * term -> proofstep
-  val add_match_hoare_create_case: thm -> theory -> theory
+  val hoare_create_case: proofstep
   val match_assn_spatial: proofstep
   val hoare_triple_prfstep: thm -> proofstep
   val add_hoare_triple_prfstep: thm -> theory -> theory
@@ -732,20 +731,23 @@ fun match_assn_pure_fn ictxt item1 item2 =
       val {id, prop, tname, ...} = item1
       val (h, c, P) = the_triple (take 3 (map Thm.term_of tname))
       val Ps = ACUtil.dest_ac assn_ac_info P
-      val b = List.last Ps
+      val bs = filter is_pure_assn Ps
     in
-      if Util.has_vars b orelse not (is_pure_assn b) then []
+      if Util.has_vars P orelse null bs then []
       else let
-        val pat = dest_arg b
+        val pat = dest_arg (hd bs)
         val insts = ItemIO.get_insts (PropMatch pat) item2 ictxt (id, fo_init)
 
         fun process_inst ((id', _), th) =
             let
+              val move_outmost =
+                  Util.argn_conv 0 (ACUtil.move_outmost assn_ac_info (hd bs))
               val norm_th = if length Ps = 1 then @{thm norm_pre_pure_iff2}
                             else @{thm norm_pre_pure_iff}
               val hoare_th = conj_left_th prop
               val hoare_th' =
-                  hoare_th |> apply_to_thm' (rewr_obj_eq norm_th)
+                  hoare_th |> apply_to_thm' move_outmost
+                           |> apply_to_thm' (rewr_obj_eq norm_th)
                            |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
                            |> Thm.elim_implies th
               val (P', _, Q') = dest_hoare_triple (prop_of' hoare_th')
@@ -815,34 +817,24 @@ val match_assn_spatial =
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_spatial_fn}
 
-fun match_hoare_create_case_gen (prfstep_name, pat) =
-    ProofStep.prfstep_custom
-        prfstep_name [WithItem (TY_MATCH_POS, pat)]
-        PRIORITY_ADD
-        (fn ((id, inst), _) => fn _ => fn _ =>
-            if Util.has_vars (lookup_inst inst "P") then [] else
-            let
-              val ts = (lookup_inst inst "P")
-                           |> ACUtil.dest_ac assn_ac_info
-                           |> filter is_pure_assn
-            in
-              if null ts then []
-              else let
-                val t = ts |> List.last |> dest_arg |> get_neg |> mk_Trueprop
-              in
-                [AddBoxes {id = id, sc = SOME 1, inits = [InitAssum t]}]
-              end
-            end)
-
-fun add_match_hoare_create_case hoare_th =
+fun hoare_create_case_fn ictxt item =
+    if not (IncrContext.is_single_ictxt ictxt) then [] else
     let
-      val name = (Util.name_of_thm hoare_th) ^ "@hoare_case"
-      val (_, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val pat = HOLogic.mk_tuple [Var (("h", 0), pheapT), pat_c, Var (("P", 0), assnT)]
-      val prfstep = match_hoare_create_case_gen (name, pat)
+      val {id, tname, ...} = item
+      val (_, _, P) = the_triple (take 3 (map Thm.term_of tname))
+      val Ps = ACUtil.dest_ac assn_ac_info P
+      val bs = filter is_pure_assn Ps
     in
-      add_prfstep prfstep
+      if Util.has_vars P orelse null bs then []
+      else [AddBoxes {id = id, sc = SOME 1,
+                      inits = [InitAssum (mk_Trueprop (dest_arg (hd bs)))]}]
     end
+
+val hoare_create_case =
+    {name = "sep.hoare_create_case",
+     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c, ?P, ?Q)"})],
+     priority = PRIORITY_ADD,
+     func = OneStep hoare_create_case_fn}
 
 (* Given hoare triple theorem <P> c <Q>, match with CODE_POS item (h,
    c), to produce MATCH_POS item with tname (h, c, P, Q).
@@ -954,7 +946,7 @@ val add_sep_logic_proofsteps =
       frame_entail, heap_preservingI,
       init_pos, match_assn, rewrite_pos,
       match_hoare_disj, match_hoare_prop,
-      match_assn_pure, match_assn_spatial
+      match_assn_pure, match_assn_spatial, hoare_create_case
     ])
 
 end  (* structure SepLogic *)
@@ -964,5 +956,4 @@ val add_heap_preserving_thm = SepLogic.add_heap_preserving_thm
 val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
 val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
 val add_forward_ent_shadowing_prfstep = SepLogic.add_forward_ent_shadowing_prfstep
-val add_match_hoare_create_case = SepLogic.add_match_hoare_create_case
 val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep

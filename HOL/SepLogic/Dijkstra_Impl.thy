@@ -89,7 +89,7 @@ lemma dstate_update_heap_ind [hoare_triple]:
 @proof @induct k @qed
 declare dstate_update_heap.simps [sep_proc_defs]
 
-lemma dstate_update_heap_to_fun [hoare_triple, hoare_create_case]:
+lemma dstate_update_heap_to_fun [hoare_triple]:
   "<dstate (State e M) (Dijkstra_State a pq) * \<up>(m < length e) * \<up>(\<forall>i\<in>keys_of M. i < length e)>
    dstate_update_heap G m (length e) a pq
    <let M' = map_update_all (\<lambda>i. e ! i) M
@@ -122,7 +122,7 @@ lemma dijkstra_step_impl_to_fun [hoare_triple]:
    <\<lambda>r. \<exists>\<^sub>AS'. dstate S' r * \<up>(is_dijkstra_step G S S')>\<^sub>t" by auto2
 declare dijkstra_step_impl.simps [sep_proc_defs del]
 
-lemma dijkstra_step_impl_correct [hoare_triple, hoare_create_case]:
+lemma dijkstra_step_impl_correct [hoare_triple]:
   "<dstate S p * \<up>(heap S \<noteq> empty_map) * \<up>(inv G S)>
    dijkstra_step_impl G p
    <\<lambda>r. \<exists>\<^sub>AS'. dstate S' r * \<up>(inv G S') * \<up>(card (unknown_set S') = card (unknown_set S) - 1)>\<^sub>t" by auto2
@@ -138,7 +138,7 @@ declare dijkstra_loop.simps [sep_proc_defs]
 (* Should not need this *)
 setup {* add_rewrite_rule @{thm Nat.diff_Suc_eq_diff_pred} *}
 
-lemma dijkstra_loop_correct [hoare_triple, hoare_create_case]:
+lemma dijkstra_loop_correct [hoare_triple]:
   "<dstate S p * \<up>(n \<le> card (unknown_set S)) * \<up>(inv G S)>
    dijkstra_loop G n p
    <\<lambda>r. \<exists>\<^sub>AS'. dstate S' r * \<up>(inv G S') * \<up>(card (unknown_set S') = card (unknown_set S) - n)>\<^sub>t"

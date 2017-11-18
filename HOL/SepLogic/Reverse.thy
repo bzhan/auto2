@@ -12,7 +12,7 @@ definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightar
    }"
 declare swap_def [sep_proc_defs]
 
-lemma swap_rule [hoare_triple, hoare_create_case]:
+lemma swap_rule [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(i < length xs) * \<up>(j < length xs)>
    swap p i j
    <\<lambda>_. p \<mapsto>\<^sub>a list_swap xs i j>" by auto2

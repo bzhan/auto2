@@ -31,7 +31,7 @@ fun array_copy :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a array \<Rig
 declare array_copy.simps [sep_proc_defs]
 
 setup {* add_rewrite_rule @{thm Arrays_Ex.array_copy.simps} *}
-lemma array_copy_rule [hoare_triple, hoare_create_case]:
+lemma array_copy_rule [hoare_triple]:
   "<src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a ldst * \<up>(si + len \<le> length lsrc) * \<up>(di + len \<le> length ldst)>
     array_copy src si dst di len
    <\<lambda>_. src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a Arrays_Ex.array_copy lsrc si ldst di len>"
@@ -88,7 +88,7 @@ lemma pop_array_heap_preserving [heap_presv_thms]:
 definition array_upd :: "nat \<Rightarrow> 'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> unit Heap" where [sep_proc_defs]:
   "array_upd i x d = do { Array.upd i x (aref d); return () }"
 
-lemma array_upd_rule [hoare_triple, hoare_create_case]:
+lemma array_upd_rule [hoare_triple]:
   "<dyn_array l p * \<up>(i < length l)>
    array_upd i x p
    <\<lambda>_. dyn_array (list_update l i x) p>" by auto2
@@ -97,7 +97,7 @@ declare array_upd_def [sep_proc_defs del]
 definition array_nth :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> 'a Heap" where [sep_proc_defs]:
   "array_nth d i = Array.nth (aref d) i"
 
-lemma array_nth_rule [hoare_triple, hoare_create_case]:
+lemma array_nth_rule [hoare_triple]:
   "<dyn_array xs p * \<up>(i < length xs)>
    array_nth p i
    <\<lambda>r. dyn_array xs p * \<up>(r = xs ! i)>" by auto2
@@ -128,7 +128,7 @@ definition array_swap :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow>
     return ()
    }"
 
-lemma array_swap_rule [hoare_triple, hoare_create_case]:
+lemma array_swap_rule [hoare_triple]:
   "<dyn_array xs p * \<up>(i < length xs) * \<up>(j < length xs)>
    array_swap p i j
    <\<lambda>_. dyn_array (list_swap xs i j) p>" by auto2

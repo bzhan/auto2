@@ -56,7 +56,7 @@ definition amap_update :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a array_map
       do { Array.upd i (Some x) (aref p); return () }
     else raise ''amap_update'')"
 
-lemma amap_update_rule [hoare_triple, hoare_create_case]:
+lemma amap_update_rule [hoare_triple]:
   "<amap m p * \<up>(i < alen p)>
    amap_update i x p
    <\<lambda>_. amap (m {i \<rightarrow> x}) p>" by auto2

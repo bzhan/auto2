@@ -71,7 +71,7 @@ partial_function (heap) rect_inter_impl ::
             rect_inter_impl a b' (k + 1)})})}"
 declare rect_inter_impl.simps [sep_proc_defs]
 
-lemma rect_inter_to_fun_ind [hoare_triple, hoare_create_case]:
+lemma rect_inter_to_fun_ind [hoare_triple]:
   "<a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b *
    \<up>(is_rect_list rects) * \<up>(k < length (all_ops rects))>
    rect_inter_impl a b k

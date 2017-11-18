@@ -496,7 +496,6 @@ attribute_setup heap_presv_thms = {* setup_attrib add_heap_preserving_thm *}
 attribute_setup forward_ent = {* setup_attrib add_forward_ent_prfstep *}
 attribute_setup forward_ent_shadow = {* setup_attrib add_forward_ent_shadowing_prfstep *}
 attribute_setup rewrite_ent = {* setup_attrib add_rewrite_ent_rule *}
-attribute_setup hoare_create_case = {* setup_attrib add_match_hoare_create_case *}
 attribute_setup hoare_triple = {* setup_attrib add_hoare_triple_prfstep *}
 
 lemma heap_preserving_lookup [heap_presv_thms]: "heap_preserving (!p)"
@@ -516,9 +515,6 @@ lemma heap_preserve_assert [heap_presv_thms]: "heap_preserving (assert P x)"
 
 setup {* fold add_hoare_triple_prfstep [
   @{thm assert_rule}, @{thm update_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
-
-setup {* fold add_match_hoare_create_case [
-  @{thm assert_rule}, @{thm nth_rule}, @{thm upd_rule}] *}
 
 setup {* fold add_hoare_triple_prfstep [
   @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule},
