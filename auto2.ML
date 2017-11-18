@@ -88,7 +88,7 @@ fun check_hyps id th (st as {ctxt, ...}) =
     let
       val hyps = Thm.hyps_of th
       val inits = Status.get_all_init_assums st id
-      val handlers = map fst (Status.get_all_handlers st id)
+      val handlers = map (fn (_, t, _) => t) (Status.get_all_handlers st id)
       val extra = subtract (op aconv) (inits @ handlers) hyps
     in
       if null extra then ()

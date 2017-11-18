@@ -34,7 +34,6 @@ sig
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
 
-  val handler_ritems: Proof.context -> term -> retro_handler -> raw_item list
   val apply_exists_ritems: Proof.context -> string list -> thm ->
                            raw_item list * thm
   val apply_exists: Proof.context -> string list -> box_id * thm ->
@@ -150,19 +149,10 @@ fun thm_update (id, th) =
     else
       AddItems {id = id, sc = NONE, raw_items = [thm_to_ritem th]}
 
-fun handler_ritems ctxt t handler =
-    let
-      val _ = assert (fastype_of t = propT) "handler_ritems: wrong type"
-    in
-      [Handler (t, handler), thm_to_ritem (Util.assume_thm ctxt t)]
-    end
-
 (* Apply the given existence theorem and return the list of resulting ritems.
  *)
 fun apply_exists_ritems ctxt xs ex_th =
     let
-      val thy = Proof_Context.theory_of ctxt
-
       val ex_th' = ex_th |> apply_to_thm' (UtilLogic.normalize_exists ctxt)
       val (vars, body) = ex_th' |> prop_of' |> UtilLogic.strip_exists
                                 |> apsnd mk_Trueprop
@@ -170,76 +160,10 @@ fun apply_exists_ritems ctxt xs ex_th =
 
       val new_th = body |> Thm.cterm_of ctxt |> Thm.assume
 
-      (* Given two terms t and u, where t may contain internal
-         variables, find replacements for those internal variables so
-         that t agrees with u. If there is no match, return the empty
-         list.
-       *)
-      fun match_vars_one (t, u) =
-          let
-            val all_internal_vars =
-                (Term.add_frees t [])
-                    |> filter (fn (x, _) => Util.is_just_internal x)
-            fun subst_for_var (x, T) =
-                [(Free (x, T), Var ((x, 0), T))]
-            val subst = maps subst_for_var all_internal_vars
-
-            val pat = Term.subst_atomic subst t
-            val inst = Pattern.first_order_match thy (pat, u) fo_init
-            fun get_freevar (x, T) = (Free (x, T), lookup_inst inst x)
-          in
-            map get_freevar all_internal_vars
-          end
-          handle Pattern.MATCH => []
-
-      (* Given two lists of terms, where terms of ts may contain
-         internal variables, find replacements for those internal
-         variables so that those terms match that in us. Note we do
-         not check for contradictory replacements here.
-       *)
-      fun match_vars (ts, us) =
-          (maps match_vars_one (Util.all_pairs (ts, us)))
-              |> distinct (eq_pair (op aconv) (op aconv))
-
-      (* Find new versions of vars by matching body and t. *)
-      fun get_freevars t =
-          let
-            val subst = match_vars_one (body, t)
-            fun get_freevar v =
-                let
-                  val (x, _) = Term.dest_Free v
-                in
-                  if not (Util.is_just_internal x) then v
-                  else the (AList.lookup (op aconv) subst v)
-                  handle Option.Option =>
-                         raise Fail "get_freevars: cannot match body and t"
-                end
-          in
-            map get_freevar vars
-          end
-
-      fun ready (t, ts) =
-          let
-            val fvars = get_freevars t
-          in
-            forall (fn t' => t' aconv t orelse not (Util.occurs_frees fvars t')) ts
-          end
-
-      fun handler (t, th) =
-          let
-            val fvars = get_freevars t
-            val th' = th |> Thm.implies_intr (Thm.cterm_of ctxt t)
-                         |> fold (UtilLogic.ex_elim ctxt) (rev fvars)
-            (* Very messy *)
-            val subst = (match_vars (Thm.prop_of ex_th' :: Thm.hyps_of ex_th',
-                                     Thm.hyps_of th @ Thm.prems_of th'))
-                            |> map (apply2 (Thm.cterm_of ctxt))
-          in
-            th' |> Thm.elim_implies (Util.subst_thm_atomic subst ex_th')
-          end
-
-      val ritems = (map (BoxItem.var_to_fact) vars) @
-                   [Handler (body, (ready, handler))]
+      val _ = trace_t ctxt "body" body
+      val _ = trace_thm ctxt "ex_th" ex_th'
+      val ritems = map (BoxItem.var_to_fact) vars @
+                   [Handler (vars, body, ex_th)]
     in
       (ritems, new_th)
     end
@@ -266,7 +190,7 @@ fun source_info {prfstep_name, source, ...} =
 end  (* structure Update. *)
 
 type box = {inits: init_info list,
-            handlers: (term * retro_handler) list,
+            handlers: (term list * term * thm) list,
             items: (box_item * box_id list) Inttab.table,
             resolve_th: thm option}
 
@@ -277,8 +201,8 @@ sig
   val get_init_vars: box -> term list
   val get_init_assums: box -> term list
 
-  val add_handler: term * retro_handler -> box -> box
-  val get_handlers: box -> (term * retro_handler) list
+  val add_handler: term list * term * thm -> box -> box
+  val get_handlers: box -> (term list * term * thm) list
 
   val map_items: ((box_item * box_id list) Inttab.table ->
                   (box_item * box_id list) Inttab.table) -> box -> box
@@ -302,8 +226,8 @@ fun get_inits {inits, ...} = inits
 fun get_init_vars {inits, ...} = maps Update.dest_init_var inits
 fun get_init_assums {inits, ...} = maps Update.dest_init_assum inits
 
-fun add_handler (t, handler) {inits, handlers, items, resolve_th} =
-    {inits = inits, handlers = cons (t, handler) handlers, items = items,
+fun add_handler (vars, t, ex_th) {inits, handlers, items, resolve_th} =
+    {inits = inits, handlers = cons (vars, t, ex_th) handlers, items = items,
      resolve_th = resolve_th}
 fun get_handlers {handlers, ...} = handlers
 
@@ -376,14 +300,14 @@ sig
   val get_inits: status -> box_id -> init_info list
   val get_init_vars: status -> box_id -> term list
   val get_init_assums: status -> box_id -> term list
-  val get_handlers: status -> box_id -> (term * retro_handler) list
+  val get_handlers: status -> box_id -> (term list * term * thm) list
   val get_all_items: bool -> status -> box_id -> box_item list
   val get_all_inits: status -> box_id -> init_info list
   val get_all_init_vars: status -> box_id -> term list
   val get_all_init_assums: status -> box_id -> term list
-  val get_all_handlers: status -> box_id -> (term * retro_handler) list
+  val get_all_handlers: status -> box_id -> (term list * term * thm) list
   val add_item: box_item -> status -> status
-  val add_handler: box_id -> (term * retro_handler) -> status -> status
+  val add_handler: box_id -> term list * term * thm -> status -> status
   val lookup_item: status -> box_id -> int -> (box_item * box_id list) option
   val lookup_item_all: status -> box_id -> int -> (box_item * box_id list) list
   val add_shadowed: box_id * box_item -> status -> status
@@ -397,8 +321,7 @@ sig
   val find_ritem_exact: status -> box_id -> raw_item -> bool
   val find_ritems_exact:
       status -> box_id -> raw_item list -> raw_item list * raw_item list
-  val invoke_handler: term * retro_handler -> thm -> thm
-  val invoke_handlers: (bool * (term * retro_handler)) list -> thm -> thm
+  val invoke_handler: Proof.context -> term list * term * thm -> thm -> thm
   val get_on_resolve: status -> box_id -> int -> thm -> thm
   val find_prim_box: status -> box_id -> init_info list -> box_id option
   val map_queue: (Updates_Heap.T -> Updates_Heap.T) -> status -> status
@@ -490,7 +413,7 @@ val get_all_handlers    = get_all_for_box Box.get_handlers
 
 fun add_item (item as {id, ...}) = map_box id (Box.add_item item)
 
-fun add_handler id (t, handler) = map_box id (Box.add_handler (t, handler))
+fun add_handler id handler = map_box id (Box.add_handler handler)
 
 fun lookup_item st id uid =
     Box.lookup_item (get_box st id) uid
@@ -633,60 +556,32 @@ fun find_ritems_exact st id ritems =
       end
     end
 
-(* Invoke a single handler (_, f) on a term t. *)
-fun invoke_handler (t, (_, f)) th = f (t, th)
-
-(* Invoke any handler given in the list handlers, whose term appear as
-   a hypothesis of th. Each handler is of the form (req, (t, _)),
-   where req is a boolean specifying whether the handler must be
-   applied.
- *)
-fun invoke_handlers handlers th =
-    let
-      val all_hyps = Thm.hyps_of th
-      val handlers' = handlers |> filter (
-            fn (_, (t, _)) => member (op aconv) all_hyps t)
-    in
-      if null handlers' then th
-      else let
-        val to_invoke =
-            find_index (fn (_, (t, (ready, _))) => ready (t, all_hyps))
-                       handlers'
-      in
-        if to_invoke = ~1 then
-          if forall (fn (req, _) => not req) handlers' then th
-          else raise Fail "invoke_handlers: cannot find invokable handler."
-        else
-          th |> invoke_handler (snd (nth handlers' to_invoke))
-             |> invoke_handlers handlers
-      end
-    end
+(* Invoke a single handler (vars, t, ex_th) on the theorem th. *)
+fun invoke_handler ctxt (vars, t, ex_th) th =
+    th |> Thm.implies_intr (Thm.cterm_of ctxt t)
+       |> fold (UtilLogic.ex_elim ctxt) (rev vars)
+       |> Thm.elim_implies ex_th
 
 (* Derive the consequence if box id is resolved, to the parent id
    formed by getting parent at index i.
  *)
 fun get_on_resolve (st as {ctxt, ...}) id i th =
     let
-      val parent = BoxID.get_parent_at_i ctxt id i
-      val prim_id = nth id i
-
       (* First get list of handlers to invoke. *)
+      val prim_id = nth id i
       val retro_ids = (get_unresolved st)
                           |> filter (BoxID.is_eq_ancestor ctxt [prim_id])
                           |> filter (BoxID.is_eq_descendent ctxt id)
-      val handlers = map (pair true) (maps (get_handlers st) retro_ids) @
-                     map (pair false) (get_handlers st parent)
-      val th' = invoke_handlers handlers th
+      val handlers = maps (get_handlers st) retro_ids
       val inits = get_inits st [prim_id]
-      val th'' = Update.get_neg_form_thm ctxt inits th'
-      val _ = if prim_id = 0 then
-                assert (null (Thm.hyps_of th''))
-                       "get_on_resolve: did not remove all hypothesis at box 0."
-              else ()
-      val _ = assert (Thm.prop_of th'' aconv Update.get_neg_form inits)
+      val th' = th |> fold (invoke_handler ctxt) handlers
+                   |> Update.get_neg_form_thm ctxt inits
+      val _ = assert (prim_id <> 0 orelse null (Thm.hyps_of th'))
+                     "get_on_resolve: did not remove all hypothesis at box 0."
+      val _ = assert (Thm.prop_of th' aconv Update.get_neg_form inits)
                      "get_on_resolve: wrong value from get_neg_form_thm."
     in
-      th''
+      th'
     end
 
 (* Find a primitive box (if there is any) whose initial facts agree

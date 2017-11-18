@@ -7,8 +7,7 @@ val TY_PROP = "PROP"
 val TY_TERM = "TERM"
 val TY_PROPERTY = "PROPERTY"
 
-type retro_handler = (term * term list -> bool) * (term * thm -> thm)
-datatype raw_item = Handler of term * retro_handler
+datatype raw_item = Handler of term list * term * thm
                   | Fact of string * term list * thm
 type box_item = {uid: int, id: box_id, sc: int, ty_str: string,
                  tname: cterm list, prop: thm}
@@ -25,7 +24,7 @@ sig
   val get_thm_raw: raw_item -> thm
   (* Handlers. *)
   val is_handler_raw: raw_item -> bool
-  val dest_handler_raw: raw_item -> term * retro_handler
+  val dest_handler_raw: raw_item -> term list * term * thm
   (* Misc. functions. *)
   val eq_ritem: raw_item * raw_item -> bool
   val instantiate: (cterm * cterm) list -> raw_item -> raw_item
@@ -62,7 +61,7 @@ fun get_thm_raw ritem =
 fun is_handler_raw ritem =
     case ritem of Handler _ => true | _ => false
 fun dest_handler_raw ritem =
-    case ritem of Handler (t, handler) => (t, handler)
+    case ritem of Handler (vars, t, ex_th) => (vars, t, ex_th)
                 | _ => raise Fail "dest_handler_raw: wrong type"
 
 fun eq_ritem (ritem1, ritem2) =
@@ -73,11 +72,12 @@ fun eq_ritem (ritem1, ritem2) =
              ty1 = ty2 andalso eq_list (op aconv) (ts1, ts2) andalso
              Thm.eq_thm_prop (th1, th2)
            | _ => false)
-      | Handler (t1, handler1) =>
+      | Handler (vars1, t1, ex_th1) =>
         (case ritem2 of
              Fact _ => false
-           | Handler (t2, handler2) =>
-             t1 aconv t2 andalso pointer_eq (handler1, handler2))
+           | Handler (vars2, t2, ex_th2) =>
+             eq_list (op aconv) (vars1, vars2) andalso t1 aconv t2 andalso
+             Thm.eq_thm_prop (ex_th1, ex_th2))
 
 (* Given a context and list of raw items, obtain fresh names of free
    variables for each internal (schematic) variable declared in the
@@ -109,7 +109,9 @@ fun instantiate subst ritem =
       val subst_fun = Term.subst_atomic (map (apply2 Thm.term_of) subst)
     in
       case ritem of
-          Handler (t, handler) => Handler (subst_fun t, handler)
+          Handler (vars, t, ex_th) =>
+          Handler (map subst_fun vars, subst_fun t,
+                   Util.subst_thm_atomic subst ex_th)
         | Fact (ty_str, tname, th) =>
           Fact (ty_str, map subst_fun tname, Util.subst_thm_atomic subst th)
     end
@@ -633,7 +635,7 @@ fun string_of_item_info ctxt (ty_str, ts, th) =
 
 fun string_of_raw_item ctxt ritem =
     case ritem of
-        Handler (t, _) => "Handler " ^ (Syntax.string_of_term ctxt t)
+        Handler (_, t, _) => "Handler " ^ (Syntax.string_of_term ctxt t)
       | Fact info => string_of_item_info ctxt info
 
 fun string_of_item ctxt {ty_str, tname, prop, ...} =
