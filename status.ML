@@ -159,9 +159,6 @@ fun apply_exists_ritems ctxt xs ex_th =
                                 |> Util.replace_names xs
 
       val new_th = body |> Thm.cterm_of ctxt |> Thm.assume
-
-      val _ = trace_t ctxt "body" body
-      val _ = trace_thm ctxt "ex_th" ex_th'
       val ritems = map (BoxItem.var_to_fact) vars @
                    [Handler (vars, body, ex_th)]
     in
