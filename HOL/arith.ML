@@ -10,14 +10,17 @@ sig
   val mk_int: int -> term
   val nat0: term
   val cnat0: cterm
+  val plusT: term
+
   val is_plus: term -> bool
   val is_minus: term -> bool
   val nat_le_th: int -> int -> thm
   val nat_less_th: int -> int -> thm
   val nat_neq_th: int -> int -> thm
-
   val nat_fold_reduce: term -> term
   val nat_fold_conv: conv
+  val plus_eq_th: int -> int -> thm
+
   val nat_fold_conv0_right: conv
   val nat_fold_conv0_left: conv
   val nat_fold_rec_conv: Proof.context -> conv
@@ -40,6 +43,7 @@ fun mk_nat n = HOLogic.mk_number natT n
 fun mk_int n = HOLogic.mk_number intT n
 val nat0 = mk_nat 0
 val cnat0 = @{cterm "0::nat"}
+val plusT = Const (@{const_name plus}, natT --> natT --> natT)
 
 (* Check whether t is in the form a + b. *)
 fun is_plus t =
@@ -96,6 +100,14 @@ fun nat_fold_conv ct =
     in
       if t aconv t' then Conv.all_conv ct
       else to_meta_eq (UtilArith.prove_by_arith ctxt [] (mk_eq (t, t')))
+    end
+
+(* Given natural numbers m and n, return the theorem m + n = p. *)
+fun plus_eq_th m n =
+    let
+      val expr = plusT $ mk_nat m $ mk_nat n
+    in
+      expr |> Thm.cterm_of ctxt |> nat_fold_conv
     end
 
 end  (* local ctxt = @{context}. *)
