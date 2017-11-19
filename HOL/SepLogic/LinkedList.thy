@@ -5,7 +5,7 @@ theory LinkedList
 imports SepAuto
 begin
 
-subsection {* Nodes *}
+section \<open>List Assertion\<close>
 
 datatype 'a node = Node (val: "'a") (nxt: "'a node ref option")
 setup {* fold add_rewrite_rule @{thms node.sel} *}
@@ -19,8 +19,6 @@ instance node :: (heap) heap
   apply (rule countable_classI [of "node_encode"])
   apply (case_tac x, simp_all, case_tac y, simp_all)
   ..
-
-subsection {* List Assertion *}
 
 fun os_list :: "'a::heap list \<Rightarrow> 'a node ref option \<Rightarrow> assn" where
   "os_list [] p = \<up>(p = None)"
@@ -58,14 +56,7 @@ ML_file "list_matcher_test.ML"
 
 type_synonym 'a os_list = "'a node ref option"
 
-subsection {* List assertion *}
-
-lemma mod_os_list_eq [backward1]:
-  "l1 = l2 \<Longrightarrow> h \<Turnstile> os_list l1 r \<Longrightarrow> h \<Turnstile> os_list l2 r" by simp
-
-subsection {* Operations *}
-
-subsubsection {* Basic operations *}
+section \<open>Basic operations\<close>
 
 definition os_empty :: "'a::heap os_list Heap" where [sep_proc_defs]:
   "os_empty = return None"
@@ -97,7 +88,7 @@ lemma os_pop_rule [hoare_triple]:
    <\<lambda>(x,r'). os_list (tl xs) r' * p \<mapsto>\<^sub>r (Node x r') * \<up>(x = hd xs)>"
 @proof @case "xs = []" @have "xs = hd xs # tl xs" @qed
 
-subsubsection {* Reverse *}
+section \<open>Reverse\<close>
 
 partial_function (heap) os_reverse_aux :: "'a::heap os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "os_reverse_aux q p = (case p of
@@ -120,7 +111,7 @@ definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where 
 lemma os_reverse_rule:
   "<os_list xs p> os_reverse p <os_list (rev xs)>" by auto2
 
-subsubsection {* Remove *}
+section \<open>Remove\<close>
 
 setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
 
@@ -141,7 +132,7 @@ lemma os_rem_rule [hoare_triple]:
   "<os_list xs b> os_rem x b <\<lambda>r. os_list (removeAll x xs) r>\<^sub>t"
 @proof @induct xs arbitrary b @qed
 
-subsubsection {* Insert in order *}
+section \<open>Ordered insert\<close>
 
 fun list_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "list_insert x [] = [x]"
@@ -177,7 +168,7 @@ lemma os_insert_to_fun [hoare_triple]:
   "<os_list xs b> os_insert x b <os_list (list_insert x xs)>"
 @proof @induct xs arbitrary b @qed
 
-subsection {* Application: insertion sort *}
+section \<open>Application: insertion sort\<close>
 
 partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list Heap" where
   "extract_list p = (case p of
@@ -219,7 +210,7 @@ definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" wh
 lemma insertion_sort_rule:
   "<emp> insertion_sort xs <\<lambda>ys. \<up>(ys = sort xs)>\<^sub>t" by auto2
 
-subsection {* Merging two lists *}
+section \<open>Merging two lists\<close>
 
 fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "merge_list xs [] = xs"
@@ -260,7 +251,7 @@ lemma merge_os_list_to_fun [hoare_triple]:
   <\<lambda>r. os_list (merge_list xs ys) r>"
 @proof @fun_induct "merge_list xs ys" arbitrary p q @qed
 
-subsection {* List copy *}
+section \<open>List copy\<close>
 
 partial_function (heap) copy_os_list :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
   "copy_os_list b = (case b of
@@ -275,7 +266,7 @@ lemma copy_os_list_rule [hoare_triple]:
   "<os_list xs b> copy_os_list b <\<lambda>r. os_list xs b * os_list xs r>"
 @proof @induct xs arbitrary b @qed
 
-subsection {* Higher-order functions *}
+section \<open>Higher-order functions\<close>
 
 partial_function (heap) map_os_list :: "('a::heap \<Rightarrow> 'a) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "map_os_list f b = (case b of
