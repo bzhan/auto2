@@ -20,96 +20,76 @@ instance node :: (heap) heap
   apply (case_tac x, simp_all, case_tac y, simp_all)
   ..
 
-subsection {* List Segment Assertion *}
+subsection {* List Assertion *}
 
-fun lseg :: "'a::heap list \<Rightarrow> 'a node ref option \<Rightarrow> 'a node ref option \<Rightarrow> assn" where
-  "lseg [] p s = \<up>(p = s)"
-| "lseg (x # l) (Some p) s = (\<exists>\<^sub>Aq. p \<mapsto>\<^sub>r Node x q * lseg l q s)"
-| "lseg (x # l) None s = false"
-setup {* fold add_rewrite_ent_rule @{thms lseg.simps} *}
+fun os_list :: "'a::heap list \<Rightarrow> 'a node ref option \<Rightarrow> assn" where
+  "os_list [] p = \<up>(p = None)"
+| "os_list (x # l) (Some p) = (\<exists>\<^sub>Aq. p \<mapsto>\<^sub>r Node x q * os_list l q)"
+| "os_list (x # l) None = false"
+setup {* fold add_rewrite_ent_rule @{thms os_list.simps} *}
 
-lemma lseg_empty: "emp \<Longrightarrow>\<^sub>A lseg [] p p" by auto2
-ML_file "lseg_matcher.ML"
+lemma os_list_empty [forward_ent_shadow]:
+  "os_list [] p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
-(* Folding and expanding the recursive definition of lseg. *)
-lemma lseg_is_some [forward_ent]: "lseg (x # l) p s \<Longrightarrow>\<^sub>A true * \<up>(p \<noteq> None)" by auto2
+lemma os_list_Cons [forward_ent_shadow]:
+  "os_list (x # l) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Aq. p \<mapsto>\<^sub>r Node x q * os_list l q)" by auto2
 
-lemma lseg_prepend [forward_ent]:
-  "p \<mapsto>\<^sub>r Node x q * lseg l q s \<Longrightarrow>\<^sub>A lseg (x # l) (Some p) s" by auto2
+lemma os_list_empty_none [forward_ent]:
+  "os_list (x # l) None \<Longrightarrow>\<^sub>A false" by auto2
 
-(* Several examples for using induction. *)
-lemma lseg_append [forward_ent]:
-  "lseg l p (Some s) * s \<mapsto>\<^sub>r Node x q \<Longrightarrow>\<^sub>A lseg (l @ [x]) p q"
-@proof @induct l arbitrary p @qed
+lemma os_list_Cons_some [forward_ent]:
+  "os_list [] (Some p) \<Longrightarrow>\<^sub>A false" by auto2
 
-lemma lseg_conc [forward_ent]:
-  "lseg l1 p q * lseg l2 q r \<Longrightarrow>\<^sub>A lseg (l1 @ l2) p r"
-@proof @induct l1 arbitrary p @qed
-
-lemma lseg_split:
-  "lseg (l1 @ l2) p r \<Longrightarrow>\<^sub>A \<exists>\<^sub>Aq. lseg l1 p q * lseg l2 q r"
-@proof @induct l1 arbitrary p @qed
-
-subsection {* List assertion *}
-
-type_synonym 'a os_list = "'a node ref option"
-
-definition os_list :: "'a list \<Rightarrow> ('a::heap) os_list \<Rightarrow> assn" where
-  "os_list l p = lseg l p None"
-setup {* add_rewrite_ent_rule @{thm os_list_def} *}
-setup {* add_rewrite_ent_rule (obj_sym_th @{thm os_list_def}) *}
-
-lemma os_line_none_rewr [forward_ent]:
-  "os_list [] b \<Longrightarrow>\<^sub>A \<up>(b = None)" by auto2
-
-lemma mod_os_list_eq [backward1]:
-  "l1 = l2 \<Longrightarrow> h \<Turnstile> os_list l1 r \<Longrightarrow> h \<Turnstile> os_list l2 r" by simp
-
-lemma os_list_none: "emp \<Longrightarrow>\<^sub>A os_list [] None" by auto2
-
-(* Folding and expanding the recursive definition of os_list. *)
 lemma os_list_is_some [forward_ent]:
   "os_list (x # l) p \<Longrightarrow>\<^sub>A true * \<up>(p \<noteq> None)" by auto2
 
-lemma os_list_prepend [forward_ent]:
-  "p \<mapsto>\<^sub>r Node x q * os_list xs q \<Longrightarrow>\<^sub>A os_list (x # xs) (Some p)" by auto2
+lemma os_list_is_not_empty [forward_ent]:
+  "os_list xs (Some p) \<Longrightarrow>\<^sub>A true * \<up>(xs \<noteq> [])" by auto2
 
-lemma os_list_prepend_rev [forward_ent]:
-  "os_list (x # xs) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>An. p \<mapsto>\<^sub>r (Node x n) * os_list xs n)" by auto2
+lemma os_list_none: "emp \<Longrightarrow>\<^sub>A os_list [] None" by auto2
 
-setup {* fold add_entail_matcher [@{thm os_list_none}, @{thm os_list_prepend}] *}
+lemma os_list_constr_ent:
+  "p \<mapsto>\<^sub>r Node x q * os_list l q \<Longrightarrow>\<^sub>A os_list (x # l) (Some p)" by auto2
+
+setup {* fold add_entail_matcher [@{thm os_list_none}, @{thm os_list_constr_ent}] *}
+setup {* fold del_prfstep_thm @{thms os_list.simps} *}
+
 ML_file "list_matcher_test.ML"
+
+type_synonym 'a os_list = "'a node ref option"
+
+subsection {* List assertion *}
+
+lemma mod_os_list_eq [backward1]:
+  "l1 = l2 \<Longrightarrow> h \<Turnstile> os_list l1 r \<Longrightarrow> h \<Turnstile> os_list l2 r" by simp
 
 subsection {* Operations *}
 
 subsubsection {* Basic operations *}
 
-definition os_empty :: "'a::heap os_list Heap" where
-  "os_empty \<equiv> return None"
-declare os_empty_def [sep_proc_defs]
+definition os_empty :: "'a::heap os_list Heap" where [sep_proc_defs]:
+  "os_empty = return None"
 
-lemma os_empty_rule: "<emp> os_empty <os_list []>" by auto2
+lemma os_empty_rule [hoare_triple]:
+  "<emp> os_empty <os_list []>" by auto2
 
-definition os_is_empty :: "'a::heap os_list \<Rightarrow> bool Heap" where
-  "os_is_empty b \<equiv> return (b = None)"
-declare os_is_empty_def [sep_proc_defs]
+definition os_is_empty :: "'a::heap os_list \<Rightarrow> bool Heap" where [sep_proc_defs]:
+  "os_is_empty b = return (b = None)"
 
-lemma os_is_empty_rule:
+lemma os_is_empty_rule [hoare_triple]:
   "<os_list xs b> os_is_empty b <\<lambda>r. os_list xs b * \<up>(r \<longleftrightarrow> xs = [])>"
 @proof @case "xs = []" @have "xs = hd xs # tl xs" @qed
 
-definition os_prepend :: "'a \<Rightarrow> 'a::heap os_list \<Rightarrow> 'a os_list Heap" where
+definition os_prepend :: "'a \<Rightarrow> 'a::heap os_list \<Rightarrow> 'a os_list Heap" where [sep_proc_defs]:
   "os_prepend a n = do { p \<leftarrow> ref (Node a n); return (Some p) }"
-declare os_prepend_def [sep_proc_defs]
 
 lemma os_prepend_rule [hoare_triple]:
   "<os_list xs n> os_prepend x n <os_list (x # xs)>" by auto2
 
-definition os_pop :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where
+definition os_pop :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where [sep_proc_defs]:
   "os_pop r = (case r of
     None \<Rightarrow> raise ''Empty Os_list'' |
     Some p \<Rightarrow> do {m \<leftarrow> !p; return (val m, nxt m)})"
-declare os_pop_def [sep_proc_defs]
 
 lemma os_pop_rule [hoare_triple]:
   "<os_list xs (Some p)>
@@ -117,83 +97,9 @@ lemma os_pop_rule [hoare_triple]:
    <\<lambda>(x,r'). os_list (tl xs) r' * p \<mapsto>\<^sub>r (Node x r') * \<up>(x = hd xs)>"
 @proof @case "xs = []" @have "xs = hd xs # tl xs" @qed
 
-subsubsection {* Iterator *}
-
-type_synonym 'a os_list_it = "'a os_list"
-
-definition os_is_it :: "('a::heap) list \<Rightarrow> 'a node ref option \<Rightarrow> 'a list \<Rightarrow> 'a node ref option \<Rightarrow> assn" where
-  "os_is_it l p l2 it = (\<exists>\<^sub>Al1. lseg l1 p it * os_list l2 it * \<up>(l = l1 @ l2))"
-setup {* add_rewrite_ent_rule @{thm os_is_it_def} *}
-
-theorem os_is_it_empty [backward]: "h \<Turnstile> os_list l p \<Longrightarrow> h \<Turnstile> os_is_it l p l p"
-@proof @have "h \<Turnstile> lseg [] p p * os_list l p" @qed
-
-definition os_it_init :: "'a os_list \<Rightarrow> ('a os_list_it) Heap" where
-  "os_it_init l = return l"
-declare os_it_init_def [sep_proc_defs]
-
-definition os_it_next :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where
-  "os_it_next it = os_pop it"
-declare os_it_next_def [sep_proc_defs]
-
-definition os_it_has_next :: "'a os_list_it \<Rightarrow> bool Heap" where
-  "os_it_has_next it = return (it \<noteq> None)"
-declare os_it_has_next_def [sep_proc_defs]
-
-theorem os_it_init_rule [hoare_triple]:
-  "<os_list l p> os_it_init p <os_is_it l p l>" by auto2
-
-theorem os_is_it_rule [forward_ent]: "os_is_it l p l' it \<Longrightarrow>\<^sub>A os_list l p" by auto2
-
-theorem os_is_has_next_rule [hoare_triple]:
-  "<os_is_it l p l' it> os_it_has_next it <\<lambda>r. os_is_it l p l' it * \<up>(r \<longleftrightarrow> (l' \<noteq> []))>"
-@proof @case "l' = []" @have "l' = hd l' # tl l'" @qed
-
-theorem os_is_has_next_rule' [forward_ent]:
-  "os_is_it l p (x # xs) it \<Longrightarrow>\<^sub>A true * \<up>(it \<noteq> None)" by auto2
-
-theorem os_it_next_rule [hoare_triple]:
-  "<os_is_it l p l' (Some q)> os_it_next (Some q) <\<lambda>(a, it'). os_is_it l p (tl l') it' * \<up>(a = hd l')>"
-@proof @case "l' = []" @qed
-
-setup {* del_prfstep_thm @{thm os_list_def} *}
-setup {* del_prfstep_thm @{thm os_is_it_def} *}
-
-subsubsection {* List-Sum *}
-
-setup {* fold add_rewrite_rule @{thms sum_list_simps} *}
-
-partial_function (heap) os_sum' :: "int os_list_it \<Rightarrow> int \<Rightarrow> int Heap"
-  where [code]:
-  "os_sum' it s = do {
-    b \<leftarrow> os_it_has_next it;
-    if b then do {
-      (x,it') \<leftarrow> os_it_next it;
-      os_sum' it' (s+x)
-    } else return s
-  }"
-declare os_sum'.simps [sep_proc_defs]
-
-lemma os_sum'_rule [hoare_triple]:
-  "<os_is_it l p l' it>
-    os_sum' it s
-  <\<lambda>r. os_list l p * \<up>(r = s + sum_list l')>"
-@proof @induct l' arbitrary it s @qed
-
-definition os_sum :: "int node ref option \<Rightarrow> int Heap" where
-  "os_sum p \<equiv> do {
-    it \<leftarrow> os_it_init p;
-    os_sum' it 0
-  }"
-declare os_sum_def [sep_proc_defs]
-
-lemma os_sum_rule:
-  "<os_list l p> os_sum p <\<lambda>r. os_list l p * \<up>(r = sum_list l)>" by auto2
-
 subsubsection {* Reverse *}
 
-partial_function (heap) os_reverse_aux 
-  :: "'a::heap os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where [code]:
+partial_function (heap) os_reverse_aux :: "'a::heap os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "os_reverse_aux q p = (case p of
     None \<Rightarrow> return q |
     Some r \<Rightarrow> do {
@@ -208,19 +114,17 @@ lemma os_reverse_aux_rule [hoare_triple]:
    <os_list ((rev xs) @ ys)>"
 @proof @induct xs arbitrary p q ys @qed
 
-definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
+definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where [sep_proc_defs]:
   "os_reverse p = os_reverse_aux None p"
-declare os_reverse_def [sep_proc_defs]
 
-lemma os_reverse_rule: "<os_list xs p> os_reverse p <os_list (rev xs)>" by auto2
+lemma os_reverse_rule:
+  "<os_list xs p> os_reverse p <os_list (rev xs)>" by auto2
 
 subsubsection {* Remove *}
 
 setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
 
-partial_function (heap) os_rem
-  :: "'a::heap \<Rightarrow> 'a node ref option \<Rightarrow> 'a node ref option Heap" 
-  where [code]:
+partial_function (heap) os_rem :: "'a::heap \<Rightarrow> 'a node ref option \<Rightarrow> 'a node ref option Heap" where
   "os_rem x b = (case b of 
      None \<Rightarrow> return None |
      Some p \<Rightarrow> do { 
@@ -257,8 +161,7 @@ lemma list_insert_sorted [forward]:
   "sorted xs \<Longrightarrow> sorted (list_insert x xs)"
 @proof @induct xs @qed
 
-partial_function (heap) os_insert
-  :: "'a::{ord,heap} \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+partial_function (heap) os_insert :: "'a::{ord,heap} \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "os_insert x b = (case b of
       None \<Rightarrow> os_prepend x None
     | Some p \<Rightarrow> do {
@@ -286,7 +189,7 @@ partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list 
     })"
 declare extract_list.simps [sep_proc_defs]
 
-theorem extract_list_rule [hoare_triple]:
+lemma extract_list_rule [hoare_triple]:
   "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
 @proof @induct l arbitrary p @qed
 
@@ -306,20 +209,17 @@ lemma os_insert_list_correct [hoare_triple]:
    <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs') * \<up>(mset xs' = mset ys + mset xs)>"
 @proof @induct ys arbitrary b xs @qed
 
-definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where
+definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where [sep_proc_defs]:
   "insertion_sort xs = do {
     p \<leftarrow> os_insert_list xs None;
     l \<leftarrow> extract_list p;
     return l
   }"
-declare insertion_sort_def [sep_proc_defs]
 
 lemma insertion_sort_rule:
   "<emp> insertion_sort xs <\<lambda>ys. \<up>(ys = sort xs)>\<^sub>t" by auto2
 
 subsection {* Merging two lists *}
-
-section {* Merge sort *}
 
 fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "merge_list xs [] = xs"
@@ -338,24 +238,20 @@ lemma merge_list_sorted [forward]:
   "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> sorted (merge_list xs ys)"
 @proof @fun_induct "merge_list xs ys" @qed
 
-partial_function (heap) merge_os_list ::
-  "('a::{heap, ord}) os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
-"merge_os_list p q = (
-  if p = None then return q
-  else if q = None then return p
-  else do {
-    np \<leftarrow> !(the p); nq \<leftarrow> !(the q);
-    if val np \<le> val nq then
-      do { npq \<leftarrow> merge_os_list (nxt np) q;
-           (the p) := Node (val np) npq;
-           return p
-         }
-    else
-      do { pnq \<leftarrow> merge_os_list p (nxt nq);
-           (the q) := Node (val nq) pnq;
-           return q
-         }
-     })"
+partial_function (heap) merge_os_list :: "('a::{heap, ord}) os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+  "merge_os_list p q = (
+    if p = None then return q
+    else if q = None then return p
+    else do {
+      np \<leftarrow> !(the p); nq \<leftarrow> !(the q);
+      if val np \<le> val nq then
+        do { npq \<leftarrow> merge_os_list (nxt np) q;
+             (the p) := Node (val np) npq;
+             return p }
+      else
+        do { pnq \<leftarrow> merge_os_list p (nxt nq);
+             (the q) := Node (val nq) pnq;
+             return q } })"
 declare merge_os_list.simps [sep_proc_defs]
 
 lemma merge_os_list_to_fun [hoare_triple]:
@@ -367,12 +263,12 @@ lemma merge_os_list_to_fun [hoare_triple]:
 subsection {* List copy *}
 
 partial_function (heap) copy_os_list :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
-"copy_os_list b = (case b of
-    None \<Rightarrow> return None
-  | Some p \<Rightarrow> do {
-      v \<leftarrow> !p;
-      q \<leftarrow> copy_os_list (nxt v);
-      os_prepend (val v) q })"
+  "copy_os_list b = (case b of
+      None \<Rightarrow> return None
+    | Some p \<Rightarrow> do {
+        v \<leftarrow> !p;
+        q \<leftarrow> copy_os_list (nxt v);
+        os_prepend (val v) q })"
 declare copy_os_list.simps [sep_proc_defs]
 
 lemma copy_os_list_rule [hoare_triple]:
@@ -381,47 +277,44 @@ lemma copy_os_list_rule [hoare_triple]:
 
 subsection {* Higher-order functions *}
 
-partial_function (heap) map_os_list ::
-  "('a::heap \<Rightarrow> 'a) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
-"map_os_list f b = (case b of
-    None \<Rightarrow> return None
-  | Some p \<Rightarrow> do {
-      v \<leftarrow> !p;
-      q \<leftarrow> map_os_list f (nxt v);
-      p := Node (f (val v)) q;
-      return (Some p) })"
+partial_function (heap) map_os_list :: "('a::heap \<Rightarrow> 'a) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+  "map_os_list f b = (case b of
+      None \<Rightarrow> return None
+    | Some p \<Rightarrow> do {
+        v \<leftarrow> !p;
+        q \<leftarrow> map_os_list f (nxt v);
+        p := Node (f (val v)) q;
+        return (Some p) })"
 declare map_os_list.simps [sep_proc_defs]
 
 lemma map_os_list_rule [hoare_triple]:
   "<os_list xs b> map_os_list f b <os_list (map f xs)>"
 @proof @induct xs arbitrary b @qed
 
-partial_function (heap) filter_os_list ::
-  "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
-"filter_os_list f b = (case b of
-    None \<Rightarrow> return None
-  | Some p \<Rightarrow> do {
-      v \<leftarrow> !p;
-      q \<leftarrow> filter_os_list f (nxt v);
-      (if (f (val v)) then do {
-         p := Node (val v) q;
-         return (Some p) }
-       else return q) })"
+partial_function (heap) filter_os_list :: "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+  "filter_os_list f b = (case b of
+      None \<Rightarrow> return None
+    | Some p \<Rightarrow> do {
+        v \<leftarrow> !p;
+        q \<leftarrow> filter_os_list f (nxt v);
+        (if (f (val v)) then do {
+           p := Node (val v) q;
+           return (Some p) }
+         else return q) })"
 declare filter_os_list.simps [sep_proc_defs]
 
 lemma filter_os_list_rule [hoare_triple]:
   "<os_list xs b> filter_os_list f b <\<lambda>r. os_list (filter f xs) r * true>"
 @proof @induct xs arbitrary b @qed
 
-partial_function (heap) filter_os_list2 ::
-  "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
-"filter_os_list2 f b = (case b of
-    None \<Rightarrow> return None
-  | Some p \<Rightarrow> do {
-      v \<leftarrow> !p;
-      q \<leftarrow> filter_os_list2 f (nxt v);
-      (if (f (val v)) then os_prepend (val v) q
-       else return q) })"
+partial_function (heap) filter_os_list2 :: "('a::heap \<Rightarrow> bool) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
+  "filter_os_list2 f b = (case b of
+      None \<Rightarrow> return None
+    | Some p \<Rightarrow> do {
+        v \<leftarrow> !p;
+        q \<leftarrow> filter_os_list2 f (nxt v);
+        (if (f (val v)) then os_prepend (val v) q
+         else return q) })"
 declare filter_os_list2.simps [sep_proc_defs]
 
 lemma filter_os_list2_rule [hoare_triple]:
@@ -430,17 +323,16 @@ lemma filter_os_list2_rule [hoare_triple]:
 
 setup {* fold add_rewrite_rule @{thms List.fold_simps} *}
 
-partial_function (heap) fold_os_list ::
-  "('a::heap \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a os_list \<Rightarrow> 'b \<Rightarrow> 'b Heap" where
-"fold_os_list f b x = (case b of
-    None \<Rightarrow> return x
-  | Some p \<Rightarrow> do {
-     v \<leftarrow> !p;
-     r \<leftarrow> fold_os_list f (nxt v) (f (val v) x);
-     return r})"
+partial_function (heap) fold_os_list :: "('a::heap \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a os_list \<Rightarrow> 'b \<Rightarrow> 'b Heap" where
+  "fold_os_list f b x = (case b of
+      None \<Rightarrow> return x
+    | Some p \<Rightarrow> do {
+       v \<leftarrow> !p;
+       r \<leftarrow> fold_os_list f (nxt v) (f (val v) x);
+       return r})"
 declare fold_os_list.simps [sep_proc_defs]
 
-theorem fold_os_list_rule [hoare_triple]:
+lemma fold_os_list_rule [hoare_triple]:
   "<os_list xs b> fold_os_list f b x <\<lambda>r. os_list xs b * \<up>(r = fold f xs x)>"
 @proof @induct xs arbitrary b x @qed
 
