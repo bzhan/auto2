@@ -56,6 +56,7 @@ ML_file "nat_order.ML"
 ML_file "nat_order_test.ML"
 ML_file "order.ML"
 ML_file "order_test.ML"
+ML_file "rings.ML"
 
 setup {* register_wellform_data ("(a::nat) - b", ["a \<ge> b"]) *}
 setup {* add_prfstep_check_req ("(a::nat) - b", "(a::nat) \<ge> b") *}

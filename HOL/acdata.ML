@@ -21,7 +21,11 @@ sig
   val has_assoc_th: ac_info -> bool
   val has_comm_th: ac_info -> bool
   val has_unit_th: ac_info -> bool
+  val comm_cv: ac_info -> conv
+  val assoc_cv: ac_info -> conv
+  val assoc_sym_cv: ac_info -> conv
   val swap_cv: ac_info -> conv
+  val swap_r_cv: ac_info -> conv
 
   val dest_ac: ac_info -> term -> term list
   val cdest_ac: ac_info -> cterm -> cterm list
@@ -117,6 +121,9 @@ fun get_head_ac_info thy t =
 fun has_assoc_th {assoc_th, ...} = not (is_true_th assoc_th)
 fun has_comm_th {comm_th, ...} = not (is_true_th comm_th)
 fun has_unit_th {unitl_th, ...} = not (is_true_th unitl_th)
+fun comm_cv {comm_th, ...} = rewr_obj_eq comm_th
+fun assoc_cv {assoc_th, ...} = rewr_obj_eq assoc_th
+fun assoc_sym_cv {assoc_th, ...} = rewr_obj_eq (obj_sym assoc_th)
 
 (* (a . b) . c = (a . c) . b *)
 fun swap_cv (ac_info as {assoc_th, comm_th, ...}) ct =
@@ -124,6 +131,15 @@ fun swap_cv (ac_info as {assoc_th, comm_th, ...}) ct =
       Conv.every_conv [rewr_obj_eq assoc_th,
                        Conv.arg_conv (rewr_obj_eq comm_th),
                        rewr_obj_eq (obj_sym assoc_th)] ct
+    else
+      rewr_obj_eq comm_th ct
+
+(* a . (b . c) = b . (a . c) *)
+fun swap_r_cv (ac_info as {assoc_th, comm_th, ...}) ct =
+    if head_agrees ac_info (dest_arg (Thm.term_of ct)) then
+      Conv.every_conv [rewr_obj_eq (obj_sym assoc_th),
+                       Conv.arg1_conv (rewr_obj_eq comm_th),
+                       rewr_obj_eq assoc_th] ct
     else
       rewr_obj_eq comm_th ct
 

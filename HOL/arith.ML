@@ -185,7 +185,7 @@ val add_arith_proofsteps =
       ("eval_mult_consts",
        [WithTerm @{term_pat "(?NUMC1::nat) * ?NUMC2"},
         Filter (fn _ => fn (_, inst) =>
-                   lookup_numc1 inst > 1 andalso lookup_numc2 inst > 1)],
+                   lookup_numc1 inst <> 1 andalso lookup_numc2 inst <> 1)],
        nat_fold_conv),
 
       ("eval_minus_consts",
