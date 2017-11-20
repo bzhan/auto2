@@ -266,8 +266,9 @@ fun output_code_pos_fn ctxt (tname, th) =
       (Util.string_of_terms ctxt tname)
     end
 
-fun output_code_pos_match_fn ctxt (tname, _) =
-    "MATCH_POS " ^ (Util.string_of_terms ctxt tname)
+fun output_code_pos_match_fn ctxt (tname, th) =
+    "MATCH_POS " ^ (Syntax.string_of_term ctxt (hd tname)) ^ " " ^
+    (Syntax.string_of_term ctxt (prop_of' (hd (UtilLogic.split_conj_th th))))
 
 (* Common matcher for CODE_POS and MATCH_POS. When pattern is a tuple
    of n terms, match the first n terms of tname.
