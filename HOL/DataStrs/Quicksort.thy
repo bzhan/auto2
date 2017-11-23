@@ -127,7 +127,8 @@ lemma quicksort_term2 [resolve]:
 
 function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "quicksort xs l r = (
-    if l < r \<and> r < length xs then
+    if l \<ge> r then xs
+    else if r < length xs then
       let p = fst (partition xs l r);
         xs1 = snd (partition xs l r);
         xs2 = quicksort xs1 l (p - 1)
@@ -151,11 +152,10 @@ lemma quicksort_basic:
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs xs3
+  @case "l \<ge> r" @case "r \<ge> length xs"
   @let "p = fst (partition xs l r)"
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
-  @case "l \<ge> r"
-  @have "l < r \<and> r < length xs"
   @have "mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
     @case "p - 1 \<le> l" @then
     @have "p - 1 - l < r - l" @with @have "p - 1 < r" @end
@@ -172,7 +172,7 @@ lemma quicksort_permutes [rewrite]:
   "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> xs' = quicksort xs l r \<Longrightarrow>
    set (sublist l (r + 1) xs') = set (sublist l (r + 1) xs)"
 @proof
-  @case "l \<ge> r"
+  @case "l \<ge> r" @case "r \<ge> length xs"
   @have "xs = take l xs @ sublist l (r + 1) xs @ drop (r + 1) xs"
   @have "xs' = take l xs' @ sublist l (r + 1) xs' @ drop (r + 1) xs'"
   @have "take l xs = take l xs'"
@@ -183,13 +183,12 @@ lemma quicksort_sorts:
   "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> sorted (sublist l (r + 1) (quicksort xs l r))"
 @proof
   @let "d = r - l"
+  @case "l \<ge> r" @case "r \<ge> length xs"
   @strong_induct d arbitrary l r xs
   @let "p = fst (partition xs l r)"
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
   @let "xs3 = quicksort xs l r"
-  @case "l \<ge> r"
-  @have "l < r \<and> r < length xs"
   @have "xs1 ! p = xs3 ! p" @then
   @have "sublist l p xs2 = sublist l p xs3"
   @have "set (sublist l p xs1) = set (sublist l p xs2)" @with

@@ -24,13 +24,17 @@ fun rev :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uni
    }
    else return ())"
 declare rev.simps [sep_proc_defs]
-setup {* add_hoare_induct_rule (@{term_pat Reverse.rev}, @{thm rev.induct}) *}
 
 lemma rev_to_fun [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(j < length xs)>
    rev p i j
    <\<lambda>_. p \<mapsto>\<^sub>a rev_swap xs i j>"
-@proof @hoare_induct @qed
+@proof
+  @strong_induct j arbitrary i xs
+  @case "i < j" @with
+    @apply_induct_hyp "j - 1" "i + 1" "list_swap xs i j"
+  @end
+@qed
 declare rev.simps [sep_proc_defs del]
 
 lemma rev_is_rev:

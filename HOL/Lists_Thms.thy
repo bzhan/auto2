@@ -96,6 +96,7 @@ setup {* add_forward_prfstep_cond @{thm sorted_sort} [with_term "sort ?xs"] *}
 setup {* add_rewrite_rule @{thm length_sort} *}
 setup {* add_rewrite_rule @{thm set_sort} *}
 setup {* add_backward_prfstep @{thm properties_for_sort} *}
+lemma sort_Nil [rewrite]: "sort [] = []" by auto
 
 section {* distinct *}
 

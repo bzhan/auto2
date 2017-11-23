@@ -3,7 +3,6 @@
 
 theory SepAuto
   imports "../Auto2_Main" "~~/src/HOL/Imperative_HOL/Imperative_HOL"
-  keywords "@hoare_induct" :: prf_decl % "proof"
 begin
 
 section {* Partial Heaps *}
@@ -484,7 +483,6 @@ ML_file "sep_util.ML"
 ML_file "assn_matcher.ML"
 ML_file "sep_steps.ML"
 ML_file "sep_steps_test.ML"
-ML_file "sep_induct.ML"
 
 attribute_setup heap_presv_thms = {* setup_attrib add_heap_preserving_thm *}
 attribute_setup forward_ent = {* setup_attrib add_forward_ent_prfstep *}
