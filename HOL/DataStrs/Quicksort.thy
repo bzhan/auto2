@@ -48,7 +48,7 @@ lemma part1_basic:
 @qed
 setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"] *}
 
-lemma part1_partitions1:
+lemma part1_partitions1 [backward]:
   "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> a"
 @proof
@@ -56,23 +56,23 @@ lemma part1_partitions1:
   @strong_induct d arbitrary l r xs i
   @case "r \<le> l"
   @case "xs ! l \<le> a" @with
-    @case "l + 1 \<le> i" @with @apply_induct_hyp "d - 1" "l + 1" r xs i @end
+    @apply_induct_hyp "d - 1" "l + 1" r xs
   @end
   @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
 @qed
-setup {* add_forward_prfstep_cond @{thm part1_partitions1} [with_term "?xs' ! ?i"] *}
 
-lemma part1_partitions2:
+lemma part1_partitions2 [backward]:
   "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> a"
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs i
   @case "r \<le> l"
-  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
-  @case "i \<le> r - 1" @with @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r" i @end
+  @case "xs ! l \<le> a" @with
+    @apply_induct_hyp "d - 1" "l + 1" r xs
+  @end
+  @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
 @qed
-setup {* add_forward_prfstep_cond @{thm part1_partitions2} [with_term "?xs' ! ?i"] *}
 
 setup {* del_prfstep_thm @{thm part1.simps} *}
 
@@ -94,26 +94,21 @@ lemma partition_basic:
 setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "partition ?xs ?l ?r"] *}
   
 lemma partition_partitions1 [forward]:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   x \<in> set (sublist l rs xs') \<Longrightarrow> x \<le> xs' ! rs"
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
+   x \<in> set (sublist l rs xs'') \<Longrightarrow> x \<le> xs'' ! rs"
 @proof
-  @obtain i where "i \<ge> l" "i < rs" "x = xs' ! i"
-  @let "p = xs ! r"
-  @let "xs'' = snd (part1 xs l (r - 1) p)"
-  @have "xs'' ! r = p"
-  @have (@rule) "\<forall>j. j \<ge> l \<longrightarrow> j < rs \<longrightarrow> xs'' ! j \<le> p"
+  @obtain i where "i \<ge> l" "i < rs" "x = xs'' ! i"
 @qed
 
 lemma partition_partitions2 [forward]:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   x \<in> set (sublist (rs + 1) (r + 1) xs') \<Longrightarrow> x \<ge> xs' ! rs"
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
+   x \<in> set (sublist (rs + 1) (r + 1) xs'') \<Longrightarrow> x \<ge> xs'' ! rs"
 @proof
-  @obtain i where "i \<ge> rs + 1" "i < r + 1" "x = xs' ! i"
+  @obtain i where "i \<ge> rs + 1" "i < r + 1" "x = xs'' ! i"
   @let "p = xs ! r"
   @let "m = fst (part1 xs l (r - 1) p)"
-  @let "xs'' = snd (part1 xs l (r - 1) p)"
-  @have "xs'' ! r = p"
-  @have (@rule) "\<forall>j. rs \<le> j \<longrightarrow> j < r - 1 \<longrightarrow> xs'' ! j \<ge> p" @with @case "m = j" @end
+  @let "xs' = snd (part1 xs l (r - 1) p)"
+  @case "xs' ! m \<le> p"
 @qed
 setup {* del_prfstep_thm @{thm partition_def} *}
 
