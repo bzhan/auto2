@@ -275,6 +275,9 @@ lemma idx_pqueue_pop_rule [hoare_triple]:
    idx_pqueue_pop p
    <\<lambda>(x, r). idx_pqueue (butlast xs) n r * \<up>(x = last xs)>" by auto2
 
+definition idx_pqueue_array_upd :: "nat \<Rightarrow> 'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> unit Heap" where [sep_proc_defs]:
+  "idx_pqueue_array_upd i x d = array_upd i x d"
+
 lemma key_within_range_update [backward2]:
   "key_within_range xs n \<Longrightarrow> i < length xs \<Longrightarrow> k < n \<Longrightarrow> key_within_range (list_update xs i (k, v)) n"
 @proof
@@ -286,8 +289,9 @@ lemma key_within_range_update [backward2]:
 
 lemma array_upd_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(i < length xs) * \<up>(k = fst (xs ! i))>
-   array_upd i (k, v) (pqueue p)
+   idx_pqueue_array_upd i (k, v) (pqueue p)
    <\<lambda>_. idx_pqueue (list_update xs i (k, v)) n p>" by auto2
+declare idx_pqueue_array_upd_def [sep_proc_defs del]
 
 section {* Heap operations on indexed_queue *}
 
@@ -425,7 +429,7 @@ definition update_idx_pqueue ::
       insert_idx_pqueue k v p
     else do {
       x \<leftarrow> array_nth (pqueue p) (the i_opt);
-      array_upd (the i_opt) (k, v) (pqueue p);
+      idx_pqueue_array_upd (the i_opt) (k, v) (pqueue p);
       (if snd x \<le> v then do {idx_bubble_down p (the i_opt); return p}
        else do {idx_bubble_up p (the i_opt); return p}) }}"
 

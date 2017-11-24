@@ -859,7 +859,8 @@ fun hoare_triple_prfstep_fn hoare_th ictxt item1 item2 =
                     val prop' = UtilLogic.mk_conjs_th [hoare_th', code_pos_th]
                     val ritem = Fact (TY_MATCH_POS, [h, c, P'', Q''], prop')
                   in
-                    [AddItems {id = id'', sc = SOME 1, raw_items = [ritem]}]
+                    [AddItems {id = id'', sc = SOME 1, raw_items = [ritem]},
+                     ShadowItem {id = id'', item = item1}]
                   end
                 else
                   let
