@@ -15,6 +15,7 @@ sig
   val is_minus_const: term -> bool
   val is_standard_ineq: term -> bool
   val dest_ineq: term -> ineq_info
+  val dest_ineq_th: thm -> ineq_info
   val is_refl_ineq: thm -> bool
   val ineq_is_better: ineq_info -> ineq_info -> bool
   val info_is_better: Proof.context -> box_id * thm -> box_id * thm -> bool
@@ -115,12 +116,22 @@ fun dest_ineq t =
         (lhs, dest_arg1 rhs, UtilArith.dest_numc (dest_arg rhs))
     end
 
+fun dest_ineq_th th =
+    if UtilLogic.is_Trueprop (Thm.prop_of th) andalso
+       is_standard_ineq (prop_of' th) then
+      dest_ineq (prop_of' th)
+    else let
+      val _ = trace_thm_global "th:" th
+    in
+      raise Fail "dest_ineq_th"
+    end
+
 (* Whether the given theorem is x + n <= x or x <= x + n (either a
    contradiction or is trivial).
  *)
 fun is_refl_ineq th =
     let
-      val (x, y, _) = dest_ineq (prop_of' th)
+      val (x, y, _) = dest_ineq_th th
     in
       x aconv y
     end
@@ -132,7 +143,7 @@ fun ineq_is_better (x1, y1, d1) (x2, y2, d2) =
 (* Comparison between two (id, th) pairs. *)
 fun info_is_better ctxt (id1, th1) (id2, th2) =
     BoxID.is_eq_ancestor ctxt id1 id2 andalso
-    ineq_is_better (dest_ineq (prop_of' th1)) (dest_ineq (prop_of' th2))
+    ineq_is_better (dest_ineq_th th1) (dest_ineq_th th2)
 
 (* Whether the current id is resolved according to the list of
    resolved ids maintained in ord_tbl.
@@ -149,7 +160,8 @@ fun is_box_resolved ctxt id =
  *)
 fun ineq_to_contradiction th =
     let
-      val (_, _, d) = dest_ineq (prop_of' th)
+      val (_, _, d) = dest_ineq_th th
+      val _ = assert (d < 0) "ineq_to_contradiction"
     in
       [Nat_Arith.nat_less_th 0 (~d), th] MRS @{thm single_resolve}
     end
@@ -158,7 +170,7 @@ fun ineq_to_contradiction th =
 fun add_resolved (id, th) ctxt =
     let
       val {resolved, graph, inv_graph} = Data.get ctxt
-      val (x, y, d) = dest_ineq (prop_of' th)
+      val (x, y, d) = dest_ineq_th th
       val _ = assert (x aconv y andalso d < 0) "add_resolved"
     in
       Data.map (K {resolved = (id, ineq_to_contradiction th) :: resolved,
@@ -181,7 +193,7 @@ fun retrieve_ineqs ctxt (x, y) =
 fun contains_info ctxt (id, th) =
     if is_box_resolved ctxt id then true
     else let
-      val (x, y, d) = dest_ineq (prop_of' th)
+      val (x, y, d) = dest_ineq_th th
     in
       if x aconv y then d >= 0
       else let
@@ -204,7 +216,7 @@ fun remove_edge (x, y) (id, th) graph =
  *)
 fun add_ineq_raw (id, th) ctxt =
     let
-      val (x, y, d) = dest_ineq (prop_of' th)
+      val (x, y, d) = dest_ineq_th th
       val _ = assert (not (x aconv y)) "add_ineq_raw: x = y"
       val _ = assert (d < 10 andalso d > ~10) "add_ineq_raw: out of bounds"
       val ineqs = retrieve_ineqs ctxt (x, y)
@@ -267,8 +279,8 @@ fun retrieve_ineqs_right ctxt y =
 (* Combine two inequalities. *)
 fun combine_ineqs th1 th2 =
     let
-      val (_, y1, d1) = dest_ineq (prop_of' th1)
-      val (x2, _, d2) = dest_ineq (prop_of' th2)
+      val (_, y1, d1) = dest_ineq_th th1
+      val (x2, _, d2) = dest_ineq_th th2
       val _ = assert (y1 aconv x2) "combine_ineqs"
     in
       if d1 < 0 andalso d2 < 0 then
@@ -306,7 +318,7 @@ fun add_ineq (id, th) ctxt =
               else if is_refl_ineq th then
                 update_step (rest, add_resolved (id, th) ctxt)
               else let
-                val (x, y, d) = dest_ineq (prop_of' th)
+                val (x, y, d) = dest_ineq_th th
               in
                 if d >= 10 orelse d <= ~10 then update_step (rest, ctxt)
                 else let
@@ -389,7 +401,7 @@ fun norm_ineq_th' th =
 
 fun convert_const_x th =
     let
-      val (x, _, d) = dest_ineq (prop_of' th)
+      val (x, _, d) = dest_ineq_th th
     in
       if UtilArith.is_numc x then
         let
@@ -408,7 +420,7 @@ fun convert_const_x th =
 
 fun convert_const_y th =
     let
-      val (_, y, d) = dest_ineq (prop_of' th)
+      val (_, y, d) = dest_ineq_th th
     in
       if UtilArith.is_numc y then
         let
@@ -427,7 +439,17 @@ fun convert_const_y th =
     end
 
 fun norm_ineq_th th =
-    th |> norm_ineq_th' |> convert_const_x |> convert_const_y
+    let
+      val th' =
+          th |> norm_ineq_th' |> convert_const_x |> convert_const_y
+    in
+      if is_standard_ineq (prop_of' th') then th'
+      else let
+        val _ = trace_thm_global "th':" th'
+      in
+        raise Fail "norm_ineq_th: invalid output."
+      end
+    end
 
 fun norm_ineq_minus_th' th =
     let
@@ -452,7 +474,17 @@ fun norm_ineq_minus_th' th =
 fun norm_ineq_minus_th th =
     case norm_ineq_minus_th' th of
         NONE => NONE
-      | SOME th' => SOME (th' |> convert_const_x |> convert_const_y)
+      | SOME th' =>
+        let
+          val th'' = th' |> convert_const_x |> convert_const_y
+        in
+          if is_standard_ineq (prop_of' th'') then SOME th''
+          else let
+            val _ = trace_thm_global "th'':" th''
+          in
+            raise Fail "norm_ineq_minus_th: invalid output."
+          end
+        end
 
 (* Add any inequality in the form a </<= b to the table, by first
    converting to the normal form.
@@ -475,7 +507,7 @@ fun add_ineq_general (id, th) ctxt =
  *)
 fun derive_contradiction ctxt th =
     let
-      val (x, y, d) = dest_ineq (prop_of' th)
+      val (x, y, d) = dest_ineq_th th
     in
       if x aconv y then
         if d < 0 then [([], ineq_to_contradiction th)] else []
@@ -483,7 +515,7 @@ fun derive_contradiction ctxt th =
         val ineqs = retrieve_ineqs ctxt (y, x)
         fun process_ineq (id, th') =
             let
-              val (_, _, d') = dest_ineq (prop_of' th')
+              val (_, _, d') = dest_ineq_th th'
             in
               if d + d' < 0 then
                 [(id, ineq_to_contradiction (combine_ineqs th th'))]
@@ -551,8 +583,8 @@ val null_ineq_matcher =
 
 fun ineq_to_eq_th th th' =
     let
-      val (x, y, d) = dest_ineq (prop_of' th)
-      val (x', y', d') = dest_ineq (prop_of' th')
+      val (x, y, d) = dest_ineq_th th
+      val (x', y', d') = dest_ineq_th th'
     in
       if x aconv y' andalso y aconv x' andalso d + d' = 0 then
         if d = 0 then
@@ -572,11 +604,11 @@ fun get_new_eqs ctxt =
                             |> map snd
       fun process_ineq (id, th) =
           let
-            val (x, y, d) = dest_ineq (prop_of' th)
+            val (x, y, d) = dest_ineq_th th
             val ineqs = retrieve_ineqs ctxt (y, x)
             fun process_ineq' (id', th') =
                 let
-                  val (_, _, d') = dest_ineq (prop_of' th')
+                  val (_, _, d') = dest_ineq_th th'
                 in
                   if d + d' = 0 then
                     let

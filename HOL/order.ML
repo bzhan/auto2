@@ -90,6 +90,10 @@ fun to_normal_th order_ty th =
       | LE_LMINUS => th RS @{thm norm_le_lminus}
       | LE_RMINUS => th RS @{thm norm_le_rminus}
       | LE => th RS @{thm norm_le}
+      | LE_LPLUS =>
+        if UtilArith.dest_numc (dest_arg (dest_arg1 (prop_of' th))) = 0 then
+          th RS @{thm norm_le_lplus0}
+        else th
       | _ => th
 
 (* eq_x is a meta equality. Use it to rewrite x in an order info. *)
@@ -124,7 +128,7 @@ fun rewrite_info_y eq_y (cx, cy, diff, th) =
 
 fun th_to_ritem th =
     let
-      val (x, y, n) = NatOrder.dest_ineq (prop_of' th)
+      val (x, y, n) = NatOrder.dest_ineq_th th
     in
       Fact (TY_NAT_ORDER, [x, y, mk_int n], th)
     end
@@ -245,8 +249,8 @@ val transitive =
 (* Helper function for transitive resolve. *)
 fun trans_resolve th1 th2 =
     let
-      val (_, _, d1) = NatOrder.dest_ineq (prop_of' th1)
-      val (_, _, d2) = NatOrder.dest_ineq (prop_of' th2)
+      val (_, _, d1) = NatOrder.dest_ineq_th th1
+      val (_, _, d2) = NatOrder.dest_ineq_th th2
     in
       if d1 < 0 andalso d2 < 0 then
         [nat_less_th 0 (~d1), th1, th2] MRS @{thm trans_resolve1}
@@ -423,7 +427,7 @@ fun find_contradiction_item pat item ctxt (id, inst) =
                             |> apply_to_thm' (Conv.arg1_conv (rewr_side eq_th1))
                             |> apply_to_thm' (Conv.arg_conv (rewr_side eq_th2))
                             |> to_normal_th order_ty
-            val (_, _, d2) = NatOrder.dest_ineq (prop_of' th2)
+            val (_, _, d2) = NatOrder.dest_ineq_th th2
           in
             if d1 + d2 < 0 then
               [((id', inst'),
@@ -549,6 +553,7 @@ fun find_contradiction pat ctxt (id, inst) =
               let
                 val d = dest_numc (dest_arg lhs)
               in
+                if d = 0 then [] else
                 [((id', inst),
                   ([nat_less_th 0 d, norm_th] MRS @{thm single_resolve})
                       |> Thm.implies_intr assum
