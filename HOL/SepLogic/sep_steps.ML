@@ -286,7 +286,7 @@ val code_pos_typed_matcher =
           end
 
       (* Use equalities to convert prop to prop'. *)
-      fun match pat {tname, prop, ty_str, ...} ctxt (id, inst) =
+      fun match pat {tname, prop, ...} ctxt (id, inst) =
           let
             val pats = HOLogic.strip_tuple pat
             val pairs = map (pair false)
@@ -296,21 +296,8 @@ val code_pos_typed_matcher =
             fun process_inst (inst, ths) =
                 let
                   val obj_eqs = map (obj_sym o to_obj_eq) ths
-                  (* Divide into cases depending on if obj_eqs
-                     contains rewrites for P and Q (MATCH_POS) or not.
-                   *)
                   val cv =
-                      if ty_str = TY_MATCH_POS andalso length obj_eqs = 4 then
-                        Conv.every_conv [
-                          rewr_obj_eq_bottom ctxt (hd obj_eqs),
-                          rewr_obj_eq_bottom ctxt (nth obj_eqs 1),
-                          Conv.arg1_conv (
-                            Util.argn_conv 0 (rewr_obj_eq (nth obj_eqs 2))),
-                          Conv.arg1_conv (
-                            Util.argn_conv 2 (rewr_obj_eq (nth obj_eqs 3)))]
-                      else
-                        Conv.every_conv (
-                          map (rewr_obj_eq_bottom ctxt) obj_eqs)
+                      Conv.every_conv (map (rewr_obj_eq_bottom ctxt) obj_eqs)
                 in
                   (inst, apply_to_thm' cv prop)
                 end
@@ -905,7 +892,7 @@ fun add_hoare_triple_prfstep hoare_th thy =
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
       (TY_CODE_POS, NONE, SOME output_code_pos_fn),
-      (TY_MATCH_POS, NONE, SOME output_code_pos_match_fn)
+      (TY_MATCH_POS, SOME (take 2), SOME output_code_pos_match_fn)
 
     ] #> fold ItemIO.add_typed_matcher [
       (TY_CODE_POS, code_pos_typed_matcher),
