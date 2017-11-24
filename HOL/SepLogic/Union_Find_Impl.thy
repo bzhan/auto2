@@ -28,13 +28,12 @@ partial_function (heap) uf_rep_of :: "nat array \<Rightarrow> nat \<Rightarrow> 
 declare uf_rep_of.simps [sep_proc_defs]
   
 lemma uf_rep_of_rule [hoare_triple]:
-  "<p \<mapsto>\<^sub>a l * \<up>(ufa_invar l) * \<up>(i < length l)>
+  "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow>
+   <p \<mapsto>\<^sub>a l>
    uf_rep_of p i
    <\<lambda>r. p \<mapsto>\<^sub>a l * \<up>(r = rep_of l i)>"
-@proof @contradiction
-  @prop_induct "ufa_invar l \<and> i < length l"
-@qed
-declare uf_rep_of.simps [sep_proc_defs]
+@proof @prop_induct "ufa_invar l \<and> i < length l" @qed
+declare uf_rep_of.simps [sep_proc_defs del]
 
 partial_function (heap) uf_compress :: "nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> unit Heap" where
   "uf_compress i ci p = (
@@ -48,12 +47,11 @@ partial_function (heap) uf_compress :: "nat \<Rightarrow> nat \<Rightarrow> nat 
 declare uf_compress.simps [sep_proc_defs]
 
 lemma uf_compress_rule [hoare_triple]:
-  "<p \<mapsto>\<^sub>a l * \<up>(ufa_invar l) * \<up>(i < length l) * \<up>(ci = rep_of l i)>
-   uf_compress i ci p
+  "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow>
+   <p \<mapsto>\<^sub>a l>
+   uf_compress i (rep_of l i) p
    <\<lambda>_. \<exists>\<^sub>Al'. p \<mapsto>\<^sub>a l' * \<up>(ufa_invar l' \<and> length l' = length l \<and> (\<forall>i<length l. rep_of l' i = rep_of l i))>"
-@proof @contradiction
-  @prop_induct "ufa_invar l \<and> i < length l"
-@qed
+@proof @prop_induct "ufa_invar l \<and> i < length l" @qed
 declare uf_compress.simps [sep_proc_defs del]
 
 definition uf_rep_of_c :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where [sep_proc_defs]:
@@ -64,7 +62,8 @@ definition uf_rep_of_c :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" w
   }"
 
 lemma uf_rep_of_c_rule [hoare_triple]:
-  "<p \<mapsto>\<^sub>a l * \<up>(ufa_invar l) * \<up>(i < length l)>
+  "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow>
+   <p \<mapsto>\<^sub>a l>
    uf_rep_of_c p i
    <\<lambda>r. \<exists>\<^sub>Al'. p \<mapsto>\<^sub>a l' * \<up>(r = rep_of l i \<and> ufa_invar l' \<and> length l' = length l \<and>
                           (\<forall>i<length l. rep_of l' i = rep_of l i))>"
@@ -109,7 +108,8 @@ definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf 
   }"
 
 lemma uf_union_rule [hoare_triple]:
-  "<is_uf n R u * \<up>(i < n) * \<up>(j < n)>
+  "i < n \<Longrightarrow> j < n \<Longrightarrow>
+   <is_uf n R u>
    uf_union u i j
    <is_uf n (per_union R i j)>" by auto2
 declare uf_union_def [sep_proc_defs del]

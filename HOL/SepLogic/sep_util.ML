@@ -29,6 +29,7 @@ sig
 
   val is_hoare_triple: term -> bool
   val dest_hoare_triple: term -> term * term * term
+  val normalize_hoare_cv: Proof.context -> conv
 
   val mult_emp_left: conv
   val mult_emp_right: conv
@@ -208,6 +209,21 @@ fun dest_hoare_triple t =
         Const (@{const_name hoare_triple}, _) $ P $ c $ Q => (P, c, Q)
       | _ => raise Fail "dest_hoare_triple"
 
+(* Normalize a Hoare triple *)
+fun normalize_hoare_cv' ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_imp t then
+        Conv.every_conv [Conv.arg_conv normalize_hoare_cv',
+                         rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
+      else
+        Conv.all_conv ct
+    end
+
+fun normalize_hoare_cv ctxt ct =
+    Conv.every_conv [normalize_hoare_cv',
+                     Util.argn_conv 0 (normalize_assn_cv ctxt)] ct
 
 (* Convert A to emp * A *)
 val mult_emp_left = rewr_obj_eq (obj_sym @{thm mult_1})

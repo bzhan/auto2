@@ -65,14 +65,13 @@ declare quicksort.simps [sep_proc_defs]
 
 setup {* add_rewrite_rule_cond @{thm Quicksort.quicksort.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
 lemma quicksort_to_fun [hoare_triple]:
-  "<a \<mapsto>\<^sub>a xs * \<up>(r < length xs)>
+  "r < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
    quicksort a l r
    <\<lambda>_. a \<mapsto>\<^sub>a Quicksort.quicksort xs l r>"
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs
   @case "l < r" @with
-    @contradiction
     @let "p = fst (Quicksort.partition xs l r)"
     @let "xs1 = snd (Quicksort.partition xs l r)"
     @let "xs2 = Quicksort.quicksort xs1 l (p - 1)"
@@ -85,7 +84,7 @@ lemma quicksort_to_fun [hoare_triple]:
     @case "l \<ge> p - 1"
     @apply_induct_hyp "(p-1)-l" l "p-1" xs1
   @end
-  @qed
+@qed
 declare quicksort.simps [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort.quicksort.simps} *}
 

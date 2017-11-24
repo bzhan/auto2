@@ -891,9 +891,15 @@ fun hoare_triple_prfstep hoare_th =
 fun add_hoare_triple_prfstep hoare_th thy =
     let
       val name = Util.name_of_thm hoare_th
-      val _ = writeln ("Add Hoare triple " ^ name)
+      val ctxt = Proof_Context.init_global thy
+      val hoare_th' =
+          hoare_th |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
+                   |> apply_to_thm' (normalize_hoare_cv ctxt)
+                   |> Util.update_name_of_thm hoare_th ""
+      val _ = writeln ("Add Hoare triple " ^ name ^ "\n" ^
+                       Syntax.string_of_term ctxt (prop_of' hoare_th'))
     in
-      add_prfstep (hoare_triple_prfstep hoare_th) thy
+      add_prfstep (hoare_triple_prfstep hoare_th') thy
     end
 
 val add_sep_logic_proofsteps =

@@ -139,11 +139,11 @@ declare dijkstra_loop.simps [sep_proc_defs]
 setup {* add_rewrite_rule @{thm Nat.diff_Suc_eq_diff_pred} *}
 
 lemma dijkstra_loop_correct [hoare_triple]:
-  "<dstate S p * \<up>(n \<le> card (unknown_set S)) * \<up>(inv G S)>
+  "n \<le> card (unknown_set S) \<Longrightarrow> inv G S \<Longrightarrow>
+   <dstate S p>
    dijkstra_loop G n p
    <\<lambda>r. \<exists>\<^sub>AS'. dstate S' r * \<up>(inv G S') * \<up>(card (unknown_set S') = card (unknown_set S) - n)>\<^sub>t"
-@proof @contradiction
-  @induct n arbitrary S p @with
+@proof @induct n arbitrary S p @with
   @subgoal "n = Suc m"
     @have "m \<le> card (unknown_set S) - 1"
   @endgoal @end

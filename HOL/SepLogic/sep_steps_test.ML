@@ -47,4 +47,22 @@ val test_normalize_mod =
       map test test_data
     end
 
+val test_normalize_hoare =
+    let
+      val ctxt' = ctxt |> fold Variable.auto_fixes [
+            Free ("P", assnT), Free ("S", natT --> assnT),
+            Free ("T", natT --> assnT)]
+      val test = Util.test_conv ctxt' (normalize_hoare_cv ctxt')
+                                "normalize_hoare"
+
+      val test_data = [
+        ("<P * \<up>(b)> c <Q>", "<P * \<up>(b)> c <Q>"),
+        ("b --> <P> c <Q>", "<P * \<up>(b)> c <Q>"),
+        ("b1 --> b2 --> <P> c <Q>", "<P * \<up>(b2) * \<up>(b1)> c <Q>"),
+        ("b1 --> <P * \<up>(b2)> c <Q>", "<P * \<up>(b2) * \<up>(b1)> c <Q>")
+      ]
+    in
+      map test test_data
+    end
+
 end

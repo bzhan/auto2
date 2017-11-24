@@ -158,12 +158,11 @@ lemma quicksort_basic:
   @let "xs2 = quicksort xs1 l (p - 1)"
   @have "mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
     @case "p - 1 \<le> l" @then
-    @have "p - 1 - l < r - l" @with @have "p - 1 < r" @end
-    @apply_induct_hyp "p - 1 - l" l "p - 1" xs1 xs2
+    @apply_induct_hyp "(p-1)-l" l "p-1" xs1 xs2
   @end
   @have "mset xs3 = mset xs2 \<and> outer_remains xs2 xs3 l r" @with
     @case "p + 1 \<ge> r" @then
-    @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2 xs3
+    @apply_induct_hyp "r-(p+1)" "p+1" r xs2 xs3
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm quicksort_basic} [with_term "?xs3.0"] *}
@@ -198,17 +197,13 @@ lemma quicksort_sorts:
   @have "\<forall>x\<in>set (sublist l p xs3). x \<le> xs3 ! p"
   @have "\<forall>x\<in>set (sublist (p + 1) (r + 1) xs1). x \<ge> xs1 ! p"
   @have "sorted (sublist l p xs3)" @with
-    @case "p = 0" @then
-    @case "l < p - 1" @with
-      @have "p - 1 - l < r - l" @with @have "p - 1 < r" @end
-      @apply_induct_hyp "p - 1 - l" l "p - 1" xs1
-    @end
-    @have "p = p - 1 + 1"
+    @case "p = 0"
+    @case "l \<ge> p - 1" @with @have "p = p - 1 + 1" @end
+    @apply_induct_hyp "(p-1)-l" l "p-1" xs1
   @end
   @have "sorted (sublist (p + 1) (r + 1) xs3)" @with
-    @case "p + 1 < r" @with
-      @apply_induct_hyp "r - (p + 1)" "p + 1" r xs2
-    @end
+    @case "r \<le> p + 1"
+    @apply_induct_hyp "r-(p+1)" "p+1" r xs2
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm quicksort_sorts} [with_term "quicksort ?xs ?l ?r"] *}
