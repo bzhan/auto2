@@ -68,9 +68,6 @@ val empty_proc_info =
 (* Add imperative command with the given definitions. *)
 fun add_proc_def th thy =
     let
-      val _ = tracing (Util.name_of_thm th)
-              handle Fail "name_of_thm: not found" => ()
-      val _ = trace_thm_global "here" th
       val th = if Util.is_meta_eq (Thm.prop_of th) then to_obj_eq th
                else th
       val nm = th |> prop_of' |> dest_arg1 |> name_of_sep_proc

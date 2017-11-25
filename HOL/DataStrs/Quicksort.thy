@@ -55,9 +55,7 @@ lemma part1_partitions1 [backward]:
   @let "d = r - l"
   @strong_induct d arbitrary l r xs i
   @case "r \<le> l"
-  @case "xs ! l \<le> a" @with
-    @apply_induct_hyp "d - 1" "l + 1" r xs
-  @end
+  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
   @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
 @qed
 
@@ -68,9 +66,7 @@ lemma part1_partitions2 [backward]:
   @let "d = r - l"
   @strong_induct d arbitrary l r xs i
   @case "r \<le> l"
-  @case "xs ! l \<le> a" @with
-    @apply_induct_hyp "d - 1" "l + 1" r xs
-  @end
+  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
   @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
 @qed
 
@@ -81,8 +77,7 @@ section {* Paritition function *}
 definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a list)" where [rewrite]:
   "partition xs l r = (
     let p = xs ! r;
-      m = fst (part1 xs l (r - 1) p);
-      xs' = snd (part1 xs l (r - 1) p);
+      (m, xs') = part1 xs l (r - 1) p;
       m' = if xs' ! m \<le> p then m + 1 else m
     in
       (m', list_swap xs' m' r))"
@@ -96,9 +91,7 @@ setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "partition ?
 lemma partition_partitions1 [forward]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
    x \<in> set (sublist l rs xs'') \<Longrightarrow> x \<le> xs'' ! rs"
-@proof
-  @obtain i where "i \<ge> l" "i < rs" "x = xs'' ! i"
-@qed
+@proof @obtain i where "i \<ge> l" "i < rs" "x = xs'' ! i" @qed
 
 lemma partition_partitions2 [forward]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
@@ -124,8 +117,7 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
   "quicksort xs l r = (
     if l \<ge> r then xs
     else if r < length xs then
-      let p = fst (partition xs l r);
-        xs1 = snd (partition xs l r);
+      let (p, xs1) = partition xs l r;
         xs2 = quicksort xs1 l (p - 1)
       in
         quicksort xs2 (p + 1) r
@@ -133,17 +125,13 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
   by auto
   termination apply (relation "measure (\<lambda>(a, l, r). (r - l))")
   apply auto by auto2+
-
-setup {* add_rewrite_rule_cond @{thm quicksort.simps}
-  [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
-setup {* register_wellform_data ("quicksort xs l r", ["l < length xs", "r < length xs"]) *}
-setup {* add_prfstep_check_req ("quicksort xs l r", "l < length xs \<and> r < length xs") *}
+setup {* add_rewrite_rule_cond @{thm quicksort.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
 
 lemma quicksort_trivial [rewrite]:
-  "r < length xs \<Longrightarrow> l \<ge> r \<Longrightarrow> quicksort xs l r = xs" by auto2
+  "l \<ge> r \<Longrightarrow> quicksort xs l r = xs" by auto2
 
 lemma quicksort_basic:
-  "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> xs3 = quicksort xs l r \<Longrightarrow> mset xs3 = mset xs \<and> outer_remains xs xs3 l r"
+  "xs3 = quicksort xs l r \<Longrightarrow> mset xs3 = mset xs \<and> outer_remains xs xs3 l r"
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs xs3
@@ -163,8 +151,7 @@ lemma quicksort_basic:
 setup {* add_forward_prfstep_cond @{thm quicksort_basic} [with_term "?xs3.0"] *}
 
 lemma quicksort_permutes [rewrite]:
-  "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> xs' = quicksort xs l r \<Longrightarrow>
-   set (sublist l (r + 1) xs') = set (sublist l (r + 1) xs)"
+  "xs' = quicksort xs l r \<Longrightarrow> set (sublist l (r + 1) xs') = set (sublist l (r + 1) xs)"
 @proof
   @case "l \<ge> r" @case "r \<ge> length xs"
   @have "xs = take l xs @ sublist l (r + 1) xs @ drop (r + 1) xs"
@@ -174,7 +161,7 @@ lemma quicksort_permutes [rewrite]:
 @qed
 
 lemma quicksort_sorts:
-  "l < length xs \<Longrightarrow> r < length xs \<Longrightarrow> sorted (sublist l (r + 1) (quicksort xs l r))"
+  "r < length xs \<Longrightarrow> sorted (sublist l (r + 1) (quicksort xs l r))"
 @proof
   @let "d = r - l"
   @case "l \<ge> r" @case "r \<ge> length xs"
