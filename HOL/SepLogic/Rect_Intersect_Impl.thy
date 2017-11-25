@@ -23,7 +23,7 @@ definition rect_inter_init :: "nat rectangle list \<Rightarrow> nat operation ar
      p \<leftarrow> Array.of_list (ins_ops rects @ del_ops rects);
      quicksort_all p;
      return p }"
-declare rect_inter_init_def [sep_proc_defs]
+declare rect_inter_init_def [sep_proc]
 
 setup {* add_rewrite_rule @{thm all_ops_def} *}
 lemma rect_inter_init_rule [hoare_triple]:
@@ -37,7 +37,7 @@ definition rect_inter_next :: "nat operation array \<Rightarrow> int_tree \<Righ
       int_tree_insert (IdxInterval (op_int oper) (op_idx oper)) b
     else
       int_tree_delete (IdxInterval (op_int oper) (op_idx oper)) b }"
-declare rect_inter_next_def [sep_proc_defs]
+declare rect_inter_next_def [sep_proc]
 
 lemma op_int_is_interval:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
@@ -69,7 +69,7 @@ partial_function (heap) rect_inter_impl ::
           else do {
             b' \<leftarrow> rect_inter_next a b k;
             rect_inter_impl a b' (k + 1)})})}"
-declare rect_inter_impl.simps [sep_proc_defs]
+declare rect_inter_impl.simps [sep_proc]
 
 lemma rect_inter_to_fun_ind [hoare_triple]:
   "<a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b *
@@ -90,7 +90,6 @@ lemma rect_inter_to_fun_ind [hoare_triple]:
   @apply_induct_hyp "length (all_ops rects) - (k + 1)" "k + 1"
   @have "length (all_ops rects) - (k + 1) < d"
 @qed
-declare rect_inter_impl.simps [sep_proc_defs del]
 
 definition rect_inter_all :: "nat rectangle list \<Rightarrow> bool Heap" where
   "rect_inter_all rects =
@@ -99,7 +98,7 @@ definition rect_inter_all :: "nat rectangle list \<Rightarrow> bool Heap" where
        a \<leftarrow> rect_inter_init rects;
        b \<leftarrow> int_tree_empty;
        rect_inter_impl a b 0 })"
-declare rect_inter_all_def [sep_proc_defs]
+declare rect_inter_all_def [sep_proc]
 
 lemma rect_inter_all_correct:
   "<\<up>(is_rect_list rects)>

@@ -2,7 +2,7 @@ theory Reverse
 imports SepAuto "../DataStrs/Arrays_Ex"
 begin
 
-definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where [sep_proc]:
   "swap a i j = do {
      x \<leftarrow> Array.nth a i;
      y \<leftarrow> Array.nth a j;
@@ -10,7 +10,6 @@ definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightar
      Array.upd j x a;
      return ()
    }"
-declare swap_def [sep_proc_defs]
 
 lemma swap_rule [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(i < length xs) * \<up>(j < length xs)>
@@ -23,7 +22,7 @@ fun rev :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uni
      rev a (i + 1) (j - 1)
    }
    else return ())"
-declare rev.simps [sep_proc_defs]
+declare rev.simps [sep_proc]
 
 lemma rev_to_fun [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(j < length xs)>
@@ -35,9 +34,8 @@ lemma rev_to_fun [hoare_triple]:
     @apply_induct_hyp "j - 1" "i + 1" "list_swap xs i j"
   @end
 @qed
-declare rev.simps [sep_proc_defs del]
 
-lemma rev_is_rev:
+lemma rev_is_rev [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(xs \<noteq> [])>
    rev p 0 (length xs - 1)
    <\<lambda>_. p \<mapsto>\<^sub>a List.rev xs>" by auto2

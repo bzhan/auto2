@@ -58,26 +58,26 @@ type_synonym 'a os_list = "'a node ref option"
 
 section \<open>Basic operations\<close>
 
-definition os_empty :: "'a::heap os_list Heap" where [sep_proc_defs]:
+definition os_empty :: "'a::heap os_list Heap" where [sep_proc]:
   "os_empty = return None"
 
 lemma os_empty_rule [hoare_triple]:
   "<emp> os_empty <os_list []>" by auto2
 
-definition os_is_empty :: "'a::heap os_list \<Rightarrow> bool Heap" where [sep_proc_defs]:
+definition os_is_empty :: "'a::heap os_list \<Rightarrow> bool Heap" where [sep_proc]:
   "os_is_empty b = return (b = None)"
 
 lemma os_is_empty_rule [hoare_triple]:
   "<os_list xs b> os_is_empty b <\<lambda>r. os_list xs b * \<up>(r \<longleftrightarrow> xs = [])>"
 @proof @case "xs = []" @have "xs = hd xs # tl xs" @qed
 
-definition os_prepend :: "'a \<Rightarrow> 'a::heap os_list \<Rightarrow> 'a os_list Heap" where [sep_proc_defs]:
+definition os_prepend :: "'a \<Rightarrow> 'a::heap os_list \<Rightarrow> 'a os_list Heap" where [sep_proc]:
   "os_prepend a n = do { p \<leftarrow> ref (Node a n); return (Some p) }"
 
 lemma os_prepend_rule [hoare_triple]:
   "<os_list xs n> os_prepend x n <os_list (x # xs)>" by auto2
 
-definition os_pop :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where [sep_proc_defs]:
+definition os_pop :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where [sep_proc]:
   "os_pop r = (case r of
     None \<Rightarrow> raise ''Empty Os_list'' |
     Some p \<Rightarrow> do {m \<leftarrow> !p; return (val m, nxt m)})"
@@ -97,7 +97,7 @@ partial_function (heap) os_reverse_aux :: "'a::heap os_list \<Rightarrow> 'a os_
       v \<leftarrow> !r;
       r := Node (val v) q;
       os_reverse_aux p (nxt v) })"
-declare os_reverse_aux.simps [sep_proc_defs]
+declare os_reverse_aux.simps [sep_proc]
 
 lemma os_reverse_aux_rule [hoare_triple]:
   "<os_list xs p * os_list ys q> 
@@ -105,7 +105,7 @@ lemma os_reverse_aux_rule [hoare_triple]:
    <os_list ((rev xs) @ ys)>"
 @proof @induct xs arbitrary p q ys @qed
 
-definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where [sep_proc_defs]:
+definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where [sep_proc]:
   "os_reverse p = os_reverse_aux None p"
 
 lemma os_reverse_rule:
@@ -126,7 +126,7 @@ partial_function (heap) os_rem :: "'a::heap \<Rightarrow> 'a node ref option \<R
          else do {
            p := Node (val n) q; 
            return (Some p) }) })"
-declare os_rem.simps [sep_proc_defs]
+declare os_rem.simps [sep_proc]
 
 lemma os_rem_rule [hoare_triple]:
   "<os_list xs b> os_rem x b <\<lambda>r. os_list (removeAll x xs) r>\<^sub>t"
@@ -162,7 +162,7 @@ partial_function (heap) os_insert :: "'a::{ord,heap} \<Rightarrow> 'a os_list \<
            q \<leftarrow> os_insert x (nxt v);
            p := Node (val v) q;
            return (Some p) }) })"
-declare os_insert.simps [sep_proc_defs]
+declare os_insert.simps [sep_proc]
 
 lemma os_insert_to_fun [hoare_triple]:
   "<os_list xs b> os_insert x b <os_list (list_insert x xs)>"
@@ -178,7 +178,7 @@ partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list 
       ls \<leftarrow> extract_list (nxt v);
       return (val v # ls)
     })"
-declare extract_list.simps [sep_proc_defs]
+declare extract_list.simps [sep_proc]
 
 lemma extract_list_rule [hoare_triple]:
   "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
@@ -192,7 +192,7 @@ fun os_insert_list :: "'a::{ord,heap} list \<Rightarrow> 'a os_list \<Rightarrow
       b'' \<leftarrow> os_insert_list (tl xs) b';
       return b''
     })"
-declare os_insert_list.simps [sep_proc_defs]
+declare os_insert_list.simps [sep_proc]
 
 lemma os_insert_list_correct [hoare_triple]:
   "<os_list xs b * \<up>(sorted xs)>
@@ -200,7 +200,7 @@ lemma os_insert_list_correct [hoare_triple]:
    <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs') * \<up>(mset xs' = mset ys + mset xs)>"
 @proof @induct ys arbitrary b xs @qed
 
-definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where [sep_proc_defs]:
+definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where [sep_proc]:
   "insertion_sort xs = do {
     p \<leftarrow> os_insert_list xs None;
     l \<leftarrow> extract_list p;
@@ -243,7 +243,7 @@ partial_function (heap) merge_os_list :: "('a::{heap, ord}) os_list \<Rightarrow
         do { pnq \<leftarrow> merge_os_list p (nxt nq);
              (the q) := Node (val nq) pnq;
              return q } })"
-declare merge_os_list.simps [sep_proc_defs]
+declare merge_os_list.simps [sep_proc]
 
 lemma merge_os_list_to_fun [hoare_triple]:
   "<os_list xs p * os_list ys q>
@@ -260,7 +260,7 @@ partial_function (heap) copy_os_list :: "'a::heap os_list \<Rightarrow> 'a os_li
         v \<leftarrow> !p;
         q \<leftarrow> copy_os_list (nxt v);
         os_prepend (val v) q })"
-declare copy_os_list.simps [sep_proc_defs]
+declare copy_os_list.simps [sep_proc]
 
 lemma copy_os_list_rule [hoare_triple]:
   "<os_list xs b> copy_os_list b <\<lambda>r. os_list xs b * os_list xs r>"
@@ -276,7 +276,7 @@ partial_function (heap) map_os_list :: "('a::heap \<Rightarrow> 'a) \<Rightarrow
         q \<leftarrow> map_os_list f (nxt v);
         p := Node (f (val v)) q;
         return (Some p) })"
-declare map_os_list.simps [sep_proc_defs]
+declare map_os_list.simps [sep_proc]
 
 lemma map_os_list_rule [hoare_triple]:
   "<os_list xs b> map_os_list f b <os_list (map f xs)>"
@@ -292,7 +292,7 @@ partial_function (heap) filter_os_list :: "('a::heap \<Rightarrow> bool) \<Right
            p := Node (val v) q;
            return (Some p) }
          else return q) })"
-declare filter_os_list.simps [sep_proc_defs]
+declare filter_os_list.simps [sep_proc]
 
 lemma filter_os_list_rule [hoare_triple]:
   "<os_list xs b> filter_os_list f b <\<lambda>r. os_list (filter f xs) r * true>"
@@ -306,7 +306,7 @@ partial_function (heap) filter_os_list2 :: "('a::heap \<Rightarrow> bool) \<Righ
         q \<leftarrow> filter_os_list2 f (nxt v);
         (if (f (val v)) then os_prepend (val v) q
          else return q) })"
-declare filter_os_list2.simps [sep_proc_defs]
+declare filter_os_list2.simps [sep_proc]
 
 lemma filter_os_list2_rule [hoare_triple]:
   "<os_list xs b> filter_os_list2 f b <\<lambda>r. os_list xs b * os_list (filter f xs) r>"
@@ -321,7 +321,7 @@ partial_function (heap) fold_os_list :: "('a::heap \<Rightarrow> 'b \<Rightarrow
        v \<leftarrow> !p;
        r \<leftarrow> fold_os_list f (nxt v) (f (val v) x);
        return r})"
-declare fold_os_list.simps [sep_proc_defs]
+declare fold_os_list.simps [sep_proc]
 
 lemma fold_os_list_rule [hoare_triple]:
   "<os_list xs b> fold_os_list f b x <\<lambda>r. os_list xs b * \<up>(r = fold f xs x)>"

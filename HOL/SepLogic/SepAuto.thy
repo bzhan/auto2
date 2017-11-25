@@ -468,10 +468,6 @@ setup {* del_prfstep_thm @{thm hoare_triple_def'} *}
 
 subsection {* Definition of procedures *}
 
-named_theorems sep_proc_defs "Seplogic: definitions of procedures"
-(* Note adding to sep_heap_presv_thms is taken care of by heap_presv_thms attribute. *)
-named_theorems sep_heap_presv_thms "Seplogic: heap preservation theorems"
-
 (* ASCII abbreviations for ML files. *)
 abbreviation (input) ex_assn_ascii :: "('a \<Rightarrow> assn) \<Rightarrow> assn" (binder "EXA" 11)
   where "ex_assn_ascii \<equiv> ex_assn"
@@ -484,25 +480,26 @@ ML_file "assn_matcher.ML"
 ML_file "sep_steps.ML"
 ML_file "sep_steps_test.ML"
 
-attribute_setup heap_presv_thms = {* setup_attrib add_heap_preserving_thm *}
+attribute_setup sep_proc = {* setup_attrib add_proc_def *}
+attribute_setup heap_presv = {* setup_attrib add_heap_preserving_thm *}
 attribute_setup forward_ent = {* setup_attrib add_forward_ent_prfstep *}
 attribute_setup forward_ent_shadow = {* setup_attrib add_forward_ent_shadowing_prfstep *}
 attribute_setup rewrite_ent = {* setup_attrib add_rewrite_ent_rule *}
 attribute_setup hoare_triple = {* setup_attrib add_hoare_triple_prfstep *}
 
-lemma heap_preserving_lookup [heap_presv_thms]: "heap_preserving (!p)"
+lemma heap_preserving_lookup [heap_presv]: "heap_preserving (!p)"
   using effect_lookupE heap_preserving_def by fastforce
 
-lemma heap_preserving_return [heap_presv_thms]: "heap_preserving (return x)"
+lemma heap_preserving_return [heap_presv]: "heap_preserving (return x)"
   using effect_returnE heap_preserving_def by fastforce
 
-lemma heap_preserving_nth [heap_presv_thms]: "heap_preserving (Array.nth a i)"
+lemma heap_preserving_nth [heap_presv]: "heap_preserving (Array.nth a i)"
   using effect_nthE heap_preserving_def by fastforce
 
-lemma heap_preserving_len [heap_presv_thms]: "heap_preserving (Array.len a)"
+lemma heap_preserving_len [heap_presv]: "heap_preserving (Array.len a)"
   using effect_lengthE heap_preserving_def by fastforce
 
-lemma heap_preserve_assert [heap_presv_thms]: "heap_preserving (assert P x)"
+lemma heap_preserve_assert [heap_presv]: "heap_preserving (assert P x)"
   using effect_assertE heap_preserving_def by fastforce
 
 setup {* fold add_hoare_triple_prfstep [

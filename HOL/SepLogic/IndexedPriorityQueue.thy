@@ -185,7 +185,7 @@ setup {* add_rewrite_ent_rule @{thm idx_pqueue.simps} *}
 
 section {* Basic operations on indexed_queue *}
 
-definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
+definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc]:
   "idx_pqueue_empty k x = do {
     pq \<leftarrow> dyn_array_new (0, x);
     idx \<leftarrow> amap_new k;
@@ -196,32 +196,31 @@ lemma index_of_pqueue_empty [resolve]:
 
 lemma idx_pqueue_empty_rule [hoare_triple]:
   "<emp> idx_pqueue_empty n x <idx_pqueue [] n>" by auto2
-declare idx_pqueue_empty_def [sep_proc_defs del]
 
-definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where [sep_proc_defs]:
+definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where [sep_proc]:
   "idx_pqueue_nth p i = array_nth (pqueue p) i"
+
+lemma idx_pqueue_nth_heap_preserving [heap_presv]:
+  "heap_preserving (idx_pqueue_nth p i)" by auto2
 
 lemma idx_pqueue_nth_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(i < length xs)>
    idx_pqueue_nth p i
    <\<lambda>r. idx_pqueue xs n p * \<up>(r = xs ! i)>" by auto2
 
-lemma idx_pqueue_nth_heap_preserving [heap_presv_thms]:
-  "heap_preserving (idx_pqueue_nth p i)" by auto2
-
-definition idx_pqueue_length :: "'a indexed_pqueue \<Rightarrow> nat Heap" where [sep_proc_defs]:
+definition idx_pqueue_length :: "'a indexed_pqueue \<Rightarrow> nat Heap" where [sep_proc]:
   "idx_pqueue_length a = array_length (pqueue a)"
+
+lemma idx_pqueue_length_heap_preserving [heap_presv]:
+  "heap_preserving (idx_pqueue_length a)" by auto2
 
 lemma idx_pqueue_length_rule [hoare_triple]:
   "<idx_pqueue xs n p>
    idx_pqueue_length p
    <\<lambda>r. idx_pqueue xs n p * \<up>(r = length xs)>" by auto2
 
-lemma idx_pqueue_length_heap_preserving [heap_presv_thms]:
-  "heap_preserving (idx_pqueue_length a)" by auto2
-
 definition idx_pqueue_swap ::
-  "'a::{heap,linorder} indexed_pqueue \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where [sep_proc_defs]:
+  "'a::{heap,linorder} indexed_pqueue \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where [sep_proc]:
   "idx_pqueue_swap p i j = do {
      pr_i \<leftarrow> array_nth (pqueue p) i;
      pr_j \<leftarrow> array_nth (pqueue p) j;
@@ -240,7 +239,7 @@ lemma idx_pqueue_swap_rule [hoare_triple]:
    <\<lambda>_. idx_pqueue (list_swap xs i j) n p>" by auto2
 
 definition idx_pqueue_push ::
-  "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
+  "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc]:
   "idx_pqueue_push k v p = do {
      len \<leftarrow> array_length (pqueue p);
      d' \<leftarrow> push_array (k, v) (pqueue p);
@@ -258,7 +257,7 @@ lemma idx_pqueue_push_rule [hoare_triple]:
    <idx_pqueue (xs @ [(k, v)]) n>\<^sub>t" by auto2
 
 definition idx_pqueue_pop ::
-  "'a::heap indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where [sep_proc_defs]:
+  "'a::heap indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where [sep_proc]:
   "idx_pqueue_pop p = do {
      (x, d') \<leftarrow> pop_array (pqueue p);
      amap_delete (fst x) (index p);
@@ -275,7 +274,7 @@ lemma idx_pqueue_pop_rule [hoare_triple]:
    idx_pqueue_pop p
    <\<lambda>(x, r). idx_pqueue (butlast xs) n r * \<up>(x = last xs)>" by auto2
 
-definition idx_pqueue_array_upd :: "nat \<Rightarrow> 'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> unit Heap" where [sep_proc_defs]:
+definition idx_pqueue_array_upd :: "nat \<Rightarrow> 'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> unit Heap" where [sep_proc]:
   "idx_pqueue_array_upd i x d = array_upd i x d"
 
 lemma key_within_range_update [backward2]:
@@ -291,7 +290,6 @@ lemma array_upd_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(i < length xs) * \<up>(k = fst (xs ! i))>
    idx_pqueue_array_upd i (k, v) (pqueue p)
    <\<lambda>_. idx_pqueue (list_update xs i (k, v)) n p>" by auto2
-declare idx_pqueue_array_upd_def [sep_proc_defs del]
 
 section {* Heap operations on indexed_queue *}
 
@@ -318,7 +316,7 @@ partial_function (heap) idx_bubble_down ::
           do { idx_pqueue_swap a k (s1 k); idx_bubble_down a (s1 k) }
         else return ()) }
      else return ()) }"
-declare idx_bubble_down.simps [sep_proc_defs]
+declare idx_bubble_down.simps [sep_proc]
 
 lemma idx_bubble_down_rule [hoare_triple]:
   "<idx_pqueue xs n a * \<up>(is_heap_partial1 xs k)>
@@ -350,7 +348,7 @@ partial_function (heap) idx_bubble_up ::
              do { idx_pqueue_swap a k (par k); idx_bubble_up a (par k) }
            else return ()) }
         else return ())})"
-declare idx_bubble_up.simps [sep_proc_defs]
+declare idx_bubble_up.simps [sep_proc]
 
 lemma idx_bubble_up_rule [hoare_triple]:
   "<idx_pqueue xs n a * \<up>(is_heap_partial2 xs k)>
@@ -365,7 +363,7 @@ lemma idx_bubble_up_rule [hoare_triple]:
 @qed
 
 definition delete_min_idx_pqueue ::
-  "'a::{heap,linorder} indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where [sep_proc_defs]:
+  "'a::{heap,linorder} indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where [sep_proc]:
   "delete_min_idx_pqueue p = do {
     len \<leftarrow> idx_pqueue_length p;
     (if len = 0 then raise ''delete_min''
@@ -389,10 +387,9 @@ lemma delete_min_idx_pqueue_rule [hoare_triple]:
    delete_min_idx_pqueue p
    <\<lambda>(x, r). \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(x = hd xs) *
                     \<up>(map_of_alist xs' = delete_map (fst x) (map_of_alist xs))>" by auto2
-declare delete_min_idx_pqueue_def [sep_proc_defs del]
 
 definition insert_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
+  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc]:
   "insert_idx_pqueue k v p = do {
      p' \<leftarrow> idx_pqueue_push k v p;
      len \<leftarrow> idx_pqueue_length p';
@@ -404,25 +401,23 @@ lemma insert_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(k < n) * \<up>(\<not>has_key_alist xs k)>
    insert_idx_pqueue k v p
    <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>\<^sub>t" by auto2
-declare insert_idx_pqueue_def [sep_proc_defs del]
 
 definition has_key_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} indexed_pqueue \<Rightarrow> bool Heap" where [sep_proc_defs]:
+  "nat \<Rightarrow> 'a::{heap,linorder} indexed_pqueue \<Rightarrow> bool Heap" where [sep_proc]:
   "has_key_idx_pqueue k p = do {
     i_opt \<leftarrow> amap_lookup (index p) k;
     return (i_opt \<noteq> None) }"
+
+lemma has_key_idx_heap_preserving [heap_presv]:
+  "heap_preserving (has_key_idx_pqueue k p)" by auto2
 
 lemma has_key_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs)>
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue xs n p * \<up>(r \<longleftrightarrow> has_key_alist xs k)>" by auto2
 
-lemma has_key_idx_heap_preserving [heap_presv_thms]:
-  "heap_preserving (has_key_idx_pqueue k p)" by auto2
-declare has_key_idx_pqueue_def [sep_proc_defs del]
-
 definition update_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc_defs]:
+  "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc]:
   "update_idx_pqueue k v p = do {
     i_opt \<leftarrow> amap_lookup (index p) k;
     if i_opt = None then
@@ -437,7 +432,6 @@ lemma update_idx_pqueue_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(is_heap xs) * \<up>(k < n)>
    update_idx_pqueue k v p
    <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>\<^sub>t" by auto2
-declare update_idx_pqueue_def [sep_proc_defs del]
 
 section {* Outer interface *}
 
@@ -454,32 +448,27 @@ lemma heap_implies_hd_min2 [resolve]:
 
 lemma idx_pqueue_empty_map [hoare_triple]:
   "<emp> idx_pqueue_empty n x <idx_pqueue_map empty_map n>" by auto2
-setup {* del_prfstep_thm @{thm idx_pqueue_empty_rule} *}
 
 lemma delete_min_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
    <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(fst x < n) *
                 \<up>(is_heap_min (fst x) M) * \<up>(M\<langle>fst x\<rangle> = Some (snd x))>" by auto2
-setup {* del_prfstep_thm @{thm delete_min_idx_pqueue_rule} *}
 
 lemma insert_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(k < n) * \<up>(k \<notin> keys_of M)>
    insert_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
-setup {* del_prfstep_thm @{thm insert_idx_pqueue_rule} *}
 
 lemma has_key_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p>
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue_map M n p * \<up>(r \<longleftrightarrow> k \<in> keys_of M)>" by auto2
-setup {* del_prfstep_thm @{thm has_key_idx_pqueue_rule} *}
 
 lemma update_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(k < n)>
    update_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
-setup {* del_prfstep_thm @{thm update_idx_pqueue_rule} *}
 
 setup {* del_prfstep_thm @{thm indexed_pqueue.collapse} *}
 setup {* del_prfstep_thm @{thm idx_pqueue_map_def} *}

@@ -76,65 +76,55 @@ section {* Operations *}
 
 subsection {* Basic operation *}
 
-definition int_tree_empty :: "int_tree Heap" where
-  "int_tree_empty \<equiv> return None"
-declare int_tree_empty_def [sep_proc_defs]
+definition int_tree_empty :: "int_tree Heap" where [sep_proc]:
+  "int_tree_empty = return None"
 
 lemma int_tree_empty_to_fun [hoare_triple]:
   "<emp> int_tree_empty <int_tree Tip>" by auto2
-declare int_tree_empty_def [sep_proc_defs del]
 
-definition int_tree_is_empty :: "int_tree \<Rightarrow> bool Heap" where
-  "int_tree_is_empty b \<equiv> return (b = None)"
-declare int_tree_is_empty_def [sep_proc_defs]
+definition int_tree_is_empty :: "int_tree \<Rightarrow> bool Heap" where [sep_proc]:
+  "int_tree_is_empty b = return (b = None)"
 
-lemma int_tree_is_empty_rule:
+lemma int_tree_is_empty_rule [hoare_triple]:
   "<int_tree t b>
    int_tree_is_empty b
    <\<lambda>r. int_tree t b * \<up>(r \<longleftrightarrow> t = Tip)>" by auto2
-declare int_tree_is_empty_def [sep_proc_defs del]
 
-definition get_tmax :: "int_tree \<Rightarrow> nat Heap" where
+definition get_tmax :: "int_tree \<Rightarrow> nat Heap" where [sep_proc]:
   "get_tmax b = (case b of
      None \<Rightarrow> return 0
    | Some p \<Rightarrow> do {
       t \<leftarrow> !p;
       return (tmax t) })"
-declare get_tmax_def [sep_proc_defs]
 
 lemma get_tmax_rule [hoare_triple]:
   "<int_tree t b> get_tmax b <\<lambda>r. int_tree t b * \<up>(r = interval_tree.tmax t)>"
 @proof @case "t = Tip" @qed
-declare get_tmax_def [sep_proc_defs del]
 
-definition compute_tmax :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree \<Rightarrow> nat Heap" where
+definition compute_tmax :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree \<Rightarrow> nat Heap" where [sep_proc]:
   "compute_tmax it l r = do {
     lm \<leftarrow> get_tmax l;
     rm \<leftarrow> get_tmax r;
     return (max3 it lm rm)
   }"
-declare compute_tmax_def [sep_proc_defs]
 
 lemma compute_tmax_rule [hoare_triple]:
   "<int_tree t1 b1 * int_tree t2 b2>
    compute_tmax it b1 b2
    <\<lambda>r. int_tree t1 b1 * int_tree t2 b2 * \<up>(r = max3 it (interval_tree.tmax t1) (interval_tree.tmax t2))>"
   by auto2
-declare compute_tmax_def [sep_proc_defs del]
 
-definition int_tree_constr :: "int_tree \<Rightarrow> nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
+definition int_tree_constr :: "int_tree \<Rightarrow> nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where [sep_proc]:
   "int_tree_constr lp v rp = do {
     m \<leftarrow> compute_tmax v lp rp;
     p \<leftarrow> ref (Node lp v m rp);
     return (Some p) }"
-declare int_tree_constr_def [sep_proc_defs]
 
 lemma int_tree_constr_rule [hoare_triple]:
   "<int_tree lt lp * int_tree rt rp>
    int_tree_constr lp v rp
    <int_tree (interval_tree.Node lt v (max3 v (interval_tree.tmax lt) (interval_tree.tmax rt)) rt)>"
   by auto2
-declare int_tree_constr_def [sep_proc_defs del]
 
 subsection {* Insertion *}
   
@@ -155,14 +145,13 @@ partial_function (heap) int_tree_insert :: "nat idx_interval \<Rightarrow> int_t
        m \<leftarrow> compute_tmax (val t) (lsub t) q;
        p := Node (lsub t) (val t) m q;
        return (Some p) })})"
-declare int_tree_insert.simps [sep_proc_defs]
+declare int_tree_insert.simps [sep_proc]
 
 lemma int_tree_insert_to_fun [hoare_triple]:
   "<int_tree t b>
    int_tree_insert v b
    <int_tree (tree_insert v t)>"
 @proof @induct t arbitrary b @qed
-declare int_tree_insert.simps [sep_proc_defs del]
 
 subsection {* Deletion *}
 
@@ -178,16 +167,15 @@ partial_function (heap) int_tree_del_min :: "int_tree \<Rightarrow> (nat idx_int
          m \<leftarrow> compute_tmax (val t) (snd r) (rsub t);
          p := Node (snd r) (val t) m (rsub t);
          return (fst r, Some p) })})"
-declare int_tree_del_min.simps [sep_proc_defs]
+declare int_tree_del_min.simps [sep_proc]
 
 lemma int_tree_del_min_to_fun [hoare_triple]:
   "<int_tree t b * \<up>(b \<noteq> None)>
    int_tree_del_min b
    <\<lambda>r. int_tree (snd (del_min t)) (snd r) * \<up>(fst(r) = fst (del_min t))>\<^sub>t"
 @proof @induct t arbitrary b @qed
-declare int_tree_del_min.simps [sep_proc_defs del]
 
-definition int_tree_del_elt :: "int_tree \<Rightarrow> int_tree Heap" where
+definition int_tree_del_elt :: "int_tree \<Rightarrow> int_tree Heap" where [sep_proc]:
   "int_tree_del_elt b = (case b of
      None \<Rightarrow> raise ''del_elt: empty tree''
    | Some p \<Rightarrow> do {
@@ -199,16 +187,13 @@ definition int_tree_del_elt :: "int_tree \<Rightarrow> int_tree Heap" where
           m \<leftarrow> compute_tmax (fst r) (lsub t) (snd r);
           p := Node (lsub t) (fst r) m (snd r);
           return (Some p) }) })"
-declare int_tree_del_elt_def [sep_proc_defs]
 
 lemma int_tree_del_elt_to_fun [hoare_triple]:
   "<int_tree (interval_tree.Node lt v m rt) b>
    int_tree_del_elt b
    <int_tree (delete_elt_tree (interval_tree.Node lt v m rt))>\<^sub>t" by auto2
-declare int_tree_del_elt_def [sep_proc_defs del]
 
-partial_function (heap) int_tree_delete ::
-  "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
+partial_function (heap) int_tree_delete :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
   "int_tree_delete x b = (case b of
      None \<Rightarrow> return None
    | Some p \<Rightarrow> do {
@@ -226,14 +211,13 @@ partial_function (heap) int_tree_delete ::
          m \<leftarrow> compute_tmax (val t) (lsub t) q;
          p := Node (lsub t) (val t) m q;
          return (Some p) })})"
-declare int_tree_delete.simps [sep_proc_defs]
+declare int_tree_delete.simps [sep_proc]
 
 lemma int_tree_delete_to_fun [hoare_triple]:
   "<int_tree t b>
    int_tree_delete x b
    <int_tree (tree_delete x t)>\<^sub>t"
 @proof @induct t arbitrary b @qed
-declare int_tree_delete.simps [sep_proc_defs del]
 
 subsection {* Search *}
 
@@ -251,7 +235,7 @@ partial_function (heap) int_tree_search :: "nat interval \<Rightarrow> int_tree 
               do { b \<leftarrow> int_tree_search x (lsub t); return b }
             else
               do { b \<leftarrow> int_tree_search x (rsub t); return b }})})"
-declare int_tree_search.simps [sep_proc_defs]
+declare int_tree_search.simps [sep_proc]
 
 lemma int_tree_search_correct [hoare_triple]:
   "<int_tree t b>
@@ -263,7 +247,6 @@ lemma int_tree_search_correct [hoare_triple]:
     @case "l \<noteq> Tip \<and> interval_tree.tmax l \<ge> low x"
   @endgoal @end
 @qed
-declare int_tree_search.simps [sep_proc_defs del]
 
 section {* Outer interface *}
 
@@ -273,25 +256,22 @@ setup {* add_rewrite_ent_rule @{thm int_tree_set_def} *}
 
 theorem int_tree_empty_rule [hoare_triple]:
   "<emp> int_tree_empty <int_tree_set {}>" by auto2
-setup {* del_prfstep_thm @{thm int_tree_empty_to_fun} *}
 
 theorem int_tree_insert_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
    int_tree_insert x b
    <int_tree_set (S \<union> {x})>" by auto2
-setup {* del_prfstep_thm @{thm int_tree_insert_to_fun} *}
 
 theorem int_tree_delete_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
    int_tree_delete x b
    <int_tree_set (S - {x})>\<^sub>t" by auto2
-setup {* del_prfstep_thm @{thm int_tree_delete_to_fun} *}
 
 theorem int_tree_search_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval x)>
    int_tree_search x b
    <\<lambda>r. int_tree_set S b * \<up>(r \<longleftrightarrow> has_overlap S x)>" by auto2
-setup {* del_prfstep_thm @{thm int_tree_search_correct} *}
+
 setup {* del_prfstep_thm @{thm int_tree_set_def} *}
 
 end

@@ -28,7 +28,7 @@ fun amap :: "(nat, 'a::heap) map \<Rightarrow> 'a array_map \<Rightarrow> assn" 
   "amap m (ArrayMap al a) = (\<exists>\<^sub>Axs. a \<mapsto>\<^sub>a xs * \<up>(al = length xs) * \<up>(m = amap_of_list xs))"
 setup {* add_rewrite_ent_rule @{thm amap.simps} *}
 
-definition amap_new :: "nat \<Rightarrow> ('a::heap) array_map Heap" where [sep_proc_defs]:
+definition amap_new :: "nat \<Rightarrow> ('a::heap) array_map Heap" where [sep_proc]:
   "amap_new n = do {
     a \<leftarrow> Array.new n None;
     return (ArrayMap n a)
@@ -39,18 +39,18 @@ lemma amap_new_rule [hoare_triple]:
    amap_new k
    <\<lambda>r. amap empty_map r * \<up>(alen r = k)>" by auto2
 
-definition amap_lookup :: "('a::heap) array_map \<Rightarrow> nat \<Rightarrow> 'a option Heap" where [sep_proc_defs]:
+definition amap_lookup :: "('a::heap) array_map \<Rightarrow> nat \<Rightarrow> 'a option Heap" where [sep_proc]:
   "amap_lookup p i = (if i < alen p then Array.nth (aref p) i else return None)"
+
+lemma amap_heap_preserving [heap_presv]:
+  "heap_preserving (amap_lookup p i)" by auto2
 
 lemma amap_lookup_rule [hoare_triple]:
   "<amap m p>
    amap_lookup p k
    <\<lambda>r. amap m p * \<up>(r = m\<langle>k\<rangle>)>" by auto2
 
-lemma amap_heap_preserving [heap_presv_thms]:
-  "heap_preserving (amap_lookup p i)" by auto2
-
-definition amap_update :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a array_map \<Rightarrow> unit Heap" where [sep_proc_defs]:
+definition amap_update :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a array_map \<Rightarrow> unit Heap" where [sep_proc]:
   "amap_update i x p =
    (if i < alen p then
       do { Array.upd i (Some x) (aref p); return () }
@@ -61,7 +61,7 @@ lemma amap_update_rule [hoare_triple]:
    amap_update i x p
    <\<lambda>_. amap (m {i \<rightarrow> x}) p>" by auto2
 
-definition amap_delete :: "nat \<Rightarrow> 'a::heap array_map \<Rightarrow> unit Heap" where [sep_proc_defs]:
+definition amap_delete :: "nat \<Rightarrow> 'a::heap array_map \<Rightarrow> unit Heap" where [sep_proc]:
   "amap_delete i p =
    (if i < alen p then
       do { Array.upd i None (aref p); return () }

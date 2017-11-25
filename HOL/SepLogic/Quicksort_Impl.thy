@@ -14,7 +14,7 @@ function part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat
          part1 a l (r - 1) p }})"
   by auto
   termination by (relation "measure (\<lambda>(_,l,r,_). r - l )") auto
-declare part1.simps [sep_proc_defs]
+declare part1.simps [sep_proc]
 
 setup {* add_rewrite_rule_cond @{thm Quicksort.part1.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
 lemma part1_to_fun [hoare_triple]:
@@ -28,11 +28,10 @@ lemma part1_to_fun [hoare_triple]:
   @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
   @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
 @qed
-declare part1.simps [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort.part1.simps} *}
 
 (* Partition function. *)
-definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where [sep_proc_defs]:
+definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where [sep_proc]:
   "partition a l r = do {
      p \<leftarrow> Array.nth a r;
      m \<leftarrow> part1 a l (r - 1) p;
@@ -46,7 +45,6 @@ lemma partition_to_fun [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs * \<up>(l < r) * \<up>(r < length xs)>
    partition a l r
    <\<lambda>rs. a \<mapsto>\<^sub>a snd (Quicksort.partition xs l r) * \<up>(rs = fst (Quicksort.partition xs l r))>" by auto2
-declare partition_def [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort.partition_def} *}
 
 (* Quicksort function *)
@@ -61,7 +59,7 @@ function quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow>
      else return ())"
   by auto
   termination by (relation "measure (\<lambda>(a, l, r). (r - l))") auto
-declare quicksort.simps [sep_proc_defs]
+declare quicksort.simps [sep_proc]
 
 setup {* add_rewrite_rule_cond @{thm Quicksort.quicksort.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
 lemma quicksort_to_fun [hoare_triple]:
@@ -85,10 +83,9 @@ lemma quicksort_to_fun [hoare_triple]:
     @apply_induct_hyp "(p-1)-l" l "p-1" xs1
   @end
 @qed
-declare quicksort.simps [sep_proc_defs del]
 setup {* del_prfstep_thm @{thm Quicksort.quicksort.simps} *}
 
-definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where [sep_proc_defs]:
+definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where [sep_proc]:
   "quicksort_all a = do {
      n \<leftarrow> Array.len a;
      if n = 0 then return ()
@@ -102,6 +99,5 @@ theorem quicksort_sorts_basic [hoare_triple]:
   @case "xs = []"
   @have "Quicksort.quicksort xs 0 (length xs - 1) = sort xs"
 @qed
-declare quicksort_all_def [sep_proc_defs del]
 
 end
