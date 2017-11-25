@@ -2,7 +2,7 @@ theory Quicksort_Impl
 imports Reverse "../DataStrs/Quicksort"
 begin
 
-function part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> nat Heap" where
+partial_function (heap) part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> nat Heap" where
   "part1 a l r p = (
      if r \<le> l then return r
      else do {
@@ -12,8 +12,6 @@ function part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat
        else do {
          swap a l r;
          part1 a l (r - 1) p }})"
-  by auto
-  termination by (relation "measure (\<lambda>(_,l,r,_). r - l)") auto
 declare part1.simps [sep_proc]
 
 setup {* add_rewrite_rule_cond @{thm Quicksort.part1.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
@@ -48,17 +46,14 @@ lemma partition_to_fun [hoare_triple]:
 setup {* del_prfstep_thm @{thm Quicksort.partition_def} *}
 
 (* Quicksort function *)
-function quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
+partial_function (heap) quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "quicksort a l r = (
      if l \<ge> r then return ()
      else do {
        p \<leftarrow> partition a l r;
-       p \<leftarrow> assert (\<lambda>x. l \<le> x \<and> x \<le> r) p;
        (if l < p - 1 then quicksort a l (p - 1) else return ());
        (if p + 1 < r then quicksort a (p + 1) r else return ())
      })"
-  by auto
-  termination by (relation "measure (\<lambda>(a, l, r). (r - l))") auto
 declare quicksort.simps [sep_proc]
 
 setup {* add_rewrite_rule_cond @{thm Quicksort.quicksort.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
@@ -73,7 +68,6 @@ lemma quicksort_to_fun [hoare_triple]:
   @let "p = fst (Quicksort.partition xs l r)"
   @let "xs1 = snd (Quicksort.partition xs l r)"
   @let "xs2 = Quicksort.quicksort xs1 l (p - 1)"
-  @have "p \<ge> l \<and> p \<le> r"
   @case "p + 1 \<ge> r" @with
     @case "l \<ge> p - 1" @then
     @apply_induct_hyp "(p-1)-l" l "p-1" xs1
