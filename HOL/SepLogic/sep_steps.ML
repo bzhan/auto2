@@ -435,7 +435,7 @@ val init_pos =
               val (ritems_P, modP_th') = mod_fact_ritems ctxt modP_th
               val ritems' = ritems @ ritems_P @
                             [Update.thm_to_ritem modP_th',
-                             Fact (TY_CODE_POS, [h_t, c1], code_pos_th)]
+                             Fact (TY_CODE_POS, [h_t, c1, c], code_pos_th)]
             in
               [AddItems {id = id, sc = SOME 1, raw_items = ritems'}]
             end)
@@ -524,7 +524,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
         val next_all_th = [success_th, all_th] MRS @{thm success_run_next}
 
         (* Form tname and prop of the new CODE_POS item. *)
-        val tname = [next_h_t, rest_c1]
+        val tname = [next_h_t, rest_c1, rest_c]
         val next_code_pos_th = UtilLogic.mk_conjs_th [run_rest_th, next_all_th]
 
         (* ritems for modQ_th. *)
@@ -601,7 +601,7 @@ fun match_assn_fn ictxt item1 item2 =
 
 val match_assn =
     {name = "sep.match_assn",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c)"}),
+     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_ADD,
      func = TwoStep match_assn_fn}
@@ -619,7 +619,10 @@ val rewrite_pos =
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val th = the_single ths
-              val tname = map (lookup_inst inst) ["h", "c"]
+              val run_th = conj_left_th th
+              val fullc' = Util.dest_argn 0 (prop_of' run_th)
+              val (h, c) = apply2 (lookup_inst inst) ("h", "c")
+              val tname = [h, c, fullc']
               val ritem = Fact (TY_CODE_POS, tname, th)
             in
               [AddItems {id = id, sc = SOME 1, raw_items = [ritem]}]
@@ -645,7 +648,7 @@ fun match_hoare_disj_fn ictxt {id, tname, prop = th1, ...} item2 =
                        "match_hoare_disj_fn: unexpected DISJ."
         val (_, c, _) = dest_hoare_triple (the_single subs)
         val {id = id', tname = tname2, prop = th2, ...} = item2
-        val (h_t, c1) = the_pair (map Thm.term_of tname2)
+        val (h_t, c1, _) = the_triple (map Thm.term_of tname2)
         val id'' = BoxID.merge_boxes ctxt (id, id')
         val insts =
             (Matcher.rewrite_match ctxt (c, Thm.cterm_of ctxt c1) (id'', fo_init))
@@ -674,7 +677,7 @@ fun match_hoare_disj_fn ictxt {id, tname, prop = th1, ...} item2 =
 val match_hoare_disj =
     {name = "sep.match_hoare_disj",
      args = [TypedMatch (TY_DISJ, @{term_pat "?A::bool"}),
-             TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c')"})],
+             TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c)"})],
      priority = PRIORITY_ADD,
      func = TwoStep match_hoare_disj_fn}
 
@@ -742,7 +745,7 @@ fun match_assn_pure_fn ictxt item1 item2 =
 
 val match_assn_pure =
     {name = "sep.match_assn_pure",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c, ?P, ?Q)"}),
+     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"}),
              PropMatch (@{term_pat "?b::bool"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_pure_fn}
@@ -783,7 +786,7 @@ fun match_assn_spatial_fn ictxt item1 item2 =
 
 val match_assn_spatial =
     {name = "sep.match_assn_spatial",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c, ?P, ?Q)"}),
+     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P'"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_spatial_fn}
@@ -806,7 +809,7 @@ fun hoare_create_case_fn ictxt item =
 
 val hoare_create_case =
     {name = "sep.hoare_create_case",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "(?h, ?c, ?P, ?Q)"})],
+     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"})],
      priority = PRIORITY_ADD,
      func = OneStep hoare_create_case_fn}
 
@@ -891,7 +894,7 @@ fun add_hoare_triple_prfstep hoare_th thy =
 
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
-      (TY_CODE_POS, NONE, SOME output_code_pos_fn),
+      (TY_CODE_POS, SOME (take 2), SOME output_code_pos_fn),
       (TY_MATCH_POS, SOME (take 2), SOME output_code_pos_match_fn)
 
     ] #> fold ItemIO.add_typed_matcher [
