@@ -340,4 +340,44 @@ lemma fw_middle_id [backward]:
   @subgoal "i' = Suc i'" @induct j' @endgoal @end
 @qed
 
+lemma fw_outermost_mono [resolve]:
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> (fw M n 0 i j)\<langle>i,j\<rangle> \<le> M\<langle>i,j\<rangle>"
+@proof
+  @case "j = 0" @with
+    @case "i = 0" @then @have "i = Suc (i - 1)"
+    @have "(fw M n 0 (i-1) n)\<langle>i,0\<rangle> = M\<langle>i,0\<rangle>"
+  @end
+  @have "(fw M n 0 i (j-1))\<langle>i,j\<rangle> = M\<langle>i,j\<rangle>"
+@qed
+
+lemma Suc_innermost_id1 [backward]:
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> i' < i \<Longrightarrow>
+   (fw M n (Suc k) i' j')\<langle>i,j\<rangle> = (fw M n k i j)\<langle>i,j\<rangle>"
+@proof @induct i' arbitrary j' @with
+  @subgoal "i' = 0" @induct j' @endgoal
+  @subgoal "i' = Suc i'" @induct j' @endgoal @end
+@qed
+
+lemma Suc_innermost_id2 [backward]:
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> j' < j \<Longrightarrow> i' \<le> i \<Longrightarrow>
+   (fw M n (Suc k) i' j')\<langle>i,j\<rangle> = (fw M n k i j)\<langle>i,j\<rangle>"
+@proof @induct i' arbitrary j' @with
+  @subgoal "i' = 0" @induct j' @endgoal
+  @subgoal "i' = Suc i'" @induct j' @endgoal @end
+@qed
+
+lemma Suc_innermost_id1' [backward]:
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> i' < i \<Longrightarrow>
+   (fw M n (Suc k) i' j')\<langle>i,j\<rangle> = (fw M n k n n)\<langle>i,j\<rangle>"
+@proof
+  @have "(fw M n (Suc k) i' j')\<langle>i,j\<rangle> = (fw M n k i j)\<langle>i,j\<rangle>"
+@qed
+
+lemma Suc_innermost_id2' [backward]:
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> j' < j \<Longrightarrow> i' \<le> i \<Longrightarrow>
+   (fw M n (Suc k) i' j')\<langle>i,j\<rangle> = (fw M n k n n)\<langle>i,j\<rangle>"
+@proof
+  @have "(fw M n (Suc k) i' j')\<langle>i,j\<rangle> = (fw M n k i j)\<langle>i,j\<rangle>"
+@qed
+
 end
