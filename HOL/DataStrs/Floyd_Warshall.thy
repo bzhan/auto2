@@ -452,7 +452,61 @@ lemma fw_step_0:
         @have "(fw M n 0 (Suc i) j)\<langle>Suc i,Suc j\<rangle> = M\<langle>Suc i,Suc j\<rangle>"
       @endgoal
     @end
-  @endgoal @end  
+  @endgoal @end
+@qed
+
+lemma fw_step_Suc:
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> M' = fw M n k n n \<Longrightarrow> \<forall>k'\<le>n. M'\<langle>k',k'\<rangle> \<ge> 0 \<Longrightarrow> Suc k \<le> n \<Longrightarrow>
+   (fw M n (Suc k) i j)\<langle>i,j\<rangle> = min (M'\<langle>i,j\<rangle>) (M'\<langle>i,Suc k\<rangle> + M'\<langle>Suc k,j\<rangle>)"
+@proof @induct i @with
+  @subgoal "i = 0"
+    @cases j @with
+      @subgoal "j = Suc j"
+        @have "(fw M n (Suc k) 0 j)\<langle>0,Suc j\<rangle> = M'\<langle>0,Suc j\<rangle>"
+        @have "(fw M n (Suc k) 0 j)\<langle>0,Suc k\<rangle> = M'\<langle>0,Suc k\<rangle>" @with
+          @case "j < Suc k" @then
+          @have "(fw M n (Suc k) 0 k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
+          @have "(fw M n (Suc k) 0 j)\<langle>0,Suc k\<rangle> = (fw M n (Suc k) 0 (Suc k))\<langle>0,Suc k\<rangle>"
+        @end
+        @have "(fw M n (Suc k) 0 j)\<langle>Suc k,Suc j\<rangle> = M'\<langle>Suc k,Suc j\<rangle>"
+      @endgoal
+    @end
+  @endgoal
+  @subgoal "i = Suc i"
+    @cases j @with
+      @subgoal "j = 0"
+        @have "(fw M n (Suc k) i n)\<langle>Suc i,0\<rangle> = M'\<langle>Suc i,0\<rangle>"
+        @have "(fw M n (Suc k) i n)\<langle>Suc i,Suc k\<rangle> = M'\<langle>Suc i,Suc k\<rangle>"
+        @have "(fw M n (Suc k) i n)\<langle>Suc k,0\<rangle> = M'\<langle>Suc k,0\<rangle>" @with
+          @case "i < Suc k" @then
+          @have "(fw M n (Suc k) k n)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
+          @have "(fw M n (Suc k) i n)\<langle>Suc k,0\<rangle> = (fw M n (Suc k) (Suc k) 0)\<langle>Suc k,0\<rangle>"
+        @end
+      @endgoal
+      @subgoal "j = Suc j"
+        @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc i,Suc j\<rangle> = M'\<langle>Suc i,Suc j\<rangle>"
+        @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc i,Suc k\<rangle> = M'\<langle>Suc i,Suc k\<rangle>" @with
+          @case "j < Suc k" @then
+          @have "(fw M n (Suc k) (Suc i) k)\<langle>Suc i,Suc k\<rangle> = M'\<langle>Suc i,Suc k\<rangle>"
+          @have "(fw M n (Suc k) (Suc i) k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>" @with
+            @case "Suc i \<le> Suc k" @then
+            @have "(fw M n (Suc k) (Suc i) k)\<langle>Suc k,Suc k\<rangle> = (fw M n (Suc k) (Suc k) (Suc k))\<langle>Suc k,Suc k\<rangle>"
+            @have "(fw M n (Suc k) (Suc k) k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
+          @end
+          @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc i,Suc k\<rangle> = (fw M n (Suc k) (Suc i) (Suc k))\<langle>Suc i,Suc k\<rangle>"
+        @end
+        @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc k,Suc j\<rangle> = M'\<langle>Suc k,Suc j\<rangle>" @with
+          @case "Suc i \<le> Suc k" @then
+          @have "(fw M n (Suc k) (Suc k) j)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>" @with
+            @case "j < Suc k" @then
+            @have "(fw M n (Suc k) (Suc k) j)\<langle>Suc k,Suc k\<rangle> = (fw M n (Suc k) (Suc k) (Suc k))\<langle>Suc k,Suc k\<rangle>"
+            @have "(fw M n (Suc k) (Suc k) k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
+          @end
+          @have "(fw M n (Suc k) (Suc k) (Suc j))\<langle>Suc k,Suc j\<rangle> = M'\<langle>Suc k,Suc j\<rangle>"
+        @end
+      @endgoal
+    @end
+  @endgoal @end
 @qed
 
 end
