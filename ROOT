@@ -55,11 +55,17 @@ session DataStrs_Advanced = DataStrs_Basic +
   theories
     "HOL/DataStrs/Connectivity"
     "HOL/DataStrs/Dijkstra"
-    "HOL/DataStrs/Floyd_Warshall"
     "HOL/DataStrs/Interval_Tree"
     "HOL/DataStrs/Quicksort"
     "HOL/DataStrs/RBT"
     "HOL/DataStrs/Rect_Intersect"
+
+session Floyd_Warshall = AUTO2 +
+  description {*
+    Floyd-Warshall algorithm.
+  *}
+  theories
+    "HOL/DataStrs/Floyd_Warshall"
 
 session SepLogic = DataStrs_Advanced +
   description {*
