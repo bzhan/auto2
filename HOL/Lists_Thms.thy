@@ -189,6 +189,7 @@ section {* rev *}
 setup {* add_forward_prfstep_cond @{thm List.length_rev} [with_term "rev ?xs"] *}
 setup {* fold add_rewrite_rule @{thms List.rev.simps} *}
 setup {* add_rewrite_rule @{thm List.rev_append} *}
+setup {* add_rewrite_rule @{thm List.rev_rev_ident} *}
 
 section {* filter *}
 

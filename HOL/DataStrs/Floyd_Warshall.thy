@@ -409,10 +409,6 @@ lemma fw_mono [backward]:
   @endgoal @end
 @qed
 
-lemma add_mono_neutr [backward]: "(0::'a::linordered_ring) \<le> b \<Longrightarrow> a \<le> a + b" by simp
-lemma add_mono_neutl [backward]: "(0::'a::linordered_ring) \<le> b \<Longrightarrow> a \<le> b + a" by simp
-setup {* add_backward2_prfstep @{thm add_mono} *}
-
 lemma min_plus1 [rewrite]: "(b::'a::linordered_ring) \<ge> 0 \<Longrightarrow> min a (b + a) = a"
 @proof @have "b + a \<ge> a" @qed
 
@@ -507,6 +503,132 @@ lemma fw_step_Suc:
       @endgoal
     @end
   @endgoal @end
+@qed
+
+subsection {* Length of paths *}
+
+fun len :: "('a::linordered_ring) mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> 'a" where
+  "len M u v [] = M\<langle>u,v\<rangle>" |
+  "len M u v (w # ws) = M\<langle>u,w\<rangle> + len M w v ws"
+setup {* fold add_rewrite_rule @{thms len.simps}*}
+
+lemma len_decomp [rewrite]:
+  "len M x z (ys @ y # zs) = len M x y ys + len M y z zs"
+@proof @induct ys arbitrary x @qed
+
+subsection {* Shortening Negative Cycles *}
+
+lemma remove_cycles_neg_cycles_aux [backward1]:
+  "xs' = i # ys \<Longrightarrow> i \<notin> set ys \<Longrightarrow>
+   xs = as @ concat (map (\<lambda>xs. i # xs) xss) @ xs' \<Longrightarrow> i \<in> set xs \<Longrightarrow>
+   len M i j ys > len M i j xs \<Longrightarrow>
+   \<exists>ys. set ys \<subseteq> set xs \<and> len M i i ys < 0"
+@proof @induct xss arbitrary xs as @with
+  @subgoal "xss = []"
+    @case "len M i i as \<ge> 0" @with
+      @have "len M i j ys \<le> len M i j xs"
+    @end
+  @endgoal
+  @subgoal "xss = zs # xss"
+    @let "xs'' = zs @ concat (map (\<lambda>xs. i # xs) xss) @ xs'"
+    @case "len M i i as \<ge> 0" @with
+      @have "len M i j xs'' \<le> len M i j xs"
+    @end
+  @endgoal @end
+@qed
+
+lemma remove_cycles_neg_cycles_aux' [backward1]:
+  "j \<notin> set ys \<Longrightarrow>
+   xs = ys @ j # concat (map (\<lambda>xs. xs @ [j]) xss) @ as \<Longrightarrow> j \<in> set xs \<Longrightarrow>
+   len M i j ys > len M i j xs \<Longrightarrow> 
+   \<exists>ys. set ys \<subseteq> set xs \<and> len M j j ys < 0"
+@proof @induct xss arbitrary xs as @with
+  @subgoal "xss = []"
+    @case "len M j j as \<ge> 0" @with
+      @have "len M i j ys \<le> len M i j xs"
+    @end
+  @endgoal
+  @subgoal "xss = zs # xss"
+    @let "xs'' = ys @ j # concat (map (\<lambda>xs. xs @ [j]) xss) @ as"
+    @let "t = concat (map (\<lambda>xs. xs @ [j]) xss) @ as"
+    @case "len M i j xs'' \<le> len M i j xs" @then
+    @have "len M j j (concat (map (\<lambda>xs. xs @ [j]) (zs # xss)) @ as) < len M j j t"
+    @have "len M j j (zs @ j # t) < len M j j t"
+  @endgoal @end
+@qed
+
+lemma start_remove_neg_cycles [resolve]:
+  "len M i j (start_remove xs k []) > len M i j xs \<Longrightarrow>
+   \<exists>ys. set ys \<subseteq> set xs \<and> len M k k ys < 0"
+@proof
+  @let "xs' = start_remove xs k []"
+  @case "len M i j xs' > len M i j xs" @with
+    @have "k \<in> set xs"
+    @obtain as bs where "xs = as @ k # bs" "xs' = rev [] @ as @ remove_cycles bs k [k]"
+    @have "xs' = as @ remove_cycles bs k [k]"
+    @let "xs'' = remove_cycles bs k [k]"
+    @have "k \<in> set bs"
+    @obtain ys where "xs'' = k # ys" "k \<notin> set ys"
+    @have "len M k j bs < len M k j ys"
+    @obtain xss as' where "as' @ concat (map (\<lambda>xs. k # xs) xss) @ xs'' = bs \<and> k \<notin> set as'"
+    @have "as' @ concat (map (\<lambda>xs. k # xs) xss) @ k # ys = bs"
+    @obtain ys' where "set ys' \<subseteq> set bs \<and> len M k k ys' < 0"
+  @end
+@qed
+
+lemma remove_all_cycles_neg_cycles [resolve]:
+  "len M i j (remove_all_cycles ys xs) > len M i j xs \<Longrightarrow>
+   \<exists>ys k. set ys \<subseteq> set xs \<and> k \<in> set xs \<and> len M k k ys < 0"
+@proof @induct ys arbitrary xs @with
+  @subgoal "ys = y # ys"
+    @let "xs' = start_remove xs y []"
+    @case "len M i j xs < len M i j xs'" @with
+      @have "y \<in> set xs"
+      @obtain ys' where "set ys' \<subseteq> set xs \<and> len M y y ys' < 0"
+    @end
+  @endgoal @end
+@qed
+
+lemma concat_map_cons_rev [rewrite]:
+  "rev (concat (map (\<lambda>xs. j # xs) xss)) = concat (map (\<lambda>xs. xs @ [j]) (rev (map rev xss)))"
+  by (induction xss) auto
+
+lemma negative_cycle_dest [resolve]:
+  "len M i j (rem_cycles i j xs) > len M i j xs \<Longrightarrow>
+   \<exists>i' ys. len M i' i' ys < 0 \<and> set ys \<subseteq> set xs \<and> i' \<in> set (i # j # xs)"
+@proof
+  @let "xsij = rem_cycles i j xs"
+  @let "xs' = remove_all_cycles xs xs"
+  @let "xsj = remove_all_rev j xs'"
+  @case "len M i j xsij > len M i j xs" @with
+    @case "len M i j xsij \<le> len M i j xsj" @with
+      @have "len M i j xsj > len M i j xs"
+      @case "len M i j xsj \<le> len M i j xs'" @with
+        @obtain ys k where "set ys \<subseteq> set xs \<and> k \<in> set xs \<and> len M k k ys < 0"
+      @end
+      @have "len M i j xsj > len M i j xs'"
+      @case "j \<notin> set xs'"
+      @have "j \<notin> set xsj"
+      @have "j \<in> set (rev xs')"
+      @obtain xss as where "as @ concat (map (\<lambda>xs. j # xs) xss) @ remove_cycles (rev xs') j [] = rev xs'" "j \<notin> set as"
+      @have "xsj = rev (tl (remove_cycles (rev xs') j []))"
+      @obtain zs where "remove_cycles (rev xs') j [] = j # zs \<and> j \<notin> set zs"
+      @have "xsj @ j # concat (map (\<lambda>xs. xs @ [j]) (rev (map rev xss))) @ rev as = xs'" @with
+        @have "remove_cycles (rev xs') j [] = j # rev xsj"
+        @have "rev (as @ concat (map (\<lambda>xs. j # xs) xss) @ j # rev xsj) = xs'"
+        @have "xsj @ j # rev (concat (map (\<lambda>xs. j # xs) xss)) @ rev as = xs'"
+      @end
+      @obtain ys where "set ys \<subseteq> set xs' \<and> len M j j ys < 0"
+    @end
+    @case "i \<notin> set xsj"
+    @have "i \<notin> set xsij"
+    @obtain xss as where "as @ concat (map (\<lambda>xs. i # xs) xss) @ remove_cycles xsj i [] = xsj" "i \<notin> set as"
+    @have "xsij = tl (remove_cycles xsj i [])"
+    @obtain zs where "remove_cycles xsj i [] = i # zs \<and> i \<notin> set zs"
+    @have "remove_cycles xsj i [] = i # xsij"
+    @have "as @ concat (map (\<lambda>xs. i # xs) xss) @ i # xsij = xsj"
+    @obtain ys where "set ys \<subseteq> set xsj \<and> len M i i ys < 0"
+  @end
 @qed
 
 end

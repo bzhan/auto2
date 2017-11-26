@@ -118,6 +118,10 @@ setup {* add_resolve_prfstep @{thm Nat.le_add1} *}
 setup {* add_resolve_prfstep @{thm Nat.le_add2} *}
 setup {* add_backward_prfstep @{thm add_left_mono} *}
 setup {* add_backward_prfstep @{thm add_right_mono} *}
+lemma add_mono_neutr [backward]: "(0::'a::linordered_ring) \<le> b \<Longrightarrow> a \<le> a + b" by simp
+lemma add_mono_neutl [backward]: "(0::'a::linordered_ring) \<le> b \<Longrightarrow> a \<le> b + a" by simp
+setup {* add_backward2_prfstep @{thm add_mono} *}
+setup {* add_forward_prfstep @{thm add_less_imp_less_left} *}
 
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp
