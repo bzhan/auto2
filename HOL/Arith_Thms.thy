@@ -209,9 +209,13 @@ setup {* add_backward1_prfstep @{thm dvd_fact} *}
 setup {* add_rewrite_rule @{thm Nat.Suc_eq_plus1} *}
 
 (* Induction. *)
+
+lemma nat_cases: "P 0 \<Longrightarrow> (\<And>n. P (Suc n)) \<Longrightarrow> P n" using nat_induct by auto
+
 setup {*
   add_var_induct_rule @{thm nat_induct} #>
-  add_strong_induct_rule @{thm nat_less_induct}
+  add_strong_induct_rule @{thm nat_less_induct} #>
+  add_cases_rule @{thm nat_cases}
 *}
 
 end

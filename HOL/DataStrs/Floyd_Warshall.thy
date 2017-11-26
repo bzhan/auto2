@@ -342,9 +342,7 @@ lemma fw_middle_id [backward]:
 lemma fw_outermost_mono [resolve]:
   "(fw M n 0 i j)\<langle>i,j\<rangle> \<le> M\<langle>i,j\<rangle>"
 @proof
-  @case "j = 0" @with
-    @case "i = 0" @then @have "i = Suc (i - 1)"
-  @end
+  @case "j = 0" @with @cases i @end
   @have "(fw M n 0 i (j-1))\<langle>i,j\<rangle> = M\<langle>i,j\<rangle>"
 @qed
 
@@ -384,8 +382,8 @@ lemma fw_mono' [forward_arg1]:
 
 lemma fw_mono [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> i' \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> (fw M n k i j)\<langle>i',j'\<rangle> \<le> M\<langle>i',j'\<rangle>"
-@proof
-  @case "k = 0" @with
+@proof @cases k @with
+  @subgoal "k = 0"
     @case "i < i'" @then
     @case "j' \<le> j" @with
       @have "(fw M n 0 i j)\<langle>i',j'\<rangle> \<le> (fw M n 0 i' j')\<langle>i',j'\<rangle>"
@@ -394,20 +392,21 @@ lemma fw_mono [backward]:
       @have "(fw M n 0 i' j)\<langle>i',j'\<rangle> = M\<langle>i',j'\<rangle>"
     @end
     @have "(fw M n 0 i j)\<langle>i',j'\<rangle> = (fw M n 0 i' j')\<langle>i',j'\<rangle>"
-  @end
-  @have "k = Suc (k - 1)"
-  @case "i' \<le> i \<and> j' \<le> j" @with
-    @have "(fw M n k i j)\<langle>i',j'\<rangle> = (fw M n k i' j')\<langle>i',j'\<rangle>"
-  @end
-  @case "\<not>i' \<le> i" @with
-    @have "(fw M n k i j)\<langle>i',j'\<rangle> = (fw M n (k-1) i' j')\<langle>i',j'\<rangle>"
-  @end
-  @case "\<not>j' \<le> j" @with
-    @case "i = i'" @with
-      @have "(fw M n k i j)\<langle>i',j'\<rangle> = (fw M n (k-1) i' j')\<langle>i',j'\<rangle>"
+  @endgoal
+  @subgoal "k = Suc k"
+    @case "i' \<le> i \<and> j' \<le> j" @with
+      @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = (fw M n (Suc k) i' j')\<langle>i',j'\<rangle>"
     @end
-    @have "(fw M n k i j)\<langle>i',j'\<rangle> = (fw M n k i' j')\<langle>i',j'\<rangle>"
-  @end
+    @case "\<not>i' \<le> i" @with
+      @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = (fw M n k i' j')\<langle>i',j'\<rangle>"
+    @end
+    @case "\<not>j' \<le> j" @with
+      @case "i = i'" @with
+        @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = (fw M n k i' j')\<langle>i',j'\<rangle>"
+      @end
+      @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = (fw M n (Suc k) i' j')\<langle>i',j'\<rangle>"
+    @end
+  @endgoal @end
 @qed
 
 lemma add_mono_neutr [backward]: "(0::'a::linordered_ring) \<le> b \<Longrightarrow> a \<le> a + b" by simp
@@ -422,32 +421,38 @@ lemma min_plus2 [rewrite]: "(b::'a::linordered_ring) \<ge> 0 \<Longrightarrow> m
 
 lemma fw_step_0:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> M\<langle>0,0\<rangle> \<ge> 0 \<Longrightarrow> (fw M n 0 i j)\<langle>i,j\<rangle> = min (M\<langle>i,j\<rangle>) (M\<langle>i,0\<rangle> + M\<langle>0,j\<rangle>)"
-@proof
-  @have "(fw M n 0 0 0)\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
-  @induct i @with
+@proof @induct i @with
   @subgoal "i = 0"
-    @case "j = 0" @have "j = Suc (j - 1)"
-    @let "M' = fw M n 0 0 (j-1)"
-    @have "M'\<langle>0,j\<rangle> = M\<langle>0,j\<rangle>"
-    @have "M'\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+    @have "(fw M n 0 0 0)\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+    @cases j @with
+      @subgoal "j = Suc j"
+        @let "M' = fw M n 0 0 j"
+        @have "M'\<langle>0,Suc j\<rangle> = M\<langle>0,Suc j\<rangle>"
+        @have "M'\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+      @endgoal
+    @end
   @endgoal
   @subgoal "i = Suc i"
-    @case "j = 0" @with
-      @let "M' = fw M n 0 i n"
-      @have "M'\<langle>Suc i,0\<rangle> = M\<langle>Suc i,0\<rangle>"
-      @have "M'\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+    @have "(fw M n 0 0 0)\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+    @cases j @with
+      @subgoal "j = 0"
+        @let "M' = fw M n 0 i n"
+        @have "M'\<langle>Suc i,0\<rangle> = M\<langle>Suc i,0\<rangle>"
+        @have "M'\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+      @endgoal
+      @subgoal "j = Suc j"
+        @have "(fw M n 0 0 (Suc j))\<langle>0,Suc j\<rangle> = M\<langle>0,Suc j\<rangle>" @with
+          @have "(fw M n 0 0 j)\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+        @end
+        @have "(fw M n 0 (Suc i) (Suc j))\<langle>0,Suc j\<rangle> = M\<langle>0,Suc j\<rangle>"
+        @have "(fw M n 0 (Suc i) 0)\<langle>Suc i,0\<rangle> = M\<langle>Suc i,0\<rangle>" @with
+          @have "(fw M n 0 i n)\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
+        @end
+        @have "(fw M n 0 (Suc i) j)\<langle>Suc i,0\<rangle> = M\<langle>Suc i,0\<rangle>"
+        @have "(fw M n 0 (Suc i) j)\<langle>Suc i,Suc j\<rangle> = M\<langle>Suc i,Suc j\<rangle>"
+      @endgoal
     @end
-    @have "j = Suc (j - 1)"
-    @have "(fw M n 0 0 j)\<langle>0,j\<rangle> = M\<langle>0,j\<rangle>" @with
-      @have "(fw M n 0 0 (j-1))\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
-    @end
-    @have "(fw M n 0 (Suc i) j)\<langle>0,j\<rangle> = M\<langle>0,j\<rangle>"
-    @have "(fw M n 0 (Suc i) 0)\<langle>Suc i,0\<rangle> = M\<langle>Suc i,0\<rangle>" @with
-      @have "(fw M n 0 i n)\<langle>0,0\<rangle> = M\<langle>0,0\<rangle>"
-    @end
-    @have "(fw M n 0 (Suc i) (j-1))\<langle>Suc i,0\<rangle> = M\<langle>Suc i,0\<rangle>"
-    @have "(fw M n 0 (Suc i) (j-1))\<langle>Suc i,j\<rangle> = M\<langle>Suc i,j\<rangle>"
-  @endgoal @end
+  @endgoal @end  
 @qed
 
 end

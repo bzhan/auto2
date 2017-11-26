@@ -12,13 +12,16 @@ sig
   val add_case_induct_rule: thm -> theory -> theory
   val add_prop_induct_rule: thm -> theory -> theory
   val add_var_induct_rule: thm -> theory -> theory
+  val add_cases_rule: thm -> theory -> theory
   val add_fun_induct_rule: term * thm -> theory -> theory
 
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
   val apply_induct_hyp_cmd: string list -> Proof.state -> Proof.state
   val case_induct_cmd: string -> Proof.state -> Proof.state
   val prop_induct_cmd: string * string option -> Proof.state -> Proof.state
-  val induct_cmd: string * string option * string list * string option -> Proof.state -> Proof.state
+  val induct_cmd:
+      string -> string * string option * string list * string option ->
+      Proof.state -> Proof.state
 end;
 
 structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
@@ -136,6 +139,15 @@ fun add_var_induct_rule ind_th thy =
                      "add_var_induct_rule: concl of ind_th must be ?P ?var"
     in
       thy |> add_typed_induct_data "var_induct" (type_of n, ind_th)
+    end
+
+fun add_cases_rule ind_th thy =
+    let
+      val (P, n) = ind_th |> concl_of' |> Term.dest_comb
+      val _ = assert (Term.is_Var P andalso Term.is_Var n)
+                     "add_cases_rule: concl of ind_th must be ?P ?var"
+    in
+      thy |> add_typed_induct_data "cases" (type_of n, ind_th)
     end
 
 fun add_fun_induct_rule (t, ind_th) thy =
@@ -374,7 +386,7 @@ fun retrieve_pat ind_vars t =
       HOLogic.mk_tuple (map mk_eq (ind_vars ~~ args))
     end
 
-fun induct_cmd (s, t, u, v) state =
+fun induct_cmd ind_ty_str (s, t, u, v) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
@@ -384,7 +396,7 @@ fun induct_cmd (s, t, u, v) state =
       val ty = type_of var
       val (arbitraries, _) = UtilLogic.strip_obj_horn stmt
 
-      val ind_th = the (get_typed_ind_th thy "var_induct" ty)
+      val ind_th = the (get_typed_ind_th thy ind_ty_str ty)
                    handle Option.Option =>
                           raise Fail "var_induct: cannot find theorem."
 
@@ -452,7 +464,15 @@ val _ =
   Outer_Syntax.command @{command_keyword "@induct"} "apply induction"
     (Parse.term -- for_stmt -- arbitrary -- Scan.option @{keyword "@with"} >>
         (fn (((s, t), u), v) =>
-            Toplevel.proof (fn state => induct_cmd (s, t, these u, v) state)))
+            Toplevel.proof (
+              fn state => induct_cmd "var_induct" (s, t, these u, v) state)))
+
+val _ =
+  Outer_Syntax.command @{command_keyword "@cases"} "apply induction"
+    (Parse.term -- Scan.option @{keyword "@with"} >>
+        (fn (s, v) =>
+            Toplevel.proof (
+              fn state => induct_cmd "cases" (s, NONE, [], v) state)))
 
 fun fun_induct_cmd (s, t, u) state =
     let
@@ -538,3 +558,4 @@ val add_case_induct_rule = Induct_ProofSteps.add_case_induct_rule
 val add_prop_induct_rule = Induct_ProofSteps.add_prop_induct_rule
 val add_var_induct_rule = Induct_ProofSteps.add_var_induct_rule
 val add_fun_induct_rule = Induct_ProofSteps.add_fun_induct_rule
+val add_cases_rule = Induct_ProofSteps.add_cases_rule
