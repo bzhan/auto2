@@ -42,26 +42,21 @@ fun rev_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a li
 setup {* add_rewrite_rule_cond @{thm rev_swap.simps} [with_filt (size1_filter "i"), with_filt (size1_filter "j")] *}
 setup {* register_wellform_data ("rev_swap xs i j", ["j < length xs"]) *}
 setup {* add_prfstep_check_req ("rev_swap xs i j", "j < length xs") *}
+setup {* add_fun_induct_rule (@{term rev_swap}, @{thm rev_swap.induct}) *}
 
 lemma rev_swap_length:
   "j < length xs \<Longrightarrow> length (rev_swap xs i j) = length xs"
-@proof
-  @strong_induct j arbitrary i xs
-  @case "i < j" @with
-    @apply_induct_hyp "j - 1" "i + 1" "list_swap xs i j"
-  @end
-@qed
+@proof @fun_induct "rev_swap xs i j" @qed
 setup {* add_forward_prfstep_cond @{thm rev_swap_length} [with_term "rev_swap ?xs ?i ?j"] *}
 
 lemma rev_swap_eval [rewrite]:
   "j < length xs \<Longrightarrow> (rev_swap xs i j) ! k =
     (if k < i then xs ! k else if k > j then xs ! k else xs ! (j - (k - i)))"
-@proof
-  @strong_induct j arbitrary i xs
+@proof @fun_induct "rev_swap xs i j" @with
+  @subgoal "(xs = xs, i = i, j = j)"
   @case "i < j" @with
-    @apply_induct_hyp "j - 1" "i + 1" "list_swap xs i j"
     @case "k < i" @then @case "k > j" @then @have "j - (k - i) = j - k + i"
-  @end
+  @end @end
 @qed
 
 lemma rev_swap_is_rev [rewrite]:
@@ -75,24 +70,17 @@ fun array_copy :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow>
 setup {* add_rewrite_rule_cond @{thm array_copy.simps} [with_filt (size1_filter "i"), with_filt (size1_filter "j")] *}
 setup {* register_wellform_data ("array_copy xs i xs' j n", ["i + n \<le> length xs", "j + n \<le> length xs'"]) *}
 setup {* add_prfstep_check_req ("array_copy xs i xs' j n", "i + n \<le> length xs \<and> j + n \<le> length xs'") *}
+setup {* add_fun_induct_rule (@{term array_copy}, @{thm array_copy.induct}) *}
 
 lemma array_copy_length:
   "i + n \<le> length xs \<Longrightarrow> j + n \<le> length xs' \<Longrightarrow> length (array_copy xs i xs' j n) = length xs'"
-@proof
-  @strong_induct n arbitrary i j xs'
-  @case "n = 0"
-  @apply_induct_hyp "n - 1" "i + 1" "j + 1" "xs' [j := xs ! i]"
-@qed
+@proof @fun_induct "array_copy xs i xs' j n" @qed
 setup {* add_forward_prfstep_cond @{thm array_copy_length} [with_term "array_copy ?xs ?i ?xs' ?j ?n"] *}
 
 lemma array_copy_eval [rewrite]:
   "i + n \<le> length xs \<Longrightarrow> j + n \<le> length xs' \<Longrightarrow>
    (array_copy xs i xs' j n) ! k = (if k < j then xs' ! k else if k \<ge> j + n then xs' ! k else xs ! (k + i - j))"
-@proof
-  @strong_induct n arbitrary i j xs'
-  @case "n = 0" @then
-  @apply_induct_hyp "n - 1" "i + 1" "j + 1" "xs' [j := xs ! i]"
-@qed
+@proof @fun_induct "array_copy xs i xs' j n" @qed
 
 setup {* del_prfstep_thm @{thm array_copy.simps} *}
 

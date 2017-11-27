@@ -19,13 +19,7 @@ lemma part1_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <p \<mapsto>\<^sub>a xs>
    part1 p l r a
    <\<lambda>rs. p \<mapsto>\<^sub>a snd (Quicksort.part1 xs l r a) * \<up>(rs = fst (Quicksort.part1 xs l r a))>"
-@proof
-  @let "d = r - l"
-  @strong_induct d arbitrary l r xs
-  @case "r \<le> l"
-  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
-  @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
-@qed
+@proof @fun_induct "Quicksort.part1 xs l r a" @qed
 setup {* del_prfstep_thm @{thm Quicksort.part1.simps} *}
 
 (* Partition function. *)

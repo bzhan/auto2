@@ -35,40 +35,23 @@ function part1 :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rig
 setup {* add_rewrite_rule_cond @{thm part1.simps} [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
 setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
 setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
+setup {* add_fun_induct_rule (@{term part1}, @{thm part1.induct}) *}
 
 lemma part1_basic:
   "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
-@proof
-  @let "d = r - l"
-  @strong_induct d arbitrary l r xs
-  @case "r \<le> l"
-  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
-  @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
-@qed
+@proof @fun_induct "part1 xs l r a" @qed
 setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"] *}
 
 lemma part1_partitions1 [backward]:
   "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> a"
-@proof
-  @let "d = r - l"
-  @strong_induct d arbitrary l r xs i
-  @case "r \<le> l"
-  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
-  @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
-@qed
+@proof @fun_induct "part1 xs l r a" @qed
 
 lemma part1_partitions2 [backward]:
   "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> a"
-@proof
-  @let "d = r - l"
-  @strong_induct d arbitrary l r xs i
-  @case "r \<le> l"
-  @case "xs ! l \<le> a" @with @apply_induct_hyp "d - 1" "l + 1" r xs @end
-  @apply_induct_hyp "d - 1" l "r - 1" "list_swap xs l r"
-@qed
+@proof @fun_induct "part1 xs l r a" @qed
 
 setup {* del_prfstep_thm @{thm part1.simps} *}
 
