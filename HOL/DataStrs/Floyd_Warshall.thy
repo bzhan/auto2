@@ -631,4 +631,138 @@ lemma negative_cycle_dest [resolve]:
   @end
 @qed
 
+section {* Definition of shortest paths *}
+
+definition D :: "('a::linordered_ring) mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" where [rewrite]:
+  "D M i j k = Min {len M i j xs | xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+
+setup {* add_rewrite_rule @{thm distinct_card} *}
+setup {* add_resolve_prfstep @{thm card_mono} *}
+setup {* add_resolve_prfstep @{thm finite_lists_length_le} *}
+setup {* add_forward_prfstep @{thm rev_finite_subset} *}
+setup {* add_backward1_prfstep @{thm rev_finite_subset} *}
+setup {* add_backward_prfstep @{thm finite_image_set} *}
+setup {* add_forward_prfstep @{thm finite_atLeastAtMost} *}
+setup {* add_backward_prfstep @{thm Min_in} *}
+
+lemma mem_finite_atLeastAtMost [rewrite]: "x \<in> {0..(k::nat)} \<longleftrightarrow> x \<le> k" by simp
+setup {* add_backward2_prfstep @{thm Min_eqI} *}
+
+lemma distinct_length_le [resolve]:
+  "finite s \<Longrightarrow> distinct xs \<Longrightarrow> set xs \<subseteq> s \<Longrightarrow> length xs \<le> card s"
+@proof @have "card (set xs) \<le> card s" @qed
+
+lemma finite_distinct [backward]:
+  "finite s \<Longrightarrow> finite {xs . set xs \<subseteq> s \<and> distinct xs}"
+@proof
+  @have "{xs . set xs \<subseteq> s \<and> distinct xs} \<subseteq> {xs. set xs \<subseteq> s \<and> length xs \<le> card s}"
+  @have "finite {xs. set xs \<subseteq> s \<and> length xs \<le> card s}"
+@qed
+
+lemma D_base_finite [resolve]:
+  "finite {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct xs}" by auto2
+
+lemma D_base_finite' [resolve]:
+  "finite {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct (i # j # xs)}"
+@proof
+  @have "{len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct (i # j # xs)}
+       \<subseteq> {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
+@qed
+
+lemma D_base_finite'' [resolve]:
+  "finite {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+@proof
+  @have "{len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}
+       \<subseteq> {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
+@qed
+
+definition cycle_free :: "'a::linordered_ring mat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
+  "cycle_free M n = (\<forall>i\<le>n. \<forall>j\<le>n. \<forall>xs. set xs \<subseteq> {0..n} \<longrightarrow>
+      len M i j (rem_cycles i j xs) \<le> len M i j xs \<and> len M i i xs \<ge> 0)"
+
+lemma cycle_freeD1 [backward2]:
+  "cycle_free M n \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> set xs \<subseteq> {0..n} \<Longrightarrow>
+   len M i j (rem_cycles i j xs) \<le> len M i j xs" by auto2
+
+lemma cycle_freeD2 [backward2]:
+  "cycle_free M n \<Longrightarrow> i \<le> n \<Longrightarrow> set xs \<subseteq> {0..n} \<Longrightarrow> len M i i xs \<ge> 0" by auto2
+setup {* del_prfstep_thm_eqforward @{thm cycle_free_def} *}
+
+lemma D_eqI [backward2]:
+  "A = {len M i j xs | xs. set xs \<subseteq> {0..k}} \<Longrightarrow>
+   A' = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs} \<Longrightarrow>
+   cycle_free M n \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow> \<forall>y\<in>A'. x \<le> y \<Longrightarrow> x \<in> A \<Longrightarrow>
+   D M i j k = x"
+@proof
+  @let "S = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "finite S" @with
+    @have "S \<subseteq> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
+  @end
+  @have "\<forall>y\<in>S. x \<le> y"
+  @have "x \<in> S" @with
+    @obtain xs where "x = len M i j xs" "set xs \<subseteq> {0..k}"
+    @let "y = len M i j (rem_cycles i j xs)"
+    @have "y \<le> x"
+    @have "y \<in> A'"
+  @end
+@qed
+
+lemma D_base_not_empty [resolve]:
+   "{len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs} \<noteq> {}"
+@proof
+  @have "len M i j [] \<in> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+@qed
+
+lemma D_dest [resolve]:
+  "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..Suc k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+@proof
+  @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "finite S" @have "D m i j k \<in> S"
+@qed
+
+lemma D_dest' [resolve]:
+  "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..Suc k}}"
+@proof
+  @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "finite S" @have "D m i j k \<in> S"
+@qed
+
+lemma D_dest'' [resolve]:
+  "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..k}}"
+@proof
+  @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "finite S" @have "D m i j k \<in> S"
+@qed
+
+definition cycle_free_up_to :: "'a::linordered_ring mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
+  "cycle_free_up_to M k n = (\<forall>i\<le>n. \<forall>j\<le>n. \<forall>xs. set xs \<subseteq> {0..k} \<longrightarrow>
+      len M i j (rem_cycles i j xs) \<le> len M i j xs \<and> len M i i xs \<ge> 0)"
+
+lemma cycle_free_up_toD1 [backward2]:
+  "cycle_free_up_to M k n \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> set xs \<subseteq> {0..k} \<Longrightarrow>
+   len M i j (rem_cycles i j xs) \<le> len M i j xs" by auto2
+
+lemma cycle_free_up_toD2 [backward2]:
+  "cycle_free_up_to M k n \<Longrightarrow> i \<le> n \<Longrightarrow> set xs \<subseteq> {0..k} \<Longrightarrow> len M i i xs \<ge> 0" by auto2
+setup {* del_prfstep_thm_eqforward @{thm cycle_free_up_to_def} *}
+
+lemma D_eqI2 [backward2]:
+  "A = {len M i j xs | xs. set xs \<subseteq> {0..k}} \<Longrightarrow>
+   A' = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs} \<Longrightarrow>
+   cycle_free_up_to M k n \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow> \<forall>y\<in>A'. x \<le> y \<Longrightarrow> x \<in> A \<Longrightarrow>
+   D M i j k = x"
+@proof
+  @let "S = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "finite S" @with
+    @have "S \<subseteq> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
+  @end
+  @have "\<forall>y\<in>S. x \<le> y"
+  @have "x \<in> S" @with
+    @obtain xs where "x = len M i j xs" "set xs \<subseteq> {0..k}"
+    @let "y = len M i j (rem_cycles i j xs)"
+    @have "y \<le> x"
+    @have "y \<in> A'"
+  @end
+@qed
+
 end
