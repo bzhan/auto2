@@ -219,7 +219,7 @@ fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" w
     if x \<le> y then x # (merge_list xs (y # ys))
     else y # (merge_list (x # xs) ys))"
 setup {* fold add_rewrite_rule @{thms merge_list.simps} *}
-setup {* add_fun_induct_rule (@{term_pat "merge_list (?a0.0::?'a::ord list) ?a1.0"}, @{thm merge_list.induct}) *}
+setup {* add_fun_induct_rule (@{term merge_list}, @{thm merge_list.induct}) *}
 
 lemma merge_list_correct [rewrite]:
   "set (merge_list xs ys) = set xs \<union> set ys"

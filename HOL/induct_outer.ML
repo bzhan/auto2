@@ -70,6 +70,31 @@ fun get_term_ind_th thy ind_type t =
       get_first match_data data
     end
 
+fun get_head_ind_th thy ind_type t =
+    let
+      val data = Symtab.lookup_list (Data.get thy) ind_type
+      val (fhead, args) = Term.strip_comb t
+
+      fun match_data (fhead', th) =
+          let
+            val (nm, _) = Term.dest_Const fhead
+            val (nm', _) = Term.dest_Const fhead'
+          in
+            if nm = nm' then
+              let
+                val (_, pat_args) = th |> concl_of' |> Term.strip_comb
+                val inst = Util.first_order_match_list
+                               thy (pat_args ~~ args) fo_init
+              in
+                SOME (Util.subst_thm_thy thy inst th)
+              end
+              handle Pattern.MATCH => raise Fail "get_head_ind_th"
+            else NONE
+          end
+    in
+      get_first match_data data
+    end
+
 (* Check a strong induction theorem ind_th is of the right form, and
    extract the induction variables and substitution.
  *)
@@ -481,7 +506,7 @@ fun fun_induct_cmd (s, t, u) state =
       val expr = Syntax.read_term ctxt s
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val ind_th = the (get_term_ind_th thy "fun_induct" expr)
+      val ind_th = the (get_head_ind_th thy "fun_induct" expr)
                        handle Option.Option =>
                               raise Fail "fun_induct: cannot find theorem."
       val (var_P, vars) = ind_th |> Thm.concl_of |> dest_Trueprop

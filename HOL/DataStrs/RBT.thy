@@ -365,7 +365,7 @@ fun combine :: "('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) r
      else
        Node (combine (Node l1 c1 k1 v1 r1) l2) R k2 v2 r2)"
 setup {* fold add_rewrite_rule @{thms combine.simps} *}
-setup {* add_fun_induct_rule (@{term_pat "combine (?a0.0::(?'a,?'b) rbt) ?a1.0"}, @{thm combine.induct}) *}
+setup {* add_fun_induct_rule (@{term combine}, @{thm combine.induct}) *}
 
 lemma combine_bd:
   "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
