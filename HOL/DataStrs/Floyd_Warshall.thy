@@ -4,17 +4,6 @@ theory Floyd_Warshall
 imports "../Auto2_Main"
 begin
 
-section {* Auxiliary *}
-
-lemma distinct_list_single_elem_decomp:
-  "{xs. set xs \<subseteq> {0} \<and> distinct xs} = {[], [0::'a::zero]}"
-@proof
-  @have "\<forall>x\<in>{xs. set xs \<subseteq> {0} \<and> distinct xs}. x\<in>{[], [0::'a]}" @with
-    @case "x = []" @then @have "x = hd x # tl x"
-    @case "tl x = []" @then @have "tl x = hd (tl x) # tl (tl x)"
-  @end
-@qed
-
 section {* Cycles in Lists *}
 
 definition cnt :: "'a \<Rightarrow> 'a list \<Rightarrow> nat" where [rewrite]:
@@ -415,7 +404,7 @@ lemma min_plus1 [rewrite]: "(b::'a::linordered_ring) \<ge> 0 \<Longrightarrow> m
 lemma min_plus2 [rewrite]: "(b::'a::linordered_ring) \<ge> 0 \<Longrightarrow> min a (a + b) = a"
 @proof @have "a + b \<ge> a" @qed
 
-lemma fw_step_0:
+lemma fw_step_0 [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> M\<langle>0,0\<rangle> \<ge> 0 \<Longrightarrow> (fw M n 0 i j)\<langle>i,j\<rangle> = min (M\<langle>i,j\<rangle>) (M\<langle>i,0\<rangle> + M\<langle>0,j\<rangle>)"
 @proof @induct i @with
   @subgoal "i = 0"
@@ -451,7 +440,7 @@ lemma fw_step_0:
   @endgoal @end
 @qed
 
-lemma fw_step_Suc:
+lemma fw_step_Suc [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> M' = fw M n k n n \<Longrightarrow> \<forall>k'\<le>n. M'\<langle>k',k'\<rangle> \<ge> 0 \<Longrightarrow> Suc k \<le> n \<Longrightarrow>
    (fw M n (Suc k) i j)\<langle>i,j\<rangle> = min (M'\<langle>i,j\<rangle>) (M'\<langle>i,Suc k\<rangle> + M'\<langle>Suc k,j\<rangle>)"
 @proof @induct i @with
@@ -746,6 +735,10 @@ lemma cycle_free_up_toD2 [backward2]:
   "cycle_free_up_to M k n \<Longrightarrow> i \<le> n \<Longrightarrow> set xs \<subseteq> {0..k} \<Longrightarrow> len M i i xs \<ge> 0" by auto2
 setup {* del_prfstep_thm_eqforward @{thm cycle_free_up_to_def} *}
 
+lemma cycle_free_up_to_diag [backward2]:
+  "cycle_free_up_to M k n \<Longrightarrow> i \<le> n \<Longrightarrow> M\<langle>i,i\<rangle> \<ge> 0"
+@proof @have "len M i i [] \<ge> 0" @qed
+
 lemma D_eqI2 [backward2]:
   "A = {len M i j xs | xs. set xs \<subseteq> {0..k}} \<Longrightarrow>
    A' = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs} \<Longrightarrow>
@@ -763,6 +756,172 @@ lemma D_eqI2 [backward2]:
     @have "y \<le> x"
     @have "y \<in> A'"
   @end
+@qed
+
+section {* Result under the absence of negative cycles *}
+
+setup {* add_backward1_prfstep @{thm add_increasing2} *}
+
+lemma distinct_list_single_elem_decomp [rewrite]:
+  "{xs. set xs \<subseteq> {0} \<and> distinct xs} = {[], [0::'a::zero]}"
+@proof
+  @have "\<forall>x\<in>{xs. set xs \<subseteq> {0} \<and> distinct xs}. x\<in>{[], [0::'a]}" @with
+    @case "x = []" @then @have "x = hd x # tl x"
+    @case "tl x = []" @then @have "tl x = hd (tl x) # tl (tl x)"
+  @end
+@qed
+
+setup {* del_prfstep_thm @{thm rem_cycles_def} *}
+setup {* add_backward_prfstep @{thm Min_le} *}
+setup {* add_resolve_prfstep @{thm split_list} *}
+
+theorem fw_shortest_path_up_to [backward2]:
+  "cycle_free_up_to M k n \<Longrightarrow> i' \<le> i \<Longrightarrow> j' \<le> j \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow>
+   D M i' j' k = (fw M n k i j)\<langle>i',j'\<rangle>"
+@proof @induct k arbitrary i j i' j' @with
+  @subgoal "k = 0"
+    @let "S = {len M i' j' xs |xs. set xs \<subseteq> {0} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
+    @have "finite S" @with
+      @have "S \<subseteq> {len M i' j' xs |xs. set xs \<subseteq> {0..0} \<and> distinct xs}"
+    @end
+    @have "\<forall>l\<in>S. (fw M n 0 i j)\<langle>i',j'\<rangle> \<le> l" @with
+      @obtain xs where "l = len M i' j' xs" "set xs \<subseteq> {0}" "distinct xs"
+      @have (@rule) "xs = [] \<or> xs = [0]" @with
+        @have "xs \<in> {xs. set xs \<subseteq> {0} \<and> distinct xs}"
+      @end
+      @case "xs = []"
+      @case "xs = [0]" @with
+        @have "(fw M n 0 i j)\<langle>i',j'\<rangle> \<le> (fw M n 0 i' j')\<langle>i',j'\<rangle>"
+        @have "(fw M n 0 i' j')\<langle>i',j'\<rangle> \<le> M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle>" @with
+          @cases j' @with
+            @subgoal "j' = 0"
+              @cases i' @with @subgoal "i' = Suc i'"
+                @have "(fw_upd (fw M n 0 i' n) 0 (Suc i') 0)\<langle>Suc i',0\<rangle> \<le> (fw M n 0 i' n)\<langle>Suc i',0\<rangle>"
+                @have "(fw M n 0 i' n)\<langle>Suc i',0\<rangle> \<le> M\<langle>Suc i',0\<rangle>"
+              @endgoal @end
+            @endgoal
+            @subgoal "j' = Suc j'"
+              @have "(fw_upd (fw M n 0 i' j') 0 i' (Suc j'))\<langle>i',Suc j'\<rangle> \<le>
+                       (fw M n 0 i' j')\<langle>i',0\<rangle> + (fw M n 0 i' j')\<langle>0,Suc j'\<rangle>"
+              @have "(fw M n 0 i' j')\<langle>i',0\<rangle> + (fw M n 0 i' j')\<langle>0,Suc j'\<rangle> \<le> M\<langle>i',0\<rangle> + M\<langle>0,Suc j'\<rangle>" @with
+                @have "(fw M n 0 i' j')\<langle>i',0\<rangle> \<le> M\<langle>i',0\<rangle>"
+              @end
+            @endgoal
+          @end
+        @end
+      @end
+    @end
+    @have "(fw M n 0 i j)\<langle>i',j'\<rangle> = (fw M n 0 i' j')\<langle>i',j'\<rangle>"
+    @have "(fw M n 0 i' j')\<langle>i',j'\<rangle> = min (M\<langle>i',j'\<rangle>) (M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle>)"
+    @have "(fw M n 0 i j)\<langle>i',j'\<rangle> \<in> S" @with
+      @case "M\<langle>i',j'\<rangle> \<le> M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle>" @with
+        @have "(fw M n 0 i j)\<langle>i',j'\<rangle> = len M i' j' []"
+      @end
+      @have "M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle> \<le> M\<langle>i',j'\<rangle>"
+      @have "M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle> = len M i' j' [0]"
+    @end
+    @have "{(0::nat)..0} = {0}"
+  @endgoal
+  @subgoal "k = Suc k"
+    @have "\<forall>k'\<le>n. (fw M n k n n)\<langle>k',k'\<rangle> \<ge> 0" @with
+      @have "D M k' k' k = (fw M n k n n)\<langle>k',k'\<rangle>"
+      @have "(fw M n k n n)\<langle>k',k'\<rangle> \<in> {len M k' k' xs |xs. set xs \<subseteq> {0..k}}"
+    @end
+    @let "S = {len M i' j' xs | xs. set xs \<subseteq> {0..Suc k} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
+    @have "\<forall>l\<in>S. (fw M n (Suc k) i j)\<langle>i',j'\<rangle> \<le> l" @with
+      @obtain xs where "l = len M i' j' xs" "set xs \<subseteq> {0..Suc k}" "i' \<notin> set xs" "j' \<notin> set xs" "distinct xs"
+      @have "D M i' j' k = (fw M n k i j)\<langle>i',j'\<rangle>"
+      @have "finite {len M i' j' xs |xs. set xs \<subseteq> {0..k} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
+      @case "Suc k \<notin> set xs" @with
+        @have "set xs \<subseteq> {0..k}"
+        @have "l \<in> {len M i' j' xs | xs. set xs \<subseteq> {0..k} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
+        @have "(fw M n k i j)\<langle>i',j'\<rangle> \<le> l"
+        @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> \<le> (fw M n k i j)\<langle>i',j'\<rangle>"
+      @end
+      @case "Suc k \<in> set xs" @with
+        @obtain ys zs where "xs = ys @ Suc k # zs"
+        @have "distinct ys" @have "distinct zs" @have "Suc k \<notin> set ys" @have "Suc k \<notin> set zs"
+        @have "set ys \<inter> set zs = {}"
+        @have "i' \<noteq> Suc k" @have "j' \<noteq> Suc k"
+  
+        @have "(fw M n k n n)\<langle>i',Suc k\<rangle> \<le> len M i' (Suc k) ys" @with
+          @have "set ys \<subseteq> {0..k}"
+          @let "S1 = {len M i' (Suc k) xs |xs. set xs \<subseteq> {0..k} \<and> i' \<notin> set xs \<and> Suc k \<notin> set xs \<and> distinct xs}"
+          @have "len M i' (Suc k) ys \<in> S1"
+          @have "finite S1"
+          @have "Min S1 \<le> len M i' (Suc k) ys"
+          @have "(fw M n k n n)\<langle>i',Suc k\<rangle> = D M i' (Suc k) k"
+        @end
+  
+        @have "(fw M n k n n)\<langle>Suc k,j'\<rangle> \<le> len M (Suc k) j' zs" @with
+          @have "set zs \<subseteq> {0..k}"
+          @let "S2 = {len M (Suc k) j' xs |xs. set xs \<subseteq> {0..k} \<and> Suc k \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
+          @have "len M (Suc k) j' zs \<in> S2"
+          @have "finite S2"
+          @have "Min S2 \<le> len M (Suc k) j' zs"
+          @have "(fw M n k n n)\<langle>Suc k,j'\<rangle> = D M (Suc k) j' k"
+        @end
+  
+        @have "l = len M i' (Suc k) ys + len M (Suc k) j' zs"
+        @have "(fw M n (Suc k) i' j')\<langle>i',j'\<rangle> = min ((fw M n k n n)\<langle>i',j'\<rangle>)
+                  ((fw M n k n n)\<langle>i',Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j'\<rangle>)"
+        @have "((fw M n k n n)\<langle>i',Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j'\<rangle>) \<le> l"
+        @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> \<le> (fw M n (Suc k) i' j')\<langle>i',j'\<rangle>"
+      @end
+    @end
+    @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = (fw M n (Suc k) i' j')\<langle>i',j'\<rangle>"
+    @have "(fw M n (Suc k) i' j')\<langle>i',j'\<rangle> =
+             min ((fw M n k n n)\<langle>i',j'\<rangle>) ((fw M n k n n)\<langle>i',Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j'\<rangle>)"
+    @case "(fw M n k n n)\<langle>i',j'\<rangle> \<le> (fw M n k n n)\<langle>i',Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j'\<rangle>" @with
+      @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = D M i' j' k"
+    @end
+    @have "(fw M n k n n)\<langle>i',Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j'\<rangle> \<le> (fw M n k n n)\<langle>i',j'\<rangle>"
+    @have "(fw M n k n n)\<langle>i',j'\<rangle> = D M i' j' k"
+    @have "(fw M n k n n)\<langle>i',j'\<rangle> \<in> {len M i' j' xs |xs. set xs \<subseteq> {0..Suc k} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
+    @obtain xs where "(fw M n k n n)\<langle>i',Suc k\<rangle> = len M i' (Suc k) xs" "set xs \<subseteq> {0..Suc k}" @with
+      @have "(fw M n k n n)\<langle>i',Suc k\<rangle> = D M i' (Suc k) k"
+      @have "D M i' (Suc k) k \<in> {len M i' (Suc k) xs |xs. set xs \<subseteq> {0..Suc k}}"
+    @end
+    @obtain ys where "(fw M n k n n)\<langle>Suc k,j'\<rangle> = len M (Suc k) j' ys" "set ys \<subseteq> {0..Suc k}" @with
+      @have "(fw M n k n n)\<langle>Suc k,j'\<rangle> = D M (Suc k) j' k"
+      @have "D M (Suc k) j' k \<in> {len M (Suc k) j' ys |ys. set ys \<subseteq> {0..Suc k}}"
+    @end
+    @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = len M i' j' (xs @ Suc k # ys)"
+    @have "set (xs @ Suc k # ys) \<subseteq> {0..Suc k}"
+  @endgoal @end
+@qed
+
+lemma cycle_free_diag:
+  "cycle_free M n \<Longrightarrow> i \<le> n \<Longrightarrow> M\<langle>i,i\<rangle> \<ge> 0"
+@proof @have "len M i i [] \<ge> 0" @qed
+
+corollary fw_shortest_path:
+  "cycle_free M n \<Longrightarrow> i' \<le> i \<Longrightarrow> j' \<le> j \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow>
+   D M i' j' k = (fw M n k i j)\<langle>i',j'\<rangle>"
+@proof @have "cycle_free_up_to M k n" @qed
+
+setup {* add_rewrite_rule @{thm rem_cycles_def} *}
+
+corollary fw_shortest:
+  "cycle_free M n \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow>
+   (fw M n n n n)\<langle>i,j\<rangle> \<le> (fw M n n n n)\<langle>i,k\<rangle> + (fw M n n n n)\<langle>k,j\<rangle>"
+@proof
+  @have "cycle_free_up_to M n n"
+  @let "FW = fw M n n n n"
+  @have "FW\<langle>i,j\<rangle> = D M i j n" @have "FW\<langle>i,k\<rangle> = D M i k n" @have "FW\<langle>k,j\<rangle> = D M k j n"
+  @have "FW\<langle>i,k\<rangle> \<in> {len M i k xs |xs. set xs \<subseteq> {0..n}}"
+  @have "FW\<langle>k,j\<rangle> \<in> {len M k j xs |xs. set xs \<subseteq> {0..n}}"
+  @obtain xs where "FW\<langle>i,k\<rangle> = len M i k xs" "set xs \<subseteq> {0..n}"
+  @obtain ys where "FW\<langle>k,j\<rangle> = len M k j ys" "set ys \<subseteq> {0..n}"
+  @let "zs = rem_cycles i j (xs @ k # ys)"
+  @have "FW\<langle>i,j\<rangle> = Min {len M i j xs |xs. set xs \<subseteq> {0..n} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "set (xs @ k # ys) \<subseteq> {0..n}"
+  @have "len M i j zs \<le> len M i j (xs @ k # ys)"
+  @have "i \<notin> set zs" @have "j \<notin> set zs" @have "distinct zs"
+  @have "set zs \<subseteq> {0..n}"
+  @have "len M i j zs \<in> {len M i j xs |xs. set xs \<subseteq> {0..n} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "finite {len M i j xs |xs. set xs \<subseteq> {0..n} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  @have "FW\<langle>i,j\<rangle> \<le> len M i j zs"
 @qed
 
 end
