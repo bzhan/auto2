@@ -627,13 +627,6 @@ lemma D_base_finite [forward_arg]:
   "finite {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct xs}" by auto2
 
 lemma D_base_finite' [forward_arg]:
-  "finite {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct (i # j # xs)}"
-@proof
-  @have "{len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct (i # j # xs)}
-       \<subseteq> {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
-@qed
-
-lemma D_base_finite'' [forward_arg]:
   "finite {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
 @proof
   @have "{len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}
@@ -675,21 +668,21 @@ lemma D_base_not_empty [resolve]:
 @qed
 
 lemma D_dest [resolve]:
-  "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..Suc k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+  "\<exists>xs. D m i j k = len m i j xs \<and> set xs \<subseteq> {0..Suc k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs"
 @proof
   @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
   @have "D m i j k \<in> S"
 @qed
 
 lemma D_dest' [resolve]:
-  "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..Suc k}}"
+  "\<exists>xs. D m i j k = len m i j xs \<and> set xs \<subseteq> {0..Suc k}"
 @proof
   @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
   @have "D m i j k \<in> S"
 @qed
 
 lemma D_dest'' [resolve]:
-  "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..k}}"
+  "\<exists>xs. D m i j k = len m i j xs \<and> set xs \<subseteq> {0..k}"
 @proof
   @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
   @have "D m i j k \<in> S"
@@ -718,12 +711,10 @@ lemma D_eqI2 [backward2]:
    D M i j k = x"
 @proof
   @let "S = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-  @have "\<forall>y\<in>S. x \<le> y"
   @have "x \<in> S" @with
     @obtain xs where "x = len M i j xs" "set xs \<subseteq> {0..k}"
     @let "y = len M i j (rem_cycles i j xs)"
-    @have "y \<le> x"
-    @have "y \<in> A'"
+    @have "y \<le> x" @have "y \<in> A'"
   @end
 @qed
 
@@ -746,7 +737,6 @@ theorem fw_shortest_path_up_to [backward2]:
     @have "\<forall>l\<in>S. (fw M n 0 i j)\<langle>i',j'\<rangle> \<le> l" @with
       @obtain xs where "l = len M i' j' xs" "set xs \<subseteq> {0}" "distinct xs"
       @have (@rule) "xs = [] \<or> xs = [0]"
-      @case "xs = []"
       @case "xs = [0]" @with
         @have "(fw M n 0 i j)\<langle>i',j'\<rangle> \<le> (fw M n 0 i' j')\<langle>i',j'\<rangle>"
         @have "(fw M n 0 i' j')\<langle>i',j'\<rangle> \<le> M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle>" @with
@@ -820,11 +810,9 @@ theorem fw_shortest_path_up_to [backward2]:
     @have "(fw M n k n n)\<langle>i',j'\<rangle> \<in> {len M i' j' xs |xs. set xs \<subseteq> {0..Suc k} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
     @obtain xs where "(fw M n k n n)\<langle>i',Suc k\<rangle> = len M i' (Suc k) xs" "set xs \<subseteq> {0..Suc k}" @with
       @have "(fw M n k n n)\<langle>i',Suc k\<rangle> = D M i' (Suc k) k"
-      @have "D M i' (Suc k) k \<in> {len M i' (Suc k) xs |xs. set xs \<subseteq> {0..Suc k}}"
     @end
     @obtain ys where "(fw M n k n n)\<langle>Suc k,j'\<rangle> = len M (Suc k) j' ys" "set ys \<subseteq> {0..Suc k}" @with
       @have "(fw M n k n n)\<langle>Suc k,j'\<rangle> = D M (Suc k) j' k"
-      @have "D M (Suc k) j' k \<in> {len M (Suc k) j' ys |ys. set ys \<subseteq> {0..Suc k}}"
     @end
     @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> = len M i' j' (xs @ Suc k # ys)"
     @have "set (xs @ Suc k # ys) \<subseteq> {0..Suc k}"
@@ -843,8 +831,6 @@ corollary fw_shortest:
   @have "cycle_free_up_to M n n"
   @let "FW = fw M n n n n"
   @have "FW\<langle>i,j\<rangle> = D M i j n" @have "FW\<langle>i,k\<rangle> = D M i k n" @have "FW\<langle>k,j\<rangle> = D M k j n"
-  @have "FW\<langle>i,k\<rangle> \<in> {len M i k xs |xs. set xs \<subseteq> {0..n}}"
-  @have "FW\<langle>k,j\<rangle> \<in> {len M k j xs |xs. set xs \<subseteq> {0..n}}"
   @obtain xs where "FW\<langle>i,k\<rangle> = len M i k xs" "set xs \<subseteq> {0..n}"
   @obtain ys where "FW\<langle>k,j\<rangle> = len M k j ys" "set ys \<subseteq> {0..n}"
   @let "zs = rem_cycles i j (xs @ k # ys)"
@@ -854,7 +840,6 @@ corollary fw_shortest:
   @have "i \<notin> set zs" @have "j \<notin> set zs" @have "distinct zs"
   @have "set zs \<subseteq> {0..n}"
   @have "len M i j zs \<in> {len M i j xs |xs. set xs \<subseteq> {0..n} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-  @have "finite {len M i j xs |xs. set xs \<subseteq> {0..n} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
   @have "FW\<langle>i,j\<rangle> \<le> len M i j zs"
 @qed
 
@@ -891,7 +876,6 @@ lemma negative_len_shortest [backward]:
   @case "i \<notin> set xs" @with
     @case "distinct xs"
     @obtain a as bs cs where "xs = as @ [a] @ bs @ [a] @ cs"
-    @have "length xs = length bs + (length as + length cs + 2)"
     @case "len M a a bs < 0" @with
       @have "length bs < n"
       @apply_induct_hyp "length bs" bs a
@@ -902,6 +886,7 @@ lemma negative_len_shortest [backward]:
       @have "len M i a as + len M a i cs < 0"
     @end
     @have "length (as @ a # cs) < n" @with
+      @have "length xs = length bs + (length as + length cs + 2)"
       @have "length (as @ a # cs) = length as + length cs + 1"
       @have "length (as @ a # cs) < length as + length cs + 2"
     @end
@@ -931,63 +916,61 @@ theorem FW_neg_cycle_detect:
     @end
   @end
   @obtain j xs where "distinct (j # xs)" "len M j j xs < 0" "j \<in> set (a # as)" "set xs \<subseteq> set as"
-  @case "k > 0" @with
-    @have "k - 1 < k"
-    @have "cycle_free_up_to M (k-1) n"
-    @have "k \<in> set xs" @with
-      @contradiction
-      @have "set xs \<subseteq> {0..k-1}"
-      @have "len M j j xs \<ge> 0"
-    @end
-    @have "j \<noteq> k"
-    @obtain ys zs where "xs = ys @ k # zs"
-    @have "set ys \<subseteq> {0..k-1}"
-    @have "set zs \<subseteq> {0..k-1}"
-    @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle> \<le> len M j k ys + len M k j zs" @with
-      @have "D M j k (k-1) = (fw M n (k-1) n n)\<langle>j,k\<rangle>"
-      @have "D M k j (k-1) = (fw M n (k-1) n n)\<langle>k,j\<rangle>"
-      @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> \<le> len M j k ys"
-    @end
-    @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle> < 0"
-    @have "k = Suc (k-1)"
-    @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>" @with
-      @cases j @with
-        @subgoal "j = 0"
-          @have "(fw M n k 0 0)\<langle>0,0\<rangle> \<le> (fw M n (k-1) n n)\<langle>0,k\<rangle> + (fw M n (k-1) n n)\<langle>k,0\<rangle>"
-        @endgoal
-        @subgoal "j = Suc j"
-          @have "(fw M n k (Suc j) (Suc j))\<langle>Suc j,Suc j\<rangle> \<le> (fw M n k (Suc j) j)\<langle>Suc j,k\<rangle> + (fw M n k (Suc j) j)\<langle>k,Suc j\<rangle>"
-          @have "j < n"
-          @have "(fw M n k (Suc j) (Suc j))\<langle>Suc j,Suc j\<rangle> \<le> (fw M n (k-1) n n)\<langle>Suc j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,Suc j\<rangle>" @with
-            @have "(fw M n k (Suc j) j)\<langle>Suc j,k\<rangle> \<le> (fw M n (k-1) n n)\<langle>Suc j,k\<rangle>"
-            @have "(fw M n k (Suc j) j)\<langle>k,Suc j\<rangle> \<le> (fw M n (k-1) n n)\<langle>k,Suc j\<rangle>"
-            @have "(fw M n k (Suc j) j)\<langle>Suc j,k\<rangle> + (fw M n k (Suc j) j)\<langle>k,Suc j\<rangle> \<le> (fw M n (k-1) n n)\<langle>Suc j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,Suc j\<rangle>"
-          @end
-        @endgoal
+  @cases k @with
+    @subgoal "k = 0"
+      @have (@rule) "xs = [] \<or> xs = [0]" @with
+        @have "set xs \<subseteq> {0}"
       @end
-    @end
-    @have "(fw M n k j j)\<langle>j,j\<rangle> < 0"
-    @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> (fw M n k j j)\<langle>j,j\<rangle>"
-  @end
-  @have "k = 0"
-  @have (@rule) "xs = [] \<or> xs = [0]" @with
-    @have "set xs \<subseteq> {0}"
-  @end
-  @case "xs = []" @with
-    @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> M\<langle>j,j\<rangle>"
-  @end
-  @case "xs = [0]" @with
-    @have "M\<langle>j,0\<rangle> + M\<langle>0,j\<rangle> < 0"
-    @have "(fw M n 0 j j)\<langle>j,j\<rangle> < 0" @with
-      @cases j @with @subgoal "j = Suc j"
-        @have "(fw M n 0 (Suc j) (Suc j))\<langle>Suc j,Suc j\<rangle> \<le> (fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> + (fw M n 0 (Suc j) j)\<langle>0,Suc j\<rangle>"
-        @have "(fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> + (fw M n 0 (Suc j) j)\<langle>0,Suc j\<rangle> \<le> M\<langle>Suc j,0\<rangle> + M\<langle>0,Suc j\<rangle>" @with
-          @have "(fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> \<le> M\<langle>Suc j,0\<rangle>"
+      @case "xs = []" @with
+        @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> M\<langle>j,j\<rangle>"
+      @end
+      @case "xs = [0]" @with
+        @have "M\<langle>j,0\<rangle> + M\<langle>0,j\<rangle> < 0"
+        @have "(fw M n 0 j j)\<langle>j,j\<rangle> < 0" @with
+          @cases j @with @subgoal "j = Suc j"
+            @have "(fw M n 0 (Suc j) (Suc j))\<langle>Suc j,Suc j\<rangle> \<le> (fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> + (fw M n 0 (Suc j) j)\<langle>0,Suc j\<rangle>"
+            @have "(fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> + (fw M n 0 (Suc j) j)\<langle>0,Suc j\<rangle> \<le> M\<langle>Suc j,0\<rangle> + M\<langle>0,Suc j\<rangle>" @with
+              @have "(fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> \<le> M\<langle>Suc j,0\<rangle>"
+            @end
+          @endgoal @end
         @end
-      @endgoal @end
-    @end
-    @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> (fw M n 0 n n)\<langle>j,j\<rangle>"
-    @have "(fw M n 0 n n)\<langle>j,j\<rangle> \<le> (fw M n 0 j j)\<langle>j,j\<rangle>"
+        @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> (fw M n 0 j j)\<langle>j,j\<rangle>"
+      @end
+    @endgoal
+    @subgoal "k = Suc k"
+      @have "cycle_free_up_to M k n"
+      @have "Suc k \<in> set xs" @with
+        @contradiction
+        @have "set xs \<subseteq> {0..k}"
+        @have "len M j j xs \<ge> 0"
+      @end
+      @obtain ys zs where "xs = ys @ Suc k # zs"
+      @have "set ys \<subseteq> {0..k}"
+      @have "set zs \<subseteq> {0..k}"
+      @have "(fw M n k n n)\<langle>j,Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j\<rangle> \<le> len M j (Suc k) ys + len M (Suc k) j zs" @with
+        @have "D M j (Suc k) k = (fw M n k n n)\<langle>j,Suc k\<rangle>"
+        @have "D M (Suc k) j k = (fw M n k n n)\<langle>Suc k,j\<rangle>"
+        @have "(fw M n k n n)\<langle>j,Suc k\<rangle> \<le> len M j (Suc k) ys"
+      @end
+      @have "(fw M n k n n)\<langle>j,Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j\<rangle> < 0"
+      @have "(fw M n (Suc k) j j)\<langle>j,j\<rangle> \<le> (fw M n k n n)\<langle>j,Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,j\<rangle>" @with
+        @cases j @with
+          @subgoal "j = 0"
+            @have "(fw M n (Suc k) 0 0)\<langle>0,0\<rangle> \<le> (fw M n k n n)\<langle>0,Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,0\<rangle>"
+          @endgoal
+          @subgoal "j = Suc j"
+            @let "M1 = fw M n (Suc k) (Suc j) j" "M2 = fw M n (Suc k) (Suc j) (Suc j)"
+            @have "M2\<langle>Suc j,Suc j\<rangle> \<le> (fw M n k n n)\<langle>Suc j,Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,Suc j\<rangle>" @with
+              @have "M2\<langle>Suc j,Suc j\<rangle> \<le> M1\<langle>Suc j,Suc k\<rangle> + M1\<langle>Suc k,Suc j\<rangle>"
+              @have "M1\<langle>Suc j,Suc k\<rangle> + M1\<langle>Suc k,Suc j\<rangle> \<le> (fw M n k n n)\<langle>Suc j,Suc k\<rangle> + (fw M n k n n)\<langle>Suc k,Suc j\<rangle>" @with
+                @have "M1\<langle>Suc j,Suc k\<rangle> \<le> (fw M n k n n)\<langle>Suc j,Suc k\<rangle>"
+              @end
+            @end
+          @endgoal
+        @end
+      @end
+      @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> (fw M n (Suc k) j j)\<langle>j,j\<rangle>"
+    @endgoal
   @end
 @qed
 
