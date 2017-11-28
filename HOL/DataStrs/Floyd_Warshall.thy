@@ -33,15 +33,12 @@ lemma remove_cycles_cnt_id [forward_arg1]:
   "cnt y (remove_cycles xs x ys) \<le> cnt y ys + cnt y xs"
 @proof @induct xs arbitrary ys x @qed
 
-lemma remove_cycles_begins_with [backward]:
-  "x \<in> set xs \<Longrightarrow> \<exists>zs. remove_cycles xs x ys = x # zs \<and> x \<notin> set zs"
+lemma remove_cycles_begins_with [rewrite]:
+  "x \<in> set xs \<Longrightarrow> remove_cycles xs x ys = x # tl (remove_cycles xs x ys) \<and> x \<notin> set (tl (remove_cycles xs x ys))"
 @proof @induct xs arbitrary ys @qed
 
 lemma remove_cycles_self [rewrite]:
-  "x \<in> set xs \<Longrightarrow> remove_cycles (remove_cycles xs x ys) x zs = remove_cycles xs x ys"
-@proof
-  @obtain ws where "remove_cycles xs x ys = x # ws" "x \<notin> set ws"
-@qed
+  "x \<in> set xs \<Longrightarrow> remove_cycles (remove_cycles xs x ys) x zs = remove_cycles xs x ys" by auto2
 
 lemma remove_cycles_one [rewrite]:
   "remove_cycles (as @ x # xs) x ys = remove_cycles (x # xs) x ys"
@@ -160,18 +157,10 @@ definition remove_all :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where 
   "remove_all x xs = (if x \<in> set xs then tl (remove_cycles xs x []) else xs)"
 
 lemma remove_all_distinct [backward]:
-  "distinct xs \<Longrightarrow> distinct (x # remove_all x xs)"
-@proof
-  @case "x \<in> set xs" @with
-    @obtain zs where "remove_cycles xs x [] = x # zs" "x \<notin> set zs"
-  @end
-@qed
+  "distinct xs \<Longrightarrow> distinct (x # remove_all x xs)" by auto2
 
 lemma remove_all_removes [resolve]:
-  "x \<notin> set (remove_all x xs)"
-@proof @contradiction
-  @obtain zs where "remove_cycles xs x [] = x # zs" "x \<notin> set zs"
-@qed
+  "x \<notin> set (remove_all x xs)" by auto2
 
 lemma remove_all_subs [forward_arg1]:
   "set (remove_all x xs) \<subseteq> set xs" by auto2
@@ -183,16 +172,12 @@ lemma remove_all_rev_distinct [backward]:
   "distinct xs \<Longrightarrow> distinct (x # remove_all_rev x xs)"
 @proof
   @case "x \<in> set xs" @with
-    @obtain zs where "remove_cycles (rev xs) x [] = x # zs" "x \<notin> set zs"  
     @have "distinct (remove_cycles (rev xs) x [])"
   @end
 @qed
 
 lemma remove_all_rev_removes [resolve]:
-  "x \<notin> set (remove_all_rev x xs)"
-@proof @contradiction
-  @obtain zs where "remove_cycles (rev xs) x [] = x # zs" "x \<notin> set zs"
-@qed
+  "x \<notin> set (remove_all_rev x xs)" by auto2
 
 lemma remove_all_rev_subs [forward_arg1]:
   "set (remove_all_rev x xs) \<subseteq> set xs" by auto2
@@ -560,10 +545,9 @@ lemma start_remove_neg_cycles [resolve]:
     @have "xs' = as @ remove_cycles bs k [k]"
     @let "xs'' = remove_cycles bs k [k]"
     @have "k \<in> set bs"
-    @obtain ys where "xs'' = k # ys" "k \<notin> set ys"
-    @have "len M k j bs < len M k j ys"
+    @have "len M k j bs < len M k j (tl xs'')"
     @obtain xss as' where "as' @ concat (map (\<lambda>xs. k # xs) xss) @ xs'' = bs \<and> k \<notin> set as'"
-    @have "as' @ concat (map (\<lambda>xs. k # xs) xss) @ k # ys = bs"
+    @have "as' @ concat (map (\<lambda>xs. k # xs) xss) @ k # (tl xs'') = bs"
     @obtain ys' where "set ys' \<subseteq> set bs \<and> len M k k ys' < 0"
   @end
 @qed
@@ -604,7 +588,6 @@ lemma negative_cycle_dest [resolve]:
       @have "j \<in> set (rev xs')"
       @obtain xss as where "as @ concat (map (\<lambda>xs. j # xs) xss) @ remove_cycles (rev xs') j [] = rev xs'" "j \<notin> set as"
       @have "xsj = rev (tl (remove_cycles (rev xs') j []))"
-      @obtain zs where "remove_cycles (rev xs') j [] = j # zs \<and> j \<notin> set zs"
       @have "xsj @ j # concat (map (\<lambda>xs. xs @ [j]) (rev (map rev xss))) @ rev as = xs'" @with
         @have "remove_cycles (rev xs') j [] = j # rev xsj"
         @have "rev (as @ concat (map (\<lambda>xs. j # xs) xss) @ j # rev xsj) = xs'"
@@ -616,7 +599,6 @@ lemma negative_cycle_dest [resolve]:
     @have "i \<notin> set xsij"
     @obtain xss as where "as @ concat (map (\<lambda>xs. i # xs) xss) @ remove_cycles xsj i [] = xsj" "i \<notin> set as"
     @have "xsij = tl (remove_cycles xsj i [])"
-    @obtain zs where "remove_cycles xsj i [] = i # zs \<and> i \<notin> set zs"
     @have "remove_cycles xsj i [] = i # xsij"
     @have "as @ concat (map (\<lambda>xs. i # xs) xss) @ i # xsij = xsj"
     @obtain ys where "set ys \<subseteq> set xsj \<and> len M i i ys < 0"
