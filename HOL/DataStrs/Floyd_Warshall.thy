@@ -924,4 +924,161 @@ corollary fw_shortest:
   @have "FW\<langle>i,j\<rangle> \<le> len M i j zs"
 @qed
 
+section {* Result under the presence of negative cycles *}
+
+lemma D_not_diag_le [resolve]:
+  "x \<in> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs} \<Longrightarrow>
+   D M i j k \<le> x"
+@proof
+  @have "finite {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+@qed
+
+lemma D_not_diag_le' [backward]:
+  "distinct xs \<Longrightarrow> set xs \<subseteq> {0..k} \<Longrightarrow> i \<notin> set xs \<Longrightarrow> j \<notin> set xs \<Longrightarrow>
+   D M i j k \<le> len M i j xs"
+@proof
+  @have "len M i j xs \<in> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
+@qed
+
+lemma fw_Suc [backward]:
+  "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> i' \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> (fw M n (Suc k) i' j')\<langle>i,j\<rangle> \<le> (fw M n k n n)\<langle>i,j\<rangle>"
+  by (metis Suc_innermost_id1' Suc_innermost_id2 Suc_n_not_le_n fw_invariant linear not_less
+            single_iteration_inv single_iteration_inv')
+
+lemma sum_le_zero1 [forward]: "(a::'a::linordered_ring) + b < 0 \<Longrightarrow> a \<ge> 0 \<Longrightarrow> b < 0"
+  by (meson add_less_same_cancel1 less_le_trans)
+
+setup {* add_backward_prfstep @{thm not_distinct_decomp} *}
+lemma less_sum1 [backward]: "b > 0 \<Longrightarrow> a < a + (b::nat)" by auto
+setup {* add_backward_prfstep @{thm Nat.trans_less_add2} *}
+
+lemma negative_len_shortest [backward]:
+  "len M i i xs < 0 \<Longrightarrow> \<exists>j ys. distinct (j # ys) \<and> len M j j ys < 0 \<and> j \<in> set (i # xs) \<and> set ys \<subseteq> set xs"
+@proof
+  @let "n = length xs"
+  @strong_induct n arbitrary xs i
+  @case "xs = []"
+  @case "i \<in> set xs" @with
+    @obtain as bs where "xs = as @ i # bs"
+    @have "length xs = length as + length bs + 1"
+    @case "len M i i as < 0" @with
+      @apply_induct_hyp "length as" as i
+    @end
+    @have "len M i i xs = len M i i as + len M i i bs"
+    @apply_induct_hyp "length bs" bs i
+  @end
+  @case "i \<notin> set xs" @with
+    @case "distinct xs"
+    @obtain a as bs cs where "xs = as @ [a] @ bs @ [a] @ cs"
+    @have "length xs = length bs + (length as + length cs + 2)"
+    @case "len M a a bs < 0" @with
+      @have "length bs < n"
+      @apply_induct_hyp "length bs" bs a
+    @end
+    @have "len M i i (as @ a # cs) < 0" @with
+      @have "len M i i xs = len M i a as + (len M a a bs + len M a i cs)"
+      @have "len M a a bs + len M a i cs \<ge> len M a i cs"
+      @have "len M i a as + len M a i cs < 0"
+    @end
+    @have "length (as @ a # cs) < n" @with
+      @have "length (as @ a # cs) = length as + length cs + 1"
+      @have "length (as @ a # cs) < length as + length cs + 2"
+    @end
+    @apply_induct_hyp "length (as @ a # cs)" "as @ a # cs" i
+  @end
+@qed
+
+setup {* del_prfstep_thm @{thm rem_cycles_def} *}
+
+theorem FW_neg_cycle_detect:
+  "\<not>cycle_free M n \<Longrightarrow> \<exists>i\<le>n. (fw M n n n n)\<langle>i,i\<rangle> < 0"
+@proof
+  @let "K = {k. k \<le> n \<and> \<not>cycle_free_up_to M k n}"
+  @have "K \<noteq> {}" @with
+    @have "n \<in> {k. k \<le> n \<and> \<not>cycle_free_up_to M k n}"
+  @end
+  @have "finite K" @with @have "K \<subseteq> {0..n}" @end
+  @let "k = Min K"
+  @have "\<forall>k'<k. cycle_free_up_to M k' n"
+  @have "\<not>cycle_free_up_to M k n \<and> k \<le> n" @with
+    @have "k \<in> {k. k \<le> n \<and> \<not>cycle_free_up_to M k n}"
+  @end
+  @obtain as a where "a \<le> n" "len M a a as < 0" "set as \<subseteq> {0..k}" @with
+    @contradiction
+    @have (@rule) "\<forall>i\<le>n. \<forall>j\<le>n. \<forall>xs. set xs \<subseteq> {0..k} \<longrightarrow>
+                   len M i j (rem_cycles i j xs) \<le> len M i j xs" @with
+      @contradiction
+      @obtain i' ys where "len M i' i' ys < 0" "set ys \<subseteq> set xs" "i' \<in> set (i # j # xs)"
+    @end
+  @end
+  @obtain j xs where "distinct (j # xs)" "len M j j xs < 0" "j \<in> set (a # as)" "set xs \<subseteq> set as"
+  @case "k > 0" @with
+    @have "k - 1 < k"
+    @have "cycle_free_up_to M (k-1) n"
+    @have "k \<in> set xs" @with
+      @contradiction
+      @have "set xs \<subseteq> {0..k-1}"
+      @have "len M j j xs \<ge> 0"
+    @end
+    @have "j \<noteq> k"
+    @obtain ys zs where "xs = ys @ k # zs"
+    @have "distinct ys" @have "distinct zs" @have "k \<notin> set ys" @have "k \<notin> set zs"
+    @have "j \<notin> set ys" @have "j \<notin> set zs"
+    @have "set ys \<subseteq> {0..k-1}"
+    @have "set zs \<subseteq> {0..k-1}"
+    @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle> \<le> len M j k ys + len M k j zs" @with
+      @have "D M j k (k-1) = (fw M n (k-1) n n)\<langle>j,k\<rangle>"
+      @have "D M k j (k-1) = (fw M n (k-1) n n)\<langle>k,j\<rangle>"
+      @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> \<le> len M j k ys"
+    @end
+    @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle> < 0"
+    @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>" @with
+      @case "j = 0" @with
+        @have "fw M n k j j = fw_upd (fw M n (k-1) n n) k j j" @with
+          @have "k = Suc (k-1)"
+        @end
+        @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>"
+      @end
+      @case "j \<noteq> 0" @with
+        @have "j = Suc (j-1)"
+        @have "fw M n k j j = fw_upd (fw M n k j (j-1)) k j j"
+        @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n k j (j-1))\<langle>j,k\<rangle> + (fw M n k j (j-1))\<langle>k,j\<rangle>"
+        @have "j - 1 < n"
+        @have "k = Suc (k-1)"
+        @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>" @with
+          @have "(fw M n k j (j-1))\<langle>j,k\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle>"
+          @have "(fw M n k j (j-1))\<langle>k,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>k,j\<rangle>"
+          @have "(fw M n k j (j-1))\<langle>j,k\<rangle> + (fw M n k j (j-1))\<langle>k,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>"
+        @end
+      @end
+    @end
+    @have "(fw M n k j j)\<langle>j,j\<rangle> < 0"
+    @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> (fw M n k j j)\<langle>j,j\<rangle>"
+  @end
+  @have "k = 0"
+  @have (@rule) "xs = [] \<or> xs = [0]" @with
+    @have "xs \<in> {xs. set xs \<subseteq> {0} \<and> distinct xs}"
+  @end
+  @case "xs = []" @with
+    @have "M\<langle>j,j\<rangle> < 0"
+    @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> M\<langle>j,j\<rangle>"
+  @end
+  @case "xs = [0]" @with
+    @have "M\<langle>j,0\<rangle> + M\<langle>0,j\<rangle> < 0"
+    @have "(fw M n 0 j j)\<langle>j,j\<rangle> < 0" @with
+      @case "j = 0" @then
+      @have "j = Suc (j-1)"
+      @have "fw M n 0 j j = fw_upd (fw M n 0 j (j-1)) 0 j j"
+      @have "(fw M n 0 j j)\<langle>j,j\<rangle> \<le> (fw M n 0 j (j-1))\<langle>j,0\<rangle> + (fw M n 0 j (j-1))\<langle>0,j\<rangle>"
+      @have "(fw M n 0 j (j-1))\<langle>j,0\<rangle> + (fw M n 0 j (j-1))\<langle>0,j\<rangle> \<le> M\<langle>j,0\<rangle> + M\<langle>0,j\<rangle>" @with
+        @have "(fw M n 0 j (j-1))\<langle>j,0\<rangle> \<le> M\<langle>j,0\<rangle>"
+      @end
+    @end
+    @have "(fw M n 0 n n)\<langle>j,j\<rangle> < 0" @with
+      @have "(fw M n 0 n n)\<langle>j,j\<rangle> \<le> (fw M n 0 j j)\<langle>j,j\<rangle>"
+    @end
+    @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> (fw M n 0 n n)\<langle>j,j\<rangle>"
+  @end
+@qed
+
 end
