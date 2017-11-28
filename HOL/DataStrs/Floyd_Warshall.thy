@@ -241,8 +241,8 @@ setup {* fold del_prfstep_thm [@{thm mat.collapse}, @{thm mat_eval.simps}, @{thm
 
 section {* Definition of the Algorithm *}
 
-definition fw_upd :: "('a::linordered_ring) mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a mat" where [rewrite]:
-  "fw_upd M k i j = M {i,j \<rightarrow> min (M\<langle>i,j\<rangle>) (M\<langle>i,k\<rangle> + M\<langle>k,j\<rangle>)}"
+abbreviation fw_upd :: "('a::linordered_ring) mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a mat" where
+  "fw_upd M k i j \<equiv> M {i,j \<rightarrow> min (M\<langle>i,j\<rangle>) (M\<langle>i,k\<rangle> + M\<langle>k,j\<rangle>)}"
 
 lemma fw_upd_mono [forward_arg1]:
   "(fw_upd M k i j)\<langle>i',j'\<rangle> \<le> M\<langle>i',j'\<rangle>" by auto2
