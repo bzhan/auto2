@@ -209,7 +209,10 @@ lemma rem_cycles_distinct' [backward]:
   @have "distinct (i # rem_cycles i j xs)"
 @qed
 
-lemma rem_cycles_removes_last [resolve]:
+lemma rem_cycles_removes_i [resolve]:
+  "i \<notin> set (rem_cycles i j xs)" by auto2
+
+lemma rem_cycles_removes_j [resolve]:
   "j \<notin> set (rem_cycles i j xs)" by auto2
 
 lemma rem_cycles_distinct [forward]:
@@ -620,6 +623,8 @@ lemma negative_cycle_dest [resolve]:
   @end
 @qed
 
+setup {* del_prfstep_thm @{thm rem_cycles_def} *}
+
 section {* Definition of shortest paths *}
 
 definition D :: "('a::linordered_ring) mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" where [rewrite]:
@@ -629,24 +634,24 @@ lemma distinct_length_le [resolve]:
   "finite s \<Longrightarrow> distinct xs \<Longrightarrow> set xs \<subseteq> s \<Longrightarrow> length xs \<le> card s"
 @proof @have "card (set xs) \<le> card s" @qed
 
-lemma finite_distinct [backward]:
+lemma finite_distinct [forward_arg]:
   "finite s \<Longrightarrow> finite {xs . set xs \<subseteq> s \<and> distinct xs}"
 @proof
   @have "{xs . set xs \<subseteq> s \<and> distinct xs} \<subseteq> {xs. set xs \<subseteq> s \<and> length xs \<le> card s}"
   @have "finite {xs. set xs \<subseteq> s \<and> length xs \<le> card s}"
 @qed
 
-lemma D_base_finite [resolve]:
+lemma D_base_finite [forward_arg]:
   "finite {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct xs}" by auto2
 
-lemma D_base_finite' [resolve]:
+lemma D_base_finite' [forward_arg]:
   "finite {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct (i # j # xs)}"
 @proof
   @have "{len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct (i # j # xs)}
        \<subseteq> {len m i j xs | xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
 @qed
 
-lemma D_base_finite'' [resolve]:
+lemma D_base_finite'' [forward_arg]:
   "finite {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
 @proof
   @have "{len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}
@@ -672,9 +677,6 @@ lemma D_eqI [backward2]:
    D M i j k = x"
 @proof
   @let "S = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-  @have "finite S" @with
-    @have "S \<subseteq> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
-  @end
   @have "\<forall>y\<in>S. x \<le> y"
   @have "x \<in> S" @with
     @obtain xs where "x = len M i j xs" "set xs \<subseteq> {0..k}"
@@ -694,21 +696,21 @@ lemma D_dest [resolve]:
   "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..Suc k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
 @proof
   @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-  @have "finite S" @have "D m i j k \<in> S"
+  @have "D m i j k \<in> S"
 @qed
 
 lemma D_dest' [resolve]:
   "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..Suc k}}"
 @proof
   @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-  @have "finite S" @have "D m i j k \<in> S"
+  @have "D m i j k \<in> S"
 @qed
 
 lemma D_dest'' [resolve]:
   "D m i j k \<in> {len m i j xs |xs. set xs \<subseteq> {0..k}}"
 @proof
   @let "S = {len m i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-  @have "finite S" @have "D m i j k \<in> S"
+  @have "D m i j k \<in> S"
 @qed
 
 definition cycle_free_up_to :: "'a::linordered_ring mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
@@ -734,9 +736,6 @@ lemma D_eqI2 [backward2]:
    D M i j k = x"
 @proof
   @let "S = {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-  @have "finite S" @with
-    @have "S \<subseteq> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> distinct xs}"
-  @end
   @have "\<forall>y\<in>S. x \<le> y"
   @have "x \<in> S" @with
     @obtain xs where "x = len M i j xs" "set xs \<subseteq> {0..k}"
@@ -748,31 +747,23 @@ lemma D_eqI2 [backward2]:
 
 section {* Result under the absence of negative cycles *}
 
-lemma distinct_list_single_elem_decomp [rewrite]:
-  "{xs. set xs \<subseteq> {0} \<and> distinct xs} = {[], [0::'a::zero]}"
+lemma distinct_list_single_elem_decomp [resolve]:
+  "distinct xs \<Longrightarrow> set xs \<subseteq> {0} \<Longrightarrow> xs = [] \<or> xs = [0::'a::zero]"
 @proof
-  @have "\<forall>x\<in>{xs. set xs \<subseteq> {0} \<and> distinct xs}. x\<in>{[], [0::'a]}" @with
-    @case "x = []" @then @have "x = hd x # tl x"
-    @case "tl x = []" @then @have "tl x = hd (tl x) # tl (tl x)"
-  @end
+  @case "xs = []" @then @have "xs = hd xs # tl xs"
+  @case "tl xs = []" @then @have "tl xs = hd (tl xs) # tl (tl xs)"
 @qed
-
-setup {* del_prfstep_thm @{thm rem_cycles_def} *}
 
 theorem fw_shortest_path_up_to [backward2]:
   "cycle_free_up_to M k n \<Longrightarrow> i' \<le> i \<Longrightarrow> j' \<le> j \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow>
    D M i' j' k = (fw M n k i j)\<langle>i',j'\<rangle>"
 @proof @induct k arbitrary i j i' j' @with
   @subgoal "k = 0"
+    @have "{(0::nat)..0} = {0}"
     @let "S = {len M i' j' xs |xs. set xs \<subseteq> {0} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
-    @have "finite S" @with
-      @have "S \<subseteq> {len M i' j' xs |xs. set xs \<subseteq> {0..0} \<and> distinct xs}"
-    @end
     @have "\<forall>l\<in>S. (fw M n 0 i j)\<langle>i',j'\<rangle> \<le> l" @with
       @obtain xs where "l = len M i' j' xs" "set xs \<subseteq> {0}" "distinct xs"
-      @have (@rule) "xs = [] \<or> xs = [0]" @with
-        @have "xs \<in> {xs. set xs \<subseteq> {0} \<and> distinct xs}"
-      @end
+      @have (@rule) "xs = [] \<or> xs = [0]"
       @case "xs = []"
       @case "xs = [0]" @with
         @have "(fw M n 0 i j)\<langle>i',j'\<rangle> \<le> (fw M n 0 i' j')\<langle>i',j'\<rangle>"
@@ -804,7 +795,6 @@ theorem fw_shortest_path_up_to [backward2]:
       @have "M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle> \<le> M\<langle>i',j'\<rangle>"
       @have "M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle> = len M i' j' [0]"
     @end
-    @have "{(0::nat)..0} = {0}"
   @endgoal
   @subgoal "k = Suc k"
     @have "\<forall>k'\<le>n. (fw M n k n n)\<langle>k',k'\<rangle> \<ge> 0" @with
@@ -815,7 +805,6 @@ theorem fw_shortest_path_up_to [backward2]:
     @have "\<forall>l\<in>S. (fw M n (Suc k) i j)\<langle>i',j'\<rangle> \<le> l" @with
       @obtain xs where "l = len M i' j' xs" "set xs \<subseteq> {0..Suc k}" "i' \<notin> set xs" "j' \<notin> set xs" "distinct xs"
       @have "D M i' j' k = (fw M n k i j)\<langle>i',j'\<rangle>"
-      @have "finite {len M i' j' xs |xs. set xs \<subseteq> {0..k} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
       @case "Suc k \<notin> set xs" @with
         @have "set xs \<subseteq> {0..k}"
         @have "l \<in> {len M i' j' xs | xs. set xs \<subseteq> {0..k} \<and> i' \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
@@ -824,15 +813,11 @@ theorem fw_shortest_path_up_to [backward2]:
       @end
       @case "Suc k \<in> set xs" @with
         @obtain ys zs where "xs = ys @ Suc k # zs"
-        @have "distinct ys" @have "distinct zs" @have "Suc k \<notin> set ys" @have "Suc k \<notin> set zs"
-        @have "set ys \<inter> set zs = {}"
-        @have "i' \<noteq> Suc k" @have "j' \<noteq> Suc k"
   
         @have "(fw M n k n n)\<langle>i',Suc k\<rangle> \<le> len M i' (Suc k) ys" @with
           @have "set ys \<subseteq> {0..k}"
           @let "S1 = {len M i' (Suc k) xs |xs. set xs \<subseteq> {0..k} \<and> i' \<notin> set xs \<and> Suc k \<notin> set xs \<and> distinct xs}"
           @have "len M i' (Suc k) ys \<in> S1"
-          @have "finite S1"
           @have "Min S1 \<le> len M i' (Suc k) ys"
           @have "(fw M n k n n)\<langle>i',Suc k\<rangle> = D M i' (Suc k) k"
         @end
@@ -841,7 +826,6 @@ theorem fw_shortest_path_up_to [backward2]:
           @have "set zs \<subseteq> {0..k}"
           @let "S2 = {len M (Suc k) j' xs |xs. set xs \<subseteq> {0..k} \<and> Suc k \<notin> set xs \<and> j' \<notin> set xs \<and> distinct xs}"
           @have "len M (Suc k) j' zs \<in> S2"
-          @have "finite S2"
           @have "Min S2 \<le> len M (Suc k) j' zs"
           @have "(fw M n k n n)\<langle>Suc k,j'\<rangle> = D M (Suc k) j' k"
         @end
@@ -875,16 +859,10 @@ theorem fw_shortest_path_up_to [backward2]:
   @endgoal @end
 @qed
 
-lemma cycle_free_diag:
-  "cycle_free M n \<Longrightarrow> i \<le> n \<Longrightarrow> M\<langle>i,i\<rangle> \<ge> 0"
-@proof @have "len M i i [] \<ge> 0" @qed
-
 corollary fw_shortest_path:
   "cycle_free M n \<Longrightarrow> i' \<le> i \<Longrightarrow> j' \<le> j \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow>
    D M i' j' k = (fw M n k i j)\<langle>i',j'\<rangle>"
 @proof @have "cycle_free_up_to M k n" @qed
-
-setup {* add_rewrite_rule @{thm rem_cycles_def} *}
 
 corollary fw_shortest:
   "cycle_free M n \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow>
@@ -912,17 +890,11 @@ section {* Result under the presence of negative cycles *}
 
 lemma D_not_diag_le [resolve]:
   "x \<in> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs} \<Longrightarrow>
-   D M i j k \<le> x"
-@proof
-  @have "finite {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-@qed
+   D M i j k \<le> x" by auto2
 
 lemma D_not_diag_le' [backward]:
   "distinct xs \<Longrightarrow> set xs \<subseteq> {0..k} \<Longrightarrow> i \<notin> set xs \<Longrightarrow> j \<notin> set xs \<Longrightarrow>
-   D M i j k \<le> len M i j xs"
-@proof
-  @have "len M i j xs \<in> {len M i j xs |xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
-@qed
+   D M i j k \<le> len M i j xs" by auto2
 
 lemma fw_Suc [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> i' \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> (fw M n (Suc k) i' j')\<langle>i,j\<rangle> \<le> (fw M n k n n)\<langle>i,j\<rangle>"
@@ -964,8 +936,6 @@ lemma negative_len_shortest [backward]:
     @apply_induct_hyp "length (as @ a # cs)" "as @ a # cs" i
   @end
 @qed
-
-setup {* del_prfstep_thm @{thm rem_cycles_def} *}
 
 theorem FW_neg_cycle_detect:
   "\<not>cycle_free M n \<Longrightarrow> \<exists>i\<le>n. (fw M n n n n)\<langle>i,i\<rangle> < 0"
@@ -1034,7 +1004,7 @@ theorem FW_neg_cycle_detect:
   @end
   @have "k = 0"
   @have (@rule) "xs = [] \<or> xs = [0]" @with
-    @have "xs \<in> {xs. set xs \<subseteq> {0} \<and> distinct xs}"
+    @have "set xs \<subseteq> {0}"
   @end
   @case "xs = []" @with
     @have "M\<langle>j,j\<rangle> < 0"
