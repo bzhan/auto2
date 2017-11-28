@@ -122,6 +122,10 @@ lemma add_mono_neutr [backward]: "(0::'a::linordered_ring) \<le> b \<Longrightar
 lemma add_mono_neutl [backward]: "(0::'a::linordered_ring) \<le> b \<Longrightarrow> a \<le> b + a" by simp
 setup {* add_backward2_prfstep @{thm add_mono} *}
 setup {* add_forward_prfstep @{thm add_less_imp_less_left} *}
+setup {* add_backward1_prfstep @{thm add_increasing2} *}
+lemma sum_le_zero1 [forward]: "(a::'a::linordered_ring) + b < 0 \<Longrightarrow> a \<ge> 0 \<Longrightarrow> b < 0" by (meson add_less_same_cancel1 less_le_trans)
+lemma less_sum1 [backward]: "b > 0 \<Longrightarrow> a < a + (b::nat)" by auto
+setup {* add_backward_prfstep @{thm Nat.trans_less_add2} *}
 
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp

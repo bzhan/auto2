@@ -46,7 +46,13 @@ setup {* add_backward2_prfstep @{thm max.mono} *}
 setup {* add_rewrite_rule @{thm max.absorb1} *}
 setup {* add_rewrite_rule @{thm max.absorb2} *}
 
-subsection {* Existence of numbers satisfying inequalities *}
+section {* Min *}
+
+setup {* add_backward_prfstep @{thm Min_in} *}
+setup {* add_backward_prfstep @{thm Min_le} *}
+setup {* add_backward2_prfstep @{thm Min_eqI} *}
+
+section {* Existence of numbers satisfying inequalities *}
 
 theorem exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
 setup {* fold add_resolve_prfstep [@{thm lt_ex}, @{thm gt_ex}] *}

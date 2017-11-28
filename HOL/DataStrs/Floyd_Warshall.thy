@@ -625,18 +625,6 @@ section {* Definition of shortest paths *}
 definition D :: "('a::linordered_ring) mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a" where [rewrite]:
   "D M i j k = Min {len M i j xs | xs. set xs \<subseteq> {0..k} \<and> i \<notin> set xs \<and> j \<notin> set xs \<and> distinct xs}"
 
-setup {* add_rewrite_rule @{thm distinct_card} *}
-setup {* add_resolve_prfstep @{thm card_mono} *}
-setup {* add_resolve_prfstep @{thm finite_lists_length_le} *}
-setup {* add_forward_prfstep @{thm rev_finite_subset} *}
-setup {* add_backward1_prfstep @{thm rev_finite_subset} *}
-setup {* add_backward_prfstep @{thm finite_image_set} *}
-setup {* add_forward_prfstep @{thm finite_atLeastAtMost} *}
-setup {* add_backward_prfstep @{thm Min_in} *}
-
-lemma mem_finite_atLeastAtMost [rewrite]: "x \<in> {0..(k::nat)} \<longleftrightarrow> x \<le> k" by simp
-setup {* add_backward2_prfstep @{thm Min_eqI} *}
-
 lemma distinct_length_le [resolve]:
   "finite s \<Longrightarrow> distinct xs \<Longrightarrow> set xs \<subseteq> s \<Longrightarrow> length xs \<le> card s"
 @proof @have "card (set xs) \<le> card s" @qed
@@ -760,8 +748,6 @@ lemma D_eqI2 [backward2]:
 
 section {* Result under the absence of negative cycles *}
 
-setup {* add_backward1_prfstep @{thm add_increasing2} *}
-
 lemma distinct_list_single_elem_decomp [rewrite]:
   "{xs. set xs \<subseteq> {0} \<and> distinct xs} = {[], [0::'a::zero]}"
 @proof
@@ -772,8 +758,6 @@ lemma distinct_list_single_elem_decomp [rewrite]:
 @qed
 
 setup {* del_prfstep_thm @{thm rem_cycles_def} *}
-setup {* add_backward_prfstep @{thm Min_le} *}
-setup {* add_resolve_prfstep @{thm split_list} *}
 
 theorem fw_shortest_path_up_to [backward2]:
   "cycle_free_up_to M k n \<Longrightarrow> i' \<le> i \<Longrightarrow> j' \<le> j \<Longrightarrow> i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> k \<le> n \<Longrightarrow>
@@ -944,13 +928,6 @@ lemma fw_Suc [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> i' \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> (fw M n (Suc k) i' j')\<langle>i,j\<rangle> \<le> (fw M n k n n)\<langle>i,j\<rangle>"
   by (metis Suc_innermost_id1' Suc_innermost_id2 Suc_n_not_le_n fw_invariant linear not_less
             single_iteration_inv single_iteration_inv')
-
-lemma sum_le_zero1 [forward]: "(a::'a::linordered_ring) + b < 0 \<Longrightarrow> a \<ge> 0 \<Longrightarrow> b < 0"
-  by (meson add_less_same_cancel1 less_le_trans)
-
-setup {* add_backward_prfstep @{thm not_distinct_decomp} *}
-lemma less_sum1 [backward]: "b > 0 \<Longrightarrow> a < a + (b::nat)" by auto
-setup {* add_backward_prfstep @{thm Nat.trans_less_add2} *}
 
 lemma negative_len_shortest [backward]:
   "len M i i xs < 0 \<Longrightarrow> \<exists>j ys. distinct (j # ys) \<and> len M j j ys < 0 \<and> j \<in> set (i # xs) \<and> set ys \<subseteq> set xs"

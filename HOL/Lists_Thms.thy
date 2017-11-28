@@ -262,4 +262,17 @@ lemma list_length: "length (list s n) = n" by (simp add: list_def)
 setup {* add_forward_prfstep_cond @{thm list_length} [with_term "list ?s ?n"] *}
 lemma list_nth [rewrite]: "i < length (list s n) \<Longrightarrow> (list s n) ! i = s i" by (simp add: list_def)
 
+section {* Splitting of lists *}
+
+setup {* add_resolve_prfstep @{thm split_list} *}
+setup {* add_backward_prfstep @{thm not_distinct_decomp} *}
+
+section {* Finiteness *}
+
+setup {* add_resolve_prfstep @{thm finite_lists_length_le} *}
+
+section {* Cardinality *}
+
+setup {* add_rewrite_rule @{thm distinct_card} *}
+
 end

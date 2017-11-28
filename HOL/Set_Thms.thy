@@ -123,14 +123,18 @@ setup {* add_resolve_prfstep @{thm Finite_Set.finite.emptyI} *}
 lemma set_finite_single [resolve]: "finite {x}" by simp
 setup {* add_rewrite_rule @{thm Finite_Set.finite_Un} *}
 lemma Max_ge' [forward]: "finite A \<Longrightarrow> x > Max A \<Longrightarrow> \<not>(x \<in> A)" using Max_ge leD by auto
+setup {* add_backward_prfstep @{thm finite_image_set} *}
+setup {* add_forward_prfstep @{thm finite_atLeastAtMost} *}
+setup {* add_forward_prfstep @{thm rev_finite_subset} *}
+setup {* add_backward1_prfstep @{thm rev_finite_subset} *}
 
 subsection {* Cardinality *}
 
 setup {* add_rewrite_rule @{thm card_empty} *}
 lemma card_emptyD [rewrite]: "finite S \<Longrightarrow> card S = 0 \<Longrightarrow> S = {}" by simp
-lemma card_minus1 [rewrite]:
-  "x \<in> S \<Longrightarrow> card (S - {x}) = card S - 1" by (simp add: card_Diff_subset)
+lemma card_minus1 [rewrite]: "x \<in> S \<Longrightarrow> card (S - {x}) = card S - 1" by (simp add: card_Diff_subset)
 setup {* add_forward_prfstep @{thm finite_Diff} *}
+setup {* add_resolve_prfstep @{thm card_mono} *}
 
 subsection {* image_set *}
 
@@ -186,5 +190,6 @@ setup {* add_rewrite_rule @{thm prod_mset_Un} *}
 subsection {* Set interval *}
 
 setup {* add_rewrite_rule @{thm Set_Interval.ord_class.lessThan_iff} *}
+setup {* add_rewrite_rule @{thm Set_Interval.ord_class.atLeastAtMost_iff} *}
 
 end
