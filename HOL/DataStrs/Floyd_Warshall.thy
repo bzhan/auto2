@@ -750,21 +750,11 @@ theorem fw_shortest_path_up_to [backward2]:
       @case "xs = [0]" @with
         @have "(fw M n 0 i j)\<langle>i',j'\<rangle> \<le> (fw M n 0 i' j')\<langle>i',j'\<rangle>"
         @have "(fw M n 0 i' j')\<langle>i',j'\<rangle> \<le> M\<langle>i',0\<rangle> + M\<langle>0,j'\<rangle>" @with
-          @cases j' @with
-            @subgoal "j' = 0"
-              @cases i' @with @subgoal "i' = Suc i'"
-                @have "(fw_upd (fw M n 0 i' n) 0 (Suc i') 0)\<langle>Suc i',0\<rangle> \<le> (fw M n 0 i' n)\<langle>Suc i',0\<rangle>"
-                @have "(fw M n 0 i' n)\<langle>Suc i',0\<rangle> \<le> M\<langle>Suc i',0\<rangle>"
-              @endgoal @end
-            @endgoal
-            @subgoal "j' = Suc j'"
-              @have "(fw_upd (fw M n 0 i' j') 0 i' (Suc j'))\<langle>i',Suc j'\<rangle> \<le>
-                       (fw M n 0 i' j')\<langle>i',0\<rangle> + (fw M n 0 i' j')\<langle>0,Suc j'\<rangle>"
-              @have "(fw M n 0 i' j')\<langle>i',0\<rangle> + (fw M n 0 i' j')\<langle>0,Suc j'\<rangle> \<le> M\<langle>i',0\<rangle> + M\<langle>0,Suc j'\<rangle>" @with
-                @have "(fw M n 0 i' j')\<langle>i',0\<rangle> \<le> M\<langle>i',0\<rangle>"
-              @end
-            @endgoal
-          @end
+          @cases j' @with @subgoal "j' = Suc j'"
+            @have "(fw M n 0 i' j')\<langle>i',0\<rangle> + (fw M n 0 i' j')\<langle>0,Suc j'\<rangle> \<le> M\<langle>i',0\<rangle> + M\<langle>0,Suc j'\<rangle>" @with
+              @have "(fw M n 0 i' j')\<langle>i',0\<rangle> \<le> M\<langle>i',0\<rangle>"
+            @end
+          @endgoal @end
         @end
       @end
     @end
@@ -951,8 +941,6 @@ theorem FW_neg_cycle_detect:
     @end
     @have "j \<noteq> k"
     @obtain ys zs where "xs = ys @ k # zs"
-    @have "distinct ys" @have "distinct zs" @have "k \<notin> set ys" @have "k \<notin> set zs"
-    @have "j \<notin> set ys" @have "j \<notin> set zs"
     @have "set ys \<subseteq> {0..k-1}"
     @have "set zs \<subseteq> {0..k-1}"
     @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle> \<le> len M j k ys + len M k j zs" @with
@@ -961,24 +949,21 @@ theorem FW_neg_cycle_detect:
       @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> \<le> len M j k ys"
     @end
     @have "(fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle> < 0"
+    @have "k = Suc (k-1)"
     @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>" @with
-      @case "j = 0" @with
-        @have "fw M n k j j = fw_upd (fw M n (k-1) n n) k j j" @with
-          @have "k = Suc (k-1)"
-        @end
-        @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>"
-      @end
-      @case "j \<noteq> 0" @with
-        @have "j = Suc (j-1)"
-        @have "fw M n k j j = fw_upd (fw M n k j (j-1)) k j j"
-        @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n k j (j-1))\<langle>j,k\<rangle> + (fw M n k j (j-1))\<langle>k,j\<rangle>"
-        @have "j - 1 < n"
-        @have "k = Suc (k-1)"
-        @have "(fw M n k j j)\<langle>j,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>" @with
-          @have "(fw M n k j (j-1))\<langle>j,k\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle>"
-          @have "(fw M n k j (j-1))\<langle>k,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>k,j\<rangle>"
-          @have "(fw M n k j (j-1))\<langle>j,k\<rangle> + (fw M n k j (j-1))\<langle>k,j\<rangle> \<le> (fw M n (k-1) n n)\<langle>j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,j\<rangle>"
-        @end
+      @cases j @with
+        @subgoal "j = 0"
+          @have "(fw M n k 0 0)\<langle>0,0\<rangle> \<le> (fw M n (k-1) n n)\<langle>0,k\<rangle> + (fw M n (k-1) n n)\<langle>k,0\<rangle>"
+        @endgoal
+        @subgoal "j = Suc j"
+          @have "(fw M n k (Suc j) (Suc j))\<langle>Suc j,Suc j\<rangle> \<le> (fw M n k (Suc j) j)\<langle>Suc j,k\<rangle> + (fw M n k (Suc j) j)\<langle>k,Suc j\<rangle>"
+          @have "j < n"
+          @have "(fw M n k (Suc j) (Suc j))\<langle>Suc j,Suc j\<rangle> \<le> (fw M n (k-1) n n)\<langle>Suc j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,Suc j\<rangle>" @with
+            @have "(fw M n k (Suc j) j)\<langle>Suc j,k\<rangle> \<le> (fw M n (k-1) n n)\<langle>Suc j,k\<rangle>"
+            @have "(fw M n k (Suc j) j)\<langle>k,Suc j\<rangle> \<le> (fw M n (k-1) n n)\<langle>k,Suc j\<rangle>"
+            @have "(fw M n k (Suc j) j)\<langle>Suc j,k\<rangle> + (fw M n k (Suc j) j)\<langle>k,Suc j\<rangle> \<le> (fw M n (k-1) n n)\<langle>Suc j,k\<rangle> + (fw M n (k-1) n n)\<langle>k,Suc j\<rangle>"
+          @end
+        @endgoal
       @end
     @end
     @have "(fw M n k j j)\<langle>j,j\<rangle> < 0"
@@ -989,24 +974,20 @@ theorem FW_neg_cycle_detect:
     @have "set xs \<subseteq> {0}"
   @end
   @case "xs = []" @with
-    @have "M\<langle>j,j\<rangle> < 0"
     @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> M\<langle>j,j\<rangle>"
   @end
   @case "xs = [0]" @with
     @have "M\<langle>j,0\<rangle> + M\<langle>0,j\<rangle> < 0"
     @have "(fw M n 0 j j)\<langle>j,j\<rangle> < 0" @with
-      @case "j = 0" @then
-      @have "j = Suc (j-1)"
-      @have "fw M n 0 j j = fw_upd (fw M n 0 j (j-1)) 0 j j"
-      @have "(fw M n 0 j j)\<langle>j,j\<rangle> \<le> (fw M n 0 j (j-1))\<langle>j,0\<rangle> + (fw M n 0 j (j-1))\<langle>0,j\<rangle>"
-      @have "(fw M n 0 j (j-1))\<langle>j,0\<rangle> + (fw M n 0 j (j-1))\<langle>0,j\<rangle> \<le> M\<langle>j,0\<rangle> + M\<langle>0,j\<rangle>" @with
-        @have "(fw M n 0 j (j-1))\<langle>j,0\<rangle> \<le> M\<langle>j,0\<rangle>"
-      @end
-    @end
-    @have "(fw M n 0 n n)\<langle>j,j\<rangle> < 0" @with
-      @have "(fw M n 0 n n)\<langle>j,j\<rangle> \<le> (fw M n 0 j j)\<langle>j,j\<rangle>"
+      @cases j @with @subgoal "j = Suc j"
+        @have "(fw M n 0 (Suc j) (Suc j))\<langle>Suc j,Suc j\<rangle> \<le> (fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> + (fw M n 0 (Suc j) j)\<langle>0,Suc j\<rangle>"
+        @have "(fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> + (fw M n 0 (Suc j) j)\<langle>0,Suc j\<rangle> \<le> M\<langle>Suc j,0\<rangle> + M\<langle>0,Suc j\<rangle>" @with
+          @have "(fw M n 0 (Suc j) j)\<langle>Suc j,0\<rangle> \<le> M\<langle>Suc j,0\<rangle>"
+        @end
+      @endgoal @end
     @end
     @have "(fw M n n n n)\<langle>j,j\<rangle> \<le> (fw M n 0 n n)\<langle>j,j\<rangle>"
+    @have "(fw M n 0 n n)\<langle>j,j\<rangle> \<le> (fw M n 0 j j)\<langle>j,j\<rangle>"
   @end
 @qed
 
