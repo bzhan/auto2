@@ -81,8 +81,15 @@ lemma sorted_ConsD2 [forward, backward2]: "sorted (x # xs) \<Longrightarrow> y \
   using sorted_Cons by blast  
 
 lemma sorted_appendI [backward]:
-  "sorted xs \<Longrightarrow> sorted ys \<Longrightarrow> \<forall>x\<in>set xs. \<forall>y\<in>set ys. x \<le> y \<Longrightarrow> sorted (xs @ ys)"
+  "sorted xs \<and> sorted ys \<and> (\<forall>x\<in>set xs. \<forall>y\<in>set ys. x \<le> y) \<Longrightarrow> sorted (xs @ ys)"
   by (simp add: sorted_append)
+
+lemma sorted_appendE [forward]: "sorted (xs @ ys) \<Longrightarrow> sorted xs \<and> sorted ys"
+  by (simp add: sorted_append)
+
+lemma sorted_appendE2 [forward]:
+  "sorted (xs @ ys) \<Longrightarrow> x \<in> set xs \<Longrightarrow> \<forall>y\<in>set ys. x \<le> y"
+  using sorted_append by blast
 
 lemma sorted_nth_mono' [backward]:
   "sorted xs \<Longrightarrow> j < length xs \<Longrightarrow> i \<le> j \<Longrightarrow> xs ! i \<le> xs ! j" using sorted_nth_mono by auto
@@ -97,6 +104,7 @@ setup {* add_rewrite_rule @{thm length_sort} *}
 setup {* add_rewrite_rule @{thm set_sort} *}
 setup {* add_backward_prfstep @{thm properties_for_sort} *}
 lemma sort_Nil [rewrite]: "sort [] = []" by auto
+lemma sort_singleton [rewrite]: "sort [a] = [a]" by auto2
 
 section {* distinct *}
 
@@ -175,6 +183,11 @@ lemma take_length [rewrite]: "take (length xs) xs = xs" by simp
 
 setup {* add_forward_prfstep_cond @{thm List.set_take_subset} [with_term "set (take ?n ?xs)"] *}
 
+lemma take_Suc [rewrite]: "Suc n \<le> length xs \<Longrightarrow> take (Suc n) xs = take n xs @ [nth xs n]"
+  using Suc_le_lessD take_Suc_conv_app_nth by blast
+
+setup {* add_rewrite_rule @{thm take_update_cancel} *}
+
 section {* drop *}
 
 setup {* add_forward_prfstep_cond @{thm List.length_drop} [with_term "drop ?n ?xs"] *}
@@ -208,8 +221,6 @@ lemma mset_simps_2 [rewrite]: "mset (a # x) = mset x + {#a#}" by simp
 setup {* add_rewrite_rule @{thm mset_append} *}
 
 setup {* add_rewrite_rule @{thm mset_eq_setD} *}
-lemma in_mset_butlastD [forward]:
-  "p \<in># mset (butlast xs) \<Longrightarrow> p \<in># mset xs" by (simp add: in_set_butlastD)
 setup {* add_rewrite_rule_cond @{thm in_multiset_in_set} [with_term "set ?xs"] *}
 setup {* add_rewrite_rule_back_cond @{thm in_multiset_in_set} [with_term "mset ?xs"] *}
 setup {* add_backward_prfstep @{thm Multiset.nth_mem_mset} *}
