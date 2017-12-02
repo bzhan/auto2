@@ -13,6 +13,10 @@ sig
   val norm_mult_poly_monomial: conv
   val norm_mult_polynomials: conv
   val norm_full: conv
+
+  val nat_ring_equiv: proofstep
+  val nat_ring_unit: proofstep
+  val add_nat_ring_proofsteps: theory -> theory
 end;
 
 structure NatRing : NAT_RING =
@@ -231,4 +235,76 @@ fun norm_full ct =
         Conv.all_conv ct
     end
 
+fun is_nat_op_head t =
+    is_plus t orelse is_times t orelse is_Suc t
+
+fun nat_ring_equiv_fn ictxt item1 item2 =
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id = id1, tname = tname1, ...} = item1
+      val {id = id2, tname = tname2, ...} = item2
+      val (ct1, ct2) = (the_single tname1, the_single tname2)
+      val (t1, t2) = (Thm.term_of ct1, Thm.term_of ct2)
+      val id = BoxID.merge_boxes ctxt (id1, id2)
+    in
+      if Term_Ord.termless (t2, t1) then []
+      else if RewriteTable.is_equiv id ctxt (ct1, ct2) then []
+      else if not (is_nat_op_head t1) orelse not (is_nat_op_head t2) then []
+      else let
+        val norm1 = norm_full ct1
+        val norm2 = norm_full ct2
+      in
+        if Util.rhs_of norm1 aconv Util.rhs_of norm2 then
+          let
+            val eq = Util.transitive_list [norm1, meta_sym norm2]
+          in
+            [Update.thm_update (id, to_obj_eq eq)]
+          end
+        else []
+      end
+    end
+
+val nat_ring_equiv =
+    {name = "nat_ring_equiv",
+     args = [TypedMatch (TY_TERM, @{term_pat "?m::nat"}),
+             TypedMatch (TY_TERM, @{term_pat "?n::nat"})],
+     priority = PRIORITY_ADD,
+     func = TwoStep nat_ring_equiv_fn}
+
+fun nat_ring_unit_fn ictxt item =
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id, tname, ...} = item
+      val ct = the_single tname
+      val t = Thm.term_of ct
+    in
+      if not (is_nat_op_head t) then []
+      else let
+        val norm = norm_full ct
+        val ct' = Thm.rhs_of norm
+        val t' = Thm.term_of ct'
+      in
+        if not (is_nat_op_head t') andalso
+           not (RewriteTable.is_equiv id ctxt (ct, ct')) then
+          [Update.thm_update (id, to_obj_eq norm)]
+        else []
+      end
+    end
+
+val nat_ring_unit =
+    {name = "nat_ring_unit",
+     args = [TypedMatch (TY_TERM, @{term_pat "?m::nat"})],
+     priority = PRIORITY_ADD,
+     func = OneStep nat_ring_unit_fn}
+
+val add_nat_ring_proofsteps =
+    fold add_prfstep [
+      nat_ring_equiv, nat_ring_unit
+
+    ] #> fold add_fixed_sc [
+      ("nat_ring_equiv", 1), ("nat_ring_unit", 1)
+    ]
+
 end;  (* NatRing *)
+
+val _ = Theory.setup NatRing.add_nat_ring_proofsteps
