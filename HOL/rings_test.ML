@@ -7,6 +7,22 @@ local
 
 in
 
+fun test_term ctxt f err_str (str1, str2) =
+    let
+      val (t1, t2) = (Proof_Context.read_term_pattern ctxt str1,
+                      Proof_Context.read_term_pattern ctxt str2)
+      val t2' = f t1
+    in
+      if t2 aconv t2' then ()
+      else let
+        val _ = trace_t ctxt "Input:" t1
+        val _ = trace_t ctxt "Expected:" t2
+        val _ = trace_t ctxt "Actual:" t2'
+      in
+        raise Fail err_str
+      end
+    end
+
 val test =
     let
       val test_data = [
@@ -25,7 +41,8 @@ val test =
         ("Suc (Suc a + Suc b)", "a + b + 3")
       ]
     in
-      map (Util.test_conv ctxt NatRing.norm_full "norm_full") test_data
+      map (Util.test_conv ctxt NatRing.norm_full "norm_full") test_data @
+      map (test_term ctxt NatRing.norm_ring_term "norm_ring_term") test_data
     end
 
 end
