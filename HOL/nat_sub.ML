@@ -567,7 +567,8 @@ fun nat_sub_expand ctxt (id, ct) =
     end
 
 fun is_nat_sub_form t =
-    if is_plus t orelse is_minus t then fastype_of (dest_arg t) = natT
+    if is_plus t orelse is_minus t orelse is_times t then
+      fastype_of (dest_arg t) = natT
     else false
 
 fun nat_sub_expand_equiv_fn ictxt item1 item2 =
