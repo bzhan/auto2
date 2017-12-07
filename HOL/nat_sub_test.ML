@@ -7,23 +7,17 @@ local
 
 in
 
-fun test_norm_t err_str (str1, str2) =
+fun test_term ctxt f err_str (str1, str2) =
     let
-      val (t1, t2) = apply2 (Syntax.read_term ctxt) (str1, str2)
-      val (ct1, ct2) = apply2 (Thm.cterm_of ctxt) (t1, t2)
-      val (p1, m1, n1) = NatSub.norm_minus_ct ct1
-      val (p2, m2, n2) = NatSub.norm_minus_ct ct2
+      val (t1, t2) = (Proof_Context.read_term_pattern ctxt str1,
+                      Proof_Context.read_term_pattern ctxt str2)
+      val t2' = f (Thm.cterm_of ctxt t1)
     in
-      if eq_list (op aconvc) (p1, p2) andalso
-         eq_list (op aconvc) (m1, m2) andalso n1 = n2 then ()
+      if t2 aconv t2' then ()
       else let
-        val _ = trace_tlist ctxt "Inputs" [t1, t2]
-        val _ = trace_tlist ctxt "p1" (map Thm.term_of p1)
-        val _ = trace_tlist ctxt "m1" (map Thm.term_of m1)
-        val _ = trace_tlist ctxt "p2" (map Thm.term_of p2)
-        val _ = trace_tlist ctxt "m2" (map Thm.term_of m2)
-        val _ = tracing ("n1 " ^ string_of_int n1)
-        val _ = tracing ("n2 " ^ string_of_int n2)
+        val _ = trace_t ctxt "Input:" t1
+        val _ = trace_t ctxt "Expected:" t2
+        val _ = trace_t ctxt "Actual:" t2'
       in
         raise Fail err_str
       end
@@ -54,7 +48,9 @@ val test =
 
         (* Cancellation needed. *)
         ("a - a", "(0::nat)"),
+        ("a - 0", "a"),
         ("a + b - a", "b"),
+        ("a - (a - a)", "a"),
         ("a + b - a - c", "b - c"),
         ("a + b - a - b", "0::nat"),
         ("a + b + c - a - b", "c"),
@@ -71,11 +67,32 @@ val test =
         ("5 - a - 3", "2 - a"),
         ("3 - a - 3", "0 - a"),
         ("(5::nat) - 3", "2::nat"),
-        ("(3::nat) - 3", "0::nat")
+        ("(3::nat) - 3", "0::nat"),
+
+        (* Monomial *)
+        ("a * 3", "a * 3"),
+        ("a * b + b * a", "a * b * 2"),
+
+        (* Cancellation between terms *)
+        ("a * 3 + a * 2", "a * 5"),
+        ("a * 3 - a * 2", "a"),
+        ("a * 3 + b - a * 2", "a + b"),
+        ("a * 2 + b - a * 3", "b - a"),
+        ("a * 2 + b * 3 - a * 3 - b * 2", "b - a"),
+        ("a * 3 - a * 2 - a", "0::nat"),
+
+        (* Distributivity *)
+        ("(a + 2) * b", "b * 2 + a * b"),
+        ("(a + 2) * 2", "a * 2 + 4"),
+        ("(a - 2) * b", "a * b - b * 2"),
+        ("(a - 2) * 2", "a * 2 - 4"),
+        ("(a + 1) * (a - 1)", "a * a - 1"),
+        ("(a + 3) * (a - 2)", "a + a * a - 6"),
+        ("(a - 1) * (a - 1)", "a * a + 1 - a * 2")
       ]
     in
       map (WfTerm.test_wfconv ctxt NatSub.fheads NatSub.norm_minus "test") test_data @
-      map (test_norm_t "test_norm") test_data
+      map (test_term ctxt NatSub.norm_ring_term "test_t") test_data
     end
 
 end

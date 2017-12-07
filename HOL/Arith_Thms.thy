@@ -56,8 +56,6 @@ ML_file "nat_order.ML"
 ML_file "nat_order_test.ML"
 ML_file "order.ML"
 ML_file "order_test.ML"
-ML_file "rings.ML"
-ML_file "rings_test.ML"
 
 setup {* register_wellform_data ("(a::nat) - b", ["a \<ge> b"]) *}
 setup {* add_prfstep_check_req ("(a::nat) - b", "(a::nat) \<ge> b") *}
@@ -73,16 +71,21 @@ lemma nat_sub1:
 lemma nat_sub2:
   "(a::nat) \<ge> b \<Longrightarrow> c \<ge> d \<Longrightarrow> a - b \<ge> c - d \<Longrightarrow> (a - b) - (c - d) = (a + d) - (b + c) \<and> a + d \<ge> b + c" by simp
 
-(* Cancel identical terms on two sides, yielding a normalized expression. *)
 lemma nat_sub3:
+  "(a::nat) \<ge> b \<Longrightarrow> c \<ge> d \<Longrightarrow> (a - b) * (c - d) = (a * c + b * d) - (a * d + b * c) \<and> a * c + b * d \<ge> a * d + b * c"
+  by (smt diff_mult_distrib mult.commute mult_le_mono1 nat_sub2)
+
+(* Cancel identical terms on two sides, yielding a normalized expression. *)
+lemma nat_sub_combine:
   "(a::nat) + b \<ge> c + b \<Longrightarrow> (a + b) - (c + b) = a - c \<and> a \<ge> c" by simp
 
-(* Cancel constants on two sides, yielding a normalized expression. *)
-lemma nat_sub4:
-  "n \<ge> m \<Longrightarrow> (a::nat) + n \<ge> c + m \<Longrightarrow> (a + n) - (c + m) = (a + (n - m)) - c \<and> a + (n - m) \<ge> c \<and> n \<ge> m" by arith
+lemma nat_sub_combine2:
+  "n \<ge> m \<Longrightarrow> (a::nat) + b * n \<ge> c + b * m \<Longrightarrow> (a + b * n) - (c + b * m) = (a + b * (n - m)) - c \<and> a + b * (n - m) \<ge> c \<and> n \<ge> m"
+  by (simp add: add.commute right_diff_distrib')
 
-lemma nat_sub5:
-  "n \<le> m \<Longrightarrow> (a::nat) + n \<ge> c + m \<Longrightarrow> (a + n) - (c + m) = a - (c + (m - n)) \<and> a \<ge> c + (m - n) \<and> m \<ge> n" by simp
+lemma nat_sub_combine3:
+  "n \<le> m \<Longrightarrow> (a::nat) + b * n \<ge> c + b * m \<Longrightarrow> (a + b * n) - (c + b * m) = a - (c + b * (m - n)) \<and> a \<ge> c + b * (m - n) \<and> m \<ge> n"
+  by (smt add.commute mult.commute nat_diff_add_eq2 nat_le_add_iff1)
 
 ML_file "nat_sub.ML"
 ML_file "nat_sub_test.ML"
