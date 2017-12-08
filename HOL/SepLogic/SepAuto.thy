@@ -333,6 +333,10 @@ setup {* add_rewrite_rule @{thm execute_lookup} *}
 lemma lookup_rule:
   "<p \<mapsto>\<^sub>r x> !p <\<lambda>r. p \<mapsto>\<^sub>r x * \<up>(r = x)>" by auto2
 
+setup {* add_rewrite_rule @{thm execute_freeze} *}
+lemma freeze_rule:
+  "<a \<mapsto>\<^sub>a xs> Array.freeze a <\<lambda>r. a \<mapsto>\<^sub>a xs * \<up>(r = xs)>" by auto2
+
 (* Next, the update rules. *)
 setup {* add_rewrite_rule @{thm Ref.lim_set} *}
 lemma Array_lim_set [rewrite]: "lim (Array.set p xs h) = lim h" by (simp add: Array.set_def)
@@ -505,7 +509,7 @@ lemma heap_preserve_assert [heap_presv]: "heap_preserving (assert P x)"
 setup {* fold add_hoare_triple_prfstep [
   @{thm assert_rule}, @{thm update_rule}, @{thm nth_rule}, @{thm upd_rule},
   @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule},
-  @{thm of_list_rule}, @{thm length_rule}] *}
+  @{thm of_list_rule}, @{thm length_rule}, @{thm freeze_rule}] *}
 
 (* Some simple tests *)
 

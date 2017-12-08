@@ -86,6 +86,7 @@ session SepLogic_More = AUTO2 +
   *}
   theories
     "HOL/SepLogic/BinarySearch"
+    "HOL/SepLogic/MergeSort"
 
 session Auto2_FOL = FOL +
   description {*
