@@ -9,10 +9,10 @@ function binarysearch_fun :: "nat \<Rightarrow> nat \<Rightarrow> 'a::linorder \
   "binarysearch_fun l r x xs =
    (if l \<ge> r then False
     else if l + 1 \<ge> r then xs ! l = x
-    else
-      if xs ! avg l r = x then True
-      else if xs ! avg l r < x then binarysearch_fun (avg l r + 1) r x xs
-      else binarysearch_fun l (avg l r) x xs)"
+    else let m = avg l r in
+      if xs ! m = x then True
+      else if xs ! m < x then binarysearch_fun (m + 1) r x xs
+      else binarysearch_fun l m x xs)"
 by pat_completeness auto
 termination by (relation "measure (\<lambda>(l,r,a,f). r-l)") auto
 

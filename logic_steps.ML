@@ -1006,6 +1006,69 @@ val disj_match_iff_prfstep =
      priority = PRIORITY_ADD,
      func = OneStep disj_match_iff_fn}
 
+fun swap_disj ct =
+    Conv.every_conv [rewr_obj_eq (obj_sym UtilBase.disj_assoc_th),
+                     Conv.arg1_conv (rewr_obj_eq UtilBase.disj_commute_th),
+                     rewr_obj_eq UtilBase.disj_assoc_th] ct
+
+fun move_outmost u ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if u aconv t then Conv.all_conv ct
+      else if not (is_disj t) then
+        raise Fail "move_outmost: u not found in ct."
+      else let
+        val (a, b) = Util.dest_binop_args t
+      in
+        if u aconv a then Conv.all_conv ct
+        else if is_disj b then
+          Conv.every_conv [Conv.arg_conv (move_outmost u),
+                           swap_disj] ct
+        else if u aconv b then
+          rewr_obj_eq UtilBase.disj_commute_th ct
+        else
+          raise Fail "move_outmost: u not found in ct."
+      end
+    end
+
+fun disj_use_vardef ictxt item =
+    if not (IncrContext.is_single_ictxt ictxt) then []
+    else if is_match_prem_only item then []
+    else let
+      val ctxt = IncrContext.context_of ictxt
+      val {id, tname, prop, ...} = item
+      val (disj_head, csubs) = dest_tname_of_disj tname
+      val subs = map Thm.term_of csubs
+      val len = length subs
+      fun is_vardef t = is_eq_term t andalso is_Var (dest_arg1 t)
+    in
+      if len = 1 then [] else
+      case find_first (is_vardef o get_neg) subs of
+          NONE => []
+        | SOME t =>
+          let
+            val (t1, _) = dest_eq (get_neg t)
+            val cv = Conv.every_conv [
+                  move_outmost t,
+                  rewr_obj_eq (obj_sym UtilBase.imp_conv_disj_th)]
+            val prop' =
+                prop |> apply_to_thm' cv
+                     |> Thm.forall_intr (Thm.cterm_of ctxt t1)
+                     |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
+                     |> apply_to_thm' (rewr_obj_eq UtilBase.use_vardef_th)
+          in
+            [ShadowItem {id = id, item = item},
+             disj_to_update false disj_head (id, SOME (len - 1), prop')]
+          end
+    end
+
+val disj_use_vardef_prfstep =
+    {name = "disj_use_vardef",
+     args = [TypedMatch (TY_DISJ, boolVar "A")],
+     priority = PRIORITY_NORM,
+     func = OneStep disj_use_vardef}
+
 (* For active case, create box checking the next case. *)
 fun disj_create_case_fn ictxt {id, tname, ...} =
     if not (IncrContext.is_single_ictxt ictxt) then [] else
@@ -1076,7 +1139,7 @@ val add_disj_proofsteps =
 
     ] #> fold add_prfstep [
       match_update_prfstep, match_one_sch_prfstep, disj_match_iff_prfstep,
-      disj_create_case_prfstep, disj_shadow_prfstep
+      disj_create_case_prfstep, disj_shadow_prfstep, disj_use_vardef_prfstep
     ]
 
 (* Normalizers *)
