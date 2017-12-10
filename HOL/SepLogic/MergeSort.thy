@@ -23,6 +23,16 @@ lemma merge_list_simps' [rewrite]:
                else merge_list (xs @ [x]) ys @ [y])" by auto2+
 setup {* del_prfstep_thm @{thm merge_list.simps} *}
 
+lemma merge_list_length [rewrite]:
+  "length (merge_list xs ys) = length xs + length ys"
+@proof @fun_induct "merge_list xs ys" @with
+  @subgoal "(xs = xs, ys = ys)"
+    @case "xs = []" @case "ys = []"
+    @have "xs = butlast xs @ [last xs]"
+    @have "ys = butlast ys @ [last ys]"
+  @end
+@qed
+
 lemma merge_list_correct_mset [rewrite]:
   "mset (merge_list xs ys) = mset xs + mset ys"
 @proof @fun_induct "merge_list xs ys" @with
@@ -146,7 +156,7 @@ lemma mergeinto_to_fun [hoare_triple]:
   "la \<le> length as \<Longrightarrow> lb \<le> length bs \<Longrightarrow> length cs = length as + length bs \<Longrightarrow>
     <a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a bs * c \<mapsto>\<^sub>a cs>
     mergeinto la lb a b c
-    <\<lambda>_. a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a bs * c \<mapsto>\<^sub>a mergeinto_fun la lb as bs cs>\<^sub>t"
+    <\<lambda>_. a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a bs * c \<mapsto>\<^sub>a mergeinto_fun la lb as bs cs>"
 @proof @fun_induct "mergeinto_fun la lb as bs cs" @with
   @subgoal "(la = Suc la, lb = Suc lb, as = as, bs = bs, cs = cs)"
     @have "Suc la + Suc lb = Suc (la + lb) + 1"
@@ -155,10 +165,10 @@ lemma mergeinto_to_fun [hoare_triple]:
 @qed
 
 lemma mergeinto_correct [hoare_triple]:
-  "length cs = length as + length bs \<Longrightarrow> sorted as \<Longrightarrow> sorted bs \<Longrightarrow>
+  "la = length as \<Longrightarrow> lb = length bs \<Longrightarrow> length cs = la + lb \<Longrightarrow>
     <a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a bs * c \<mapsto>\<^sub>a cs>
-    mergeinto (length as) (length bs) a b c
-    <\<lambda>_. \<exists>\<^sub>Acs. a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a bs * c \<mapsto>\<^sub>a cs * \<up>(sorted cs) * \<up>(mset cs = mset as + mset bs)>\<^sub>t"
+    mergeinto la lb a b c
+    <\<lambda>_. a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a bs * c \<mapsto>\<^sub>a merge_list as bs>"
   by auto2
 
 definition atake :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a array Heap" where [sep_proc]:
@@ -181,19 +191,52 @@ lemma adrop_copies [hoare_triple]:
   "n \<le> length as \<Longrightarrow>
    <xs \<mapsto>\<^sub>a as> adrop xs n <\<lambda>r. r \<mapsto>\<^sub>a drop n as * xs \<mapsto>\<^sub>a as>" by auto2
 
-partial_function (heap) mergeSort :: "'a::{heap,linorder} array \<Rightarrow> 'a array Heap" where  
-  "mergeSort xs = do {
-    len \<leftarrow> Array.len xs;
-    if len \<le> 1 then return xs
+partial_function (heap) mergeSort :: "'a::{heap,linorder} array \<Rightarrow> unit Heap" where
+  "mergeSort p = do {
+    len \<leftarrow> Array.len p;
+    if len \<le> 1 then return ()
     else do { 
-      as \<leftarrow> atake xs (len div 2);
-      bs \<leftarrow> adrop xs (len div 2);
-      as' \<leftarrow> mergeSort as;
-      bs' \<leftarrow> mergeSort bs;
-      mergeinto (len div 2) (len - len div 2) as' bs' xs;
-      return xs
+      a \<leftarrow> atake p (len div 2);
+      b \<leftarrow> adrop p (len div 2);
+      mergeSort a;
+      mergeSort b;
+      mergeinto (len div 2) (len - len div 2) a b p;
+      return ()
     }
   }"
 declare mergeSort.simps [sep_proc]
+
+fun mergesort_fun :: "'a::linorder list \<Rightarrow> 'a list" where
+  "mergesort_fun xs =
+    (if length xs \<le> 1 then xs else
+     merge_list (mergesort_fun (take (length xs div 2) xs)) (mergesort_fun (drop (length xs div 2) xs)))"
+setup {* add_rewrite_rule @{thm mergesort_fun.simps} *}
+setup {* add_fun_induct_rule (@{term mergesort_fun}, @{thm mergesort_fun.induct}) *}
+
+lemma sort_length_le1 [rewrite]: "length xs \<le> 1 \<Longrightarrow> sort xs = xs"
+@proof
+  @case "xs = []" @have "xs = hd xs # tl xs" @case "tl xs = []"
+@qed
+
+lemma mergesort_fun_correct [rewrite]:
+  "mergesort_fun xs = sort xs"
+@proof @fun_induct "mergesort_fun xs" @with
+  @subgoal "xs = xs"
+    @case "length xs \<le> 1"
+    @let "l1 = length xs div 2"
+    @have "mset (take l1 xs) + mset (drop l1 xs) = mset xs" @with
+      @have "take l1 xs @ drop l1 xs = xs"
+    @end
+  @end
+@qed
+
+lemma mergeSort_to_fun [hoare_triple]:
+  "<p \<mapsto>\<^sub>a xs>
+   mergeSort p
+   <\<lambda>_. p \<mapsto>\<^sub>a mergesort_fun xs>\<^sub>t"
+@proof @fun_induct "mergesort_fun xs" arbitrary p @qed
+
+lemma mergeSort_correct [hoare_triple]:
+  "<p \<mapsto>\<^sub>a xs> mergeSort p <\<lambda>_. p \<mapsto>\<^sub>a sort xs>\<^sub>t" by auto2
 
 end

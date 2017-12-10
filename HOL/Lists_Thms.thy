@@ -101,6 +101,7 @@ section {* sort *}
 
 setup {* add_forward_prfstep_cond @{thm sorted_sort} [with_term "sort ?xs"] *}
 setup {* add_rewrite_rule @{thm length_sort} *}
+setup {* add_rewrite_rule @{thm mset_sort} *}
 setup {* add_rewrite_rule @{thm set_sort} *}
 setup {* add_backward_prfstep @{thm properties_for_sort} *}
 lemma sort_Nil [rewrite]: "sort [] = []" by auto
@@ -187,6 +188,7 @@ lemma take_Suc [rewrite]: "Suc n \<le> length xs \<Longrightarrow> take (Suc n) 
   using Suc_le_lessD take_Suc_conv_app_nth by blast
 
 setup {* add_rewrite_rule @{thm take_update_cancel} *}
+setup {* add_rewrite_rule @{thm append_take_drop_id} *}
 
 section {* drop *}
 

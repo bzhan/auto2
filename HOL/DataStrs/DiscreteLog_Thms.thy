@@ -4,6 +4,13 @@ theory DiscreteLog_Thms
   imports "../Auto2_Main" "~~/src/HOL/Library/Discrete"
 begin
 
+section {* div 2 and standard results *}
+
+lemma even_div_2 [rewrite]: "(2 * i) div 2 = (i::nat)" by auto
+lemma odd_div_2 [rewrite]: "(2 * i + 1) div 2 = (i::nat)" by auto
+lemma div2_less1 [backward]: "(n::nat) \<ge> 2 \<Longrightarrow> n div 2 < n" by auto
+lemma div2_less2 [backward]: "(n::nat) \<ge> 2 \<Longrightarrow> n - n div 2 < n" by auto
+
 section {* Average and standard results *}
 
 fun avg :: "nat \<Rightarrow> nat \<Rightarrow> nat" where
@@ -87,9 +94,6 @@ section {* Second version of discrete log *}
 
 definition dlog' :: "nat \<Rightarrow> nat" where [rewrite]:
   "dlog' n = dlog (n - 1) + 1"
-
-lemma even_div_2 [rewrite]: "(2 * i) div 2 = (i::nat)" by auto
-lemma odd_div_2 [rewrite]: "(2 * i + 1) div 2 = (i::nat)" by auto
 
 lemma dlog_div_2 [backward]:
   "(n::nat) > 1 \<Longrightarrow> dlog n \<ge> dlog (n div 2) + 1"
