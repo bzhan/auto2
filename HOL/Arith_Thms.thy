@@ -134,6 +134,7 @@ setup {* add_backward1_prfstep @{thm Nat.add_le_mono} *}
 setup {* add_backward1_prfstep @{thm add_increasing2} *}
 setup {* add_backward1_prfstep @{thm add_mono} *}
 setup {* add_backward_prfstep @{thm add_strict_left_mono} *}
+setup {* add_backward1_prfstep @{thm Nat.mult_le_mono} *}
 
 (* Addition. *)
 theorem nat_add_eq_self_zero [forward]: "(m::nat) = m + n \<Longrightarrow> n = 0" by simp
@@ -223,10 +224,17 @@ setup {* add_backward1_prfstep @{thm dvd_fact} *}
 
 (* Successor function. *)
 setup {* add_rewrite_rule @{thm Nat.Suc_eq_plus1} *}
+setup {* add_backward_prfstep @{thm Nat.gr0_implies_Suc} *}
+
+(* Cases *)
+setup {* fold add_rewrite_rule @{thms Nat.nat.case} *}
 
 (* Induction. *)
-
 lemma nat_cases: "P 0 \<Longrightarrow> (\<And>n. P (Suc n)) \<Longrightarrow> P n" using nat_induct by auto
+
+(* div *)
+lemma prod_div_le [backward]: "a > 0 \<Longrightarrow> a * (b div a) \<le> (b::nat)"
+  using split_div_lemma by blast
 
 setup {*
   add_var_induct_rule @{thm nat_induct} #>

@@ -126,6 +126,8 @@ lemma distinct_nthE [forward]:
 section {* map function *}
 
 setup {* fold add_rewrite_rule @{thms List.list.map} *}
+setup {* add_rewrite_rule @{thm List.length_map} *}
+setup {* add_rewrite_rule @{thm List.nth_map} *}
 setup {* add_rewrite_rule @{thm List.map_append} *}
 
 section {* Replicate *}
@@ -179,7 +181,7 @@ setup {* add_forward_prfstep_cond @{thm length_take} [with_term "take ?n ?xs"] *
 lemma nth_take [rewrite]: "i < length (take n xs) \<Longrightarrow> take n xs ! i = xs ! i" by simp
 
 setup {* add_rewrite_rule @{thm List.take_0} *}
-setup {* add_rewrite_rule @{thm take_Suc_conv_app_nth} *}
+setup {* add_rewrite_rule @{thm List.take_Suc_conv_app_nth} *}
 lemma take_length [rewrite]: "take (length xs) xs = xs" by simp
 
 setup {* add_forward_prfstep_cond @{thm List.set_take_subset} [with_term "set (take ?n ?xs)"] *}
@@ -187,8 +189,9 @@ setup {* add_forward_prfstep_cond @{thm List.set_take_subset} [with_term "set (t
 lemma take_Suc [rewrite]: "Suc n \<le> length xs \<Longrightarrow> take (Suc n) xs = take n xs @ [nth xs n]"
   using Suc_le_lessD take_Suc_conv_app_nth by blast
 
-setup {* add_rewrite_rule @{thm take_update_cancel} *}
-setup {* add_rewrite_rule @{thm append_take_drop_id} *}
+setup {* add_rewrite_rule @{thm List.take_update_cancel} *}
+setup {* add_rewrite_rule @{thm List.append_take_drop_id} *}
+setup {* add_rewrite_rule @{thm List.take_all} *}
 
 section {* drop *}
 
@@ -198,6 +201,8 @@ lemma nth_drop [rewrite]: "i < length (drop n xs) \<Longrightarrow> drop n xs ! 
 
 setup {* add_rewrite_rule @{thm List.drop_0} *}
 setup {* add_rewrite_rule @{thm List.drop_all} *}
+setup {* add_rewrite_rule_back @{thm List.take_drop} *}
+setup {* add_rewrite_rule @{thm List.drop_drop} *}
 
 section {* rev *}
 

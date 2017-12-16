@@ -60,7 +60,7 @@ session DataStrs_Advanced = DataStrs_Basic +
     "HOL/DataStrs/RBT"
     "HOL/DataStrs/Rect_Intersect"
 
-session Floyd_Warshall = AUTO2 +
+session DataStrs_FW = AUTO2 +
   description {*
     Floyd-Warshall algorithm.
   *}

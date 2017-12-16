@@ -639,7 +639,8 @@ fun nat_sub_expand_unit_fn ictxt item =
               val ct = Thm.rhs_of eq_th
               val ts = norm_minus_ct ct
             in
-              if length ts <= 1 then
+              if length ts = 0 orelse
+                 (length ts = 1 andalso snd (the_single ts) = 1) then
                 let
                   val (_, eq') = norm_minus wft
                   val eq = Util.transitive_list [eq_th, eq']

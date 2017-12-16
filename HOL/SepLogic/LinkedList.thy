@@ -132,6 +132,22 @@ lemma os_rem_rule [hoare_triple]:
   "<os_list xs b> os_rem x b <\<lambda>r. os_list (removeAll x xs) r>\<^sub>t"
 @proof @induct xs arbitrary b @qed
 
+section \<open>Extract list\<close>
+
+partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list Heap" where
+  "extract_list p = (case p of
+    None \<Rightarrow> return []
+  | Some pp \<Rightarrow> do {
+      v \<leftarrow> !pp;
+      ls \<leftarrow> extract_list (nxt v);
+      return (val v # ls)
+    })"
+declare extract_list.simps [sep_proc]
+
+lemma extract_list_rule [hoare_triple]:
+  "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
+@proof @induct l arbitrary p @qed
+
 section \<open>Ordered insert\<close>
 
 fun list_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
@@ -139,6 +155,11 @@ fun list_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
 | "list_insert x (y # ys) = (
     if x \<le> y then x # (y # ys) else y # list_insert x ys)"
 setup {* fold add_rewrite_rule @{thms list_insert.simps} *}
+
+lemma list_insert_length:
+  "length (list_insert x xs) = length xs + 1"
+@proof @induct xs @qed
+setup {* add_forward_prfstep_cond @{thm list_insert_length} [with_term "list_insert ?x ?xs"] *}
 
 lemma list_insert_mset [rewrite]:
   "mset (list_insert x xs) = {#x#} + mset xs"
@@ -168,47 +189,46 @@ lemma os_insert_to_fun [hoare_triple]:
   "<os_list xs b> os_insert x b <os_list (list_insert x xs)>"
 @proof @induct xs arbitrary b @qed
 
-section \<open>Application: insertion sort\<close>
+section \<open>Insertion sort\<close>
 
-partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list Heap" where
-  "extract_list p = (case p of
-    None \<Rightarrow> return []
-  | Some pp \<Rightarrow> do {
-      v \<leftarrow> !pp;
-      ls \<leftarrow> extract_list (nxt v);
-      return (val v # ls)
-    })"
-declare extract_list.simps [sep_proc]
+fun insert_sort :: "'a::ord list \<Rightarrow> 'a list" where
+  "insert_sort [] = []"
+| "insert_sort (x # xs) = list_insert x (insert_sort xs)"
+setup {* fold add_rewrite_rule @{thms insert_sort.simps} *}
 
-lemma extract_list_rule [hoare_triple]:
-  "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
-@proof @induct l arbitrary p @qed
+lemma insert_sort_mset [rewrite]:
+  "mset (insert_sort xs) = mset xs"
+@proof @induct xs @qed
 
-fun os_insert_list :: "'a::{ord,heap} list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
-  "os_insert_list xs b = (
-    if xs = [] then return b
-    else do {
-      b' \<leftarrow> os_insert (hd xs) b;
-      b'' \<leftarrow> os_insert_list (tl xs) b';
-      return b''
-    })"
-declare os_insert_list.simps [sep_proc]
+lemma insert_sort_sorted [forward]:
+  "sorted (insert_sort xs)"
+@proof @induct xs @qed
 
-lemma os_insert_list_correct [hoare_triple]:
-  "<os_list xs b * \<up>(sorted xs)>
-   os_insert_list ys b
-   <\<lambda>r. \<exists>\<^sub>Axs'. os_list xs' r * \<up>(sorted xs') * \<up>(mset xs' = mset ys + mset xs)>"
-@proof @induct ys arbitrary b xs @qed
+lemma insert_sort_is_sort [rewrite]:
+  "insert_sort xs = sort xs" by auto2
 
-definition insertion_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where [sep_proc]:
-  "insertion_sort xs = do {
-    p \<leftarrow> os_insert_list xs None;
+fun os_insert_sort_aux :: "'a::{ord,heap} list \<Rightarrow> 'a os_list Heap" where
+  "os_insert_sort_aux [] = (return None)"
+| "os_insert_sort_aux (x # xs) = do {
+     b \<leftarrow> os_insert_sort_aux xs;
+     b' \<leftarrow> os_insert x b;
+     return b'
+   }"
+declare os_insert_sort_aux.simps [sep_proc]
+
+lemma os_insert_sort_aux_correct [hoare_triple]:
+  "<emp> os_insert_sort_aux xs <os_list (insert_sort xs)>"
+@proof @induct xs @qed
+
+definition os_insert_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" where [sep_proc]:
+  "os_insert_sort xs = do {
+    p \<leftarrow> os_insert_sort_aux xs;
     l \<leftarrow> extract_list p;
     return l
   }"
 
-lemma insertion_sort_rule:
-  "<emp> insertion_sort xs <\<lambda>ys. \<up>(ys = sort xs)>\<^sub>t" by auto2
+lemma insertion_sort_rule [hoare_triple]:
+  "<emp> os_insert_sort xs <\<lambda>ys. \<up>(ys = sort xs)>\<^sub>t" by auto2
 
 section \<open>Merging two lists\<close>
 

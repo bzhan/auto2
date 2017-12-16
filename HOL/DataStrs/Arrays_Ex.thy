@@ -101,6 +101,12 @@ lemma nth_sublist [rewrite]:
 lemma sublist_nil [rewrite]:
   "r \<le> length xs \<Longrightarrow> r \<le> l \<Longrightarrow> sublist l r xs = []" by auto2
 
+lemma sublist_0 [rewrite]:
+  "sublist 0 l xs = take l xs" by auto2
+
+lemma sublist_drop [rewrite]: "sublist l r (drop n xs) = sublist (l + n) (r + n) xs"
+@proof @have "take r (drop n xs) = drop n (take (r + n) xs)" @qed
+
 setup {* del_prfstep_thm @{thm sublist_def} *}
 
 lemma sublist_single [rewrite]:
