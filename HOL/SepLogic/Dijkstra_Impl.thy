@@ -13,7 +13,7 @@ fun dstate :: "state \<Rightarrow> dijkstra_state \<Rightarrow> assn" where
 setup {* add_rewrite_ent_rule @{thm dstate.simps} *}
 
 fun dstate_pq_init :: "graph \<Rightarrow> nat \<Rightarrow> nat indexed_pqueue Heap" where
-  "dstate_pq_init G 0 = idx_pqueue_empty (size G) 0"
+  "dstate_pq_init G 0 = idx_pqueue_empty (size G)"
 | "dstate_pq_init G (Suc k) = do {
     p \<leftarrow> dstate_pq_init G k;
     if k > 0 then update_idx_pqueue k (weight G 0 k) p

@@ -2,24 +2,24 @@ theory DynamicArray
 imports SepAuto "../DataStrs/Arrays_Ex"
 begin
 
-datatype 'a dynamic_array = Dyn_Array (alen: nat) (amax: nat) (defv: 'a) (aref: "'a array")
+datatype 'a dynamic_array = Dyn_Array (alen: nat) (amax: nat) (aref: "'a array")
 setup {* add_rewrite_rule_back @{thm dynamic_array.collapse} *}
 setup {* add_rewrite_rule @{thm dynamic_array.case} *}
 setup {* fold add_rewrite_rule @{thms dynamic_array.sel} *}
 
 fun dyn_array :: "'a::heap list \<Rightarrow> 'a dynamic_array \<Rightarrow> assn" where
-  "dyn_array xs (Dyn_Array al am dv a) =
+  "dyn_array xs (Dyn_Array al am a) =
      (\<exists>\<^sub>Axs'. a \<mapsto>\<^sub>a xs' * \<up>(xs = take al xs') * \<up>(al \<le> length xs') * \<up>(am = length xs'))"
 setup {* add_rewrite_ent_rule @{thm dyn_array.simps} *}
 
-definition dyn_array_new :: "'a \<Rightarrow> 'a::heap dynamic_array Heap" where [sep_proc]:
-  "dyn_array_new x = do {
-    p \<leftarrow> Array.new 5 x;
-    return (Dyn_Array 0 5 x p)
+definition dyn_array_new :: "'a::heap dynamic_array Heap" where [sep_proc]:
+  "dyn_array_new = do {
+     p \<leftarrow> Array.new 5 undefined;
+     return (Dyn_Array 0 5 p)
    }"
 
 lemma dyn_array_new_rule [hoare_triple]:
-  "<emp> dyn_array_new x <dyn_array []>" by auto2
+  "<emp> dyn_array_new <dyn_array []>" by auto2
 
 fun array_copy :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "array_copy src si dst di n =
@@ -45,9 +45,9 @@ definition ensure_length :: "nat \<Rightarrow> 'a::heap dynamic_array \<Rightarr
   "ensure_length nl d =
    (if nl \<le> amax d then return d
     else do {
-      p \<leftarrow> Array.new (2 * nl) (defv d);
+      p \<leftarrow> Array.new (2 * nl) undefined;
       array_copy (aref d) 0 p 0 (alen d);
-      return (Dyn_Array (alen d) (2 * nl) (defv d) p)
+      return (Dyn_Array (alen d) (2 * nl) p)
     })"
 
 lemma ensure_length_rule [hoare_triple]:
@@ -59,7 +59,7 @@ definition push_array :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 
   "push_array x d = do {
     p \<leftarrow> ensure_length (alen d + 1) d;
     Array.upd (alen d) x (aref p);
-    return (Dyn_Array (alen p + 1) (amax p) (defv p) (aref p))
+    return (Dyn_Array (alen p + 1) (amax p) (aref p))
    }"
 
 lemma push_array_rule [hoare_triple]:
@@ -71,7 +71,7 @@ lemma push_array_rule [hoare_triple]:
 definition pop_array :: "'a::heap dynamic_array \<Rightarrow> ('a \<times> 'a dynamic_array) Heap" where [sep_proc]:
   "pop_array d = do {
     x \<leftarrow> Array.nth (aref d) (alen d - 1);
-    return (x, Dyn_Array (alen d - 1) (amax d) (defv d) (aref d))
+    return (x, Dyn_Array (alen d - 1) (amax d) (aref d))
    }"
 
 lemma pop_array_heap_preserving [heap_presv]:

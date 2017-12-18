@@ -185,9 +185,9 @@ setup {* add_rewrite_ent_rule @{thm idx_pqueue.simps} *}
 
 section {* Basic operations on indexed_queue *}
 
-definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc]:
-  "idx_pqueue_empty k x = do {
-    pq \<leftarrow> dyn_array_new (0, x);
+definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap indexed_pqueue Heap" where [sep_proc]:
+  "idx_pqueue_empty k = do {
+    pq \<leftarrow> dyn_array_new;
     idx \<leftarrow> amap_new k;
     return (Indexed_PQueue pq idx) }"
 
@@ -195,7 +195,7 @@ lemma index_of_pqueue_empty [resolve]:
   "index_of_pqueue [] empty_map" by auto2
 
 lemma idx_pqueue_empty_rule [hoare_triple]:
-  "<emp> idx_pqueue_empty n x <idx_pqueue [] n>" by auto2
+  "<emp> idx_pqueue_empty n <idx_pqueue [] n>" by auto2
 
 definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where [sep_proc]:
   "idx_pqueue_nth p i = array_nth (pqueue p) i"
@@ -447,7 +447,7 @@ lemma heap_implies_hd_min2 [resolve]:
 @qed
 
 lemma idx_pqueue_empty_map [hoare_triple]:
-  "<emp> idx_pqueue_empty n x <idx_pqueue_map empty_map n>" by auto2
+  "<emp> idx_pqueue_empty n <idx_pqueue_map empty_map n>" by auto2
 
 lemma delete_min_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
