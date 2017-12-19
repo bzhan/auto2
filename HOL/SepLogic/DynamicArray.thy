@@ -21,43 +21,39 @@ definition dyn_array_new :: "'a::heap dynamic_array Heap" where [sep_proc]:
 lemma dyn_array_new_rule [hoare_triple]:
   "<emp> dyn_array_new <dyn_array []>" by auto2
 
-fun array_copy :: "'a::heap array \<Rightarrow> nat \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "array_copy src si dst di n =
-   (if n = 0 then return ()
-    else do {
-      x \<leftarrow> Array.nth src si;
-      Array.upd di x dst;
-      array_copy src (si+1) dst (di+1) (n-1) })"
+fun array_copy :: "'a::heap array \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> unit Heap" where
+  "array_copy a b 0 = (return ())"
+| "array_copy a b (Suc n) = do {
+      array_copy a b n;
+      x \<leftarrow> Array.nth a n;
+      Array.upd n x b;
+      return () }"
 declare array_copy.simps [sep_proc]
 
-setup {* add_rewrite_rule @{thm Arrays_Ex.array_copy.simps} *}
 lemma array_copy_rule [hoare_triple]:
-  "<src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a ldst * \<up>(si + len \<le> length lsrc) * \<up>(di + len \<le> length ldst)>
-    array_copy src si dst di len
-   <\<lambda>_. src \<mapsto>\<^sub>a lsrc * dst \<mapsto>\<^sub>a Arrays_Ex.array_copy lsrc si ldst di len>"
-@proof @strong_induct len arbitrary si di ldst
-  @case "len = 0"
-  @apply_induct_hyp "len - 1" "si + 1" "di + 1" "list_update ldst di (lsrc ! si)"
-@qed
-setup {* del_prfstep_thm @{thm Arrays_Ex.array_copy.simps} *}
+  "n \<le> length as \<Longrightarrow> n \<le> length bs \<Longrightarrow>
+   <a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a bs>
+    array_copy a b n
+   <\<lambda>_. a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a Arrays_Ex.array_copy as bs n>"
+@proof @induct n @qed
 
-definition ensure_length :: "nat \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where [sep_proc]:
-  "ensure_length nl d =
-   (if nl \<le> amax d then return d
+definition ensure_length :: "'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where [sep_proc]:
+  "ensure_length d = (case d of Dyn_Array al am ar \<Rightarrow>
+    if al < am then return d
     else do {
-      p \<leftarrow> Array.new (2 * nl) undefined;
-      array_copy (aref d) 0 p 0 (alen d);
-      return (Dyn_Array (alen d) (2 * nl) p)
+      p \<leftarrow> Array.new (2 * am + 1) undefined;
+      array_copy ar p am;
+      return (Dyn_Array am (2 * am + 1) p)
     })"
 
 lemma ensure_length_rule [hoare_triple]:
   "<dyn_array xs p>
-   ensure_length nl p
-   <\<lambda>r. dyn_array xs r * \<up>(amax r \<ge> nl)>\<^sub>t" by auto2
+   ensure_length p
+   <\<lambda>r. dyn_array xs r * \<up>(alen r < amax r)>\<^sub>t" by auto2
 
 definition push_array :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where [sep_proc]:
   "push_array x d = do {
-    p \<leftarrow> ensure_length (alen d + 1) d;
+    p \<leftarrow> ensure_length d;
     Array.upd (alen d) x (aref p);
     return (Dyn_Array (alen p + 1) (amax p) (aref p))
    }"
@@ -78,7 +74,8 @@ lemma pop_array_heap_preserving [heap_presv]:
   "heap_preserving (pop_array d)" by auto2
 
 lemma pop_array_rule [hoare_triple]:
-  "xs \<noteq> [] \<Longrightarrow> <dyn_array xs p>
+  "xs \<noteq> [] \<Longrightarrow>
+   <dyn_array xs p>
    pop_array p
    <\<lambda>(x, r). dyn_array (butlast xs) r * \<up>(x = last xs)>"
 @proof @have "last xs = xs ! (length xs - 1)" @qed
@@ -87,9 +84,10 @@ definition array_upd :: "nat \<Rightarrow> 'a \<Rightarrow> 'a::heap dynamic_arr
   "array_upd i x d = do { Array.upd i x (aref d); return () }"
 
 lemma array_upd_rule [hoare_triple]:
-  "<dyn_array l p * \<up>(i < length l)>
+  "i < length xs \<Longrightarrow>
+   <dyn_array xs p>
    array_upd i x p
-   <\<lambda>_. dyn_array (list_update l i x) p>" by auto2
+   <\<lambda>_. dyn_array (list_update xs i x) p>" by auto2
 
 definition array_nth :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> 'a Heap" where [sep_proc]:
   "array_nth d i = Array.nth (aref d) i"
@@ -98,7 +96,8 @@ lemma array_nth_heap_preserving [heap_presv]:
   "heap_preserving (array_nth d i)" by auto2
 
 lemma array_nth_rule [hoare_triple]:
-  "<dyn_array xs p * \<up>(i < length xs)>
+  "i < length xs \<Longrightarrow>
+   <dyn_array xs p>
    array_nth p i
    <\<lambda>r. dyn_array xs p * \<up>(r = xs ! i)>" by auto2
 
@@ -126,7 +125,8 @@ definition array_swap :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow>
    }"
 
 lemma array_swap_rule [hoare_triple]:
-  "<dyn_array xs p * \<up>(i < length xs) * \<up>(j < length xs)>
+  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow>
+   <dyn_array xs p>
    array_swap p i j
    <\<lambda>_. dyn_array (list_swap xs i j) p>" by auto2
 

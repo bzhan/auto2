@@ -63,26 +63,25 @@ lemma rev_swap_is_rev [rewrite]:
   "length xs \<ge> 1 \<Longrightarrow> rev_swap xs 0 (length xs - 1) = rev xs" by auto2
 
 section {* Copy one array to the beginning of another *}
-    
-fun array_copy :: "'a list \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
-  "array_copy xs i xs' j n =
-    (if n = 0 then xs' else array_copy xs (i + 1) (xs' [j := xs ! i]) (j + 1) (n - 1))"
-setup {* add_rewrite_rule_cond @{thm array_copy.simps} [with_filt (size1_filter "i"), with_filt (size1_filter "j")] *}
-setup {* register_wellform_data ("array_copy xs i xs' j n", ["i + n \<le> length xs", "j + n \<le> length xs'"]) *}
-setup {* add_prfstep_check_req ("array_copy xs i xs' j n", "i + n \<le> length xs \<and> j + n \<le> length xs'") *}
-setup {* add_fun_induct_rule (@{term array_copy}, @{thm array_copy.induct}) *}
+
+fun array_copy :: "'a list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> 'a list" where
+  "array_copy xs xs' 0 = xs'"
+| "array_copy xs xs' (Suc n) = list_update (array_copy xs xs' n) n (xs ! n)"
+setup {* fold add_rewrite_rule @{thms array_copy.simps} *}
+setup {* register_wellform_data ("array_copy xs xs' n", ["n \<le> length xs", "n \<le> length xs'"]) *}
+setup {* add_prfstep_check_req ("array_copy xs xs' n", "n \<le> length xs \<and> n \<le> length xs'") *}
 
 lemma array_copy_length:
-  "i + n \<le> length xs \<Longrightarrow> j + n \<le> length xs' \<Longrightarrow> length (array_copy xs i xs' j n) = length xs'"
-@proof @fun_induct "array_copy xs i xs' j n" @qed
-setup {* add_forward_prfstep_cond @{thm array_copy_length} [with_term "array_copy ?xs ?i ?xs' ?j ?n"] *}
+  "n \<le> length xs \<Longrightarrow> n \<le> length xs' \<Longrightarrow> length (array_copy xs xs' n) = length xs'"
+@proof @induct n @qed
+setup {* add_forward_prfstep_cond @{thm array_copy_length} [with_term "array_copy ?xs ?xs' ?n"] *}
 
-lemma array_copy_eval [rewrite]:
-  "i + n \<le> length xs \<Longrightarrow> j + n \<le> length xs' \<Longrightarrow>
-   (array_copy xs i xs' j n) ! k = (if k < j then xs' ! k else if k \<ge> j + n then xs' ! k else xs ! (k + i - j))"
-@proof @fun_induct "array_copy xs i xs' j n" @qed
+lemma array_copy_ind [rewrite]:
+  "n \<le> length xs \<Longrightarrow> n \<le> length xs' \<Longrightarrow> k < n \<Longrightarrow> (array_copy xs xs' n) ! k = xs ! k"
+@proof @induct n @qed
 
-setup {* del_prfstep_thm @{thm array_copy.simps} *}
+lemma array_copy_correct [rewrite]:
+  "n \<le> length xs \<Longrightarrow> n \<le> length xs' \<Longrightarrow> take n (array_copy xs xs' n) = take n xs" by auto2
 
 section {* Sublist *}
 
