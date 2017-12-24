@@ -132,7 +132,7 @@ setup {* add_rewrite_rule @{thm List.map_append} *}
 
 section {* Replicate *}
 
-setup {* add_forward_prfstep_cond @{thm length_replicate} [with_term "replicate ?n ?x"] *}
+setup {* add_rewrite_arg_rule @{thm length_replicate} *}
 setup {* add_rewrite_rule @{thm List.nth_replicate} *}
 
 section {* last *}
@@ -160,12 +160,12 @@ lemma butlast_append' [rewrite]: "bs \<noteq> [] \<Longrightarrow> butlast (as @
 
 setup {* add_rewrite_rule @{thm List.append_butlast_last_id} *}
 lemma set_butlast_is_subset: "set (butlast xs) \<subseteq> set xs" by (simp add: in_set_butlastD subsetI)
-setup {* add_forward_prfstep_cond @{thm set_butlast_is_subset} [with_term "set (butlast ?xs)"] *}
+setup {* add_forward_arg1_prfstep @{thm set_butlast_is_subset} *}
 
 section {* List update *}
 
 setup {* register_wellform_data ("xs[i := x]", ["i < length xs"]) *}
-setup {* add_forward_prfstep_cond @{thm List.length_list_update} [with_term "?xs[?i := ?x]"] *}
+setup {* add_rewrite_arg_rule @{thm List.length_list_update} *}
 setup {* add_rewrite_rule @{thm List.nth_list_update_eq} *}
 setup {* add_rewrite_rule @{thm List.nth_list_update_neq} *}
 setup {* add_rewrite_rule @{thm List.nth_list_update} *}
@@ -175,16 +175,14 @@ section {* take *}
 setup {* register_wellform_data ("take n xs", ["n \<le> length xs"]) *}
 setup {* add_prfstep_check_req ("take n xs", "n \<le> length xs") *}
 
-lemma length_take: "n \<le> length xs \<Longrightarrow> length (take n xs) = n" by simp
-setup {* add_forward_prfstep_cond @{thm length_take} [with_term "take ?n ?xs"] *}
-
+lemma length_take [rewrite_arg]: "n \<le> length xs \<Longrightarrow> length (take n xs) = n" by simp
 lemma nth_take [rewrite]: "i < length (take n xs) \<Longrightarrow> take n xs ! i = xs ! i" by simp
 
 setup {* add_rewrite_rule @{thm List.take_0} *}
 setup {* add_rewrite_rule @{thm List.take_Suc_conv_app_nth} *}
 lemma take_length [rewrite]: "take (length xs) xs = xs" by simp
 
-setup {* add_forward_prfstep_cond @{thm List.set_take_subset} [with_term "set (take ?n ?xs)"] *}
+setup {* add_forward_arg1_prfstep @{thm List.set_take_subset} *}
 
 lemma take_Suc [rewrite]: "Suc n \<le> length xs \<Longrightarrow> take (Suc n) xs = take n xs @ [nth xs n]"
   using Suc_le_lessD take_Suc_conv_app_nth by blast
@@ -195,9 +193,9 @@ setup {* add_rewrite_rule @{thm List.take_all} *}
 
 section {* drop *}
 
-setup {* add_forward_prfstep_cond @{thm List.length_drop} [with_term "drop ?n ?xs"] *}
-
-lemma nth_drop [rewrite]: "i < length (drop n xs) \<Longrightarrow> drop n xs ! i = xs ! (n + i)" by simp
+setup {* add_rewrite_arg_rule @{thm List.length_drop} *}
+lemma nth_drop [rewrite]:
+  "i < length (drop n xs) \<Longrightarrow> drop n xs ! i = xs ! (n + i)" by simp
 
 setup {* add_rewrite_rule @{thm List.drop_0} *}
 setup {* add_rewrite_rule @{thm List.drop_all} *}
@@ -206,7 +204,7 @@ setup {* add_rewrite_rule @{thm List.drop_drop} *}
 
 section {* rev *}
 
-setup {* add_forward_prfstep_cond @{thm List.length_rev} [with_term "rev ?xs"] *}
+setup {* add_rewrite_arg_rule @{thm List.length_rev} *}
 setup {* fold add_rewrite_rule @{thms List.rev.simps} *}
 setup {* add_rewrite_rule @{thm List.rev_append} *}
 setup {* add_rewrite_rule @{thm List.rev_rev_ident} *}
@@ -276,8 +274,7 @@ section {* Lambda lists *}
 definition list :: "(nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a list" where
   "list s n = map s [0 ..< n]"
 
-lemma list_length: "length (list s n) = n" by (simp add: list_def)
-setup {* add_forward_prfstep_cond @{thm list_length} [with_term "list ?s ?n"] *}
+lemma list_length [rewrite_arg]: "length (list s n) = n" by (simp add: list_def)
 lemma list_nth [rewrite]: "i < length (list s n) \<Longrightarrow> (list s n) ! i = s i" by (simp add: list_def)
 
 section {* Splitting of lists *}

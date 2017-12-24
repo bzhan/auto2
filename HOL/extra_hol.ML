@@ -8,6 +8,9 @@ sig
   val add_forward_arg_prfstep_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_forward_arg_prfstep: thm -> theory -> theory
+  val add_rewrite_arg_rule_cond:
+      thm -> pre_prfstep_descriptor list -> theory -> theory
+  val add_rewrite_arg_rule: thm -> theory -> theory
 end;
 
 structure Extra_HOL : EXTRA_HOL =
@@ -32,6 +35,18 @@ fun add_forward_arg_prfstep_cond th conds thy =
     end
 
 fun add_forward_arg_prfstep th = add_forward_arg_prfstep_cond th []
+
+fun add_rewrite_arg_rule_cond th conds thy =
+    let
+      val concl = th |> concl_of' |> strip_conj |> hd
+      val _ = assert (is_eq_term concl) "rewrite_arg"
+      val (lhs, _) = dest_eq concl
+    in
+      thy |> add_forward_prfstep_cond
+          th ([K (WithTerm (dest_arg lhs))] @ conds)
+    end
+
+fun add_rewrite_arg_rule th = add_rewrite_arg_rule_cond th []
 
 end  (* structure Extra_HOL *)
 

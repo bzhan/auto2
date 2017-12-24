@@ -19,9 +19,8 @@ lemma list_swap_eval_triv [rewrite]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> (list_swap xs i j) ! i = xs ! j"
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> (list_swap xs i j) ! j = xs ! i" by auto2+
 
-lemma length_list_swap:
+lemma length_list_swap [rewrite_arg]:
   "length (list_swap xs i j) = length xs" by auto2
-setup {* add_forward_prfstep_cond @{thm length_list_swap} [with_term "list_swap ?xs ?i ?j"] *}
 
 lemma mset_list_swap [rewrite]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> mset (list_swap xs i j) = mset xs" by auto2
@@ -44,10 +43,9 @@ setup {* register_wellform_data ("rev_swap xs i j", ["j < length xs"]) *}
 setup {* add_prfstep_check_req ("rev_swap xs i j", "j < length xs") *}
 setup {* add_fun_induct_rule (@{term rev_swap}, @{thm rev_swap.induct}) *}
 
-lemma rev_swap_length:
+lemma rev_swap_length [rewrite_arg]:
   "j < length xs \<Longrightarrow> length (rev_swap xs i j) = length xs"
 @proof @fun_induct "rev_swap xs i j" @qed
-setup {* add_forward_prfstep_cond @{thm rev_swap_length} [with_term "rev_swap ?xs ?i ?j"] *}
 
 lemma rev_swap_eval [rewrite]:
   "j < length xs \<Longrightarrow> (rev_swap xs i j) ! k =
@@ -71,10 +69,9 @@ setup {* fold add_rewrite_rule @{thms array_copy.simps} *}
 setup {* register_wellform_data ("array_copy xs xs' n", ["n \<le> length xs", "n \<le> length xs'"]) *}
 setup {* add_prfstep_check_req ("array_copy xs xs' n", "n \<le> length xs \<and> n \<le> length xs'") *}
 
-lemma array_copy_length:
+lemma array_copy_length [rewrite_arg]:
   "n \<le> length xs \<Longrightarrow> n \<le> length xs' \<Longrightarrow> length (array_copy xs xs' n) = length xs'"
 @proof @induct n @qed
-setup {* add_forward_prfstep_cond @{thm array_copy_length} [with_term "array_copy ?xs ?xs' ?n"] *}
 
 lemma array_copy_ind [rewrite]:
   "n \<le> length xs \<Longrightarrow> n \<le> length xs' \<Longrightarrow> k < n \<Longrightarrow> (array_copy xs xs' n) ! k = xs ! k"
@@ -90,9 +87,8 @@ definition sublist :: "nat \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow>
 setup {* register_wellform_data ("sublist l r xs", ["l \<le> r", "r \<le> length xs"]) *}
 setup {* add_prfstep_check_req ("sublist l r xs", "l \<le> r \<and> r \<le> length xs") *}
 
-lemma length_sublist:
+lemma length_sublist [rewrite_arg]:
   "r \<le> length xs \<Longrightarrow> length (sublist l r xs) = r - l" by auto2
-setup {* add_forward_prfstep_cond @{thm length_sublist} [with_term "sublist ?l ?r ?xs"] *}
 
 lemma nth_sublist [rewrite]:
   "r \<le> length xs \<Longrightarrow> xs' = sublist l r xs \<Longrightarrow> i < length xs' \<Longrightarrow> xs' ! i = xs ! (i + l)" by auto2
@@ -175,8 +171,8 @@ section {* Updating a set of elements in an array *}
 definition list_update_set :: "(nat \<Rightarrow> bool) \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
   "list_update_set S f xs = list (\<lambda>i. if S i then f i else xs ! i) (length xs)"
 
-lemma list_update_set_length: "length (list_update_set S f xs) = length xs" by auto2
-setup {* add_forward_prfstep_cond @{thm list_update_set_length} [with_term "list_update_set ?S ?f ?xs"] *}
+lemma list_update_set_length [rewrite_arg]:
+  "length (list_update_set S f xs) = length xs" by auto2
 
 lemma list_update_set_nth [rewrite]:
   "xs' = list_update_set S f xs \<Longrightarrow> i < length xs' \<Longrightarrow> xs' ! i = (if S i then f i else xs ! i)" by auto2
