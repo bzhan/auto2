@@ -28,10 +28,9 @@ lemma rev_to_fun [hoare_triple]:
   "<p \<mapsto>\<^sub>a xs * \<up>(j < length xs)>
    rev p i j
    <\<lambda>_. p \<mapsto>\<^sub>a rev_swap xs i j>"
-@proof
-  @strong_induct j arbitrary i xs
-  @case "i < j" @with
-    @apply_induct_hyp "j - 1" "i + 1" "list_swap xs i j"
+@proof @fun_induct "rev_swap xs i j" @with
+  @subgoal "(xs = xs, i = i, j = j)"
+    @unfold "rev_swap xs i j"
   @end
 @qed
 

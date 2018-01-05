@@ -38,20 +38,23 @@ lemma rev_nth [rewrite]:
 
 fun rev_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "rev_swap xs i j = (if i < j then rev_swap (list_swap xs i j) (i + 1) (j - 1) else xs)"
-setup {* add_rewrite_rule_cond @{thm rev_swap.simps} [with_filt (size1_filter "i"), with_filt (size1_filter "j")] *}
+setup {* add_unfolding_rule @{thm rev_swap.simps} *}
 setup {* register_wellform_data ("rev_swap xs i j", ["j < length xs"]) *}
 setup {* add_prfstep_check_req ("rev_swap xs i j", "j < length xs") *}
 setup {* add_fun_induct_rule (@{term rev_swap}, @{thm rev_swap.induct}) *}
 
 lemma rev_swap_length [rewrite_arg]:
   "j < length xs \<Longrightarrow> length (rev_swap xs i j) = length xs"
-@proof @fun_induct "rev_swap xs i j" @qed
+@proof @fun_induct "rev_swap xs i j" @with 
+  @subgoal "(xs = xs, i = i, j = j)" @unfold "rev_swap xs i j" @end
+@qed
 
 lemma rev_swap_eval [rewrite]:
   "j < length xs \<Longrightarrow> (rev_swap xs i j) ! k =
     (if k < i then xs ! k else if k > j then xs ! k else xs ! (j - (k - i)))"
 @proof @fun_induct "rev_swap xs i j" @with
   @subgoal "(xs = xs, i = i, j = j)"
+  @unfold "rev_swap xs i j"
   @case "i < j" @with
     @case "k < i" @then @case "k > j" @then @have "j - (k - i) = j - k + i"
   @end @end

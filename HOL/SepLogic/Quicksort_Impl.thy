@@ -14,13 +14,13 @@ partial_function (heap) part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<
          part1 a l (r - 1) p }})"
 declare part1.simps [sep_proc]
 
-setup {* add_rewrite_rule_cond @{thm Quicksort.part1.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
 lemma part1_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <p \<mapsto>\<^sub>a xs>
    part1 p l r a
    <\<lambda>rs. p \<mapsto>\<^sub>a snd (Quicksort.part1 xs l r a) * \<up>(rs = fst (Quicksort.part1 xs l r a))>"
-@proof @fun_induct "Quicksort.part1 xs l r a" @qed
-setup {* del_prfstep_thm @{thm Quicksort.part1.simps} *}
+@proof @fun_induct "Quicksort.part1 xs l r a" @with
+  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "Quicksort.part1 xs l r a" @end
+@qed
 
 (* Partition function. *)
 definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where [sep_proc]:
@@ -32,12 +32,11 @@ definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarro
      swap a m' r;
      return m' }"
 
-setup {* add_rewrite_rule @{thm Quicksort.partition_def} *}
 lemma partition_to_fun [hoare_triple]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
    partition a l r
-   <\<lambda>rs. a \<mapsto>\<^sub>a snd (Quicksort.partition xs l r) * \<up>(rs = fst (Quicksort.partition xs l r))>" by auto2
-setup {* del_prfstep_thm @{thm Quicksort.partition_def} *}
+   <\<lambda>rs. a \<mapsto>\<^sub>a snd (Quicksort.partition xs l r) * \<up>(rs = fst (Quicksort.partition xs l r))>"
+@proof @unfold "Quicksort.partition xs l r" @qed
 
 (* Quicksort function *)
 partial_function (heap) quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
@@ -50,7 +49,6 @@ partial_function (heap) quicksort :: "'a::{heap,linorder} array \<Rightarrow> na
      })"
 declare quicksort.simps [sep_proc]
 
-setup {* add_rewrite_rule_cond @{thm Quicksort.quicksort.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
 lemma quicksort_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
    quicksort a l r
@@ -58,6 +56,7 @@ lemma quicksort_to_fun [hoare_triple]:
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs
+  @unfold "Quicksort.quicksort xs l r"
   @case "l \<ge> r"
   @let "p = fst (Quicksort.partition xs l r)"
   @let "xs1 = snd (Quicksort.partition xs l r)"
@@ -70,7 +69,6 @@ lemma quicksort_to_fun [hoare_triple]:
   @case "l \<ge> p - 1"
   @apply_induct_hyp "(p-1)-l" l "p-1" xs1
 @qed
-setup {* del_prfstep_thm @{thm Quicksort.quicksort.simps} *}
 
 definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where [sep_proc]:
   "quicksort_all a = do {
@@ -79,10 +77,8 @@ definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap
      else quicksort a 0 (n - 1) }"
 
 theorem quicksort_sorts_basic [hoare_triple]:
-  "<a \<mapsto>\<^sub>a xs> quicksort_all a <\<lambda>_. a \<mapsto>\<^sub>a sort xs>"
-@proof
-  @case "xs = []"
-  @have "Quicksort.quicksort xs 0 (length xs - 1) = sort xs"
-@qed
+  "<a \<mapsto>\<^sub>a xs>
+   quicksort_all a
+   <\<lambda>_. a \<mapsto>\<^sub>a sort xs>" by auto2
 
 end

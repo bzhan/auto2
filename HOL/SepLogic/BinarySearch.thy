@@ -16,9 +16,9 @@ function binarysearch_fun :: "nat \<Rightarrow> nat \<Rightarrow> 'a::linorder \
 by pat_completeness auto
 termination by (relation "measure (\<lambda>(l,r,a,f). r-l)") auto
 
+setup {* add_unfolding_rule @{thm binarysearch_fun.simps} *}
 setup {* register_wellform_data ("binarysearch_fun l r x xs", ["l \<le> r", "r \<le> length xs"]) *}
 setup {* add_prfstep_check_req ("binarysearch_fun l r x xs", "l \<le> r \<and> r \<le> length xs") *}
-setup {* add_rewrite_rule_cond @{thm binarysearch_fun.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
 setup {* add_fun_induct_rule (@{term binarysearch_fun}, @{thm binarysearch_fun.induct}) *}
 
 lemma binarysearch_fun_correct [rewrite]:
@@ -26,6 +26,7 @@ lemma binarysearch_fun_correct [rewrite]:
    binarysearch_fun l r x xs \<longleftrightarrow> (\<exists>i. l \<le> i \<and> i < r \<and> xs ! i = x)"
 @proof @fun_induct "binarysearch_fun l r x xs" @with
   @subgoal "(l = l, r = r, x = x, xs = xs)"
+  @unfold "binarysearch_fun l r x xs"
   @case "l \<ge> r" @case "l + 1 \<ge> r"
   @let "m = avg l r"
   @case "xs ! m = x"
@@ -57,6 +58,7 @@ lemma binarysearch_correct [hoare_triple]:
    <\<lambda>res. a \<mapsto>\<^sub>a xs * \<up>(res \<longleftrightarrow> binarysearch_fun l r x xs)>\<^sub>t"
 @proof @fun_induct "binarysearch_fun l r x xs" @with
   @subgoal "(l = l, r = r, x = x, xs = xs)"
+    @unfold "binarysearch_fun l r x xs"
     @case "l \<ge> r" @case "l + 1 \<ge> r"
   @end
 @qed

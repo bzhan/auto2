@@ -4,6 +4,7 @@ theory Auto2_HOL
 imports HOL_Base
 keywords "@proof" :: prf_block % "proof"
   and "@have" "@case" "@obtain" "@let" "@contradiction" "@strong_induct" :: prf_decl % "proof"
+  and "@unfold" :: prf_decl % "proof"
   and "@induct" "@fun_induct" "@case_induct" "@prop_induct" "@cases" :: prf_decl % "proof"
   and "@apply_induct_hyp" :: prf_decl % "proof"
   and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
@@ -37,6 +38,7 @@ ML_file "../auto2_outer.ML"
 
 ML_file "acdata.ML"
 ML_file "ac_steps.ML"
+ML_file "unfolding.ML"
 ML_file "induct_outer.ML"
 ML_file "extra_hol.ML"
 
@@ -53,5 +55,6 @@ attribute_setup rewrite_bidir = {* setup_attrib add_rewrite_rule_bidir *}
 attribute_setup forward_arg1 = {* setup_attrib add_forward_arg1_prfstep *}
 attribute_setup forward_arg = {* setup_attrib add_forward_arg_prfstep *}
 attribute_setup rewrite_arg = {* setup_attrib add_rewrite_arg_rule *}
+attribute_setup unfold = {* setup_attrib add_unfolding_rule *}
 
 end

@@ -57,7 +57,7 @@ session DataStrs_Advanced = DataStrs_Basic +
     "HOL/DataStrs/Dijkstra"
     "HOL/DataStrs/Interval_Tree"
     "HOL/DataStrs/Quicksort"
-    "HOL/DataStrs/RBT"
+    "HOL/DataStrs/RBTree"
     "HOL/DataStrs/Rect_Intersect"
 
 session DataStrs_FW = AUTO2 +
@@ -76,7 +76,7 @@ session SepLogic = DataStrs_Advanced +
     "HOL/SepLogic/BST_Impl"
     "HOL/SepLogic/Quicksort_Impl"
     "HOL/SepLogic/Rect_Intersect_Impl"
-    "HOL/SepLogic/RBT_Impl"
+    "HOL/SepLogic/RBTree_Impl"
     "HOL/SepLogic/Connectivity_Impl"
     "HOL/SepLogic/Dijkstra_Impl"
 

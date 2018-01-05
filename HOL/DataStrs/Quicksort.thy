@@ -32,7 +32,7 @@ function part1 :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rig
      else part1 (list_swap xs l r) l (r - 1) a)"
   by auto
   termination by (relation "measure (\<lambda>(_,l,r,_). r - l)") auto
-setup {* add_rewrite_rule_cond @{thm part1.simps} [with_filt (size1_filter "l"), with_filt (size1_filter "r")] *}
+setup {* add_unfolding_rule @{thm part1.simps} *}
 setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
 setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 setup {* add_fun_induct_rule (@{term part1}, @{thm part1.induct}) *}
@@ -40,24 +40,28 @@ setup {* add_fun_induct_rule (@{term part1}, @{thm part1.induct}) *}
 lemma part1_basic:
   "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
-@proof @fun_induct "part1 xs l r a" @qed
+@proof @fun_induct "part1 xs l r a" @with
+  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
+@qed
 setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"] *}
 
 lemma part1_partitions1 [backward]:
   "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> a"
-@proof @fun_induct "part1 xs l r a" @qed
+@proof @fun_induct "part1 xs l r a" @with
+  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
+@qed
 
 lemma part1_partitions2 [backward]:
   "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
    rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> a"
-@proof @fun_induct "part1 xs l r a" @qed
-
-setup {* del_prfstep_thm @{thm part1.simps} *}
+@proof @fun_induct "part1 xs l r a" @with
+  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
+@qed
 
 section {* Paritition function *}
 
-definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a list)" where [rewrite]:
+definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a list)" where [unfold]:
   "partition xs l r = (
     let p = xs ! r;
       (m, xs') = part1 xs l (r - 1) p;
@@ -68,25 +72,25 @@ setup {* register_wellform_data ("partition xs l r", ["l < r", "r < length xs"])
 
 lemma partition_basic:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
-   outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r" by auto2
+   outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
+@proof @unfold "partition xs l r" @qed
 setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "partition ?xs ?l ?r"] *}
   
 lemma partition_partitions1 [forward]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
    x \<in> set (sublist l rs xs'') \<Longrightarrow> x \<le> xs'' ! rs"
-@proof @obtain i where "i \<ge> l" "i < rs" "x = xs'' ! i" @qed
+@proof @unfold "partition xs l r" @obtain i where "i \<ge> l" "i < rs" "x = xs'' ! i" @qed
 
 lemma partition_partitions2 [forward]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
    x \<in> set (sublist (rs + 1) (r + 1) xs'') \<Longrightarrow> x \<ge> xs'' ! rs"
-@proof
+@proof @unfold "partition xs l r"
   @obtain i where "i \<ge> rs + 1" "i < r + 1" "x = xs'' ! i"
   @let "p = xs ! r"
   @let "m = fst (part1 xs l (r - 1) p)"
   @let "xs' = snd (part1 xs l (r - 1) p)"
   @case "xs' ! m \<le> p"
 @qed
-setup {* del_prfstep_thm @{thm partition_def} *}
 
 lemma quicksort_term1 [resolve]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> fst (partition xs l r) - (l + 1) < r - l"
@@ -108,16 +112,18 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
   by auto
   termination apply (relation "measure (\<lambda>(a, l, r). (r - l))")
   apply auto by auto2+
-setup {* add_rewrite_rule_cond @{thm quicksort.simps} (map (with_filt o size1_filter) ["l", "r"]) *}
+setup {* add_unfolding_rule @{thm quicksort.simps} *}
 
 lemma quicksort_trivial [rewrite]:
-  "l \<ge> r \<Longrightarrow> quicksort xs l r = xs" by auto2
+  "l \<ge> r \<Longrightarrow> quicksort xs l r = xs"
+@proof @unfold "quicksort xs l r" @qed
 
 lemma quicksort_basic:
   "mset (quicksort xs l r) = mset xs \<and> outer_remains xs (quicksort xs l r) l r"
 @proof
   @let "d = r - l"
   @strong_induct d arbitrary l r xs
+  @unfold "quicksort xs l r"
   @case "l \<ge> r" @case "r \<ge> length xs"
   @let "p = fst (partition xs l r)"
   @let "xs1 = snd (partition xs l r)"
@@ -136,7 +142,7 @@ setup {* add_forward_prfstep_cond @{thm quicksort_basic} [with_term "quicksort ?
 
 lemma quicksort_permutes [rewrite]:
   "xs' = quicksort xs l r \<Longrightarrow> set (sublist l (r + 1) xs') = set (sublist l (r + 1) xs)"
-@proof
+@proof @unfold "quicksort xs l r"
   @case "l \<ge> r" @case "r \<ge> length xs"
   @have "xs = take l xs @ sublist l (r + 1) xs @ drop (r + 1) xs"
   @have "xs' = take l xs' @ sublist l (r + 1) xs' @ drop (r + 1) xs'"
@@ -153,7 +159,7 @@ lemma quicksort_sorts:
   @let "p = fst (partition xs l r)"
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
-  @let "xs3 = quicksort xs l r"
+  @let "xs3 = quicksort xs2 (p + 1) r"
   @have "xs1 ! p = xs3 ! p" @then
   @have "sublist l p xs2 = sublist l p xs3"
   @have "set (sublist l p xs1) = set (sublist l p xs2)" @with
@@ -171,10 +177,9 @@ lemma quicksort_sorts:
     @case "r \<le> p + 1"
     @apply_induct_hyp "r-(p+1)" "p+1" r xs2
   @end
+  @unfold "quicksort xs l r"
 @qed
 setup {* add_forward_prfstep_cond @{thm quicksort_sorts} [with_term "quicksort ?xs ?l ?r"] *}
-
-setup {* del_prfstep_thm @{thm quicksort.simps} *}
 
 lemma quicksort_sorts_all [rewrite]:
   "xs \<noteq> [] \<Longrightarrow> quicksort xs 0 (length xs - 1) = sort xs"
