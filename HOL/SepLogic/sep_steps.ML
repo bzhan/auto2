@@ -12,6 +12,9 @@ val hoare_shadowing =
 
 signature SEP_LOGIC =
 sig
+  val normalize_mod_cv: Proof.context -> conv
+  val normalize_hoare_cv: Proof.context -> conv
+
   val empty_proc_info: proc_info
   val add_proc_def: thm -> theory -> theory
   val get_proc_def: theory -> string -> thm list
@@ -56,6 +59,49 @@ structure SepLogic : SEP_LOGIC =
 struct
 
 open SepUtil
+
+(* Normalize a statement of the form h |= P, which can appear as
+   either fact or goal. Assume P itself is normalized.
+ *)
+fun normalize_mod_cv' ctxt ct =
+    let
+      val t = Thm.term_of ct
+      val (_, P) = dest_mod t
+    in
+      if is_pure_assn P then
+        Conv.every_conv [rewr_obj_eq @{thm mod_pure'}] ct
+      else if is_times P andalso is_pure_assn (dest_arg P) then
+        Conv.every_conv [
+          rewr_obj_eq @{thm mod_pure_star_dist},
+          Conv.arg1_conv (normalize_mod_cv' ctxt)] ct
+      else if is_ex_assn P then
+        Conv.every_conv [
+          rewr_obj_eq @{thm mod_ex_dist},
+          Conv.binder_conv (normalize_mod_cv' o snd) ctxt] ct
+      else
+        Conv.all_conv ct
+    end
+
+(* Full normalization of a statement of the form h |= P. *)
+fun normalize_mod_cv ctxt ct =
+    Conv.every_conv [mod_assn_conv (AssnNorm.normalize_assn_cv ctxt),
+                     normalize_mod_cv' ctxt] ct
+
+(* Normalize a Hoare triple *)
+fun normalize_hoare_cv' ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_imp t then
+        Conv.every_conv [Conv.arg_conv normalize_hoare_cv',
+                         rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
+      else
+        Conv.all_conv ct
+    end
+
+fun normalize_hoare_cv ctxt ct =
+    Conv.every_conv [normalize_hoare_cv',
+                     Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)] ct
 
 (* Data maintained for each imperative command. *)
 structure Data = Theory_Data (

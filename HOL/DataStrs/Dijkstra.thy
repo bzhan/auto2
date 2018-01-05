@@ -1,5 +1,5 @@
 theory Dijkstra
-imports Mapping Arrays_Ex
+  imports Mapping_Str Arrays_Ex
 begin
 
 section {* Graphs *}

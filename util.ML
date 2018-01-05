@@ -94,6 +94,8 @@ sig
   val lambda_abstract: term -> term -> term
   val is_pattern_list: term list -> bool
   val is_pattern: term -> bool
+
+  val normalize_meta_all_imp: Proof.context -> conv
   val swap_meta_imp_alls: Proof.context -> conv
   val normalize_meta_horn: Proof.context -> conv
   val strip_meta_horn: term -> term list * (term list * term)
@@ -465,6 +467,25 @@ fun is_pattern_list ts =
     end
 
 fun is_pattern t = is_pattern_list [t]
+
+(* Push !!x to the right as much as possible. *)
+fun normalize_meta_all_imp_once ct =
+    Conv.try_conv (
+      Conv.every_conv [Conv.rewr_conv (Thm.symmetric @{thm Pure.norm_hhf_eq}),
+                       Conv.arg_conv normalize_meta_all_imp_once]) ct
+
+fun normalize_meta_all_imp ctxt ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if Logic.is_all t then
+        Conv.every_conv [Conv.binder_conv (normalize_meta_all_imp o snd) ctxt,
+                         normalize_meta_all_imp_once] ct
+      else if is_implies t then
+        Conv.arg_conv (normalize_meta_all_imp ctxt) ct
+      else
+        Conv.all_conv ct
+    end
 
 (* Rewrite A ==> !!v_i. B to !!v_i. A ==> B. *)
 fun swap_meta_imp_alls ctxt ct =

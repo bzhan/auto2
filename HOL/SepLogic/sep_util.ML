@@ -9,6 +9,7 @@ sig
   val assn_ac_info: ac_info
   val assn_comm_cv: conv
   val assn_assoc_sym_cv: conv
+  val is_true_assn: term -> bool
   val is_entail: term -> bool
   val dest_entail: term -> term * term
   val cdest_entail: cterm -> cterm * cterm
@@ -24,13 +25,10 @@ sig
   val is_pure_assn: term -> bool
   val has_pure_assn: term -> bool
   val strip_pure_assn: term -> term
-  val normalize_assn_cv: Proof.context -> conv
-  val normalize_mod_cv: Proof.context -> conv
 
   val is_hoare_triple: term -> bool
   val dest_hoare_triple: term -> term * term * term
   val name_of_sep_proc: term -> string
-  val normalize_hoare_cv: Proof.context -> conv
 
   val mult_emp_left: conv
   val mult_emp_right: conv
@@ -51,6 +49,11 @@ val assn_true = @{term true}
 val assn_ac_info = Nat_Arith.times_ac_on_typ @{theory} assnT
 val assn_comm_cv = rewr_obj_eq (#comm_th assn_ac_info)
 val assn_assoc_sym_cv = rewr_obj_eq (obj_sym (#assoc_th assn_ac_info))
+
+fun is_true_assn t =
+    case t of
+        Const (@{const_name top_assn}, _) => true
+      | _ => false
 
 fun is_entail t =
     case t of
@@ -132,74 +135,6 @@ fun strip_pure_assn t =
     else if is_pure_assn t then emp
     else t
 
-fun is_case_prod t =
-    case t of
-        Const (@{const_name case_prod}, _) $ _ $ _ => true
-      | _ => false
-
-(* Normalization function for assertions. This function pulls all EX_A
-   to the front, then apply AC-rules to the inside, putting all pure
-   assertions on the right.
- *)
-fun normalize_assn_cv ctxt ct =
-    let
-      fun pure_ord (t, s) = not (is_pure_assn t) andalso is_pure_assn s
-      val t = Thm.term_of ct
-    in
-      if is_ex_assn t then
-        Conv.binder_conv (normalize_assn_cv o snd) ctxt ct
-      else if is_times t then
-        if is_ex_assn (dest_arg1 t) then
-          Conv.every_conv [rewr_obj_eq (obj_sym @{thm ex_distrib_star}),
-                           normalize_assn_cv ctxt] ct
-        else if is_ex_assn (dest_arg t) then
-          Conv.every_conv [
-            assn_comm_cv,
-            rewr_obj_eq (obj_sym @{thm ex_distrib_star}),
-            Conv.binder_conv (K assn_comm_cv) ctxt,
-            normalize_assn_cv ctxt] ct
-        else
-          Conv.every_conv [
-            Conv.binop_conv (normalize_assn_cv ctxt),
-            ACUtil.normalize_au assn_ac_info,
-            ACUtil.normalize_comm_gen assn_ac_info pure_ord] ct
-      else if is_pure_assn t andalso is_conj (dest_arg t) then
-        Conv.every_conv [rewr_obj_eq @{thm pure_conj},
-                         normalize_assn_cv ctxt] ct
-      else if is_case_prod t then
-        Conv.every_conv [rewr_obj_eq @{thm case_prod_beta},
-                         normalize_assn_cv ctxt] ct
-      else
-        Conv.all_conv ct
-    end
-
-(* Normalize a statement of the form h |= P, which can appear as
-   either fact or goal. Assume P itself is normalized.
- *)
-fun normalize_mod_cv' ctxt ct =
-    let
-      val t = Thm.term_of ct
-      val (_, P) = dest_mod t
-    in
-      if is_pure_assn P then
-        Conv.every_conv [rewr_obj_eq @{thm mod_pure'}] ct
-      else if is_times P andalso is_pure_assn (dest_arg P) then
-        Conv.every_conv [
-          rewr_obj_eq @{thm mod_pure_star_dist},
-          Conv.arg1_conv (normalize_mod_cv' ctxt)] ct
-      else if is_ex_assn P then
-        Conv.every_conv [
-          rewr_obj_eq @{thm mod_ex_dist},
-          Conv.binder_conv (normalize_mod_cv' o snd) ctxt] ct
-      else
-        Conv.all_conv ct
-    end
-
-(* Full normalization of a statement of the form h |= P. *)
-fun normalize_mod_cv ctxt ct =
-    Conv.every_conv [mod_assn_conv (normalize_assn_cv ctxt),
-                     normalize_mod_cv' ctxt] ct
-
 fun is_hoare_triple t =
     case t of
         Const (@{const_name hoare_triple}, _) $ _ $ _ $ _ => true
@@ -214,22 +149,6 @@ fun name_of_sep_proc c =
     case Term.head_of c of
         Const (nm, _) => nm
       | _ => raise Fail "name_of_sep_proc"
-
-(* Normalize a Hoare triple *)
-fun normalize_hoare_cv' ct =
-    let
-      val t = Thm.term_of ct
-    in
-      if is_imp t then
-        Conv.every_conv [Conv.arg_conv normalize_hoare_cv',
-                         rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
-      else
-        Conv.all_conv ct
-    end
-
-fun normalize_hoare_cv ctxt ct =
-    Conv.every_conv [normalize_hoare_cv',
-                     Util.argn_conv 0 (normalize_assn_cv ctxt)] ct
 
 (* Convert A to emp * A *)
 val mult_emp_left = rewr_obj_eq (obj_sym @{thm mult_1})

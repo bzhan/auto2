@@ -201,8 +201,11 @@ abbreviation bot_assn :: assn ("false") where "bot_assn \<equiv> \<up>False"
 
 lemma mod_false' [resolve]: "\<not> (h \<Turnstile> false * Ru)" by auto2
 
-lemma mod_star_trueI: "h \<Turnstile> P \<Longrightarrow> h \<Turnstile> P * true"
+lemma mod_star_trueI [backward]: "h \<Turnstile> P \<Longrightarrow> h \<Turnstile> P * true"
 @proof @have "snd h = snd h \<union> {}" @qed
+
+lemma top_assn_reduce: "true * true = true" by auto2
+setup {* del_prfstep_thm @{thm mod_star_trueI} *}
 
 lemma sngr_same_false [resolve]: "\<not>h \<Turnstile> p \<mapsto>\<^sub>r x * p \<mapsto>\<^sub>r y * Qu" by auto2
 
@@ -480,6 +483,7 @@ abbreviation (input) models_ascii :: "pheap \<Rightarrow> assn \<Rightarrow> boo
   where "h |= P \<equiv> h \<Turnstile> P"
 
 ML_file "sep_util.ML"
+ML_file "assn_norm.ML"
 ML_file "assn_matcher.ML"
 ML_file "sep_steps.ML"
 ML_file "sep_steps_test.ML"

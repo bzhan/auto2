@@ -8,7 +8,7 @@
 *)
 
 theory Lists_Ex
-imports "../Auto2_Main" Mapping
+imports "../Auto2_Main" Mapping_Str
 begin
   
 section {* Linear time version of rev *}

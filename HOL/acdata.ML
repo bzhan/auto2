@@ -38,6 +38,7 @@ sig
   val normalize_au: ac_info -> conv
   val normalize_all_ac: ac_info -> conv
   val ac_last_conv: ac_info -> conv -> conv
+  val norm_combine: ac_info -> (term -> bool) -> conv -> conv
 end;
 
 structure ACUtil : ACUTIL =
@@ -296,5 +297,33 @@ fun ac_last_conv ac_info cv ct =
     if head_agrees ac_info (Thm.term_of ct) then
       Conv.arg_conv cv ct
     else cv ct
+
+(* Given ct in the form x_1 * ... * x_n, where some sequence of x_i
+   satisfies predicate pred. Combine these x_i into a single term
+   using the binary combinator cv.
+ *)
+fun norm_combine ac_info pred cv ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if head_agrees ac_info t then
+        let
+          val (a, b) = Util.dest_binop_args t
+        in
+          if pred b then
+            if pred a then
+              cv ct
+            else if head_agrees ac_info a andalso pred (dest_arg a) then
+              Conv.every_conv [assoc_cv ac_info,
+                               Conv.arg_conv cv,
+                               norm_combine ac_info pred cv] ct
+            else
+              Conv.all_conv ct
+          else
+            Conv.arg1_conv (norm_combine ac_info pred cv) ct
+        end
+      else
+        Conv.all_conv ct
+    end
 
 end  (* structure ACUtil. *)

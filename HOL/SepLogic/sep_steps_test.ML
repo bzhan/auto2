@@ -10,7 +10,8 @@ val test_normalize_assn =
       val ctxt' = ctxt |> fold Variable.auto_fixes [
             Free ("P", assnT), Free ("S", natT --> assnT),
             Free ("T", natT --> assnT)]
-      val test = Util.test_conv ctxt' (normalize_assn_cv ctxt') "normalize_assn"
+      val test = Util.test_conv ctxt' (AssnNorm.normalize_assn_cv ctxt')
+                                "normalize_assn"
 
       val test_data = [
         ("P * (Q * R)", "P * Q * R"),
@@ -22,7 +23,10 @@ val test_normalize_assn =
         ("(EXA x. S x) * P", "EXA x. S x * P"),
         ("P * (EXA x. S x)", "EXA x. P * S x"),
         ("(EXA x. S x) * (EXA y. T y)", "EXA x y. S x * T y"),
-        ("EXA x. S x * \<up>(B x) * T x", "EXA x. S x * T x * \<up>(B x)")
+        ("EXA x. S x * \<up>(B x) * T x", "EXA x. S x * T x * \<up>(B x)"),
+        ("P * true * true", "P * true"),
+        ("true * P * true", "P * true"),
+        ("true * P * true * \<up>(b)", "P * true * \<up>(b)")
       ]
     in
       map test test_data
@@ -33,7 +37,8 @@ val test_normalize_mod =
       val ctxt' = ctxt |> fold Variable.auto_fixes [
             Free ("P", assnT), Free ("S", natT --> assnT),
             Free ("T", natT --> assnT)]
-      val test = Util.test_conv ctxt' (normalize_mod_cv ctxt') "normalize_mod"
+      val test = Util.test_conv ctxt' (SepLogic.normalize_mod_cv ctxt')
+                                "normalize_mod"
 
       val test_data = [
         ("h |= (P * \<up>(b))", "(h |= P) & b"),
@@ -52,7 +57,7 @@ val test_normalize_hoare =
       val ctxt' = ctxt |> fold Variable.auto_fixes [
             Free ("P", assnT), Free ("S", natT --> assnT),
             Free ("T", natT --> assnT)]
-      val test = Util.test_conv ctxt' (normalize_hoare_cv ctxt')
+      val test = Util.test_conv ctxt' (SepLogic.normalize_hoare_cv ctxt')
                                 "normalize_hoare"
 
       val test_data = [

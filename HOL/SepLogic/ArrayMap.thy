@@ -1,5 +1,5 @@
 theory ArrayMap
-imports SepAuto "../DataStrs/Mapping"
+  imports SepAuto "../DataStrs/Mapping_Str"
 begin
 
 text {* Implementation of a map from nats [0,n) to 'a using a fixed-size array. *}

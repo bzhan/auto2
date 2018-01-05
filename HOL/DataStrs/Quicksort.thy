@@ -114,24 +114,25 @@ lemma quicksort_trivial [rewrite]:
   "l \<ge> r \<Longrightarrow> quicksort xs l r = xs" by auto2
 
 lemma quicksort_basic:
-  "xs3 = quicksort xs l r \<Longrightarrow> mset xs3 = mset xs \<and> outer_remains xs xs3 l r"
+  "mset (quicksort xs l r) = mset xs \<and> outer_remains xs (quicksort xs l r) l r"
 @proof
   @let "d = r - l"
-  @strong_induct d arbitrary l r xs xs3
+  @strong_induct d arbitrary l r xs
   @case "l \<ge> r" @case "r \<ge> length xs"
   @let "p = fst (partition xs l r)"
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
+  @let "xs3 = quicksort xs l r"
   @have "mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
     @case "p - 1 \<le> l" @then
-    @apply_induct_hyp "(p-1)-l" l "p-1" xs1 xs2
+    @apply_induct_hyp "(p-1)-l" l "p-1" xs1
   @end
   @have "mset xs3 = mset xs2 \<and> outer_remains xs2 xs3 l r" @with
     @case "p + 1 \<ge> r" @then
-    @apply_induct_hyp "r-(p+1)" "p+1" r xs2 xs3
+    @apply_induct_hyp "r-(p+1)" "p+1" r xs2
   @end
 @qed
-setup {* add_forward_prfstep_cond @{thm quicksort_basic} [with_term "?xs3.0"] *}
+setup {* add_forward_prfstep_cond @{thm quicksort_basic} [with_term "quicksort ?xs ?l ?r"] *}
 
 lemma quicksort_permutes [rewrite]:
   "xs' = quicksort xs l r \<Longrightarrow> set (sublist l (r + 1) xs') = set (sublist l (r + 1) xs)"

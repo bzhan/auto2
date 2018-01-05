@@ -44,7 +44,7 @@ session DataStrs_Basic = AUTO2 +
     "HOL/DataStrs/BST"
     "HOL/DataStrs/Interval"
     "HOL/DataStrs/Lists_Ex"
-    "HOL/DataStrs/Mapping"
+    "HOL/DataStrs/Mapping_Str"
     "HOL/DataStrs/Partial_Equiv_Rel"
     "HOL/DataStrs/Union_Find"
 

@@ -1,4 +1,4 @@
-theory Mapping
+theory Mapping_Str
 imports "../Auto2_Main"
 begin
 

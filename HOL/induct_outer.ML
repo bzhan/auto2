@@ -256,6 +256,7 @@ fun apply_induct_hyp_cmd s state =
       val th = stmt |> Thm.assume
                     |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
                     |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) ts)
+                    |> apply_to_thm (Util.normalize_meta_all_imp ctxt)
 
       val prems = th |> Thm.prems_of
                      |> map (fn t => Logic.list_implies (As, t))

@@ -6,8 +6,15 @@ local
 
 in
 
-fun assert_eq_prop t txt th =
-    let val _ = assert (t aconv (Thm.prop_of th)) txt in th end
+val test_normalize_meta_all_imp =
+    let
+      val test_data = [
+        ("!!x. (A ==> B x)", "A ==> (!!x. B x)")
+      ]
+    in
+      map (Util.test_conv ctxt (Util.normalize_meta_all_imp ctxt)
+                          "normalize_meta_all_imp") test_data
+    end
 
 val test_to_obj_conv =
     let
