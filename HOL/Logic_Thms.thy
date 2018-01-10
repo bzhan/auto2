@@ -111,8 +111,4 @@ setup {* add_forward_prfstep (equiv_forward_th @{thm option.simps(1)}) *}
 setup {* fold add_rewrite_rule @{thms Option.option.case} *}
 setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2", 1)] *}
 
-(* Quantifiers and other fundamental proofsteps. *)
-ML_file "util_arith.ML"
-setup {* Consts.add_const_data ("NUMC", UtilArith.is_numc) *}
-
 end

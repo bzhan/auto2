@@ -4,6 +4,9 @@ theory Order_Thms
 imports Logic_Thms
 begin
 
+ML_file "util_arith.ML"
+setup {* Consts.add_const_data ("NUMC", UtilArith.is_numc) *}
+
 section {* Results in class order or preorder *}
 
 setup {* add_forward_prfstep_cond @{thm Orderings.order_class.order.trans} [with_filt (not_type_filter "a" natT)] *}

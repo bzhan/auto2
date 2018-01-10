@@ -38,8 +38,11 @@ val fheads = [@{term "(op +) :: (nat => nat => nat)"},
 val plus_info = Nat_Arith.plus_ac_on_typ @{theory} natT
 val is_numc = UtilArith.is_numc
 val dest_numc = UtilArith.dest_numc
-val is_plus = Nat_Arith.is_plus
-val is_minus = Nat_Arith.is_minus
+val is_plus = UtilArith.is_plus
+val is_minus = UtilArith.is_minus
+val is_times = UtilArith.is_times
+val is_zero = UtilArith.is_zero
+val is_one = UtilArith.is_one
 val wf_rewr_obj_eq = WfTerm.rewr_obj_eq fheads
 val nat0 = Nat_Arith.nat0
 
@@ -67,21 +70,6 @@ val distrib_l_th = @{thm nat_distrib(2)}
 val nat_fold_wfconv = WfTerm.conv_of Nat_Arith.nat_fold_conv
 val cancel_0_left = WfTerm.try_conv (wf_rewr_obj_eq @{thm add_0_left})
 val append_0_left = wf_rewr_obj_eq (obj_sym @{thm add_0_left})
-
-fun is_times t =
-    case t of
-        Const (@{const_name times}, _) $ _ $ _ => true
-      | _ => false
-
-fun is_zero t =
-    case t of
-        Const (@{const_name zero_class.zero}, _) => true
-      | _ => false
-
-fun is_one t =
-    case t of
-        Const (@{const_name one_class.one}, _) => true
-      | _ => false
 
 (* When comparing atoms, constants are greater than non-constants. *)
 fun compare_atom (t1, t2) =

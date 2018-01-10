@@ -66,11 +66,11 @@ fun eq_info ((id, th), (id', th')) =
 
 (* Check whether t is in the form a + n, where n is a constant. *)
 fun is_plus_const t =
-    Nat_Arith.is_plus t andalso UtilArith.is_numc (dest_arg t)
+    UtilArith.is_plus t andalso UtilArith.is_numc (dest_arg t)
 
 (* Check whether t is in the form a - n, where n is a constant. *)
 fun is_minus_const t =
-    Nat_Arith.is_minus t andalso UtilArith.is_numc (dest_arg t)
+    UtilArith.is_minus t andalso UtilArith.is_numc (dest_arg t)
 
 (* Check whether t is in the form a <= b (boolean value). *)
 fun is_less_eq t =

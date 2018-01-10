@@ -823,25 +823,6 @@ fun swap_prem_to_front ct =
              then_conv (Conv.rewr_conv Drule.swap_prems_eq)) ct
     end
 
-fun is_def_eq t =
-    if not (is_eq_term t) then false
-    else let
-      val (lhs, rhs) = dest_eq t
-    in
-      Term.is_Var lhs andalso not (Term.is_Var rhs) andalso
-      not (Util.is_subterm lhs rhs)
-    end
-
-fun swap_one_eq_to_front ct =
-    case Thm.term_of ct of
-        @{const Pure.imp} $ A $ _ =>
-        if is_Trueprop A andalso is_def_eq (dest_Trueprop A) then
-          Conv.arg1_conv UtilBase.to_meta_eq_cv ct
-        else
-          ((Conv.arg_conv swap_one_eq_to_front)
-               then_conv (Conv.rewr_conv Drule.swap_prems_eq)) ct
-      | _ => Conv.no_conv ct
-
 (* Using cv, rewrite all assumptions and conclusion in ct. *)
 fun horn_conv cv ct =
     (case Thm.term_of ct of
@@ -922,7 +903,8 @@ fun add_basic_prfstep_cond th mode conds thy =
 
       (* Intermediate form, with definitional eqs in front. *)
       val th_defs = th |> apply_to_thm (UtilLogic.to_obj_conv_on_horn ctxt')
-                       |> apply_to_thm (Conv.repeat_conv swap_one_eq_to_front)
+                       |> apply_to_thm (
+            Conv.repeat_conv UtilLogic.swap_one_eq_to_front)
 
       (* List of definitions used. *)
       val def_subst = th_defs |> Thm.prems_of |> filter Util.is_meta_eq

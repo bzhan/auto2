@@ -12,6 +12,11 @@ sig
   val dest_numc_rat: term -> Rat.rat
   val is_order: term -> bool
   val is_linorder: Proof.context -> term -> bool
+  val is_plus: term -> bool
+  val is_minus: term -> bool
+  val is_times: term -> bool
+  val is_zero: term -> bool
+  val is_one: term -> bool
 
   (* Theorems. *)
   val neg_ineq_cv: conv
@@ -79,6 +84,33 @@ fun is_linorder ctxt t =
     in
       is_order t andalso Sign.of_sort thy (T, ["Orderings.linorder"])
     end
+
+(* Check whether t is in the form a + b. *)
+fun is_plus t =
+    case t of
+        Const (@{const_name plus}, _) $ _ $ _ => true
+      | _ => false
+
+(* Check whether t is in the form a - b. *)
+fun is_minus t =
+    case t of
+        Const (@{const_name minus}, _) $ _ $ _ => true
+      | _ => false
+
+fun is_times t =
+    case t of
+        Const (@{const_name times}, _) $ _ $ _ => true
+      | _ => false
+
+fun is_zero t =
+    case t of
+        Const (@{const_name zero_class.zero}, _) => true
+      | _ => false
+
+fun is_one t =
+    case t of
+        Const (@{const_name one_class.one}, _) => true
+      | _ => false
 
 (* Convert ~ x < y to y <= x, and ~ x <= y to y < x. *)
 val neg_ineq_cv =

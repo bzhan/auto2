@@ -314,16 +314,12 @@ val _ =
 
 fun strip_ex t =
     if is_ex t then
-      case t of
-          _ $ Abs (abs as (_, T, _)) =>
-          let
-            val (x, body) = Term.dest_abs abs
-            val var = Free (x, T)
-            val (vars, body') = strip_ex body
-          in
-            (var :: vars, body')
-          end
-        | _ => error "strip_ex"
+      let
+        val (var, body) = Util.dest_abs_t (dest_arg t)
+        val (vars, body') = strip_ex body
+      in
+        (var :: vars, body')
+      end
     else
       ([], t)
 

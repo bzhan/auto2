@@ -10,10 +10,7 @@ sig
   val mk_int: int -> term
   val nat0: term
   val cnat0: cterm
-  val plusT: term
 
-  val is_plus: term -> bool
-  val is_minus: term -> bool
   val nat_le_th: int -> int -> thm
   val nat_less_th: int -> int -> thm
   val nat_neq_th: int -> int -> thm
@@ -43,19 +40,6 @@ fun mk_nat n = HOLogic.mk_number natT n
 fun mk_int n = HOLogic.mk_number intT n
 val nat0 = mk_nat 0
 val cnat0 = @{cterm "0::nat"}
-val plusT = Const (@{const_name plus}, natT --> natT --> natT)
-
-(* Check whether t is in the form a + b. *)
-fun is_plus t =
-    case t of
-        Const (@{const_name plus}, _) $ _ $ _ => true
-      | _ => false
-
-(* Check whether t is in the form a - b. *)
-fun is_minus t =
-    case t of
-        Const (@{const_name minus}, _) $ _ $ _ => true
-      | _ => false
 
 local
   val ctxt = @{context}
@@ -105,7 +89,8 @@ fun nat_fold_conv ct =
 (* Given natural numbers m and n, return the theorem m + n = p. *)
 fun plus_eq_th m n =
     let
-      val expr = plusT $ mk_nat m $ mk_nat n
+      val expr = Const (@{const_name plus}, natT --> natT --> natT)
+                       $ mk_nat m $ mk_nat n
     in
       expr |> Thm.cterm_of ctxt |> nat_fold_conv
     end
