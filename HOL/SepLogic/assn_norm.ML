@@ -27,7 +27,11 @@ fun normalize_assn_cv ctxt ct =
             | Const (@{const_name top_assn}, _) => 1
             | _ => 0
 
-      fun pure_ord (t, s) = sort_by t < sort_by s
+      fun pure_ord (t, s) =
+          if sort_by t = 0 andalso sort_by s = 0 then
+            Term_Ord.termless (t, s)
+          else
+            sort_by t < sort_by s
       val t = Thm.term_of ct
     in
       if is_ex_assn t then

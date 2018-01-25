@@ -20,7 +20,7 @@ val test_normalize_assn =
         ("P * \<up>(b) * Q", "P * Q * \<up>(b)"),
         ("\<up>(b) * (P * \<up>(c)) * Q", "P * Q * \<up>(b) * \<up>(c)"),
         ("EXA x. S x", "EXA x. S x"),
-        ("(EXA x. S x) * P", "EXA x. S x * P"),
+        ("(EXA x. S x) * P", "EXA x. P * S x"),
         ("P * (EXA x. S x)", "EXA x. P * S x"),
         ("(EXA x. S x) * (EXA y. T y)", "EXA x y. S x * T y"),
         ("EXA x. S x * \<up>(B x) * T x", "EXA x. S x * T x * \<up>(B x)"),
