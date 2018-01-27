@@ -45,7 +45,7 @@ struct
 
 local
   open UtilArith
-  open Nat_Arith
+  open Nat_Util
 in
 
 (* Fold one arithmetic operation on constants. *)

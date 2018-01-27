@@ -35,7 +35,7 @@ val fheads = [@{term "(op +) :: (nat => nat => nat)"},
               @{term "(op -) :: (nat => nat => nat)"},
               @{term "(op *) :: (nat => nat => nat)"}]
 
-val plus_info = Nat_Arith.plus_ac_on_typ @{theory} natT
+val plus_info = Nat_Util.plus_ac_on_typ @{theory} natT
 val is_numc = UtilArith.is_numc
 val dest_numc = UtilArith.dest_numc
 val is_plus = UtilArith.is_plus
@@ -44,7 +44,7 @@ val is_times = UtilArith.is_times
 val is_zero = UtilArith.is_zero
 val is_one = UtilArith.is_one
 val wf_rewr_obj_eq = WfTerm.rewr_obj_eq fheads
-val nat0 = Nat_Arith.nat0
+val nat0 = Nat_Util.nat0
 
 val mult_1 = @{thm mult_1}  (* 1 * a = a *)
 val mult_1_right = @{thm mult_1_right}  (* a * 1 = a *)
@@ -67,7 +67,7 @@ val swap_times = WfTerm.every_conv [times_assoc, WfTerm.arg_conv times_comm,
 val distrib_r_th = @{thm nat_distrib(1)}
 val distrib_l_th = @{thm nat_distrib(2)}
 
-val nat_fold_wfconv = WfTerm.conv_of Nat_Arith.nat_fold_conv
+val nat_fold_wfconv = WfTerm.conv_of Nat_Util.nat_fold_conv
 val cancel_0_left = WfTerm.try_conv (wf_rewr_obj_eq @{thm add_0_left})
 val append_0_left = wf_rewr_obj_eq (obj_sym @{thm add_0_left})
 
@@ -130,7 +130,7 @@ fun dest_monomial t =
     if is_times t andalso is_numc (dest_arg t) then
       (dest_arg1 t, UtilArith.dest_numc (dest_arg t))
     else if is_numc t then
-      (Nat_Arith.mk_nat 1, UtilArith.dest_numc t)
+      (Nat_Util.mk_nat 1, UtilArith.dest_numc t)
     else
       (t, 1)
 
@@ -258,8 +258,8 @@ fun cancel_terms wft =
                   WfTerm.arg_conv nat_fold_wfconv,
                   WfTerm.try_conv (wf_rewr_obj_eq mult_1),
                   WfTerm.try_conv (wf_rewr_obj_eq mult_1_right)]
-            val le_th = if n1 >= n2 then Nat_Arith.nat_le_th n2 n1
-                        else Nat_Arith.nat_le_th n1 n2
+            val le_th = if n1 >= n2 then Nat_Util.nat_le_th n2 n1
+                        else Nat_Util.nat_le_th n1 n2
           in
             if n1 = n2 then
               wf_rewr_obj_eq @{thm nat_sub_combine} wft
@@ -364,7 +364,7 @@ fun list_plus ts =
     let
       fun list_rev ts =
           case ts of
-              [] => Nat_Arith.mk_nat 0
+              [] => Nat_Util.mk_nat 0
             | [t] => t
             | t :: ts' => mk_plus (list_rev ts', t)
     in
@@ -378,7 +378,7 @@ fun list_times ts =
     let
       fun list_rev ts =
           case ts of
-              [] => Nat_Arith.mk_nat 1
+              [] => Nat_Util.mk_nat 1
             | [t] => t
             | t :: ts' => mk_times (list_rev ts', t)
     in

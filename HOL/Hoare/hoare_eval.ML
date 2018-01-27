@@ -21,7 +21,7 @@ fun get_const_ID_eq ctxt t t' =
       val (n, n') = (dest_const_ID t, dest_const_ID t')
     in
       if n = n' then raise Fail "get_const_ID_eq"
-      else SOME ((Nat_Arith.nat_neq_th n n')
+      else SOME ((Nat_Util.nat_neq_th n n')
                      |> apply_to_thm' (Conv.arg_conv id_eq_cv))
     end
 

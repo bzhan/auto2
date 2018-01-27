@@ -1,6 +1,6 @@
 (* Arithmetic proof steps. *)
 
-signature NAT_ARITH =
+signature NAT_UTIL =
 sig
   val lookup_numc: Type.tyenv * Envir.tenv -> int -> int
   val lookup_numc0: Type.tyenv * Envir.tenv -> int
@@ -29,7 +29,7 @@ sig
   val add_arith_proofsteps: theory -> theory
 end;
 
-structure Nat_Arith : NAT_ARITH =
+structure Nat_Util : NAT_UTIL =
 struct
 
 fun lookup_numc inst n = UtilArith.dest_numc (lookup_instn inst ("NUMC", n))
@@ -178,11 +178,11 @@ val add_arith_proofsteps =
         Filter (fn _ => fn (_, inst) => lookup_numc2 inst >= 1)],
        nat_fold_conv)]
 
-end  (* structure Nat_Arith. *)
+end  (* structure Nat_Util. *)
 
-val mk_nat = Nat_Arith.mk_nat
-val mk_int = Nat_Arith.mk_int
-val plus_ac_on_typ = Nat_Arith.plus_ac_on_typ
-val times_ac_on_typ = Nat_Arith.times_ac_on_typ
-val _ = Theory.setup Nat_Arith.add_arith_ac_data
-val _ = Theory.setup Nat_Arith.add_arith_proofsteps
+val mk_nat = Nat_Util.mk_nat
+val mk_int = Nat_Util.mk_int
+val plus_ac_on_typ = Nat_Util.plus_ac_on_typ
+val times_ac_on_typ = Nat_Util.times_ac_on_typ
+val _ = Theory.setup Nat_Util.add_arith_ac_data
+val _ = Theory.setup Nat_Util.add_arith_proofsteps

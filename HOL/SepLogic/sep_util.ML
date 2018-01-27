@@ -46,7 +46,7 @@ val assnT = @{typ assn}
 val pheapT = @{typ pheap}
 val emp = @{term emp}
 val assn_true = @{term true}
-val assn_ac_info = Nat_Arith.times_ac_on_typ @{theory} assnT
+val assn_ac_info = Nat_Util.times_ac_on_typ @{theory} assnT
 val assn_comm_cv = rewr_obj_eq (#comm_th assn_ac_info)
 val assn_assoc_sym_cv = rewr_obj_eq (obj_sym (#assoc_th assn_ac_info))
 

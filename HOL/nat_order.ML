@@ -163,7 +163,7 @@ fun ineq_to_contradiction th =
       val (_, _, d) = dest_ineq_th th
       val _ = assert (d < 0) "ineq_to_contradiction"
     in
-      [Nat_Arith.nat_less_th 0 (~d), th] MRS @{thm single_resolve}
+      [Nat_Util.nat_less_th 0 (~d), th] MRS @{thm single_resolve}
     end
 
 (* Add a new resolved id (with proof) to the table. *)
@@ -250,11 +250,11 @@ fun print_ineq_table ctxt =
 
 (* In expression x + n < y, fold n. *)
 val fold_const_left =
-    apply_to_thm' (Conv.arg1_conv (Conv.arg_conv Nat_Arith.nat_fold_conv))
+    apply_to_thm' (Conv.arg1_conv (Conv.arg_conv Nat_Util.nat_fold_conv))
 
 (* In expression x < y + n, fold n. *)
 val fold_const_right =
-    apply_to_thm' (Conv.arg_conv (Conv.arg_conv Nat_Arith.nat_fold_conv))
+    apply_to_thm' (Conv.arg_conv (Conv.arg_conv Nat_Util.nat_fold_conv))
 
 (* Retrieve all inequalities whose left side is x. *)
 fun retrieve_ineqs_left ctxt x =
@@ -291,13 +291,13 @@ fun combine_ineqs th1 th2 =
         if d2 >= (~d1) then
           ([th1, th2] MRS @{thm trans3}) |> fold_const_right
         else  (* d2 < (~d1) *)
-          ([Nat_Arith.nat_less_th d2 (~d1), th1, th2] MRS @{thm trans4})
+          ([Nat_Util.nat_less_th d2 (~d1), th1, th2] MRS @{thm trans4})
               |> fold_const_left
       else  (* d1 >= 0 andalso d2 < 0 *)
         if d1 >= (~d2) then
           ([th1, th2] MRS @{thm trans5}) |> fold_const_right
         else
-          ([Nat_Arith.nat_less_th d1 (~d2), th1, th2] MRS @{thm trans6})
+          ([Nat_Util.nat_less_th d1 (~d2), th1, th2] MRS @{thm trans6})
               |> fold_const_left
     end
 
@@ -347,7 +347,7 @@ fun norm_ineq_th' th =
       val t = prop_of' th
       val _ = assert (is_less_eq t orelse is_less t) "norm_ineq_th"
       val (lhs, rhs) = Util.dest_binop_args t
-      val try_fold0 = Conv.try_conv (Conv.arg_conv Nat_Arith.nat_fold_conv0_right)
+      val try_fold0 = Conv.try_conv (Conv.arg_conv Nat_Util.nat_fold_conv0_right)
     in
       if is_less_eq t then
         if is_plus_const lhs andalso is_plus_const rhs then
@@ -358,7 +358,7 @@ fun norm_ineq_th' th =
             if n1 <= n2 then
               (th RS @{thm reduce_le_plus_consts}) |> fold_const_right
             else
-              ([Nat_Arith.nat_le_th n2 n1, th]
+              ([Nat_Util.nat_le_th n2 n1, th]
                    MRS @{thm reduce_le_plus_consts'}) |> fold_const_left
           end
         else if is_plus_const lhs then
@@ -383,7 +383,7 @@ fun norm_ineq_th' th =
                                                      |> apply_to_thm' try_fold0
                                                      |> norm_ineq_th'
             else
-              ([Nat_Arith.nat_le_th n2 n1, th]
+              ([Nat_Util.nat_le_th n2 n1, th]
                    MRS @{thm reduce_less_plus_consts'}) |> fold_const_left
                                                         |> norm_ineq_th'
           end
@@ -430,7 +430,7 @@ fun convert_const_y th =
           else if d < 0 andalso yn + d >= 0 then
             (th RS @{thm cv_const2}) |> fold_const_right
           else if d < 0 andalso yn + d < 0 then
-            ([Nat_Arith.nat_less_th yn (~d), th] MRS @{thm cv_const3})
+            ([Nat_Util.nat_less_th yn (~d), th] MRS @{thm cv_const3})
                 |> fold_const_left
           else
             (th RS @{thm cv_const6}) |> fold_const_right
