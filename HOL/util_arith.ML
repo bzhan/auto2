@@ -15,6 +15,7 @@ sig
   val is_plus: term -> bool
   val is_minus: term -> bool
   val is_times: term -> bool
+  val is_divide: term -> bool
   val is_zero: term -> bool
   val is_one: term -> bool
 
@@ -100,6 +101,11 @@ fun is_minus t =
 fun is_times t =
     case t of
         Const (@{const_name times}, _) $ _ $ _ => true
+      | _ => false
+
+fun is_divide t =
+    case t of
+        Const (@{const_name divide}, _) $ _ $ _ => true
       | _ => false
 
 fun is_zero t =

@@ -11,6 +11,8 @@ sig
   val nat0: term
   val cnat0: cterm
 
+  val mk_less: term * term -> term
+  val mk_le: term * term -> term
   val nat_le_th: int -> int -> thm
   val nat_less_th: int -> int -> thm
   val nat_neq_th: int -> int -> thm
@@ -45,19 +47,21 @@ local
   val ctxt = @{context}
 in
 
+fun mk_less (m, n) =
+    Const (@{const_name less}, natT --> natT --> boolT) $ m $ n
+
+fun mk_le (m, n) =
+    Const (@{const_name less_eq}, natT --> natT --> boolT) $ m $ n
+
 (* Obtain the theorem m <= n. *)
 fun nat_le_th m n =
     if m > n then raise Fail "nat_le_th: input"
-    else UtilArith.prove_by_arith ctxt [] (
-        Const (@{const_name less_eq}, natT --> natT --> boolT)
-              $ mk_nat m $ mk_nat n)
+    else UtilArith.prove_by_arith ctxt [] (mk_le (mk_nat m, mk_nat n))
 
 (* Obtain the theorem m < n. *)
 fun nat_less_th m n =
     if m >= n then raise Fail "nat_less_th: input"
-    else UtilArith.prove_by_arith ctxt [] (
-        Const (@{const_name less}, natT --> natT --> boolT)
-              $ mk_nat m $ mk_nat n)
+    else UtilArith.prove_by_arith ctxt [] (mk_less (mk_nat m, mk_nat n))
 
 (* Obtain the theorem m ~= n. *)
 fun nat_neq_th m n =
