@@ -171,8 +171,8 @@ setup {* add_forward_prfstep_cond @{thm n_dvd_one} [with_cond "?n \<noteq> 1"] *
 
 (* Products. *)
 setup {* add_rewrite_rule @{thm mult_zero_left} *}
-theorem prod_ineqs: "m * k > (0::nat) \<Longrightarrow> 1 \<le> m \<and> m \<le> m * k \<and> 1 \<le> k \<and> k \<le> m * k" by simp
-setup {* add_forward_prfstep_cond @{thm prod_ineqs} [with_term "?m * ?k"] *}
+lemma prod_ineqs1 [forward]: "(m::nat) * k > 0 \<Longrightarrow> m > 0 \<and> k > 0" by simp
+lemma prod_ineqs2 [backward]: "(k::nat) > 0 \<Longrightarrow> m \<le> m * k" by simp
 
 theorem prod_cancel: "(a::nat) * b = a * c \<Longrightarrow> a > 0 \<Longrightarrow> b = c" by auto
 setup {* add_forward_prfstep_cond @{thm prod_cancel} [with_cond "?b \<noteq> ?c"] *}

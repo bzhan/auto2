@@ -37,7 +37,10 @@ lemma prime_dvd_mult_eq_nat: "prime p \<Longrightarrow> p dvd m * n = (p dvd m \
 
 lemma not_prime_eq_prod_nat [backward1]: "n > 1 \<Longrightarrow> \<not> prime n \<Longrightarrow>
     \<exists>m k. n = m * k \<and> 1 < m \<and> m < n \<and> 1 < k \<and> k < n"
-@proof @obtain m where "m dvd n \<and> m \<noteq> 1 \<and> m \<noteq> n" @obtain k where "n = m * k" @qed
+@proof
+  @obtain m where "m dvd n \<and> m \<noteq> 1 \<and> m \<noteq> n"
+  @obtain k where "n = m * k" @have "m \<le> m * k" @have "k \<le> m * k"
+@qed
 
 lemma prime_dvd_power_nat: "prime p \<Longrightarrow> p dvd x^n \<Longrightarrow> p dvd x" by auto2
 setup {* add_forward_prfstep_cond @{thm prime_dvd_power_nat} [with_cond "?p \<noteq> ?x"] *}
