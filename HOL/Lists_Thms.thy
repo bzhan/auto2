@@ -148,7 +148,7 @@ setup {* add_forward_prfstep_cond @{thm List.last_in_set} [with_term "last ?as"]
 
 section {* butlast *}
 
-setup {* add_rewrite_rule @{thm List.length_butlast} *}
+setup {* add_rewrite_arg_rule @{thm List.length_butlast} *}
 setup {* add_rewrite_rule @{thm List.nth_butlast} *}
 setup {* add_rewrite_rule_back @{thm List.butlast_conv_take} *}
 setup {* add_rewrite_rule @{thm List.butlast_snoc} *}
