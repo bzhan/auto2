@@ -47,20 +47,8 @@ setup {* fold add_rewrite_ent_rule @{thms int_tree.simps} *}
 lemma int_tree_Tip [forward_ent_shadow]: "int_tree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
 lemma int_tree_Node [forward_ent_shadow]:
-  "int_tree (interval_tree.Node lt v m rt) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp v m rp * int_tree lt lp * int_tree rt rp)"
-  by auto2
-
-lemma int_tree_Node_none [forward_ent]:
-  "int_tree (interval_tree.Node lt v m rt) None \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma int_tree_Tip_some [forward_ent]:
-  "int_tree Tip (Some p) \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma int_tree_is_some [forward_ent]:
-  "int_tree (interval_tree.Node lt v m rt) p \<Longrightarrow>\<^sub>A true * \<up>(p \<noteq> None)" by auto2
-
-lemma int_tree_is_not_leaf [forward_ent]:
-  "int_tree t (Some p) \<Longrightarrow>\<^sub>A true * \<up>(t \<noteq> Tip)" by auto2
+  "int_tree (interval_tree.Node lt v m rt) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. the p \<mapsto>\<^sub>r Node lp v m rp * int_tree lt lp * int_tree rt rp * \<up>(p \<noteq> None))"
+@proof @case "p = None" @qed
 
 lemma int_tree_none: "emp \<Longrightarrow>\<^sub>A int_tree interval_tree.Tip None" by auto2
 

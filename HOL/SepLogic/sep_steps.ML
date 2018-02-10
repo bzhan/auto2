@@ -231,30 +231,42 @@ fun mod_inv_match_item ictxt (pat, item) (id, inst) =
           |> IncrContext.replace_id_for_type ictxt
     end
 
+(* Given fact of form h |= P, normalize, then use apply_exists when
+   necessary.
+ *)
+fun mod_fact_ritems ctxt mod_th =
+    let
+      val mod_th' = apply_to_thm' (normalize_mod_cv ctxt) mod_th
+      val (vars, _) = (UtilLogic.strip_exists (prop_of' mod_th'))
+                          |> Util.replace_vars ctxt
+                          |> Util.replace_internal_vars
+      val xs = map (fst o Term.dest_Free) vars
+    in
+      if null xs then ([], mod_th')
+      else Update.apply_exists_ritems ctxt xs mod_th'
+    end
+
 fun forward_ent_prfstep_fn shadowing ent_th ictxt item =
     let
-      val (A, B) = dest_entail (prop_of' ent_th)
+      val (A, _) = dest_entail (prop_of' ent_th)
       val ctxt = IncrContext.context_of ictxt
       val {id, tname, ...} = item
       val h_t = tname |> the_single |> Thm.term_of |> dest_mod |> fst
       val pat = mk_mod (h_t, mk_star (A, Var (("Ru", 0), assnT)))
       val insts = mod_match_item ictxt (pat, item) (id, fo_init)
-      val is_pure_B = strip_pure_assn B aconv assn_true
 
       fun process_inst ((id', _), th) =
           let
-            val raw_items =
+            val (ex_ritems, mod_th) =
                 ([ent_th, th] MRS @{thm entailsD'})
-                    |> apply_to_thm' (normalize_mod_cv ctxt)
-                    |> Logic_ProofSteps.split_conj_gen_th ctxt
-                    |> (if is_pure_B then filter_out (is_mod o prop_of') else I)
-                    |> map Update.thm_to_ritem
+                    |> mod_fact_ritems ctxt
+            val ritems = ex_ritems @ [Update.thm_to_ritem mod_th]
           in
-            [AddItems {id = id', sc = NONE, raw_items = raw_items}] @
+            [AddItems {id = id', sc = NONE, raw_items = ritems}] @
             (if shadowing then [ShadowItem {id = id', item = item}] else [])
           end
     in
-      maps process_inst insts
+      if null insts then [] else process_inst (hd insts)
     end
 
 fun forward_ent_prfstep ent_th =
@@ -536,21 +548,6 @@ fun rewrite_hoare_triple_goal ctxt th =
         | SOME eq =>
           th |> apply_to_thm' (
             Conv.arg_conv (Conv.arg1_conv (Conv.rewr_conv eq)))
-    end
-
-(* Given fact of form h |= P, normalize, then use apply_exists when
-   necessary.
- *)
-fun mod_fact_ritems ctxt mod_th =
-    let
-      val mod_th' = apply_to_thm' (normalize_mod_cv ctxt) mod_th
-      val (vars, _) = (UtilLogic.strip_exists (prop_of' mod_th'))
-                          |> Util.replace_vars ctxt
-                          |> Util.replace_internal_vars
-      val xs = map (fst o Term.dest_Free) vars
-    in
-      if null xs then ([], mod_th')
-      else Update.apply_exists_ritems ctxt xs mod_th'
     end
 
 val init_pos =

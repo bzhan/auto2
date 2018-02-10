@@ -29,16 +29,8 @@ setup {* fold add_rewrite_ent_rule @{thms btree.simps} *}
 lemma btree_Tip [forward_ent_shadow]: "btree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
 lemma btree_Node [forward_ent_shadow]:
-  "btree (tree.Node lt k v rt) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp)"
-  by auto2
-
-lemma btree_Node_none [forward_ent]: "btree (tree.Node lt k v rt) None \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma btree_Tip_some [forward_ent]: "btree Tip (Some p) \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma btree_is_some [forward_ent]: "btree (tree.Node lt k v rt) p \<Longrightarrow>\<^sub>A true * \<up>(p \<noteq> None)" by auto2
-
-lemma btree_is_not_leaf [forward_ent]: "btree t (Some p) \<Longrightarrow>\<^sub>A true * \<up>(t \<noteq> Tip)" by auto2
+  "btree (tree.Node lt k v rt) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. the p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp * \<up>(p \<noteq> None))"
+@proof @case "p = None" @qed
 
 lemma btree_none: "emp \<Longrightarrow>\<^sub>A btree tree.Tip None" by auto2
 

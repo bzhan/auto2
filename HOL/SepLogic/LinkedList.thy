@@ -30,19 +30,8 @@ lemma os_list_empty [forward_ent_shadow]:
   "os_list [] p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
 lemma os_list_Cons [forward_ent_shadow]:
-  "os_list (x # l) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Aq. p \<mapsto>\<^sub>r Node x q * os_list l q)" by auto2
-
-lemma os_list_empty_none [forward_ent]:
-  "os_list (x # l) None \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma os_list_Cons_some [forward_ent]:
-  "os_list [] (Some p) \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma os_list_is_some [forward_ent]:
-  "os_list (x # l) p \<Longrightarrow>\<^sub>A true * \<up>(p \<noteq> None)" by auto2
-
-lemma os_list_is_not_empty [forward_ent]:
-  "os_list xs (Some p) \<Longrightarrow>\<^sub>A true * \<up>(xs \<noteq> [])" by auto2
+  "os_list (x # l) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Aq. the p \<mapsto>\<^sub>r Node x q * os_list l q * \<up>(p \<noteq> None))"
+@proof @case "p = None" @qed
 
 lemma os_list_none: "emp \<Longrightarrow>\<^sub>A os_list [] None" by auto2
 

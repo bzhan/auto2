@@ -39,16 +39,8 @@ setup {* fold add_rewrite_ent_rule @{thms btree.simps} *}
 lemma btree_Leaf [forward_ent_shadow]: "btree Leaf p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
 lemma btree_Node [forward_ent_shadow]:
-  "btree (rbt.Node lt c k v rt) (Some p) \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp c k v rp * btree lt lp * btree rt rp)"
-  by auto2
-
-lemma btree_Node_none [forward_ent]: "btree (rbt.Node lt c k v rt) None \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma btree_Leaf_some [forward_ent]: "btree Leaf (Some p) \<Longrightarrow>\<^sub>A false" by auto2
-
-lemma btree_is_some [forward_ent]: "btree (rbt.Node lt c k v rt) q \<Longrightarrow>\<^sub>A true * \<up>(q \<noteq> None)" by auto2
-
-lemma btree_is_not_leaf [forward_ent]: "btree t (Some p) \<Longrightarrow>\<^sub>A true * \<up>(t \<noteq> Leaf)" by auto2
+  "btree (rbt.Node lt c k v rt) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. the p \<mapsto>\<^sub>r Node lp c k v rp * btree lt lp * btree rt rp * \<up>(p \<noteq> None))"
+@proof @case "p = None" @qed
 
 lemma btree_none: "emp \<Longrightarrow>\<^sub>A btree Leaf None" by auto2
 
