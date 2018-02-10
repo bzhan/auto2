@@ -102,8 +102,8 @@ lemma cl_inv'R [forward]:
 lemma cl_inv_to_cl_inv' [forward]: "cl_inv t \<Longrightarrow> cl_inv' t"
 @proof @case "t = Leaf" @then @case "cl t = R" @qed
 
-lemma cl_inv'I: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (Node l c k v r)" by auto
-setup {* add_forward_prfstep_cond @{thm cl_inv'I} [with_term "Node ?l ?c ?k ?v ?r"] *}
+lemma cl_inv'I [forward_arg]:
+  "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (Node l c k v r)" by auto
 
 subsection {* Set of keys, sortedness *}
 
@@ -172,10 +172,9 @@ setup {* add_prfstep_check_req ("balance l k v r", "black_depth l = black_depth 
 
 lemma balance_non_Leaf [resolve]: "balance l k v r \<noteq> Leaf" by auto2
 
-lemma balance_bdinv:
+lemma balance_bdinv [forward_arg]:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (balance l k v r)"
 @proof @have "bd_inv (balanceR l k v r)" @qed
-setup {* add_forward_prfstep_cond @{thm balance_bdinv} [with_term "balance ?l ?k ?v ?r"] *}
 
 lemma balance_bd [rewrite]:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow>
@@ -302,31 +301,26 @@ definition balR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow>
 setup {* register_wellform_data ("balR l k v r", ["black_depth l = black_depth r + 1"]) *}
 setup {* add_prfstep_check_req ("balR l k v r", "black_depth l = black_depth r + 1") *}
 
-lemma balL_bd:
+lemma balL_bd [forward_arg]:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl r = B \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow>
    bd_inv (balL l k v r) \<and> black_depth (balL l k v r) = black_depth l + 1" by auto2
-setup {* add_forward_prfstep_cond @{thm balL_bd} [with_term "balL ?l ?k ?v ?r"] *}
 
-lemma balL_bd':
+lemma balL_bd' [forward_arg]:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl_inv r \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow>
    bd_inv (balL l k v r) \<and> black_depth (balL l k v r) = black_depth l + 1" by auto2
-setup {* add_forward_prfstep_cond @{thm balL_bd'} [with_term "balL ?l ?k ?v ?r"] *}
 
-lemma balL_cl:
+lemma balL_cl [forward_arg]:
   "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (balL l k v r)" by auto2
-setup {* add_forward_prfstep_cond @{thm balL_cl} [with_term "balL ?l ?k ?v ?r"] *}
 
 lemma balL_cl' [forward]:
   "cl_inv' l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (balL l k v r)" by auto2
 
-lemma balR_bd:
+lemma balR_bd [forward_arg]:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl_inv l \<Longrightarrow> black_depth l = black_depth r + 1 \<Longrightarrow>
    bd_inv (balR l k v r) \<and> black_depth (balR l k v r) = black_depth l" by auto2
-setup {* add_forward_prfstep_cond @{thm balR_bd} [with_term "balR ?l ?k ?v ?r"] *}
 
-lemma balR_cl:
+lemma balR_cl [forward_arg]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl l = B \<Longrightarrow> cl_inv (balR l k v r)" by auto2
-setup {* add_forward_prfstep_cond @{thm balR_cl} [with_term "balR ?l ?k ?v ?r"] *}
 
 lemma balR_cl' [forward]:
   "cl_inv l \<Longrightarrow> cl_inv' r \<Longrightarrow> cl_inv' (balR l k v r)" by auto2
@@ -367,7 +361,7 @@ setup {* fold add_rewrite_rule @{thms combine.simps(1,2)} *}
 setup {* add_unfolding_rule @{thm combine.simps(3)} *}
 setup {* add_fun_induct_rule (@{term combine}, @{thm combine.induct}) *}
 
-lemma combine_bd:
+lemma combine_bd [forward_arg]:
   "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
    bd_inv (combine lt rt) \<and> black_depth (combine lt rt) = black_depth lt"
 @proof @fun_induct "combine lt rt" @with
@@ -377,7 +371,6 @@ lemma combine_bd:
       @have "cl (Node (combine r1 l2) B k2 v2 r2) = B" @end @end @end
   @endgoal @end
 @qed
-setup {* add_forward_prfstep_cond @{thm combine_bd} [with_term "combine ?lt ?rt"] *}
 
 lemma combine_cl:
   "cl_inv lt \<Longrightarrow> cl_inv rt \<Longrightarrow>
@@ -424,7 +417,7 @@ fun del :: "'a::linorder \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" 
 setup {* add_rewrite_rule @{thm del.simps(1)} *}
 setup {* add_unfolding_rule @{thm del.simps(2)} *}
 
-lemma del_bd:
+lemma del_bd [forward_arg]:
   "bd_inv t \<Longrightarrow> cl_inv t \<Longrightarrow> bd_inv (del x t) \<and> (
     if cl t = R then black_depth (del x t) = black_depth t
     else black_depth (del x t) = black_depth t - 1)"
@@ -437,7 +430,6 @@ lemma del_bd:
       @case "r = Leaf" @case "cl r = B" @end
   @endgoal @end
 @qed
-setup {* add_forward_prfstep_cond @{thm del_bd} [with_term "del ?x ?t"] *}
 
 lemma del_cl:
   "cl_inv t \<Longrightarrow> if cl t = R then cl_inv (del x t) else cl_inv' (del x t)"

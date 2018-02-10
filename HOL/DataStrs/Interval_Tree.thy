@@ -140,22 +140,19 @@ lemma delete_min_del_hd:
 @proof @induct t @qed
 setup {* add_forward_prfstep_cond @{thm delete_min_del_hd} [with_term "in_traverse (snd (del_min ?t))"] *}
 
-lemma delete_min_max_inv:
+lemma delete_min_max_inv [forward_arg]:
   "tree_max_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_max_inv (snd (del_min t))"
 @proof @induct t @qed
-setup {* add_forward_prfstep_cond @{thm delete_min_max_inv} [with_term "snd (del_min ?t)"] *}
 
 lemma delete_min_on_set:
   "t \<noteq> Tip \<Longrightarrow> {fst (del_min t)} \<union> tree_set (snd (del_min t)) = tree_set t" by auto2
 setup {* add_forward_prfstep_cond @{thm delete_min_on_set} [with_term "tree_set (snd (del_min ?t))"] *}
 
-lemma delete_min_interval_inv:
+lemma delete_min_interval_inv [forward_arg]:
   "tree_interval_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_interval_inv (snd (del_min t))" by auto2
-setup {* add_forward_prfstep_cond @{thm delete_min_interval_inv} [with_term "snd (del_min ?t)"] *}
 
-lemma delete_min_all_inv:
+lemma delete_min_all_inv [forward_arg]:
   "is_interval_tree t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> is_interval_tree (snd (del_min t))" by auto2
-setup {* add_forward_prfstep_cond @{thm delete_min_all_inv} [with_term "snd (del_min ?t)"] *}
 
 fun delete_elt_tree :: "interval_tree \<Rightarrow> interval_tree" where
   "delete_elt_tree Tip = undefined"
@@ -170,18 +167,16 @@ setup {* add_rewrite_rule @{thm delete_elt_tree.simps(2)} *}
 lemma delete_elt_in_traverse [rewrite]:
   "in_traverse (delete_elt_tree (Node lt x m rt)) = in_traverse lt @ in_traverse rt" by auto2
 
-lemma delete_elt_max_inv:
+lemma delete_elt_max_inv [forward_arg]:
   "tree_max_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_max_inv (delete_elt_tree t)" by auto2
-setup {* add_forward_prfstep_cond @{thm delete_elt_max_inv} [with_term "delete_elt_tree ?t"] *}
 
 lemma delete_elt_on_set [rewrite]:
   "t \<noteq> Tip \<Longrightarrow> tree_set (delete_elt_tree (Node lt x m rt)) = tree_set lt \<union> tree_set rt" by auto2
 
-lemma delete_elt_interval_inv:
+lemma delete_elt_interval_inv [forward_arg]:
   "tree_interval_inv t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> tree_interval_inv (delete_elt_tree t)" by auto2
-setup {* add_forward_prfstep_cond @{thm delete_elt_interval_inv} [with_term "delete_elt_tree ?t"] *}
 
-lemma delete_elt_all_inv:
+lemma delete_elt_all_inv [forward_arg]:
   "is_interval_tree t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> is_interval_tree (delete_elt_tree t)" by auto2
 
 fun tree_delete :: "nat idx_interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
