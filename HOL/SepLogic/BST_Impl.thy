@@ -9,7 +9,6 @@ section {* Tree nodes *}
 datatype ('a, 'b) node =
   Node (lsub: "('a, 'b) node ref option") (key: 'a) (val: 'b) (rsub: "('a, 'b) node ref option")
 setup {* fold add_rewrite_rule @{thms node.sel} *}
-setup {* add_forward_prfstep (equiv_forward_th @{thm node.simps(1)}) *}
 
 fun node_encode :: "('a::heap, 'b::heap) node \<Rightarrow> nat" where
   "node_encode (Node l k v r) = to_nat (l, k, v, r)"

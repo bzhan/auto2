@@ -10,8 +10,7 @@ datatype interval_tree =
 where
   "tmax Tip = 0"
 
-setup {* add_resolve_prfstep @{thm interval_tree.distinct(2)} *}
-setup {* add_forward_prfstep (equiv_forward_th (@{thm interval_tree.simps(1)})) *}
+setup {* add_resolve_prfstep @{thm interval_tree.distinct(1)} *}
 setup {* fold add_rewrite_rule @{thms interval_tree.sel} *}
 setup {* add_forward_prfstep @{thm interval_tree.collapse} *}
 setup {* add_var_induct_rule @{thm interval_tree.induct} *}

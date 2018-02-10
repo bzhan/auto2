@@ -27,7 +27,6 @@ section {* Tree nodes *}
 datatype 'a node =
   Node (lsub: "'a node ref option") (val: "'a idx_interval") (tmax: nat) (rsub: "'a node ref option")
 setup {* fold add_rewrite_rule @{thms node.sel} *}
-setup {* add_forward_prfstep (equiv_forward_th @{thm node.simps(1)}) *}
 
 fun node_encode :: "('a::heap) node \<Rightarrow> nat" where
   "node_encode (Node l v m r) = to_nat (l, v, m, r)"

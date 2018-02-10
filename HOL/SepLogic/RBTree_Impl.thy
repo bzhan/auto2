@@ -9,7 +9,6 @@ section {* Tree nodes *}
 datatype ('a, 'b) rbt_node =
   Node (lsub: "('a, 'b) rbt_node ref option") (cl: color) (key: 'a) (val: 'b) (rsub: "('a, 'b) rbt_node ref option")
 setup {* fold add_rewrite_rule @{thms rbt_node.sel} *}
-setup {* add_forward_prfstep (equiv_forward_th @{thm rbt_node.simps(1)}) *}
 
 fun color_encode :: "color \<Rightarrow> nat" where
   "color_encode B = 0"

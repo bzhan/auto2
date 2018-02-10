@@ -9,7 +9,6 @@ section \<open>List Assertion\<close>
 
 datatype 'a node = Node (val: "'a") (nxt: "'a node ref option")
 setup {* fold add_rewrite_rule @{thms node.sel} *}
-setup {* add_forward_prfstep (equiv_forward_th @{thm node.simps(1)}) *}
 
 fun node_encode :: "'a::heap node \<Rightarrow> nat" where
   "node_encode (Node x r) = to_nat (x, r)"

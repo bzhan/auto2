@@ -36,8 +36,7 @@ datatype 'a operation =
 setup {* fold add_rewrite_rule_back @{thms operation.collapse} *}
 setup {* fold add_rewrite_rule @{thms operation.sel} *}
 setup {* fold add_rewrite_rule @{thms operation.case} *}
-setup {* fold add_rewrite_rule @{thms operation.simps(1-2)} *}
-setup {* add_resolve_prfstep @{thm operation.simps(3)} *}
+setup {* add_resolve_prfstep @{thm operation.distinct(1)} *}
 setup {* add_forward_prfstep_cond @{thm operation.disc(1)} [with_term "INS ?x11.0 ?x12.0 ?x13.0"] *}
 setup {* add_forward_prfstep_cond @{thm operation.disc(2)} [with_term "DEL ?x21.0 ?x22.0 ?x23.0"] *}
 

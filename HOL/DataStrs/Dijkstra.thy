@@ -264,7 +264,6 @@ datatype state = State (est: "nat list") (heap: "(nat, nat) map")
 
 setup {* fold add_rewrite_rule @{thms state.sel} *}
 setup {* add_rewrite_rule_back @{thm state.collapse} *}
-setup {* add_forward_prfstep (equiv_forward_th @{thm state.simps(1)}) *}
 
 definition unknown_set :: "state \<Rightarrow> nat set" where [rewrite]:
   "unknown_set S = keys_of (heap S)"

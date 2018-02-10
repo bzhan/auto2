@@ -9,8 +9,7 @@ section {* Definition and setup for trees *}
 datatype ('a, 'b) tree =
     Tip | Node (lsub: "('a, 'b) tree") (key: 'a) (nval: 'b) (rsub: "('a, 'b) tree")
 
-setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
-setup {* add_forward_prfstep (equiv_forward_th (@{thm tree.simps(1)})) *}
+setup {* add_resolve_prfstep @{thm tree.distinct(1)} *}
 setup {* fold add_rewrite_rule @{thms tree.sel} *}
 setup {* add_forward_prfstep @{thm tree.collapse} *}
 setup {* add_var_induct_rule @{thm tree.induct} *}
