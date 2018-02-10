@@ -3,8 +3,7 @@ imports IndexedPriorityQueue "../DataStrs/Dijkstra"
 begin
 
 datatype dijkstra_state = Dijkstra_State (est_a: "nat array") (heap_pq: "nat indexed_pqueue")
-setup {* add_rewrite_rule_back_cond @{thm dijkstra_state.collapse}
-  [with_cond "?dijkstra_state \<noteq> Dijkstra_State ?e ?h"] *}
+setup {* add_rewrite_rule_back @{thm dijkstra_state.collapse} *}
 setup {* add_rewrite_rule @{thm dijkstra_state.case} *}
 setup {* fold add_rewrite_rule @{thms dijkstra_state.sel} *}
 

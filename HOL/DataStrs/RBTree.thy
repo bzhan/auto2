@@ -17,7 +17,7 @@ setup {* add_resolve_prfstep @{thm color.distinct(1)} *}
 setup {* add_resolve_prfstep @{thm rbt.distinct(2)} *}
 setup {* fold add_rewrite_rule @{thms rbt.sel} *}
 setup {* add_forward_prfstep (equiv_forward_th (@{thm rbt.simps(1)})) *}
-setup {* add_forward_prfstep_cond @{thm rbt.collapse} [with_cond "?tree \<noteq> Node ?l ?c ?k ?v ?r"] *}
+setup {* add_forward_prfstep @{thm rbt.collapse} *}
 setup {* add_var_induct_rule @{thm rbt.induct} *}
 
 lemma not_R [forward]: "c \<noteq> R \<Longrightarrow> c = B" using color.exhaust by blast

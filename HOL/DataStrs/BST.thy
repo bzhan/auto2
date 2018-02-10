@@ -12,7 +12,7 @@ datatype ('a, 'b) tree =
 setup {* add_resolve_prfstep @{thm tree.distinct(2)} *}
 setup {* add_forward_prfstep (equiv_forward_th (@{thm tree.simps(1)})) *}
 setup {* fold add_rewrite_rule @{thms tree.sel} *}
-setup {* add_forward_prfstep_cond @{thm tree.collapse} [with_cond "?tree \<noteq> Node ?l ?k ?v ?r"] *}
+setup {* add_forward_prfstep @{thm tree.collapse} *}
 setup {* add_var_induct_rule @{thm tree.induct} *}
 
 section {* Inorder traversal, and set of elements of a tree *}

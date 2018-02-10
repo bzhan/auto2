@@ -141,8 +141,7 @@ section {* Indexed priority queue *}
 
 datatype 'a indexed_pqueue =
   Indexed_PQueue (pqueue: "(nat \<times> 'a) dynamic_array") (index: "nat array_map")
-setup {* add_rewrite_rule_back_cond @{thm indexed_pqueue.collapse}
-  [with_cond "?indexed_pqueue \<noteq> Indexed_PQueue ?pq ?idx"] *}
+setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
 setup {* add_rewrite_rule @{thm indexed_pqueue.case} *}
 setup {* fold add_rewrite_rule @{thms indexed_pqueue.sel} *}
 

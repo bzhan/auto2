@@ -13,7 +13,7 @@ where
 setup {* add_resolve_prfstep @{thm interval_tree.distinct(2)} *}
 setup {* add_forward_prfstep (equiv_forward_th (@{thm interval_tree.simps(1)})) *}
 setup {* fold add_rewrite_rule @{thms interval_tree.sel} *}
-setup {* add_forward_prfstep_cond @{thm interval_tree.collapse} [with_cond "?tree \<noteq> Node ?l ?k ?v ?r"] *}
+setup {* add_forward_prfstep @{thm interval_tree.collapse} *}
 setup {* add_var_induct_rule @{thm interval_tree.induct} *}
 
 section {* Inorder traversal, and set of elements of a tree *}
