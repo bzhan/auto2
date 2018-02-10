@@ -1,5 +1,5 @@
 theory IndexedPriorityQueue
-imports DynamicArray ArrayMap
+  imports DynamicArray "../DataStrs/Mapping_Str"
 begin
 
 section {* Successor functions, eq-pred predicate *}
@@ -139,16 +139,10 @@ setup {* add_forward_prfstep_cond @{thm desc_is_heap_partial2} [with_term "?xs'"
 
 section {* Indexed priority queue *}
 
-datatype 'a indexed_pqueue =
-  Indexed_PQueue (pqueue: "(nat \<times> 'a) dynamic_array") (index: "nat array_map")
-setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
-setup {* add_rewrite_rule @{thm indexed_pqueue.case} *}
-setup {* fold add_rewrite_rule @{thms indexed_pqueue.sel} *}
-
-definition index_of_pqueue :: "(nat \<times> 'a) list \<Rightarrow> (nat, nat) map \<Rightarrow> bool" where [rewrite]:
+definition index_of_pqueue :: "(nat \<times> 'a) list \<Rightarrow> nat option list \<Rightarrow> bool" where [rewrite]:
   "index_of_pqueue xs m = (
-    (\<forall>i<length xs. m\<langle>fst (xs ! i)\<rangle> = Some i) \<and>
-    (\<forall>i k. m\<langle>k\<rangle> = Some i \<longrightarrow> i < length xs \<and> fst (xs ! i) = k))"
+    (\<forall>i<length xs. fst (xs ! i) < length m \<and> m ! (fst (xs ! i)) = Some i) \<and>
+    (\<forall>i. \<forall>k<length m. m ! k = Some i \<longrightarrow> i < length xs \<and> fst (xs ! i) = k))"
 
 lemma has_index_unique_key [forward]:
   "index_of_pqueue xs m \<Longrightarrow> unique_keys_set (set xs)"
@@ -159,8 +153,8 @@ lemma has_index_unique_key [forward]:
   @end
 @qed
 
-lemma has_index_keys_of [rewrite_bidir]:
-  "index_of_pqueue xs m \<Longrightarrow> has_key_alist xs k \<longleftrightarrow> k \<in> keys_of m"
+lemma has_index_keys_of [rewrite]:
+  "index_of_pqueue xs m \<Longrightarrow> has_key_alist xs k \<longleftrightarrow> (k < length m \<and> m ! k \<noteq> None)"
 @proof
   @case "has_key_alist xs k" @with
     @obtain v' where "(k, v') \<in> set xs" @then
@@ -177,9 +171,15 @@ lemma has_index_distinct [forward]:
 definition key_within_range :: "(nat \<times> 'a) list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "key_within_range xs n = (\<forall>p\<in>set xs. fst p < n)"
 
+datatype 'a indexed_pqueue =
+  Indexed_PQueue (pqueue: "(nat \<times> 'a) dynamic_array") (index: "nat option array")
+setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
+setup {* add_rewrite_rule @{thm indexed_pqueue.case} *}
+setup {* fold add_rewrite_rule @{thms indexed_pqueue.sel} *}
+
 fun idx_pqueue :: "(nat \<times> 'a::{heap,linorder}) list \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue xs n (Indexed_PQueue pq idx) =
-    (\<exists>\<^sub>Am. dyn_array xs pq * amap m idx * \<up>(n = alen idx) * \<up>(index_of_pqueue xs m) * \<up>(key_within_range xs n))"
+    (\<exists>\<^sub>Am. dyn_array xs pq * idx \<mapsto>\<^sub>a m * \<up>(n = length m) * \<up>(index_of_pqueue xs m) * \<up>(key_within_range xs n))"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue.simps} *}
 
 section {* Basic operations on indexed_queue *}
@@ -187,11 +187,11 @@ section {* Basic operations on indexed_queue *}
 definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap indexed_pqueue Heap" where [sep_proc]:
   "idx_pqueue_empty k = do {
     pq \<leftarrow> dyn_array_new;
-    idx \<leftarrow> amap_new k;
+    idx \<leftarrow> Array.new k None;
     return (Indexed_PQueue pq idx) }"
 
 lemma index_of_pqueue_empty [resolve]:
-  "index_of_pqueue [] empty_map" by auto2
+  "index_of_pqueue [] (replicate k None)" by auto2
 
 lemma idx_pqueue_empty_rule [hoare_triple]:
   "<emp> idx_pqueue_empty n <idx_pqueue [] n>" by auto2
@@ -223,14 +223,15 @@ definition idx_pqueue_swap ::
   "idx_pqueue_swap p i j = do {
      pr_i \<leftarrow> array_nth (pqueue p) i;
      pr_j \<leftarrow> array_nth (pqueue p) j;
-     amap_update (fst pr_i) j (index p);
-     amap_update (fst pr_j) i (index p);
+     Array.upd (fst pr_i) (Some j) (index p);
+     Array.upd (fst pr_j) (Some i) (index p);
      array_swap (pqueue p) i j
    }"
 
 lemma index_of_pqueue_swap [backward]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> index_of_pqueue xs m \<Longrightarrow>
-   index_of_pqueue (list_swap xs i j) (m {fst (xs ! i) \<rightarrow> j} {fst (xs ! j) \<rightarrow> i})" by auto2
+   index_of_pqueue (list_swap xs i j)
+      (list_update (list_update m (fst (xs ! i)) (Some j)) (fst (xs ! j)) (Some i))" by auto2
 
 lemma idx_pqueue_swap_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(i < length xs) * \<up>(j < length xs)>
@@ -242,13 +243,13 @@ definition idx_pqueue_push ::
   "idx_pqueue_push k v p = do {
      len \<leftarrow> array_length (pqueue p);
      d' \<leftarrow> push_array (k, v) (pqueue p);
-     amap_update k len (index p);
+     Array.upd k (Some len) (index p);
      return (Indexed_PQueue d' (index p))
    }"
 
 lemma index_of_pqueue_push [backward2]:
-  "index_of_pqueue xs m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow>
-   index_of_pqueue (xs @ [(k, v)]) (m{k \<rightarrow> length xs})" by auto2
+  "index_of_pqueue xs m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow> k < length m \<Longrightarrow>
+   index_of_pqueue (xs @ [(k, v)]) (list_update m k (Some (length xs)))" by auto2
 
 lemma idx_pqueue_push_rule [hoare_triple]:
   "<idx_pqueue xs n p * \<up>(k < n) * \<up>(\<not>has_key_alist xs k)>
@@ -259,13 +260,13 @@ definition idx_pqueue_pop ::
   "'a::heap indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where [sep_proc]:
   "idx_pqueue_pop p = do {
      (x, d') \<leftarrow> pop_array (pqueue p);
-     amap_delete (fst x) (index p);
+     Array.upd (fst x) None (index p);
      return (x, Indexed_PQueue d' (index p))
    }"
 
 lemma index_of_pqueue_pop [backward2]:
   "index_of_pqueue xs m \<Longrightarrow> xs \<noteq> [] \<Longrightarrow>
-   index_of_pqueue (butlast xs) (delete_map (fst (last xs)) m)"
+   index_of_pqueue (butlast xs) (list_update m (fst (last xs)) None)"
 @proof @have "length xs = length (butlast xs) + 1" @qed
 
 lemma idx_pqueue_pop_rule [hoare_triple]:
@@ -401,24 +402,24 @@ lemma insert_idx_pqueue_rule [hoare_triple]:
    insert_idx_pqueue k v p
    <\<lambda>r. \<exists>\<^sub>Axs'. idx_pqueue xs' n r * \<up>(is_heap xs') * \<up>(map_of_alist xs' = map_of_alist xs {k \<rightarrow> v})>\<^sub>t" by auto2
 
-definition has_key_idx_pqueue ::
-  "nat \<Rightarrow> 'a::{heap,linorder} indexed_pqueue \<Rightarrow> bool Heap" where [sep_proc]:
+definition has_key_idx_pqueue :: "nat \<Rightarrow> 'a::{heap,linorder} indexed_pqueue \<Rightarrow> bool Heap" where [sep_proc]:
   "has_key_idx_pqueue k p = do {
-    i_opt \<leftarrow> amap_lookup (index p) k;
+    i_opt \<leftarrow> Array.nth (index p) k;
     return (i_opt \<noteq> None) }"
 
 lemma has_key_idx_heap_preserving [heap_presv]:
   "heap_preserving (has_key_idx_pqueue k p)" by auto2
 
 lemma has_key_idx_pqueue_rule [hoare_triple]:
-  "<idx_pqueue xs n p * \<up>(is_heap xs)>
+  "k < n \<Longrightarrow>
+   <idx_pqueue xs n p * \<up>(is_heap xs)>
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue xs n p * \<up>(r \<longleftrightarrow> has_key_alist xs k)>" by auto2
 
 definition update_idx_pqueue ::
   "nat \<Rightarrow> 'a::{heap,linorder} \<Rightarrow> 'a indexed_pqueue \<Rightarrow> 'a indexed_pqueue Heap" where [sep_proc]:
   "update_idx_pqueue k v p = do {
-    i_opt \<leftarrow> amap_lookup (index p) k;
+    i_opt \<leftarrow> Array.nth (index p) k;
     if i_opt = None then
       insert_idx_pqueue k v p
     else do {
@@ -460,7 +461,7 @@ lemma insert_idx_pqueue_map [hoare_triple]:
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 
 lemma has_key_idx_pqueue_map [hoare_triple]:
-  "<idx_pqueue_map M n p>
+  "k < n \<Longrightarrow> <idx_pqueue_map M n p>
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue_map M n p * \<up>(r \<longleftrightarrow> k \<in> keys_of M)>" by auto2
 
