@@ -29,7 +29,6 @@ sig
   val entail_equiv_forward_th: thm -> thm
   val entail_equiv_backward_th: thm -> thm
   val add_rewrite_ent_rule: thm -> theory -> theory
-  val frame_entail: proofstep
 
   val TY_CODE_POS: string
   val TY_MATCH_POS: string
@@ -341,42 +340,6 @@ fun entail_equiv_backward_th th =
 fun add_rewrite_ent_rule eq_th thy =
     thy |> add_forward_ent_prfstep (entail_equiv_forward_th eq_th)
         |> add_backward_ent_prfstep (entail_equiv_backward_th eq_th)
-
-(* Here item1 is a DISJ item of form A ==>_A B, where A and B may
-   contain schematic variables. Match pattern h |= A * Ru with item2,
-   and produce h |= B * Ru for each match.
- *)
-fun frame_entail_fn ictxt item1 item2 =
-    let
-      val ctxt = IncrContext.context_of ictxt
-      val {id, tname, prop = th1, ...} = item1
-      val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
-      val subs = map Thm.term_of csubs
-    in
-      if length subs > 1 then []
-      else if not (is_entail (the_single subs)) then []
-      else let
-        val (A, _) = dest_entail (the_single subs)
-        val pat = mk_mod (Var (("h", 0), pheapT), A)
-        val insts = mod_match_item ictxt (pat, item2) (id, fo_init)
-        fun inst_to_updt ((id', _), th) =
-            let
-              val th' = ([th1, th] MRS @{thm entailsD'})
-                            |> apply_to_thm' (normalize_mod_cv ctxt)
-            in
-              [Update.thm_update (id', th')]
-            end
-      in
-        maps inst_to_updt insts
-      end
-    end
-
-val frame_entail =
-    {name = "frame_entail",
-     args = [TypedMatch (TY_DISJ, @{term_pat "?A::bool"}),
-             TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
-     priority = PRIORITY_ADD,
-     func = TwoStep frame_entail_fn}
 
 fun is_bind_cmd t =
     case t of
@@ -1035,7 +998,7 @@ val add_sep_logic_proofsteps =
 
     ] #> fold add_prfstep (
       normalize_mod_cv_prfsteps @ [
-      frame_entail, heap_preservingI, init_pos, rewrite_pos,
+      heap_preservingI, init_pos, rewrite_pos,
       match_assn, match_assn_pure, match_assn_spatial,
       match_hoare_disj, match_hoare_prop, hoare_create_case
     ])
