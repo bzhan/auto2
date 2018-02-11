@@ -97,10 +97,6 @@ definition get_color :: "('a::heap, 'b::heap) btree \<Rightarrow> color Heap" wh
        return (cl t)
      })"
 
-lemma get_color_heap_preserving [heap_presv]:
-  "heap_preserving (get_color p)"
-@proof @case "p = None" @qed
-
 lemma get_color_rule [hoare_triple]:
   "<btree t p> get_color p <\<lambda>r. btree t p * \<up>(r = rbt.cl t)>"
 @proof @case "t = Leaf" @qed

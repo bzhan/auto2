@@ -3,8 +3,7 @@
 (* Data stored for each imperative command *)
 type proc_info = {
   proc_defs: thm list,
-  hoare_triples: thm list,
-  heap_presv: thm option
+  hoare_triples: thm list
 }
 
 val hoare_shadowing =
@@ -20,8 +19,6 @@ sig
   val get_proc_def: theory -> string -> thm list
   val update_hoare_triple: thm -> theory -> theory
   val get_hoare_triples: theory -> string -> thm list
-  val add_heap_presv_thm: thm -> theory -> theory
-  val get_heap_presv_thm: theory -> string -> thm option
 
   val add_forward_ent_prfstep: thm -> theory -> theory
   val add_forward_ent_shadowing_prfstep: thm -> theory -> theory
@@ -37,9 +34,6 @@ sig
   val code_pos_typed_matcher: item_matcher
 
   val find_proc_def: Proof.context -> term -> thm option
-  val heap_preservingI: proofstep
-  val heap_preserving_effectD: thm -> proofstep
-  val add_heap_preserving_thm: thm -> theory -> theory
   val init_pos: proofstep
   val next_code_pos_ritems: Proof.context -> thm -> thm -> thm -> raw_item list
   val match_assn: proofstep
@@ -110,8 +104,7 @@ structure Data = Theory_Data (
   val merge = Symtab.merge (op pointer_eq)
 )
 
-val empty_proc_info =
-    {proc_defs = [], hoare_triples = [], heap_presv = NONE}
+val empty_proc_info = {proc_defs = [], hoare_triples = []}
 
 (* Add imperative command with the given definitions. *)
 fun add_proc_def th thy =
@@ -119,11 +112,10 @@ fun add_proc_def th thy =
       val th = if Util.is_meta_eq (Thm.prop_of th) then to_obj_eq th
                else th
       val nm = th |> prop_of' |> dest_arg1 |> name_of_sep_proc
-      val {proc_defs, hoare_triples, heap_presv} =
+      val {proc_defs, hoare_triples} =
           the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
       val new_info =
-          {proc_defs = th :: proc_defs, hoare_triples = hoare_triples,
-           heap_presv = heap_presv}
+          {proc_defs = th :: proc_defs, hoare_triples = hoare_triples}
     in
       thy |> Data.map (Symtab.update (nm, new_info))
     end
@@ -143,11 +135,10 @@ fun update_hoare_triple hoare_th thy =
     let
       val (_, c, _) = dest_hoare_triple (prop_of' hoare_th)
       val nm = name_of_sep_proc c
-      val {proc_defs, heap_presv, ...} =
+      val {proc_defs, ...} =
           the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
       val new_info =
-          {proc_defs = proc_defs, hoare_triples = [hoare_th],
-           heap_presv = heap_presv}
+          {proc_defs = proc_defs, hoare_triples = [hoare_th]}
     in
       thy |> Data.map (Symtab.update (nm, new_info))
     end
@@ -159,26 +150,6 @@ fun get_hoare_triples thy nm =
           the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
     in
       hoare_triples
-    end
-
-fun add_heap_presv_thm th thy =
-    let
-      val nm = th |> prop_of' |> dest_arg |> name_of_sep_proc
-      val {proc_defs, hoare_triples, ...} =
-          the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
-      val new_info =
-          {proc_defs = proc_defs, hoare_triples = hoare_triples,
-           heap_presv = SOME th}
-    in
-      thy |> Data.map (Symtab.update (nm, new_info))
-    end
-
-fun get_heap_presv_thm thy nm =
-    let
-      val {heap_presv, ...} =
-          the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
-    in
-      heap_presv
     end
 
 (* Rewrite on subterms, bottom order. *)
@@ -443,61 +414,6 @@ fun find_proc_def ctxt c =
       else NONE
     end
 
-(* To prove facts of form heap_preserving c (as initial goal), try to
-   expand c, then use definition of heap_preserving.
- *)
-val heap_preservingI =
-    ProofStep.prfstep_custom
-        "heap_preservingI"
-        [WithGoal @{term_pat "heap_preserving ?c"}, ShadowFirst]
-        PRIORITY_SHADOW
-        (fn ((id, _), ths) => fn _ => fn ctxt =>
-            let
-              val th = the_single ths
-              val c = th |> prop_of' |> get_neg |> dest_arg
-              val th' =
-                  case find_proc_def ctxt c of
-                      NONE => th
-                    | SOME eq =>
-                      th |> apply_to_thm' (
-                        Conv.arg_conv (Conv.arg_conv (Conv.rewr_conv eq)))
-              val th_res =
-                  th' |> apply_to_thm' (
-                    Conv.arg_conv (rewr_obj_eq @{thm heap_preserving_def}))
-            in
-              [Update.thm_update (id, th_res)]
-            end)
-
-(* Given heap_preserving c, conclude h = h' from effect c h h' r. *)
-fun heap_preserving_effectD presv_th =
-    let
-      val name = (Util.name_of_thm presv_th) ^ "effectD"
-      val pat_c = presv_th |> prop_of' |> dest_arg
-      val cT = fastype_of pat_c |> dest_Type |> snd |> the_single
-      val heapT = @{typ heap}
-      val pat =
-          Const (@{const_name effect},
-                 Type ("Heap", [cT]) --> heapT --> heapT --> cT --> boolT) $
-                pat_c $ Var (("h", 0), heapT) $ Var (("h'", 0), heapT) $
-                Var (("r", 0), cT)
-      fun prfstep_fn ((id, _), ths) _ _ =
-          let
-            val res_th =
-                [presv_th, the_single ths] MRS @{thm heap_preserving_effectD}
-          in
-            [Update.thm_update (id, res_th)]
-          end
-    in
-      ProofStep.prfstep_custom name [WithFact pat] PRIORITY_ADD prfstep_fn
-    end
-
-(* Add the heap_preserving_effectD proofstep (for proving future
-   heap_preserving results).
- *)
-fun add_heap_preserving_thm presv_th thy =
-    thy |> add_prfstep (heap_preserving_effectD presv_th)
-        |> add_heap_presv_thm presv_th
-
 (* Given theorem of form ~<P> c <Q>, attempt to expand the definition
    of c, using find_proc_def to lookup definitions.
  *)
@@ -555,7 +471,6 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
       (* Find current command, decompose into c1 or c1 ; c2 ... ; cn. *)
       val cur_cmd = run_th |> prop_of' |> Util.dest_args |> hd
       val is_bind = is_bind_cmd cur_cmd
-      val heap_preserve_opt = NONE
 
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
 
@@ -568,15 +483,11 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
        *)
       if is_bind then let
         val ex_th = [hoare_th, mod_th', run_th] MRS @{thm hoare_tripleE''}
-        val ex_th' = if is_none heap_preserve_opt then ex_th
-                     else [the (heap_preserve_opt), ex_th]
-                              MRS @{thm hoare_tripleE''_preserve}
 
         (* Below we will use r_ and h_ to denote the new variables. *)
         val x_r = extract_return_name cur_cmd
-        val xs = if is_some heap_preserve_opt then [Name.internal x_r]
-                 else map Name.internal [x_r, "h"]
-        val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th'
+        val xs = map Name.internal [x_r, "h"]
+        val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th
 
         (* Output res_th has three parts:
 
@@ -615,14 +526,10 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
       (* Case where the command is not composite (last step). *)
       else let
         val ex_th = [hoare_th, mod_th', run_th] MRS @{thm hoare_tripleE'}
-        val ex_th' = if is_none heap_preserve_opt then ex_th
-                     else [the (heap_preserve_opt), ex_th]
-                              MRS @{thm hoare_tripleE'_preserve}
 
         (* Below we will use h_ to denote the new variables. *)
-        val xs = if is_some heap_preserve_opt then []
-                 else [Name.internal "h"]
-        val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th'
+        val xs = [Name.internal "h"]
+        val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th
 
         (* The pair is:
 
@@ -989,8 +896,7 @@ val add_sep_logic_proofsteps =
 
     ] #> fold add_prfstep (
       normalize_mod_cv_prfsteps @ [
-      heap_preservingI, init_pos, rewrite_pos,
-      match_assn, match_assn_pure, match_assn_spatial,
+      init_pos, rewrite_pos, match_assn, match_assn_pure, match_assn_spatial,
       match_hoare_disj, match_hoare_prop, hoare_create_case
     ])
 
@@ -998,7 +904,6 @@ end  (* structure SepLogic *)
 
 val _ = Theory.setup SepLogic.add_sep_logic_proofsteps
 val add_proc_def = SepLogic.add_proc_def
-val add_heap_preserving_thm = SepLogic.add_heap_preserving_thm
 val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
 val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
 val add_forward_ent_shadowing_prfstep = SepLogic.add_forward_ent_shadowing_prfstep

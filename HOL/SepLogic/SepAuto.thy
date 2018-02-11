@@ -443,30 +443,9 @@ lemma hoare_tripleE'':
   @obtain \<sigma>' r' where "run c (Some (fst h)) \<sigma>' r'"
 @qed
 
-definition heap_preserving :: "'a Heap \<Rightarrow> bool" where [rewrite]:
-  "heap_preserving c = (\<forall>h h' r. effect c h h' r \<longrightarrow> h = h')"
-
-setup {* add_forward_prfstep @{thm effectI} *}
-lemma heap_preservingD [forward]:
-  "heap_preserving c \<Longrightarrow> success_run c h h' r \<Longrightarrow> h = h'" by auto2
-setup {* del_prfstep_thm @{thm effectI} *}
-
-lemma heap_preserving_effectD:
-  "heap_preserving c \<Longrightarrow> effect c h h' r \<Longrightarrow> h = h'" by auto2
-
 lemma effect_bind [forward]:
   "effect (f \<bind> g) h h'' r' \<Longrightarrow> \<exists>h' r. effect f h h' r \<and> effect (g r) h' h'' r'"
   by (elim effect_elims) auto
-
-lemma hoare_tripleE'_preserve:
-  "heap_preserving c \<Longrightarrow>
-   \<exists>h'. h' \<Turnstile> Q \<and> \<sigma> = Some (fst h') \<and> success_run c h h' r \<Longrightarrow>
-   h \<Turnstile> Q \<and> \<sigma> = Some (fst h) \<and> success_run c h h r" by auto2
-
-lemma hoare_tripleE''_preserve:
-  "heap_preserving c \<Longrightarrow>
-   \<exists>r' h'. run (g r') (Some (fst h')) \<sigma> r \<and> h' \<Turnstile> Q r' * Ru \<and> success_run c h h' r' \<Longrightarrow>
-   \<exists>r'. run (g r') (Some (fst h)) \<sigma> r \<and> h \<Turnstile> Q r' * Ru \<and> success_run c h h r'" by auto2
 
 setup {* del_prfstep_thm @{thm success_run.simps} *}
 setup {* del_prfstep_thm @{thm hoare_triple_def} *}
@@ -488,26 +467,10 @@ ML_file "sep_steps.ML"
 ML_file "sep_steps_test.ML"
 
 attribute_setup sep_proc = {* setup_attrib add_proc_def *}
-attribute_setup heap_presv = {* setup_attrib add_heap_preserving_thm *}
 attribute_setup forward_ent = {* setup_attrib add_forward_ent_prfstep *}
 attribute_setup forward_ent_shadow = {* setup_attrib add_forward_ent_shadowing_prfstep *}
 attribute_setup rewrite_ent = {* setup_attrib add_rewrite_ent_rule *}
 attribute_setup hoare_triple = {* setup_attrib add_hoare_triple_prfstep *}
-
-lemma heap_preserving_lookup [heap_presv]: "heap_preserving (!p)"
-  using effect_lookupE heap_preserving_def by fastforce
-
-lemma heap_preserving_return [heap_presv]: "heap_preserving (return x)"
-  using effect_returnE heap_preserving_def by fastforce
-
-lemma heap_preserving_nth [heap_presv]: "heap_preserving (Array.nth a i)"
-  using effect_nthE heap_preserving_def by fastforce
-
-lemma heap_preserving_len [heap_presv]: "heap_preserving (Array.len a)"
-  using effect_lengthE heap_preserving_def by fastforce
-
-lemma heap_preserve_assert [heap_presv]: "heap_preserving (assert P x)"
-  using effect_assertE heap_preserving_def by fastforce
 
 setup {* fold add_hoare_triple_prfstep [
   @{thm assert_rule}, @{thm update_rule}, @{thm nth_rule}, @{thm upd_rule},

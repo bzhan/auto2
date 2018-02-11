@@ -28,9 +28,6 @@ lemma idx_pqueue_empty_rule [hoare_triple]:
 definition idx_pqueue_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) Heap" where [sep_proc]:
   "idx_pqueue_nth p i = array_nth (pqueue p) i"
 
-lemma idx_pqueue_nth_heap_preserving [heap_presv]:
-  "heap_preserving (idx_pqueue_nth p i)" by auto2
-
 lemma idx_pqueue_nth_rule [hoare_triple]:
   "<idx_pqueue (xs, m) p * \<up>(i < length xs)>
    idx_pqueue_nth p i
@@ -39,9 +36,6 @@ lemma idx_pqueue_nth_rule [hoare_triple]:
 definition idx_nth :: "'a::heap indexed_pqueue \<Rightarrow> nat \<Rightarrow> nat option Heap" where [sep_proc]:
   "idx_nth p i = Array.nth (index p) i"
 
-lemma idx_nth_heap_preserving [heap_presv]:
-  "heap_preserving (idx_nth p i)" by auto2
-
 lemma idx_nth_rule [hoare_triple]:
   "<idx_pqueue (xs, m) p * \<up>(i < length m)>
    idx_nth p i
@@ -49,9 +43,6 @@ lemma idx_nth_rule [hoare_triple]:
 
 definition idx_pqueue_length :: "'a indexed_pqueue \<Rightarrow> nat Heap" where [sep_proc]:
   "idx_pqueue_length a = array_length (pqueue a)"
-
-lemma idx_pqueue_length_heap_preserving [heap_presv]:
-  "heap_preserving (idx_pqueue_length a)" by auto2
 
 lemma idx_pqueue_length_rule [hoare_triple]:
   "<idx_pqueue (xs, m) p>
@@ -117,9 +108,6 @@ definition has_key_idx_pqueue :: "nat \<Rightarrow> 'a::{heap,linorder} indexed_
   "has_key_idx_pqueue k p = do {
     i_opt \<leftarrow> Array.nth (index p) k;
     return (i_opt \<noteq> None) }"
-
-lemma has_key_idx_heap_preserving [heap_presv]:
-  "heap_preserving (has_key_idx_pqueue k p)" by auto2
 
 lemma has_key_idx_pqueue_rule [hoare_triple]:
   "k < length m \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>

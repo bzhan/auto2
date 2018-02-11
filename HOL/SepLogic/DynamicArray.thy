@@ -62,9 +62,6 @@ lemma push_array_basic_rule' [hoare_triple]:
 definition array_length :: "'a dynamic_array \<Rightarrow> nat Heap" where [sep_proc]:
   "array_length d = return (alen d)"
 
-lemma array_length_heap_preserving [heap_presv]:
-  "heap_preserving (array_length d)" by auto2
-
 lemma array_length_rule' [hoare_triple]:
   "<dyn_array_raw (xs, n) p>
    array_length p
@@ -80,9 +77,6 @@ lemma array_max_rule' [hoare_triple]:
 
 definition array_nth :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> 'a Heap" where [sep_proc]:
   "array_nth d i = Array.nth (aref d) i"
-
-lemma array_nth_heap_preserving [heap_presv]:
-  "heap_preserving (array_nth d i)" by auto2
 
 lemma array_nth_rule' [hoare_triple]:
   "i < n \<Longrightarrow> n \<le> length xs \<Longrightarrow>
