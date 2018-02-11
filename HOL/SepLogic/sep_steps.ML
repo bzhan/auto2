@@ -561,13 +561,6 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
 
-      (* When conclusion is of the form h |= Q * emp, reduce to h |=
-         Q.
-       *)
-      val try_reduce_emp_right_th =
-          apply_to_thm (
-            Util.concl_conv (Trueprop_conv (Conv.try_conv reduce_emp_right)))
-
       val mod_th' = if P aconv emp then
                       apply_to_thm' (mod_assn_conv mult_emp_left) mod_th
                     else mod_th
@@ -598,7 +591,6 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
          *)
         val (run_rest_th, modQ_th, success_th) =
             the_triple (UtilLogic.split_conj_th res_th)
-        val modQ_th = try_reduce_emp_right_th modQ_th
 
         (* Extract c2 ; ... ; cn *)
         val rest_c = run_rest_th |> prop_of' |> Util.dest_args |> hd
@@ -642,7 +634,6 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
 
          *)
         val (modQ_th, rest_th) = (conj_left_th res_th, conj_right_th res_th)
-        val modQ_th = try_reduce_emp_right_th modQ_th
 
         (* \sigma = Some (fst h_) & success_run c h h_ r ==> ... *)
         val vars = [Var (("h_", 0), pheapT)]

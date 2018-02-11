@@ -46,7 +46,8 @@ val test_normalize_mod =
         ("h |= (EXA x. S x)", "EX x. h |= S x"),
         ("h |= ((EXA x. S x) * (EXA y. T y))", "EX x y. h |= S x * T y"),
         ("h |= \<up>(b)", "(h |= emp) & b"),
-        ("h |= (EXA x. S x * \<up>(b x))", "EX x. h |= S x & b x")
+        ("h |= (EXA x. S x * \<up>(b x))", "EX x. h |= S x & b x"),
+        ("h |= P * emp", "h |= P")
       ]
     in
       map test test_data
