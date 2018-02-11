@@ -288,7 +288,7 @@ lemma has_key_idx_pqueue_map [hoare_triple]:
 
 lemma update_idx_pqueue_map [hoare_triple]:
   "k < n \<Longrightarrow>
-   <idx_pqueue_map M n p * \<up>(k < n)>
+   <idx_pqueue_map M n p>
    update_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 

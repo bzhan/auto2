@@ -555,9 +555,7 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
       (* Find current command, decompose into c1 or c1 ; c2 ... ; cn. *)
       val cur_cmd = run_th |> prop_of' |> Util.dest_args |> hd
       val is_bind = is_bind_cmd cur_cmd
-      val c1 = if is_bind then fst (dest_bind cur_cmd) else cur_cmd
-      val thy = Proof_Context.theory_of ctxt
-      val heap_preserve_opt = get_heap_presv_thm thy (name_of_sep_proc c1)
+      val heap_preserve_opt = NONE
 
       val (P, _, _) = dest_hoare_triple (prop_of' hoare_th)
 
@@ -669,10 +667,11 @@ fun match_assn_fn ictxt item1 item2 =
             let
               val ritems = next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
             in
-              AddItems {id = id', sc = SOME 1, raw_items = ritems}
+              [AddItems {id = id', sc = SOME 1, raw_items = ritems},
+               ShadowItem {id = id', item = item2}]
             end
       in
-        map inst_to_updt insts
+        maps inst_to_updt insts
       end
     end
 
@@ -680,7 +679,7 @@ val match_assn =
     {name = "sep.match_assn",
      args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
-     priority = PRIORITY_ADD,
+     priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_fn}
 
 (* Given CODE_POS item with parameters (h, c), where c can be
@@ -939,7 +938,8 @@ fun hoare_triple_prfstep_fn hoare_th ictxt item1 item2 =
                         next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
                   in
                     [AddItems {id = id'', sc = SOME 1, raw_items = ritems},
-                     ShadowItem {id = id'', item = item1}]
+                     ShadowItem {id = id'', item = item1},
+                     ShadowItem {id = id'', item = item2}]
                   end
           in
             maps process_inst' insts'

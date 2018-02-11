@@ -51,7 +51,8 @@ fun dstate_update_est :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow
 declare dstate_update_est.simps [sep_proc]
 
 lemma dstate_update_est_ind [hoare_triple]:
-  "<dstate (State e M) (Dijkstra_State a pq) * \<up>(k \<le> length e) * \<up>(m < length e)>
+  "k \<le> length e \<Longrightarrow> m < length e \<Longrightarrow>
+   <a \<mapsto>\<^sub>a e * idx_pqueue_map M (length e) pq>
    dstate_update_est G m k pq a
    <let e' = list_update_set_impl (\<lambda>i. i \<in> keys_of M)
                (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e k
@@ -78,10 +79,10 @@ fun dstate_update_heap ::
 declare dstate_update_heap.simps [sep_proc]
 
 lemma dstate_update_heap_ind [hoare_triple]:
-  "<dstate (State e M) (Dijkstra_State a pq) * \<up>(k \<le> length e) * \<up>(m < length e)>
+  "k \<le> length e \<Longrightarrow> m < length e \<Longrightarrow>
+   <a \<mapsto>\<^sub>a e * idx_pqueue_map M (length e) pq>
    dstate_update_heap G m k a pq
-   <let M' = map_update_all_impl (\<lambda>i. e ! i) M k
-    in (\<lambda>r. dstate (State e M') (Dijkstra_State a r))>\<^sub>t"
+   <\<lambda>r. dstate (State e (map_update_all_impl (\<lambda>i. e ! i) M k)) (Dijkstra_State a r)>\<^sub>t"
 @proof @induct k @qed
 
 lemma dstate_update_heap_to_fun [hoare_triple]:
