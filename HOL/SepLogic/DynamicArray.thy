@@ -110,18 +110,6 @@ definition push_array :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 
     }
   }"
 
-fun push_array_fun :: "'a \<Rightarrow> 'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
-  "push_array_fun x (xs, n) = (
-     if n < length xs then push_array_basic_fun x (xs, n)
-     else push_array_basic_fun x (double_length_fun (xs, n)))"
-setup {* add_rewrite_rule @{thm push_array_fun.simps} *}
-
-lemma push_array_rule' [hoare_triple]:
-  "n \<le> length xs \<Longrightarrow>
-   <dyn_array_raw (xs, n) p>
-   push_array x p
-   <dyn_array_raw (push_array_fun x (xs, n))>\<^sub>t" by auto2
-
 definition pop_array :: "'a::heap dynamic_array \<Rightarrow> ('a \<times> 'a dynamic_array) Heap" where [sep_proc]:
   "pop_array d = do {
     x \<leftarrow> Array.nth (aref d) (alen d - 1);
@@ -136,6 +124,18 @@ lemma pop_array_rule' [hoare_triple]:
 
 setup {* del_prfstep_thm @{thm dyn_array_raw.simps} *}
 setup {* del_prfstep_thm @{thm dynamic_array.collapse} *}
+
+fun push_array_fun :: "'a \<Rightarrow> 'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
+  "push_array_fun x (xs, n) = (
+     if n < length xs then push_array_basic_fun x (xs, n)
+     else push_array_basic_fun x (double_length_fun (xs, n)))"
+setup {* add_rewrite_rule @{thm push_array_fun.simps} *}
+
+lemma push_array_rule' [hoare_triple]:
+  "n \<le> length xs \<Longrightarrow>
+   <dyn_array_raw (xs, n) p>
+   push_array x p
+   <dyn_array_raw (push_array_fun x (xs, n))>\<^sub>t" by auto2
 
 section {* Abstract assertion *}
 
@@ -188,6 +188,8 @@ lemma pop_array_rule [hoare_triple]:
    <\<lambda>(x, r). dyn_array (butlast xs) r * \<up>(x = last xs)>"
 @proof @have "last xs = xs ! (length xs - 1)" @qed
 
+setup {* del_prfstep_thm @{thm dyn_array_def} *}
+
 section {* Derived operations *}
 
 definition array_swap :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where [sep_proc]:
@@ -204,7 +206,5 @@ lemma array_swap_rule [hoare_triple]:
    <dyn_array xs p>
    array_swap p i j
    <\<lambda>_. dyn_array (list_swap xs i j) p>" by auto2
-
-setup {* del_prfstep_thm @{thm dyn_array_def} *}
 
 end
