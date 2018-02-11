@@ -1,5 +1,5 @@
 theory Indexed_PQueue_Impl
-  imports DynamicArray IndexedPriorityQueue
+  imports DynamicArray "../DataStrs/Indexed_PQueue"
 begin
 
 datatype 'a indexed_pqueue =

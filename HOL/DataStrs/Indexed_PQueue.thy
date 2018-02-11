@@ -1,5 +1,5 @@
-theory IndexedPriorityQueue
-  imports "../DataStrs/Arrays_Ex" "../DataStrs/Mapping_Str"
+theory Indexed_PQueue
+  imports Arrays_Ex Mapping_Str
 begin
 
 section {* Successor functions, eq-pred predicate *}
