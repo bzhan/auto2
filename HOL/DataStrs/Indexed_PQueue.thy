@@ -52,24 +52,11 @@ lemma is_heapD:
 setup {* add_forward_prfstep_cond @{thm is_heapD} [with_term "?xs ! ?j"] *}
 setup {* del_prfstep_thm_eqforward @{thm is_heap_def} *}
 
-lemma is_heap_butlast [forward]:
-  "is_heap xs \<Longrightarrow> is_heap (butlast xs)" by auto2
-
 section {* Bubble-down *}
 
 (* The corresponding tree is a heap, except k is not necessarily smaller than its descendents. *)
 definition is_heap_partial1 :: "('a \<times> 'b::linorder) list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "is_heap_partial1 xs k = (\<forall>i j. eq_pred i j \<longrightarrow> i \<noteq> k \<longrightarrow> j < length xs \<longrightarrow> snd (xs ! i) \<le> snd (xs ! j))"
-
-lemma swap_zero_is_heap_partial1:
-  "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> xs' = list_swap xs 0 (length xs - 1) \<Longrightarrow>
-   is_heap_partial1 (butlast xs') 0" by auto2
-setup {* add_forward_prfstep_cond @{thm swap_zero_is_heap_partial1} [with_term "butlast ?xs'"] *}
-
-lemma incr_is_heap_partial1:
-  "is_heap xs \<Longrightarrow> k < length xs \<Longrightarrow> v \<ge> snd (xs ! k) \<Longrightarrow> xs' = list_update xs k (fst (xs ! k), v) \<Longrightarrow>
-   is_heap_partial1 xs' k" by auto2
-setup {* add_forward_prfstep_cond @{thm incr_is_heap_partial1} [with_term "?xs'"] *}
 
 (* Two cases of switching with s1 k. *)
 lemma bubble_down1:
@@ -128,15 +115,6 @@ lemma bubble_up2 [forward]:
    is_heap xs" by auto2
 setup {* del_prfstep_thm @{thm p_cases} *}
 
-lemma append_is_heap_partial2:
-  "is_heap xs \<Longrightarrow> is_heap_partial2 (xs @ [x]) (length xs)" by auto2
-setup {* add_forward_prfstep_cond @{thm append_is_heap_partial2} [with_term "?xs @ [?x]"] *}
-
-lemma desc_is_heap_partial2:
-  "is_heap xs \<Longrightarrow> k < length xs \<Longrightarrow> v < snd (xs ! k) \<Longrightarrow>
-   xs' = list_update xs k (fst (xs ! k), v) \<Longrightarrow> is_heap_partial2 xs' k" by auto2
-setup {* add_forward_prfstep_cond @{thm desc_is_heap_partial2} [with_term "?xs'"] *}
-
 section {* Indexed priority queue *}
 
 type_synonym 'a idx_pqueue = "(nat \<times> 'a) list \<times> nat option list"
@@ -144,9 +122,23 @@ type_synonym 'a idx_pqueue = "(nat \<times> 'a) list \<times> nat option list"
 fun index_of_pqueue :: "'a idx_pqueue \<Rightarrow> bool" where
   "index_of_pqueue (xs, m) = (
     (\<forall>i<length xs. fst (xs ! i) < length m \<and> m ! (fst (xs ! i)) = Some i) \<and>
-    (\<forall>i. \<forall>k<length m. m ! k = Some i \<longrightarrow> i < length xs \<and> fst (xs ! i) = k) \<and>
-    (\<forall>p\<in>set xs. fst p < length m))"
+    (\<forall>i. \<forall>k<length m. m ! k = Some i \<longrightarrow> i < length xs \<and> fst (xs ! i) = k))"
 setup {* add_rewrite_rule @{thm index_of_pqueue.simps} *}
+setup {* add_property_const @{term index_of_pqueue} *}
+
+lemma index_of_pqueueD1:
+  "i < length xs \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
+   fst (xs ! i) < length m \<and> m ! (fst (xs ! i)) = Some i" by auto2
+setup {* add_forward_prfstep_cond @{thm index_of_pqueueD1} [with_term "?xs ! ?i"] *}
+
+lemma index_of_pqueueD2 [forward]:
+  "k < length m \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
+   m ! k = Some i \<Longrightarrow> i < length xs \<and> fst (xs ! i) = k" by auto2
+
+lemma index_of_pqueueD3 [forward]:
+  "index_of_pqueue (xs, m) \<Longrightarrow> p \<in> set xs \<Longrightarrow> fst p < length m"
+@proof @obtain i where "i < length xs" "xs ! i = p" @qed
+setup {* del_prfstep_thm_eqforward @{thm index_of_pqueue.simps} *}
 
 lemma has_index_unique_key [forward]:
   "index_of_pqueue (xs, m) \<Longrightarrow> unique_keys_set (set xs)"
@@ -198,49 +190,21 @@ declare idx_pqueue_push_fun.simps [unfold]
 
 lemma idx_pqueue_push_correct [forward_arg]:
   "index_of_pqueue (xs, m) \<Longrightarrow> k < length m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow>
-   index_of_pqueue (idx_pqueue_push_fun k v (xs, m))"
-@proof
-  @unfold "idx_pqueue_push_fun k v (xs, m)"
-  @let "res = idx_pqueue_push_fun k v (xs, m)"
-  @let "xs' = fst res" "m' = snd res"
-  @have "\<forall>i<length xs'. fst (xs' ! i) < length m' \<and> m' ! (fst (xs' ! i)) = Some i"
-  @have "\<forall>i. \<forall>k'<length m'. m' ! k' = Some i \<longrightarrow> i < length xs' \<and> fst (xs' ! i) = k'"
-  @have "\<forall>p\<in>set xs'. fst p < length m'"
-@qed
-
-lemma idx_pqueue_push_correct2:
-  "is_heap xs \<Longrightarrow> k < length m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow>
    r = idx_pqueue_push_fun k v (xs, m) \<Longrightarrow>
-   fst r = xs @ [(k, v)] \<and> length (snd r) = length m"
-@proof
-  @unfold "idx_pqueue_push_fun k v (xs, m)"
-@qed
-setup {* add_forward_prfstep_cond @{thm idx_pqueue_push_correct2} [with_term "?r"] *}
+   index_of_pqueue r \<and> fst r = xs @ [(k, v)] \<and> length (snd r) = length m"
+@proof @unfold "idx_pqueue_push_fun k v (xs, m)" @qed
 
 fun idx_pqueue_pop_fun :: "'a idx_pqueue \<Rightarrow> 'a idx_pqueue" where
   "idx_pqueue_pop_fun (xs, m) = (butlast xs, list_update m (fst (last xs)) None)"
 declare idx_pqueue_pop_fun.simps [unfold]
 
 lemma idx_pqueue_pop_correct [forward_arg]:
-  "index_of_pqueue (xs, m) \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> index_of_pqueue (idx_pqueue_pop_fun (xs, m))"
+  "index_of_pqueue (xs, m) \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> r = idx_pqueue_pop_fun (xs, m) \<Longrightarrow>
+   index_of_pqueue r \<and> fst r = butlast xs \<and> length (snd r) = length m"
 @proof
   @unfold "idx_pqueue_pop_fun (xs, m)"
   @have "length xs = length (butlast xs) + 1"
-@qed
-
-lemma idx_pqueue_pop_correct2:
-  "r = idx_pqueue_pop_fun (xs, m) \<Longrightarrow> fst r = butlast xs \<and> length (snd r) = length m"
-@proof @unfold "idx_pqueue_pop_fun (xs, m)" @qed
-setup {* add_forward_prfstep_cond @{thm idx_pqueue_pop_correct2} [with_term "?r"] *}
-
-lemma index_of_pqueue_update [forward_arg]:
-  "index_of_pqueue (xs, m) \<Longrightarrow> i < length xs \<Longrightarrow> k = fst (xs ! i) \<Longrightarrow> k < length m \<Longrightarrow>
-   index_of_pqueue (list_update xs i (k, v), m)"
-@proof
-  @let "xs' = list_update xs i (k, v)" @then
-  @have "\<forall>p\<in>set xs'. fst p < length m" @with
-    @obtain j where "j < length xs' \<and> xs' ! j = p"
-  @end
+  @have "fst (xs ! length (butlast xs)) < length m"  (* TODO: remove? *)
 @qed
 
 section {* Bubble up and down *}
@@ -279,7 +243,7 @@ lemma idx_bubble_down_fun_correct:
 @qed
 setup {* add_forward_prfstep_cond @{thm idx_bubble_down_fun_correct} [with_term "?r"] *}
 
-lemma idx_bubble_down_fun_correct2 [forward_arg]:
+lemma idx_bubble_down_fun_correct2 [forward]:
   "index_of_pqueue x \<Longrightarrow> index_of_pqueue (idx_bubble_down_fun x k)"
 @proof @fun_induct "idx_bubble_down_fun x k" @with
   @subgoal "(x = (xs, m), k = k)"
@@ -310,7 +274,7 @@ lemma idx_bubble_up_fun_correct:
 @qed
 setup {* add_forward_prfstep_cond @{thm idx_bubble_up_fun_correct} [with_term "?r"] *}
 
-lemma idx_bubble_up_fun_correct2 [forward_arg]:
+lemma idx_bubble_up_fun_correct2 [forward]:
   "index_of_pqueue x \<Longrightarrow> index_of_pqueue (idx_bubble_up_fun x k)"
 @proof @fun_induct "idx_bubble_up_fun x k" @with
   @subgoal "(x = (xs, m), k = k)"
@@ -332,11 +296,21 @@ lemma delete_min_idx_pqueue_correct:
 @proof @unfold "delete_min_idx_pqueue_fun (xs, m)" @qed
 setup {* add_forward_prfstep_cond @{thm delete_min_idx_pqueue_correct} [with_term "?res"] *}
 
+lemma hd_last_swap_eval_last [rewrite]:
+  "xs \<noteq> [] \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
+@proof
+  @let "xs' = list_swap xs 0 (length xs - 1)"
+  @have "last xs' = xs' ! (length xs - 1)"
+@qed
+
 lemma delete_min_idx_pqueue_correct2:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> res = delete_min_idx_pqueue_fun (xs, m) \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
    is_heap (fst (snd res)) \<and> fst res = hd xs \<and> length (snd (snd res)) = length m \<and>
    map_of_alist (fst (snd res)) = delete_map (fst (fst res)) (map_of_alist xs)"
-@proof @unfold "delete_min_idx_pqueue_fun (xs, m)" @qed
+@proof @unfold "delete_min_idx_pqueue_fun (xs, m)"
+  @let "xs' = list_swap xs 0 (length xs - 1)"
+  @have "is_heap_partial1 (butlast xs') 0"
+@qed
 setup {* add_forward_prfstep_cond @{thm delete_min_idx_pqueue_correct2} [with_term "?res"] *}
 
 fun insert_idx_pqueue_fun :: "nat \<Rightarrow> 'a::linorder \<Rightarrow> 'a idx_pqueue \<Rightarrow> 'a idx_pqueue" where
@@ -355,7 +329,9 @@ lemma insert_idx_pqueue_correct2:
    r = insert_idx_pqueue_fun k v (xs, m) \<Longrightarrow>
    is_heap (fst r) \<and> length (snd r) = length m \<and>
    map_of_alist (fst r) = map_of_alist xs { k \<rightarrow> v }"
-@proof @unfold "insert_idx_pqueue_fun k v (xs, m)" @qed
+@proof @unfold "insert_idx_pqueue_fun k v (xs, m)"
+  @have "is_heap_partial2 (xs @ [(k, v)]) (length xs)"
+@qed
 setup {* add_forward_prfstep_cond @{thm insert_idx_pqueue_correct2} [with_term "?r"] *}
 
 fun update_idx_pqueue_fun :: "nat \<Rightarrow> 'a::linorder \<Rightarrow> 'a idx_pqueue \<Rightarrow> 'a idx_pqueue" where
@@ -373,7 +349,12 @@ setup {* add_unfolding_rule @{thm update_idx_pqueue_fun.simps} *}
 lemma update_idx_pqueue_correct [forward_arg]:
   "index_of_pqueue (xs, m) \<Longrightarrow> k < length m \<Longrightarrow>
    index_of_pqueue (update_idx_pqueue_fun k v (xs, m))"
-@proof @unfold "update_idx_pqueue_fun k v (xs, m)" @qed
+@proof @unfold "update_idx_pqueue_fun k v (xs, m)"
+  @let "i = the (m ! k)"
+  @let "xs' = list_update xs i (k, v)"
+  @case "m ! k = None"
+  @have "index_of_pqueue (xs', m)"
+@qed
 
 lemma update_idx_pqueue_correct2:
   "index_of_pqueue (xs, m) \<Longrightarrow> is_heap xs \<Longrightarrow> k < length m \<Longrightarrow>
@@ -385,7 +366,10 @@ lemma update_idx_pqueue_correct2:
   @let "xs' = list_update xs i (k, v)"
   @have "xs' = fst (xs', m)" (* TODO: remove *)
   @case "m ! k = None"
-  @case "snd (xs ! the (m ! k)) \<le> v"
+  @case "snd (xs ! the (m ! k)) \<le> v" @with
+    @have "is_heap_partial1 xs' i"
+  @end
+  @have "is_heap_partial2 xs' i"
 @qed
 setup {* add_forward_prfstep_cond @{thm update_idx_pqueue_correct2} [with_term "?r"] *}
 
