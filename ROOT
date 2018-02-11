@@ -57,6 +57,7 @@ session DataStrs_Advanced = DataStrs_Basic +
     "HOL/DataStrs/Dijkstra"
     "HOL/DataStrs/Interval_Tree"
     "HOL/DataStrs/Quicksort"
+    "HOL/DataStrs/Indexed_PQueue"
     "HOL/DataStrs/RBTree"
     "HOL/DataStrs/Rect_Intersect"
 
