@@ -17,8 +17,6 @@ sig
   val assn_match_all_strict:
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val mod_match: Proof.context -> term * thm -> id_inst -> id_inst_th list
-  val mod_matches:
-      Proof.context -> (term * thm) list -> id_inst -> id_inst_ths list
   val assn_matcher: item_matcher
   val triv_assn_matcher: assn_matcher
   val emp_assn_matcher: assn_matcher
@@ -182,19 +180,6 @@ fun mod_match ctxt (pat, th) (id, inst) =
     in
       maps process_inst_h insts_h
     end
-
-(* Match a list of (pat, th) pairs *)
-fun mod_matches ctxt pairs instsp =
-    case pairs of
-        [] => [(instsp, [])]
-      | (pat, th) :: pairs' =>
-        let
-          val insts = mod_match ctxt (pat, th) instsp
-          fun process_inst (instsp', th) =
-              map (apsnd (cons th)) (mod_matches ctxt pairs' instsp')
-        in
-          maps process_inst insts
-        end
 
 val assn_matcher =
     let
