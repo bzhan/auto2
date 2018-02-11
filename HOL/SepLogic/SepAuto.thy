@@ -207,8 +207,6 @@ lemma mod_star_trueI [backward]: "h \<Turnstile> P \<Longrightarrow> h \<Turnsti
 lemma top_assn_reduce: "true * true = true" by auto2
 setup {* del_prfstep_thm @{thm mod_star_trueI} *}
 
-lemma sngr_same_false [resolve]: "\<not>h \<Turnstile> p \<mapsto>\<^sub>r x * p \<mapsto>\<^sub>r y * Qu" by auto2
-
 lemma mod_pure_star_dist [rewrite]:
   "h \<Turnstile> P * \<up>b \<longleftrightarrow> (h \<Turnstile> P \<and> b)"
 @proof
@@ -398,7 +396,8 @@ lemma ref_rule:
   "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 
 setup {* fold del_prfstep_thm [@{thm sngr_assn_rule}, @{thm snga_assn_rule}] *}
-setup {* fold del_prfstep_thm [@{thm pure_assn_rule}, @{thm top_assn_rule}, @{thm mod_pure_star_dist}] *}
+setup {* fold del_prfstep_thm
+  [@{thm pure_assn_rule}, @{thm top_assn_rule}, @{thm mod_pure_star_dist}, @{thm one_assn_rule}] *}
 
 section {* success_run and its properties. *}
 

@@ -252,7 +252,7 @@ fun forward_ent_prfstep_fn shadowing ent_th ictxt item =
       val ctxt = IncrContext.context_of ictxt
       val {id, tname, ...} = item
       val h_t = tname |> the_single |> Thm.term_of |> dest_mod |> fst
-      val pat = mk_mod (h_t, mk_star (A, Var (("Ru", 0), assnT)))
+      val pat = mk_mod (h_t, A)
       val insts = mod_match_item ictxt (pat, item) (id, fo_init)
 
       fun process_inst ((id', _), th) =
@@ -299,7 +299,7 @@ fun backward_ent_prfstep_fn ent_th ictxt item =
       val {id, tname, ...} = item
       val h_t = tname |> the_single |> Thm.term_of |> dest_not
                       |> dest_mod |> fst
-      val pat = get_neg (mk_mod (h_t, mk_star (B, Var (("Ru", 0), assnT))))
+      val pat = get_neg (mk_mod (h_t, B))
       val insts = mod_inv_match_item ictxt (pat, item) (id, fo_init)
 
       fun process_inst ((id', _), th) =
@@ -357,8 +357,7 @@ fun frame_entail_fn ictxt item1 item2 =
       else if not (is_entail (the_single subs)) then []
       else let
         val (A, _) = dest_entail (the_single subs)
-        val pat = mk_mod (Var (("h", 0), pheapT),
-                          mk_star (A, Var (("Ru", 0), assnT)))
+        val pat = mk_mod (Var (("h", 0), pheapT), A)
         val insts = mod_match_item ictxt (pat, item2) (id, fo_init)
         fun inst_to_updt ((id', _), th) =
             let
@@ -710,9 +709,7 @@ fun match_assn_fn ictxt item1 item2 =
     in
       if has_pure_assn P then []
       else let
-        val P_pat = if P aconv emp then Var (("Ru", 0), assnT)
-                    else mk_star (P, Var (("Ru", 0), assnT))
-        val mod_pat = mk_mod (h_t, P_pat)
+        val mod_pat = mk_mod (h_t, P)
         val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
         fun inst_to_updt ((id', _), mod_th) =
             let
@@ -897,8 +894,7 @@ fun match_assn_spatial_fn ictxt item1 item2 =
     in
       if not (Util.has_vars P) orelse not (has_pure_assn P) then []
       else let
-        val P_pat = mk_star (P', Var (("Ru", 0), assnT))
-        val mod_pat = mk_mod (h, P_pat)
+        val mod_pat = mk_mod (h, P')
         val insts = mod_match_item ictxt (mod_pat, item2) (id, fo_init)
         fun process_inst ((id', inst), _) =
             let
@@ -961,9 +957,7 @@ fun hoare_triple_prfstep_fn hoare_th ictxt item1 item2 =
        *)
       val h_pat = Var (("h", 0), pheapT)
       val code_pos_pat = HOLogic.mk_tuple [h_pat, pat_c]
-      val P_pat = if P' aconv emp then Var (("Ru", 0), assnT)
-                  else mk_star (P', Var (("Ru", 0), assnT))
-      val mod_pat = mk_mod (h_pat, P_pat)
+      val mod_pat = mk_mod (h_pat, P')
 
       val arg1 = TypedMatch (TY_CODE_POS, code_pos_pat)
       val insts = ItemIO.match_arg ctxt arg1 item1 ([], fo_init)

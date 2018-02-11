@@ -156,7 +156,7 @@ fun assn_match_all_strict ctxt (pat, ct) (id, inst) =
    to h using regular matching, then match pat_P to P using assertion
    matching. Return the theorem pat_h(s) |= pat_P(s).
  *)
-fun mod_match ctxt (pat, th) (id, inst) =
+fun mod_match_gen strict ctxt (pat, th) (id, inst) =
     let
       val (pat_h, pat_P) = pat |> dest_mod
       val (ch, cP) = th |> cprop_of' |> cdest_mod
@@ -165,10 +165,14 @@ fun mod_match ctxt (pat, th) (id, inst) =
       (* eq_th is pat_h(s) == h. *)
       fun process_inst_h ((id', inst'), eq_th) =
           let
-            val insts'' = assn_match_all_strict ctxt (pat_P, cP) (id', inst')
+            val insts'' =
+                if strict then
+                  assn_match_all_strict ctxt (pat_P, cP) (id', inst')
+                else
+                  assn_match_all ctxt (pat_P, cP) (id', inst')
             val rewr_eq_th = eq_th |> Conv.rewr_conv |> Conv.arg1_conv
 
-            (* ent_th is P ==> pat_P(s). Obtain h |= pat_P(s) then
+            (* ent_th is P ==> pat_P(s) * R. Obtain h |= pat_P(s) then
                pat_h(s) |= pat_P(s).
              *)
             fun process_inst ((id', inst'), ent_th) =
@@ -181,6 +185,9 @@ fun mod_match ctxt (pat, th) (id, inst) =
       maps process_inst_h insts_h
     end
 
+fun mod_match ctxt (pat, th) (id, inst) =
+    mod_match_gen false ctxt (pat, th) (id, inst)
+
 val assn_matcher =
     let
       fun pre_match pat {tname, ...} _ =
@@ -188,7 +195,7 @@ val assn_matcher =
 
       fun match pat (item as {prop, ...}) ctxt (id, inst) =
           if not (pre_match pat item ctxt) then []
-          else mod_match ctxt (pat, prop) (id, inst)
+          else mod_match_gen true ctxt (pat, prop) (id, inst)
     in
       {pre_match = pre_match, match = match}
     end
@@ -434,7 +441,7 @@ fun assn_inv_match_all_strict ctxt (pat, ct) (id, inst) =
    inverted assertion matching. Return the theorem ~(pat_h(s) |=
    pat_P(s)).
  *)
-fun mod_inv_match ctxt (pat, th) (id, inst) =
+fun mod_inv_match_gen strict ctxt (pat, th) (id, inst) =
     let
       val (pat_h, pat_P) = pat |> dest_not |> dest_mod
       val (ch, cP) = th |> cprop_of' |> Thm.dest_arg |> cdest_mod
@@ -443,7 +450,11 @@ fun mod_inv_match ctxt (pat, th) (id, inst) =
       (* eq_th is pat_h(s) == h. *)
       fun process_inst_h ((id', inst'), eq_th) =
           let
-            val insts'' = assn_inv_match_all_strict ctxt (pat_P, cP) (id', inst')
+            val insts'' =
+                if strict then
+                  assn_inv_match_all_strict ctxt (pat_P, cP) (id', inst')
+                else
+                  assn_inv_match_all ctxt (pat_P, cP) (id', inst')
             val rewr_eq_th = eq_th |> Conv.rewr_conv |> Conv.arg1_conv
                                    |> Conv.arg_conv
 
@@ -460,6 +471,9 @@ fun mod_inv_match ctxt (pat, th) (id, inst) =
       maps process_inst_h insts_h
     end
 
+fun mod_inv_match ctxt (pat, th) (id, inst) =
+    mod_inv_match_gen false ctxt (pat, th) (id, inst)
+
 val assn_inv_matcher =
     let
       fun is_neg_mod t = is_neg t andalso is_mod (dest_not t)
@@ -474,7 +488,7 @@ val assn_inv_matcher =
 
       fun match pat (item as {prop, ...}) ctxt (id, inst) =
           if not (pre_match pat item ctxt) then []
-          else mod_inv_match ctxt (pat, prop) (id, inst)
+          else mod_inv_match_gen true ctxt (pat, prop) (id, inst)
     in
       {pre_match = pre_match, match = match}
     end
