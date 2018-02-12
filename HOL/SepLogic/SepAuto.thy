@@ -8,9 +8,7 @@ begin
 section {* Partial Heaps *}
 
 datatype pheap = pHeap (heapOf: heap) (addrOf: "addr set")
-setup {* add_rewrite_rule_back_cond @{thm pheap.collapse} [with_cond "?pheap \<noteq> pHeap ?a ?b"] *}
-setup {* add_forward_prfstep (equiv_forward_th @{thm pheap.simps(1)}) *}
-setup {* fold add_rewrite_rule @{thms pheap.sel} *}
+setup {* add_simple_datatype "pheap" *}
 
 fun in_range :: "(heap \<times> addr set) \<Rightarrow> bool" where
   "in_range (h,as) \<longleftrightarrow> (\<forall>a\<in>as. a < lim h)"
@@ -454,8 +452,7 @@ lemma hoare_tripleE'':
 setup {* del_prfstep_thm @{thm success_run.simps} *}
 setup {* del_prfstep_thm @{thm hoare_triple_def} *}
 setup {* del_prfstep_thm @{thm hoare_triple_def'} *}
-setup {* fold del_prfstep_thm [@{thm pheap.collapse}, @{thm pheap.simps(1)}] *}
-setup {* fold del_prfstep_thm @{thms pheap.sel} *}
+setup {* del_simple_datatype "pheap" *}
 
 subsection {* Definition of procedures *}
 

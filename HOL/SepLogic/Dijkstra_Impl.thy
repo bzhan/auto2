@@ -3,9 +3,7 @@ imports Indexed_PQueue_Impl "../DataStrs/Dijkstra"
 begin
 
 datatype dijkstra_state = Dijkstra_State (est_a: "nat array") (heap_pq: "nat indexed_pqueue")
-setup {* add_rewrite_rule_back @{thm dijkstra_state.collapse} *}
-setup {* add_rewrite_rule @{thm dijkstra_state.case} *}
-setup {* fold add_rewrite_rule @{thms dijkstra_state.sel} *}
+setup {* add_simple_datatype "dijkstra_state" *}
 
 fun dstate :: "state \<Rightarrow> dijkstra_state \<Rightarrow> assn" where
   "dstate (State e M) (Dijkstra_State a pq) = a \<mapsto>\<^sub>a e * idx_pqueue_map M (length e) pq"

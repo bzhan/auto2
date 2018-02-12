@@ -5,9 +5,7 @@ begin
 section {* Definition of interval *}
 
 datatype 'a interval = Interval (low: 'a) (high: 'a)
-setup {* add_rewrite_rule_back @{thm interval.collapse} *}
-setup {* add_rewrite_rule @{thm interval.case} *}
-setup {* fold add_rewrite_rule @{thms interval.sel} *}
+setup {* add_simple_datatype "interval" *}
 
 instantiation interval :: (linorder) linorder begin
 
@@ -35,9 +33,7 @@ setup {* add_property_const @{term is_interval} *}
 section {* Definition of interval with an index *}
 
 datatype 'a idx_interval = IdxInterval (int: "'a interval") (idx: nat)
-setup {* add_rewrite_rule_back @{thm idx_interval.collapse} *}
-setup {* add_rewrite_rule @{thm idx_interval.case} *}
-setup {* fold add_rewrite_rule @{thms idx_interval.sel} *}
+setup {* add_simple_datatype "idx_interval" *}
 
 instantiation idx_interval :: (linorder) linorder begin
 

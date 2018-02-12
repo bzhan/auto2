@@ -261,9 +261,7 @@ section {* Invariant for the Dijkstra's algorithm *}
    and a heap containing estimates for the unknown vertices.
  *)
 datatype state = State (est: "nat list") (heap: "(nat, nat) map")
-
-setup {* fold add_rewrite_rule @{thms state.sel} *}
-setup {* add_rewrite_rule_back @{thm state.collapse} *}
+setup {* add_simple_datatype "state" *}
 
 definition unknown_set :: "state \<Rightarrow> nat set" where [rewrite]:
   "unknown_set S = keys_of (heap S)"

@@ -5,9 +5,7 @@ begin
 section {* Definition of rectangles *}
 
 datatype 'a rectangle = Rectangle (xint: "'a interval") (yint: "'a interval")
-setup {* add_rewrite_rule_back @{thm rectangle.collapse} *}
-setup {* add_rewrite_rule @{thm rectangle.case} *}
-setup {* fold add_rewrite_rule @{thms rectangle.sel} *}
+setup {* add_simple_datatype "rectangle" *}
 
 definition is_rect :: "('a::linorder) rectangle \<Rightarrow> bool" where [rewrite]:
   "is_rect rect \<longleftrightarrow> is_interval (xint rect) \<and> is_interval (yint rect)"

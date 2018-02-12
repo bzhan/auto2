@@ -216,7 +216,7 @@ lemma rem_cycles_subs [forward_arg1]:
 section {* Matrices *}
 
 datatype 'c mat = Mat (eval_fun: "nat \<Rightarrow> nat \<Rightarrow> 'c")
-setup {* add_rewrite_rule_back @{thm mat.collapse} *}
+setup {* add_simple_datatype "mat" *}
 
 fun mat_eval :: "'c mat \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'c" ("_\<langle>_,_\<rangle>" [90,91]) where
   "(Mat f)\<langle>a,b\<rangle> = f a b"
@@ -237,7 +237,7 @@ lemma mat_update_eval' [rewrite]:
   "M {x,y \<rightarrow> v} \<langle>x,y\<rangle> = v"
   "x \<noteq> x' \<Longrightarrow> M {x,y \<rightarrow> v} \<langle>x',y'\<rangle> = M\<langle>x',y'\<rangle>"
   "y \<noteq> y' \<Longrightarrow> M {x,y \<rightarrow> v} \<langle>x',y'\<rangle> = M\<langle>x',y'\<rangle>" by auto2+
-setup {* fold del_prfstep_thm [@{thm mat.collapse}, @{thm mat_eval.simps}, @{thm mat_update.simps}] *}
+setup {* del_simple_datatype "mat" *}
 
 section {* Definition of the Algorithm *}
 

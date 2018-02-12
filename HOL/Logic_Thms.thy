@@ -106,7 +106,7 @@ setup {* add_backward_prfstep @{thm Relation.transI} *}
 (* Options *)
 setup {* add_resolve_prfstep @{thm option.distinct(1)} *}
 setup {* add_rewrite_rule @{thm Option.option.sel} *}
-setup {* add_rewrite_rule_back @{thm option.collapse} *}
+setup {* add_forward_prfstep @{thm option.collapse} *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm option.simps(1)}) *}
 setup {* fold add_rewrite_rule @{thms Option.option.case} *}
 setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2", 1)] *}

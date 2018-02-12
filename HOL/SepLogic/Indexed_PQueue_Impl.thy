@@ -4,9 +4,7 @@ begin
 
 datatype 'a indexed_pqueue =
   Indexed_PQueue (pqueue: "(nat \<times> 'a) dynamic_array") (index: "nat option array")
-setup {* add_rewrite_rule_back @{thm indexed_pqueue.collapse} *}
-setup {* add_rewrite_rule @{thm indexed_pqueue.case} *}
-setup {* fold add_rewrite_rule @{thms indexed_pqueue.sel} *}
+setup {* add_simple_datatype "indexed_pqueue" *}
 
 fun idx_pqueue :: "'a::heap idx_pqueue \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue (xs, m) (Indexed_PQueue pq idx) = (dyn_array xs pq * idx \<mapsto>\<^sub>a m)"
@@ -116,7 +114,7 @@ lemma has_key_idx_pqueue_rule [hoare_triple]:
    <\<lambda>r. idx_pqueue (xs, m) p * \<up>(r \<longleftrightarrow> has_key_alist xs k)>" by auto2
 
 setup {* del_prfstep_thm @{thm idx_pqueue.simps} *}
-setup {* del_prfstep_thm @{thm indexed_pqueue.collapse} *}
+setup {* del_simple_datatype "indexed_pqueue" *}
 
 section {* Bubble up and down *}
 

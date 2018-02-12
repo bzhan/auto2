@@ -3,9 +3,7 @@ imports Arrays_Impl
 begin
 
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (aref: "'a array")
-setup {* add_rewrite_rule_back @{thm dynamic_array.collapse} *}
-setup {* add_rewrite_rule @{thm dynamic_array.case} *}
-setup {* fold add_rewrite_rule @{thms dynamic_array.sel} *}
+setup {* add_simple_datatype "dynamic_array" *}
 
 section {* Raw assertion *}
 
@@ -117,7 +115,7 @@ lemma pop_array_rule' [hoare_triple]:
    <\<lambda>(x, r). dyn_array_raw (xs, n - 1) r * \<up>(x = xs ! (n - 1))>" by auto2
 
 setup {* del_prfstep_thm @{thm dyn_array_raw.simps} *}
-setup {* del_prfstep_thm @{thm dynamic_array.collapse} *}
+setup {* del_simple_datatype "dynamic_array" *}
 
 fun push_array_fun :: "'a \<Rightarrow> 'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
   "push_array_fun x (xs, n) = (
