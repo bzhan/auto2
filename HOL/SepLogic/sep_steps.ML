@@ -208,17 +208,22 @@ fun mod_fact_ritems ctxt mod_th =
 
 fun forward_ent_prfstep_fn shadowing ent_th ictxt item =
     let
-      val (A, _) = dest_entail (prop_of' ent_th)
       val ctxt = IncrContext.context_of ictxt
-      val {id, tname, ...} = item
-      val h_t = tname |> the_single |> Thm.term_of |> dest_mod |> fst
-      val pat = mk_mod (h_t, A)
-      val insts = mod_match_item ictxt (pat, item) (id, fo_init)
+      val (A, _) = dest_entail (prop_of' ent_th)
+      val {id, prop, ...} = item
+      val (_, P) = dest_mod (prop_of' prop)
+      val cP = Thm.cterm_of ctxt P
 
-      fun process_inst ((id', _), th) =
+      val insts = (AssnMatcher.assn_match_single ctxt (A, cP) (id, fo_init))
+                      |> IncrContext.replace_id_for_type ictxt
+
+      fun process_inst ((id', _), eq_th) =
+          (* eq_th is P == pat(inst) * P' *)
           let
+            val prop' = prop |> apply_to_thm' (
+                  Conv.arg_conv (Conv.rewr_conv eq_th))
             val (ex_ritems, mod_th) =
-                ([ent_th, th] MRS @{thm entailsD'})
+                ([ent_th, prop'] MRS @{thm entailsD'})
                     |> mod_fact_ritems ctxt
             val ritems = ex_ritems @ [Update.thm_to_ritem mod_th]
           in
