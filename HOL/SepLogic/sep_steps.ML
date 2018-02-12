@@ -191,16 +191,6 @@ fun mod_match_item ictxt (pat, item) (id, inst) =
           |> IncrContext.replace_id_for_type ictxt
     end
 
-fun mod_inv_match_item ictxt (pat, item) (id, inst) =
-    let
-      val ctxt = IncrContext.context_of ictxt
-      val {id = id', prop, ...} = item
-      val id'' = BoxID.merge_boxes ctxt (id, id')
-    in
-      (AssnMatcher.mod_inv_match ctxt (pat, prop) (id'', inst))
-          |> IncrContext.replace_id_for_type ictxt
-    end
-
 (* Given fact of form h |= P, normalize, then use apply_exists when
    necessary.
  *)
@@ -266,16 +256,20 @@ fun backward_ent_prfstep_fn ent_th ictxt item =
     let
       val ctxt = IncrContext.context_of ictxt
       val (_, B) = dest_entail (prop_of' ent_th)
-      val {id, tname, ...} = item
-      val h_t = tname |> the_single |> Thm.term_of |> dest_not
-                      |> dest_mod |> fst
-      val pat = get_neg (mk_mod (h_t, B))
-      val insts = mod_inv_match_item ictxt (pat, item) (id, fo_init)
+      val {id, prop, ...} = item
+      val (_, P) = prop |> prop_of' |> dest_not |> dest_mod
+      val cP = Thm.cterm_of ctxt P
 
-      fun process_inst ((id', _), th) =
+      val insts = (AssnMatcher.assn_match_single ctxt (B, cP) (id, fo_init))
+                      |> IncrContext.replace_id_for_type ictxt
+
+      fun process_inst ((id', _), eq_th) =
+          (* eq_th is P == pat(inst) * P' *)
           let
+            val prop' = prop |> apply_to_thm' (
+                  Conv.arg_conv (Conv.arg_conv (Conv.rewr_conv eq_th)))
             val res_th =
-                ([ent_th, th] MRS @{thm entailsD_back})
+                ([ent_th, prop'] MRS @{thm entailsD_back})
                     |> apply_to_thm' (Conv.arg_conv (normalize_mod_cv ctxt))
           in
             Update.thm_update (id', res_th)
