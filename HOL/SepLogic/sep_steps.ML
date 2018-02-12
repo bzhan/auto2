@@ -63,7 +63,7 @@ fun normalize_mod_cv' ctxt ct =
     in
       if is_pure_assn P then
         Conv.every_conv [rewr_obj_eq @{thm mod_pure'}] ct
-      else if is_times P andalso is_pure_assn (dest_arg P) then
+      else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
         Conv.every_conv [
           rewr_obj_eq @{thm mod_pure_star_dist},
           Conv.arg1_conv (normalize_mod_cv' ctxt)] ct

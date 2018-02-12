@@ -36,7 +36,7 @@ fun normalize_assn_cv ctxt ct =
     in
       if is_ex_assn t then
         Conv.binder_conv (normalize_assn_cv o snd) ctxt ct
-      else if is_times t then
+      else if UtilArith.is_times t then
         if is_ex_assn (dest_arg1 t) then
           Conv.every_conv [rewr_obj_eq (obj_sym @{thm ex_distrib_star}),
                            normalize_assn_cv ctxt] ct

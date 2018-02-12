@@ -59,8 +59,6 @@ fun test test_fun str (pat_str, t_str, info_str) =
 val test_assn_term_matcher =
     let
       val test_data = [
-        ("?R", "os_list xs p * sngr_assn a 1",
-         [([], "os_list xs p * sngr_assn a 1 * emp")]),
         ("os_list ?xs n1", "emp", [([], "os_list [] n1 * emp")]),
         ("os_list ?xs n1", "sngr_assn a 1",
          [([], "os_list [] n1 * sngr_assn a 1")]),
@@ -82,25 +80,14 @@ val test_assn_term_matcher =
 val test_list_prop_matcher =
     let
       val test_data = [
-        ("?R::assn", "os_list xs p * sngr_assn a 1",
-         [([], "os_list xs p * sngr_assn a 1")]),
         ("os_list ?xs s1", "sngr_assn pp (Node x r) * os_list xs r",
          [([], "os_list (x # xs) s1")]),
         ("os_list zs s1", "sngr_assn pp (Node x r) * os_list xs r",
          [([], "os_list zs s1")]),
         ("os_list ?xs p * os_list ?ys q", "os_list ys q * os_list xs p",
          [([], "os_list xs p * os_list ys q")]),
-        ("os_list ?xs p * ?R", "os_list xs p",
-         [([], "os_list xs p * emp")]),
-        ("os_list ?xs p * ?R", "os_list xs p * os_list ys q",
-         [([], "os_list xs p * os_list ys q")]),
-        ("os_list ?xs s1 * ?R", "sngr_assn pp (Node x r) * os_list xs r",
-         [([], "os_list (x # xs) s1 * emp")]),
-        ("os_list ?xs p * os_list ?ys q * ?R", "os_list xs p * os_list ys q",
-         [([], "os_list xs p * os_list ys q * emp")]),
         ("os_list ?xs p", "os_list xs p * os_list ys q", []),
         ("sngr_assn a 1", "sngr_assn a 1", [([], "sngr_assn a 1")]),
-        ("os_list ?xs s1 * ?R", "sngr_assn pp (Node x r)", []),
         ("sngr_assn ?a 1 * os_list ?ys q * os_list ?zs r",
          "os_list ys q * os_list zs r * sngr_assn a 1",
          [([], "sngr_assn a 1 * os_list ys q * os_list zs r")])

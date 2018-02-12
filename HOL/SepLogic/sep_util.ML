@@ -19,7 +19,6 @@ sig
   val cdest_mod: cterm -> cterm * cterm
   val mk_mod: term * term -> term
   val is_ex_assn: term -> bool
-  val is_times: term -> bool
   val mod_assn_conv: conv -> conv
   val heap_of_mod_th: thm -> term
   val is_pure_assn: term -> bool
@@ -102,11 +101,6 @@ fun is_ex_assn t =
         Const (@{const_name ex_assn}, _) $ _ => true
       | _ => false
 
-fun is_times t =
-    case t of
-        Const (@{const_name times}, _) $ _ $ _ => true
-      | _ => false
-
 (* Given term h |= P, apply conversion on P. *)
 val mod_assn_conv = Conv.arg_conv
 
@@ -130,7 +124,7 @@ fun has_pure_assn t =
    assertions and return the product of the remaining terms.
  *)
 fun strip_pure_assn t =
-    if is_times t andalso is_pure_assn (dest_arg t) then
+    if UtilArith.is_times t andalso is_pure_assn (dest_arg t) then
       strip_pure_assn (dest_arg1 t)
     else if is_pure_assn t then emp
     else t
