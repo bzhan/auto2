@@ -23,17 +23,10 @@ sig
   val true_assn_matcher: assn_matcher
   val add_entail_matcher: thm -> theory -> theory
 
-  val add_assn_inv_matcher: assn_matcher -> theory -> theory
-  val assn_inv_match_term:
-      Proof.context -> term * cterm -> id_inst -> id_inst_th list
-  val assn_inv_match_all:
-      Proof.context -> term * cterm -> id_inst -> id_inst_th list
-  val assn_inv_match_all_strict:
+  val assn_inv_match:
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val mod_inv_match: Proof.context -> term * thm -> id_inst -> id_inst_th list
-  val assn_inv_matcher: item_matcher
   val triv_assn_inv_matcher: assn_matcher
-  val emp_assn_inv_matcher: assn_matcher
 
   val add_assn_matcher_proofsteps: theory -> theory
 end
@@ -44,13 +37,6 @@ struct
 open SepUtil
 
 structure MatchData = Theory_Data (
-  type T = assn_matcher list
-  val empty = []
-  val extend = I;
-  val merge = merge (op pointer_eq)
-)
-
-structure InvMatchData = Theory_Data (
   type T = assn_matcher list
   val empty = []
   val extend = I;
@@ -339,158 +325,9 @@ fun add_entail_matcher th =
 
 (* Matching in the backward direction *)
 
-fun add_assn_inv_matcher matcher = InvMatchData.map (cons matcher)
-
-(* Assume pat is not in the form A * B. Match pat with one or more
-   terms of t. Return theorem of form pat(s) * t' ==> t.
- *)
-fun assn_inv_match_term ctxt (pat, ct) (id, inst) =
-    let
-      val _ = assert (not (Term.is_Var pat))
-                     "assn_inv_match_term: pat should not be Var."
-      val thy = Proof_Context.theory_of ctxt
-      fun apply_matcher matcher = matcher ctxt (pat, ct) (id, inst)
-
-      (* th must be an entailment, and the left side must be
-             pat(s), pat(s) * t', or t' * pat(s).
-       *)
-      fun process_res ((id, inst'), th) =
-          let
-            val _ = assert (is_entail (prop_of' th)) "assn_inv_match_term"
-            val (lhs, _) = th |> prop_of' |> dest_entail
-            val exp_lhs = Util.subst_term_norm inst' pat
-          in
-            if lhs aconv exp_lhs then
-              ((id, inst'), th |> apply_to_entail_l mult_emp_right)
-            else if UtilArith.is_times lhs andalso
-                    dest_arg1 lhs aconv exp_lhs then
-              ((id, inst'), th)
-            else if UtilArith.is_times lhs andalso
-                    dest_arg lhs aconv exp_lhs then
-              ((id, inst'), th |> apply_to_entail_l assn_comm_cv)
-            else
-              raise Fail "assn_inv_match_term"
-          end
-    in
-      (maps apply_matcher (InvMatchData.get thy))
-          |> map process_res
-    end
-
-(* Match each term of pat with some term in t. Return pat(s) * t' ==> t. *)
-fun assn_inv_match_all ctxt (pat, ct) (id, inst) =
-    if UtilArith.is_times pat then
-      let
-        val (A, B) = Util.dest_binop_args pat
-        val insts = assn_inv_match_all ctxt (A, ct) (id, inst)
-
-        (* th is A(s) * t' ==> t. Match B(s) with t', with result
-             B(s) * t'' ==> t'. Produce (A(s) * B(s)) * t'' ==> t.
-         *)
-        fun process_inst ((id', inst'), th) =
-            let
-              val ct' = th |> cprop_of' |> cdest_entail |> fst |> Thm.dest_arg
-              val B' = Util.subst_term_norm inst' B
-              val insts' = assn_inv_match_all ctxt (B', ct') (id', inst')
-
-              (* th' is B(s) * t'' ==> t'. *)
-              fun process_inst' ((id'', inst''), th') =
-                  let
-                    val res = ([th, th'] MRS @{thm entail_trans2'})
-                                  |> apply_to_entail_l assn_assoc_sym_cv
-                  in
-                    ((id'', inst''), res)
-                  end
-            in
-              map process_inst' insts'
-            end
-      in
-        maps process_inst insts
-      end
-    else
-      assn_inv_match_term ctxt (pat, ct) (id, inst)
-
-(* Guarantees that every term in t is matched. Returns pat(s) ==> t. *)
-fun assn_inv_match_all_strict ctxt (pat, ct) (id, inst) =
-    let
-      val inst = assn_inv_match_all ctxt (pat, ct) (id, inst)
-      fun process_inst ((id', inst'), th) =
-          let
-            val lhs = th |> prop_of' |> dest_entail |> fst
-            val _ = assert (UtilArith.is_times lhs andalso
-                            dest_arg1 lhs aconv Util.subst_term_norm inst' pat)
-                           "assn_match_all"
-          in
-            if dest_arg lhs aconv emp then
-              [((id', inst'), th |> apply_to_entail_l reduce_emp_right)]
-            else []
-          end
-    in
-      maps process_inst inst
-    end
-
-(* Given pat of form ~(pat_h |= pat_P), and a theorem ~(h |= P), match
-   pat_h to h using regular matching, then match pat_P to P using
-   inverted assertion matching. Return the theorem ~(pat_h(s) |=
-   pat_P(s)).
- *)
-fun mod_inv_match_gen strict ctxt (pat, th) (id, inst) =
-    let
-      val (pat_h, pat_P) = pat |> dest_not |> dest_mod
-      val (ch, cP) = th |> cprop_of' |> Thm.dest_arg |> cdest_mod
-      val insts_h = Matcher.rewrite_match ctxt (pat_h, ch) (id, inst)
-
-      (* eq_th is pat_h(s) == h. *)
-      fun process_inst_h ((id', inst'), eq_th) =
-          let
-            val insts'' =
-                if strict then
-                  assn_inv_match_all_strict ctxt (pat_P, cP) (id', inst')
-                else
-                  assn_inv_match_all ctxt (pat_P, cP) (id', inst')
-            val rewr_eq_th = eq_th |> Conv.rewr_conv |> Conv.arg1_conv
-                                   |> Conv.arg_conv
-
-            (* ent_th is pat_P(s) ==> P. Obtain ~(h |= pat_P(s)) then
-               ~(pat_h(s) |= pat_P(s)).
-             *)
-            fun process_inst ((id', inst'), ent_th) =
-                [((id', inst'), ([ent_th, th] MRS @{thm entails_invD})
-                                    |> apply_to_thm' rewr_eq_th)]
-          in
-            maps process_inst insts''
-          end
-    in
-      maps process_inst_h insts_h
-    end
-
-fun mod_inv_match ctxt (pat, th) (id, inst) =
-    mod_inv_match_gen false ctxt (pat, th) (id, inst)
-
-val assn_inv_matcher =
-    let
-      fun is_neg_mod t = is_neg t andalso is_mod (dest_not t)
-      fun pre_match pat {tname, ...} _ =
-          let
-            val t = tname |> the_single |> Thm.term_of
-          in
-            is_neg_mod pat andalso is_neg_mod t andalso
-            (pat |> dest_not |> dest_mod |> fst)
-                aconv (t |> dest_not |> dest_mod |> fst)
-          end
-
-      fun match pat (item as {prop, ...}) ctxt (id, inst) =
-          if not (pre_match pat item ctxt) then []
-          else mod_inv_match_gen true ctxt (pat, prop) (id, inst)
-    in
-      {pre_match = pre_match, match = match}
-    end
-
-(* Specific inverted assertion matchers *)
-
 (* Matcher using the theorem A ==> A. *)
 fun triv_assn_inv_matcher ctxt (pat, ct) (id, inst) =
-    if pat aconv emp then []  (* leave to emp_assn_matcher *)
-    else let
+    let
       val cts = ACUtil.cdest_ac assn_ac_info ct
 
       fun match_i i =
@@ -516,21 +353,78 @@ fun triv_assn_inv_matcher ctxt (pat, ct) (id, inst) =
       maps match_i (0 upto (length cts - 1))
     end
 
-(* Consider the case where pat = emp. Return emp * t ==> t. *)
-fun emp_assn_inv_matcher ctxt (pat, ct) (id, inst) =
-    if not (pat aconv emp) then []
-    else [((id, inst), ct |> Thm.term_of |> entail_triv_th ctxt
-                          |> apply_to_entail_l mult_emp_left)]
+(* Assume pat is not in the form A * B. Match pat with one or more
+   terms of t. Return theorem of form pat(s) * t' ==> t.
+ *)
+fun assn_inv_match ctxt (pat, ct) (id, inst) =
+    let
+      val _ = assert (not (Term.is_Var pat))
+                     "assn_inv_match_term: pat should not be Var."
+      val insts = triv_assn_inv_matcher ctxt (pat, ct) (id, inst)
+
+      (* th must be an entailment, and the left side must be
+             pat(s), pat(s) * t', or t' * pat(s).
+       *)
+      fun process_res ((id, inst'), th) =
+          let
+            val _ = assert (is_entail (prop_of' th)) "assn_inv_match_term"
+            val (lhs, _) = th |> prop_of' |> dest_entail
+            val exp_lhs = Util.subst_term_norm inst' pat
+          in
+            if lhs aconv exp_lhs then
+              ((id, inst'), th |> apply_to_entail_l mult_emp_right)
+            else if UtilArith.is_times lhs andalso
+                    dest_arg1 lhs aconv exp_lhs then
+              ((id, inst'), th)
+            else if UtilArith.is_times lhs andalso
+                    dest_arg lhs aconv exp_lhs then
+              ((id, inst'), th |> apply_to_entail_l assn_comm_cv)
+            else
+              raise Fail "assn_inv_match_term"
+          end
+    in
+      map process_res insts
+    end
+
+(* Given pat of form ~(pat_h |= pat_P), and a theorem ~(h |= P), match
+   pat_h to h using regular matching, then match pat_P to P using
+   inverted assertion matching. Return the theorem ~(pat_h(s) |=
+   pat_P(s)).
+ *)
+fun mod_inv_match ctxt (pat, th) (id, inst) =
+    let
+      val _ = assert (not (UtilArith.is_times pat))
+                     "mod_inv_match_gen: pat should not be a product."
+      val (pat_h, pat_P) = pat |> dest_not |> dest_mod
+      val (ch, cP) = th |> cprop_of' |> Thm.dest_arg |> cdest_mod
+      val insts_h = Matcher.rewrite_match ctxt (pat_h, ch) (id, inst)
+
+      (* eq_th is pat_h(s) == h. *)
+      fun process_inst_h ((id', inst'), eq_th) =
+          let
+            val insts'' = assn_inv_match ctxt (pat_P, cP) (id', inst')
+            val rewr_eq_th = eq_th |> Conv.rewr_conv |> Conv.arg1_conv
+                                   |> Conv.arg_conv
+
+            (* ent_th is pat_P(s) ==> P. Obtain ~(h |= pat_P(s)) then
+               ~(pat_h(s) |= pat_P(s)).
+             *)
+            fun process_inst ((id', inst'), ent_th) =
+                [((id', inst'), ([ent_th, th] MRS @{thm entails_invD})
+                                    |> apply_to_thm' rewr_eq_th)]
+          in
+            maps process_inst insts''
+          end
+    in
+      maps process_inst_h insts_h
+    end
 
 val add_assn_matcher_proofsteps =
     fold ItemIO.add_prop_matcher [
-      (TY_PROP, assn_matcher), (TY_PROP, assn_inv_matcher)
+      (TY_PROP, assn_matcher)
 
     ] #> fold add_assn_matcher [
       triv_assn_matcher, emp_assn_matcher, true_assn_matcher
-
-    ] #> fold add_assn_inv_matcher [
-      triv_assn_inv_matcher, emp_assn_inv_matcher
     ]
 
 end  (* structure AssnMatcher. *)
