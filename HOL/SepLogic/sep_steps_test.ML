@@ -8,8 +8,8 @@ in
 val test_normalize_assn =
     let
       val ctxt' = ctxt |> fold Variable.auto_fixes [
-            Free ("P", assnT), Free ("S", natT --> assnT),
-            Free ("T", natT --> assnT)]
+            Free ("P", assnT), Free ("Q", assnT), Free ("R", assnT),
+            Free ("S", natT --> assnT), Free ("T", natT --> assnT)]
       val test = Util.test_conv ctxt' (AssnNorm.normalize_assn_cv ctxt')
                                 "normalize_assn"
 
@@ -26,7 +26,8 @@ val test_normalize_assn =
         ("EXA x. S x * \<up>(B x) * T x", "EXA x. S x * T x * \<up>(B x)"),
         ("P * true * true", "P * true"),
         ("true * P * true", "P * true"),
-        ("true * P * true * \<up>(b)", "P * true * \<up>(b)")
+        ("true * P * true * \<up>(b)", "P * true * \<up>(b)"),
+        ("(EXA x. S x) * P * Q", "EXA x. P * Q * S x")
       ]
     in
       map test test_data

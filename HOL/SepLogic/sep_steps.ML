@@ -156,31 +156,6 @@ fun get_hoare_triples thy nm =
 fun rewr_obj_eq_bottom ctxt eq_th =
     Conv.bottom_conv (K (Conv.try_conv (rewr_obj_eq eq_th))) ctxt
 
-(* Proofsteps normalizing assertions. *)
-fun normalize_mod_cv_prfstep (prfstep_name, pat) =
-    ProofStep.prfstep_custom
-        prfstep_name
-        [WithItem (TY_PROP, pat)]
-        PRIORITY_SHADOW
-        (fn ((id, _), ths) => fn items => fn ctxt =>
-            let
-              val th = the_single ths
-              val th' =
-                  if is_neg (prop_of' th) then
-                    apply_to_thm' (Conv.arg_conv (normalize_mod_cv ctxt)) th
-                  else
-                    apply_to_thm' (normalize_mod_cv ctxt) th
-            in
-              if not (Thm.prop_of th aconv Thm.prop_of th') then
-                [Update.thm_update (id, th'),
-                 ShadowItem {id = id, item = the_single items}]
-              else []
-            end)
-
-val normalize_mod_cv_prfsteps =
-    [normalize_mod_cv_prfstep ("mod_norm", @{term_pat "?h |= ?P"}),
-     normalize_mod_cv_prfstep ("mod_norm_neg", @{term_pat "~(?h |= ?P)"})]
-
 fun mod_match_item ictxt (pat, item) (id, inst) =
     let
       val ctxt = IncrContext.context_of ictxt
@@ -310,6 +285,27 @@ fun entail_equiv_backward_th th =
 fun add_rewrite_ent_rule eq_th thy =
     thy |> add_forward_ent_prfstep (entail_equiv_forward_th eq_th)
         |> add_backward_ent_prfstep (entail_equiv_backward_th eq_th)
+
+val entails_goal =
+    ProofStep.prfstep_custom
+        "sep.entails_goal"
+        [WithProp @{term_pat "~(entails ?A ?B)"}]
+        PRIORITY_ADD
+        (fn ((id, _), ths) => fn _ => fn ctxt =>
+            let
+              val ex_th = ths MRS @{thm entailsE}
+              val xs = map Name.internal ["h"]
+              val (ex_ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th
+              val (modP_th, goal_th) =
+                  (conj_left_th res_th, conj_right_th res_th)
+              val (ex_ritems', modP_th') = mod_fact_ritems ctxt modP_th
+              val goal_th' = goal_th |> apply_to_thm' (
+                    Conv.arg_conv (normalize_mod_cv ctxt))
+              val ritems = ex_ritems @ ex_ritems' @
+                           map Update.thm_to_ritem [modP_th', goal_th']
+            in
+              [AddItems {id = id, sc = NONE, raw_items = ritems}]
+            end)
 
 fun is_bind_cmd t =
     case t of
@@ -547,8 +543,10 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
             (rest_th RS all_th')
                 |> apply_to_thm' (Conv.arg_conv (normalize_mod_cv ctxt))
 
+        val _ = trace_thm ctxt "modQ_th" modQ_th
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
+        val _ = trace_thm ctxt "modQ_th'" modQ_th'
       in
         ritems @ ritems_Q @ map (Update.thm_to_ritem) [modQ_th', Q_goal]
       end
@@ -893,11 +891,10 @@ val add_sep_logic_proofsteps =
       (TY_CODE_POS, code_pos_typed_matcher),
       (TY_MATCH_POS, code_pos_typed_matcher)
 
-    ] #> fold add_prfstep (
-      normalize_mod_cv_prfsteps @ [
-      init_pos, rewrite_pos, match_assn, match_assn_pure, match_assn_spatial,
-      match_hoare_disj, match_hoare_prop, hoare_create_case
-    ])
+    ] #> fold add_prfstep [
+      entails_goal, init_pos, rewrite_pos, match_assn, match_assn_pure,
+      match_assn_spatial, match_hoare_disj, match_hoare_prop, hoare_create_case
+    ]
 
 end  (* structure SepLogic *)
 
