@@ -34,7 +34,6 @@ sig
   val TY_MATCH_POS: string
   val output_code_pos_fn: item_output
   val output_code_pos_match_fn: item_output
-  val code_pos_typed_matcher: item_matcher
 
   val init_pos: proofstep
   val next_code_pos_ritems: Proof.context -> thm -> thm -> thm -> raw_item list
@@ -434,44 +433,6 @@ fun output_code_pos_match_fn ctxt (tname, th) =
     "MATCH_POS " ^ (Syntax.string_of_term ctxt (hd tname)) ^ " " ^
     (Syntax.string_of_term ctxt (prop_of' (hd (UtilLogic.split_conj_th th))))
 
-(* Common matcher for CODE_POS and MATCH_POS. When pattern is a tuple
-   of n terms, match the first n terms of tname.
- *)
-val code_pos_typed_matcher =
-    let
-      (* Check pat contains at least as many terms as tname. *)
-      fun pre_match pat {tname, ...} ctxt =
-          let
-            val pats = HOLogic.strip_tuple pat
-          in
-            if length pats > length tname then false
-            else forall (Matcher.pre_match ctxt)
-                        (pats ~~ take (length pats) tname)
-          end
-
-      (* Use equalities to convert prop to prop'. *)
-      fun match pat {tname, prop, ...} ctxt (id, inst) =
-          let
-            val pats = HOLogic.strip_tuple pat
-            val pairs = map (pair false)
-                            (pats ~~ (take (length pats) tname))
-
-            val insts = Matcher.rewrite_match_list ctxt pairs (id, inst)
-            fun process_inst (inst, ths) =
-                let
-                  val obj_eqs = map (obj_sym o to_obj_eq) ths
-                  val cv =
-                      Conv.every_conv (map (rewr_obj_eq_bottom ctxt) obj_eqs)
-                in
-                  (inst, apply_to_thm' cv prop)
-                end
-          in
-            map process_inst insts
-          end
-    in
-      {pre_match = pre_match, match = match}
-    end
-
 fun init_pos_fn ictxt item =
     let
       val {id, sc, prop, ...} = item
@@ -662,7 +623,7 @@ fun match_assn_fn ictxt item1 item2 =
 
 val match_assn =
     {name = "sep.match_assn",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"}),
+     args = [TypedMatch (TY_MATCH_POS, Term.dummy),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_fn}
@@ -695,7 +656,7 @@ fun rewrite_pos_fn ictxt item1 item2 =
 
 val rewrite_pos =
     {name = "sep.rewrite_pos",
-     args = [TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c::?'a Heap)"}),
+     args = [TypedMatch (TY_CODE_POS, Term.dummy),
              TypedMatch (TY_EQ, @{term_pat "(?c1::?'a Heap) = ?c2"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep rewrite_pos_fn}
@@ -746,7 +707,7 @@ fun match_hoare_prop_fn ictxt item1 item2 =
 val match_hoare_prop =
     {name = "sep.match_hoare_prop",
      args = [TypedMatch (TY_PROP, @{term_pat "<?P> ?c <?Q>"}),
-             TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c')"})],
+             TypedMatch (TY_CODE_POS, Term.dummy)],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_hoare_prop_fn}
 
@@ -773,7 +734,7 @@ fun match_hoare_disj_fn ictxt item1 item2 =
 val match_hoare_disj =
     {name = "sep.match_hoare_disj",
      args = [TypedMatch (TY_DISJ, @{term_pat "?A::bool"}),
-             TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c)"})],
+             TypedMatch (TY_CODE_POS, Term.dummy)],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_hoare_disj_fn}
 
@@ -822,7 +783,7 @@ fun match_assn_pure_fn ictxt item1 item2 =
 
 val match_assn_pure =
     {name = "sep.match_assn_pure",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"}),
+     args = [TypedMatch (TY_MATCH_POS, Term.dummy),
              PropMatch (@{term_pat "?b::bool"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_pure_fn}
@@ -862,7 +823,7 @@ fun match_assn_spatial_fn ictxt item1 item2 =
 
 val match_assn_spatial =
     {name = "sep.match_assn_spatial",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"}),
+     args = [TypedMatch (TY_MATCH_POS, Term.dummy),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P'"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_spatial_fn}
@@ -885,7 +846,7 @@ fun hoare_create_case_fn ictxt item =
 
 val hoare_create_case =
     {name = "sep.hoare_create_case",
-     args = [TypedMatch (TY_MATCH_POS, @{term_pat "?h"})],
+     args = [TypedMatch (TY_MATCH_POS, Term.dummy)],
      priority = PRIORITY_ADD,
      func = OneStep hoare_create_case_fn}
 
@@ -955,7 +916,7 @@ fun hoare_triple_prfstep_fn ictxt item1 item2 =
 
 val hoare_triple_prfstep =
     {name = "sep.hoare_triple",
-     args = [TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c)"}),
+     args = [TypedMatch (TY_CODE_POS, Term.dummy),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep hoare_triple_prfstep_fn}
@@ -984,8 +945,8 @@ val add_sep_logic_proofsteps =
       (TY_MATCH_POS, SOME (take 2), SOME output_code_pos_match_fn)
 
     ] #> fold ItemIO.add_typed_matcher [
-      (TY_CODE_POS, code_pos_typed_matcher),
-      (TY_MATCH_POS, code_pos_typed_matcher)
+      (TY_CODE_POS, ItemIO.univ_matcher),
+      (TY_MATCH_POS, ItemIO.univ_matcher)
 
     ] #> fold add_prfstep [
       entails_goal, entails_match, entails_match_disj,
