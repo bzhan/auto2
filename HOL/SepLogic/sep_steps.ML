@@ -426,7 +426,7 @@ fun output_code_pos_fn ctxt (tname, th) =
                        |> is_bind_cmd
     in
       "CODE_POS " ^ (if is_bind then "" else "(last) ") ^
-      (Util.string_of_terms ctxt tname)
+      (Util.string_of_terms ctxt (take 2 tname))
     end
 
 fun output_code_pos_match_fn ctxt (tname, th) =
@@ -939,10 +939,17 @@ fun add_hoare_triple_prfstep hoare_th thy =
       thy |> update_hoare_triple hoare_th'
     end
 
+fun code_pos_terms ts =
+    let
+      val (_, c, _) = the_triple ts
+    in
+      [if is_bind_cmd c then fst (dest_bind c) else c]
+    end
+
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
-      (TY_CODE_POS, SOME (take 2), SOME output_code_pos_fn),
-      (TY_MATCH_POS, SOME (take 2), SOME output_code_pos_match_fn)
+      (TY_CODE_POS, SOME code_pos_terms, SOME output_code_pos_fn),
+      (TY_MATCH_POS, SOME ItemIO.no_rewr_terms, SOME output_code_pos_match_fn)
 
     ] #> fold ItemIO.add_typed_matcher [
       (TY_CODE_POS, ItemIO.univ_matcher),
