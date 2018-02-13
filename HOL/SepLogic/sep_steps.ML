@@ -246,12 +246,15 @@ fun forward_ent_prfstep ent_th =
      priority = PRIORITY_SHADOW,
      func = OneStep (forward_ent_prfstep_fn ent_th)}
 
-fun add_forward_ent_prfstep ent_th =
+fun add_forward_ent_prfstep ent_th thy =
     let
+      val name = Util.name_of_thm ent_th
+      val ctxt = Proof_Context.init_global thy
       val prfstep = forward_ent_prfstep ent_th
-      val _ = writeln (#name prfstep)
+      val _ = writeln ("Add forward entailment " ^ name ^ "\n" ^
+                       Syntax.string_of_term ctxt (prop_of' ent_th))
     in
-      add_prfstep prfstep
+      add_prfstep prfstep thy
     end
 
 fun backward_ent_prfstep_fn ent_th ictxt item =
@@ -287,23 +290,26 @@ fun backward_ent_prfstep ent_th =
      priority = PRIORITY_SHADOW,
      func = OneStep (backward_ent_prfstep_fn ent_th)}
 
-fun add_backward_ent_prfstep ent_th =
+fun add_backward_ent_prfstep ent_th thy =
     let
+      val name = Util.name_of_thm ent_th
+      val ctxt = Proof_Context.init_global thy
       val prfstep = backward_ent_prfstep ent_th
-      val _ = writeln (#name prfstep)
+      val _ = writeln ("Add backward entailment " ^ name ^ "\n" ^
+                       Syntax.string_of_term ctxt (prop_of' ent_th))
     in
-      add_prfstep prfstep
+      add_prfstep prfstep thy
     end
 
 fun entail_equiv_forward_th th =
     (th RS @{thm entail_equiv_forward})
         |> Drule.zero_var_indexes
-        |> Util.update_name_of_thm th "@ent_eqforward"
+        |> Util.update_name_of_thm th "@forward"
 
 fun entail_equiv_backward_th th =
     (th RS @{thm entail_equiv_backward})
         |> Drule.zero_var_indexes
-        |> Util.update_name_of_thm th "@ent_eqbackward"
+        |> Util.update_name_of_thm th "@backward"
 
 fun add_rewrite_ent_rule eq_th thy =
     thy |> add_forward_ent_prfstep (entail_equiv_forward_th eq_th)
