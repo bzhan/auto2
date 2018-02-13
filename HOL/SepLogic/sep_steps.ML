@@ -672,23 +672,34 @@ val match_assn =
    rewritten as c1 ; c2 ; ... ; cn (for example, using rewriting rules
    for if or case), update c to c1 and modify the prop accordingly.
  *)
+fun rewrite_pos_fn ictxt item1 item2 =
+    if not (IncrContext.is_single_ictxt ictxt) then [] else
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id = id1, tname, prop = th, ...} = item1
+      val {id = id2, prop = eq_th, ...} = item2
+      val (h, c, _) = the_triple (map Thm.term_of tname)
+      val (c1, c2) = eq_th |> prop_of' |> dest_eq
+      val id = BoxID.merge_boxes ctxt (id1, id2)
+    in
+      if c1 aconv c then
+        let
+          val th' = th |> apply_to_thm' (rewr_obj_eq_bottom ctxt eq_th)
+          val c2' = if is_bind_cmd c2 then fst (dest_bind c2) else c2
+          val ritem = Fact (TY_CODE_POS, [h, c2', c2], th')
+        in
+          [AddItems {id = id, sc = SOME 1, raw_items = [ritem]},
+           ShadowItem {id = id, item = item1}]
+        end
+      else []
+    end
+
 val rewrite_pos =
-    ProofStep.prfstep_custom
-        "sep.rewrite_pos"
-        [WithItem (TY_CODE_POS, @{term_pat "(?h, bind ?c ?c')"}),
-         ShadowFirst]
-        PRIORITY_SHADOW
-        (fn ((id, inst), ths) => fn _ => fn _ =>
-            let
-              val th = the_single ths
-              val run_th = conj_left_th th
-              val fullc' = Util.dest_argn 0 (prop_of' run_th)
-              val (h, c) = apply2 (lookup_inst inst) ("h", "c")
-              val tname = [h, c, fullc']
-              val ritem = Fact (TY_CODE_POS, tname, th)
-            in
-              [AddItems {id = id, sc = SOME 1, raw_items = [ritem]}]
-            end)
+    {name = "sep.rewrite_pos",
+     args = [TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c::?'a Heap)"}),
+             TypedMatch (TY_EQ, @{term_pat "(?c1::?'a Heap) = ?c2"})],
+     priority = PRIORITY_SHADOW,
+     func = TwoStep rewrite_pos_fn}
 
 (* Here item1 is a DISJ item of form <P> c <Q>, where P, c, and Q may
    contain schematic variables. item2 is a CODE_POS item (h,
