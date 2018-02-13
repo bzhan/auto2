@@ -44,7 +44,7 @@ sig
   val match_assn_pure: proofstep
   val hoare_create_case: proofstep
   val match_assn_spatial: proofstep
-  val hoare_triple_prfstep: thm -> proofstep
+  val hoare_triple_prfstep: proofstep
   val add_hoare_triple_prfstep: thm -> theory -> theory
 
   val add_sep_logic_proofsteps: theory -> theory
@@ -896,61 +896,72 @@ val hoare_create_case =
    hoare triple <P> c <Q>, item1 is the CODE_POS item with parameters
    (h, c), and item2 gives the proposition h |= P * P'.
  *)
-fun hoare_triple_prfstep_fn hoare_th ictxt item1 item2 =
+fun hoare_triple_prfstep_fn ictxt item1 item2 =
     let
-      val (P, pat_c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val P' = strip_pure_assn P
       val ctxt = IncrContext.context_of ictxt
+      val thy = Proof_Context.theory_of ctxt
 
-      (* Match the first item with CODE_POS (h, c), and the second
-         item with h |= P'.
-       *)
-      val h_pat = Var (("h", 0), pheapT)
-      val code_pos_pat = HOLogic.mk_tuple [h_pat, pat_c]
-      val mod_pat = mk_mod (h_pat, P')
-
-      val arg1 = TypedMatch (TY_CODE_POS, code_pos_pat)
-      val insts = ItemIO.match_arg ctxt arg1 item1 ([], fo_init)
-
-      fun process_inst ((id', inst'), code_pos_th) =
-          let
-            val mod_pat' = Util.subst_term_norm inst' mod_pat
-            val insts' = mod_match_item ictxt (mod_pat', item2) (id', inst')
-            fun process_inst' ((id'', inst''), mod_th) =
-                if has_pure_assn P then
-                  let
-                    val (h, c) =
-                        apply2 (Util.subst_term_norm inst'') (h_pat, pat_c)
-                    val hoare_th' = Util.subst_thm ctxt inst'' hoare_th
-                    val (P'', _, Q'') = dest_hoare_triple (prop_of' hoare_th')
-                    val prop' = UtilLogic.mk_conjs_th [hoare_th', code_pos_th]
-                    val ritem = Fact (TY_MATCH_POS, [h, c, P'', Q''], prop')
-                  in
-                    [AddItems {id = id'', sc = SOME 1, raw_items = [ritem]},
-                     ShadowItem {id = id'', item = item1}]
-                  end
-                else
-                  let
-                    val ritems =
-                        next_code_pos_ritems ctxt code_pos_th mod_th hoare_th
-                  in
-                    [AddItems {id = id'', sc = SOME 1, raw_items = ritems},
-                     ShadowItem {id = id'', item = item1},
-                     ShadowItem {id = id'', item = item2}]
-                  end
-          in
-            maps process_inst' insts'
-          end
+      val {id = id1, tname, prop = code_pos_th, ...} = item1
+      val {id = id2, ...} = item2
+      val id = BoxID.merge_boxes ctxt (id1, id2)
+      val (h, c, _) = the_triple (map Thm.term_of tname)
+      val nm = name_of_sep_proc c
+      val hoare_ths = get_hoare_triples thy nm
     in
-      maps process_inst insts
+      if null hoare_ths then [] else
+      let
+        val hoare_th = the_single hoare_ths
+
+        val (P, pat, _) = dest_hoare_triple (prop_of' hoare_th)
+        val cc = Thm.cterm_of ctxt c
+        val insts = Matcher.rewrite_match ctxt (pat, cc) (id, fo_init)
+
+        fun process_inst ((id', inst), eq_th) =
+            let
+              val P' = P |> strip_pure_assn
+                         |> Util.subst_term_norm inst
+              val mod_pat = mk_mod (h, P')
+              val insts' = mod_match_item ictxt (mod_pat, item2) (id', inst)
+              val code_pos_th =
+                  code_pos_th |> apply_to_thm' (
+                    rewr_obj_eq_bottom ctxt (to_obj_eq (meta_sym eq_th)))
+
+              fun process_inst' ((id'', inst''), mod_th) =
+                  if has_pure_assn P then
+                    let
+                      val (h, c) = apply2 (Util.subst_term_norm inst'') (h, c)
+                      val hoare_th' = Util.subst_thm ctxt inst'' hoare_th
+                      val (P'', _, Q'') = dest_hoare_triple (prop_of' hoare_th')
+                      val prop' = UtilLogic.mk_conjs_th [hoare_th', code_pos_th]
+                      val ritem = Fact (TY_MATCH_POS, [h, c, P'', Q''], prop')
+                    in
+                      [AddItems {id = id'', sc = SOME 1, raw_items = [ritem]},
+                       ShadowItem {id = id'', item = item1}]
+                    end
+                  else
+                    let
+                      val hoare_th' = Util.subst_thm ctxt inst'' hoare_th
+                      val ritems =
+                          next_code_pos_ritems ctxt code_pos_th mod_th hoare_th'
+                    in
+                      [AddItems {id = id'', sc = SOME 1, raw_items = ritems},
+                       ShadowItem {id = id'', item = item1},
+                       ShadowItem {id = id'', item = item2}]
+                    end
+            in
+              maps process_inst' insts'
+            end
+      in
+        maps process_inst insts
+      end
     end
 
-fun hoare_triple_prfstep hoare_th =
-    {name = (Util.name_of_thm hoare_th) ^ "@hoare",
+val hoare_triple_prfstep =
+    {name = "sep.hoare_triple",
      args = [TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c)"}),
              TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_SHADOW,
-     func = TwoStep (hoare_triple_prfstep_fn hoare_th)}
+     func = TwoStep hoare_triple_prfstep_fn}
 
 (* Given hoare_th of the form <?P> ?c <?Q>, produce proofstep matching
    item1 with CODE_POS (?h, ?c) and item2 with proposition ?h |= ?P *
@@ -964,15 +975,10 @@ fun add_hoare_triple_prfstep hoare_th thy =
           hoare_th |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
                    |> apply_to_thm' (normalize_hoare_cv ctxt)
                    |> Util.update_name_of_thm hoare_th ""
-      val (_, c, _) = dest_hoare_triple (prop_of' hoare_th')
-      val prev_ths = get_hoare_triples thy (name_of_sep_proc c)
-      val prev_nms = map (fn th => Util.name_of_thm th ^ "@hoare") prev_ths
       val _ = writeln ("Add Hoare triple " ^ name ^ "\n" ^
                        Syntax.string_of_term ctxt (prop_of' hoare_th'))
     in
-      thy |> fold del_prfstep prev_nms
-          |> add_prfstep (hoare_triple_prfstep hoare_th')
-          |> update_hoare_triple hoare_th'
+      thy |> update_hoare_triple hoare_th'
     end
 
 val add_sep_logic_proofsteps =
@@ -986,7 +992,7 @@ val add_sep_logic_proofsteps =
 
     ] #> fold add_prfstep [
       entails_goal, entails_match, entails_match_disj,
-      init_pos, rewrite_pos, match_assn, match_assn_pure,
+      init_pos, rewrite_pos, match_assn, match_assn_pure, hoare_triple_prfstep,
       match_assn_spatial, match_hoare_disj, match_hoare_prop, hoare_create_case
     ]
 
