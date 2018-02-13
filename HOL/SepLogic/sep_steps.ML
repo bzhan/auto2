@@ -341,9 +341,8 @@ fun entails_match_fn ictxt item1 item2 =
       val P' = strip_pure_assn P
       val pat = mk_mod (h, P')
       val id = BoxID.merge_boxes ctxt (id1, id2)
-      val insts =
-          (AssnMatcher.mod_match_strict ctxt (pat, th2) (id, fo_init))
-              |> IncrContext.replace_id_for_type ictxt
+      val insts = (AssnMatcher.mod_match_strict ctxt (pat, th2) (id, fo_init))
+                      |> IncrContext.replace_id_for_type ictxt
 
       fun process_inst ((id', inst'), mod_th) =
           let
@@ -701,6 +700,56 @@ val rewrite_pos =
      priority = PRIORITY_SHADOW,
      func = TwoStep rewrite_pos_fn}
 
+(* Here item1 is a PROP item of form <P> c <Q>, where P, c, and Q may
+   contain schematic variables. item2 is a CODE_POS item (h,
+   c1). Match pattern c with c1, and produce a MATCH_POS item of form
+   (h, P) containing the instantiated hoare triple as well as theorems
+   from item2.
+ *)
+fun match_hoare_prop_fn ictxt item1 item2 =
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val thy = Proof_Context.theory_of ctxt
+      val {id = id1, prop = th1, ...} = item1
+      val {id = id2, tname = tname2, prop = th2, ...} = item2
+      val id = BoxID.merge_boxes ctxt (id1, id2)
+
+      val (_, c, _) = dest_hoare_triple (prop_of' th1)
+      val (h, c1, _) = the_triple (map Thm.term_of tname2)
+      val cc1 = Thm.cterm_of ctxt c1
+      val insts = (Matcher.rewrite_match ctxt (c, cc1) (id, fo_init))
+                      |> IncrContext.replace_id_for_type ictxt
+
+      fun process_inst ((id', inst), eq_th) =
+          let
+            (* Substitute and rewrite command to c1. *)
+            val th1' =
+                th1 |> Util.subst_thm_thy thy inst
+                    |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
+            val (P', _, Q') = dest_hoare_triple (prop_of' th1')
+            val new_tname = [h, c1, P', Q']
+            val new_prop = UtilLogic.mk_conjs_th [th1', th2]
+            val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
+
+            val shadow = Config.get ctxt hoare_shadowing
+          in
+            [AddItems {id = id', sc = NONE, raw_items = [ritem]}] @
+            (if shadow then [ShadowItem {id = id', item = item2}] else [])
+          end
+    in
+      maps process_inst insts
+    end
+
+(* Note we will be matching the instantiations of ?c and ?c' in the
+   proofstep, so they may take different values in the pre-filter.
+ *)
+val match_hoare_prop =
+    {name = "sep.match_hoare_prop",
+     args = [TypedMatch (TY_PROP, @{term_pat "<?P> ?c <?Q>"}),
+             TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c')"})],
+     priority = PRIORITY_SHADOW,
+     func = TwoStep match_hoare_prop_fn}
+
 (* Here item1 is a DISJ item of form <P> c <Q>, where P, c, and Q may
    contain schematic variables. item2 is a CODE_POS item (h,
    c1). Match pattern c with c1, and produce a MATCH_POS item of form
@@ -709,45 +758,13 @@ val rewrite_pos =
  *)
 fun match_hoare_disj_fn ictxt item1 item2 =
     let
-      val {id, tname, prop = th1, ...} = item1
+      val {tname, ...} = item1
       val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
     in
       if length subs > 1 then []
       else if not (is_hoare_triple (the_single subs)) then []
-      else let
-        val ctxt = IncrContext.context_of ictxt
-        val thy = Proof_Context.theory_of ctxt
-        val _ = assert (length subs = 1)
-                       "match_hoare_disj_fn: unexpected DISJ."
-        val (_, c, _) = dest_hoare_triple (the_single subs)
-        val {id = id', tname = tname2, prop = th2, ...} = item2
-        val (h_t, c1, _) = the_triple (map Thm.term_of tname2)
-        val id'' = BoxID.merge_boxes ctxt (id, id')
-        val insts =
-            (Matcher.rewrite_match ctxt (c, Thm.cterm_of ctxt c1) (id'', fo_init))
-                |> IncrContext.replace_id_for_type ictxt
-        fun process_inst ((id''', inst), eq_th) =
-            let
-              (* Substitute and rewrite command to c1. *)
-              val th1' =
-                  th1 |> Util.subst_thm_thy thy inst
-                      |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
-              val (P', _, Q') = dest_hoare_triple (prop_of' th1')
-              val new_tname = [h_t, c1, P', Q']
-              val new_prop = UtilLogic.mk_conjs_th [th1', th2]
-              val ritem = Fact (TY_MATCH_POS, new_tname, new_prop)
-
-              val shadow = Config.get ctxt hoare_shadowing
-            in
-              [AddItems {id = id''', sc = NONE, raw_items = [ritem]}] @
-              (if shadow then
-                 [ShadowItem {id = id''', item = item2}]
-               else [])
-            end
-      in
-        maps process_inst insts
-      end
+      else match_hoare_prop_fn ictxt item1 item2
     end
 
 (* Note we will be matching the instantiations of ?c and ?c' in the
@@ -759,26 +776,6 @@ val match_hoare_disj =
              TypedMatch (TY_CODE_POS, @{term_pat "(?h, ?c)"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_hoare_disj_fn}
-
-(* Match a proposition <P> c <Q> (without schematic variables) with a
-   CODE_POS item (h, c). Produce MATCH_POS item of form (h, P)
-   (similar to match_hoare_disj).
- *)
-val match_hoare_prop =
-    ProofStep.prfstep_custom
-        "sep.match_hoare_prop"
-        [WithFact @{term_pat "<?P> ?c::?'a Heap <?Q>"},
-         WithItem (TY_CODE_POS, @{term_pat "(?h, ?c::?'a Heap)"}),
-         ShadowSecond]
-        PRIORITY_SHADOW
-        (fn ((id, inst), ths) => fn _ => fn _ =>
-            let
-              val tname = map (lookup_inst inst) ["h", "c", "P", "Q"]
-              val prop = UtilLogic.mk_conjs_th ths
-              val ritem = Fact (TY_MATCH_POS, tname, prop)
-            in
-              [AddItems {id = id, sc = NONE, raw_items = [ritem]}]
-            end)
 
 (* Match a MATCH_POS item with hoare triple <P * \<up>(b)> c <Q> with
    proposition b, resulting in a new MATCH_POS item (shadowing the
