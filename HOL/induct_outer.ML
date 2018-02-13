@@ -363,13 +363,21 @@ fun prop_induct_cmd (s, t) state =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
                  |> map (Thm.cterm_of ctxt)
+                 |> map (UtilLogic.to_meta_conv ctxt)
 
-      val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
-                    |> map Util.send_all_to_hyps
+      fun solve_eq eq =
+          let
+            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
+          in
+            Thm.equal_elim (meta_sym eq) th
+          end
+
+      val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
 
       val ind_concl = ind_th |> fold Thm.elim_implies ths
                              |> fold Thm.implies_intr (rev cAs)
-      val _ = writeln ("Obtained " ^ (ind_concl |> Thm.concl_of |> Syntax.string_of_term ctxt))
+      val _ = writeln ("Obtained " ^
+                       (ind_concl |> Thm.concl_of |> Syntax.string_of_term ctxt))
 
       val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
     in
