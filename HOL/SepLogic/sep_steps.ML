@@ -21,7 +21,6 @@ sig
   val get_hoare_triples: theory -> string -> thm list
 
   val add_forward_ent_prfstep: thm -> theory -> theory
-  val add_forward_ent_shadowing_prfstep: thm -> theory -> theory
   val add_backward_ent_prfstep: thm -> theory -> theory
   val entail_equiv_forward_th: thm -> thm
   val entail_equiv_backward_th: thm -> thm
@@ -215,7 +214,7 @@ fun mod_fact_ritems ctxt mod_th =
       else Update.apply_exists_ritems ctxt xs mod_th'
     end
 
-fun forward_ent_prfstep_fn shadowing ent_th ictxt item =
+fun forward_ent_prfstep_fn ent_th ictxt item =
     let
       val ctxt = IncrContext.context_of ictxt
       val (A, _) = dest_entail (prop_of' ent_th)
@@ -236,8 +235,8 @@ fun forward_ent_prfstep_fn shadowing ent_th ictxt item =
                     |> mod_fact_ritems ctxt
             val ritems = ex_ritems @ [Update.thm_to_ritem mod_th]
           in
-            [AddItems {id = id', sc = NONE, raw_items = ritems}] @
-            (if shadowing then [ShadowItem {id = id', item = item}] else [])
+            [AddItems {id = id', sc = NONE, raw_items = ritems},
+             ShadowItem {id = id', item = item}]
           end
     in
       if null insts then [] else process_inst (hd insts)
@@ -246,14 +245,8 @@ fun forward_ent_prfstep_fn shadowing ent_th ictxt item =
 fun forward_ent_prfstep ent_th =
     {name = (Util.name_of_thm ent_th) ^ "@ent",
      args = [TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
-     priority = PRIORITY_ADD,
-     func = OneStep (forward_ent_prfstep_fn false ent_th)}
-
-fun forward_ent_shadowing_prfstep ent_th =
-    {name = (Util.name_of_thm ent_th) ^ "@ent_shadow",
-     args = [TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
      priority = PRIORITY_SHADOW,
-     func = OneStep (forward_ent_prfstep_fn true ent_th)}
+     func = OneStep (forward_ent_prfstep_fn ent_th)}
 
 fun add_forward_ent_prfstep ent_th =
     let
@@ -262,9 +255,6 @@ fun add_forward_ent_prfstep ent_th =
     in
       add_prfstep prfstep
     end
-
-fun add_forward_ent_shadowing_prfstep ent_th =
-    add_prfstep (forward_ent_shadowing_prfstep ent_th)
 
 fun backward_ent_prfstep_fn ent_th ictxt item =
     let
@@ -286,16 +276,17 @@ fun backward_ent_prfstep_fn ent_th ictxt item =
                 ([ent_th, prop'] MRS @{thm entailsD_back})
                     |> apply_to_thm' (Conv.arg_conv (normalize_mod_ex_cv ctxt))
           in
-            Update.thm_update (id', res_th)
+            [Update.thm_update (id', res_th),
+             ShadowItem {id = id', item = item}]
           end
     in
-      map process_inst insts
+      if null insts then [] else process_inst (hd insts)
     end
 
 fun backward_ent_prfstep ent_th =
     {name = (Util.name_of_thm ent_th) ^ "@entback",
      args = [TypedMatch (TY_PROP, @{term_pat "~(?h |= ?P)"})],
-     priority = PRIORITY_ADD,
+     priority = PRIORITY_SHADOW,
      func = OneStep (backward_ent_prfstep_fn ent_th)}
 
 fun add_backward_ent_prfstep ent_th =
@@ -994,5 +985,4 @@ val _ = Theory.setup SepLogic.add_sep_logic_proofsteps
 val add_proc_def = SepLogic.add_proc_def
 val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
 val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
-val add_forward_ent_shadowing_prfstep = SepLogic.add_forward_ent_shadowing_prfstep
 val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep

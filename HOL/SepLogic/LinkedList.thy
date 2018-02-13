@@ -25,10 +25,10 @@ fun os_list :: "'a::heap list \<Rightarrow> 'a node ref option \<Rightarrow> ass
 | "os_list (x # l) None = false"
 setup {* fold add_rewrite_ent_rule @{thms os_list.simps} *}
 
-lemma os_list_empty [forward_ent_shadow]:
+lemma os_list_empty [forward_ent]:
   "os_list [] p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
-lemma os_list_Cons [forward_ent_shadow]:
+lemma os_list_Cons [forward_ent]:
   "os_list (x # l) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Aq. the p \<mapsto>\<^sub>r Node x q * os_list l q * \<up>(p \<noteq> None))"
 @proof @case "p = None" @qed
 

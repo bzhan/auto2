@@ -108,4 +108,6 @@ lemma uf_union_rule [hoare_triple]:
    uf_union u i j
    <is_uf n (per_union R i j)>" by auto2
 
+setup {* del_prfstep_thm @{thm is_uf_def} *}
+
 end

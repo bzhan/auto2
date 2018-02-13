@@ -35,9 +35,9 @@ fun btree :: "('a::heap, 'b::heap) rbt \<Rightarrow> ('a, 'b) rbt_node ref optio
 | "btree (rbt.Node lt c k v rt) None = false"
 setup {* fold add_rewrite_ent_rule @{thms btree.simps} *}
 
-lemma btree_Leaf [forward_ent_shadow]: "btree Leaf p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
+lemma btree_Leaf [forward_ent]: "btree Leaf p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
-lemma btree_Node [forward_ent_shadow]:
+lemma btree_Node [forward_ent]:
   "btree (rbt.Node lt c k v rt) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. the p \<mapsto>\<^sub>r Node lp c k v rp * btree lt lp * btree rt rp * \<up>(p \<noteq> None))"
 @proof @case "p = None" @qed
 

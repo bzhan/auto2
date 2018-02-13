@@ -474,7 +474,6 @@ ML_file "sep_steps_test.ML"
 
 attribute_setup sep_proc = {* setup_attrib add_proc_def *}
 attribute_setup forward_ent = {* setup_attrib add_forward_ent_prfstep *}
-attribute_setup forward_ent_shadow = {* setup_attrib add_forward_ent_shadowing_prfstep *}
 attribute_setup rewrite_ent = {* setup_attrib add_rewrite_ent_rule *}
 attribute_setup hoare_triple = {* setup_attrib add_hoare_triple_prfstep *}
 

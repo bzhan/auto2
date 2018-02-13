@@ -43,9 +43,9 @@ fun int_tree :: "interval_tree \<Rightarrow> nat node ref option \<Rightarrow> a
 | "int_tree (interval_tree.Node lt v m rt) None = false"
 setup {* fold add_rewrite_ent_rule @{thms int_tree.simps} *}
 
-lemma int_tree_Tip [forward_ent_shadow]: "int_tree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
+lemma int_tree_Tip [forward_ent]: "int_tree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
-lemma int_tree_Node [forward_ent_shadow]:
+lemma int_tree_Node [forward_ent]:
   "int_tree (interval_tree.Node lt v m rt) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. the p \<mapsto>\<^sub>r Node lp v m rp * int_tree lt lp * int_tree rt rp * \<up>(p \<noteq> None))"
 @proof @case "p = None" @qed
 

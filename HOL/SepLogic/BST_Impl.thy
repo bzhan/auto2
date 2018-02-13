@@ -25,9 +25,9 @@ fun btree :: "('a::heap, 'b::heap) tree \<Rightarrow> ('a, 'b) node ref option \
 | "btree (tree.Node lt k v rt) None = false"
 setup {* fold add_rewrite_ent_rule @{thms btree.simps} *}
 
-lemma btree_Tip [forward_ent_shadow]: "btree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
+lemma btree_Tip [forward_ent]: "btree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
-lemma btree_Node [forward_ent_shadow]:
+lemma btree_Node [forward_ent]:
   "btree (tree.Node lt k v rt) p \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Alp rp. the p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp * \<up>(p \<noteq> None))"
 @proof @case "p = None" @qed
 
