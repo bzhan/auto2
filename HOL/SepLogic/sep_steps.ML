@@ -27,6 +27,10 @@ sig
   val entail_equiv_backward_th: thm -> thm
   val add_rewrite_ent_rule: thm -> theory -> theory
 
+  val entails_goal: proofstep
+  val entails_match: proofstep
+  val entails_match_disj: proofstep
+
   val TY_CODE_POS: string
   val TY_MATCH_POS: string
   val output_code_pos_fn: item_output
@@ -79,6 +83,36 @@ fun normalize_mod_cv' ctxt ct =
 fun normalize_mod_cv ctxt ct =
     Conv.every_conv [mod_assn_conv (AssnNorm.normalize_assn_cv ctxt),
                      normalize_mod_cv' ctxt] ct
+
+fun normalize_pure_cv ct =
+    let
+      val t = Thm.term_of ct
+      val (_, P) = dest_mod t
+    in
+      if is_pure_assn P then
+        Conv.every_conv [rewr_obj_eq @{thm mod_pure'}] ct
+      else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
+        Conv.every_conv [rewr_obj_eq @{thm mod_pure_star_dist},
+                         Conv.arg1_conv normalize_pure_cv] ct
+      else
+        Conv.all_conv ct
+    end
+
+fun normalize_ex_cv ctxt ct =
+    let
+      val t = Thm.term_of ct
+      val (_, P) = dest_mod t
+    in
+      if is_ex_assn P then
+        Conv.every_conv [rewr_obj_eq @{thm mod_ex_dist},
+                         Conv.binder_conv (normalize_ex_cv o snd) ctxt] ct
+      else
+        Conv.all_conv ct
+    end
+
+fun normalize_mod_ex_cv ctxt ct =
+    Conv.every_conv [mod_assn_conv (AssnNorm.normalize_assn_cv ctxt),
+                     normalize_ex_cv ctxt] ct
 
 (* Normalize a Hoare triple *)
 fun normalize_hoare_cv' ct =
@@ -250,7 +284,7 @@ fun backward_ent_prfstep_fn ent_th ictxt item =
                   Conv.arg_conv (Conv.arg_conv (Conv.rewr_conv eq_th)))
             val res_th =
                 ([ent_th, prop'] MRS @{thm entailsD_back})
-                    |> apply_to_thm' (Conv.arg_conv (normalize_mod_cv ctxt))
+                    |> apply_to_thm' (Conv.arg_conv (normalize_mod_ex_cv ctxt))
           in
             Update.thm_update (id', res_th)
           end
@@ -300,12 +334,71 @@ val entails_goal =
                   (conj_left_th res_th, conj_right_th res_th)
               val (ex_ritems', modP_th') = mod_fact_ritems ctxt modP_th
               val goal_th' = goal_th |> apply_to_thm' (
-                    Conv.arg_conv (normalize_mod_cv ctxt))
+                    Conv.arg_conv (normalize_mod_ex_cv ctxt))
               val ritems = ex_ritems @ ex_ritems' @
                            map Update.thm_to_ritem [modP_th', goal_th']
             in
               [AddItems {id = id, sc = NONE, raw_items = ritems}]
             end)
+
+(* item1 can be either PROP or DISJ. Use directly in the PROP case. *)
+fun entails_match_fn ictxt item1 item2 =
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id = id1, prop = th1, ...} = item1
+      val {id = id2, prop = th2, ...} = item2
+      val (h, P) = dest_mod (dest_not (prop_of' th1))
+      val P' = strip_pure_assn P
+      val pat = mk_mod (h, P')
+      val id = BoxID.merge_boxes ctxt (id1, id2)
+      val insts =
+          (AssnMatcher.mod_match_strict ctxt (pat, th2) (id, fo_init))
+              |> IncrContext.replace_id_for_type ictxt
+
+      fun process_inst ((id', inst'), mod_th) =
+          let
+            val th1 = Util.subst_thm ctxt inst' th1
+          in
+            if P aconv P' then
+              Update.thm_update (id', [th1, mod_th] MRS @{thm contra_triv})
+            else let
+              val cv = Conv.every_conv [Conv.arg_conv normalize_pure_cv,
+                                        Logic_ProofSteps.norm_all_disj ctxt]
+              val th1' = apply_to_thm' cv th1
+              val res = [th1', mod_th] MRS @{thm Meson.make_refined_neg_rule}
+            in
+              Update.thm_update (id', res)
+            end
+          end
+    in
+      map process_inst insts
+    end
+
+val entails_match =
+    {name = "sep.entails_match",
+     args = [TypedMatch (TY_PROP, @{term_pat "~(?h |= ?P)"}),
+             TypedMatch (TY_PROP, @{term_pat "?h |= ?Q"})],
+     priority = PRIORITY_ADD,
+     func = TwoStep entails_match_fn}
+
+fun entails_match_disj_fn ictxt item1 item2 =
+    let
+      val {tname, ...} = item1
+      val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
+      val subs = map Thm.term_of csubs
+    in
+      if length subs > 1 then []
+      else if not (is_neg (the_single subs)) orelse
+              not (is_mod (dest_not (the_single subs))) then []
+      else entails_match_fn ictxt item1 item2
+    end
+
+val entails_match_disj =
+    {name = "sep.entails_match_disj",
+     args = [TypedMatch (TY_DISJ, @{term_pat "?A::bool"}),
+             TypedMatch (TY_PROP, @{term_pat "?h |= ?Q"})],
+     priority = PRIORITY_ADD,
+     func = TwoStep entails_match_disj_fn}
 
 fun is_bind_cmd t =
     case t of
@@ -541,12 +634,10 @@ fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
                              |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)
         val Q_goal =
             (rest_th RS all_th')
-                |> apply_to_thm' (Conv.arg_conv (normalize_mod_cv ctxt))
+                |> apply_to_thm' (Conv.arg_conv (normalize_mod_ex_cv ctxt))
 
-        val _ = trace_thm ctxt "modQ_th" modQ_th
         (* ritems for modQ_th. *)
         val (ritems_Q, modQ_th') = mod_fact_ritems ctxt modQ_th
-        val _ = trace_thm ctxt "modQ_th'" modQ_th'
       in
         ritems @ ritems_Q @ map (Update.thm_to_ritem) [modQ_th', Q_goal]
       end
@@ -892,7 +983,8 @@ val add_sep_logic_proofsteps =
       (TY_MATCH_POS, code_pos_typed_matcher)
 
     ] #> fold add_prfstep [
-      entails_goal, init_pos, rewrite_pos, match_assn, match_assn_pure,
+      entails_goal, entails_match, entails_match_disj,
+      init_pos, rewrite_pos, match_assn, match_assn_pure,
       match_assn_spatial, match_hoare_disj, match_hoare_prop, hoare_create_case
     ]
 

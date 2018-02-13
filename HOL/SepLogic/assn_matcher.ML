@@ -17,7 +17,7 @@ sig
   val assn_match_all_strict:
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val mod_match: Proof.context -> term * thm -> id_inst -> id_inst_th list
-  val assn_matcher: item_matcher
+  val mod_match_strict: Proof.context -> term * thm -> id_inst -> id_inst_th list
   val triv_assn_matcher: assn_matcher
   val emp_assn_matcher: assn_matcher
   val true_assn_matcher: assn_matcher
@@ -168,17 +168,8 @@ fun mod_match_gen strict ctxt (pat, th) (id, inst) =
 fun mod_match ctxt (pat, th) (id, inst) =
     mod_match_gen false ctxt (pat, th) (id, inst)
 
-val assn_matcher =
-    let
-      fun pre_match pat {tname, ...} _ =
-          is_mod pat andalso is_mod (Thm.term_of (the_single tname))
-
-      fun match pat (item as {prop, ...}) ctxt (id, inst) =
-          if not (pre_match pat item ctxt) then []
-          else mod_match_gen true ctxt (pat, prop) (id, inst)
-    in
-      {pre_match = pre_match, match = match}
-    end
+fun mod_match_strict ctxt (pat, th) (id, inst) =
+    mod_match_gen true ctxt (pat, th) (id, inst)
 
 (* Specific assertion matchers *)
 
@@ -357,10 +348,7 @@ fun assn_match_single ctxt (pat, ct) (id, inst) =
     end
 
 val add_assn_matcher_proofsteps =
-    fold ItemIO.add_prop_matcher [
-      (TY_PROP, assn_matcher)
-
-    ] #> fold add_assn_matcher [
+    fold add_assn_matcher [
       triv_assn_matcher, emp_assn_matcher, true_assn_matcher
     ]
 
