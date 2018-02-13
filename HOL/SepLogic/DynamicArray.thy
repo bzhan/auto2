@@ -22,13 +22,14 @@ lemma dyn_array_new_rule' [hoare_triple]:
    dyn_array_new
    <dyn_array_raw (replicate 5 undefined, 0)>" by auto2
 
-definition double_length :: "'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where [sep_proc]:
-  "double_length d = (case d of Dyn_Array al ar \<Rightarrow> do {
+fun double_length :: "'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where
+  "double_length (Dyn_Array al ar) = do {
       am \<leftarrow> Array.len ar;
       p \<leftarrow> Array.new (2 * am + 1) undefined;
       array_copy ar p am;
       return (Dyn_Array am p)
-    })"
+    }"
+declare double_length.simps [sep_proc]
 
 fun double_length_fun :: "'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
   "double_length_fun (xs, n) =
@@ -41,11 +42,12 @@ lemma double_length_rule' [hoare_triple]:
    double_length p
    <dyn_array_raw (double_length_fun (xs, n))>\<^sub>t" by auto2
 
-definition push_array_basic :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where [sep_proc]:
-  "push_array_basic x p = do {
-    Array.upd (alen p) x (aref p);
-    return (Dyn_Array (alen p + 1) (aref p))
+fun push_array_basic :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap" where
+  "push_array_basic x (Dyn_Array al ar) = do {
+    Array.upd al x ar;
+    return (Dyn_Array (al + 1) ar)
    }"
+declare push_array_basic.simps [sep_proc]
 
 fun push_array_basic_fun :: "'a \<Rightarrow> 'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
   "push_array_basic_fun x (xs, n) = (list_update xs n x, n + 1)"

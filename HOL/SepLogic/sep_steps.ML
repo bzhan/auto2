@@ -36,7 +36,6 @@ sig
   val output_code_pos_match_fn: item_output
   val code_pos_typed_matcher: item_matcher
 
-  val find_proc_def: Proof.context -> term -> thm option
   val init_pos: proofstep
   val next_code_pos_ritems: Proof.context -> thm -> thm -> thm -> raw_item list
   val match_assn: proofstep
@@ -155,10 +154,10 @@ fun add_proc_def th thy =
 
 fun get_proc_def thy nm =
     let
-      val {proc_defs, ...} =
+      val {hoare_triples, proc_defs, ...} =
           the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
     in
-      proc_defs
+      if null hoare_triples then proc_defs else []
     end
 
 (* Add the given theorem as a Hoare triple. Remove previous Hoare
@@ -474,72 +473,73 @@ val code_pos_typed_matcher =
       {pre_match = pre_match, match = match}
     end
 
-(* Find definition for a given procedure among the theorems
-   sep_proc. Return NONE or SOME (c == c').
- *)
-fun find_proc_def ctxt c =
+fun init_pos_fn ictxt item =
     let
+      val {id, sc, prop, ...} = item
+      val _ = assert (sc = 0) "init_pos"
+      val ctxt = IncrContext.context_of ictxt
       val thy = Proof_Context.theory_of ctxt
-      val nm = name_of_sep_proc c
-      val hoare_ths = get_hoare_triples thy nm
-    in
-      if null hoare_ths then
-        let
-          val ths = get_proc_def thy nm
-        in
-          SOME (Conv.first_conv (map rewr_obj_eq ths) (Thm.cterm_of ctxt c))
-          handle CTERM _ => NONE
-        end
-      else NONE
-    end
 
-(* Given theorem of form ~<P> c <Q>, attempt to expand the definition
-   of c, using find_proc_def to lookup definitions.
- *)
-fun rewrite_hoare_triple_goal ctxt th =
-    let
-      val (_, c, _) = dest_hoare_triple (get_neg (prop_of' th))
+      val (_, c, _) = dest_hoare_triple (get_neg (prop_of' prop))
+      val nm = name_of_sep_proc c
+      val proc_defs = get_proc_def thy nm
+
+      fun process_hoare_th (id, th) =
+          let
+            val ex_th = th RS @{thm hoare_tripleI}
+            val xs = map Name.internal ["h", "\<sigma>", "r"]
+            val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th
+
+            (* The pair is h_ |= P and what is to be placed into the
+               CODE_POS item.
+             *)
+            val (modP_th, code_pos_th) =
+                (conj_left_th res_th, conj_right_th res_th)
+
+            val (_, c, _) = dest_hoare_triple (get_neg (prop_of' th))
+            val is_bind = is_bind_cmd c
+            val c1 = if is_bind then fst (dest_bind c) else c
+
+            val h_t = heap_of_mod_th modP_th
+
+            val (ritems_P, modP_th') = mod_fact_ritems ctxt modP_th
+            val ritems' = ritems @ ritems_P @
+                          [Update.thm_to_ritem modP_th',
+                           Fact (TY_CODE_POS, [h_t, c1, c], code_pos_th)]
+          in
+            [AddItems {id = id, sc = SOME 1, raw_items = ritems'}]
+          end
+
+      fun process_proc_def proc_def =
+          let
+            val (lhs, _) = proc_def |> prop_of' |> dest_eq
+            val cc = Thm.cterm_of ctxt c
+            val insts = (Matcher.rewrite_match ctxt (lhs, cc) (id, fo_init))
+                            |> IncrContext.replace_id_for_type ictxt
+
+            fun process_inst ((id', _), eq_th) =
+                let
+                  val cv = Conv.every_conv [
+                        Conv.rewr_conv (meta_sym eq_th), rewr_obj_eq proc_def]
+                  val th = apply_to_thm' (Conv.arg_conv (Conv.arg1_conv cv)) prop
+                in
+                  process_hoare_th (id', th)
+                end
+          in
+            maps process_inst insts
+          end
     in
-      case find_proc_def ctxt c of
-          NONE => th
-        | SOME eq =>
-          th |> apply_to_thm' (
-            Conv.arg_conv (Conv.arg1_conv (Conv.rewr_conv eq)))
+      if null proc_defs then
+        process_hoare_th (id, prop)
+      else
+        maps process_proc_def proc_defs
     end
 
 val init_pos =
-    ProofStep.prfstep_custom
-        "sep.init_pos"
-        [WithProp @{term_pat "~<?P> ?c <?Q>"}]
-        PRIORITY_ADD
-        (fn ((id, _), ths) => fn _ => fn ctxt =>
-            let
-              (* First step, replace c by its definition in goal. *)
-              val th = rewrite_hoare_triple_goal ctxt (the_single ths)
-
-              val ex_th = th RS @{thm hoare_tripleI}
-              val xs = map Name.internal ["h", "\<sigma>", "r"]
-              val (ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th
-
-              (* The pair is h_ |= P and what is to be placed into the
-                 CODE_POS item.
-               *)
-              val (modP_th, code_pos_th) =
-                  (conj_left_th res_th, conj_right_th res_th)
-
-              val (_, c, _) = dest_hoare_triple (get_neg (prop_of' th))
-              val is_bind = is_bind_cmd c
-              val c1 = if is_bind then fst (dest_bind c) else c
-
-              val h_t = heap_of_mod_th modP_th
-
-              val (ritems_P, modP_th') = mod_fact_ritems ctxt modP_th
-              val ritems' = ritems @ ritems_P @
-                            [Update.thm_to_ritem modP_th',
-                             Fact (TY_CODE_POS, [h_t, c1, c], code_pos_th)]
-            in
-              [AddItems {id = id, sc = SOME 1, raw_items = ritems'}]
-            end)
+    {name = "sep.init_pos",
+     args = [TypedMatch (TY_PROP, @{term_pat "~<?P> ?c <?Q>"})],
+     priority = PRIORITY_ADD,
+     func = OneStep init_pos_fn}
 
 (* Produce the next CODE_POS item, as well as new variables and facts. *)
 fun next_code_pos_ritems ctxt code_pos_th mod_th hoare_th =
