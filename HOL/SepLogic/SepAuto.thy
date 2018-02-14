@@ -204,13 +204,12 @@ subsection {* Properties of assertions *}
 
 abbreviation bot_assn :: assn ("false") where "bot_assn \<equiv> \<up>False"
 
-lemma mod_false' [resolve]: "\<not> (h \<Turnstile> false * Ru)" by auto2
-
-lemma mod_star_trueI [backward]: "h \<Turnstile> P \<Longrightarrow> h \<Turnstile> P * true"
-@proof @have "addrOf h = addrOf h \<union> {}" @qed
-
-lemma top_assn_reduce: "true * true = true" by auto2
-setup {* del_prfstep_thm @{thm mod_star_trueI} *}
+lemma top_assn_reduce: "true * true = true"
+@proof
+  @have "\<forall>h. h \<Turnstile> true \<longleftrightarrow> h \<Turnstile> true * true" @with
+    @have "addrOf h = addrOf h \<union> {}"
+  @end
+@qed
 
 lemma mod_pure_star_dist [rewrite]:
   "h \<Turnstile> P * \<up>b \<longleftrightarrow> (h \<Turnstile> P \<and> b)"
@@ -220,7 +219,6 @@ lemma mod_pure_star_dist [rewrite]:
   @end
 @qed
 
-lemma mod_pure': "h \<Turnstile> \<up>b \<longleftrightarrow> (h \<Turnstile> emp \<and> b)" by auto2
 lemma pure_conj: "\<up>(P \<and> Q) = \<up>P * \<up>Q" by auto2
 
 subsection {* Entailment and its properties *}
@@ -230,18 +228,13 @@ definition entails :: "assn \<Rightarrow> assn \<Rightarrow> bool" (infix "\<Lon
 
 lemma entails_triv: "A \<Longrightarrow>\<^sub>A A" by auto2
 lemma entails_true: "A \<Longrightarrow>\<^sub>A true" by auto2
-lemma entails_frame: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> P * R \<Longrightarrow>\<^sub>A Q * R" by auto2
+lemma entails_frame [backward]: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> P * R \<Longrightarrow>\<^sub>A Q * R" by auto2
 lemma entails_frame': "\<not> (A * F \<Longrightarrow>\<^sub>A Q) \<Longrightarrow> A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not> (B * F \<Longrightarrow>\<^sub>A Q)" by auto2
 lemma entails_frame'': "\<not> (P \<Longrightarrow>\<^sub>A B * F) \<Longrightarrow> A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not> (P \<Longrightarrow>\<^sub>A A * F)" by auto2
 lemma entail_equiv_forward: "P = Q \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q" by auto2
 lemma entail_equiv_backward: "P = Q \<Longrightarrow> Q \<Longrightarrow>\<^sub>A P" by auto2
-lemma entailsD: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> h \<Turnstile> P \<Longrightarrow> h \<Turnstile> Q" by auto2
-lemma entailsD': "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> h \<Turnstile> P * R \<Longrightarrow> h \<Turnstile> Q * R" by auto2
-lemma entailsD_back: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> \<not>h \<Turnstile> Q * R \<Longrightarrow> \<not>h \<Turnstile> P * R" by auto2
+lemma entailsD [forward]: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> h \<Turnstile> P \<Longrightarrow> h \<Turnstile> Q" by auto2
 lemma entail_trans2: "A \<Longrightarrow>\<^sub>A D * B \<Longrightarrow> B \<Longrightarrow>\<^sub>A C \<Longrightarrow> A \<Longrightarrow>\<^sub>A D * C" by auto2
-lemma entail_trans2': "D * B \<Longrightarrow>\<^sub>A A \<Longrightarrow> C \<Longrightarrow>\<^sub>A B \<Longrightarrow> D * C \<Longrightarrow>\<^sub>A A" by auto2
-lemma entails_invD: "A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not>(h \<Turnstile> B) \<Longrightarrow> \<not>(h \<Turnstile> A)" by auto2
-lemma entailsE: "\<not>(P \<Longrightarrow>\<^sub>A Q) \<Longrightarrow> \<exists>h. h \<Turnstile> P \<and> \<not> h \<Turnstile> Q" by auto2
 
 lemma entails_pure': "\<not>(\<up>b \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<not>(emp \<Longrightarrow>\<^sub>A Q) \<and> b)" by auto2
 lemma entails_pure: "\<not>(P * \<up>b \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<not>(P \<Longrightarrow>\<^sub>A Q) \<and> b)" by auto2
@@ -260,19 +253,6 @@ inductive run :: "'a Heap \<Rightarrow> heap option \<Rightarrow> heap option \<
 setup {* add_case_induct_rule @{thm run.cases} *}
 setup {* fold add_resolve_prfstep @{thms run.intros(1,2)} *}
 setup {* add_forward_prfstep @{thm run.intros(3)} *}
-setup {* add_backward_prfstep @{thm run.intros(3)} *}
-
-lemma run_preserve_None [forward]:
-  "run c None \<sigma>' r \<Longrightarrow> \<sigma>' = None"
-@proof @case_induct "run c None \<sigma>' r" @qed
-
-lemma run_execute_fail [forward]:
-  "execute c h = None \<Longrightarrow> run c (Some h) \<sigma>' r \<Longrightarrow> \<sigma>' = None"
-@proof @case_induct "run c (Some h) \<sigma>' r" @qed
-
-lemma run_execute_succeed [forward]:
-  "execute c h = Some (r', h') \<Longrightarrow> run c (Some h) \<sigma>' r \<Longrightarrow> \<sigma>' = Some h' \<and> r = r'"
-@proof @case_induct "run c (Some h) \<sigma>' r" @qed
 
 lemma run_complete [resolve]:
   "\<exists>\<sigma>' r. run c \<sigma> \<sigma>' (r::'a)"
@@ -288,8 +268,7 @@ lemma run_to_execute [forward]:
 
 setup {* add_rewrite_rule @{thm execute_bind(1)} *}
 lemma runE [forward]:
-  "run f (Some h) (Some h') r' \<Longrightarrow> run (f \<bind> g) (Some h) \<sigma> r \<Longrightarrow> run (g r') (Some h') \<sigma> r"
-@proof @case "\<sigma> = None" @qed
+  "run f (Some h) (Some h') r' \<Longrightarrow> run (f \<bind> g) (Some h) \<sigma> r \<Longrightarrow> run (g r') (Some h') \<sigma> r" by auto2
 
 setup {* add_rewrite_rule @{thm Array.get_alloc} *}
 setup {* add_rewrite_rule @{thm Ref.get_alloc} *}
@@ -308,7 +287,7 @@ definition hoare_triple :: "assn \<Rightarrow> 'a Heap \<Rightarrow> ('a \<Right
 abbreviation hoare_triple' :: "assn \<Rightarrow> 'r Heap \<Rightarrow> ('r \<Rightarrow> assn) \<Rightarrow> bool" ("<_> _ <_>\<^sub>t") where
   "<P> c <Q>\<^sub>t \<equiv> <P> c <\<lambda>r. Q r * true>"
 
-lemma frame_rule:
+lemma frame_rule [backward]:
   "<P> c <Q> \<Longrightarrow> <P * R> c <\<lambda>x. Q x * R>"
 @proof
   @have "\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>
@@ -347,13 +326,6 @@ lemma bind_rule:
 (* Actual statement used: *)
 lemma bind_rule':
   "<P> f <Q> \<Longrightarrow> \<not> <P> f \<bind> g <R> \<Longrightarrow> \<exists>x. \<not> <Q x> g x <R>" using bind_rule by blast
-
-setup {* add_forward_prfstep @{thm entailsD} *}
-setup {* add_backward_prfstep @{thm entails_frame} *}
-setup {* add_backward_prfstep @{thm frame_rule} *}
-
-lemma pre_rule:
-  "\<not> <P> f <Q> \<Longrightarrow> P \<Longrightarrow>\<^sub>A P' \<Longrightarrow> \<not> <P'> f <Q>" by auto2
 
 lemma pre_rule':
   "\<not> <P * R> f <Q> \<Longrightarrow> P \<Longrightarrow>\<^sub>A P' \<Longrightarrow> \<not> <P' * R> f <Q>"
@@ -470,7 +442,7 @@ lemma ref_rule:
 
 setup {* fold del_prfstep_thm [
   @{thm sngr_assn_rule}, @{thm snga_assn_rule}, @{thm pure_assn_rule}, @{thm top_assn_rule},
-  @{thm mod_pure_star_dist}, @{thm one_assn_rule}, @{thm hoare_triple_def}] *}
+  @{thm mod_pure_star_dist}, @{thm one_assn_rule}, @{thm hoare_triple_def}, @{thm mod_ex_dist}] *}
 setup {* del_simple_datatype "pheap" *}
 
 subsection {* Definition of procedures *}
@@ -499,7 +471,7 @@ setup {* fold add_hoare_triple_prfstep [
   @{thm of_list_rule}, @{thm length_rule}, @{thm freeze_rule}] *}
 
 (* Some simple tests *)
-declare [[print_trace]]
+
 theorem "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> ref x <\<lambda>r. a \<mapsto>\<^sub>r x * r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> (!a) <\<lambda>r. a \<mapsto>\<^sub>r x * \<up>(r = x)>" by auto2

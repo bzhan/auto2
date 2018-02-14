@@ -24,7 +24,8 @@ val test_normalize_assn =
         ("P * true * true", "P * true"),
         ("true * P * true", "P * true"),
         ("true * P * true * \<up>(b)", "P * true * \<up>(b)"),
-        ("(EXA x. S x) * P * Q", "EXA x. P * Q * S x")
+        ("(EXA x. S x) * P * Q", "EXA x. P * Q * S x"),
+        ("\<up>(b1 & b2)", "\<up>b1 * \<up>b2")
       ]
     in
       map (Util.test_conv ctxt' (AssnNorm.normalize_assn_cv ctxt')

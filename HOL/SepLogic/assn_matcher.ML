@@ -16,8 +16,6 @@ sig
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val assn_match_all_strict:
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
-  val mod_match: Proof.context -> term * thm -> id_inst -> id_inst_th list
-  val mod_match_strict: Proof.context -> term * thm -> id_inst -> id_inst_th list
   val triv_assn_matcher: assn_matcher
   val emp_assn_matcher: assn_matcher
   val true_assn_matcher: assn_matcher
@@ -133,45 +131,6 @@ fun assn_match_all_strict ctxt (pat, ct) (id, inst) =
     in
       maps process_inst inst
     end
-
-(* Given pat of form pat_h |= pat_P, and a theorem h |= P, match pat_h
-   to h using regular matching, then match pat_P to P using assertion
-   matching. Return the theorem pat_h(s) |= pat_P(s).
- *)
-fun mod_match_gen strict ctxt (pat, th) (id, inst) =
-    let
-      val (pat_h, pat_P) = pat |> dest_mod
-      val (ch, cP) = th |> cprop_of' |> cdest_mod
-      val insts_h = Matcher.rewrite_match ctxt (pat_h, ch) (id, inst)
-
-      (* eq_th is pat_h(s) == h. *)
-      fun process_inst_h ((id', inst'), eq_th) =
-          let
-            val insts'' =
-                if strict then
-                  assn_match_all_strict ctxt (pat_P, cP) (id', inst')
-                else
-                  assn_match_all ctxt (pat_P, cP) (id', inst')
-            val rewr_eq_th = eq_th |> Conv.rewr_conv |> Conv.arg1_conv
-
-            (* ent_th is P ==> pat_P(s) * R. Obtain h |= pat_P(s) then
-               pat_h(s) |= pat_P(s).
-             *)
-            fun process_inst ((id', inst'), ent_th) =
-                [((id', inst'), ([ent_th, th] MRS @{thm entailsD})
-                                    |> apply_to_thm' rewr_eq_th)]
-          in
-            maps process_inst insts''
-          end
-    in
-      maps process_inst_h insts_h
-    end
-
-fun mod_match ctxt (pat, th) (id, inst) =
-    mod_match_gen false ctxt (pat, th) (id, inst)
-
-fun mod_match_strict ctxt (pat, th) (id, inst) =
-    mod_match_gen true ctxt (pat, th) (id, inst)
 
 (* Specific assertion matchers *)
 
