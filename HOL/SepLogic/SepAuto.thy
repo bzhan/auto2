@@ -231,6 +231,8 @@ definition entails :: "assn \<Rightarrow> assn \<Rightarrow> bool" (infix "\<Lon
 lemma entails_triv: "A \<Longrightarrow>\<^sub>A A" by auto2
 lemma entails_true: "A \<Longrightarrow>\<^sub>A true" by auto2
 lemma entails_frame: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> P * R \<Longrightarrow>\<^sub>A Q * R" by auto2
+lemma entails_frame': "\<not> (A * F \<Longrightarrow>\<^sub>A Q) \<Longrightarrow> A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not> (B * F \<Longrightarrow>\<^sub>A Q)" by auto2
+lemma entails_frame'': "\<not> (P \<Longrightarrow>\<^sub>A B * F) \<Longrightarrow> A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not> (P \<Longrightarrow>\<^sub>A A * F)" by auto2
 lemma entail_equiv_forward: "P = Q \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q" by auto2
 lemma entail_equiv_backward: "P = Q \<Longrightarrow> Q \<Longrightarrow>\<^sub>A P" by auto2
 lemma entailsD: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> h \<Turnstile> P \<Longrightarrow> h \<Turnstile> Q" by auto2
@@ -240,6 +242,12 @@ lemma entail_trans2: "A \<Longrightarrow>\<^sub>A D * B \<Longrightarrow> B \<Lo
 lemma entail_trans2': "D * B \<Longrightarrow>\<^sub>A A \<Longrightarrow> C \<Longrightarrow>\<^sub>A B \<Longrightarrow> D * C \<Longrightarrow>\<^sub>A A" by auto2
 lemma entails_invD: "A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not>(h \<Turnstile> B) \<Longrightarrow> \<not>(h \<Turnstile> A)" by auto2
 lemma entailsE: "\<not>(P \<Longrightarrow>\<^sub>A Q) \<Longrightarrow> \<exists>h. h \<Turnstile> P \<and> \<not> h \<Turnstile> Q" by auto2
+
+lemma entails_pure': "\<not>(\<up>b \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<not>(emp \<Longrightarrow>\<^sub>A Q) \<and> b)" by auto2
+lemma entails_pure: "\<not>(P * \<up>b \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<not>(P \<Longrightarrow>\<^sub>A Q) \<and> b)" by auto2
+lemma entails_ex: "\<not>((\<exists>\<^sub>Ax. P x) \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<exists>x. \<not>(P x \<Longrightarrow>\<^sub>A Q))" by auto2
+lemma entails_ex_post: "\<not>(P \<Longrightarrow>\<^sub>A (\<exists>\<^sub>Ax. Q x)) \<Longrightarrow> \<forall>x. \<not>(P \<Longrightarrow>\<^sub>A Q x)" by auto2
+lemma entails_pure_post: "\<not>(P \<Longrightarrow>\<^sub>A Q * \<up>b) \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> \<not>b" by auto2
 
 setup {* del_prfstep_thm @{thm entails_def} *}
 
@@ -359,10 +367,10 @@ lemma pre_ex_rule:
   "\<not> <\<exists>\<^sub>Ax. P x> f <Q> \<longleftrightarrow> (\<exists>x. \<not> <P x> f <Q>)" by auto2
 
 lemma pre_pure_rule:
-  "\<not> <P * \<up>(b)> f <Q> \<longleftrightarrow> \<not> <P> f <Q> \<and> b" by auto2
+  "\<not> <P * \<up>b> f <Q> \<longleftrightarrow> \<not> <P> f <Q> \<and> b" by auto2
 
 lemma pre_pure_rule':
-  "\<not> <\<up>(b)> f <Q> \<longleftrightarrow> \<not> <emp> f <Q> \<and> b" by auto2
+  "\<not> <\<up>b> f <Q> \<longleftrightarrow> \<not> <emp> f <Q> \<and> b" by auto2
 
 lemma post_rule:
   "<P> f <Q> \<Longrightarrow> \<forall>x. Q x \<Longrightarrow>\<^sub>A R x \<Longrightarrow> <P> f <R>" by auto2
@@ -491,7 +499,7 @@ setup {* fold add_hoare_triple_prfstep [
   @{thm of_list_rule}, @{thm length_rule}, @{thm freeze_rule}] *}
 
 (* Some simple tests *)
-
+declare [[print_trace]]
 theorem "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> ref x <\<lambda>r. a \<mapsto>\<^sub>r x * r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> (!a) <\<lambda>r. a \<mapsto>\<^sub>r x * \<up>(r = x)>" by auto2

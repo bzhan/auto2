@@ -71,7 +71,8 @@ fun assn_match_term ctxt (pat, ct) (id, inst) =
               ((id, inst'), th)
             else if UtilArith.is_times rhs andalso
                     dest_arg rhs aconv exp_rhs then
-              ((id, inst'), th |> apply_to_entail_r assn_comm_cv)
+              ((id, inst'),
+               th |> apply_to_entail_r (ACUtil.comm_cv assn_ac_info))
             else
               raise Fail "assn_match_term"
           end
@@ -100,7 +101,8 @@ fun assn_match_all ctxt (pat, ct) (id, inst) =
               fun process_inst' ((id'', inst''), th') =
                   let
                     val res = ([th, th'] MRS @{thm entail_trans2})
-                                  |> apply_to_entail_r assn_assoc_sym_cv
+                                  |> apply_to_entail_r (
+                                ACUtil.assoc_sym_cv assn_ac_info)
                   in
                     ((id'', inst''), res)
                   end
@@ -248,7 +250,7 @@ fun entail_matcher' entail_th ctxt r ct id =
                 let
                   val cv = eq_th |> Conv.rewr_conv |> Util.argn_conv 1
                                  |> ACUtil.ac_last_conv assn_ac_info
-                  val th' = th |> apply_to_entail_r assn_comm_cv
+                  val th' = th |> apply_to_entail_r (ACUtil.comm_cv assn_ac_info)
                 in
                   (id'', ([th', entail_th'] MRS @{thm entail_trans2})
                              |> apply_to_entail_r cv)
@@ -336,7 +338,7 @@ fun assn_match_single ctxt (pat, ct) (id, inst) =
                         Conv.every_conv [
                           ACUtil.move_outmost assn_ac_info t',
                           Conv.arg_conv (Conv.rewr_conv (meta_sym eq_th)),
-                          assn_comm_cv] ct
+                          ACUtil.comm_cv assn_ac_info] ct
                 in
                   ((id', inst'), eq_th')
                 end

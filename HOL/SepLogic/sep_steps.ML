@@ -6,13 +6,10 @@ type proc_info = {
   hoare_triples: thm list
 }
 
-val hoare_shadowing =
-    Attrib.setup_config_bool @{binding "hoare_shadowing"} (K false)
-
 signature SEP_LOGIC =
 sig
-  val normalize_mod_cv: Proof.context -> conv
   val normalize_hoare_goal_cv: Proof.context -> conv
+  val normalize_entail_goal_cv: Proof.context -> conv
 
   val empty_proc_info: proc_info
   val add_proc_def: thm -> theory -> theory
@@ -24,11 +21,8 @@ sig
   val add_backward_ent_prfstep: thm -> theory -> theory
   val add_rewrite_ent_rule: thm -> theory -> theory
 
-  val entails_goal: proofstep
-  val entails_match: proofstep
-  val entails_match_disj: proofstep
-
   val TY_CODE_POS: string
+  val TY_ENTAIL: string
 
   val init_pos: proofstep
   val rewrite_pos: proofstep
@@ -47,61 +41,6 @@ structure SepLogic : SEP_LOGIC =
 struct
 
 open SepUtil
-
-(* Normalize a statement of the form h |= P, which can appear as
-   either fact or goal. Assume P itself is normalized.
- *)
-fun normalize_mod_cv' ctxt ct =
-    let
-      val t = Thm.term_of ct
-      val (_, P) = dest_mod t
-    in
-      if is_pure_assn P then
-        rewr_obj_eq @{thm mod_pure'} ct
-      else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
-        Conv.every_conv [rewr_obj_eq @{thm mod_pure_star_dist},
-                         Conv.arg1_conv (normalize_mod_cv' ctxt)] ct
-      else if is_ex_assn P then
-        Conv.every_conv [rewr_obj_eq @{thm mod_ex_dist},
-                         Conv.binder_conv (normalize_mod_cv' o snd) ctxt] ct
-      else
-        Conv.all_conv ct
-    end
-
-(* Full normalization of a statement of the form h |= P. *)
-fun normalize_mod_cv ctxt ct =
-    Conv.every_conv [mod_assn_conv (AssnNorm.normalize_assn_cv ctxt),
-                     normalize_mod_cv' ctxt] ct
-
-fun normalize_pure_cv ct =
-    let
-      val t = Thm.term_of ct
-      val (_, P) = dest_mod t
-    in
-      if is_pure_assn P then
-        Conv.every_conv [rewr_obj_eq @{thm mod_pure'}] ct
-      else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
-        Conv.every_conv [rewr_obj_eq @{thm mod_pure_star_dist},
-                         Conv.arg1_conv normalize_pure_cv] ct
-      else
-        Conv.all_conv ct
-    end
-
-fun normalize_ex_cv ctxt ct =
-    let
-      val t = Thm.term_of ct
-      val (_, P) = dest_mod t
-    in
-      if is_ex_assn P then
-        Conv.every_conv [rewr_obj_eq @{thm mod_ex_dist},
-                         Conv.binder_conv (normalize_ex_cv o snd) ctxt] ct
-      else
-        Conv.all_conv ct
-    end
-
-fun normalize_mod_ex_cv ctxt ct =
-    Conv.every_conv [mod_assn_conv (AssnNorm.normalize_assn_cv ctxt),
-                     normalize_ex_cv ctxt] ct
 
 (* Normalize a Hoare triple goal. *)
 fun normalize_hoare_goal_cv' ctxt ct =
@@ -129,6 +68,32 @@ fun normalize_hoare_goal_cv ctxt ct =
       Conv.every_conv [
         Conv.arg_conv (Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)),
         normalize_hoare_goal_cv' ctxt] ct
+
+fun normalize_entail_goal_cv' ctxt ct =
+    let
+      val t = Thm.term_of ct
+      val (P, _) = t |> dest_not |> dest_entail
+    in
+      if is_pure_assn P then
+        rewr_obj_eq @{thm entails_pure'} ct
+      else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
+        Conv.every_conv [rewr_obj_eq @{thm entails_pure},
+                         Conv.arg1_conv (normalize_entail_goal_cv' ctxt)] ct
+      else if is_ex_assn P then
+        Conv.every_conv [
+          rewr_obj_eq @{thm entails_ex},
+          Conv.binder_conv (normalize_entail_goal_cv' o snd) ctxt] ct
+      else
+        Conv.all_conv ct
+    end
+
+fun normalize_entail_goal_cv ctxt ct =
+    if is_ex (Thm.term_of ct) then
+      Conv.binder_conv (normalize_entail_goal_cv o snd) ctxt ct
+    else
+      Conv.every_conv [
+        Conv.arg_conv (Conv.binop_conv (AssnNorm.normalize_assn_cv ctxt)),
+        normalize_entail_goal_cv' ctxt] ct
 
 (* Data maintained for each imperative command. *)
 structure Data = Theory_Data (
@@ -186,167 +151,6 @@ fun get_hoare_triples thy nm =
       hoare_triples
     end
 
-(* Given fact of form h |= P, normalize, then use apply_exists when
-   necessary.
- *)
-fun mod_fact_ritems ctxt mod_th =
-    let
-      val mod_th' = apply_to_thm' (normalize_mod_cv ctxt) mod_th
-      val (vars, _) = (UtilLogic.strip_exists (prop_of' mod_th'))
-                          |> Util.replace_vars ctxt
-                          |> Util.replace_internal_vars
-      val xs = map (fst o Term.dest_Free) vars
-    in
-      if null xs then ([], mod_th')
-      else Update.apply_exists_ritems ctxt xs mod_th'
-    end
-
-fun forward_ent_prfstep_fn ent_th ictxt item =
-    let
-      val ctxt = IncrContext.context_of ictxt
-      val (A, _) = dest_entail (prop_of' ent_th)
-      val {id, prop, ...} = item
-      val (_, P) = dest_mod (prop_of' prop)
-      val cP = Thm.cterm_of ctxt P
-
-      val insts = (AssnMatcher.assn_match_single ctxt (A, cP) (id, fo_init))
-                      |> IncrContext.replace_id_for_type ictxt
-
-      fun process_inst ((id', _), eq_th) =
-          (* eq_th is P == pat(inst) * P' *)
-          let
-            val prop' = prop |> apply_to_thm' (
-                  Conv.arg_conv (Conv.rewr_conv eq_th))
-            val (ex_ritems, mod_th) =
-                ([ent_th, prop'] MRS @{thm entailsD'})
-                    |> mod_fact_ritems ctxt
-            val ritems = ex_ritems @ [Update.thm_to_ritem mod_th]
-          in
-            [AddItems {id = id', sc = NONE, raw_items = ritems},
-             ShadowItem {id = id', item = item}]
-          end
-    in
-      if null insts then [] else process_inst (hd insts)
-    end
-
-fun forward_ent_prfstep ent_th =
-    {name = Util.name_of_thm ent_th ^ "@ent",
-     args = [TypedMatch (TY_PROP, @{term_pat "?h |= ?P"})],
-     priority = PRIORITY_SHADOW,
-     func = OneStep (forward_ent_prfstep_fn ent_th)}
-
-fun backward_ent_prfstep_fn ent_th ictxt item =
-    let
-      val ctxt = IncrContext.context_of ictxt
-      val (_, B) = dest_entail (prop_of' ent_th)
-      val {id, prop, ...} = item
-      val (_, P) = prop |> prop_of' |> dest_not |> dest_mod
-      val cP = Thm.cterm_of ctxt P
-
-      val insts = (AssnMatcher.assn_match_single ctxt (B, cP) (id, fo_init))
-                      |> IncrContext.replace_id_for_type ictxt
-
-      fun process_inst ((id', _), eq_th) =
-          (* eq_th is P == pat(inst) * P' *)
-          let
-            val prop' = prop |> apply_to_thm' (
-                  Conv.arg_conv (Conv.arg_conv (Conv.rewr_conv eq_th)))
-            val res_th =
-                ([ent_th, prop'] MRS @{thm entailsD_back})
-                    |> apply_to_thm' (Conv.arg_conv (normalize_mod_ex_cv ctxt))
-          in
-            [Update.thm_update (id', res_th),
-             ShadowItem {id = id', item = item}]
-          end
-    in
-      if null insts then [] else process_inst (hd insts)
-    end
-
-fun backward_ent_prfstep ent_th =
-    {name = (Util.name_of_thm ent_th) ^ "@entback",
-     args = [TypedMatch (TY_PROP, @{term_pat "~(?h |= ?P)"})],
-     priority = PRIORITY_SHADOW,
-     func = OneStep (backward_ent_prfstep_fn ent_th)}
-
-val entails_goal =
-    ProofStep.prfstep_custom
-        "sep.entails_goal"
-        [WithProp @{term_pat "~(entails ?A ?B)"}]
-        PRIORITY_ADD
-        (fn ((id, _), ths) => fn _ => fn ctxt =>
-            let
-              val ex_th = ths MRS @{thm entailsE}
-              val xs = map Name.internal ["h"]
-              val (ex_ritems, res_th) = Update.apply_exists_ritems ctxt xs ex_th
-              val (modP_th, goal_th) =
-                  (conj_left_th res_th, conj_right_th res_th)
-              val (ex_ritems', modP_th') = mod_fact_ritems ctxt modP_th
-              val goal_th' = goal_th |> apply_to_thm' (
-                    Conv.arg_conv (normalize_mod_ex_cv ctxt))
-              val ritems = ex_ritems @ ex_ritems' @
-                           map Update.thm_to_ritem [modP_th', goal_th']
-            in
-              [AddItems {id = id, sc = NONE, raw_items = ritems}]
-            end)
-
-(* item1 can be either PROP or DISJ. Use directly in the PROP case. *)
-fun entails_match_fn ictxt item1 item2 =
-    let
-      val ctxt = IncrContext.context_of ictxt
-      val {id = id1, prop = th1, ...} = item1
-      val {id = id2, prop = th2, ...} = item2
-      val (h, P) = dest_mod (dest_not (prop_of' th1))
-      val P' = strip_pure_assn P
-      val pat = mk_mod (h, P')
-      val id = BoxID.merge_boxes ctxt (id1, id2)
-      val insts = (AssnMatcher.mod_match_strict ctxt (pat, th2) (id, fo_init))
-                      |> IncrContext.replace_id_for_type ictxt
-
-      fun process_inst ((id', inst'), mod_th) =
-          let
-            val th1 = Util.subst_thm ctxt inst' th1
-          in
-            if P aconv P' then
-              Update.thm_update (id', [th1, mod_th] MRS @{thm contra_triv})
-            else let
-              val cv = Conv.every_conv [Conv.arg_conv normalize_pure_cv,
-                                        Logic_ProofSteps.norm_all_disj ctxt]
-              val th1' = apply_to_thm' cv th1
-              val res = [th1', mod_th] MRS @{thm Meson.make_refined_neg_rule}
-            in
-              Update.thm_update (id', res)
-            end
-          end
-    in
-      map process_inst insts
-    end
-
-val entails_match =
-    {name = "sep.entails_match",
-     args = [TypedMatch (TY_PROP, @{term_pat "~(?h |= ?P)"}),
-             TypedMatch (TY_PROP, @{term_pat "?h |= ?Q"})],
-     priority = PRIORITY_ADD,
-     func = TwoStep entails_match_fn}
-
-fun entails_match_disj_fn ictxt item1 item2 =
-    let
-      val {tname, ...} = item1
-      val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
-      val subs = map Thm.term_of csubs
-    in
-      if length subs > 1 then []
-      else if not (is_neg (the_single subs)) orelse
-              not (is_mod (dest_not (the_single subs))) then []
-      else entails_match_fn ictxt item1 item2
-    end
-
-val entails_match_disj =
-    {name = "sep.entails_match_disj",
-     args = [TypedMatch (TY_DISJ, @{term_pat "?A::bool"}),
-             TypedMatch (TY_PROP, @{term_pat "?h |= ?Q"})],
-     priority = PRIORITY_ADD,
-     func = TwoStep entails_match_disj_fn}
-
 fun is_bind_cmd c =
     case c of
         Const (@{const_name bind}, _) $ _ $ _ => true
@@ -377,12 +181,22 @@ val TY_ENTAIL = "ENTAIL"
 fun is_neg_hoare_triple t =
     is_neg t andalso is_hoare_triple (dest_not t)
 
+fun is_neg_entail t =
+    is_neg t andalso is_entail (dest_not t)
+
 fun norm_precond ctxt ct =
     Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt) ct
 
-fun hoare_goal_ritems ctxt th =
+fun norm_entail_conds ctxt ct =
+    Conv.binop_conv (AssnNorm.normalize_assn_cv ctxt) ct
+
+fun is_implies_item item =
+    Util.is_implies (Thm.prop_of (#prop item))
+
+fun hoare_goal_update ctxt (id, th) =
     if Util.is_implies (Thm.prop_of th) then
-      [Fact (TY_CODE_POS, [Thm.prop_of th], th)]
+      AddItems {id = id, sc = SOME 1,
+                raw_items = [Fact (TY_CODE_POS, [Thm.prop_of th], th)]}
     else let
       val th' = th |> apply_to_thm' (normalize_hoare_goal_cv ctxt)
       val (vars, _) = (UtilLogic.strip_exists (prop_of' th'))
@@ -397,25 +211,201 @@ fun hoare_goal_ritems ctxt th =
       val (res_th', rest) =
           res_th |> Logic_ProofSteps.split_conj_gen_th ctxt
                  |> filter_split (is_neg_hoare_triple o prop_of')
-      val _ = assert (length res_th' = 1) "hoare_goal_ritems"
+      val _ = assert (length res_th' = 1) "hoare_goal_update"
 
       val res_th' = res_th' |> the_single
                             |> apply_to_thm' (Conv.arg_conv (norm_precond ctxt))
-    in
-      ex_ritems @ map Update.thm_to_ritem rest @
-      [Fact (TY_CODE_POS, [prop_of' res_th'], res_th')]
-    end
 
-fun hoare_goal_update ctxt (id, th) =
-    AddItems {id = id, sc = SOME 1, raw_items = hoare_goal_ritems ctxt th}
+      val ritems = ex_ritems @ map Update.thm_to_ritem rest @
+                   [Fact (TY_CODE_POS, [prop_of' res_th'], res_th')]
+    in
+      AddItems {id = id, sc = SOME 1, raw_items = ritems}
+    end
 
 fun entail_goal_update ctxt (id, th) =
     if Util.is_implies (Thm.prop_of th) then
       AddItems {id = id, sc = SOME 1,
                 raw_items = [Fact (TY_ENTAIL, [Thm.prop_of th], th)]}
-    else
-      AddItems {id = id, sc = SOME 1,
-                raw_items = [Update.thm_to_ritem th]}
+    else let
+      val th' = th |> apply_to_thm' (normalize_entail_goal_cv ctxt)
+      val (vars, _) = (UtilLogic.strip_exists (prop_of' th'))
+                          |> Util.replace_vars ctxt
+                          |> Util.replace_internal_vars
+      val xs = map (fst o Term.dest_Free) vars
+
+      val (ex_ritems, res_th) =
+          if length xs = 0 then ([], th')
+          else Update.apply_exists_ritems ctxt xs th'
+
+      val (res_th', rest) =
+          res_th |> Logic_ProofSteps.split_conj_gen_th ctxt
+                 |> filter_split (is_neg_entail o prop_of')
+      val _ = assert (length res_th' = 1) "hoare_entail_update"
+
+      val res_th' =
+          res_th' |> the_single
+                  |> apply_to_thm' (Conv.arg_conv (norm_entail_conds ctxt))
+
+      val ritems = ex_ritems @ map Update.thm_to_ritem rest @
+                   [Fact (TY_ENTAIL, [prop_of' res_th'], res_th')]
+    in
+      AddItems {id = id, sc = SOME 1, raw_items = ritems}
+    end
+
+fun init_entail_fn ictxt item =
+    if not (IncrContext.is_single_ictxt ictxt) then [] else
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id, prop, ...} = item
+    in
+      [entail_goal_update ctxt (id, prop)]
+    end
+
+val init_entail =
+    {name = "sep.init_entail",
+     args = [TypedMatch (TY_PROP, @{term_pat "~entails ?A ?B"})],
+     priority = PRIORITY_ADD,
+     func = OneStep init_entail_fn}
+
+(* Apply entailment to the pre-condition P of P ==>_A Q. *)
+fun forward_ent_prfstep_fn ent_th ictxt item =
+    if is_implies_item item then [] else
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val (A, _) = dest_entail (prop_of' ent_th)
+      val {id, prop, ...} = item
+      val (P, _) = prop |> prop_of' |> dest_not |> dest_entail
+      val cP = Thm.cterm_of ctxt P
+
+      val insts = (AssnMatcher.assn_match_single ctxt (A, cP) (id, fo_init))
+                      |> IncrContext.replace_id_for_type ictxt
+
+      fun process_inst ((id', _), eq_th) =
+          (* eq_th is P == pat(inst) * P' *)
+          let
+            val prop' = prop |> apply_to_thm' (
+                  Conv.arg_conv (Conv.arg1_conv (Conv.rewr_conv eq_th)))
+            val prop'' = [prop', ent_th] MRS @{thm entails_frame'}
+          in
+            [entail_goal_update ctxt (id', prop''),
+             ShadowItem {id = id', item = item}]
+          end
+    in
+      if null insts then [] else process_inst (hd insts)
+    end
+
+fun forward_ent_prfstep ent_th =
+    {name = Util.name_of_thm ent_th ^ "@ent",
+     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     priority = PRIORITY_SHADOW,
+     func = OneStep (forward_ent_prfstep_fn ent_th)}
+
+fun backward_ent_prfstep_fn ent_th ictxt item =
+    if is_implies_item item then [] else
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val (_, B) = dest_entail (prop_of' ent_th)
+      val {id, prop, ...} = item
+      val (_, Q) = prop |> prop_of' |> dest_not |> dest_entail
+      val cQ = Thm.cterm_of ctxt Q
+
+      val insts = (AssnMatcher.assn_match_single ctxt (B, cQ) (id, fo_init))
+                      |> IncrContext.replace_id_for_type ictxt
+
+      fun process_inst ((id', _), eq_th) =
+          (* eq_th is P == pat(inst) * P' *)
+          let
+            val prop' = prop |> apply_to_thm' (
+                  Conv.arg_conv (Conv.arg_conv (Conv.rewr_conv eq_th)))
+            val prop'' = [prop', ent_th] MRS @{thm entails_frame''}
+          in
+            [entail_goal_update ctxt (id', prop''),
+             ShadowItem {id = id', item = item}]
+          end
+    in
+      if null insts then [] else process_inst (hd insts)
+    end
+
+fun backward_ent_prfstep ent_th =
+    {name = Util.name_of_thm ent_th ^ "@entback",
+     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     priority = PRIORITY_SHADOW,
+     func = OneStep (backward_ent_prfstep_fn ent_th)}
+
+fun group_pure_assn ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_pure_assn t then
+        mult_emp_left ct
+      else if UtilArith.is_times t then
+        if has_pure_assn (dest_arg1 t) then
+          Conv.every_conv [
+            Conv.arg1_conv group_pure_assn,
+            ACUtil.assoc_cv assn_ac_info,
+            Conv.arg_conv (rewr_obj_eq (obj_sym @{thm pure_conj}))] ct
+        else
+          Conv.all_conv ct
+      else
+        Conv.all_conv ct
+    end
+
+fun make_sch_th ctxt th =
+    case Thm.prop_of th of
+        Const (@{const_name Pure.all}, _) $ Abs (nm, T, _) =>
+        let
+          val var = Var ((nm,0),T)
+        in
+          Thm.forall_elim (Thm.cterm_of ctxt var) th
+        end
+      | _ => raise Fail "make_sch_th"
+
+fun entails_norm_ex ctxt th =
+    let
+      val t = prop_of' th
+      val (_, Q) = t |> dest_not |> dest_entail
+    in
+      if is_ex_assn Q then
+        (th RS @{thm entails_ex_post})
+            |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
+            |> make_sch_th ctxt
+            |> entails_norm_ex ctxt
+      else th
+    end
+
+(* Solve an entailment. *)
+fun entails_resolve_fn ictxt item =
+    if is_implies_item item then [] else
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id, prop, ...} = item
+      val prop = entails_norm_ex ctxt prop
+      val (P, Q) = dest_entail (get_neg (prop_of' prop))
+      val cP = Thm.cterm_of ctxt P
+      val Q' = strip_pure_assn Q
+      val insts = (AssnMatcher.assn_match_all_strict ctxt (Q', cP) (id, fo_init))
+                      |> IncrContext.replace_id_for_type ictxt
+
+      fun process_inst ((id', _), mod_th) =
+          if has_pure_assn Q then
+            let
+              val prop' = prop |> apply_to_thm' (
+                    Conv.arg_conv (Conv.arg_conv group_pure_assn))
+              val res = [prop', mod_th] MRS @{thm entails_pure_post}
+            in
+              Update.thm_update (id', res)
+            end
+          else
+            Update.thm_update (id', [prop, mod_th] MRS @{thm contra_triv})
+    in
+      map process_inst insts
+    end
+
+val entails_resolve =
+    {name = "sep.entails_resolve",
+     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     priority = PRIORITY_RESOLVE,
+     func = OneStep entails_resolve_fn}
 
 (* Initialize CODE_POS item from a Hoare triple goal. *)
 fun init_pos_fn ictxt item =
@@ -460,11 +450,8 @@ val init_pos =
      priority = PRIORITY_ADD,
      func = OneStep init_pos_fn}
 
-fun is_implies_code_pos item =
-    Util.is_implies (Thm.prop_of (#prop item))
-
 fun forward_hoare_prfstep_fn ent_th ictxt item =
-    if is_implies_code_pos item then [] else
+    if is_implies_item item then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val (A, _) = dest_entail (prop_of' ent_th)
@@ -509,11 +496,10 @@ fun add_backward_ent_prfstep ent_th thy =
     let
       val name = Util.name_of_thm ent_th
       val ctxt = Proof_Context.init_global thy
-      val prfstep = backward_ent_prfstep ent_th
       val _ = writeln ("Add backward entailment " ^ name ^ "\n" ^
                        Syntax.string_of_term ctxt (prop_of' ent_th))
     in
-      add_prfstep prfstep thy
+      add_prfstep (backward_ent_prfstep ent_th) thy
     end
 
 fun add_rewrite_ent_rule th thy =
@@ -556,7 +542,7 @@ fun rewr_first_cmd eq_th ct =
 (* Apply rewrite to the first command in CODE_POS. *)
 fun rewrite_pos_fn ictxt item1 item2 =
     if not (IncrContext.is_single_ictxt ictxt) then [] else
-    if is_implies_code_pos item1 then [] else
+    if is_implies_item item1 then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val {id = id1, prop = th, ...} = item1
@@ -651,7 +637,7 @@ fun match_hoare_th id ictxt hoare_th goal item =
    CODE_POS item).
  *)
 fun match_hoare_prop_fn ictxt item1 item2 =
-    if is_implies_code_pos item2 then [] else
+    if is_implies_item item2 then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val {id = id1, prop = hoare_th, ...} = item1
@@ -670,7 +656,7 @@ val match_hoare_prop =
 
 (* For DISJ items, check that it is a Hoare triple. *)
 fun match_hoare_disj_fn ictxt item1 item2 =
-    if is_implies_code_pos item2 then [] else
+    if is_implies_item item2 then [] else
     let
       val {tname, ...} = item1
       val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
@@ -791,7 +777,7 @@ val entail_create_case =
 
 (* Matching CODE_POS with an existing Hoare triple. *)
 fun hoare_triple_fn ictxt item =
-    if is_implies_code_pos item then [] else
+    if is_implies_item item then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val thy = Proof_Context.theory_of ctxt
@@ -840,17 +826,29 @@ fun code_pos_terms ts =
       end
     end
 
+fun entail_terms ts =
+    let
+      val t = the_single ts
+    in
+      if fastype_of t = propT then []
+      else let
+        val (P, Q) = t |> dest_not |> dest_entail
+      in
+        [P, Q]
+      end
+    end
+
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
       (TY_CODE_POS, SOME code_pos_terms, NONE),
-      (TY_ENTAIL, SOME (K []), NONE)
+      (TY_ENTAIL, SOME entail_terms, NONE)
 
     ] #> fold ItemIO.add_typed_matcher [
       (TY_CODE_POS, ItemIO.univ_matcher),
       (TY_ENTAIL, ItemIO.univ_matcher)
 
     ] #> fold add_prfstep [
-      entails_goal, entails_match, entails_match_disj,
+      init_entail, entails_resolve,
       init_pos, rewrite_pos, match_assn_pure, hoare_triple,
       match_hoare_disj, match_hoare_prop, hoare_create_case,
       entail_pure, entail_create_case

@@ -7,8 +7,6 @@ sig
   val emp: term
   val assn_true: term
   val assn_ac_info: ac_info
-  val assn_comm_cv: conv
-  val assn_assoc_sym_cv: conv
   val is_true_assn: term -> bool
   val is_entail: term -> bool
   val dest_entail: term -> term * term
@@ -46,8 +44,6 @@ val pheapT = @{typ pheap}
 val emp = @{term emp}
 val assn_true = @{term true}
 val assn_ac_info = Nat_Util.times_ac_on_typ @{theory} assnT
-val assn_comm_cv = rewr_obj_eq (#comm_th assn_ac_info)
-val assn_assoc_sym_cv = rewr_obj_eq (obj_sym (#assoc_th assn_ac_info))
 
 fun is_true_assn t =
     case t of
