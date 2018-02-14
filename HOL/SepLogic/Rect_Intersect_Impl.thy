@@ -46,7 +46,8 @@ lemma op_int_is_interval:
 setup {* add_forward_prfstep_cond @{thm op_int_is_interval} [with_term "op_int (?ops ! ?k)"] *}
 
 lemma rect_inter_next_rule [hoare_triple]:
-  "<a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b * \<up>(is_rect_list rects) * \<up>(k < length (all_ops rects))>
+  "is_rect_list rects \<Longrightarrow> k < length (all_ops rects) \<Longrightarrow>
+   <a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b>
    rect_inter_next a b k
    <\<lambda>r. a \<mapsto>\<^sub>a all_ops rects * int_tree_set (apply_ops_k_next rects S k) r>\<^sub>t" by auto2
 
@@ -72,8 +73,8 @@ partial_function (heap) rect_inter_impl ::
 declare rect_inter_impl.simps [sep_proc]
 
 lemma rect_inter_to_fun_ind [hoare_triple]:
-  "<a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b *
-   \<up>(is_rect_list rects) * \<up>(k < length (all_ops rects))>
+  "is_rect_list rects \<Longrightarrow> k < length (all_ops rects) \<Longrightarrow>
+   <a \<mapsto>\<^sub>a all_ops rects * int_tree_set S b>
    rect_inter_impl a b k
    <\<lambda>r. a \<mapsto>\<^sub>a all_ops rects * \<up>(r \<longleftrightarrow> rect_inter rects S k)>\<^sub>t"
 @proof
@@ -101,7 +102,8 @@ definition rect_inter_all :: "nat rectangle list \<Rightarrow> bool Heap" where
 declare rect_inter_all_def [sep_proc]
 
 lemma rect_inter_all_correct:
-  "<\<up>(is_rect_list rects)>
+  "is_rect_list rects \<Longrightarrow>
+   <emp>
    rect_inter_all rects
    <\<lambda>r. \<up>(r = has_rect_overlap rects)>\<^sub>t" by auto2
 

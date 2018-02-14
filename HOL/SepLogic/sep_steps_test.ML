@@ -3,16 +3,13 @@
 local
   open SepUtil
   val ctxt = @{context}
+  val ctxt' = ctxt |> fold Variable.auto_fixes [
+        Free ("P", assnT), Free ("Q", assnT), Free ("R", assnT),
+        Free ("S", natT --> assnT), Free ("T", natT --> assnT)]
 in
 
 val test_normalize_assn =
     let
-      val ctxt' = ctxt |> fold Variable.auto_fixes [
-            Free ("P", assnT), Free ("Q", assnT), Free ("R", assnT),
-            Free ("S", natT --> assnT), Free ("T", natT --> assnT)]
-      val test = Util.test_conv ctxt' (AssnNorm.normalize_assn_cv ctxt')
-                                "normalize_assn"
-
       val test_data = [
         ("P * (Q * R)", "P * Q * R"),
         ("P * \<up>(b)", "P * \<up>(b)"),
@@ -30,17 +27,13 @@ val test_normalize_assn =
         ("(EXA x. S x) * P * Q", "EXA x. P * Q * S x")
       ]
     in
-      map test test_data
+      map (Util.test_conv ctxt' (AssnNorm.normalize_assn_cv ctxt')
+                          "normalize_assn")
+          test_data
     end
 
 val test_normalize_mod =
     let
-      val ctxt' = ctxt |> fold Variable.auto_fixes [
-            Free ("P", assnT), Free ("S", natT --> assnT),
-            Free ("T", natT --> assnT)]
-      val test = Util.test_conv ctxt' (SepLogic.normalize_mod_cv ctxt')
-                                "normalize_mod"
-
       val test_data = [
         ("h |= (P * \<up>(b))", "(h |= P) & b"),
         ("h |= (\<up>(b) * P)", "(h |= P) & b"),
@@ -51,25 +44,41 @@ val test_normalize_mod =
         ("h |= P * emp", "h |= P")
       ]
     in
-      map test test_data
+      map (Util.test_conv ctxt' (SepLogic.normalize_mod_cv ctxt')
+                          "normalize_mod")
+          test_data
     end
 
-val test_normalize_hoare =
+val test_contract_hoare =
     let
-      val ctxt' = ctxt |> fold Variable.auto_fixes [
-            Free ("P", assnT), Free ("S", natT --> assnT),
-            Free ("T", natT --> assnT)]
-      val test = Util.test_conv ctxt' (SepLogic.normalize_hoare_cv ctxt')
-                                "normalize_hoare"
-
       val test_data = [
-        ("<P * \<up>(b)> c <Q>", "<P * \<up>(b)> c <Q>"),
-        ("b --> <P> c <Q>", "<P * \<up>(b)> c <Q>"),
-        ("b1 --> b2 --> <P> c <Q>", "<P * \<up>(b2) * \<up>(b1)> c <Q>"),
-        ("b1 --> <P * \<up>(b2)> c <Q>", "<P * \<up>(b2) * \<up>(b1)> c <Q>")
+        ("<P * \<up>(b)> c <S>", "<P * \<up>(b)> c <S>"),
+        ("b --> <P> c <S>", "<P * \<up>(b)> c <S>"),
+        ("b1 --> b2 --> <P> c <S>", "<P * \<up>(b2) * \<up>(b1)> c <S>"),
+        ("b1 --> <P * \<up>(b2)> c <S>", "<P * \<up>(b2) * \<up>(b1)> c <S>"),
+        ("<Q * P> c <S>", "<P * Q> c <S>")
       ]
     in
-      map test test_data
+      map (Util.test_conv ctxt' (SepLogic.contract_hoare_cv ctxt')
+                          "contract_hoare")
+          test_data
+    end
+
+val test_normalize_hoare_goal =
+    let
+      val test_data = [
+        ("~<P> c <S>", "~<P> c <S>"),
+        ("~<\<up>(b)> c <S>", "~<emp> c <S> & b"),
+        ("~<P * \<up>(b)> c <S>", "~<P> c <S> & b"),
+        ("~<\<up>(b1) * \<up>(b2)> c <S>", "(~<emp> c <S> & b1) & b2"),
+        ("~<P * Q> c <S>", "~<P * Q> c <S>"),
+        ("EX x. ~<T x> c <S>", "EX x. ~<T x> c <S>"),
+        ("EX x. ~<\<up>(b x)> c <S>", "EX x. ~<emp> c <S> & b x")
+      ]
+    in
+      map (Util.test_conv ctxt' (SepLogic.normalize_hoare_goal_cv ctxt')
+                          "normalize_hoare_goal")
+          test_data
     end
 
 end

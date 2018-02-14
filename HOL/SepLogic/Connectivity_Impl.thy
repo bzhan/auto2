@@ -13,13 +13,15 @@ fun connected_rel_imp :: "nat \<Rightarrow> (nat \<times> nat) list \<Rightarrow
 declare connected_rel_imp.simps [sep_proc]
 
 lemma connected_rel_imp_to_fun [hoare_triple]:
-  "<\<up>(is_valid_graph n (set es)) * \<up>(k \<le> length es)>
+  "is_valid_graph n (set es) \<Longrightarrow> k \<le> length es \<Longrightarrow>
+   <emp>
    connected_rel_imp n es k
    <is_uf n (connected_rel_ind n es k)>"
 @proof @induct k @qed
 
 lemma connected_rel_imp_correct [hoare_triple]:
-  "<\<up>(is_valid_graph n (set es))>
+  "is_valid_graph n (set es) \<Longrightarrow>
+   <emp>
    connected_rel_imp n es (length es)
    <is_uf n (connected_rel n (set es))>" by auto2
 

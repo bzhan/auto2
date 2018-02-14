@@ -53,7 +53,8 @@ partial_function (heap) binarysearch :: "nat \<Rightarrow> nat \<Rightarrow> 'a:
 declare binarysearch.simps [sep_proc]
 
 lemma binarysearch_correct [hoare_triple]:
-  "<a \<mapsto>\<^sub>a xs * \<up>(r \<le> length xs) * \<up>(l \<le> r)>
+  "r \<le> length xs \<Longrightarrow> l \<le> r \<Longrightarrow>
+   <a \<mapsto>\<^sub>a xs>
    binarysearch l r x a
    <\<lambda>res. a \<mapsto>\<^sub>a xs * \<up>(res \<longleftrightarrow> binarysearch_fun l r x xs)>\<^sub>t"
 @proof @fun_induct "binarysearch_fun l r x xs" @with
@@ -64,7 +65,8 @@ lemma binarysearch_correct [hoare_triple]:
 @qed
 
 lemma binarysearch_correct' [hoare_triple]:
-  "sorted xs \<Longrightarrow> r \<le> length xs \<Longrightarrow> l \<le> r \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
+  "sorted xs \<Longrightarrow> r \<le> length xs \<Longrightarrow> l \<le> r \<Longrightarrow>
+   <a \<mapsto>\<^sub>a xs>
    binarysearch l r x a
    <\<lambda>res. a \<mapsto>\<^sub>a xs * \<up>(res \<longleftrightarrow> (\<exists>i. l \<le> i \<and> i < r \<and> xs ! i = x))>\<^sub>t"
   by auto2

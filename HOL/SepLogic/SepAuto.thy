@@ -230,6 +230,7 @@ definition entails :: "assn \<Rightarrow> assn \<Rightarrow> bool" (infix "\<Lon
 
 lemma entails_triv: "A \<Longrightarrow>\<^sub>A A" by auto2
 lemma entails_true: "A \<Longrightarrow>\<^sub>A true" by auto2
+lemma entails_frame: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> P * R \<Longrightarrow>\<^sub>A Q * R" by auto2
 lemma entail_equiv_forward: "P = Q \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q" by auto2
 lemma entail_equiv_backward: "P = Q \<Longrightarrow> Q \<Longrightarrow>\<^sub>A P" by auto2
 lemma entailsD: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> h \<Turnstile> P \<Longrightarrow> h \<Turnstile> Q" by auto2
@@ -291,8 +292,6 @@ section {* Definition of hoare triple, and the frame rule. *}
 definition new_addrs :: "heap \<Rightarrow> addr set \<Rightarrow> heap \<Rightarrow> addr set" where [rewrite]:
   "new_addrs h as h' = as \<union> {a. lim h \<le> a \<and> a < lim h'}"
 
-lemma new_addr_refl [rewrite]: "new_addrs h as h = as" by auto2
-
 definition hoare_triple :: "assn \<Rightarrow> 'a Heap \<Rightarrow> ('a \<Rightarrow> assn) \<Rightarrow> bool" ("<_>/ _/ <_>") where [rewrite]:
   "<P> c <Q> \<longleftrightarrow> (\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>
     (\<sigma> \<noteq> None \<and> pHeap (the \<sigma>) (new_addrs h as (the \<sigma>)) \<Turnstile> Q r \<and> relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and>
@@ -301,7 +300,7 @@ definition hoare_triple :: "assn \<Rightarrow> 'a Heap \<Rightarrow> ('a \<Right
 abbreviation hoare_triple' :: "assn \<Rightarrow> 'r Heap \<Rightarrow> ('r \<Rightarrow> assn) \<Rightarrow> bool" ("<_> _ <_>\<^sub>t") where
   "<P> c <Q>\<^sub>t \<equiv> <P> c <\<lambda>r. Q r * true>"
 
-lemma frame_rule [backward]:
+lemma frame_rule:
   "<P> c <Q> \<Longrightarrow> <P * R> c <\<lambda>x. Q x * R>"
 @proof
   @have "\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>
@@ -315,6 +314,64 @@ lemma frame_rule [backward]:
 
 (* This is the last use of the definition of separating conjunction. *)
 setup {* del_prfstep_thm @{thm mod_star_conv} *}
+
+lemma bind_rule:
+  "<P> f <Q> \<Longrightarrow> \<forall>x. <Q x> g x <R> \<Longrightarrow> <P> f \<bind> g <R>"
+@proof
+  @have "\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P \<longrightarrow> run (f \<bind> g) (Some h) \<sigma> r \<longrightarrow>
+                    (\<sigma> \<noteq> None \<and> pHeap (the \<sigma>) (new_addrs h as (the \<sigma>)) \<Turnstile> R r \<and>
+                     relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and> lim h \<le> lim (the \<sigma>))" @with
+    (* First step from h to h' *)
+    @obtain \<sigma>' r' where "run f (Some h) \<sigma>' r'"
+    @obtain h' where "\<sigma>' = Some h'"
+    @let "as' = new_addrs h as h'"
+    @have "pHeap h' as' \<Turnstile> Q r'"
+
+    (* Second step from h' to h'' *)
+    @have "run (g r') (Some h') \<sigma> r"
+    @obtain h'' where "\<sigma> = Some h''"
+    @let "as'' = new_addrs h' as' h''"
+    @have "pHeap h'' as'' \<Turnstile> R r"
+    @have "as'' = new_addrs h as h''"
+  @end
+@qed
+
+(* Actual statement used: *)
+lemma bind_rule':
+  "<P> f <Q> \<Longrightarrow> \<not> <P> f \<bind> g <R> \<Longrightarrow> \<exists>x. \<not> <Q x> g x <R>" using bind_rule by blast
+
+setup {* add_forward_prfstep @{thm entailsD} *}
+setup {* add_backward_prfstep @{thm entails_frame} *}
+setup {* add_backward_prfstep @{thm frame_rule} *}
+
+lemma pre_rule:
+  "\<not> <P> f <Q> \<Longrightarrow> P \<Longrightarrow>\<^sub>A P' \<Longrightarrow> \<not> <P'> f <Q>" by auto2
+
+lemma pre_rule':
+  "\<not> <P * R> f <Q> \<Longrightarrow> P \<Longrightarrow>\<^sub>A P' \<Longrightarrow> \<not> <P' * R> f <Q>"
+@proof @have "P * R \<Longrightarrow>\<^sub>A P' * R" @qed
+
+lemma pre_rule'':
+  "<P> f <Q> \<Longrightarrow> P' \<Longrightarrow>\<^sub>A P * R \<Longrightarrow> <P'> f <\<lambda>x. Q x * R>"
+@proof @have "<P * R> f <\<lambda>x. Q x * R>" @qed
+
+lemma pre_ex_rule:
+  "\<not> <\<exists>\<^sub>Ax. P x> f <Q> \<longleftrightarrow> (\<exists>x. \<not> <P x> f <Q>)" by auto2
+
+lemma pre_pure_rule:
+  "\<not> <P * \<up>(b)> f <Q> \<longleftrightarrow> \<not> <P> f <Q> \<and> b" by auto2
+
+lemma pre_pure_rule':
+  "\<not> <\<up>(b)> f <Q> \<longleftrightarrow> \<not> <emp> f <Q> \<and> b" by auto2
+
+lemma post_rule:
+  "<P> f <Q> \<Longrightarrow> \<forall>x. Q x \<Longrightarrow>\<^sub>A R x \<Longrightarrow> <P> f <R>" by auto2
+
+setup {* fold del_prfstep_thm [@{thm entailsD}, @{thm entails_frame}, @{thm frame_rule}] *}
+
+(* Actual statement used: *)
+lemma post_rule':
+  "<P> f <Q> \<Longrightarrow> \<not> <P> f <R> \<Longrightarrow> \<exists>x. \<not> (Q x \<Longrightarrow>\<^sub>A R x)" using post_rule by blast
 
 lemma norm_pre_pure_iff: "<P * \<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <P> c <Q>)" by auto2
 lemma norm_pre_pure_iff2: "<\<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <emp> c <Q>)" by auto2
@@ -403,58 +460,9 @@ setup {* add_rewrite_rule @{thm execute_ref} *}
 lemma ref_rule:
   "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 
-setup {* fold del_prfstep_thm [@{thm sngr_assn_rule}, @{thm snga_assn_rule}] *}
-setup {* fold del_prfstep_thm
-  [@{thm pure_assn_rule}, @{thm top_assn_rule}, @{thm mod_pure_star_dist}, @{thm one_assn_rule}] *}
-
-section {* success_run and its properties. *}
-
-lemma new_addrs_bind [rewrite]:
-  "lim h \<le> lim h' \<Longrightarrow> lim h' \<le> lim h'' \<Longrightarrow> new_addrs h' (new_addrs h as h') h'' = new_addrs h as h''" by auto2
-
-fun success_run :: "'a Heap \<Rightarrow> pheap \<Rightarrow> pheap \<Rightarrow> 'a \<Rightarrow> bool" where
-  "success_run f (pHeap h as) (pHeap h' as') r \<longleftrightarrow>
-    as' = new_addrs h as h' \<and> run f (Some h) (Some h') r \<and> relH {a. a < lim h \<and> a \<notin> as} h h' \<and> lim h \<le> lim h'"
-setup {* add_rewrite_rule @{thm success_run.simps} *}
-
-lemma success_run_bind:
-  "success_run f h h' r \<Longrightarrow> success_run (g r) h' h'' r' \<Longrightarrow> success_run (f \<bind> g) h h'' r'" by auto2
-
-lemma success_run_next: "success_run f h h'' r' \<Longrightarrow>
-  \<forall>h'. \<sigma> = Some (heapOf h') \<and> success_run (f \<bind> g) h h' r \<longrightarrow> \<not> h' \<Turnstile> Q \<Longrightarrow>
-  \<forall>h'. \<sigma> = Some (heapOf h') \<and> success_run (g r') h'' h' r \<longrightarrow> \<not> h' \<Turnstile> Q" by auto2
-
-lemma hoare_triple_def' [rewrite]:
-  "<P> c <Q> \<longleftrightarrow> (\<forall>h \<sigma> r. h \<Turnstile> P \<longrightarrow> run c (Some (heapOf h)) \<sigma> r \<longrightarrow>
-    (\<sigma> \<noteq> None \<and> pHeap (the \<sigma>) (new_addrs (heapOf h) (addrOf h) (the \<sigma>)) \<Turnstile> Q r \<and>
-     relH {a . a < lim (heapOf h) \<and> a \<notin> (addrOf h)} (heapOf h) (the \<sigma>) \<and>
-     lim (heapOf h) \<le> lim (the \<sigma>)))"
-  using hoare_triple_def[of P c Q] by (smt Collect_cong pheap.collapse pheap.sel)
-
-lemma hoare_tripleE':
-  "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run c (Some (heapOf h)) \<sigma> r \<Longrightarrow>
-   \<exists>h'. h' \<Turnstile> Q r * Ru \<and> \<sigma> = Some (heapOf h') \<and> success_run c h h' r"
-@proof @have "<P * Ru> c <\<lambda>r. Q r * Ru>" @qed
-
-lemma hoare_tripleI:
-  "\<not><P> c <Q> \<Longrightarrow> \<exists>h \<sigma> r. h \<Turnstile> P \<and> run c (Some (heapOf h)) \<sigma> r \<and>
-   (\<forall>h'. \<sigma> = Some (heapOf h') \<and> success_run c h h' r \<longrightarrow> \<not>h' \<Turnstile> Q r)" by auto2
-
-lemma hoare_triple_mp:
-  "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> success_run c h h' r \<Longrightarrow> h' \<Turnstile> (Q r) * Ru"
-@proof @have "<P * Ru> c <\<lambda>r. Q r * Ru>" @qed
-
-lemma hoare_tripleE'':
-  "<P> c <Q> \<Longrightarrow> h \<Turnstile> P * Ru \<Longrightarrow> run (c \<bind> g) (Some (heapOf h)) \<sigma> r \<Longrightarrow>
-   \<exists>r' h'. run (g r') (Some (heapOf h')) \<sigma> r \<and> h' \<Turnstile> Q r' * Ru \<and> success_run c h h' r'"
-@proof
-  @have "<P * Ru> c <\<lambda>r. Q r * Ru>" @then
-  @obtain \<sigma>' r' where "run c (Some (heapOf h)) \<sigma>' r'"
-@qed
-
-setup {* del_prfstep_thm @{thm success_run.simps} *}
-setup {* del_prfstep_thm @{thm hoare_triple_def} *}
-setup {* del_prfstep_thm @{thm hoare_triple_def'} *}
+setup {* fold del_prfstep_thm [
+  @{thm sngr_assn_rule}, @{thm snga_assn_rule}, @{thm pure_assn_rule}, @{thm top_assn_rule},
+  @{thm mod_pure_star_dist}, @{thm one_assn_rule}, @{thm hoare_triple_def}] *}
 setup {* del_simple_datatype "pheap" *}
 
 subsection {* Definition of procedures *}
@@ -483,7 +491,7 @@ setup {* fold add_hoare_triple_prfstep [
   @{thm of_list_rule}, @{thm length_rule}, @{thm freeze_rule}] *}
 
 (* Some simple tests *)
-
+declare [[print_trace]]
 theorem "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> ref x <\<lambda>r. a \<mapsto>\<^sub>r x * r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> (!a) <\<lambda>r. a \<mapsto>\<^sub>r x * \<up>(r = x)>" by auto2

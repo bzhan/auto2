@@ -12,7 +12,8 @@ definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightar
    }"
 
 lemma swap_rule [hoare_triple]:
-  "<p \<mapsto>\<^sub>a xs * \<up>(i < length xs) * \<up>(j < length xs)>
+  "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow>
+   <p \<mapsto>\<^sub>a xs>
    swap p i j
    <\<lambda>_. p \<mapsto>\<^sub>a list_swap xs i j>" by auto2
 
@@ -25,7 +26,8 @@ fun rev :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uni
 declare rev.simps [sep_proc]
 
 lemma rev_to_fun [hoare_triple]:
-  "<p \<mapsto>\<^sub>a xs * \<up>(j < length xs)>
+  "j < length xs \<Longrightarrow>
+   <p \<mapsto>\<^sub>a xs>
    rev p i j
    <\<lambda>_. p \<mapsto>\<^sub>a rev_swap xs i j>"
 @proof @fun_induct "rev_swap xs i j" @with
@@ -35,7 +37,8 @@ lemma rev_to_fun [hoare_triple]:
 @qed
 
 lemma rev_is_rev [hoare_triple]:
-  "<p \<mapsto>\<^sub>a xs * \<up>(xs \<noteq> [])>
+  "xs \<noteq> [] \<Longrightarrow>
+   <p \<mapsto>\<^sub>a xs>
    rev p 0 (length xs - 1)
    <\<lambda>_. p \<mapsto>\<^sub>a List.rev xs>" by auto2
 

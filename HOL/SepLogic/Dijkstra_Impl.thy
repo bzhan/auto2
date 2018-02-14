@@ -20,7 +20,8 @@ fun dstate_pq_init :: "graph \<Rightarrow> nat \<Rightarrow> nat indexed_pqueue 
 declare dstate_pq_init.simps [sep_proc]
 
 lemma dstate_pq_init_to_fun [hoare_triple]:
-  "<\<up>(k \<le> size G)>
+  "k \<le> size G \<Longrightarrow>
+   <emp>
    dstate_pq_init G k
    <idx_pqueue_map (map_constr (\<lambda>i. i > 0) (\<lambda>i. weight G 0 i) k) (size G)>\<^sub>t"
 @proof @induct k @qed
@@ -54,17 +55,15 @@ lemma dstate_update_est_ind [hoare_triple]:
   "k \<le> length e \<Longrightarrow> m < length e \<Longrightarrow>
    <a \<mapsto>\<^sub>a e * idx_pqueue_map M (length e) pq>
    dstate_update_est G m k pq a
-   <let e' = list_update_set_impl (\<lambda>i. i \<in> keys_of M)
-               (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e k
-    in (\<lambda>r. dstate (State e' M) (Dijkstra_State r pq))>\<^sub>t"
+   <\<lambda>r. dstate (State (list_update_set_impl (\<lambda>i. i \<in> keys_of M)
+                      (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e k) M) (Dijkstra_State r pq)>\<^sub>t"
 @proof @induct k @qed
 
 lemma dstate_update_est_to_fun [hoare_triple]:
   "<dstate (State e M) (Dijkstra_State a pq) * \<up>(m < length e)>
    dstate_update_est G m (length e) pq a
-   <let e' = list_update_set (\<lambda>i. i \<in> keys_of M)
-               (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e
-    in (\<lambda>r. dstate (State e' M) (Dijkstra_State r pq))>\<^sub>t" by auto2
+   <\<lambda>r. dstate (State (list_update_set (\<lambda>i. i \<in> keys_of M)
+               (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e) M) (Dijkstra_State r pq)>\<^sub>t" by auto2
 
 fun dstate_update_heap ::
   "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat array \<Rightarrow> nat indexed_pqueue \<Rightarrow> nat indexed_pqueue Heap" where
@@ -86,10 +85,11 @@ lemma dstate_update_heap_ind [hoare_triple]:
 @proof @induct k @qed
 
 lemma dstate_update_heap_to_fun [hoare_triple]:
-  "<dstate (State e M) (Dijkstra_State a pq) * \<up>(m < length e) * \<up>(\<forall>i\<in>keys_of M. i < length e)>
+  "m < length e \<Longrightarrow>
+   \<forall>i\<in>keys_of M. i < length e \<Longrightarrow>
+   <dstate (State e M) (Dijkstra_State a pq)>
    dstate_update_heap G m (length e) a pq
-   <let M' = map_update_all (\<lambda>i. e ! i) M
-    in (\<lambda>r. dstate (State e M') (Dijkstra_State a r))>\<^sub>t" by auto2
+   <\<lambda>r. dstate (State e (map_update_all (\<lambda>i. e ! i) M)) (Dijkstra_State a r)>\<^sub>t" by auto2
 
 fun dijkstra_extract_min :: "dijkstra_state \<Rightarrow> (nat \<times> dijkstra_state) Heap" where
   "dijkstra_extract_min (Dijkstra_State a pq) = do {
@@ -98,7 +98,8 @@ fun dijkstra_extract_min :: "dijkstra_state \<Rightarrow> (nat \<times> dijkstra
 declare dijkstra_extract_min.simps [sep_proc]
   
 lemma dijkstra_extract_min_rule [hoare_triple]:
-  "<dstate (State e M) (Dijkstra_State a pq) * \<up>(M \<noteq> empty_map)>
+  "M \<noteq> empty_map \<Longrightarrow>
+   <dstate (State e M) (Dijkstra_State a pq)>
    dijkstra_extract_min (Dijkstra_State a pq)
    <\<lambda>(m, r). dstate (State e (delete_map m M)) r * \<up>(m < length e) * \<up>(is_heap_min m M)>\<^sub>t" by auto2
 
@@ -115,12 +116,14 @@ fun dijkstra_step_impl :: "graph \<Rightarrow> dijkstra_state \<Rightarrow> dijk
 declare dijkstra_step_impl.simps [sep_proc]
 
 lemma dijkstra_step_impl_to_fun [hoare_triple]:
-  "<dstate S (Dijkstra_State a pq) * \<up>(heap S \<noteq> empty_map) * \<up>(inv G S)>
+  "heap S \<noteq> empty_map \<Longrightarrow> inv G S \<Longrightarrow>
+   <dstate S (Dijkstra_State a pq)>
    dijkstra_step_impl G (Dijkstra_State a pq)
    <\<lambda>r. \<exists>\<^sub>AS'. dstate S' r * \<up>(is_dijkstra_step G S S')>\<^sub>t" by auto2
 
 lemma dijkstra_step_impl_correct [hoare_triple]:
-  "<dstate S p * \<up>(heap S \<noteq> empty_map) * \<up>(inv G S)>
+  "heap S \<noteq> empty_map \<Longrightarrow> inv G S \<Longrightarrow>
+   <dstate S p>
    dijkstra_step_impl G p
    <\<lambda>r. \<exists>\<^sub>AS'. dstate S' r * \<up>(inv G S') * \<up>(card (unknown_set S') = card (unknown_set S) - 1)>\<^sub>t" by auto2
 
@@ -152,7 +155,8 @@ definition dijkstra :: "graph \<Rightarrow> dijkstra_state Heap" where [sep_proc
     dijkstra_loop G (size G - 1) p }"
 
 lemma dijkstra_correct [hoare_triple]:
-  "<\<up>(size G > 0)>
+  "size G > 0 \<Longrightarrow>
+   <emp>
    dijkstra G
    <\<lambda>r. \<exists>\<^sub>AS. dstate S r * \<up>(inv G S) * \<up>(unknown_set S = {}) *
         \<up>(\<forall>i\<in>verts G. has_dist G 0 i \<and> est S ! i = dist G 0 i)>\<^sub>t" by auto2
