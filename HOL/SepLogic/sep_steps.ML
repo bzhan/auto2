@@ -29,15 +29,13 @@ sig
   val entails_match_disj: proofstep
 
   val TY_CODE_POS: string
-  val TY_MATCH_POS: string
 
   val init_pos: proofstep
-  val match_assn: proofstep
   val rewrite_pos: proofstep
   val match_hoare_disj: proofstep
   val match_assn_pure: proofstep
   val hoare_create_case: proofstep
-  val hoare_triple_prfstep: proofstep
+  val hoare_triple: proofstep
 
   val contract_hoare_cv: Proof.context -> conv
   val add_hoare_triple_prfstep: thm -> theory -> theory
@@ -124,16 +122,13 @@ fun normalize_hoare_goal_cv' ctxt ct =
         Conv.all_conv ct
     end
 
-fun normalize_hoare_goal_cv'' ctxt ct =
-    Conv.every_conv [
-      Conv.arg_conv (Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)),
-      normalize_hoare_goal_cv' ctxt] ct
-
 fun normalize_hoare_goal_cv ctxt ct =
     if is_ex (Thm.term_of ct) then
       Conv.binder_conv (normalize_hoare_goal_cv o snd) ctxt ct
     else
-      normalize_hoare_goal_cv'' ctxt ct
+      Conv.every_conv [
+        Conv.arg_conv (Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)),
+        normalize_hoare_goal_cv' ctxt] ct
 
 (* Data maintained for each imperative command. *)
 structure Data = Theory_Data (
@@ -374,10 +369,53 @@ fun extract_return_name t =
  *)
 val TY_CODE_POS = "CODE_POS"
 
-(* MATCH_POS item stores a Hoare triple fact, indicating a possible
-   Hoare triple that can push forward the code position.
+(* ENTAIL item stores an entailment goal, usually indicating the end
+   of the program.
  *)
-val TY_MATCH_POS = "MATCH_POS"
+val TY_ENTAIL = "ENTAIL"
+
+fun is_neg_hoare_triple t =
+    is_neg t andalso is_hoare_triple (dest_not t)
+
+fun norm_precond ctxt ct =
+    Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt) ct
+
+fun hoare_goal_ritems ctxt th =
+    if Util.is_implies (Thm.prop_of th) then
+      [Fact (TY_CODE_POS, [Thm.prop_of th], th)]
+    else let
+      val th' = th |> apply_to_thm' (normalize_hoare_goal_cv ctxt)
+      val (vars, _) = (UtilLogic.strip_exists (prop_of' th'))
+                          |> Util.replace_vars ctxt
+                          |> Util.replace_internal_vars
+      val xs = map (fst o Term.dest_Free) vars
+
+      val (ex_ritems, res_th) =
+          if length xs = 0 then ([], th')
+          else Update.apply_exists_ritems ctxt xs th'
+
+      val (res_th', rest) =
+          res_th |> Logic_ProofSteps.split_conj_gen_th ctxt
+                 |> filter_split (is_neg_hoare_triple o prop_of')
+      val _ = assert (length res_th' = 1) "hoare_goal_ritems"
+
+      val res_th' = res_th' |> the_single
+                            |> apply_to_thm' (Conv.arg_conv (norm_precond ctxt))
+    in
+      ex_ritems @ map Update.thm_to_ritem rest @
+      [Fact (TY_CODE_POS, [prop_of' res_th'], res_th')]
+    end
+
+fun hoare_goal_update ctxt (id, th) =
+    AddItems {id = id, sc = SOME 1, raw_items = hoare_goal_ritems ctxt th}
+
+fun entail_goal_update ctxt (id, th) =
+    if Util.is_implies (Thm.prop_of th) then
+      AddItems {id = id, sc = SOME 1,
+                raw_items = [Fact (TY_ENTAIL, [Thm.prop_of th], th)]}
+    else
+      AddItems {id = id, sc = SOME 1,
+                raw_items = [Update.thm_to_ritem th]}
 
 (* Initialize CODE_POS item from a Hoare triple goal. *)
 fun init_pos_fn ictxt item =
@@ -390,17 +428,6 @@ fun init_pos_fn ictxt item =
       val (_, c, _) = dest_hoare_triple (get_neg (prop_of' prop))
       val nm = name_of_sep_proc c
       val proc_defs = get_proc_def thy nm
-
-      fun process_hoare_th (id, th) =
-          let
-            val th = th |> apply_to_thm' (
-                  Conv.arg_conv (
-                    Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)))
-
-            val ritems = [Fact (TY_CODE_POS, [prop_of' th], th)]
-          in
-            [AddItems {id = id, sc = SOME 1, raw_items = ritems}]
-          end
 
       fun process_proc_def proc_def =
           let
@@ -415,14 +442,14 @@ fun init_pos_fn ictxt item =
                         Conv.rewr_conv (meta_sym eq_th), rewr_obj_eq proc_def]
                   val th = apply_to_thm' (Conv.arg_conv (Conv.arg1_conv cv)) prop
                 in
-                  process_hoare_th (id', th)
+                  hoare_goal_update ctxt (id', th)
                 end
           in
-            maps process_inst insts
+            map process_inst insts
           end
     in
       if null proc_defs then
-        process_hoare_th (id, prop)
+        [hoare_goal_update ctxt (id, prop)]
       else
         maps process_proc_def proc_defs
     end
@@ -433,32 +460,11 @@ val init_pos =
      priority = PRIORITY_ADD,
      func = OneStep init_pos_fn}
 
-fun hoare_goal_ritems ctxt th =
-    let
-      val th' = th |> apply_to_thm' (normalize_hoare_goal_cv ctxt)
-      val (vars, _) = (UtilLogic.strip_exists (prop_of' th'))
-                          |> Util.replace_vars ctxt
-                          |> Util.replace_internal_vars
-      val xs = map (fst o Term.dest_Free) vars
-
-      val (ex_ritems, res_th) = Update.apply_exists_ritems ctxt xs th'
-
-      val res_ths = Logic_ProofSteps.split_conj_gen_th ctxt res_th
-      val (res_th', rest) =
-          filter_split (fn th => is_neg (prop_of' th) andalso
-                                 is_hoare_triple (dest_not (prop_of' th)))
-                       res_ths
-      val _ = assert (length res_th' = 1) "hoare_goal_ritems"
-      val res_th' = res_th' |> the_single
-                            |> apply_to_thm' (
-            Conv.arg_conv (
-              Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)))
-    in
-      ex_ritems @ map Update.thm_to_ritem rest @
-      [Fact (TY_CODE_POS, [prop_of' res_th'], res_th')]
-    end
+fun is_implies_code_pos item =
+    Util.is_implies (Thm.prop_of (#prop item))
 
 fun forward_hoare_prfstep_fn ent_th ictxt item =
+    if is_implies_code_pos item then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val (A, _) = dest_entail (prop_of' ent_th)
@@ -474,9 +480,8 @@ fun forward_hoare_prfstep_fn ent_th ictxt item =
             val prop' = prop |> apply_to_thm' (
                   Conv.arg_conv (Util.argn_conv 0 (Conv.rewr_conv eq_th)))
             val prop'' = [prop', ent_th] MRS @{thm pre_rule'}
-            val ritems = hoare_goal_ritems ctxt prop''
           in
-            [AddItems {id = id', sc = NONE, raw_items = ritems},
+            [hoare_goal_update ctxt (id', prop''),
              ShadowItem {id = id', item = item}]
           end
     in
@@ -526,48 +531,16 @@ fun add_rewrite_ent_rule th thy =
 
 fun match_assn_props id ctxt hoare_th goal =
     let
-      val (P1, c1, _) = dest_hoare_triple (prop_of' hoare_th)
+      val (P1, c1, _) = dest_hoare_triple (concl_of' hoare_th)
       val (P2, c2, _) = dest_hoare_triple (dest_not (prop_of' goal))
       val c2' = get_first_cmd c2
       val _ = assert (c1 aconv c2' andalso P1 aconv P2) "match_assn_props"
     in
       if c2 aconv c2' then
-        Update.thm_update (id, [hoare_th, goal] MRS @{thm post_rule'})
+        entail_goal_update ctxt (id, [hoare_th, goal] MRS @{thm post_rule'})
       else
-        let
-          val th = [hoare_th, goal] MRS @{thm bind_rule'}
-          val ritems = hoare_goal_ritems ctxt th
-        in
-          AddItems {id = id, sc = NONE, raw_items = ritems}
-        end
+        hoare_goal_update ctxt (id, [hoare_th, goal] MRS @{thm bind_rule'})
     end
-
-(* Match a MATCH_POS item with the current CODE_POS, and produce the
-   next CODE_POS item. This is performed when all pure assertions in
-   the MATCH_POS item are cleared (condition P1 = P2).
- *)
-fun match_assn_fn ictxt item1 item2 =
-    let
-      val ctxt = IncrContext.context_of ictxt
-      val {id = id1, prop = hoare_th, ...} = item1
-      val {id = id2, prop = goal, ...} = item2
-      val id = BoxID.merge_boxes ctxt (id1, id2)
-      val (P1, c1, _) = dest_hoare_triple (prop_of' hoare_th)
-      val (P2, c2, _) = dest_hoare_triple (dest_not (prop_of' goal))
-      val c2' = get_first_cmd c2
-    in
-      if not (c1 aconv c2') orelse not (P1 aconv P2) then []
-      else [match_assn_props id ctxt hoare_th goal,
-            ShadowItem {id = id, item = item1},
-            ShadowItem {id = id, item = item2}]
-    end
-
-val match_assn =
-    {name = "sep.match_assn",
-     args = [TypedMatch (TY_MATCH_POS, Term.dummy),
-             TypedMatch (TY_CODE_POS, Term.dummy)],
-     priority = PRIORITY_SHADOW,
-     func = TwoStep match_assn_fn}
 
 (* Rewrite the first command of a Hoare triple. *)
 fun rewr_first_cmd eq_th ct =
@@ -583,6 +556,7 @@ fun rewr_first_cmd eq_th ct =
 (* Apply rewrite to the first command in CODE_POS. *)
 fun rewrite_pos_fn ictxt item1 item2 =
     if not (IncrContext.is_single_ictxt ictxt) then [] else
+    if is_implies_code_pos item1 then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val {id = id1, prop = th, ...} = item1
@@ -595,9 +569,8 @@ fun rewrite_pos_fn ictxt item1 item2 =
       if c1 aconv c' then
         let
           val th' = th |> apply_to_thm' (Conv.arg_conv (rewr_first_cmd eq_th))
-          val ritem = Fact (TY_CODE_POS, [prop_of' th'], th')
         in
-          [AddItems {id = id, sc = SOME 1, raw_items = [ritem]},
+          [hoare_goal_update ctxt (id, th'),
            ShadowItem {id = id, item = item1}]
         end
       else []
@@ -612,8 +585,7 @@ val rewrite_pos =
 
 fun normalize_hoare_cv ct =
     let
-      val t = Thm.term_of ct
-      val (P, _, _) = t |> dest_hoare_triple
+      val (P, _, _) = ct |> Thm.term_of |> dest_hoare_triple
     in
       if is_pure_assn P then
         rewr_obj_eq @{thm norm_pre_pure_iff2} ct
@@ -626,19 +598,14 @@ fun normalize_hoare_cv ct =
 
 (* Contract a Hoare triple to <P> c <Q> form. *)
 fun contract_hoare_cv' ct =
-    let
-      val t = Thm.term_of ct
-    in
-      if is_imp t then
-        Conv.every_conv [Conv.arg_conv contract_hoare_cv',
-                         rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
-      else
-        Conv.all_conv ct
-    end
+    if is_imp (Thm.term_of ct) then
+      Conv.every_conv [Conv.arg_conv contract_hoare_cv',
+                       rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
+    else
+      Conv.all_conv ct
 
 fun contract_hoare_cv ctxt ct =
-    Conv.every_conv [contract_hoare_cv',
-                     Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)] ct
+    Conv.every_conv [contract_hoare_cv', norm_precond ctxt] ct
 
 fun match_hoare_th id ictxt hoare_th goal item =
     let
@@ -660,40 +627,23 @@ fun match_hoare_th id ictxt hoare_th goal item =
                     |> IncrContext.replace_id_for_type ictxt
 
             fun process_inst' ((id'', inst''), ent_th) =
-                (* ent_th is P ==> P''(s) * R.  *)
-                (* hoare_th is initially <P'' * b> c <Q>. *)
-                (* Want <P'' * b * R> c <Q * R>. *)
                 let
                   val hoare_th =
                       (Util.subst_thm ctxt inst'' hoare_th)
                           |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
                           |> apply_to_thm' normalize_hoare_cv
                           |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
-                  val hoare_th' = ([hoare_th, ent_th] MRS @{thm pre_rule''})
-                                      |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
-                                      |> apply_to_thm' (contract_hoare_cv ctxt)
-                  val _ = trace_thm ctxt "eq_th" eq_th
-                  val _ = trace_thm ctxt "ent_th" ent_th
-                  val _ = trace_thm ctxt "hoare_th" hoare_th
-                  val _ = trace_thm ctxt "hoare_th'" hoare_th'
-                  val _ = trace_thm ctxt "goal" goal
+                  val hoare_th' =
+                      [hoare_th, ent_th] MRS @{thm pre_rule''}
                 in
-                  if has_pure_assn P' then
-                    let
-                      val ritem = Fact (TY_MATCH_POS, [prop_of' hoare_th'],
-                                        hoare_th')
-                    in
-                      [AddItems {id = id'', sc = SOME 1, raw_items = [ritem]}]
-                    end
-                  else
-                    [match_assn_props id'' ctxt hoare_th' goal,
-                     ShadowItem {id = id'', item = item}]
+                  [match_assn_props id'' ctxt hoare_th' goal,
+                   ShadowItem {id = id'', item = item}]
                 end
           in
-            maps process_inst' insts'
+            if null insts' then [] else process_inst' (hd insts')
           end
     in
-      maps process_inst insts
+      if null insts then [] else process_inst (hd insts)
     end
 
 (* Match with PROP or DISJ items that are Hoare triples. In this
@@ -701,6 +651,7 @@ fun match_hoare_th id ictxt hoare_th goal item =
    CODE_POS item).
  *)
 fun match_hoare_prop_fn ictxt item1 item2 =
+    if is_implies_code_pos item2 then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val {id = id1, prop = hoare_th, ...} = item1
@@ -719,6 +670,7 @@ val match_hoare_prop =
 
 (* For DISJ items, check that it is a Hoare triple. *)
 fun match_hoare_disj_fn ictxt item1 item2 =
+    if is_implies_code_pos item2 then [] else
     let
       val {tname, ...} = item1
       val (_, csubs) = Logic_ProofSteps.dest_tname_of_disj tname
@@ -745,41 +697,25 @@ fun match_assn_pure_fn ictxt item1 item2 =
     let
       val ctxt = IncrContext.context_of ictxt
       val {id, prop, ...} = item1
-      val (P, _, _) = prop |> prop_of' |> dest_hoare_triple
-      val Ps = ACUtil.dest_ac assn_ac_info P
-      val bs = filter is_pure_assn Ps
     in
-      if Util.has_vars P orelse null bs then []
-      else let
-        val pat = dest_arg (hd bs)
-        val insts = ItemIO.get_insts (PropMatch pat) item2 ictxt (id, fo_init)
+      if Util.is_implies (Thm.prop_of prop) then
+        let
+          val (A, _) = Logic.dest_implies (Thm.prop_of prop)
+          val pat = PropMatch (dest_Trueprop A)
+          val insts = ItemIO.get_insts pat item2 ictxt (id, fo_init)
 
-        fun process_inst ((id', _), th) =
-            let
-              val move_outmost =
-                  Util.argn_conv 0 (ACUtil.move_outmost assn_ac_info (hd bs))
-              val norm_th = if length Ps = 1 then @{thm norm_pre_pure_iff2}
-                            else @{thm norm_pre_pure_iff}
-              val prop' =
-                  prop |> apply_to_thm' move_outmost
-                       |> apply_to_thm' (rewr_obj_eq norm_th)
-                       |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
-                       |> Thm.elim_implies th
-                       |> apply_to_thm' (
-                    Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt))
-              val ritem = Fact (TY_MATCH_POS, [prop_of' prop'], prop')
-            in
-              [AddItems {id = id', sc = SOME 1, raw_items = [ritem]},
+          fun process_inst ((id', _), th) =
+              [hoare_goal_update ctxt (id', th RS prop),
                ShadowItem {id = id', item = item1}]
-            end
-      in
-        maps process_inst insts
-      end
+        in
+          maps process_inst insts
+        end
+      else []
     end
 
 val match_assn_pure =
     {name = "sep.match_assn_pure",
-     args = [TypedMatch (TY_MATCH_POS, Term.dummy),
+     args = [TypedMatch (TY_CODE_POS, Term.dummy),
              PropMatch (@{term_pat "?b::bool"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_pure_fn}
@@ -788,26 +724,74 @@ fun hoare_create_case_fn ictxt item =
     if not (IncrContext.is_single_ictxt ictxt) then [] else
     let
       val {id, prop, ...} = item
-      val (P, _, _) = prop |> prop_of' |> dest_hoare_triple
-      val Ps = ACUtil.dest_ac assn_ac_info P
-      val bs = filter is_pure_assn Ps
     in
-      if Util.has_vars P orelse null bs then []
-      else let
-        val assum = mk_Trueprop (get_neg (dest_arg (hd bs)))
-      in
-        [AddBoxes {id = id, sc = SOME 1, inits = [InitAssum assum]}]
-      end
+      if Util.is_implies (Thm.prop_of prop) then
+        let
+          val (A, _) = Logic.dest_implies (Thm.prop_of prop)
+          val assum = get_neg' A
+        in
+          [AddBoxes {id = id, sc = SOME 1, inits = [InitAssum assum]}]
+        end
+      else []
     end
 
 val hoare_create_case =
     {name = "sep.hoare_create_case",
-     args = [TypedMatch (TY_MATCH_POS, Term.dummy)],
+     args = [TypedMatch (TY_CODE_POS, Term.dummy)],
      priority = PRIORITY_ADD,
      func = OneStep hoare_create_case_fn}
 
+fun entail_pure_fn ictxt item1 item2 =
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id, prop, ...} = item1
+    in
+      if Util.is_implies (Thm.prop_of prop) then
+        let
+          val (A, _) = Logic.dest_implies (Thm.prop_of prop)
+          val pat = PropMatch (dest_Trueprop A)
+          val insts = ItemIO.get_insts pat item2 ictxt (id, fo_init)
+
+          fun process_inst ((id', _), th) =
+              [entail_goal_update ctxt (id', th RS prop),
+               ShadowItem {id = id', item = item1}]
+        in
+          maps process_inst insts
+        end
+      else []
+    end
+
+val entail_pure =
+    {name = "sep.entail_pure",
+     args = [TypedMatch (TY_ENTAIL, Term.dummy),
+             PropMatch (@{term_pat "?b::bool"})],
+     priority = PRIORITY_SHADOW,
+     func = TwoStep entail_pure_fn}
+
+fun entail_create_case_fn ictxt item =
+    if not (IncrContext.is_single_ictxt ictxt) then [] else
+    let
+      val {id, prop, ...} = item
+    in
+      if Util.is_implies (Thm.prop_of prop) then
+        let
+          val (A, _) = Logic.dest_implies (Thm.prop_of prop)
+          val assum = get_neg' A
+        in
+          [AddBoxes {id = id, sc = SOME 1, inits = [InitAssum assum]}]
+        end
+      else []
+    end
+
+val entail_create_case =
+    {name = "sep.entail_create_case",
+     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     priority = PRIORITY_ADD,
+     func = OneStep entail_create_case_fn}
+
 (* Matching CODE_POS with an existing Hoare triple. *)
-fun hoare_triple_prfstep_fn ictxt item =
+fun hoare_triple_fn ictxt item =
+    if is_implies_code_pos item then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val thy = Proof_Context.theory_of ctxt
@@ -820,11 +804,11 @@ fun hoare_triple_prfstep_fn ictxt item =
       maps (fn hoare_th => match_hoare_th id ictxt hoare_th goal item) hoare_ths
     end
 
-val hoare_triple_prfstep =
+val hoare_triple =
     {name = "sep.hoare_triple",
      args = [TypedMatch (TY_CODE_POS, Term.dummy)],
      priority = PRIORITY_SHADOW,
-     func = OneStep hoare_triple_prfstep_fn}
+     func = OneStep hoare_triple_fn}
 
 (* Given hoare_th of the form <?P> ?c <?Q>, produce proofstep matching
    item1 with CODE_POS (?h, ?c) and item2 with proposition ?h |= ?P *
@@ -846,24 +830,30 @@ fun add_hoare_triple_prfstep hoare_th thy =
 
 fun code_pos_terms ts =
     let
-      val (P, c, _) = ts |> the_single |> dest_not |> dest_hoare_triple
+      val t = the_single ts
     in
-      [P, get_first_cmd c]
+      if fastype_of t = propT then []
+      else let
+        val (P, c, _) = t |> dest_not |> dest_hoare_triple
+      in
+        [P, get_first_cmd c]
+      end
     end
 
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
       (TY_CODE_POS, SOME code_pos_terms, NONE),
-      (TY_MATCH_POS, SOME ItemIO.no_rewr_terms, NONE)
+      (TY_ENTAIL, SOME (K []), NONE)
 
     ] #> fold ItemIO.add_typed_matcher [
       (TY_CODE_POS, ItemIO.univ_matcher),
-      (TY_MATCH_POS, ItemIO.univ_matcher)
+      (TY_ENTAIL, ItemIO.univ_matcher)
 
     ] #> fold add_prfstep [
       entails_goal, entails_match, entails_match_disj,
-      init_pos, rewrite_pos, match_assn, match_assn_pure, hoare_triple_prfstep,
-      match_hoare_disj, match_hoare_prop, hoare_create_case
+      init_pos, rewrite_pos, match_assn_pure, hoare_triple,
+      match_hoare_disj, match_hoare_prop, hoare_create_case,
+      entail_pure, entail_create_case
     ]
 
 end  (* structure SepLogic *)

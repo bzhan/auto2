@@ -491,7 +491,7 @@ setup {* fold add_hoare_triple_prfstep [
   @{thm of_list_rule}, @{thm length_rule}, @{thm freeze_rule}] *}
 
 (* Some simple tests *)
-declare [[print_trace]]
+
 theorem "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> ref x <\<lambda>r. a \<mapsto>\<^sub>r x * r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> (!a) <\<lambda>r. a \<mapsto>\<^sub>r x * \<up>(r = x)>" by auto2
