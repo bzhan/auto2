@@ -73,13 +73,7 @@ session SepLogic = DataStrs_Advanced +
     Separation logic.
   *}
   theories
-    "HOL/SepLogic/LinkedList"
-    "HOL/SepLogic/BST_Impl"
-    "HOL/SepLogic/Quicksort_Impl"
-    "HOL/SepLogic/Rect_Intersect_Impl"
-    "HOL/SepLogic/RBTree_Impl"
-    "HOL/SepLogic/Connectivity_Impl"
-    "HOL/SepLogic/Dijkstra_Impl"
+    "HOL/SepLogic/Sep_Examples"
 
 session Auto2_FOL = FOL +
   description {*
