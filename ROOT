@@ -81,14 +81,6 @@ session SepLogic = DataStrs_Advanced +
     "HOL/SepLogic/Connectivity_Impl"
     "HOL/SepLogic/Dijkstra_Impl"
 
-session SepLogic_More = AUTO2 +
-  description {*
-    Additional algorithms.
-  *}
-  theories
-    "HOL/SepLogic/BinarySearch"
-    "HOL/SepLogic/MergeSort"
-
 session Auto2_FOL = FOL +
   description {*
     Example in first order logic.
