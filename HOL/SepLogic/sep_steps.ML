@@ -86,7 +86,7 @@ fun normalize_hoare_goal_cv ctxt ct =
       Conv.binder_conv (normalize_hoare_goal_cv o snd) ctxt ct
     else
       Conv.every_conv [
-        Conv.arg_conv (Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt)),
+        Conv.arg_conv (Util.argn_conv 0 (SepUtilExtra.normalize_assn_cv ctxt)),
         normalize_hoare_goal_cv' ctxt] ct
 
 fun normalize_entail_goal_cv' ctxt ct =
@@ -112,7 +112,7 @@ fun normalize_entail_goal_cv ctxt ct =
       Conv.binder_conv (normalize_entail_goal_cv o snd) ctxt ct
     else
       Conv.every_conv [
-        Conv.arg_conv (Conv.binop_conv (AssnNorm.normalize_assn_cv ctxt)),
+        Conv.arg_conv (Conv.binop_conv (SepUtilExtra.normalize_assn_cv ctxt)),
         normalize_entail_goal_cv' ctxt] ct
 
 (* Data maintained for each imperative command. *)
@@ -207,10 +207,10 @@ fun is_neg_entail t =
     is_neg t andalso is_entail (dest_not t)
 
 fun norm_precond ctxt ct =
-    Util.argn_conv 0 (AssnNorm.normalize_assn_cv ctxt) ct
+    Util.argn_conv 0 (SepUtilExtra.normalize_assn_cv ctxt) ct
 
 fun norm_entail_conds ctxt ct =
-    Conv.binop_conv (AssnNorm.normalize_assn_cv ctxt) ct
+    Conv.binop_conv (SepUtilExtra.normalize_assn_cv ctxt) ct
 
 fun is_implies_item item =
     Util.is_implies (Thm.prop_of (#prop item))
@@ -842,12 +842,6 @@ fun add_hoare_triple_prfstep hoare_th thy =
       thy |> update_hoare_triple hoare_th'
     end
 
-fun assn_terms P =
-    P |> ACUtil.dest_ac assn_ac_info
-      |> filter_out is_pure_assn
-      |> maps (snd o Term.strip_comb)
-      |> distinct (op aconv)
-
 fun code_pos_terms ts =
     let
       val t = the_single ts
@@ -856,7 +850,7 @@ fun code_pos_terms ts =
       else let
         val (P, c, _) = t |> dest_not |> dest_hoare_triple
       in
-        assn_terms P @ [get_first_cmd c]
+        SepUtilExtra.assn_rewr_terms P @ [get_first_cmd c]
       end
     end
 
@@ -868,7 +862,7 @@ fun entail_terms ts =
       else let
         val (P, Q) = t |> dest_not |> dest_entail
       in
-        assn_terms P @ [Q]
+        SepUtilExtra.assn_rewr_terms P @ [Q]
       end
     end
 

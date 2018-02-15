@@ -1,11 +1,6 @@
-(* Normalization for assertions *)
+(* Instantiation-dependent functions *)
 
-signature ASSN_NORM =
-sig
-  val normalize_assn_cv: Proof.context -> conv
-end;
-
-structure AssnNorm : ASSN_NORM =
+structure SepUtilExtra : SEP_UTIL_EXTRA =
 struct
 
 open SepUtil
@@ -68,4 +63,11 @@ fun normalize_assn_cv ctxt ct =
         Conv.all_conv ct
     end
 
-end  (* structure AssnNorm. *)
+(* Rewrite terms for an assertion *)
+fun assn_rewr_terms P =
+    P |> ACUtil.dest_ac assn_ac_info
+      |> filter_out is_pure_assn
+      |> maps (snd o Term.strip_comb)
+      |> distinct (op aconv)
+
+end  (* structure SepUtilExtra. *)

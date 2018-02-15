@@ -455,7 +455,7 @@ abbreviation (input) models_ascii :: "pheap \<Rightarrow> assn \<Rightarrow> boo
   where "h |= P \<equiv> h \<Turnstile> P"
 
 ML_file "sep_util.ML"
-ML_file "assn_norm.ML"
+ML_file "sep_util_extra.ML"
 ML_file "assn_matcher.ML"
 ML_file "sep_steps.ML"
 ML_file "sep_steps_test.ML"

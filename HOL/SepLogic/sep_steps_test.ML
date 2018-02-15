@@ -28,7 +28,7 @@ val test_normalize_assn =
         ("\<up>(b1 & b2)", "\<up>b1 * \<up>b2")
       ]
     in
-      map (Util.test_conv ctxt' (AssnNorm.normalize_assn_cv ctxt')
+      map (Util.test_conv ctxt' (SepUtilExtra.normalize_assn_cv ctxt')
                           "normalize_assn")
           test_data
     end

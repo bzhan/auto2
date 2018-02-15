@@ -27,6 +27,13 @@ sig
   val apply_to_entail_r: conv -> thm -> thm
 end;
 
+(* To be implemented for each instantiation. *)
+signature SEP_UTIL_EXTRA =
+sig
+  val normalize_assn_cv: Proof.context -> conv
+  val assn_rewr_terms: term -> term list
+end;
+
 structure SepUtil : SEP_UTIL =
 struct
 
