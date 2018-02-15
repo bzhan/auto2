@@ -178,6 +178,7 @@ type item_io_info = {
 
 datatype match_arg = PropMatch of term
                    | TypedMatch of string * term
+                   | TypedUniv of string
                    | PropertyMatch of term
                    | WellFormMatch of term * term
 
@@ -199,7 +200,6 @@ sig
   val get_io_info: theory -> string -> item_io_info
   val get_prop_matchers: theory -> string -> item_matcher list
   val get_typed_matchers: theory -> string -> item_matcher list
-  val univ_matcher: item_matcher
   val prop_matcher: item_matcher
   val term_prop_matcher: item_matcher
   val null_eq_matcher: item_matcher
@@ -262,6 +262,7 @@ fun pat_of_match_arg arg =
     case arg of
         PropMatch pat => pat
       | TypedMatch (_, pat) => pat
+      | TypedUniv _ => Term.dummy
       | PropertyMatch pat => pat
       | WellFormMatch (_, req) => req
 
@@ -270,6 +271,7 @@ fun subst_arg inst arg =
         PropMatch pat => PropMatch (Util.subst_term_norm inst pat)
       | TypedMatch (ty_str, pat) =>
         TypedMatch (ty_str, Util.subst_term_norm inst pat)
+      | TypedUniv ty_str => TypedUniv ty_str
       | PropertyMatch pat =>
         PropertyMatch (Util.subst_term_norm inst pat)
       | WellFormMatch (t, req) =>
@@ -281,6 +283,7 @@ fun assert_valid_arg arg =
         assert (fastype_of pat = boolT)
                "assert_valid_arg: arg for PropMatch should be bool."
       | TypedMatch _ => ()
+      | TypedUniv _ => ()
       | PropertyMatch pat =>
         assert (fastype_of pat = boolT)
                "assert_valid_arg: arg for PropertyMatch should be bool."
@@ -291,6 +294,7 @@ fun assert_valid_arg arg =
 fun check_ty_str ty_str arg =
     case arg of
         TypedMatch (ty_str', _) => ty_str = ty_str'
+      | TypedUniv ty_str' => ty_str = ty_str'
       | _ => true
 
 fun is_ordinary_match arg =
@@ -319,10 +323,6 @@ fun get_io_info thy ty_str =
 
 fun get_prop_matchers thy ty_str = #prop_matchers (get_io_info thy ty_str)
 fun get_typed_matchers thy ty_str = #typed_matchers (get_io_info thy ty_str)
-
-val univ_matcher =
-    {pre_match = fn _ => fn _ => fn _ => true,
-     match = fn _ => fn _ => fn _ => fn (id, inst) => [((id, inst), true_th)]}
 
 (* Prop-matching with a PROP item. *)
 val prop_matcher =
@@ -541,20 +541,20 @@ fun pre_match_arg ctxt arg (item as {ty_str, ...}) =
       val _ = assert_valid_arg arg
       val thy = Proof_Context.theory_of ctxt
       val {prop_matchers, typed_matchers, ...} = get_io_info thy ty_str
-      val pat = pat_of_match_arg arg
     in
-      if not (Util.is_pattern pat) then true else
-      case (arg, pat) of
-          (PropMatch _, _) =>
-          if Term.is_Var pat orelse
-             (is_neg pat andalso Term.is_Var (get_neg pat))
-          then true
-          else exists (fn f => f pat item ctxt) (map #pre_match prop_matchers)
-        | (TypedMatch _, _) =>
+      case arg of
+          PropMatch pat =>
+          Term.is_Var pat orelse
+          (is_neg pat andalso Term.is_Var (get_neg pat)) orelse
+          not (Util.is_pattern pat) orelse
+          exists (fn f => f pat item ctxt) (map #pre_match prop_matchers)
+        | TypedMatch (_, pat) =>
+          not (Util.is_pattern pat) orelse
           exists (fn f => f pat item ctxt) (map #pre_match typed_matchers)
-        | (PropertyMatch _, _) =>
+        | TypedUniv _ => true
+        | PropertyMatch _ =>
           raise Fail "pre_match_arg: should not be called on PropertyMatch."
-        | (WellFormMatch _, _) =>
+        | WellFormMatch _ =>
           raise Fail "pre_match_arg: should not be called on WellFormMatch."
     end
 
@@ -574,6 +574,7 @@ fun match_arg ctxt arg (item as {id, ty_str, ...}) (id', inst) =
       case arg of
           PropMatch _ => maps (fn f => f pat item ctxt (id'', inst))
                               (map #match prop_matchers)
+        | TypedUniv _ => [((id'', inst), true_th)]
         | TypedMatch _ => maps (fn f => f pat item ctxt (id'', inst))
                                (map #match typed_matchers)
         | PropertyMatch _ =>

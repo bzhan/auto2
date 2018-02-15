@@ -640,7 +640,7 @@ fun nat_order_resolve_fn ictxt _ =
 
 val nat_order_resolve_prfstep =
     {name = "nat_order_resolve",
-     args = [TypedMatch (TY_NULL, @{term_pat "A::bool"})],
+     args = [TypedUniv TY_NULL],
      priority = PRIORITY_ADD,
      func = OneStep nat_order_resolve_fn}
 

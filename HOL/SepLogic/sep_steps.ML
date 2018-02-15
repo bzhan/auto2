@@ -306,7 +306,7 @@ fun forward_ent_prfstep_fn ent_th ictxt item =
 
 fun forward_ent_prfstep ent_th =
     {name = Util.name_of_thm ent_th ^ "@ent",
-     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     args = [TypedUniv TY_ENTAIL],
      priority = PRIORITY_SHADOW,
      func = OneStep (forward_ent_prfstep_fn ent_th)}
 
@@ -338,7 +338,7 @@ fun backward_ent_prfstep_fn ent_th ictxt item =
 
 fun backward_ent_prfstep ent_th =
     {name = Util.name_of_thm ent_th ^ "@entback",
-     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     args = [TypedUniv TY_ENTAIL],
      priority = PRIORITY_SHADOW,
      func = OneStep (backward_ent_prfstep_fn ent_th)}
 
@@ -413,7 +413,7 @@ fun entails_resolve_fn ictxt item =
 
 val entails_resolve =
     {name = "sep.entails_resolve",
-     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     args = [TypedUniv TY_ENTAIL],
      priority = PRIORITY_RESOLVE,
      func = OneStep entails_resolve_fn}
 
@@ -487,7 +487,7 @@ fun forward_hoare_prfstep_fn ent_th ictxt item =
 
 fun forward_hoare_prfstep ent_th =
     {name = Util.name_of_thm ent_th ^ "@hoare_ent",
-     args = [TypedMatch (TY_CODE_POS, Term.dummy)],
+     args = [TypedUniv TY_CODE_POS],
      priority = PRIORITY_SHADOW,
      func = OneStep (forward_hoare_prfstep_fn ent_th)}
 
@@ -561,7 +561,7 @@ fun rewrite_pos_fn ictxt item1 item2 =
 
 val rewrite_pos =
     {name = "sep.rewrite_pos",
-     args = [TypedMatch (TY_CODE_POS, Term.dummy),
+     args = [TypedUniv TY_CODE_POS,
              TypedMatch (TY_EQ, @{term_pat "(?c1::?'a Heap) = ?c2"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep rewrite_pos_fn}
@@ -655,7 +655,7 @@ fun match_hoare_prop_fn ictxt item1 item2 =
 val match_hoare_prop =
     {name = "sep.match_hoare_prop",
      args = [TypedMatch (TY_PROP, @{term_pat "<?P> ?c <?Q>"}),
-             TypedMatch (TY_CODE_POS, Term.dummy)],
+             TypedUniv TY_CODE_POS],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_hoare_prop_fn}
 
@@ -674,8 +674,7 @@ fun match_hoare_disj_fn ictxt item1 item2 =
 
 val match_hoare_disj =
     {name = "sep.match_hoare_disj",
-     args = [TypedMatch (TY_DISJ, Term.dummy),
-             TypedMatch (TY_CODE_POS, Term.dummy)],
+     args = [TypedUniv TY_DISJ, TypedUniv TY_CODE_POS],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_hoare_disj_fn}
 
@@ -706,7 +705,7 @@ fun match_assn_pure_fn ictxt item1 item2 =
 
 val match_assn_pure =
     {name = "sep.match_assn_pure",
-     args = [TypedMatch (TY_CODE_POS, Term.dummy),
+     args = [TypedUniv TY_CODE_POS,
              PropMatch (@{term_pat "?b::bool"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_pure_fn}
@@ -728,7 +727,7 @@ fun hoare_create_case_fn ictxt item =
 
 val hoare_create_case =
     {name = "sep.hoare_create_case",
-     args = [TypedMatch (TY_CODE_POS, Term.dummy)],
+     args = [TypedUniv TY_CODE_POS],
      priority = PRIORITY_ADD,
      func = OneStep hoare_create_case_fn}
 
@@ -754,7 +753,7 @@ fun entail_pure_fn ictxt item1 item2 =
 
 val entail_pure =
     {name = "sep.entail_pure",
-     args = [TypedMatch (TY_ENTAIL, Term.dummy),
+     args = [TypedUniv TY_ENTAIL,
              PropMatch (@{term_pat "?b::bool"})],
      priority = PRIORITY_SHADOW,
      func = TwoStep entail_pure_fn}
@@ -776,7 +775,7 @@ fun entail_create_case_fn ictxt item =
 
 val entail_create_case =
     {name = "sep.entail_create_case",
-     args = [TypedMatch (TY_ENTAIL, Term.dummy)],
+     args = [TypedUniv TY_ENTAIL],
      priority = PRIORITY_ADD,
      func = OneStep entail_create_case_fn}
 
@@ -797,7 +796,7 @@ fun hoare_triple_fn ictxt item =
 
 val hoare_triple =
     {name = "sep.hoare_triple",
-     args = [TypedMatch (TY_CODE_POS, Term.dummy)],
+     args = [TypedUniv TY_CODE_POS],
      priority = PRIORITY_SHADOW,
      func = OneStep hoare_triple_fn}
 
@@ -858,10 +857,6 @@ val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
       (TY_CODE_POS, SOME code_pos_terms, NONE),
       (TY_ENTAIL, SOME entail_terms, NONE)
-
-    ] #> fold ItemIO.add_typed_matcher [
-      (TY_CODE_POS, ItemIO.univ_matcher),
-      (TY_ENTAIL, ItemIO.univ_matcher)
 
     ] #> fold add_prfstep [
       init_entail, entails_resolve,

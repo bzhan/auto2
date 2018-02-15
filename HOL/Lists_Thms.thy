@@ -105,7 +105,7 @@ setup {* add_rewrite_rule @{thm mset_sort} *}
 setup {* add_rewrite_rule @{thm set_sort} *}
 setup {* add_backward_prfstep @{thm properties_for_sort} *}
 lemma sort_Nil [rewrite]: "sort [] = []" by auto
-lemma sort_singleton [rewrite]: "sort [a] = [a]" by auto2
+lemma sort_singleton [rewrite]: "sort [a] = [a]" by auto
 
 section {* distinct *}
 

@@ -68,8 +68,7 @@ fun alg_assoc_prfstep (fhead, assoc_l) =
       val (c, _) = Term.dest_Const fhead
     in
       {name = c ^ "@assoc",
-       args = [TypedMatch (TY_TERM, @{term_pat "?A"}),
-               TypedMatch (TY_TERM, @{term_pat "?B"})],
+       args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
        priority = PRIORITY_ADD,
        func = TwoStep (alg_assoc_prfstep_fn (fhead, assoc_l))}
     end

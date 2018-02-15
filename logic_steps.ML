@@ -96,15 +96,13 @@ fun shadow_item_fn ictxt item1 item2 =
 
 val shadow_prop_item =
     {name = "shadow_prop",
-     args = [TypedMatch (TY_PROP, boolVar "A"),
-             TypedMatch (TY_PROP, boolVar "B")],
+     args = [TypedUniv TY_PROP, TypedUniv TY_PROP],
      priority = PRIORITY_URGENT,
      func = TwoStep shadow_item_fn}
 
 val shadow_term_item =
     {name = "shadow_term",
-     args = [TypedMatch (TY_TERM, @{term_pat "?A::?'a"}),
-             TypedMatch (TY_TERM, @{term_pat "?B::?'a"})],
+     args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
      priority = PRIORITY_URGENT,
      func = TwoStep shadow_item_fn}
 
@@ -245,7 +243,7 @@ fun exists_elim_fn ictxt {id, prop, ...} =
 
 val exists_elim_prfstep =
     {name = "exists_elim",
-     args = [TypedMatch (TY_PROP, boolVar "A")],
+     args = [TypedUniv TY_PROP],
      priority = PRIORITY_ADD,
      func = OneStep exists_elim_fn}
 
@@ -926,8 +924,7 @@ fun match_update_fn ictxt item1 item2 =
 
 val match_update_prfstep =
     {name = "disj_match_update",
-     args = [TypedMatch (TY_DISJ, boolVar "C"),
-             PropMatch (boolVar "A")],
+     args = [TypedUniv TY_DISJ, PropMatch (boolVar "A")],
      priority = PRIORITY_SHADOW,
      func = TwoStep match_update_fn}
 
@@ -974,8 +971,7 @@ fun match_one_sch_fn ictxt item1 item2 =
 
 val match_one_sch_prfstep =
     {name = "disj_match_one_sch",
-     args = [TypedMatch (TY_DISJ, boolVar "C"),
-             TypedMatch (TY_TERM, @{term_pat "?A"})],
+     args = [TypedUniv TY_DISJ, TypedUniv TY_TERM],
      priority = PRIORITY_ADD,
      func = TwoStep match_one_sch_fn}
 
@@ -1001,7 +997,7 @@ fun disj_match_iff_fn ictxt {id, tname, prop, ...} =
 
 val disj_match_iff_prfstep =
     {name = "disj_match_iff",
-     args = [TypedMatch (TY_DISJ, boolVar "A")],
+     args = [TypedUniv TY_DISJ],
      priority = PRIORITY_ADD,
      func = OneStep disj_match_iff_fn}
 
@@ -1064,7 +1060,7 @@ fun disj_use_vardef ictxt item =
 
 val disj_use_vardef_prfstep =
     {name = "disj_use_vardef",
-     args = [TypedMatch (TY_DISJ, boolVar "A")],
+     args = [TypedUniv TY_DISJ],
      priority = PRIORITY_NORM,
      func = OneStep disj_use_vardef}
 
@@ -1094,7 +1090,7 @@ fun disj_create_case_fn ictxt {id, tname, ...} =
 
 val disj_create_case_prfstep =
     {name = "disj_create_case",
-     args = [TypedMatch (TY_DISJ, boolVar "A")],
+     args = [TypedUniv TY_DISJ],
      priority = PRIORITY_ADD,
      func = OneStep disj_create_case_fn}
 
@@ -1121,17 +1117,13 @@ fun disj_shadow_fn ictxt (item1 as {tname = tname1, ...})
 
 val disj_shadow_prfstep =
     {name = "disj_shadow",
-     args = [TypedMatch (TY_DISJ, boolVar "A"),
-             TypedMatch (TY_DISJ, boolVar "B")],
+     args = [TypedUniv TY_DISJ, TypedUniv TY_DISJ],
      priority = PRIORITY_SHADOW,
      func = TwoStep disj_shadow_fn}
 
 val add_disj_proofsteps =
     fold ItemIO.add_item_type [
       (TY_DISJ, SOME disj_rewr_terms, SOME output_disj_fn)
-
-    ] #> fold ItemIO.add_typed_matcher [
-      (TY_DISJ, ItemIO.univ_matcher)
 
     ] #> fold ItemIO.add_prop_matcher [
       (TY_DISJ, disj_prop_matcher)

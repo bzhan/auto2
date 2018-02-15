@@ -77,7 +77,7 @@ fun alg_norm1_prfstep norm_info =
                    handle TERM _ => raise Fail "alg_norm1_prfstep"
     in
       {name = c ^ "@norm1",
-       args = [TypedMatch (TY_TERM, @{term_pat "?A"})],
+       args = [TypedUniv TY_TERM],
        priority = PRIORITY_ADD,
        func = OneStep (alg_norm1_prfstep_fn norm_info)}
     end
@@ -153,8 +153,7 @@ fun alg_norm2_prfstep norm_info =
       val (c, _) = Term.dest_Const pred_t
     in
       {name = c ^ "@norm2",
-       args = [TypedMatch (TY_TERM, @{term_pat "?A"}),
-               TypedMatch (TY_TERM, @{term_pat "?B"})],
+       args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
        priority = PRIORITY_ADD,
        func = TwoStep (alg_norm2_prfstep_fn norm_info)}
     end

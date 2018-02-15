@@ -174,8 +174,7 @@ fun ac_expand_equiv_fn ictxt item1 item2 =
 
 val ac_expand_equiv =
     {name = "ac_expand_equiv",
-     args = [TypedMatch (TY_TERM, @{term_pat "?A::?'a"}),
-             TypedMatch (TY_TERM, @{term_pat "?B::?'a"})],
+     args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
      priority = PRIORITY_ADD,
      func = TwoStep ac_expand_equiv_fn}
 
@@ -216,7 +215,7 @@ fun ac_expand_unit_fn ictxt item =
 
 val ac_expand_unit =
     {name = "ac_expand_unit",
-     args = [TypedMatch (TY_TERM, @{term_pat "?A::?'a"})],
+     args = [TypedUniv TY_TERM],
      priority = PRIORITY_ADD,
      func = OneStep ac_expand_unit_fn}
 
