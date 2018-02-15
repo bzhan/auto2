@@ -41,8 +41,7 @@ sig
   val add_rewrite_ent_rule: thm -> theory -> theory
 
   val rewrite_pos: proofstep
-  val normalize_hoare_cv: conv
-  val contract_hoare_cv: Proof.context -> conv
+  val extract_pure_hoare_cv: conv
   val match_hoare_th: box_id -> incr_context -> thm -> thm -> box_item ->
                       raw_update list
   val match_hoare_prop: proofstep
@@ -53,6 +52,7 @@ sig
   val entail_create_case: proofstep
   val hoare_triple: proofstep
 
+  val contract_hoare_cv: Proof.context -> conv
   val add_hoare_triple_prfstep: thm -> theory -> theory
   val add_sep_logic_proofsteps: theory -> theory
 end;
@@ -181,12 +181,14 @@ fun get_first_cmd c =
         Const (@{const_name bind}, _) $ c1 $ _ => c1
       | _ => c
 
-fun extract_return_name t =
+fun extract_return_var t =
     case t of
-        Const (@{const_name bind}, _) $ _ $ Abs (x, _, _) =>
-        if x = "uu_" then "u"  (* no assigned name *)
-        else x  (* regular assigned name *)
-      | _ => "r"  (* invalid input, return is a pair, etc. *)
+        Const (@{const_name bind}, _) $ _ $ Abs (x, T, _) =>
+        if x = "uu_" then Free ("u",T)  (* no assigned name *)
+        else Free (x,T)  (* regular assigned name *)
+      | Const (@{const_name bind}, _) $ _ $ c =>
+        Free ("r", Term.domain_type (fastype_of c))
+      | _ => raise Fail "extract_return_var"
 
 (* CODE_POS item stores a Hoare triple goal, indicating the current
    position in the program.
@@ -535,19 +537,6 @@ fun add_rewrite_ent_rule th thy =
           |> add_backward_ent_prfstep backward_th
     end
 
-fun match_assn_props id ctxt hoare_th goal =
-    let
-      val (P1, c1, _) = dest_hoare_triple (concl_of' hoare_th)
-      val (P2, c2, _) = dest_hoare_triple (dest_not (prop_of' goal))
-      val c2' = get_first_cmd c2
-      val _ = assert (c1 aconv c2' andalso P1 aconv P2) "match_assn_props"
-    in
-      if c2 aconv c2' then
-        entail_goal_update ctxt (id, [hoare_th, goal] MRS @{thm post_rule'})
-      else
-        hoare_goal_update ctxt (id, [hoare_th, goal] MRS @{thm bind_rule'})
-    end
-
 (* Rewrite the first command of a Hoare triple. *)
 fun rewr_first_cmd eq_th ct =
     let
@@ -589,7 +578,8 @@ val rewrite_pos =
      priority = PRIORITY_SHADOW,
      func = TwoStep rewrite_pos_fn}
 
-fun normalize_hoare_cv ct =
+(* Extract the pure pre-conditions from a Hoare triple fact. *)
+fun extract_pure_hoare_cv ct =
     let
       val (P, _, _) = ct |> Thm.term_of |> dest_hoare_triple
     in
@@ -597,22 +587,12 @@ fun normalize_hoare_cv ct =
         rewr_obj_eq @{thm norm_pre_pure_iff2} ct
       else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
         Conv.every_conv [rewr_obj_eq @{thm norm_pre_pure_iff},
-                         Conv.arg_conv normalize_hoare_cv] ct
+                         Conv.arg_conv extract_pure_hoare_cv] ct
       else
         Conv.all_conv ct
     end
 
-(* Contract a Hoare triple to <P> c <Q> form. *)
-fun contract_hoare_cv' ct =
-    if is_imp (Thm.term_of ct) then
-      Conv.every_conv [Conv.arg_conv contract_hoare_cv',
-                       rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
-    else
-      Conv.all_conv ct
-
-fun contract_hoare_cv ctxt ct =
-    Conv.every_conv [contract_hoare_cv', norm_precond ctxt] ct
-
+(* Use a Hoare triple to advance a step in CODE_POS. *)
 fun match_hoare_th id ictxt hoare_th goal item =
     let
       val ctxt = IncrContext.context_of ictxt
@@ -637,13 +617,30 @@ fun match_hoare_th id ictxt hoare_th goal item =
                   val hoare_th =
                       (Util.subst_thm ctxt inst' hoare_th)
                           |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
-                          |> apply_to_thm' normalize_hoare_cv
+                          |> apply_to_thm' extract_pure_hoare_cv
                           |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
                   val hoare_th' =
                       [hoare_th, ent_th] MRS @{thm pre_rule''}
                 in
-                  [match_assn_props id'' ctxt hoare_th' goal,
-                   ShadowItem {id = id'', item = item}]
+                  if is_bind_cmd c then
+                    let
+                      val return_var = extract_return_var c
+                      val th' = [hoare_th', goal] MRS @{thm bind_rule'}
+                      val (_, (assms, concl)) = th' |> Thm.prop_of
+                                                    |> Util.strip_meta_horn
+                      val concl' = concl |> dest_Trueprop
+                                         |> Util.rename_abs_term [return_var]
+                                         |> mk_Trueprop
+                      val t' = Util.list_meta_horn ([], (assms, concl'))
+                      val th' = Thm.renamed_prop t' th'
+                    in
+                      [hoare_goal_update ctxt (id'', th'),
+                       ShadowItem {id = id'', item = item}]
+                    end
+                  else
+                    [entail_goal_update
+                         ctxt (id'', [hoare_th', goal] MRS @{thm post_rule'}),
+                     ShadowItem {id = id'', item = item}]
                 end
           in
             if null insts' then [] else process_inst' (hd insts')
@@ -815,6 +812,17 @@ val hoare_triple =
      args = [TypedMatch (TY_CODE_POS, Term.dummy)],
      priority = PRIORITY_SHADOW,
      func = OneStep hoare_triple_fn}
+
+(* Contract a Hoare triple to <P> c <Q> form. *)
+fun contract_hoare_cv' ct =
+    if is_imp (Thm.term_of ct) then
+      Conv.every_conv [Conv.arg_conv contract_hoare_cv',
+                       rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
+    else
+      Conv.all_conv ct
+
+fun contract_hoare_cv ctxt ct =
+    Conv.every_conv [contract_hoare_cv', norm_precond ctxt] ct
 
 (* Given hoare_th of the form <?P> ?c <?Q>, produce proofstep matching
    item1 with CODE_POS (?h, ?c) and item2 with proposition ?h |= ?P *
