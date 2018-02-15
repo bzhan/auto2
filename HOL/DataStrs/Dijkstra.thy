@@ -153,7 +153,7 @@ lemma path_split1 [backward]: "is_path G p \<Longrightarrow> hd p \<in> V \<Long
 @proof @induct p @with
   @subgoal "p = a # p'"
     @let "p = a # p'"
-    @case "p' = []" @then
+    @case "p' = []"
     @case "hd p' \<notin> V" @with @have "p = path_join G [a, hd p'] p'" @end
     @obtain p1 p2 where "joinable G p1 p2" "p' = path_join G p1 p2" "int_pts p1 \<subseteq> V" "hd p2 \<notin> V"
     @have "p = path_join G (a # p1) p2"

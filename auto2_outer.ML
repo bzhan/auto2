@@ -172,7 +172,7 @@ val rule =
 val _ =
   Outer_Syntax.command @{command_keyword "@have"} "intermediate goal"
     (((rule -- Parse.term) --
-      Scan.option (@{keyword "@with"} || @{keyword "@then"})) >>
+      Scan.option @{keyword "@with"}) >>
         (fn ((s, r), t) =>
            Toplevel.proof (fn state => have_cmd (r, s, t) state)))
 
@@ -417,7 +417,7 @@ fun obtain_cmd (s, t, u) state =
 val obtain_param =
   ((Scan.repeat Parse.term --
     Scan.option (@{keyword "where"} |-- (Scan.repeat Parse.term)))
-     -- Scan.option (@{keyword "@with"} || @{keyword "@then"}))
+     -- Scan.option @{keyword "@with"})
 
 val _ =
   Outer_Syntax.command @{command_keyword "@obtain"} "obtain variables"
@@ -501,7 +501,7 @@ fun case_cmd (s, t) state =
 
 val _ =
   Outer_Syntax.command @{command_keyword "@case"} "intermediate case"
-    ((Parse.term -- Scan.option (@{keyword "@with"} || @{keyword "@then"})) >>
+    ((Parse.term -- Scan.option @{keyword "@with"}) >>
         (fn (s, t) =>
             Toplevel.proof (fn state => case_cmd (s, t) state)))
 
@@ -614,7 +614,7 @@ fun let_cmd s state =
 
 val _ =
   Outer_Syntax.command @{command_keyword "@let"} "define a variable"
-    (((Scan.repeat Parse.term) --| Scan.option @{keyword "@then"}) >>
+    (Scan.repeat Parse.term >>
         (fn s =>
             Toplevel.proof (fn state => let_cmd s state)))
 

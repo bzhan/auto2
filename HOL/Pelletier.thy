@@ -28,7 +28,7 @@ theorem p11: "p \<longleftrightarrow> p" by auto2
 
 theorem p12: "((p \<longleftrightarrow> q) \<longleftrightarrow> r) \<longleftrightarrow> (p \<longleftrightarrow> (q \<longleftrightarrow> r))"
 @proof
-  @case "p" @then
+  @case "p"
   @case "q"
 @qed
 
@@ -45,37 +45,37 @@ theorem p17: "(p \<and> (q \<longrightarrow> r) \<longrightarrow> s) \<longleftr
 theorem p18: "\<exists>y::'a. \<forall>x. F(y) \<longrightarrow> F(x)"
 @proof
   @case "\<forall>x. F(x)" @with
-    @obtain "y::'a" where "y = y" @then @have "\<forall>x. F(y) \<longrightarrow> F(x)"
+    @obtain "y::'a" where "y = y" @have "\<forall>x. F(y) \<longrightarrow> F(x)"
   @end
-  @obtain y where "\<not>F(y)" @then @have "\<forall>x. F(y) \<longrightarrow> F(x)"
+  @obtain y where "\<not>F(y)" @have "\<forall>x. F(y) \<longrightarrow> F(x)"
 @qed
 
 theorem p19: "\<exists>x::'a. \<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))"
 @proof
   @case "\<exists>x. P(x) \<longrightarrow> Q(x)" @with
-    @obtain x where "P(x) \<longrightarrow> Q(x)" @then
+    @obtain x where "P(x) \<longrightarrow> Q(x)"
     @have "\<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))"
   @end
-  @obtain "x::'a" where "x = x" @then
+  @obtain "x::'a" where "x = x"
   @have "\<forall>y z. (P(y) \<longrightarrow> Q(z)) \<longrightarrow> (P(x) \<longrightarrow> Q(x))"
 @qed
 
 theorem p20: "\<forall>x y. \<exists>z. \<forall>w. P(x) \<and> Q(y) \<longrightarrow> R(z) \<and> S(w) \<Longrightarrow>
   \<exists>x y. P(x) \<and> Q(y) \<Longrightarrow> \<exists>z. R(z)"
 @proof
-  @obtain x y where "P(x)" "Q(y)" @then
+  @obtain x y where "P(x)" "Q(y)"
   @obtain z where "\<forall>w. P(x) \<and> Q(y) \<longrightarrow> R(z) \<and> S(w)"
 @qed
     
 theorem p21: "\<exists>x. p \<longrightarrow> F(x) \<Longrightarrow> \<exists>x. F(x) \<longrightarrow> p \<Longrightarrow> \<exists>x. p \<longleftrightarrow> F(x)"
 @proof
-  @case "p" @with @obtain x where "F(x)" @then @have "p \<longleftrightarrow> F(x)" @end
-  @case "\<not>p" @with @obtain x where "\<not>F(x)" @then @have "p \<longleftrightarrow> F(x)" @end
+  @case "p" @with @obtain x where "F(x)" @have "p \<longleftrightarrow> F(x)" @end
+  @case "\<not>p" @with @obtain x where "\<not>F(x)" @have "p \<longleftrightarrow> F(x)" @end
 @qed
 
 theorem p22: "\<forall>x::'a. p \<longleftrightarrow> F(x) \<Longrightarrow> p \<longleftrightarrow> (\<forall>x. F(x))"
 @proof
-  @case "p" @then @obtain "x::'a" where "x = x"
+  @case "p" @obtain "x::'a" where "x = x"
 @qed
 
 theorem p23: "(\<forall>x::'a. p \<or> F(x)) \<longleftrightarrow> (p \<or> (\<forall>x. F(x)))" by auto2
@@ -84,7 +84,7 @@ theorem p29: "\<exists>x. F(x) \<Longrightarrow> \<exists>x. G(x) \<Longrightarr
   ((\<forall>x. F(x) \<longrightarrow> H(x)) \<and> (\<forall>x. G(x) \<longrightarrow> J(x))) \<longleftrightarrow>
   (\<forall>x y. F(x) \<and> G(y) \<longrightarrow> H(x) \<and> J(y))"
 @proof
-  @obtain a b where "F(a)" "G(b)" @then
+  @obtain a b where "F(a)" "G(b)"
   @case "\<forall>x y. F(x) \<and> G(y) \<longrightarrow> H(x) \<and> J(y)" @with
     @have "\<forall>x. F(x) \<longrightarrow> H(x)" @with @have "F(x) \<and> G(b)" @end
     @have "\<forall>y. G(y) \<longrightarrow> J(y)" @with @have "F(a) \<and> G(y)" @end
@@ -111,14 +111,14 @@ theorem p35: "\<exists>(x::'a) (y::'b). P(x,y) \<longrightarrow> (\<forall>x y. 
 theorem p39: "\<not>(\<exists>x. \<forall>y. F(y,x) \<longleftrightarrow> \<not>F(y,y))"
 @proof
   @contradiction
-  @obtain x where "\<forall>y. F(y,x) \<longleftrightarrow> \<not>F(y,y)" @then
+  @obtain x where "\<forall>y. F(y,x) \<longleftrightarrow> \<not>F(y,y)"
   @case "F(x,x)"
 @qed
 
 (* Note there is a typo in the original text. *)
 theorem p40: "\<exists>y. \<forall>x. F(x,y) \<longleftrightarrow> F(x,x) \<Longrightarrow> \<not>(\<forall>x. \<exists>y. \<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,x))"
 @proof
-  @obtain A where "\<forall>x. F(x,A) \<longleftrightarrow> F(x,x)" @then
+  @obtain A where "\<forall>x. F(x,A) \<longleftrightarrow> F(x,x)"
   @have "\<not>(\<exists>y. \<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,A))" @with
     @have (@rule) "\<forall>y. \<not>(\<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,A))" @with
       @have "\<not>(F(y,y) \<longleftrightarrow> \<not>F(y,A))" @with @case "F(y,y)" @end
@@ -129,7 +129,7 @@ theorem p40: "\<exists>y. \<forall>x. F(x,y) \<longleftrightarrow> F(x,x) \<Long
 theorem p42: "\<not>(\<exists>y. \<forall>x. F(x,y) \<longleftrightarrow> \<not>(\<exists>z. F(x,z) \<and> F(z,x)))"
 @proof
   @contradiction
-  @obtain y where "\<forall>x. F(x,y) \<longleftrightarrow> \<not>(\<exists>z. F(x,z) \<and> F(z,x))" @then
+  @obtain y where "\<forall>x. F(x,y) \<longleftrightarrow> \<not>(\<exists>z. F(x,z) \<and> F(z,x))"
   @case "F(y,y)"
 @qed
 
@@ -158,8 +158,8 @@ theorem p48: "a = b \<or> c = d \<Longrightarrow> a = c \<or> b = d \<Longrighta
 
 theorem p49: "\<exists>x y. \<forall>(z::'a). z = x \<or> z = y \<Longrightarrow> P(a) \<and> P(b) \<Longrightarrow> (a::'a) \<noteq> b \<Longrightarrow> \<forall>x. P(x)"
 @proof
-  @obtain x y where "\<forall>(z::'a). z = x \<or> z = y" @then
-  @have "x = a \<or> x = b" @then
+  @obtain x y where "\<forall>(z::'a). z = x \<or> z = y"
+  @have "x = a \<or> x = b"
   @have "\<forall>c. P(c)" @with @have "c = a \<or> c = b" @end
 @qed
 
@@ -171,7 +171,7 @@ theorem p50: "\<forall>x. F(a,x) \<or> (\<forall>y. F(x,y)) \<Longrightarrow> \<
 theorem p51: "\<exists>z w. \<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w \<Longrightarrow>
   \<exists>z. \<forall>x. (\<exists>w. \<forall>y. F(x,y) \<longleftrightarrow> y = w) \<longleftrightarrow> x = z"
 @proof
-  @obtain z w where "\<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w" @then
+  @obtain z w where "\<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w"
   @have "\<forall>x. (\<exists>w. \<forall>y. F(x,y) \<longleftrightarrow> y = w) \<longleftrightarrow> x = z" @with
     @case "x = z" @with @have "\<forall>y. F(x,y) \<longleftrightarrow> y = w" @end
   @end
@@ -180,7 +180,7 @@ theorem p51: "\<exists>z w. \<forall>x y. F(x,y) \<longleftrightarrow> x = z \<a
 theorem p52: "\<exists>z w. \<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w \<Longrightarrow>
   \<exists>w. \<forall>y. (\<exists>z. \<forall>x. F(x,y) \<longleftrightarrow> x = z) \<longleftrightarrow> y = w"
 @proof
-  @obtain z w where "\<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w" @then
+  @obtain z w where "\<forall>x y. F(x,y) \<longleftrightarrow> x = z \<and> y = w"
   @have"\<forall>y. (\<exists>z. \<forall>x. F(x,y) \<longleftrightarrow> x = z) \<longleftrightarrow> y = w" @with
     @case "y = w" @with @have "\<forall>x. F(x,y) \<longleftrightarrow> x = z" @end
   @end
@@ -212,7 +212,7 @@ theorem p58: "\<forall>x y. f(x) = g(y) \<Longrightarrow> \<forall>x y. f(f(x)) 
 
 theorem p59: "\<forall>x::'a. F(x) \<longleftrightarrow> \<not>F(f(x)) \<Longrightarrow> \<exists>x. F(x) \<and> \<not>F(f(x))"
 @proof
-  @obtain "x::'a" where "x = x" @then @case "F(x)"
+  @obtain "x::'a" where "x = x" @case "F(x)"
 @qed
 
 theorem p60: "\<forall>x. F(x,f(x)) \<longleftrightarrow> (\<exists>y. (\<forall>z. F(z,y) \<longrightarrow> F(z,f(x))) \<and> F(x,y))" by auto2

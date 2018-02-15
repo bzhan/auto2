@@ -57,7 +57,7 @@ lemma has_left_inverse [backward]:
 
 lemma add_cancel_left [forward]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x +\<^sub>G y = x +\<^sub>G z \<Longrightarrow> y = z"
-@proof @obtain "x'\<in>.G" where "x' +\<^sub>G x = \<zero>\<^sub>G" @then @have "x' +\<^sub>G (x +\<^sub>G y) = y" @qed
+@proof @obtain "x'\<in>.G" where "x' +\<^sub>G x = \<zero>\<^sub>G" @have "x' +\<^sub>G (x +\<^sub>G y) = y" @qed
       
 lemma add_cancel_right [forward]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> y +\<^sub>G x = z +\<^sub>G x \<Longrightarrow> y = z" by auto2

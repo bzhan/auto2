@@ -63,14 +63,14 @@ lemma inv_group_fun [rewrite]:
 lemma unit_l_cancel [forward]:
   "is_monoid(G) \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x *\<^sub>G y = x *\<^sub>G z \<Longrightarrow> x \<in> units(G) \<Longrightarrow> y = z"
 @proof
-  @have "inv(G,x) *\<^sub>G x *\<^sub>G y = inv(G,x) *\<^sub>G (x *\<^sub>G y)" @then
+  @have "inv(G,x) *\<^sub>G x *\<^sub>G y = inv(G,x) *\<^sub>G (x *\<^sub>G y)"
   @have "inv(G,x) *\<^sub>G x *\<^sub>G z = inv(G,x) *\<^sub>G (x *\<^sub>G z)"
 @qed
 
 lemma unit_r_cancel [forward]:
   "is_monoid(G) \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> y *\<^sub>G x = z *\<^sub>G x \<Longrightarrow> x \<in> units(G) \<Longrightarrow> y = z"
 @proof
-  @have "y *\<^sub>G (x *\<^sub>G inv(G,x)) = y *\<^sub>G x *\<^sub>G inv(G,x)" @then
+  @have "y *\<^sub>G (x *\<^sub>G inv(G,x)) = y *\<^sub>G x *\<^sub>G inv(G,x)"
   @have "z *\<^sub>G (x *\<^sub>G inv(G,x)) = z *\<^sub>G x *\<^sub>G inv(G,x)"
 @qed
 
@@ -201,10 +201,10 @@ setup {* del_prfstep_thm @{thm group_prod_def} *}
 lemma group_prod_is_monoid [forward]:
   "is_monoid(G) \<Longrightarrow> is_monoid(H) \<Longrightarrow> is_monoid(G \<times>\<^sub>G H)"
 @proof
-  @let "K = G \<times>\<^sub>G H" @then
+  @let "K = G \<times>\<^sub>G H"
   @have "is_times_assoc(K)" @with
     @have "\<forall>x\<in>.K. \<forall>y\<in>.K. \<forall>z\<in>.K. (x *\<^sub>K y) *\<^sub>K z = x *\<^sub>K (y *\<^sub>K z)" @with
-      @have "(fst(x) *\<^sub>G fst(y)) *\<^sub>G fst(z) = fst(x) *\<^sub>G (fst(y) *\<^sub>G fst(z))" @then
+      @have "(fst(x) *\<^sub>G fst(y)) *\<^sub>G fst(z) = fst(x) *\<^sub>G (fst(y) *\<^sub>G fst(z))"
       @have "(snd(x) *\<^sub>H snd(y)) *\<^sub>H snd(z) = snd(x) *\<^sub>H (snd(y) *\<^sub>H snd(z))"
     @end
   @end
@@ -213,7 +213,7 @@ lemma group_prod_is_monoid [forward]:
 lemma group_prod_is_group [forward]:
   "is_group(G) \<Longrightarrow> is_group(H) \<Longrightarrow> is_group(G \<times>\<^sub>G H)"
 @proof
-  @let "K = G \<times>\<^sub>G H" @then
+  @let "K = G \<times>\<^sub>G H"
   @have "\<forall>x\<in>.K. \<langle>inv(G,fst(x)), inv(H,snd(x))\<rangle> *\<^sub>K x = \<one>\<^sub>K"
 @qed
 
@@ -288,8 +288,8 @@ section {* Image of a homomorphism *}
 lemma image_is_subgroup:
   "is_group_hom(f) \<Longrightarrow> H = target_str(f) \<Longrightarrow> is_subgroup_set(H, image(f))"
 @proof
-  @let "G = source_str(f)" @then
-  @have "f ` \<one>\<^sub>G = \<one>\<^sub>H" @then
+  @let "G = source_str(f)"
+  @have "f ` \<one>\<^sub>G = \<one>\<^sub>H"
   @have "subset_mult_closed(H, image(f))" @with
     @have "\<forall>x\<in>image(f). \<forall>y\<in>image(f). x *\<^sub>H y \<in> image(f)" @with
       @obtain "x'\<in>source(f)" where "f`x' = x"

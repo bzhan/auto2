@@ -39,15 +39,15 @@ setup {* del_prfstep_thm @{thm rcoset_equiv_def} *}
 lemma rcoset_equiv_is_equiv [typing]:
   "is_group(G) \<Longrightarrow> is_subgroup_set(G,H) \<Longrightarrow> rcoset_equiv(G,H) \<in> equiv_space(carrier(G))"
 @proof
-  @let "S = carrier(G)" @then
-  @let "R = rcoset_equiv(G,H)" @then
+  @let "S = carrier(G)"
+  @let "R = rcoset_equiv(G,H)"
   @have "\<forall>x\<in>.R. x \<sim>\<^sub>R x" @with @have "x = \<one>\<^sub>G *\<^sub>G x" @end
   @have "\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x" @with
-    @obtain "h\<in>H" where "h *\<^sub>G x = y" @then
+    @obtain "h\<in>H" where "h *\<^sub>G x = y"
     @have "inv(G,h) *\<^sub>G y = x" @with @have "h *\<^sub>G (inv(G,h) *\<^sub>G y) = h *\<^sub>G inv(G,h) *\<^sub>G y" @end @end
   @have "\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z" @with
-    @obtain "h1\<in>H" where "h1 *\<^sub>G x = y" @then
-    @obtain "h2\<in>H" where "h2 *\<^sub>G y = z" @then
+    @obtain "h1\<in>H" where "h1 *\<^sub>G x = y"
+    @obtain "h2\<in>H" where "h2 *\<^sub>G y = z"
     @have "(h2 *\<^sub>G h1) *\<^sub>G x = z" @with @have "(h2 *\<^sub>G h1) *\<^sub>G x = h2 *\<^sub>G (h1 *\<^sub>G x)" @end @end
 @qed
 
@@ -55,7 +55,7 @@ lemma rcoset_mult_compat2 [backward]:
   "R = rcoset_equiv(G,H) \<Longrightarrow> x \<in>. G \<Longrightarrow>
    is_normal_subgroup_set(G,H) \<Longrightarrow> y \<sim>\<^sub>R z \<Longrightarrow> x *\<^sub>G y \<sim>\<^sub>R x *\<^sub>G z"
 @proof
-  @obtain "h\<in>H" where "h *\<^sub>G y = z" @then
+  @obtain "h\<in>H" where "h *\<^sub>G y = z"
   @have "(x *\<^sub>G h *\<^sub>G inv(G,x)) *\<^sub>G (x *\<^sub>G y) = x *\<^sub>G (h *\<^sub>G (inv(G,x) *\<^sub>G x) *\<^sub>G y)"
 @qed
 
@@ -63,7 +63,7 @@ lemma rcoset_mult_compat1 [backward]:
   "R = rcoset_equiv(G,H) \<Longrightarrow> x \<in>. G \<Longrightarrow>
    is_subgroup_set(G,H) \<Longrightarrow> y \<sim>\<^sub>R z \<Longrightarrow> y *\<^sub>G x \<sim>\<^sub>R z *\<^sub>G x"
 @proof
-  @obtain "h\<in>H" where "h *\<^sub>G y = z" @then
+  @obtain "h\<in>H" where "h *\<^sub>G y = z"
   @have "h *\<^sub>G (y *\<^sub>G x) = (h *\<^sub>G y) *\<^sub>G x"
 @qed
 
@@ -137,8 +137,8 @@ lemma quotient_group_sel2 [rewrite]:
 lemma quotient_group_is_group:
   "is_normal_subgroup_set(G,H) \<Longrightarrow> is_group(G //\<^sub>G H)"
 @proof
-  @let "Q = G //\<^sub>G H" @then
-  @have "is_monoid(Q)" @then
+  @let "Q = G //\<^sub>G H"
+  @have "is_monoid(Q)"
   @have "\<forall>x\<in>.Q. rcoset_inv(G,H,x) *\<^sub>Q x = \<one>\<^sub>Q"
 @qed
 setup {* add_forward_prfstep_cond @{thm quotient_group_is_group} [with_term "?G //\<^sub>G ?H"] *}
@@ -155,7 +155,7 @@ lemma qsurj_group_is_morphism [typing]:
 lemma qsurj_group_is_surjective:
   "is_normal_subgroup_set(G,H) \<Longrightarrow> surjective(qsurj_group(G,H))"
 @proof
-  @let "R = rcoset_equiv(G,H)" @then
+  @let "R = rcoset_equiv(G,H)"
   @have (@rule) "\<forall>x \<in>. G //\<^sub>G H. qsurj_group(G,H)`rep(R,x) = x"
 @qed
 setup {* add_forward_prfstep_cond @{thm qsurj_group_is_surjective} [with_term "qsurj_group(?G,?H)"] *}
@@ -194,7 +194,7 @@ lemma exists_induced_group_mor [backward]:
   "is_normal_subgroup_set(G,K) \<Longrightarrow> f \<in> G \<rightharpoonup>\<^sub>G H \<Longrightarrow> K \<subseteq> kernel(f) \<Longrightarrow>
    \<exists>!h. h\<in>(G //\<^sub>G K)\<rightharpoonup>H \<and> f = h \<circ>\<^sub>m qsurj_group(G,K)"
 @proof
-  @let "p = qsurj_group(G,K)" @then
+  @let "p = qsurj_group(G,K)"
   @have "\<forall>x\<in>.G. \<forall>y\<in>.G. p`x = p`y \<longrightarrow> f`x = f`y" @with
     @obtain "k \<in> K" where "k *\<^sub>G x = y" @end
 @qed
@@ -229,14 +229,14 @@ setup {* add_forward_prfstep_cond @{thm induced_group_mor_is_hom} [with_term "in
 lemma injective_induced_group_mor:
   "mor_form(f) \<Longrightarrow> is_group_hom(f) \<Longrightarrow> injective(induced_group_mor(f,kernel(f)))"
 @proof
-  @let "h = induced_group_mor(f,kernel(f))" @then
-  @let "G = source_str(f)" @then
-  @let "p = qsurj_group(G,kernel(f))" @then
+  @let "h = induced_group_mor(f,kernel(f))"
+  @let "G = source_str(f)"
+  @let "p = qsurj_group(G,kernel(f))"
   @have "\<forall>x\<in>source(h). \<forall>y\<in>source(h). h`x = h`y \<longrightarrow> x = y" @with
-    @obtain "x'\<in>source(p)" where "p`x' = x" @then
-    @obtain "y'\<in>source(p)" where "p`y' = y" @then
-    @have "f`x' = f`y'" @then
-    @have "y' *\<^sub>G inv(G,x') \<in> kernel(f)" @then
+    @obtain "x'\<in>source(p)" where "p`x' = x"
+    @obtain "y'\<in>source(p)" where "p`y' = y"
+    @have "f`x' = f`y'"
+    @have "y' *\<^sub>G inv(G,x') \<in> kernel(f)"
     @have "(y' *\<^sub>G inv(G,x')) *\<^sub>G x' = y'"
   @end
 @qed

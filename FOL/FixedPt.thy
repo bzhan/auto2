@@ -149,7 +149,7 @@ lemma trans_cl_induct [script_induct]:
   "\<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<forall>y. \<langle>a,y\<rangle> \<in> r \<longrightarrow> P(y) \<Longrightarrow>
    \<forall>y z. \<langle>a,y\<rangle> \<in> trans_cl(r) \<longrightarrow> \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(b)"
 @proof
-  @obtain y where "\<langle>a,y\<rangle> \<in> rtrans_cl(r) \<and> \<langle>y,b\<rangle> \<in> r" @then
+  @obtain y where "\<langle>a,y\<rangle> \<in> rtrans_cl(r) \<and> \<langle>y,b\<rangle> \<in> r"
   @induct "\<langle>a,y\<rangle> \<in> rtrans_cl(r)" "\<forall>z. \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(z)"
 @qed
 setup {* del_prfstep_thm @{thm trans_cl_def} *}

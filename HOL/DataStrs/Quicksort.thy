@@ -130,11 +130,11 @@ lemma quicksort_basic:
   @let "xs2 = quicksort xs1 l (p - 1)"
   @let "xs3 = quicksort xs l r"
   @have "mset xs2 = mset xs1 \<and> outer_remains xs1 xs2 l r" @with
-    @case "p - 1 \<le> l" @then
+    @case "p - 1 \<le> l"
     @apply_induct_hyp "(p-1)-l" l "p-1" xs1
   @end
   @have "mset xs3 = mset xs2 \<and> outer_remains xs2 xs3 l r" @with
-    @case "p + 1 \<ge> r" @then
+    @case "p + 1 \<ge> r"
     @apply_induct_hyp "r-(p+1)" "p+1" r xs2
   @end
 @qed
@@ -160,7 +160,7 @@ lemma quicksort_sorts:
   @let "xs1 = snd (partition xs l r)"
   @let "xs2 = quicksort xs1 l (p - 1)"
   @let "xs3 = quicksort xs2 (p + 1) r"
-  @have "xs1 ! p = xs3 ! p" @then
+  @have "xs1 ! p = xs3 ! p"
   @have "sublist l p xs2 = sublist l p xs3"
   @have "set (sublist l p xs1) = set (sublist l p xs2)" @with
     @case "p = 0" @have "p = p - 1 + 1" @end

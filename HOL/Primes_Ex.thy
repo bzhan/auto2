@@ -52,7 +52,7 @@ lemma prime_nat_code: "prime p = (1 < p \<and> (\<forall>x. 1 < x \<and> x < p \
 lemma prime_factor_nat [backward]: "n \<noteq> 1 \<Longrightarrow> \<exists>p. p dvd n \<and> prime p"
 @proof
   @strong_induct n
-  @case "prime n" @then @case "n = 0" @then
+  @case "prime n" @case "n = 0"
   @obtain k where "k \<noteq> 1" "k \<noteq> n" "k dvd n"
   @apply_induct_hyp k
 @qed
@@ -70,11 +70,11 @@ lemma prime_power_mult: "prime p \<Longrightarrow> x * y = p ^ k \<Longrightarro
   @induct k arbitrary x y @with
     @subgoal "k = Suc k'"
       @case "p dvd x" @with
-        @obtain x' where "x = p * x'" @then @have "x * y = p * (x' * y)" @then
-        @obtain i j where "x' = p ^ i" "y = p ^ j" @then @have "x = p ^ Suc i" @end
+        @obtain x' where "x = p * x'" @have "x * y = p * (x' * y)"
+        @obtain i j where "x' = p ^ i" "y = p ^ j" @have "x = p ^ Suc i" @end
       @case "p dvd y" @with
-        @obtain y' where "y = p * y'" @then @have "x * y = p * (x * y')" @then
-        @obtain i j where "x = p ^ i" "y' = p ^ j" @then @have "y = p ^ Suc j" @end
+        @obtain y' where "y = p * y'" @have "x * y = p * (x * y')"
+        @obtain i j where "x = p ^ i" "y' = p ^ j" @have "y = p ^ Suc j" @end
     @endgoal
   @end
 @qed
@@ -110,7 +110,7 @@ theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<
 theorem prime_dvd_multiset [backward1]: "prime p \<Longrightarrow> p dvd (\<Prod>i\<in>#M. i) \<Longrightarrow> \<exists>n. n\<in>#M \<and> p dvd n"
 @proof
   @strong_induct M
-  @case "M = {#}" @then
+  @case "M = {#}"
   @obtain M' m where "M = M' + {#m#}"
   @contradiction @apply_induct_hyp M'
 @qed
@@ -119,12 +119,12 @@ theorem factorization_unique_aux:
   "\<forall>p\<in>#M. prime p \<Longrightarrow> \<forall>p\<in>#N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) dvd (\<Prod>i\<in>#N. i) \<Longrightarrow> M \<subseteq># N"
 @proof
   @strong_induct M arbitrary N
-  @case "M = {#}" @then
-  @obtain M' m where "M = M' + {#m#}" @then
-  @have "m dvd (\<Prod>i\<in>#M. i)" @then
-  @obtain n where "n \<in># N" "m dvd n" @then
-  @obtain N' where "N = N' + {#n#}" @then
-  @have "m = n" @then
+  @case "M = {#}"
+  @obtain M' m where "M = M' + {#m#}"
+  @have "m dvd (\<Prod>i\<in>#M. i)"
+  @obtain n where "n \<in># N" "m dvd n"
+  @obtain N' where "N = N' + {#n#}"
+  @have "m = n"
   @have "(\<Prod>i\<in>#M'. i) dvd (\<Prod>i\<in>#N'. i)"
   @apply_induct_hyp M' N'
 @qed

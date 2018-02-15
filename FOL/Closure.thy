@@ -25,11 +25,11 @@ lemma closure_subset' [backward2]:
 lemma closure_subspace:
   "is_top_space(X) \<Longrightarrow> Y \<subseteq> carrier(X) \<Longrightarrow> A \<subseteq> Y \<Longrightarrow> closure(subspace(X,Y),A) = Y \<inter> closure(X,A)"
 @proof
-  @let "B = closure(subspace(X,Y), A)" @then
+  @let "B = closure(subspace(X,Y), A)"
   @have "B \<subseteq> Y \<inter> closure(X,A)" @with
     @have "is_closed(subspace(X,Y), Y \<inter> closure(X,A))" @end
-  @obtain "C\<in>closed_sets(X)" where "B = Y \<inter> C" @then
-  @have "closure(X,A) \<subseteq> C" @then
+  @obtain "C\<in>closed_sets(X)" where "B = Y \<inter> C"
+  @have "closure(X,A) \<subseteq> C"
   @have "Y \<inter> closure(X,A) \<subseteq> Y \<inter> C"
 @qed
 
@@ -41,7 +41,7 @@ lemma closure_mem2 [forward]:
   "is_top_space(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> x \<in> closure(X,A) \<Longrightarrow> U \<in> neighs(X,x) \<Longrightarrow> U \<inter> A \<noteq> \<emptyset>"
 @proof
   @contradiction
-  @have "is_closed(X, carrier(X) \<midarrow> U)" @then
+  @have "is_closed(X, carrier(X) \<midarrow> U)"
   @have "closure(X,A) \<subseteq> carrier(X) \<midarrow> U"
 @qed
 
@@ -73,22 +73,22 @@ lemma hausdorff_is_T1 [forward]: "hausdorff(X) \<Longrightarrow> T1_space(X)"
 
 lemma subspace_hausdorff: "hausdorff(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> hausdorff(subspace(X,A))"
 @proof 
-  @let "Y = subspace(X,A)" @then
+  @let "Y = subspace(X,A)"
   @have "\<forall>x\<in>.Y. \<forall>y\<in>.Y. x \<noteq> y \<longrightarrow> (\<exists>U\<in>neighs(Y,x). \<exists>V\<in>neighs(Y,y). U \<inter> V = \<emptyset>)" @with
-    @obtain "U\<in>neighs(X,x)" "V\<in>neighs(X,y)" where "U \<inter> V = \<emptyset>" @then
+    @obtain "U\<in>neighs(X,x)" "V\<in>neighs(X,y)" where "U \<inter> V = \<emptyset>"
     @have "(A \<inter> U) \<inter> (A \<inter> V) = \<emptyset>" @end
 @qed
 setup {* add_forward_prfstep_cond @{thm subspace_hausdorff} [with_term "subspace(?X,?A)"] *}
 
 lemma product_hausdorff [forward]: "hausdorff(X) \<Longrightarrow> hausdorff(Y) \<Longrightarrow> hausdorff(X \<times>\<^sub>T Y)"
 @proof 
-  @let "Z = X \<times>\<^sub>T Y" @then
+  @let "Z = X \<times>\<^sub>T Y"
   @have "\<forall>x\<in>.Z. \<forall>y\<in>.Z. x \<noteq> y \<longrightarrow> (\<exists>U\<in>neighs(Z,x). \<exists>V\<in>neighs(Z,y). U \<inter> V = \<emptyset>)" @with
     @case "fst(x) \<noteq> fst(y)" @with
-      @obtain "U\<in>neighs(X,fst(x))" "V\<in>neighs(X,fst(y))" where "U \<inter> V = \<emptyset>" @then
+      @obtain "U\<in>neighs(X,fst(x))" "V\<in>neighs(X,fst(y))" where "U \<inter> V = \<emptyset>"
       @have "(U \<times> carrier(Y)) \<inter> (V \<times> carrier(Y)) = \<emptyset>" @end
     @case "snd(x) \<noteq> snd(y)" @with
-      @obtain "U\<in>neighs(Y,snd(x))" "V\<in>neighs(Y,snd(y))" where "U \<inter> V = \<emptyset>" @then
+      @obtain "U\<in>neighs(Y,snd(x))" "V\<in>neighs(Y,snd(y))" where "U \<inter> V = \<emptyset>"
       @have "(carrier(X) \<times> U) \<inter> (carrier(X) \<times> V) = \<emptyset>" @end
   @end
 @qed

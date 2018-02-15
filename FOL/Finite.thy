@@ -36,15 +36,15 @@ lemma equipotent_refl [resolve]: "equipotent(X,X)"
 @proof @have "id_fun(X) \<in> X \<cong> X" @qed
 
 lemma equipotent_sym [forward]: "equipotent(S,T) \<Longrightarrow> equipotent(T,S)"
-@proof @obtain "f \<in> S \<cong> T" @then @have "bijective(inverse(f))" @qed
+@proof @obtain "f \<in> S \<cong> T" @have "bijective(inverse(f))" @qed
 
 lemma equipotent_trans [backward2]: "equipotent(S,T) \<Longrightarrow> equipotent(T,U) \<Longrightarrow> equipotent(S,U)"
-@proof @obtain "f \<in> S \<cong> T" @then @obtain "g \<in> T \<cong> U" @then @have "g \<circ> f \<in> S \<cong> U" @qed
+@proof @obtain "f \<in> S \<cong> T" @obtain "g \<in> T \<cong> U" @have "g \<circ> f \<in> S \<cong> U" @qed
 
 lemma bij_is_equiv_meta_real: "equiv_meta_rel(equipotent)" by auto2
 
 lemma equipotent_empty [forward]: "equipotent(X,\<emptyset>) \<Longrightarrow> X = \<emptyset>"
-@proof @obtain "f \<in> X \<cong> \<emptyset>" @then @have "X \<rightarrow> \<emptyset> \<noteq> \<emptyset>" @qed
+@proof @obtain "f \<in> X \<cong> \<emptyset>" @have "X \<rightarrow> \<emptyset> \<noteq> \<emptyset>" @qed
 
 lemma equipotent_singleton [resolve]: "equipotent({a},{b})"
 @proof @have "(\<lambda>x\<in>{a}. b\<in>{b}) \<in> {a} \<cong> {b}" @qed
@@ -53,30 +53,30 @@ lemma equipotent_union [backward1]:
   "A \<inter> C = \<emptyset> \<Longrightarrow> B \<inter> D = \<emptyset> \<Longrightarrow> equipotent(A,B) \<Longrightarrow> equipotent(C,D) \<Longrightarrow>
    equipotent(A \<union> C, B \<union> D)"
 @proof
-  @obtain "f \<in> A \<cong> B" @then @obtain "g \<in> C \<cong> D" @then
+  @obtain "f \<in> A \<cong> B" @obtain "g \<in> C \<cong> D"
   @have "glue_function2(f,g) \<in> (A \<union> C) \<cong> (B \<union> D)"
 @qed
 
 lemma equipotent_cons [backward1]:
   "x \<notin> A \<Longrightarrow> y \<notin> B \<Longrightarrow> equipotent(A,B) \<Longrightarrow> equipotent(cons(x,A), cons(y,B))"
 @proof
-  @have "cons(x,A) = {x} \<union> A" @then @have "cons(y,B) = {y} \<union> B"
+  @have "cons(x,A) = {x} \<union> A" @have "cons(y,B) = {y} \<union> B"
 @qed
 
 lemma equipotent_minus1 [backward]:
   "a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> equipotent(S \<midarrow> {a}, S \<midarrow> {b})"
 @proof
-  @case "a = b" @then
-  @have "a \<in> S \<midarrow> {b}" @then @have "b \<in> S \<midarrow> {a}" @then
-  @let "T = S \<midarrow> {a} \<midarrow> {b}" @then
-  @have "equipotent({b},{a})" @then
-  @have "S \<midarrow> {a} = T \<union> {b}" @then @have "S \<midarrow> {b} = T \<union> {a}"
+  @case "a = b"
+  @have "a \<in> S \<midarrow> {b}" @have "b \<in> S \<midarrow> {a}"
+  @let "T = S \<midarrow> {a} \<midarrow> {b}"
+  @have "equipotent({b},{a})"
+  @have "S \<midarrow> {a} = T \<union> {b}" @have "S \<midarrow> {b} = T \<union> {a}"
 @qed
 
 lemma equipotent_minus1_gen [backward2]:
   "equipotent(A,B) \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> B \<Longrightarrow> equipotent(A \<midarrow> {x}, B \<midarrow> {y})"
 @proof
-  @obtain "f \<in> A \<cong> B" @then
+  @obtain "f \<in> A \<cong> B"
   @have "equipotent(A \<midarrow> {x}, B \<midarrow> {f`x})" @with
     @have "func_restrict_image(func_restrict(f,A\<midarrow>{x})) \<in> A \<midarrow> {x} \<cong> B \<midarrow> {f`x}" @end
 @qed
@@ -86,12 +86,12 @@ section {* Schroeder-Bernstein Theorem *}
 lemma schroeder_bernstein:
   "injective(f) \<Longrightarrow> injective(g) \<Longrightarrow> f \<in> X \<rightarrow> Y \<Longrightarrow> g \<in> Y \<rightarrow> X \<Longrightarrow> equipotent(X,Y)"
 @proof
-  @let "X_A = lfp(X, \<lambda>W. X \<midarrow> g``(Y \<midarrow> f``W))" @then
-  @let "X_B = X \<midarrow> X_A" "Y_A = f``X_A" "Y_B = Y \<midarrow> Y_A" @then
-  @have "X \<midarrow> g``Y_B = X_A" @then
-  @have "g``Y_B = X_B" @then
-  @let "f' = func_restrict_image(func_restrict(f,X_A))" @then
-  @let "g' = func_restrict_image(func_restrict(g,Y_B))" @then
+  @let "X_A = lfp(X, \<lambda>W. X \<midarrow> g``(Y \<midarrow> f``W))"
+  @let "X_B = X \<midarrow> X_A" "Y_A = f``X_A" "Y_B = Y \<midarrow> Y_A"
+  @have "X \<midarrow> g``Y_B = X_A"
+  @have "g``Y_B = X_B"
+  @let "f' = func_restrict_image(func_restrict(f,X_A))"
+  @let "g' = func_restrict_image(func_restrict(g,Y_B))"
   @have "glue_function2(f', inverse(g')) \<in> (X_A \<union> X_B) \<cong> (Y_A \<union> Y_B)"
 @qed
 
@@ -121,9 +121,9 @@ lemma equipotent_nat_less_range [forward]:
 @proof
   @var_induct "m \<in> nat" arbitrary n @with
     @subgoal "m = m' +\<^sub>\<nat> 1"
-      @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1" @then
-      @have "[m'] = [m' +\<^sub>\<nat> 1] \<midarrow> {m'}" @then
-      @have "[n'] = [n' +\<^sub>\<nat> 1] \<midarrow> {n'}" @then
+      @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1"
+      @have "[m'] = [m' +\<^sub>\<nat> 1] \<midarrow> {m'}"
+      @have "[n'] = [n' +\<^sub>\<nat> 1] \<midarrow> {n'}"
       @have "equipotent([m'], [n'])"
     @endgoal
   @end
@@ -149,17 +149,17 @@ setup {* add_forward_prfstep_cond @{thm finite_nat_less_range} [with_term "[?k]"
 lemma finite_cons [forward]: "finite(X) \<Longrightarrow> finite(cons(a,X))"
 @proof
   @contradiction
-  @obtain "n\<in>nat" where "equipotent(X, [n])" @then
+  @obtain "n\<in>nat" where "equipotent(X, [n])"
   @have "equipotent(cons(a,X), [n +\<^sub>\<nat> 1])" @with
     @have "[n +\<^sub>\<nat> 1] = cons(n,[n])" @end
 @qed
 
 lemma finite_diff_singleton: "finite(X) \<Longrightarrow> finite(X \<midarrow> {a})"
 @proof
-  @case "a \<notin> X" @then
-  @obtain "n\<in>nat" where "equipotent(X, [n])" @then
-  @have "n \<noteq> 0" @then
-  @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1" @then
+  @case "a \<notin> X"
+  @obtain "n\<in>nat" where "equipotent(X, [n])"
+  @have "n \<noteq> 0"
+  @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1"
   @have "equipotent(X \<midarrow> {a}, [n'])" @with @have "[n'] = [n] \<midarrow> {n'}" @end
 @qed
 setup {* add_forward_prfstep_cond @{thm finite_diff_singleton} [with_term "?X \<midarrow> {?a}"] *}
@@ -188,7 +188,7 @@ lemma card_nat_less_range [rewrite]: "k \<in> nat \<Longrightarrow> card([k]) = 
 lemma card_cons [rewrite]:
   "finite(X) \<Longrightarrow> a \<notin> X \<Longrightarrow> n = card(X) \<Longrightarrow> card(cons(a,X)) = n +\<^sub>\<nat> 1"
 @proof
-  @have "equipotent(X,[n])" @then @have "[n +\<^sub>\<nat> 1] = cons(n,[n])" @then
+  @have "equipotent(X,[n])" @have "[n +\<^sub>\<nat> 1] = cons(n,[n])"
   @have "equipotent(cons(a,X),cons(n,[n]))"
 @qed
 
@@ -198,20 +198,20 @@ section {* Induction on finite sets *}
 
 lemma card_Suc_elim [resolve]:
   "finite(F) \<Longrightarrow> n \<in>. \<nat> \<Longrightarrow> card(F) = n +\<^sub>\<nat> 1 \<Longrightarrow> \<exists>a F'. F = cons(a,F') \<and> a \<notin> F' \<and> finite(F') \<and> card(F') = n"
-@proof @obtain "a \<in> F" @then @have "F = cons(a,F\<midarrow>{a})" @qed
+@proof @obtain "a \<in> F" @have "F = cons(a,F\<midarrow>{a})" @qed
 setup {* del_prfstep_thm @{thm finite_diff_singleton} *}
 
 lemma card_1_elim [backward]:
   "finite(F) \<Longrightarrow> card(F) = 1 \<Longrightarrow> \<exists>a. F = {a}"
 @proof
-  @have "1 = 0 +\<^sub>\<nat> 1" @then
+  @have "1 = 0 +\<^sub>\<nat> 1"
   @obtain a F' where "F = cons(a,F') \<and> a \<notin> F' \<and> finite(F') \<and> card(F') = 0"
 @qed
 
 lemma finite_induct [var_induct]:
   "finite(F) \<Longrightarrow> P(\<emptyset>) \<Longrightarrow> \<forall>a X. finite(X) \<longrightarrow> a \<notin> X \<longrightarrow> P(X) \<longrightarrow> P(cons(a,X)) \<Longrightarrow> P(F)"
 @proof
-  @let "n = card(F)" @then
+  @let "n = card(F)"
   @var_induct "n \<in> nat" arbitrary F @with
     @subgoal "n = n' +\<^sub>\<nat> 1"
       @obtain a F' where "F = cons(a,F')" "a \<notin> F'" "finite(F')" "card(F') = n'"
@@ -241,7 +241,7 @@ lemma subset_finite [forward]: "finite(A) \<Longrightarrow> B \<subseteq> A \<Lo
   @var_induct "finite(A)" arbitrary B @with
     @subgoal "A = cons(a,A')"
       @case "a \<notin> B" @with @have "B \<subseteq> A'" @end
-      @have "B = cons(a, B \<inter> A')" @then @have "B \<inter> A' \<subseteq> A'"
+      @have "B = cons(a, B \<inter> A')" @have "B \<inter> A' \<subseteq> A'"
     @endgoal
   @end
 @qed

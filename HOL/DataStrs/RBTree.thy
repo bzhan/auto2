@@ -100,7 +100,7 @@ lemma cl_inv'R [forward]:
   "cl_inv' (Node l R k v r) \<Longrightarrow> cl l = B \<Longrightarrow> cl r = B \<Longrightarrow> cl_inv (Node l R k v r)" by auto2
 
 lemma cl_inv_to_cl_inv' [forward]: "cl_inv t \<Longrightarrow> cl_inv' t"
-@proof @case "t = Leaf" @then @case "cl t = R" @qed
+@proof @case "t = Leaf" @case "cl t = R" @qed
 
 lemma cl_inv'I [forward_arg]:
   "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv' (Node l c k v r)" by auto

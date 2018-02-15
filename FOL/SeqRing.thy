@@ -48,7 +48,7 @@ lemma seq_ring_mult_id [forward]: "is_comm_ring(R) \<Longrightarrow> is_mult_id(
 lemma seq_ring_is_comm_ring [forward]:
   "is_comm_ring(R) \<Longrightarrow> is_comm_ring(seq_ring(R))"
 @proof
-  @let "S = seq_ring(R)" @then
+  @let "S = seq_ring(R)"
   @have "has_add_inverse(S)" @with
     @have "\<forall>X\<in>.S. X +\<^sub>S seq_neg(X) = \<zero>\<^sub>S" @end
   @have "is_times_comm(S)"
@@ -60,7 +60,7 @@ lemma seq_ring_uminus [rewrite]:
 
 lemma seq_ring_eval_minus [rewrite]:
   "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> n \<in> source(X -\<^sub>S Y) \<Longrightarrow> (X -\<^sub>S Y)`n = X`n -\<^sub>R Y`n"
-@proof @have "X -\<^sub>S Y = X +\<^sub>S (-\<^sub>S Y)" @then @have "X`n -\<^sub>R Y`n = X`n +\<^sub>R -\<^sub>R Y`n" @qed
+@proof @have "X -\<^sub>S Y = X +\<^sub>S (-\<^sub>S Y)" @have "X`n -\<^sub>R Y`n = X`n +\<^sub>R -\<^sub>R Y`n" @qed
 
 setup {* fold del_prfstep_thm [@{thm seq_ring_zero_neq_one}, @{thm seq_ring_plus_assoc},
   @{thm seq_ring_times_assoc}, @{thm seq_ring_has_add_inverse}, @{thm seq_ring_left_distrib}] *}
@@ -92,9 +92,9 @@ lemma vanishes_add:
    vanishes(X) \<Longrightarrow> vanishes(Y) \<Longrightarrow> vanishes(X +\<^sub>S Y)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X +\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R \<and> t >\<^sub>R \<zero>\<^sub>R \<and> r = s +\<^sub>R t" @then
-    @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n\<bar>\<^sub>R <\<^sub>R s" @then
-    @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`n\<bar>\<^sub>R <\<^sub>R t" @then
+    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R \<and> t >\<^sub>R \<zero>\<^sub>R \<and> r = s +\<^sub>R t"
+    @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n\<bar>\<^sub>R <\<^sub>R s"
+    @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`n\<bar>\<^sub>R <\<^sub>R t"
     @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>(X +\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r"
   @end
 @qed
@@ -104,7 +104,7 @@ lemma vanishes_minus:
   "is_ord_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> vanishes(X) \<Longrightarrow> vanishes(-\<^sub>S X)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(-\<^sub>S X)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @then
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>(-\<^sub>S X)`n\<bar>\<^sub>R <\<^sub>R r"
   @end
 @qed
@@ -133,8 +133,8 @@ lemma vanishes_mult_bounded:
    bounded(X) \<Longrightarrow> vanishes(Y) \<Longrightarrow> vanishes(X *\<^sub>S Y)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X *\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain a where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R a" @then
-    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>Y`n\<bar>\<^sub>R <\<^sub>R r /\<^sub>R a" @then
+    @obtain a where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R a"
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>Y`n\<bar>\<^sub>R <\<^sub>R r /\<^sub>R a"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X *\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r"
   @end
 @qed
@@ -151,9 +151,9 @@ lemma vanishes_limit_equal [forward]:
    converges_to(X,x) \<Longrightarrow> converges_to(Y,x)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>Y`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t" @then
-    @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R t" @then
-    @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>(X -\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R s" @then
+    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t"
+    @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R t"
+    @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>(X -\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R s"
     @have "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R r"
   @end
 @qed
@@ -165,9 +165,9 @@ lemma cauchy_add:
    cauchy(X) \<Longrightarrow> cauchy(Y) \<Longrightarrow> cauchy(X +\<^sub>S Y)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X +\<^sub>S Y)`m -\<^sub>R (X +\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t" @then
-    @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s" @then
-    @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t" @then
+    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t"
+    @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s"
+    @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t"
     @have "\<forall>m \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>(X +\<^sub>S Y)`m -\<^sub>R (X +\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r" @with
       @have "(X`m +\<^sub>R Y`m) -\<^sub>R (X`n +\<^sub>R Y`n) = (X`m -\<^sub>R X`n) +\<^sub>R (Y`m -\<^sub>R Y`n)" @end
   @end
@@ -178,7 +178,7 @@ lemma cauchy_minus:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> cauchy(X) \<Longrightarrow> cauchy(-\<^sub>S X)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(-\<^sub>S X)`m -\<^sub>R (-\<^sub>S X)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain "k\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @then
+    @obtain "k\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r"
     @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(-\<^sub>S X)`m -\<^sub>R (-\<^sub>S X)`n\<bar>\<^sub>R <\<^sub>R r" @with
       @have "-\<^sub>R (X`m) -\<^sub>R (-\<^sub>R X`n) = X`n -\<^sub>R X`m" @end
   @end
@@ -200,13 +200,13 @@ lemma cauchy_mult:
    cauchy(X) \<Longrightarrow> cauchy(Y) \<Longrightarrow> cauchy(X *\<^sub>S Y)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X *\<^sub>S Y)`m -\<^sub>R (X *\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain a where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R a" @then
-    @obtain b where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>Y`n\<bar>\<^sub>R <\<^sub>R b" @then
-    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t" @then
-    @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s /\<^sub>R b" @then
-    @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t /\<^sub>R a" @then
+    @obtain a where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R a"
+    @obtain b where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>Y`n\<bar>\<^sub>R <\<^sub>R b"
+    @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t"
+    @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s /\<^sub>R b"
+    @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t /\<^sub>R a"
     @have "\<forall>m \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>(X *\<^sub>S Y)`m -\<^sub>R (X *\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r" @with
-      @have "(X`m *\<^sub>R Y`m) -\<^sub>R (X`n *\<^sub>R Y`n) = (X`m -\<^sub>R X`n) *\<^sub>R Y`n +\<^sub>R X`m *\<^sub>R (Y`m -\<^sub>R Y`n)" @then
+      @have "(X`m *\<^sub>R Y`m) -\<^sub>R (X`n *\<^sub>R Y`n) = (X`m -\<^sub>R X`n) *\<^sub>R Y`n +\<^sub>R X`m *\<^sub>R (Y`m -\<^sub>R Y`n)"
       @have "\<bar>X`m *\<^sub>R (Y`m -\<^sub>R Y`n)\<bar>\<^sub>R <\<^sub>R t" @end
   @end
 @qed
@@ -217,10 +217,10 @@ lemma cauchy_inverse:
    cauchy(seq_inverse(X))"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>seq_inverse(X)`m -\<^sub>R seq_inverse(X)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain b "i\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R" @then
-    @obtain j where "j \<ge>\<^sub>\<nat> i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r *\<^sub>R (b *\<^sub>R b)" @then
+    @obtain b "i\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
+    @obtain j where "j \<ge>\<^sub>\<nat> i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r *\<^sub>R (b *\<^sub>R b)"
     @have "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>seq_inverse(X)`m -\<^sub>R seq_inverse(X)`n\<bar>\<^sub>R <\<^sub>R r" @with
-      @have "b *\<^sub>R b <\<^sub>R \<bar>X`m *\<^sub>R X`n\<bar>\<^sub>R" @then
+      @have "b *\<^sub>R b <\<^sub>R \<bar>X`m *\<^sub>R X`n\<bar>\<^sub>R"
       @have "inv(R,X`m) -\<^sub>R inv(R,X`n) = (X`n -\<^sub>R X`m) /\<^sub>R (X`m *\<^sub>R X`n)" @end
   @end
 @qed
@@ -232,11 +232,11 @@ lemma vanishes_diff_inverse [backward1]:
    vanishes(X -\<^sub>S Y) \<Longrightarrow> vanishes(seq_inverse(X) -\<^sub>S seq_inverse(Y))"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(seq_inverse(X) -\<^sub>S seq_inverse(Y))`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain a "i\<in>.\<nat>" where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. a <\<^sub>R \<bar>X`n\<bar>\<^sub>R" @then
-    @obtain b "j\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. b <\<^sub>R \<bar>Y`n\<bar>\<^sub>R" @then
-    @obtain k where "k \<ge>\<^sub>\<nat> max(\<nat>,i,j)" "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X -\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r *\<^sub>R (a *\<^sub>R b)" @then
+    @obtain a "i\<in>.\<nat>" where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. a <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
+    @obtain b "j\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. b <\<^sub>R \<bar>Y`n\<bar>\<^sub>R"
+    @obtain k where "k \<ge>\<^sub>\<nat> max(\<nat>,i,j)" "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X -\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r *\<^sub>R (a *\<^sub>R b)"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>(seq_inverse(X) -\<^sub>S seq_inverse(Y))`n\<bar>\<^sub>R <\<^sub>R r" @with
-      @have "a *\<^sub>R b <\<^sub>R \<bar>X`n *\<^sub>R Y`n\<bar>\<^sub>R" @then
+      @have "a *\<^sub>R b <\<^sub>R \<bar>X`n *\<^sub>R Y`n\<bar>\<^sub>R"
       @have "inv(R,X`n) -\<^sub>R inv(R,Y`n) = (Y`n -\<^sub>R X`n) /\<^sub>R (X`n *\<^sub>R Y`n)" @end
   @end
 @qed
@@ -246,7 +246,7 @@ lemma seq_inverse_is_inverse [backward]:
    vanishes(X *\<^sub>S seq_inverse(X) -\<^sub>S \<one>\<^sub>S)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X *\<^sub>S seq_inverse(X) -\<^sub>S \<one>\<^sub>S)`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain b "k\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R" @then
+    @obtain b "k\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>(X *\<^sub>S seq_inverse(X) -\<^sub>S \<one>\<^sub>S)`n\<bar>\<^sub>R <\<^sub>R r"
   @end
 @qed
@@ -268,20 +268,20 @@ lemma pos_seq_compat_vanishes [forward]:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> pos_seq(X) \<Longrightarrow>
    vanishes(X -\<^sub>S Y) \<Longrightarrow> pos_seq(Y)"
 @proof
-  @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. X`n >\<^sub>R r" @then
-  @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t" @then
-  @obtain j where "j \<ge>\<^sub>\<nat> i" "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>(X -\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R s" @then
+  @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. X`n >\<^sub>R r"
+  @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t"
+  @obtain j where "j \<ge>\<^sub>\<nat> i" "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>(X -\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R s"
   @have "\<forall>n\<ge>\<^sub>\<nat>j. Y`n >\<^sub>R t" @with
-    @have "X`n -\<^sub>R Y`n <\<^sub>R s" @then @have "X`n = (X`n -\<^sub>R Y`n) +\<^sub>R Y`n" @end
+    @have "X`n -\<^sub>R Y`n <\<^sub>R s" @have "X`n = (X`n -\<^sub>R Y`n) +\<^sub>R Y`n" @end
 @qed      
 
 lemma pos_seq_add:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow>
    pos_seq(X) \<Longrightarrow> pos_seq(Y) \<Longrightarrow> pos_seq(X +\<^sub>S Y)"
 @proof
-  @obtain s "i\<in>.\<nat>" where "s >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. s <\<^sub>R X`n" @then
-  @obtain t "j\<in>.\<nat>" where "t >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. t <\<^sub>R Y`n" @then
-  @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). s +\<^sub>R t <\<^sub>R (X +\<^sub>S Y)`n" @then
+  @obtain s "i\<in>.\<nat>" where "s >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. s <\<^sub>R X`n"
+  @obtain t "j\<in>.\<nat>" where "t >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. t <\<^sub>R Y`n"
+  @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). s +\<^sub>R t <\<^sub>R (X +\<^sub>S Y)`n"
   @have "s +\<^sub>R t >\<^sub>R \<zero>\<^sub>R"
 @qed
 setup {* add_forward_prfstep_cond @{thm pos_seq_add} [with_term "?X +\<^sub>?S ?Y"] *}
@@ -290,9 +290,9 @@ lemma pos_seq_mult:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow>
    pos_seq(X) \<Longrightarrow> pos_seq(Y) \<Longrightarrow> pos_seq(X *\<^sub>S Y)"
 @proof
-  @obtain s "i\<in>.\<nat>" where "s >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. s <\<^sub>R X`n" @then
-  @obtain t "j\<in>.\<nat>" where "t >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. t <\<^sub>R Y`n" @then
-  @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). s *\<^sub>R t <\<^sub>R (X *\<^sub>S Y)`n" @then
+  @obtain s "i\<in>.\<nat>" where "s >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. s <\<^sub>R X`n"
+  @obtain t "j\<in>.\<nat>" where "t >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. t <\<^sub>R Y`n"
+  @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). s *\<^sub>R t <\<^sub>R (X *\<^sub>S Y)`n"
   @have "s *\<^sub>R t >\<^sub>R \<zero>\<^sub>R"
 @qed
 setup {* add_forward_prfstep_cond @{thm pos_seq_mult} [with_term "?X *\<^sub>?S ?Y"] *}
@@ -301,7 +301,7 @@ lemma non_vanishes_pos_seq_cases [backward1]:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> cauchy(X) \<Longrightarrow> \<not>vanishes(X) \<Longrightarrow>
    \<not>pos_seq(X) \<Longrightarrow> pos_seq(-\<^sub>S X)"
 @proof
-  @obtain b "k\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "(\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)" @then
+  @obtain b "k\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "(\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)"
   @case "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R (-\<^sub>S X)`n" @end
 @qed
       
@@ -309,10 +309,10 @@ lemma pos_seq_minus [resolve]:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> pos_seq(X) \<Longrightarrow> \<not>pos_seq(-\<^sub>S X)"
 @proof
   @contradiction
-  @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. X`n >\<^sub>R r" @then
-  @obtain s "j\<in>.\<nat>" where "s >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. (-\<^sub>S X)`n >\<^sub>R s" @then
-  @let "k = max(\<nat>,i,j)" @then
-  @have "(-\<^sub>S X)`k >\<^sub>R s" @then @have "X`k >\<^sub>R r"
+  @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. X`n >\<^sub>R r"
+  @obtain s "j\<in>.\<nat>" where "s >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>j. (-\<^sub>S X)`n >\<^sub>R s"
+  @let "k = max(\<nat>,i,j)"
+  @have "(-\<^sub>S X)`k >\<^sub>R s" @have "X`k >\<^sub>R r"
 @qed
 
 definition nonneg_seq :: "i \<Rightarrow> o" where [rewrite]:
@@ -338,15 +338,15 @@ lemma pos_seq_not_vanish [resolve]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> pos_seq(X) \<Longrightarrow> \<not>vanishes(X)"
 @proof
   @contradiction
-  @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. X`n >\<^sub>R r" @then
-  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @then
-  @have "\<bar>X`max(\<nat>,i,j)\<bar>\<^sub>R <\<^sub>R r" @then @have "X`max(\<nat>,i,j) >\<^sub>R r"
+  @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. X`n >\<^sub>R r"
+  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
+  @have "\<bar>X`max(\<nat>,i,j)\<bar>\<^sub>R <\<^sub>R r" @have "X`max(\<nat>,i,j) >\<^sub>R r"
 @qed
 
 lemma not_positive_to_nonneg_uminus [rewrite_back]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> cauchy(X) \<Longrightarrow>
    \<not>pos_seq(X) \<longleftrightarrow> nonneg_seq(-\<^sub>S X)"
-@proof @case "vanishes(X)" @then @have "pos_seq(X) \<or> pos_seq(-\<^sub>S X)" @qed
+@proof @case "vanishes(X)" @have "pos_seq(X) \<or> pos_seq(-\<^sub>S X)" @qed
 
 lemma not_positiveD [backward2]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<not>pos_seq(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow> \<exists>k\<ge>\<^sub>\<nat>i. r \<ge>\<^sub>R X`k"
@@ -357,16 +357,16 @@ lemma not_positive' [rewrite_back]:
 @proof
   @case "\<not>pos_seq(X)" @with
     @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>R r)" @with
-      @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s" @then
-      @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s" @then
-      @obtain k where "k \<ge>\<^sub>\<nat> i" "s \<ge>\<^sub>R X`k" @then
+      @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s"
+      @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s"
+      @obtain k where "k \<ge>\<^sub>\<nat> i" "s \<ge>\<^sub>R X`k"
       @have "\<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>R r"
     @end
   @end
   @case "\<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>R r" @with
-    @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. r <\<^sub>R X`n" @then
-    @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. X`n \<le>\<^sub>R r" @then
-    @obtain "k\<in>.\<nat>" where "k \<ge>\<^sub>\<nat> i" "k \<ge>\<^sub>\<nat> j" @then
+    @obtain r "i\<in>.\<nat>" where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. r <\<^sub>R X`n"
+    @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. X`n \<le>\<^sub>R r"
+    @obtain "k\<in>.\<nat>" where "k \<ge>\<^sub>\<nat> i" "k \<ge>\<^sub>\<nat> j"
     @have "X`k \<le>\<^sub>R r"
   @end
 @qed
@@ -402,7 +402,7 @@ lemma vanishes_zero [rewrite]:
 @proof
   @case "vanishes({c}\<^sub>R)" @with
     @contradiction
-    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>{c}\<^sub>R`n\<bar>\<^sub>R <\<^sub>R \<bar>c\<bar>\<^sub>R" @then
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>{c}\<^sub>R`n\<bar>\<^sub>R <\<^sub>R \<bar>c\<bar>\<^sub>R"
     @have "\<bar>{c}\<^sub>R`k\<bar>\<^sub>R <\<^sub>R \<bar>c\<bar>\<^sub>R" @end
   @case "c = \<zero>\<^sub>R" @with
     @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>{c}\<^sub>R`n\<bar>\<^sub>R <\<^sub>R r)" @with

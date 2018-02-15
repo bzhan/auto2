@@ -26,11 +26,11 @@ setup {* fold add_backward_prfstep @{thms eq_pred.intros(2,3)} *}
 
 lemma eq_pred_parent1 [forward]:
   "eq_pred i (s1 k) \<Longrightarrow> i \<noteq> s1 k \<Longrightarrow> eq_pred i k"
-@proof @let "v = s1 k" @then @prop_induct "eq_pred i v" @qed
+@proof @let "v = s1 k" @prop_induct "eq_pred i v" @qed
 
 lemma eq_pred_parent2 [forward]:
   "eq_pred i (s2 k) \<Longrightarrow> i \<noteq> s2 k \<Longrightarrow> eq_pred i k"
-@proof @let "v = s2 k" @then @prop_induct "eq_pred i v" @qed
+@proof @let "v = s2 k" @prop_induct "eq_pred i v" @qed
 
 lemma eq_pred_cases:
   "eq_pred i j \<Longrightarrow> eq_pred (s1 i) j \<or> eq_pred (s2 i) j \<or> j = i \<or> j = s1 i \<or> j = s2 i"
@@ -98,7 +98,7 @@ lemma heap_implies_hd_min [resolve]:
   "is_heap xs \<Longrightarrow> i < length xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> snd (hd xs) \<le> snd (xs ! i)"
 @proof
   @strong_induct i
-  @case "i = 0" @then @apply_induct_hyp "par i"
+  @case "i = 0" @apply_induct_hyp "par i"
   @have "eq_pred (par i) i"
 @qed
 
@@ -153,7 +153,7 @@ lemma has_index_keys_of [rewrite]:
   "index_of_pqueue (xs, m) \<Longrightarrow> has_key_alist xs k \<longleftrightarrow> (k < length m \<and> m ! k \<noteq> None)"
 @proof
   @case "has_key_alist xs k" @with
-    @obtain v' where "(k, v') \<in> set xs" @then
+    @obtain v' where "(k, v') \<in> set xs"
     @obtain i where "i < length xs \<and> xs ! i = (k, v')"
   @end
 @qed

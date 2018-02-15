@@ -199,7 +199,7 @@ lemma nat_add_cancel_left [forward]:
 
 lemma nat_add_cancel_right [forward]:
   "a \<in>. \<nat> \<Longrightarrow> b \<in>. \<nat> \<Longrightarrow> c \<in>. \<nat> \<Longrightarrow> a +\<^sub>\<nat> c = b +\<^sub>\<nat> c \<Longrightarrow> a = b"
-@proof @have "a +\<^sub>\<nat> c = c +\<^sub>\<nat> a" @then @have "b +\<^sub>\<nat> c = c +\<^sub>\<nat> b" @qed
+@proof @have "a +\<^sub>\<nat> c = c +\<^sub>\<nat> a" @have "b +\<^sub>\<nat> c = c +\<^sub>\<nat> b" @qed
 
 lemma nat_add_right_eq_zero [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x +\<^sub>\<nat> y = x \<Longrightarrow> y = 0"
@@ -235,16 +235,16 @@ lemma nat_le_refl [resolve]: "x \<in>. \<nat> \<Longrightarrow> x \<le>\<^sub>\<
 lemma nat_le_antisym [forward]:
   "x \<le>\<^sub>\<nat> y \<Longrightarrow> y \<le>\<^sub>\<nat> x \<Longrightarrow> x = y"
 @proof
-  @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p" @then
-  @obtain "q\<in>nat" where "x = y +\<^sub>\<nat> q" @then
+  @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p"
+  @obtain "q\<in>nat" where "x = y +\<^sub>\<nat> q"
   @have "(x +\<^sub>\<nat> p) +\<^sub>\<nat> q = x +\<^sub>\<nat> (p +\<^sub>\<nat> q)"
 @qed
 
 lemma nat_le_trans [forward]:
   "x \<le>\<^sub>\<nat> y \<Longrightarrow> y \<le>\<^sub>\<nat> z \<Longrightarrow> x \<le>\<^sub>\<nat> z"
 @proof
-  @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p" @then
-  @obtain "q\<in>nat" where "z = y +\<^sub>\<nat> q" @then
+  @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p"
+  @obtain "q\<in>nat" where "z = y +\<^sub>\<nat> q"
   @have "(x +\<^sub>\<nat> p) +\<^sub>\<nat> q = x +\<^sub>\<nat> (p +\<^sub>\<nat> q)"
 @qed
       
@@ -265,12 +265,12 @@ lemma nat_le_Suc [resolve]: "x \<in>. \<nat> \<Longrightarrow> x <\<^sub>\<nat> 
 @proof @have "x \<noteq> Suc(x)" @with @have "x = x +\<^sub>\<nat> 0" @end @qed
 
 lemma nat_le_to_less_Suc [resolve]: "x \<le>\<^sub>\<nat> y \<Longrightarrow> x \<le>\<^sub>\<nat> Suc(y)"
-@proof @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p" @then @have "(x +\<^sub>\<nat> p) +\<^sub>\<nat> 1 = x +\<^sub>\<nat> (p +\<^sub>\<nat> 1)" @qed
+@proof @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p" @have "(x +\<^sub>\<nat> p) +\<^sub>\<nat> 1 = x +\<^sub>\<nat> (p +\<^sub>\<nat> 1)" @qed
 
 lemma nat_less_to_Suc_le [resolve]: "x <\<^sub>\<nat> y \<Longrightarrow> Suc(x) \<le>\<^sub>\<nat> y"
 @proof
-  @obtain "p\<in>nat" where "p \<noteq> 0" "y = x +\<^sub>\<nat> p" @then
-  @obtain "p'\<in>nat" where "p = Suc(p')" @then
+  @obtain "p\<in>nat" where "p \<noteq> 0" "y = x +\<^sub>\<nat> p"
+  @obtain "p'\<in>nat" where "p = Suc(p')"
   @have "x +\<^sub>\<nat> (p' +\<^sub>\<nat> 1) = (x +\<^sub>\<nat> 1) +\<^sub>\<nat> p'"
 @qed
 
@@ -293,21 +293,21 @@ lemma nat_add_ordered_right [rewrite_back]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> x \<le>\<^sub>\<nat> y \<longleftrightarrow> x +\<^sub>\<nat> z \<le>\<^sub>\<nat> y +\<^sub>\<nat> z"
 @proof
   @case "x \<le>\<^sub>\<nat> y" @with
-    @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p" @then
+    @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p"
     @have "(x +\<^sub>\<nat> p) +\<^sub>\<nat> z = (x +\<^sub>\<nat> z) +\<^sub>\<nat> p" @end
   @case "x +\<^sub>\<nat> z \<le>\<^sub>\<nat> y +\<^sub>\<nat> z" @with
-    @obtain "p\<in>nat" where "y +\<^sub>\<nat> z = x +\<^sub>\<nat> z +\<^sub>\<nat> p" @then
+    @obtain "p\<in>nat" where "y +\<^sub>\<nat> z = x +\<^sub>\<nat> z +\<^sub>\<nat> p"
     @have "x +\<^sub>\<nat> z +\<^sub>\<nat> p = x +\<^sub>\<nat> p +\<^sub>\<nat> z" @end
 @qed
 
 lemma nat_add_ordered_left [rewrite_back]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> y \<le>\<^sub>\<nat> z \<longleftrightarrow> x +\<^sub>\<nat> y \<le>\<^sub>\<nat> x +\<^sub>\<nat> z"
-@proof @have "x +\<^sub>\<nat> y = y +\<^sub>\<nat> x" @then @have "x +\<^sub>\<nat> z = z +\<^sub>\<nat> x" @qed
+@proof @have "x +\<^sub>\<nat> y = y +\<^sub>\<nat> x" @have "x +\<^sub>\<nat> z = z +\<^sub>\<nat> x" @qed
 
 lemma nat_mult_ordered_left [backward]:
   "z \<in>. \<nat> \<Longrightarrow> x \<le>\<^sub>\<nat> y \<Longrightarrow> z *\<^sub>\<nat> x \<le>\<^sub>\<nat> z *\<^sub>\<nat> y"
 @proof
-  @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p" @then
+  @obtain "p\<in>nat" where "y = x +\<^sub>\<nat> p"
   @have "z *\<^sub>\<nat> (x +\<^sub>\<nat> p) = z *\<^sub>\<nat> x +\<^sub>\<nat> z *\<^sub>\<nat> p"
 @qed
 
@@ -330,13 +330,13 @@ lemma nat_add_order_mix3 [backward1]:
 lemma nat_mult_less_right [backward2]:
   "z \<in>. \<nat> \<Longrightarrow> z \<noteq> 0 \<Longrightarrow> x <\<^sub>\<nat> y \<Longrightarrow> x *\<^sub>\<nat> z <\<^sub>\<nat> y *\<^sub>\<nat> z"
 @proof
-  @obtain "p\<in>nat" where "p \<noteq> 0" "y = x +\<^sub>\<nat> p" @then
+  @obtain "p\<in>nat" where "p \<noteq> 0" "y = x +\<^sub>\<nat> p"
   @have "(x +\<^sub>\<nat> p) *\<^sub>\<nat> z = x *\<^sub>\<nat> z +\<^sub>\<nat> p *\<^sub>\<nat> z"
 @qed
 
 lemma nat_mult_less_left [backward2]:
   "z \<in>. \<nat> \<Longrightarrow> z \<noteq> 0 \<Longrightarrow> x <\<^sub>\<nat> y \<Longrightarrow> z *\<^sub>\<nat> x <\<^sub>\<nat> z *\<^sub>\<nat> y"
-@proof @have "z *\<^sub>\<nat> x = x *\<^sub>\<nat> z" @then @have "z *\<^sub>\<nat> y = y *\<^sub>\<nat> z" @qed
+@proof @have "z *\<^sub>\<nat> x = x *\<^sub>\<nat> z" @have "z *\<^sub>\<nat> y = y *\<^sub>\<nat> z" @qed
 
 lemma nat_mult_cancel_left [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> z \<noteq> 0 \<Longrightarrow> z *\<^sub>\<nat> x = z *\<^sub>\<nat> y \<Longrightarrow> x = y"
@@ -347,7 +347,7 @@ lemma nat_mult_cancel_left [forward]:
 
 lemma nat_mult_cancel_right [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> z \<noteq> 0 \<Longrightarrow> x *\<^sub>\<nat> z = y *\<^sub>\<nat> z \<Longrightarrow> x = y"
-@proof @have "x *\<^sub>\<nat> z = z *\<^sub>\<nat> x" @then @have "y *\<^sub>\<nat> z = z *\<^sub>\<nat> y" @qed
+@proof @have "x *\<^sub>\<nat> z = z *\<^sub>\<nat> x" @have "y *\<^sub>\<nat> z = z *\<^sub>\<nat> y" @qed
 
 section {* Subtraction in natural numbers *}
 
@@ -359,7 +359,7 @@ setup {* del_prfstep_thm @{thm minusI} *}
 lemma nat_minus_prop:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x \<ge>\<^sub>\<nat> y \<Longrightarrow> x -\<^sub>\<nat> y \<in>. \<nat> \<and> (x -\<^sub>\<nat> y) +\<^sub>\<nat> y = x"
 @proof
-  @obtain "p\<in>.\<nat>" where "x = y +\<^sub>\<nat> p" @then @have "x = p +\<^sub>\<nat> y" @then
+  @obtain "p\<in>.\<nat>" where "x = y +\<^sub>\<nat> p" @have "x = p +\<^sub>\<nat> y"
   @have "x -\<^sub>\<nat> y = p"
 @qed
 setup {* add_typing_rule (conj_left_th @{thm nat_minus_prop}) *}

@@ -19,8 +19,8 @@ lemma int_rel_trans [backward2]:
   "a1 \<in>. \<nat> \<Longrightarrow> a2 \<in>. \<nat> \<Longrightarrow> b1 \<in>. \<nat> \<Longrightarrow> b2 \<in>. \<nat> \<Longrightarrow> c1 \<in>. \<nat> \<Longrightarrow> c2 \<in>. \<nat> \<Longrightarrow>
    a1 +\<^sub>\<nat> b2 = a2 +\<^sub>\<nat> b1 \<Longrightarrow> b1 +\<^sub>\<nat> c2 = b2 +\<^sub>\<nat> c1 \<Longrightarrow> a1 +\<^sub>\<nat> c2 = a2 +\<^sub>\<nat> c1"
 @proof
-  @have "(a1 +\<^sub>\<nat> c2) +\<^sub>\<nat> b2 = (a1 +\<^sub>\<nat> b2) +\<^sub>\<nat> c2" @then
-  @have "(a2 +\<^sub>\<nat> b1) +\<^sub>\<nat> c2 = a2 +\<^sub>\<nat> (b1 +\<^sub>\<nat> c2)" @then
+  @have "(a1 +\<^sub>\<nat> c2) +\<^sub>\<nat> b2 = (a1 +\<^sub>\<nat> b2) +\<^sub>\<nat> c2"
+  @have "(a2 +\<^sub>\<nat> b1) +\<^sub>\<nat> c2 = a2 +\<^sub>\<nat> (b1 +\<^sub>\<nat> c2)"
   @have "a2 +\<^sub>\<nat> (b2 +\<^sub>\<nat> c1) = (a2 +\<^sub>\<nat> c1) +\<^sub>\<nat> b2"
 @qed
 
@@ -93,14 +93,14 @@ section {* Addition on integers *}
 lemma int_add_raw_compat1 [backward]:
   "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> int_add_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a' +\<^sub>\<nat> c) +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a' +\<^sub>\<nat> b) +\<^sub>\<nat> (c +\<^sub>\<nat> d)" @then
+  @have "(a' +\<^sub>\<nat> c) +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a' +\<^sub>\<nat> b) +\<^sub>\<nat> (c +\<^sub>\<nat> d)"
   @have "(b' +\<^sub>\<nat> d) +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (b' +\<^sub>\<nat> a) +\<^sub>\<nat> (c +\<^sub>\<nat> d)"
 @qed
 
 lemma int_add_raw_compat2 [backward]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> int_add_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a +\<^sub>\<nat> c') +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (c' +\<^sub>\<nat> d)" @then
+  @have "(a +\<^sub>\<nat> c') +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (c' +\<^sub>\<nat> d)"
   @have "(b +\<^sub>\<nat> d') +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (d' +\<^sub>\<nat> c)"
 @qed
 
@@ -118,14 +118,14 @@ section {* Multiplication on integers *}
 lemma int_mult_raw_compat1 [backward]:
   "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> int_mult_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a'*\<^sub>\<nat>c +\<^sub>\<nat> b'*\<^sub>\<nat>d) +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (a'+\<^sub>\<nat>b) *\<^sub>\<nat> c +\<^sub>\<nat> (b'+\<^sub>\<nat>a) *\<^sub>\<nat> d" @then
+  @have "(a'*\<^sub>\<nat>c +\<^sub>\<nat> b'*\<^sub>\<nat>d) +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (a'+\<^sub>\<nat>b) *\<^sub>\<nat> c +\<^sub>\<nat> (b'+\<^sub>\<nat>a) *\<^sub>\<nat> d"
   @have "(a'*\<^sub>\<nat>d +\<^sub>\<nat> b'*\<^sub>\<nat>c) +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (b'+\<^sub>\<nat>a) *\<^sub>\<nat> c +\<^sub>\<nat> (a'+\<^sub>\<nat>b) *\<^sub>\<nat> d"
 @qed
 
 lemma int_mult_raw_compat2 [backward]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a*\<^sub>\<nat>c' +\<^sub>\<nat> b*\<^sub>\<nat>d') +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (c'+\<^sub>\<nat>d) *\<^sub>\<nat> a +\<^sub>\<nat> (d'+\<^sub>\<nat>c) *\<^sub>\<nat> b" @then
+  @have "(a*\<^sub>\<nat>c' +\<^sub>\<nat> b*\<^sub>\<nat>d') +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (c'+\<^sub>\<nat>d) *\<^sub>\<nat> a +\<^sub>\<nat> (d'+\<^sub>\<nat>c) *\<^sub>\<nat> b"
   @have "(a*\<^sub>\<nat>d' +\<^sub>\<nat> b*\<^sub>\<nat>c') +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (d'+\<^sub>\<nat>c) *\<^sub>\<nat> a +\<^sub>\<nat> (c'+\<^sub>\<nat>d) *\<^sub>\<nat> b"
 @qed
 
@@ -180,8 +180,8 @@ lemma nonneg_int_raw_mult [backward2]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> nonneg_int_raw(\<langle>a,b\<rangle>) \<Longrightarrow> nonneg_int_raw(\<langle>c,d\<rangle>) \<Longrightarrow>
    nonneg_int_raw(int_mult_raw(\<langle>a,b\<rangle>, \<langle>c,d\<rangle>))"
 @proof
-  @obtain "p\<in>nat" where "a = b +\<^sub>\<nat> p" @then
-  @obtain "q\<in>nat" where "c = d +\<^sub>\<nat> q" @then
+  @obtain "p\<in>nat" where "a = b +\<^sub>\<nat> p"
+  @obtain "q\<in>nat" where "c = d +\<^sub>\<nat> q"
   @have "(b+\<^sub>\<nat>p)*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>(d+\<^sub>\<nat>q) +\<^sub>\<nat> p*\<^sub>\<nat>q = (b+\<^sub>\<nat>p)*\<^sub>\<nat>(d+\<^sub>\<nat>q) +\<^sub>\<nat> b*\<^sub>\<nat>d"
 @qed
 
@@ -200,12 +200,12 @@ lemma int_is_domain_raw [forward]:
    x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2 = x1 *\<^sub>\<nat> y2 +\<^sub>\<nat> y1 *\<^sub>\<nat> x2 \<Longrightarrow> x1 = y1 \<or> x2 = y2"
 @proof
   @case "x1 <\<^sub>\<nat> y1" @with
-    @obtain "p\<in>nat" where "p \<noteq> 0" "y1 = x1 +\<^sub>\<nat> p" @then
-    @have "x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> (x1 +\<^sub>\<nat> p) *\<^sub>\<nat> y2 = (x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> x1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> y2" @then
+    @obtain "p\<in>nat" where "p \<noteq> 0" "y1 = x1 +\<^sub>\<nat> p"
+    @have "x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> (x1 +\<^sub>\<nat> p) *\<^sub>\<nat> y2 = (x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> x1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> y2"
     @have "x1 *\<^sub>\<nat> y2 +\<^sub>\<nat> (x1 +\<^sub>\<nat> p) *\<^sub>\<nat> x2 = (x1 *\<^sub>\<nat> x2 +\<^sub>\<nat> x1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> x2" @end
   @case "x1 >\<^sub>\<nat> y1" @with
-    @obtain "p\<in>nat" where "p \<noteq> 0" "x1 = y1 +\<^sub>\<nat> p" @then
-    @have "(y1 +\<^sub>\<nat> p) *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2 = (y1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> x2" @then
+    @obtain "p\<in>nat" where "p \<noteq> 0" "x1 = y1 +\<^sub>\<nat> p"
+    @have "(y1 +\<^sub>\<nat> p) *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2 = (y1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> x2"
     @have "(y1 +\<^sub>\<nat> p) *\<^sub>\<nat> y2 +\<^sub>\<nat> y1 *\<^sub>\<nat> x2 = (y1 *\<^sub>\<nat> x2 +\<^sub>\<nat> y1 *\<^sub>\<nat> y2) +\<^sub>\<nat> p *\<^sub>\<nat> y2" @end
 @qed
 
@@ -223,7 +223,7 @@ lemma int_diff_eval [rewrite]:
 lemma int_is_diff [backward]:
   "n \<in> int \<Longrightarrow> \<exists>a\<in>.\<nat>. \<exists>b\<in>.\<nat>. n = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
 @proof
-  @let "p = rep(\<R>,n)" @then
+  @let "p = rep(\<R>,n)"
   @have "n = of_nat(\<int>,fst(p)) -\<^sub>\<int> of_nat(\<int>,snd(p))"
 @qed
 
@@ -285,11 +285,11 @@ section {* Further properties of int_act *}
 lemma int_act_add [rewrite_bidir]:
   "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x +\<^sub>\<int> y,r) = int_act(R,x,r) +\<^sub>R int_act(R,y,r)"
 @proof
-  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
-  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
-  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)" @then
-  @let "ra = nat_act(R,a,r)" "rb = nat_act(R,b,r)" "rc = nat_act(R,c,r)" "rd = nat_act(R,d,r)" @then
-  @have "(za -\<^sub>\<int> zb) +\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za +\<^sub>\<int> zc) -\<^sub>\<int> (zb +\<^sub>\<int> zd)" @then
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)"
+  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)"
+  @let "ra = nat_act(R,a,r)" "rb = nat_act(R,b,r)" "rc = nat_act(R,c,r)" "rd = nat_act(R,d,r)"
+  @have "(za -\<^sub>\<int> zb) +\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za +\<^sub>\<int> zc) -\<^sub>\<int> (zb +\<^sub>\<int> zd)"
   @have "(ra -\<^sub>R rb) +\<^sub>R (rc -\<^sub>R rd) = (ra +\<^sub>R rc) -\<^sub>R (rb +\<^sub>R rd)"
 @qed
 
@@ -304,7 +304,7 @@ lemma int_act_minus [rewrite_bidir]:
 lemma int_act_add_right [rewrite_bidir]:
   "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> s \<in>. R \<Longrightarrow> int_act(R,x,r +\<^sub>R s) = int_act(R,x,r) +\<^sub>R int_act(R,x,s)"
 @proof
-  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
   @have "(nat_act(R,a,r) +\<^sub>R nat_act(R,a,s)) -\<^sub>R (nat_act(R,b,r) +\<^sub>R nat_act(R,b,s)) =
          (nat_act(R,a,r) -\<^sub>R nat_act(R,b,r)) +\<^sub>R (nat_act(R,a,s) -\<^sub>R nat_act(R,b,s))"
 @qed
@@ -320,10 +320,10 @@ lemma int_act_sub_right [rewrite_bidir]:
 lemma int_act_mult [rewrite_bidir]:
   "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x *\<^sub>\<int> y, r) = int_act(R,x,int_act(R,y,r))"
 @proof
-  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
-  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
-  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)" @then
-  @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)" @then
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)"
+  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)"
+  @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)"
 @qed
 
 section {* Definition of of_int *}
@@ -352,11 +352,11 @@ setup {* del_prfstep_thm_str "" @{thm of_int_def} *}
 lemma of_int_mult [rewrite_bidir]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> of_int(R,x) *\<^sub>R of_int(R,y) = of_int(R,x *\<^sub>\<int> y)"
 @proof
-  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
-  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
-  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)" @then
-  @let "ra = of_nat(R,a)" "rb = of_nat(R,b)" "rc = of_nat(R,c)" "rd = of_nat(R,d)" @then
-  @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)" @then
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)"
+  @let "za = of_nat(\<int>,a)" "zb = of_nat(\<int>,b)" "zc = of_nat(\<int>,c)" "zd = of_nat(\<int>,d)"
+  @let "ra = of_nat(R,a)" "rb = of_nat(R,b)" "rc = of_nat(R,c)" "rd = of_nat(R,d)"
+  @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)"
   @have "(ra -\<^sub>R rb) *\<^sub>R (rc -\<^sub>R rd) = (ra *\<^sub>R rc +\<^sub>R rb *\<^sub>R rd) -\<^sub>R (ra *\<^sub>R rd +\<^sub>R rb *\<^sub>R rc)"
 @qed
 
@@ -379,18 +379,18 @@ lemma ord_ring_switch_sides4_less' [resolve]:
 lemma ord_ring_of_int_le [backward]:
   "is_ord_ring(R) \<Longrightarrow> x \<le>\<^sub>\<int> y \<Longrightarrow> of_int(R,x) \<le>\<^sub>R of_int(R,y)"
 @proof
-  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
-  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
-  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<le>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" @then
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)"
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<le>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)"
   @have "of_nat(R,a) +\<^sub>R of_nat(R,d) \<le>\<^sub>R of_nat(R,b) +\<^sub>R of_nat(R,c)"
 @qed
 
 lemma ord_ring_of_int_less [backward]:
   "is_ord_ring(R) \<Longrightarrow> x <\<^sub>\<int> y \<Longrightarrow> of_int(R,x) <\<^sub>R of_int(R,y)"
 @proof
-  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
-  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
-  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) <\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" @then
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)"
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) <\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)"
   @have "of_nat(R,a) +\<^sub>R of_nat(R,d) <\<^sub>R of_nat(R,b) +\<^sub>R of_nat(R,c)"
 @qed
 
@@ -413,10 +413,10 @@ setup {* add_forward_prfstep_cond @{thm ord_ring_of_int_positive} [with_term "of
 lemma int_gt_to_ge [backward]:
   "x >\<^sub>\<int> y \<Longrightarrow> x \<ge>\<^sub>\<int> y +\<^sub>\<int> 1\<^sub>\<int>"
 @proof
-  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
-  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)" @then
-  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) >\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)" @then
-  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<ge>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c) +\<^sub>\<int> 1\<^sub>\<int>" @then
+  @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "x = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
+  @obtain "c\<in>.\<nat>" "d\<in>.\<nat>" where "y = of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d)"
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) >\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c)"
+  @have "of_nat(\<int>,a) +\<^sub>\<int> of_nat(\<int>,d) \<ge>\<^sub>\<int> of_nat(\<int>,b) +\<^sub>\<int> of_nat(\<int>,c) +\<^sub>\<int> 1\<^sub>\<int>"
   @have "of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b) \<ge>\<^sub>\<int> of_nat(\<int>,c) -\<^sub>\<int> of_nat(\<int>,d) +\<^sub>\<int> 1\<^sub>\<int>"
 @qed
   

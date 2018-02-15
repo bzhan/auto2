@@ -24,7 +24,7 @@ lemma abs_positive [rewrite]: "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Lon
 lemma abs_mult [rewrite]: "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<bar>x *\<^sub>R y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R *\<^sub>R \<bar>y\<bar>\<^sub>R" by auto2
 lemma abs_inverse [rewrite]: "is_ord_field(R) \<Longrightarrow> x \<in> units(R) \<Longrightarrow> \<bar>inv(R,x)\<bar>\<^sub>R = inv(R,\<bar>x\<bar>\<^sub>R)" by auto2
 lemma abs_div [rewrite]: "is_ord_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in> units(R) \<Longrightarrow> \<bar>x /\<^sub>R y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R /\<^sub>R \<bar>y\<bar>\<^sub>R"
-  @proof @have "x /\<^sub>R y = x *\<^sub>R inv(R,y)" @then @have "\<bar>x\<bar>\<^sub>R /\<^sub>R \<bar>y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R *\<^sub>R inv(R,\<bar>y\<bar>\<^sub>R)" @qed
+  @proof @have "x /\<^sub>R y = x *\<^sub>R inv(R,y)" @have "\<bar>x\<bar>\<^sub>R /\<^sub>R \<bar>y\<bar>\<^sub>R = \<bar>x\<bar>\<^sub>R *\<^sub>R inv(R,\<bar>y\<bar>\<^sub>R)" @qed
 
 lemma abs_ge_cases [forward]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> r \<in>. R \<Longrightarrow> \<bar>x\<bar>\<^sub>R \<ge>\<^sub>R r \<Longrightarrow> x >\<^sub>R -\<^sub>R r \<Longrightarrow> x \<ge>\<^sub>R r"
@@ -137,9 +137,9 @@ lemma avg_diff [rewrite]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> \<bar>a -\<^sub>R avg(R,a,b)\<bar>\<^sub>R = \<bar>a -\<^sub>R b\<bar>\<^sub>R /\<^sub>R 2\<^sub>R"
 @proof
   @case "a \<le>\<^sub>R b" @with
-    @have "a \<le>\<^sub>R avg(R,a,b)" @then @have "(a +\<^sub>R b) /\<^sub>R 2\<^sub>R -\<^sub>R a = (b -\<^sub>R a) /\<^sub>R 2\<^sub>R" @end
+    @have "a \<le>\<^sub>R avg(R,a,b)" @have "(a +\<^sub>R b) /\<^sub>R 2\<^sub>R -\<^sub>R a = (b -\<^sub>R a) /\<^sub>R 2\<^sub>R" @end
   @case "a \<ge>\<^sub>R b" @with
-    @have "a \<ge>\<^sub>R avg(R,a,b)" @then @have "a -\<^sub>R (a +\<^sub>R b) /\<^sub>R 2\<^sub>R = (a -\<^sub>R b) /\<^sub>R 2\<^sub>R" @end
+    @have "a \<ge>\<^sub>R avg(R,a,b)" @have "a -\<^sub>R (a +\<^sub>R b) /\<^sub>R 2\<^sub>R = (a -\<^sub>R b) /\<^sub>R 2\<^sub>R" @end
 @qed
 
 lemma avg_diff2 [rewrite]:

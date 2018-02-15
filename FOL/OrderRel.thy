@@ -570,9 +570,9 @@ lemma sup_prod_inv:
   "\<forall>a\<in>I. order(R`a) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> has_sup(prod_rel(I,R),A) \<Longrightarrow>
    sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))"
 @proof
-  @let "M = sup(prod_rel(I,R),A)" @then
+  @let "M = sup(prod_rel(I,R),A)"
   @have (@rule) "\<forall>a\<in>I. \<forall>x\<in>upper_bound(R`a,projs(A,a)). le(R`a,M`a,x)" @with
-    @let "f = Tup(I, \<lambda>b. if b = a then x else M`b)" @then
+    @let "f = Tup(I, \<lambda>b. if b = a then x else M`b)"
     @have "f \<in> upper_bound(prod_rel(I,R),A)" @end
   @have (@rule) "\<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<and> sup(R`a,projs(A,a)) = M`a"
 @qed
@@ -604,19 +604,19 @@ lemma right_directed_max_is_greatest:
 lemma right_directed_prod:
   "\<forall>a\<in>I. right_directed(R`a) \<Longrightarrow> S = prod_rel(I,R) \<Longrightarrow> right_directed(S)"
 @proof
-  @let "E = prod_src(I,R)" @then
+  @let "E = prod_src(I,R)"
   @have "\<forall>x\<in>E. \<forall>y\<in>E. \<exists>z\<in>E. z \<ge>\<^sub>S x \<and> z \<ge>\<^sub>S y" @with
-    @let "z = Tup(I, \<lambda>a. SOME w\<in>.R`a. le(R`a,x`a,w) \<and> le(R`a,y`a,w))" @then
-    @have "z \<in> E" @then @have "z \<ge>\<^sub>S x"
+    @let "z = Tup(I, \<lambda>a. SOME w\<in>.R`a. le(R`a,x`a,w) \<and> le(R`a,y`a,w))"
+    @have "z \<in> E" @have "z \<ge>\<^sub>S x"
   @end
 @qed
 
 lemma right_directed_cofinal:
   "right_directed(R) \<Longrightarrow> cofinal(R,A) \<Longrightarrow> right_directed(suborder(R,A))"
 @proof
-  @let "S = suborder(R,A)" @then
+  @let "S = suborder(R,A)"
   @have "\<forall>x\<in>A. \<forall>y\<in>A. \<exists>z\<in>A. z \<ge>\<^sub>S x \<and> z \<ge>\<^sub>S y" @with
-    @obtain "z'\<in>.R" where "z' \<ge>\<^sub>R x \<and> z' \<ge>\<^sub>R y" @then @obtain "z\<in>A" where "z' \<le>\<^sub>R z"
+    @obtain "z'\<in>.R" where "z' \<ge>\<^sub>R x \<and> z' \<ge>\<^sub>R y" @obtain "z\<in>A" where "z' \<le>\<^sub>R z"
   @end
 @qed
 
@@ -776,8 +776,8 @@ setup {* del_prfstep_thm @{thm union_rel_def} *}
 lemma directed_elt_in_rel2:
   "directed_rels(X) \<Longrightarrow> x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow> \<exists>R\<in>X. x \<in>. R \<and> y \<in>. R"
 @proof
-  @obtain "R\<in>X" where "x\<in>.R" @then
-  @obtain "S\<in>X" where "y\<in>.S" @then
+  @obtain "R\<in>X" where "x\<in>.R"
+  @obtain "S\<in>X" where "y\<in>.S"
   @obtain "T\<in>X" where "is_suborder(R,T)" "is_suborder(S,T)"
 @qed
 setup {* add_backward_prfstep_cond @{thm directed_elt_in_rel2} [with_filt (order_filter "x" "y")] *}
@@ -786,8 +786,8 @@ lemma directed_elt_in_rel3:
   "directed_rels(X) \<Longrightarrow> x \<in> union_src(X) \<Longrightarrow> y \<in> union_src(X) \<Longrightarrow> z \<in> union_src(X) \<Longrightarrow>
    \<exists>R\<in>X. x \<in>. R \<and> y \<in>. R \<and> z \<in>. R"
 @proof
-  @obtain "R\<in>X" where "x\<in>.R" "y\<in>.R" @then
-  @obtain "S\<in>X" where "z\<in>.S" @then
+  @obtain "R\<in>X" where "x\<in>.R" "y\<in>.R"
+  @obtain "S\<in>X" where "z\<in>.S"
   @obtain "T\<in>X" where "is_suborder(R,T)" "is_suborder(S,T)"
 @qed
 setup {* add_backward_prfstep_cond @{thm directed_elt_in_rel3} [
@@ -798,7 +798,7 @@ lemma union_rel_prop:
 @proof
   @have "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>U y" @with
     @case "x \<le>\<^sub>U y" @with
-      @obtain "S\<in>X" where "x \<le>\<^sub>S y" @then
+      @obtain "S\<in>X" where "x \<le>\<^sub>S y"
       @obtain "T\<in>X" where "is_suborder(R,T)" "is_suborder(S,T)"
     @end
   @end
@@ -817,8 +817,8 @@ lemma union_rel_preorder [forward]:
   "directed_rels(X) \<Longrightarrow> R = union_rel(X) \<Longrightarrow> preorder(R)"
 @proof
   @have "\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z" @with
-    @obtain "S\<in>X" where "x \<in>. S" "y \<in>. S" "z \<in>. S" @then
-    @have "x \<le>\<^sub>S y" @then @have "y \<le>\<^sub>S z"
+    @obtain "S\<in>X" where "x \<in>. S" "y \<in>. S" "z \<in>. S"
+    @have "x \<le>\<^sub>S y" @have "y \<le>\<^sub>S z"
   @end
 @qed
 
@@ -882,7 +882,7 @@ lemma linear_continuum_eq_str_ord [forward]:
   "linear_continuum(R) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> linear_continuum(S)"
 @proof
   @have "\<forall>T. T \<noteq> \<emptyset> \<longrightarrow> upper_bound(S,T) \<noteq> \<emptyset> \<longrightarrow> has_sup(S,T)" @with
-    @have "has_sup(R,T)" @then
+    @have "has_sup(R,T)"
     @have "has_sup(S,T) \<and> sup(S,T) = sup(R,T)"
   @end
 @qed

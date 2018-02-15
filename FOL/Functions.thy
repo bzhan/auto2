@@ -40,10 +40,10 @@ lemma empty_fun_space [rewrite]: "A \<rightarrow> B = \<emptyset> \<longleftrigh
 @proof
   @case "A \<rightarrow> B = \<emptyset>" @with  (* Show A \<noteq> 0 and B = 0 *)
     @case "A = \<emptyset>" @with @have "Fun(A,B,\<lambda>_.\<emptyset>) \<in> A \<rightarrow> B" @end
-    @case "B \<noteq> \<emptyset>" @with @obtain "b \<in> B" @then @have "Fun(A,B,\<lambda>_.b) \<in> A \<rightarrow> B" @end
+    @case "B \<noteq> \<emptyset>" @with @obtain "b \<in> B" @have "Fun(A,B,\<lambda>_.b) \<in> A \<rightarrow> B" @end
   @end
   @case "A \<noteq> \<emptyset> \<and> B = \<emptyset>" @with
-    @obtain "f \<in> A \<rightarrow> B" "a \<in> A" @then @have "f ` a \<in> B"
+    @obtain "f \<in> A \<rightarrow> B" "a \<in> A" @have "f ` a \<in> B"
   @end
 @qed
 
@@ -408,8 +408,8 @@ setup {* del_prfstep_thm @{thm right_inverse_def} *}
 lemma exists_left_inverse [backward]:
   "injective(f) \<Longrightarrow> A = source(f) \<Longrightarrow> B = target(f) \<Longrightarrow> A \<noteq> \<emptyset> \<Longrightarrow> \<exists>r\<in>B\<rightarrow>A. r \<circ> f = id_fun(A)"
 @proof
-  @obtain "a \<in> A" @then
-  @let "r = (\<lambda>y\<in>B. (if (\<exists>x\<in>A. f`x=y) then (SOME x\<in>A. f`x=y) else a)\<in>A)" @then
+  @obtain "a \<in> A"
+  @let "r = (\<lambda>y\<in>B. (if (\<exists>x\<in>A. f`x=y) then (SOME x\<in>A. f`x=y) else a)\<in>A)"
   @have (@rule) "\<forall>x\<in>A. r`(f`x) = x" @with @have "\<exists>x'\<in>A. f`x' = f`x" @end
 @qed
 
@@ -430,7 +430,7 @@ lemma exists_pullback_surj [backward1]:
    \<exists>!h. h\<in>F\<rightarrow>G \<and> f = h \<circ> g"
 @proof
   @have "\<exists>h\<in>F\<rightarrow>G. f = h \<circ> g" @with
-    @obtain "s \<in> F \<rightarrow> E" where "g \<circ> s = id_fun(F)" @then
+    @obtain "s \<in> F \<rightarrow> E" where "g \<circ> s = id_fun(F)"
     @obtain "h \<in> F \<rightarrow> G" where "h = f \<circ> s"
   @end
 @qed
@@ -440,7 +440,7 @@ lemma exists_pullback_inj:
    \<exists>!h. h\<in>G\<rightarrow>F \<and> f = g \<circ> h"
 @proof
   @have "\<exists>h\<in>G\<rightarrow>F. f = g \<circ> h" @with
-    @obtain "r \<in> E \<rightarrow> F" where "r \<circ> g = id_fun(F)" @then
+    @obtain "r \<in> E \<rightarrow> F" where "r \<circ> g = id_fun(F)"
     @obtain "h \<in> G \<rightarrow> F" where "h = r \<circ> f" @end
   @contradiction @have (@rule) "\<forall>x\<in>G. f`x \<subseteq> g``F"
 @qed
@@ -475,7 +475,7 @@ lemma exists_proj_fun:
   "B \<noteq> \<emptyset> \<Longrightarrow> f \<in> (A \<times> B) \<rightarrow> D \<Longrightarrow> \<forall>x\<in>A. is_const_fun(curry(A,B,D)`f`x) \<Longrightarrow>
    \<exists>g\<in>A\<rightarrow>D. \<forall>x\<in>A. \<forall>y\<in>B. f`\<langle>x,y\<rangle> = g`x"
 @proof
-  @obtain "y \<in> B" @then @let "g = (\<lambda>x\<in>A. f`\<langle>x,y\<rangle>\<in>D)"
+  @obtain "y \<in> B" @let "g = (\<lambda>x\<in>A. f`\<langle>x,y\<rangle>\<in>D)"
 @qed
 
 (* Product map *)
@@ -531,15 +531,15 @@ lemma pow_ext_id [rewrite]:
 lemma pow_ext_surj [backward]:
   "is_function(f) \<Longrightarrow> surjective(f) \<Longrightarrow> surjective(pow_ext(f))"
 @proof
-  @let "A = source(f)" "B = target(f)" @then
-  @obtain "s \<in> B \<rightarrow> A" where "f \<circ> s = id_fun(target(f))" @then
+  @let "A = source(f)" "B = target(f)"
+  @obtain "s \<in> B \<rightarrow> A" where "f \<circ> s = id_fun(target(f))"
   @have "pow_ext(f \<circ> s) = pow_ext(f) \<circ> pow_ext(s)"
 @qed
 
 lemma pow_ext_inj [backward]:
   "injective(f) \<Longrightarrow> injective(pow_ext(f))"
 @proof
-  @let "U = source(pow_ext(f))" @then
+  @let "U = source(pow_ext(f))"
   @have (@rule) "\<forall>S\<in>U. \<forall>T\<in>U. f `` S = f `` T \<longrightarrow> S = T" @with
     @have "\<forall>x. x \<in> S \<longleftrightarrow> x \<in> T" @with
       @contradiction @have "f`x \<in> f``S"
@@ -565,14 +565,14 @@ lemma injective_left_comp [forward]:
   "injective(u) \<Longrightarrow> injective(left_comp(u,E))"
 @proof
   @contradiction
-  @obtain "r \<in> target(u) \<rightarrow> source(u)" where "r \<circ> u = id_fun(source(u))" @then
+  @obtain "r \<in> target(u) \<rightarrow> source(u)" where "r \<circ> u = id_fun(source(u))"
   @have "left_comp(r,E) \<circ> left_comp(u,E) = id_fun(E\<rightarrow>source(u))"
 @qed
 
 lemma surjective_left_comp [forward]:
   "surjective(u) \<Longrightarrow> surjective(left_comp(u,E))"
 @proof
-  @obtain "s \<in> target(u) \<rightarrow> source(u)" where "u \<circ> s = id_fun(target(u))" @then
+  @obtain "s \<in> target(u) \<rightarrow> source(u)" where "u \<circ> s = id_fun(target(u))"
   @have "left_comp(u,E) \<circ> left_comp(s,E) = id_fun(E\<rightarrow>target(u))"
 @qed
 
@@ -592,14 +592,14 @@ setup {* del_prfstep_thm @{thm right_comp_def} *}
 lemma injective_right_comp [forward]:
   "surjective(u) \<Longrightarrow> injective(right_comp(E,u))"
 @proof
-  @obtain "s \<in> target(u) \<rightarrow> source(u)" where "u \<circ> s = id_fun(target(u))" @then
+  @obtain "s \<in> target(u) \<rightarrow> source(u)" where "u \<circ> s = id_fun(target(u))"
   @have "right_comp(E,s) \<circ> right_comp(E,u) = id_fun(target(u)\<rightarrow>E)"
 @qed
 
 lemma surjective_right_comp [backward]:
   "injective(u) \<Longrightarrow> source(u) \<noteq> \<emptyset> \<Longrightarrow> surjective(right_comp(E,u))"
 @proof
-  @obtain "r \<in> target(u) \<rightarrow> source(u)" where "r \<circ> u = id_fun(source(u))" @then
+  @obtain "r \<in> target(u) \<rightarrow> source(u)" where "r \<circ> u = id_fun(source(u))"
   @have "right_comp(E,u) \<circ> right_comp(E,r) = id_fun(target(r)\<rightarrow>E)"
 @qed
 

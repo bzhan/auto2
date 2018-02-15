@@ -115,8 +115,8 @@ lemma fundamental_group_inv2 [rewrite]:
 lemma fundamental_group_is_group:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> is_group(\<pi>\<^sub>1(X,x))"
 @proof
-  @let "G = \<pi>\<^sub>1(X,x)" "\<R> = loop_space_rel(X,x)" @then
-  @have "is_monoid(G)" @then
+  @let "G = \<pi>\<^sub>1(X,x)" "\<R> = loop_space_rel(X,x)"
+  @have "is_monoid(G)"
   @have "\<forall>f\<in>.G. fundamental_group_inv(\<R>,f) *\<^sub>G f = \<one>\<^sub>G"
 @qed
 setup {* add_forward_prfstep_cond @{thm fundamental_group_is_group} [with_term "\<pi>\<^sub>1(?X,?x)"] *}
@@ -150,7 +150,7 @@ lemma induced_mor_product [rewrite]:
    G = \<pi>\<^sub>1(X,x) \<Longrightarrow> H = \<pi>\<^sub>1(Y,k`x) \<Longrightarrow> f \<in>. G \<Longrightarrow> g \<in>. G \<Longrightarrow>
    induced_mor(k,x)`(f *\<^sub>G g) = induced_mor(k,x)`f *\<^sub>H induced_mor(k,x)`g"
 @proof
-  @let "\<R> = loop_space_rel(X,x)" @then
+  @let "\<R> = loop_space_rel(X,x)"
   @let "f' = rep(\<R>,f)" "g' = rep(\<R>,g)"
 @qed
 setup {* del_prfstep_thm_str "@sym" @{thm path_product_comp} *}
@@ -159,7 +159,7 @@ lemma induced_mor_on_id [rewrite]:
   "continuous(k) \<Longrightarrow> X = source_str(k) \<Longrightarrow> Y = target_str(k) \<Longrightarrow> x \<in> source(k) \<Longrightarrow>
    G = \<pi>\<^sub>1(X,x) \<Longrightarrow> H = \<pi>\<^sub>1(Y,k`x) \<Longrightarrow> induced_mor(k,x)`(\<one>\<^sub>G) = \<one>\<^sub>H"
 @proof
-  @let "\<R> = loop_space_rel(X,x)" @then
+  @let "\<R> = loop_space_rel(X,x)"
   @have "path_homotopic(k \<circ>\<^sub>m rep(\<R>,\<one>\<^sub>G), k \<circ>\<^sub>m const_mor(I,X,x))"
 @qed
 
@@ -170,7 +170,7 @@ lemma induced_mor_is_homomorphism [typing]:
 lemma induced_mor_id [rewrite]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> induced_mor(id_mor(X),x) = id_mor(\<pi>\<^sub>1(X,x))"
 @proof
-  @let "G = \<pi>\<^sub>1(X,x)" "\<R> = loop_space_rel(X,x)" @then
+  @let "G = \<pi>\<^sub>1(X,x)" "\<R> = loop_space_rel(X,x)"
   @have (@rule) "\<forall>f\<in>.G. induced_mor(id_mor(X),x)`f = f" @with
     @let "f' = rep(\<R>,f)" @end
 @qed
@@ -180,7 +180,7 @@ lemma induced_mor_comp' [rewrite]:
    X = source_str(k) \<Longrightarrow> G = \<pi>\<^sub>1(X,x) \<Longrightarrow> f \<in>. G \<Longrightarrow> \<R> = loop_space_rel(X,x) \<Longrightarrow>
    induced_mor(h \<circ>\<^sub>m k, x) ` f = induced_mor(h,k`x) ` (induced_mor(k,x) ` f)"
 @proof
-  @have "f = equiv_class(\<R>,rep(\<R>,f))" @then
+  @have "f = equiv_class(\<R>,rep(\<R>,f))"
   @have "(h \<circ>\<^sub>m k) \<circ>\<^sub>m rep(\<R>,f) = h \<circ>\<^sub>m (k \<circ>\<^sub>m rep(\<R>,f))"
 @qed
 

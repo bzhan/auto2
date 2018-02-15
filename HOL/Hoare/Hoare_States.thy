@@ -215,7 +215,7 @@ theorem ceval_deterministic: "ceval c st st1 \<Longrightarrow> ceval c st st2 \<
 setup {* add_rewrite_rule @{thm loop_def} *}
 theorem loop_never_stops: "\<not>(ceval loop st st')"
 @proof @contradiction
-  @let "v = loop" @then
+  @let "v = loop"
   @prop_induct "ceval v st st'"
 @qed
 

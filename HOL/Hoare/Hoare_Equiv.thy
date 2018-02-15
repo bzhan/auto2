@@ -54,7 +54,7 @@ theorem if_cong: "bequiv b b' \<Longrightarrow> cequiv c1 c1' \<Longrightarrow> 
 theorem while_cong1 [backward1]:
   "bequiv b b' \<Longrightarrow> cequiv c c' \<Longrightarrow> ceval (WHILE b DO c OD) st st' \<Longrightarrow> ceval (WHILE b' DO c' OD) st st'"
 @proof
-  @let "v = WHILE b DO c OD" @then
+  @let "v = WHILE b DO c OD"
   @prop_induct "ceval v st st'"
 @qed
 

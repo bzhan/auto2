@@ -100,7 +100,7 @@ lemma sum_subset_iff [rewrite]: "A + B \<subseteq> C + D \<longleftrightarrow> A
 @qed
 
 lemma sum_equal [forward]: "A + B = C + D \<Longrightarrow> A = C \<and> B = D"
-@proof @have "A + B \<subseteq> C + D" @then @have "C + D \<subseteq> A + B" @qed
+@proof @have "A + B \<subseteq> C + D" @have "C + D \<subseteq> A + B" @qed
 
 section {* Case *}
 

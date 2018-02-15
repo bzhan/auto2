@@ -20,8 +20,8 @@ lemma rat_rel_trans [backward1]:
   "a1 \<in>. \<int> \<Longrightarrow> a2 \<in>. \<int> \<Longrightarrow> b1 \<in>. \<int> \<Longrightarrow> b2 \<in>. \<int> \<Longrightarrow> c1 \<in>. \<int> \<Longrightarrow> c2 \<in>. \<int> \<Longrightarrow> b2 \<noteq> \<zero>\<^sub>\<int> \<Longrightarrow>
    a1 *\<^sub>\<int> b2 = a2 *\<^sub>\<int> b1 \<Longrightarrow> b1 *\<^sub>\<int> c2 = b2 *\<^sub>\<int> c1 \<Longrightarrow> a1 *\<^sub>\<int> c2 = a2 *\<^sub>\<int> c1"
 @proof
-  @have "(a1 *\<^sub>\<int> c2) *\<^sub>\<int> b2 = (a1 *\<^sub>\<int> b2) *\<^sub>\<int> c2" @then
-  @have "(a2 *\<^sub>\<int> b1) *\<^sub>\<int> c2 = a2 *\<^sub>\<int> (b1 *\<^sub>\<int> c2)" @then
+  @have "(a1 *\<^sub>\<int> c2) *\<^sub>\<int> b2 = (a1 *\<^sub>\<int> b2) *\<^sub>\<int> c2"
+  @have "(a2 *\<^sub>\<int> b1) *\<^sub>\<int> c2 = a2 *\<^sub>\<int> (b1 *\<^sub>\<int> c2)"
   @have "a2 *\<^sub>\<int> (b2 *\<^sub>\<int> c1) = (a2 *\<^sub>\<int> c1) *\<^sub>\<int> b2"
 @qed
 
@@ -100,14 +100,14 @@ lemma rat_mult_raw_type [typing]:
 lemma rat_mult_raw_compat1 [backward]:
   "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> rat_mult_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a' *\<^sub>\<int> c) *\<^sub>\<int> (b *\<^sub>\<int> d) = (a' *\<^sub>\<int> b) *\<^sub>\<int> (c *\<^sub>\<int> d)" @then
+  @have "(a' *\<^sub>\<int> c) *\<^sub>\<int> (b *\<^sub>\<int> d) = (a' *\<^sub>\<int> b) *\<^sub>\<int> (c *\<^sub>\<int> d)"
   @have "(b' *\<^sub>\<int> d) *\<^sub>\<int> (a *\<^sub>\<int> c) = (b' *\<^sub>\<int> a) *\<^sub>\<int> (c *\<^sub>\<int> d)"
 @qed
 
 lemma rat_mult_raw_compat2 [backward]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a *\<^sub>\<int> c') *\<^sub>\<int> (b *\<^sub>\<int> d) = (a *\<^sub>\<int> b) *\<^sub>\<int> (c' *\<^sub>\<int> d)" @then
+  @have "(a *\<^sub>\<int> c') *\<^sub>\<int> (b *\<^sub>\<int> d) = (a *\<^sub>\<int> b) *\<^sub>\<int> (c' *\<^sub>\<int> d)"
   @have "(b *\<^sub>\<int> d') *\<^sub>\<int> (a *\<^sub>\<int> c) = (a *\<^sub>\<int> b) *\<^sub>\<int> (d' *\<^sub>\<int> c)"
 @qed
 
@@ -130,14 +130,14 @@ lemma rat_add_raw_type [typing]:
 lemma rat_add_raw_compat1 [backward]:
   "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> rat_add_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a'*\<^sub>\<int>d +\<^sub>\<int> b'*\<^sub>\<int>c) *\<^sub>\<int> (b*\<^sub>\<int>d) = (a'*\<^sub>\<int>b)*\<^sub>\<int>d*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>b'*\<^sub>\<int>c*\<^sub>\<int>d" @then
+  @have "(a'*\<^sub>\<int>d +\<^sub>\<int> b'*\<^sub>\<int>c) *\<^sub>\<int> (b*\<^sub>\<int>d) = (a'*\<^sub>\<int>b)*\<^sub>\<int>d*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>b'*\<^sub>\<int>c*\<^sub>\<int>d"
   @have "(b'*\<^sub>\<int>d) *\<^sub>\<int> (a*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>c) = (b'*\<^sub>\<int>a)*\<^sub>\<int>d*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>b'*\<^sub>\<int>c*\<^sub>\<int>d"
 @qed
 
 lemma rat_add_raw_compat2 [backward]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
 @proof
-  @have "(a*\<^sub>\<int>d' +\<^sub>\<int> b*\<^sub>\<int>c') *\<^sub>\<int> (b*\<^sub>\<int>d) = (c'*\<^sub>\<int>d)*\<^sub>\<int>b*\<^sub>\<int>b +\<^sub>\<int> a*\<^sub>\<int>b*\<^sub>\<int>d*\<^sub>\<int>d'" @then
+  @have "(a*\<^sub>\<int>d' +\<^sub>\<int> b*\<^sub>\<int>c') *\<^sub>\<int> (b*\<^sub>\<int>d) = (c'*\<^sub>\<int>d)*\<^sub>\<int>b*\<^sub>\<int>b +\<^sub>\<int> a*\<^sub>\<int>b*\<^sub>\<int>d*\<^sub>\<int>d'"
   @have "(b*\<^sub>\<int>d') *\<^sub>\<int> (a*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>c)  = (d'*\<^sub>\<int>c)*\<^sub>\<int>b*\<^sub>\<int>b +\<^sub>\<int> a*\<^sub>\<int>b*\<^sub>\<int>d*\<^sub>\<int>d'"
 @qed
 
@@ -255,7 +255,7 @@ lemma rat_of_nat [rewrite]:
 lemma rat_diff_raw_eval [rewrite]:
   "\<langle>p,r\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>q,r\<rangle> \<in>. \<R> \<Longrightarrow> Rat(\<langle>p,r\<rangle>) -\<^sub>\<rat> Rat(\<langle>q,r\<rangle>) = Rat(\<langle>p-\<^sub>\<int>q, r\<rangle>)"
 @proof
-  @have "Rat(\<langle>p,r\<rangle>) -\<^sub>\<rat> Rat(\<langle>q,r\<rangle>) = Rat(\<langle>p,r\<rangle>) +\<^sub>\<rat> (-\<^sub>\<rat> Rat(\<langle>q,r\<rangle>))" @then
+  @have "Rat(\<langle>p,r\<rangle>) -\<^sub>\<rat> Rat(\<langle>q,r\<rangle>) = Rat(\<langle>p,r\<rangle>) +\<^sub>\<rat> (-\<^sub>\<rat> Rat(\<langle>q,r\<rangle>))"
   @have "p -\<^sub>\<int> q = p +\<^sub>\<int> (-\<^sub>\<int> q)"
 @qed
 
@@ -273,7 +273,7 @@ lemma rat_div_eval [rewrite]:
 lemma rat_is_quotient [backward]:
   "r \<in>. \<rat> \<Longrightarrow> \<exists>a\<in>.\<int>. \<exists>b>\<^sub>\<int>0\<^sub>\<int>. r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)"
 @proof
-  @let "p = rep(\<R>,r)" @then
+  @let "p = rep(\<R>,r)"
   @have "r = of_int(\<rat>,fst(p)) /\<^sub>\<rat> of_int(\<rat>,snd(p))"
 @qed
 
@@ -289,13 +289,13 @@ lemma field_switch_sides4 [resolve]:
   "is_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in> units(R) \<Longrightarrow> c \<in>. R \<Longrightarrow> d \<in> units(R) \<Longrightarrow>
    a *\<^sub>R d = b *\<^sub>R c \<Longrightarrow> a /\<^sub>R b = c /\<^sub>R d"
 @proof
-  @have "(a /\<^sub>R b) *\<^sub>R (b *\<^sub>R d) = (c /\<^sub>R d) *\<^sub>R (b *\<^sub>R d)" @then @have "b *\<^sub>R d \<in> units(R)"
+  @have "(a /\<^sub>R b) *\<^sub>R (b *\<^sub>R d) = (c /\<^sub>R d) *\<^sub>R (b *\<^sub>R d)" @have "b *\<^sub>R d \<in> units(R)"
 @qed
 
 lemma of_rat_raw_compat [rewrite]:
   "is_ord_field(R) \<Longrightarrow> \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> of_rat_raw(R,\<langle>a,b\<rangle>) = of_rat_raw(R,\<langle>c,d\<rangle>)"
 @proof
-  @have "of_int(R,d) \<noteq> of_int(R,0\<^sub>\<int>)" @then
+  @have "of_int(R,d) \<noteq> of_int(R,0\<^sub>\<int>)"
   @have "of_int(R,a) *\<^sub>R of_int(R,d) = of_int(R,b) *\<^sub>R of_int(R,c)"
 @qed
 
@@ -318,14 +318,14 @@ lemma of_rat_eval_quotient [rewrite]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y >\<^sub>\<int> 0\<^sub>\<int> \<Longrightarrow>
    of_rat(R,of_int(\<rat>,x) /\<^sub>\<rat> of_int(\<rat>,y)) = of_int(R,x) /\<^sub>R of_int(R,y)"
 @proof
-  @let "r = of_int(\<rat>,x) /\<^sub>\<rat> of_int(\<rat>,y)" @then
-  @let "p = rep(\<R>,r)" @then @have "p \<sim>\<^sub>\<R> \<langle>x,y\<rangle>"
+  @let "r = of_int(\<rat>,x) /\<^sub>\<rat> of_int(\<rat>,y)"
+  @let "p = rep(\<R>,r)" @have "p \<sim>\<^sub>\<R> \<langle>x,y\<rangle>"
 @qed
 
 lemma of_rat_is_zero [forward]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. \<rat> \<Longrightarrow> of_rat(R,x) = 0\<^sub>R \<Longrightarrow> x = 0\<^sub>\<rat>"
 @proof
-  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "x = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)" @then
+  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "x = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)"
   @have "of_int(R,a) = of_int(R,0\<^sub>\<int>)"
 @qed
   
@@ -348,11 +348,11 @@ section {* Further properties *}
 lemma of_rat_mult [rewrite_bidir]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. \<rat> \<Longrightarrow> y \<in>. \<rat> \<Longrightarrow> of_rat(R,x) *\<^sub>R of_rat(R,y) = of_rat(R,x *\<^sub>\<rat> y)"
 @proof
-  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "x = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)" @then
-  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "y = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)" @then
-  @let "qa = of_int(\<rat>,a)" "qb = of_int(\<rat>,b)" "qc = of_int(\<rat>,c)" "qd = of_int(\<rat>,d)" @then
-  @let "ra = of_int(R,a)" "rb = of_int(R,b)" "rc = of_int(R,c)" "rd = of_int(R,d)" @then
-  @have "(qa /\<^sub>\<rat> qb) *\<^sub>\<rat> (qc /\<^sub>\<rat> qd) = (qa *\<^sub>\<rat> qc) /\<^sub>\<rat> (qb *\<^sub>\<rat> qd)" @then
+  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "x = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)"
+  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "y = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)"
+  @let "qa = of_int(\<rat>,a)" "qb = of_int(\<rat>,b)" "qc = of_int(\<rat>,c)" "qd = of_int(\<rat>,d)"
+  @let "ra = of_int(R,a)" "rb = of_int(R,b)" "rc = of_int(R,c)" "rd = of_int(R,d)"
+  @have "(qa /\<^sub>\<rat> qb) *\<^sub>\<rat> (qc /\<^sub>\<rat> qd) = (qa *\<^sub>\<rat> qc) /\<^sub>\<rat> (qb *\<^sub>\<rat> qd)"
   @have "(ra /\<^sub>R rb) *\<^sub>R (rc /\<^sub>R rd) = (ra *\<^sub>R rc) /\<^sub>R (rb *\<^sub>R rd)"
 @qed
 
@@ -363,11 +363,11 @@ lemma of_rat_inverse [rewrite_bidir]:
 lemma of_rat_add [rewrite_bidir]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. \<rat> \<Longrightarrow> y \<in>. \<rat> \<Longrightarrow> of_rat(R,x) +\<^sub>R of_rat(R,y) = of_rat(R,x +\<^sub>\<rat> y)"
 @proof
-  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "x = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)" @then
-  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "y = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)" @then
-  @let "qa = of_int(\<rat>,a)" "qb = of_int(\<rat>,b)" "qc = of_int(\<rat>,c)" "qd = of_int(\<rat>,d)" @then
-  @let "ra = of_int(R,a)" "rb = of_int(R,b)" "rc = of_int(R,c)" "rd = of_int(R,d)" @then
-  @have "(qa /\<^sub>\<rat> qb) +\<^sub>\<rat> (qc /\<^sub>\<rat> qd) = (qa *\<^sub>\<rat> qd +\<^sub>\<rat> qb *\<^sub>\<rat> qc) /\<^sub>\<rat> (qb *\<^sub>\<rat> qd)" @then
+  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "x = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)"
+  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "y = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)"
+  @let "qa = of_int(\<rat>,a)" "qb = of_int(\<rat>,b)" "qc = of_int(\<rat>,c)" "qd = of_int(\<rat>,d)"
+  @let "ra = of_int(R,a)" "rb = of_int(R,b)" "rc = of_int(R,c)" "rd = of_int(R,d)"
+  @have "(qa /\<^sub>\<rat> qb) +\<^sub>\<rat> (qc /\<^sub>\<rat> qd) = (qa *\<^sub>\<rat> qd +\<^sub>\<rat> qb *\<^sub>\<rat> qc) /\<^sub>\<rat> (qb *\<^sub>\<rat> qd)"
   @have "(ra /\<^sub>R rb) +\<^sub>R (rc /\<^sub>R rd) = (ra *\<^sub>R rd +\<^sub>R rb *\<^sub>R rc) /\<^sub>R (rb *\<^sub>R rd)"
 @qed
       
@@ -375,45 +375,45 @@ lemma ord_field_le_divide_switch [backward1]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> b >\<^sub>R 0\<^sub>R \<Longrightarrow> d >\<^sub>R 0\<^sub>R \<Longrightarrow>
    a /\<^sub>R b \<le>\<^sub>R c /\<^sub>R d \<Longrightarrow> a *\<^sub>R d \<le>\<^sub>R b *\<^sub>R c"
 @proof
-  @have "a /\<^sub>R b *\<^sub>R (b *\<^sub>R d) \<le>\<^sub>R c /\<^sub>R d *\<^sub>R (b *\<^sub>R d)" @then @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
+  @have "a /\<^sub>R b *\<^sub>R (b *\<^sub>R d) \<le>\<^sub>R c /\<^sub>R d *\<^sub>R (b *\<^sub>R d)" @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
 @qed
 
 lemma ord_field_le_divide_switch2 [backward1]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> b >\<^sub>R 0\<^sub>R \<Longrightarrow> d >\<^sub>R 0\<^sub>R \<Longrightarrow>
    a *\<^sub>R d \<le>\<^sub>R b *\<^sub>R c \<Longrightarrow> a /\<^sub>R b \<le>\<^sub>R c /\<^sub>R d"
 @proof
-  @have "a *\<^sub>R d /\<^sub>R (b *\<^sub>R d) \<le>\<^sub>R b *\<^sub>R c /\<^sub>R (b *\<^sub>R d)" @then @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
+  @have "a *\<^sub>R d /\<^sub>R (b *\<^sub>R d) \<le>\<^sub>R b *\<^sub>R c /\<^sub>R (b *\<^sub>R d)" @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
 @qed
       
 lemma ord_field_le_divide_switch3 [backward1]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> b >\<^sub>R 0\<^sub>R \<Longrightarrow> d >\<^sub>R 0\<^sub>R \<Longrightarrow>
    a /\<^sub>R b <\<^sub>R c /\<^sub>R d \<Longrightarrow> a *\<^sub>R d <\<^sub>R b *\<^sub>R c"
 @proof
-  @have "a /\<^sub>R b *\<^sub>R (b *\<^sub>R d) <\<^sub>R c /\<^sub>R d *\<^sub>R (b *\<^sub>R d)" @then @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
+  @have "a /\<^sub>R b *\<^sub>R (b *\<^sub>R d) <\<^sub>R c /\<^sub>R d *\<^sub>R (b *\<^sub>R d)" @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
 @qed
 
 lemma ord_field_le_divide_switch4 [backward1]:
   "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> b >\<^sub>R 0\<^sub>R \<Longrightarrow> d >\<^sub>R 0\<^sub>R \<Longrightarrow>
    a *\<^sub>R d <\<^sub>R b *\<^sub>R c \<Longrightarrow> a /\<^sub>R b <\<^sub>R c /\<^sub>R d"
 @proof
-  @have "a *\<^sub>R d /\<^sub>R (b *\<^sub>R d) <\<^sub>R b *\<^sub>R c /\<^sub>R (b *\<^sub>R d)" @then @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
+  @have "a *\<^sub>R d /\<^sub>R (b *\<^sub>R d) <\<^sub>R b *\<^sub>R c /\<^sub>R (b *\<^sub>R d)" @have "b *\<^sub>R d >\<^sub>R 0\<^sub>R"
 @qed
 
 lemma ord_field_of_rat_le [backward]:
   "is_ord_field(R) \<Longrightarrow> r \<le>\<^sub>\<rat> s \<Longrightarrow> of_rat(R,r) \<le>\<^sub>R of_rat(R,s)"
 @proof
-  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)" @then
-  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "s = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)" @then
-  @have "of_int(\<rat>,a) *\<^sub>\<rat> of_int(\<rat>,d) \<le>\<^sub>\<rat> of_int(\<rat>,b) *\<^sub>\<rat> of_int(\<rat>,c)" @then
+  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)"
+  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "s = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)"
+  @have "of_int(\<rat>,a) *\<^sub>\<rat> of_int(\<rat>,d) \<le>\<^sub>\<rat> of_int(\<rat>,b) *\<^sub>\<rat> of_int(\<rat>,c)"
   @have "of_int(R,a) *\<^sub>R of_int(R,d) \<le>\<^sub>R of_int(R,b) *\<^sub>R of_int(R,c)"
 @qed
 
 lemma ord_field_of_rat_less [backward]:
   "is_ord_field(R) \<Longrightarrow> r <\<^sub>\<rat> s \<Longrightarrow> of_rat(R,r) <\<^sub>R of_rat(R,s)"
 @proof
-  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)" @then
-  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "s = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)" @then
-  @have "of_int(\<rat>,a) *\<^sub>\<rat> of_int(\<rat>,d) <\<^sub>\<rat> of_int(\<rat>,b) *\<^sub>\<rat> of_int(\<rat>,c)" @then
+  @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)"
+  @obtain "c\<in>.\<int>" d where "d>\<^sub>\<int>0\<^sub>\<int>" "s = of_int(\<rat>,c) /\<^sub>\<rat> of_int(\<rat>,d)"
+  @have "of_int(\<rat>,a) *\<^sub>\<rat> of_int(\<rat>,d) <\<^sub>\<rat> of_int(\<rat>,b) *\<^sub>\<rat> of_int(\<rat>,c)"
   @have "of_int(R,a) *\<^sub>R of_int(R,d) <\<^sub>R of_int(R,b) *\<^sub>R of_int(R,c)"
 @qed
 
@@ -427,7 +427,7 @@ section {* Rationals is an archimedean field *}
 lemma int_has_of_nat_ge [forward]: "is_archimedean(\<int>)"
 @proof
   @have "\<forall>z\<in>.\<int>. \<exists>n\<in>nat. of_nat(\<int>,n) \<ge>\<^sub>\<int> z" @with
-    @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "z = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)" @then
+    @obtain "a\<in>.\<nat>" "b\<in>.\<nat>" where "z = of_nat(\<int>,a) -\<^sub>\<int> of_nat(\<int>,b)"
     @have "of_nat(\<int>,a) \<ge>\<^sub>\<int> z"
   @end
 @qed
@@ -436,8 +436,8 @@ lemma is_archimedeanI_pos_of_int [forward]:
   "is_ord_ring(R) \<Longrightarrow> \<forall>x >\<^sub>R 0\<^sub>R. \<exists>z\<in>.\<int>. of_int(R,z) \<ge>\<^sub>R x \<Longrightarrow> is_archimedean(R)"
 @proof
   @have "\<forall>x >\<^sub>R 0\<^sub>R. \<exists>n\<in>nat. of_nat(R,n) \<ge>\<^sub>R x" @with
-    @obtain "z\<in>.\<int>" where "of_int(R,z) \<ge>\<^sub>R x" @then
-    @obtain "n\<in>nat" where "of_nat(\<int>,n) \<ge>\<^sub>\<int> z" @then
+    @obtain "z\<in>.\<int>" where "of_int(R,z) \<ge>\<^sub>R x"
+    @obtain "n\<in>nat" where "of_nat(\<int>,n) \<ge>\<^sub>\<int> z"
     @have "of_nat(R,n) = of_int(R,of_nat(\<int>,n))"
   @end
 @qed
@@ -445,7 +445,7 @@ lemma is_archimedeanI_pos_of_int [forward]:
 lemma rat_is_archimedean [forward]: "is_archimedean(\<rat>)"
 @proof
   @have "\<forall>r >\<^sub>\<rat> 0\<^sub>\<rat>. \<exists>z\<in>.\<int>. of_int(\<rat>,z) \<ge>\<^sub>\<rat> r" @with
-    @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)" @then
+    @obtain "a\<in>.\<int>" b where "b>\<^sub>\<int>0\<^sub>\<int>" "r = of_int(\<rat>,a) /\<^sub>\<rat> of_int(\<rat>,b)"
     @have "of_int(\<rat>,b) \<ge>\<^sub>\<rat> of_int(\<rat>,1\<^sub>\<int>)" @end
 @qed
 
@@ -453,9 +453,9 @@ lemma is_archimedeanI_pos_of_rat [forward]:
   "is_ord_field(R) \<Longrightarrow> \<forall>x >\<^sub>R 0\<^sub>R. \<exists>z\<in>.\<rat>. of_rat(R,z) \<ge>\<^sub>R x \<Longrightarrow> is_archimedean(R)"
 @proof
   @have "\<forall>x >\<^sub>R 0\<^sub>R. \<exists>n\<in>nat. of_nat(R,n) \<ge>\<^sub>R x" @with
-    @obtain "r\<in>.\<rat>" where "of_rat(R,r) \<ge>\<^sub>R x" @then
-    @obtain "n\<in>nat" where "of_nat(\<rat>,n) \<ge>\<^sub>\<rat> r" @then
-    @have "of_nat(R,n) = of_rat(R,of_nat(\<rat>,n))" @then
+    @obtain "r\<in>.\<rat>" where "of_rat(R,r) \<ge>\<^sub>R x"
+    @obtain "n\<in>nat" where "of_nat(\<rat>,n) \<ge>\<^sub>\<rat> r"
+    @have "of_nat(R,n) = of_rat(R,of_nat(\<rat>,n))"
     @have "of_rat(R,of_nat(\<rat>,n)) \<ge>\<^sub>R of_rat(R,r)"
   @end
 @qed
@@ -465,21 +465,21 @@ section {* More properties of archimedean fields *}
 lemma is_archimedeanD_rat [backward]:
   "is_archimedean(R) \<Longrightarrow> is_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>r\<in>.\<rat>. of_rat(R,r) >\<^sub>R x"
 @proof
-  @obtain "n\<in>nat" where "of_nat(R,n) >\<^sub>R x" @then
+  @obtain "n\<in>nat" where "of_nat(R,n) >\<^sub>R x"
   @have "of_rat(R,of_nat(\<rat>,n)) = of_nat(R,n)"
 @qed
 
 lemma is_archimedeanD_rat_pos [backward]:
   "is_archimedean(R) \<Longrightarrow> is_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>r>\<^sub>\<rat>\<zero>\<^sub>\<rat>. of_rat(R,r) >\<^sub>R x"
 @proof
-  @obtain "r\<in>.\<rat>" where "of_rat(R,r) >\<^sub>R x" @then
+  @obtain "r\<in>.\<rat>" where "of_rat(R,r) >\<^sub>R x"
   @obtain "r'\<in>.\<rat>" where "r' >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r' \<ge>\<^sub>\<rat> r"
 @qed
 
 lemma is_archimedeanD_rat_less [backward]:
   "is_archimedean(R) \<Longrightarrow> is_field(R) \<Longrightarrow> x >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> \<exists>r>\<^sub>\<rat>\<zero>\<^sub>\<rat>. of_rat(R,r) <\<^sub>R x"
 @proof
-  @obtain r where "r>\<^sub>\<rat>\<zero>\<^sub>\<rat>" "of_rat(R,r) >\<^sub>R inv(R,x)" @then
+  @obtain r where "r>\<^sub>\<rat>\<zero>\<^sub>\<rat>" "of_rat(R,r) >\<^sub>R inv(R,x)"
   @have "of_rat(R,inv(\<rat>,r)) <\<^sub>R x"
 @qed
 

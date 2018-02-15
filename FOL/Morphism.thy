@@ -239,7 +239,7 @@ lemma exists_pullback_surj_mor [backward1]:
    \<forall>x\<in>.E. \<forall>y\<in>.E. g`x=g`y \<longrightarrow> f`x=f`y \<Longrightarrow> \<exists>!h. h\<in>F\<rightharpoonup>G \<and> f = h \<circ>\<^sub>m g"
 @proof
   @have "\<exists>h\<in>F\<rightharpoonup>G. f = h \<circ>\<^sub>m g" @with
-    @obtain "s\<in>F\<rightharpoonup>E" where "g \<circ>\<^sub>m s = id_mor(F)" @then
+    @obtain "s\<in>F\<rightharpoonup>E" where "g \<circ>\<^sub>m s = id_mor(F)"
     @obtain "h\<in>F\<rightharpoonup>G" where "h = f \<circ>\<^sub>m s"
   @end
 @qed

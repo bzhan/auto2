@@ -19,9 +19,9 @@ lemma divides_id [resolve]: "is_semiring(R) \<Longrightarrow> a \<in>. R \<Longr
 lemma divides_trans [forward]:
   "is_semiring(R) \<Longrightarrow> divides(R,a,b) \<Longrightarrow> divides(R,b,c) \<Longrightarrow> divides(R,a,c)"
 @proof
-  @obtain "k\<in>.R" where "b = a *\<^sub>R k" @then
-  @obtain "l\<in>.R" where "c = b *\<^sub>R l" @then
-  @have "c = (a *\<^sub>R k) *\<^sub>R l" @then @have "c = a *\<^sub>R (k *\<^sub>R l)"
+  @obtain "k\<in>.R" where "b = a *\<^sub>R k"
+  @obtain "l\<in>.R" where "c = b *\<^sub>R l"
+  @have "c = (a *\<^sub>R k) *\<^sub>R l" @have "c = a *\<^sub>R (k *\<^sub>R l)"
 @qed
 
 lemma divides_one [resolve]:
@@ -38,13 +38,13 @@ lemma nat_divides_cancel [forward]:
   "a \<in>. \<nat> \<Longrightarrow> b \<in>. \<nat> \<Longrightarrow> c \<in>. \<nat> \<Longrightarrow> c \<noteq> 0 \<Longrightarrow>
    divides(\<nat>, a *\<^sub>\<nat> c, b *\<^sub>\<nat> c) \<Longrightarrow> divides(\<nat>, a, b)"
 @proof
-  @obtain "k\<in>.\<nat>" where "b *\<^sub>\<nat> c = a *\<^sub>\<nat> c *\<^sub>\<nat> k" @then
+  @obtain "k\<in>.\<nat>" where "b *\<^sub>\<nat> c = a *\<^sub>\<nat> c *\<^sub>\<nat> k"
   @have "a *\<^sub>\<nat> k *\<^sub>\<nat> c = b *\<^sub>\<nat> c"
 @qed
 
 lemma nat_le_prod [backward]:
   "a \<in>. \<nat> \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> k \<noteq> 0 \<Longrightarrow> a \<le>\<^sub>\<nat> a *\<^sub>\<nat> k"
-@proof @have "k \<ge>\<^sub>\<nat> 1" @then @have "a = a *\<^sub>\<nat> 1" @qed
+@proof @have "k \<ge>\<^sub>\<nat> 1" @have "a = a *\<^sub>\<nat> 1" @qed
       
 lemma nat_divides_le [forward]:
   "b \<noteq> 0 \<Longrightarrow> divides(\<nat>,a,b) \<Longrightarrow> 1 \<le>\<^sub>\<nat> a \<and> a \<le>\<^sub>\<nat> b"
@@ -62,8 +62,8 @@ lemma quotient_remainder_theorem:
   "m >\<^sub>\<nat> 0 \<Longrightarrow> n \<in> nat \<Longrightarrow> \<exists>q\<in>nat. \<exists>r\<in>nat. n = m *\<^sub>\<nat> q +\<^sub>\<nat> r \<and> 0 \<le>\<^sub>\<nat> r \<and> r <\<^sub>\<nat> m"
 @proof
   @strong_induct "n \<in> nat"
-  @case "n <\<^sub>\<nat> m" @then
-  @let "n' = n -\<^sub>\<nat> m" @then
+  @case "n <\<^sub>\<nat> m"
+  @let "n' = n -\<^sub>\<nat> m"
   @have "n' <\<^sub>\<nat> n" @with @have "n' +\<^sub>\<nat> m <\<^sub>\<nat> n +\<^sub>\<nat> m" @end
   @obtain "q\<in>nat" "r\<in>nat" where "n' = m *\<^sub>\<nat> q +\<^sub>\<nat> r" "0 \<le>\<^sub>\<nat> r" "r <\<^sub>\<nat> m"
   @have "n = (m *\<^sub>\<nat> q +\<^sub>\<nat> r) +\<^sub>\<nat> m"
@@ -89,7 +89,7 @@ lemma exists_prime [resolve]: "\<exists>p. prime(p)"
 lemma prime_factor_nat: "n \<in> nat \<Longrightarrow> n \<noteq> 1 \<Longrightarrow> \<exists>p. divides(\<nat>,p,n) \<and> prime(p)"
 @proof
   @strong_induct "n \<in> nat"
-  @case "prime(n)" @then
+  @case "prime(n)"
   @case "n = \<zero>\<^sub>\<nat>" @with @obtain q where "prime(q)" @end
 @qed
 

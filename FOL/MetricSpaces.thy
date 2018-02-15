@@ -70,7 +70,7 @@ lemma open_ball_subset [backward]:
   "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> a +\<^sub>\<real> dist(X,x,y) \<le>\<^sub>\<real> b \<Longrightarrow> open_ball(X,x,a) \<subseteq> open_ball(X,y,b)"
 @proof
   @have "\<forall>z\<in>open_ball(X,x,a). z \<in> open_ball(X,y,b)" @with
-    @have "dist(X,y,z) \<le>\<^sub>\<real> dist(X,y,x) +\<^sub>\<real> dist(X,x,z)" @then
+    @have "dist(X,y,z) \<le>\<^sub>\<real> dist(X,y,x) +\<^sub>\<real> dist(X,x,z)"
     @have "dist(X,y,z) <\<^sub>\<real> a +\<^sub>\<real> dist(X,y,x)" @end
 @qed
 
@@ -100,16 +100,16 @@ setup {* del_prfstep_thm @{thm metric_basis_def} *}
 lemma metric_basis_is_basis [forward]:
   "is_metric_space(X) \<Longrightarrow> collection_is_basis(metric_basis(X))"
 @proof
-  @let "B = metric_basis(X)" @then
+  @let "B = metric_basis(X)"
   @have "\<forall>U\<in>B. \<forall>V\<in>B. \<forall>w\<in>U\<inter>V. \<exists>W\<in>B. w\<in>W \<and> W\<subseteq>U\<inter>V" @with
-    @obtain "x\<in>.X" "a\<in>.\<real>" where "U = open_ball(X,x,a)" @then
-    @obtain "y\<in>.X" "b\<in>.\<real>" where "V = open_ball(X,y,b)" @then
-    @have "dist(X,w,x) <\<^sub>\<real> a" @then
-    @have "dist(X,w,y) <\<^sub>\<real> b" @then
-    @let "c = min(\<real>, a -\<^sub>\<real> dist(X,w,x), b -\<^sub>\<real> dist(X,w,y))" @then
+    @obtain "x\<in>.X" "a\<in>.\<real>" where "U = open_ball(X,x,a)"
+    @obtain "y\<in>.X" "b\<in>.\<real>" where "V = open_ball(X,y,b)"
+    @have "dist(X,w,x) <\<^sub>\<real> a"
+    @have "dist(X,w,y) <\<^sub>\<real> b"
+    @let "c = min(\<real>, a -\<^sub>\<real> dist(X,w,x), b -\<^sub>\<real> dist(X,w,y))"
     @have "c >\<^sub>\<real> 0\<^sub>\<real>" @with @have "a -\<^sub>\<real> dist(X,w,x) >\<^sub>\<real> 0\<^sub>\<real>" @end
-    @let "W = open_ball(X,w,c)" @then
-    @have "w \<in> W" @then
+    @let "W = open_ball(X,w,c)"
+    @have "w \<in> W"
     @have "W \<subseteq> U" @with @have "c \<le>\<^sub>\<real> a -\<^sub>\<real> dist(X,w,x)" @end
     @have "W \<subseteq> V" @with @have "c \<le>\<^sub>\<real> b -\<^sub>\<real> dist(X,w,y)" @end
   @end

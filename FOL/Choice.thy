@@ -24,7 +24,7 @@ translations
 
 lemma someI: "\<exists>x\<in>A. P(x) \<Longrightarrow> (SOME x\<in>A. P(x)) \<in> A \<and> P(SOME x\<in>A. P(x))"
 @proof
-  @obtain "x \<in> A" where "P(x)" @then @have "x\<in>{x\<in>A. P(x)}" @then
+  @obtain "x \<in> A" where "P(x)" @have "x\<in>{x\<in>A. P(x)}"
   @have "Choice({x\<in>A. P(x)}) \<in> {x\<in>A. P(x)}"
 @qed
 setup {* add_forward_prfstep_cond @{thm someI} [with_term "SOME x\<in>?A. ?P(x)"] *}

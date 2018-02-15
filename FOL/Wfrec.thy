@@ -28,14 +28,14 @@ lemma rel_trans_cl_prev [backward]:
 lemma wf_trans_cl [forward]:
   "wf(r) \<Longrightarrow> wf(rel_trans_cl(r))"
 @proof
-  @let "A = source(r)" @then
-  @let "r' = rel_trans_cl(r)" @then
+  @let "A = source(r)"
+  @let "r' = rel_trans_cl(r)"
   @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. rel_minimal(r',B,x))" @with
     @contradiction
-    @let "B' = {x\<in>A. \<exists>y\<in>B. rel(r',y,x)}" @then
-    @obtain "m\<in>B'" where "rel_minimal(r,B',m)" @then
+    @let "B' = {x\<in>A. \<exists>y\<in>B. rel(r',y,x)}"
+    @obtain "m\<in>B'" where "rel_minimal(r,B',m)"
     @have "m \<in> B" @with
-      @obtain "y \<in> B" where "rel(r',y,m)" @then
+      @obtain "y \<in> B" where "rel(r',y,m)"
       @obtain "y' \<in> A" where "rel(r,y',m)" "(y=y' \<or> rel(r',y,y'))" @end
     @have "\<forall>y\<in>source(r). rel(r',y,m) \<longrightarrow> y \<notin> B" @with
       @obtain "y' \<in> A" where "rel(r,y',m)" "(y=y' \<or> rel(r',y,y'))" @end
@@ -46,7 +46,7 @@ lemma wf_trans_cl [forward]:
 lemma wf_induct [strong_induct]:
   "wf(r) \<and> a \<in> source(r) \<Longrightarrow> \<forall>x\<in>source(r). (\<forall>y\<in>source(r). rel(r,y,x) \<longrightarrow> P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(a)"
 @proof
-  @let "Z = {z \<in> source(r). \<not>P(z)}" @then
+  @let "Z = {z \<in> source(r). \<not>P(z)}"
   @case "Z = \<emptyset>" @with @have "a \<notin> Z" @end
   @obtain "m\<in>Z" where "rel_minimal(r,Z,m)"
 @qed
@@ -103,7 +103,7 @@ lemma unfold_the_recfun:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> a \<in> source(r) \<Longrightarrow> is_recfun(r,a,H,the_recfun(r,a,H))"
 @proof
   @strong_induct "wf(r) \<and> a \<in> source(r)"
-  @let "f = Tup(rel_vsection(r,a), \<lambda>y. H(y, the_recfun(r,y,H)))" @then
+  @let "f = Tup(rel_vsection(r,a), \<lambda>y. H(y, the_recfun(r,y,H)))"
   @have "is_recfun(r,a,H,f)"
 @qed
 setup {* add_forward_prfstep_cond @{thm unfold_the_recfun} [with_term "the_recfun(?r,?a,?H)"] *}

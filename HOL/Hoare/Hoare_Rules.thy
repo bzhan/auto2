@@ -73,7 +73,7 @@ theorem hoare_if: "{{ (P && b) }} c1 {{ Q }} \<Longrightarrow> {{ P &~ b }} c2 {
 
 theorem hoare_while: "{{ P && b }} c {{ P }} \<Longrightarrow> {{ P }} (WHILE b DO c OD) {{ P &~ b }}"
 @proof
-  @let "v = WHILE b DO c OD" @then
+  @let "v = WHILE b DO c OD"
   @have "\<forall>st st'. ceval v st st' \<longrightarrow> aseval P st \<longrightarrow> aseval (P &~ b) st'" @with
     @prop_induct "ceval v st st'" @end
 @qed

@@ -50,7 +50,7 @@ lemma is_ord_field_prop [forward]:
 
 lemma ord_field_inv_sign [backward]:
   "is_ord_field(R) \<Longrightarrow> x >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> inv(R,x) >\<^sub>R \<zero>\<^sub>R"
-@proof @have "x *\<^sub>R inv(R,x) = \<one>\<^sub>R" @then @have "\<one>\<^sub>R >\<^sub>R \<zero>\<^sub>R" @qed
+@proof @have "x *\<^sub>R inv(R,x) = \<one>\<^sub>R" @have "\<one>\<^sub>R >\<^sub>R \<zero>\<^sub>R" @qed
 setup {* add_forward_prfstep_cond @{thm ord_field_inv_sign} [with_term "inv(?R,?x)"] *}
 
 lemma ord_field_inv_sign2 [backward]:
@@ -81,7 +81,7 @@ lemma ord_field_div_sign2 [forward]:
     
 lemma ord_field_divide_le [backward]:
   "is_ord_field(R) \<Longrightarrow> c >\<^sub>R 0\<^sub>R \<Longrightarrow> a \<le>\<^sub>R b \<Longrightarrow> a /\<^sub>R c \<le>\<^sub>R b /\<^sub>R c"
-@proof @have "a /\<^sub>R c = a *\<^sub>R inv(R,c)" @then @have "b /\<^sub>R c = b *\<^sub>R inv(R,c)" @qed
+@proof @have "a /\<^sub>R c = a *\<^sub>R inv(R,c)" @have "b /\<^sub>R c = b *\<^sub>R inv(R,c)" @qed
 
 lemma ord_field_divide_less [backward]:
   "is_ord_field(R) \<Longrightarrow> c >\<^sub>R 0\<^sub>R \<Longrightarrow> a <\<^sub>R b \<Longrightarrow> a /\<^sub>R c <\<^sub>R b /\<^sub>R c"
@@ -129,7 +129,7 @@ lemma ord_field_divide_less6 [backward1]:
 
 lemma ord_field_quotient_less [backward]:
   "is_ord_field(R) \<Longrightarrow> a \<ge>\<^sub>R 0\<^sub>R \<Longrightarrow> b \<ge>\<^sub>R 1\<^sub>R \<Longrightarrow> a /\<^sub>R b \<le>\<^sub>R a"
-@proof @have "(a /\<^sub>R b) *\<^sub>R b = a *\<^sub>R 1\<^sub>R" @then @case "(a /\<^sub>R b) *\<^sub>R b >\<^sub>R a *\<^sub>R b" @qed
+@proof @have "(a /\<^sub>R b) *\<^sub>R b = a *\<^sub>R 1\<^sub>R" @case "(a /\<^sub>R b) *\<^sub>R b >\<^sub>R a *\<^sub>R b" @qed
 
 section {* Fields of characteristic zero *}
 
@@ -166,22 +166,22 @@ setup {* del_prfstep_thm @{thm is_archimedean_def} *}
 lemma is_archimedeanD_greater [backward]:
   "is_archimedean(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>n\<in>nat. of_nat(R,n) >\<^sub>R x"
 @proof
-  @obtain "n\<in>nat" where "of_nat(R,n) \<ge>\<^sub>R x" @then
+  @obtain "n\<in>nat" where "of_nat(R,n) \<ge>\<^sub>R x"
   @have "of_nat(R, n +\<^sub>\<nat> 1) >\<^sub>R x"
 @qed
 
 lemma is_archimedeanD_nat_inverse_less [backward]:
   "is_archimedean(R) \<Longrightarrow> is_field(R) \<Longrightarrow> x >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> \<exists>n>\<^sub>\<nat>0. inv(R,of_nat(R,n)) <\<^sub>R x"
 @proof
-  @obtain "n\<in>nat" where "of_nat(R,n) >\<^sub>R inv(R,x)" @then
-  @obtain n' where "n'>\<^sub>\<nat>0" "n' = max(\<nat>,n,1)" @then
+  @obtain "n\<in>nat" where "of_nat(R,n) >\<^sub>R inv(R,x)"
+  @obtain n' where "n'>\<^sub>\<nat>0" "n' = max(\<nat>,n,1)"
   @have "of_nat(R,n') >\<^sub>R inv(R,x)"
 @qed
 
 lemma is_archimedeanD_nat_inverse_less_plus1 [backward]:
   "is_archimedean(R) \<Longrightarrow> is_field(R) \<Longrightarrow> x >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> \<exists>n\<in>nat. inv(R,of_nat(R,n +\<^sub>\<nat> 1)) <\<^sub>R x"
 @proof
-  @obtain n where "n>\<^sub>\<nat>0" "inv(R,of_nat(R,n)) <\<^sub>R x" @then @have "n \<ge>\<^sub>\<nat> 1" @then
+  @obtain n where "n>\<^sub>\<nat>0" "inv(R,of_nat(R,n)) <\<^sub>R x" @have "n \<ge>\<^sub>\<nat> 1"
   @have "n -\<^sub>\<nat> 1 \<in> nat"
 @qed
 
@@ -195,7 +195,7 @@ lemma is_archimedeanD_quotient [backward2]:
 lemma power_two_unbounded [backward]:
   "is_archimedean(R) \<Longrightarrow> M \<in>. R \<Longrightarrow> \<exists>n\<in>nat. 2\<^sub>R ^\<^sub>R n >\<^sub>R M"
 @proof
-  @obtain "n\<in>nat" where "of_nat(R,n) >\<^sub>R M" @then @have "2\<^sub>R ^\<^sub>R n >\<^sub>R of_nat(R,n)"
+  @obtain "n\<in>nat" where "of_nat(R,n) >\<^sub>R M" @have "2\<^sub>R ^\<^sub>R n >\<^sub>R of_nat(R,n)"
 @qed
 
 section {* Averages *}
@@ -207,16 +207,16 @@ setup {* register_wellform_data ("avg(R,a,b)", ["a \<in>. R", "b \<in>. R"]) *}
 lemma avg_type [typing]: "is_ord_field(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> avg(R,a,b) \<in>. R" by auto2
 
 lemma avg_le [backward]: "is_ord_field(R) \<Longrightarrow> a \<le>\<^sub>R b \<Longrightarrow> a \<le>\<^sub>R avg(R,a,b)"
-@proof @have "a +\<^sub>R a \<le>\<^sub>R a +\<^sub>R b" @then @have "a +\<^sub>R a = 2\<^sub>R *\<^sub>R a" @qed
+@proof @have "a +\<^sub>R a \<le>\<^sub>R a +\<^sub>R b" @have "a +\<^sub>R a = 2\<^sub>R *\<^sub>R a" @qed
       
 lemma avg_le2 [backward]: "is_ord_field(R) \<Longrightarrow> a \<le>\<^sub>R b \<Longrightarrow> avg(R,a,b) \<le>\<^sub>R b"
-@proof @have "a +\<^sub>R b \<le>\<^sub>R b +\<^sub>R b" @then @have "b +\<^sub>R b = 2\<^sub>R *\<^sub>R b" @qed
+@proof @have "a +\<^sub>R b \<le>\<^sub>R b +\<^sub>R b" @have "b +\<^sub>R b = 2\<^sub>R *\<^sub>R b" @qed
 
 lemma avg_less [backward]: "is_ord_field(R) \<Longrightarrow> a <\<^sub>R b \<Longrightarrow> a <\<^sub>R avg(R,a,b)"
-@proof @have "a +\<^sub>R a <\<^sub>R a +\<^sub>R b" @then @have "a +\<^sub>R a = 2\<^sub>R *\<^sub>R a" @qed
+@proof @have "a +\<^sub>R a <\<^sub>R a +\<^sub>R b" @have "a +\<^sub>R a = 2\<^sub>R *\<^sub>R a" @qed
 
 lemma avg_less2 [backward]: "is_ord_field(R) \<Longrightarrow> a <\<^sub>R b \<Longrightarrow> avg(R,a,b) <\<^sub>R b"
-@proof @have "a +\<^sub>R b <\<^sub>R b +\<^sub>R b" @then @have "b +\<^sub>R b = 2\<^sub>R *\<^sub>R b" @qed
+@proof @have "a +\<^sub>R b <\<^sub>R b +\<^sub>R b" @have "b +\<^sub>R b = 2\<^sub>R *\<^sub>R b" @qed
 
 lemma avg_ge [backward]: "is_ord_field(R) \<Longrightarrow> a \<ge>\<^sub>R b \<Longrightarrow> a \<ge>\<^sub>R avg(R,a,b)"
 @proof @have "avg(R,a,b) = avg(R,b,a)" @qed
@@ -240,11 +240,11 @@ lemma ord_ring_of_nat_greater_zero' [backward]:
 
 lemma ord_field_rat_ge_zero:
   "is_ord_field(R) \<Longrightarrow> m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> n \<noteq> 0 \<Longrightarrow> of_nat(R,m) /\<^sub>R of_nat(R,n) \<ge>\<^sub>R 0\<^sub>R"
-@proof @have "of_nat(R,m) \<ge>\<^sub>R 0\<^sub>R" @then @have "of_nat(R,n) \<ge>\<^sub>R 0\<^sub>R" @qed
+@proof @have "of_nat(R,m) \<ge>\<^sub>R 0\<^sub>R" @have "of_nat(R,n) \<ge>\<^sub>R 0\<^sub>R" @qed
 
 lemma ord_field_rat_greater_zero:
   "is_ord_field(R) \<Longrightarrow> m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> m \<noteq> 0 \<Longrightarrow> n \<noteq> 0 \<Longrightarrow> of_nat(R,m) /\<^sub>R of_nat(R,n) >\<^sub>R 0\<^sub>R"
-@proof @have "of_nat(R,m) >\<^sub>R 0\<^sub>R" @then @have "of_nat(R,n) \<ge>\<^sub>R 0\<^sub>R" @qed
+@proof @have "of_nat(R,m) >\<^sub>R 0\<^sub>R" @have "of_nat(R,n) \<ge>\<^sub>R 0\<^sub>R" @qed
 
 lemma ord_ring_le_switch_left':
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> 0\<^sub>R \<le>\<^sub>R y -\<^sub>R x \<Longrightarrow> x \<le>\<^sub>R y" by auto2

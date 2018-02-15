@@ -62,7 +62,7 @@ lemma quicksort_to_fun [hoare_triple]:
   @let "xs1 = snd (Quicksort.partition xs l r)"
   @let "xs2 = Quicksort.quicksort xs1 l (p - 1)"
   @case "p + 1 \<ge> r" @with
-    @case "l \<ge> p - 1" @then
+    @case "l \<ge> p - 1"
     @apply_induct_hyp "(p-1)-l" l "p-1" xs1
   @end
   @apply_induct_hyp "r-(p+1)" "p+1" r xs2

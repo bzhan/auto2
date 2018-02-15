@@ -104,9 +104,9 @@ lemma lower_bounded_is_neg_upper [rewrite]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> upper_bounded(seq_neg(X)) \<longleftrightarrow> lower_bounded(X)"
 @proof
   @case "lower_bounded(X)" @with
-    @obtain "r\<in>.R" where "\<forall>n\<in>.\<nat>. r \<le>\<^sub>R X`n" @then @have "\<forall>n\<in>.\<nat>. -\<^sub>R r \<ge>\<^sub>R (seq_neg(X))`n" @end
+    @obtain "r\<in>.R" where "\<forall>n\<in>.\<nat>. r \<le>\<^sub>R X`n" @have "\<forall>n\<in>.\<nat>. -\<^sub>R r \<ge>\<^sub>R (seq_neg(X))`n" @end
   @case "upper_bounded(seq_neg(X))" @with
-    @obtain "r\<in>.R" where "\<forall>n\<in>.\<nat>. r \<ge>\<^sub>R seq_neg(X)`n" @then @have "\<forall>n\<in>.\<nat>. -\<^sub>R r \<le>\<^sub>R X`n" @end
+    @obtain "r\<in>.R" where "\<forall>n\<in>.\<nat>. r \<ge>\<^sub>R seq_neg(X)`n" @have "\<forall>n\<in>.\<nat>. -\<^sub>R r \<le>\<^sub>R X`n" @end
 @qed
 
 section {* Boundedness on sequences *}
@@ -118,7 +118,7 @@ setup {* add_property_const @{term bounded} *}
 lemma boundedI [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r \<Longrightarrow> bounded(X)"
 @proof
-  @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R max(R,r,1\<^sub>R)" @then @have "1\<^sub>R >\<^sub>R \<zero>\<^sub>R"
+  @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R max(R,r,1\<^sub>R)" @have "1\<^sub>R >\<^sub>R \<zero>\<^sub>R"
 @qed
 
 lemma boundedD [resolve]:
@@ -132,7 +132,7 @@ lemma boundedI_less [forward]:
 lemma boundedD_less [resolve]:
   "ord_ring_seq(X) \<Longrightarrow> bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
 @proof
-  @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @then @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r +\<^sub>R \<one>\<^sub>R"
+  @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r +\<^sub>R \<one>\<^sub>R"
 @qed
       
 lemma bounded_on_tail [forward]:
@@ -140,10 +140,10 @@ lemma bounded_on_tail [forward]:
 @proof
   @have "r \<in>. R" @with @have "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R r" @end
   @case "k = 0" @with @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @end
-  @obtain S where "S \<noteq> \<emptyset>" "S = nat_less_range(k)" @then
-  @obtain "f \<in> nat \<rightarrow> carrier(R)" where "f = (\<lambda>i\<in>nat. \<bar>X`i\<bar>\<^sub>R \<in> carrier(R))" @then
-  @let "m = max(R,r,greatest(R,f `` S))" @then
-  @have "has_greatest(R,f``S)" @then
+  @obtain S where "S \<noteq> \<emptyset>" "S = nat_less_range(k)"
+  @obtain "f \<in> nat \<rightarrow> carrier(R)" where "f = (\<lambda>i\<in>nat. \<bar>X`i\<bar>\<^sub>R \<in> carrier(R))"
+  @let "m = max(R,r,greatest(R,f `` S))"
+  @have "has_greatest(R,f``S)"
   @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R m" @with @have "\<bar>X`n\<bar>\<^sub>R = f`n" @end
 @qed
 
@@ -168,7 +168,7 @@ lemma vanishesE_nat_ge [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> vanishes(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
 @proof
-  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @then @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
+  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
 @qed
 
 lemma not_vanishesD [backward]:
@@ -202,8 +202,8 @@ lemma cauchyI2 [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R r \<Longrightarrow> cauchy(X)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s" @then
-    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" @then
+    @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s"
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s"
     @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @end
 @qed
 
@@ -211,7 +211,7 @@ lemma cauchyE_nat_ge [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r"
 @proof
-  @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @then
+  @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r"
   @have "\<forall>m \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r"
 @qed
 
@@ -228,8 +228,8 @@ lemma cauchy_from_vanishes [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> vanishes(X) \<Longrightarrow> cauchy(X)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s" @then
-    @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n\<bar>\<^sub>R <\<^sub>R s" @then
+    @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s"
+    @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n\<bar>\<^sub>R <\<^sub>R s"
     @have "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @with
       @have "X`m -\<^sub>R X`n = X`m +\<^sub>R (-\<^sub>R X`n)" @end
   @end
@@ -238,7 +238,7 @@ lemma cauchy_from_vanishes [forward]:
 lemma cauchy_imp_bounded [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> bounded(X)"
 @proof
-  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R 1\<^sub>R" @then
+  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R 1\<^sub>R"
   @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R \<bar>X`k\<bar>\<^sub>R +\<^sub>R 1\<^sub>R"
 @qed
 
@@ -256,11 +256,11 @@ lemma cauchy_not_vanishes_cases [backward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> \<not>vanishes(X) \<Longrightarrow>
    \<exists>b>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)"
 @proof
-  @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. r \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R" @then
-  @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s" @then
-  @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s" @then
-  @obtain k where "k\<ge>\<^sub>\<nat>i" "r \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R" @then
-  @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" @then
+  @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. r \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R"
+  @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s"
+  @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s"
+  @obtain k where "k\<ge>\<^sub>\<nat>i" "r \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R"
+  @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s"
   @case "X`k \<le>\<^sub>R -\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R -\<^sub>R X`n" @end
   @case "X`k \<ge>\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R X`n" @end
 @qed
@@ -269,7 +269,7 @@ lemma cauchy_not_vanishes [backward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> \<not>vanishes(X) \<Longrightarrow>
    \<exists>b>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
 @proof
-  @obtain b "k\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "(\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)" @then
+  @obtain b "k\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "(\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R -\<^sub>R X`n) \<or> (\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R X`n)"
   @have "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
 @qed
 
@@ -292,14 +292,14 @@ lemma converges_toE_nat_ge [backward2]:
   "converges_to(X,s) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r"
 @proof
-  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r" @then @have "max(\<nat>,i,j) \<ge>\<^sub>\<nat> i"
+  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r" @have "max(\<nat>,i,j) \<ge>\<^sub>\<nat> i"
 @qed
 
 lemma converges_to_neg [backward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,s) \<Longrightarrow> converges_to(seq_neg(X), -\<^sub>R s)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>seq_neg(X)`n -\<^sub>R (-\<^sub>R s)\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r" @then
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>seq_neg(X)`n -\<^sub>R (-\<^sub>R s)\<bar>\<^sub>R <\<^sub>R r" @with
       @have "-\<^sub>R (X`n) -\<^sub>R (-\<^sub>R s) = -\<^sub>R (X`n -\<^sub>R s)" @end
   @end
@@ -312,25 +312,25 @@ lemma converges_to_neg' [resolve]:
 lemma lt_limit [backward2]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,x) \<Longrightarrow> y <\<^sub>R x \<Longrightarrow> \<exists>n\<in>.\<nat>. y <\<^sub>R X`n"
 @proof
-  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y" @then
-  @have "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y" @then @have "x -\<^sub>R X`k <\<^sub>R x -\<^sub>R y"
+  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y"
+  @have "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R x -\<^sub>R y" @have "x -\<^sub>R X`k <\<^sub>R x -\<^sub>R y"
 @qed
 
 lemma gt_limit [backward2]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,x) \<Longrightarrow> y >\<^sub>R x \<Longrightarrow> \<exists>n\<in>.\<nat>. y >\<^sub>R X`n"
 @proof
-  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x" @then
-  @have "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x" @then @have "X`k -\<^sub>R x <\<^sub>R y -\<^sub>R x"
+  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x"
+  @have "\<bar>X`k -\<^sub>R x\<bar>\<^sub>R <\<^sub>R y -\<^sub>R x" @have "X`k -\<^sub>R x <\<^sub>R y -\<^sub>R x"
 @qed
 
 lemma limit_unique [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges_to(X,x) \<Longrightarrow> converges_to(X,y) \<Longrightarrow> x = y"
 @proof
   @contradiction
-  @let "r = \<bar>x -\<^sub>R y\<bar>\<^sub>R" @then
-  @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t" @then
-  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R s" @then
-  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R y\<bar>\<^sub>R <\<^sub>R t" @then
+  @let "r = \<bar>x -\<^sub>R y\<bar>\<^sub>R"
+  @obtain s t where "s >\<^sub>R \<zero>\<^sub>R" "t >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R t"
+  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n -\<^sub>R x\<bar>\<^sub>R <\<^sub>R s"
+  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>R y\<bar>\<^sub>R <\<^sub>R t"
   @have "\<bar>x -\<^sub>R y\<bar>\<^sub>R <\<^sub>R r"
 @qed
       
@@ -348,7 +348,7 @@ setup {* del_prfstep_thm @{thm converges_def} *}
 lemma converges_neg [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> converges(X) \<Longrightarrow> converges(seq_neg(X))"
 @proof
-  @obtain s where "converges_to(X,s)" @then
+  @obtain s where "converges_to(X,s)"
   @have "converges_to(seq_neg(X), -\<^sub>R s)"
 @qed
 

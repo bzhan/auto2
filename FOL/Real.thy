@@ -205,7 +205,7 @@ lemma real_mult_eval_seq [rewrite]:
 lemma real_divide_eval [rewrite]:
   "r \<in>. \<rat> \<Longrightarrow> s \<in> units(\<rat>) \<Longrightarrow> Real({r}\<^sub>\<rat>) /\<^sub>\<real> Real({s}\<^sub>\<rat>) = Real({r /\<^sub>\<rat> s}\<^sub>\<rat>)"
 @proof 
-  @have "Real({r}\<^sub>\<rat>) /\<^sub>\<real> Real({s}\<^sub>\<rat>) = Real({r}\<^sub>\<rat>) *\<^sub>\<real> inv(\<real>,Real({s}\<^sub>\<rat>))" @then
+  @have "Real({r}\<^sub>\<rat>) /\<^sub>\<real> Real({s}\<^sub>\<rat>) = Real({r}\<^sub>\<rat>) *\<^sub>\<real> inv(\<real>,Real({s}\<^sub>\<rat>))"
   @have "r /\<^sub>\<rat> s = r *\<^sub>\<rat> inv(\<rat>,s)"
 @qed
   
@@ -256,17 +256,17 @@ lemma le_Real_all_n [resolve]:
 lemma archimedeal_Real [forward]: "is_archimedean(\<real>)"
 @proof 
   @have "\<forall>x>\<^sub>\<real>0\<^sub>\<real>. \<exists>r\<in>.\<rat>. of_rat(\<real>,r) \<ge>\<^sub>\<real> x" @with
-    @let "X = rep(\<R>,x)" @then
-    @obtain b where "b >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> b" @then
-    @have "of_rat(\<real>,b) = Real({b}\<^sub>\<rat>)" @then
+    @let "X = rep(\<R>,x)"
+    @obtain b where "b >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> b"
+    @have "of_rat(\<real>,b) = Real({b}\<^sub>\<rat>)"
     @have "\<forall>n\<in>.\<nat>. X`n \<le>\<^sub>\<rat> {b}\<^sub>\<rat>`n" @end
 @qed
       
 lemma le_rat_real [backward1]:
   "X \<in>. \<R> \<Longrightarrow> c \<in>. \<rat> \<Longrightarrow> r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<Longrightarrow> Real(X) \<le>\<^sub>\<real> of_rat(\<real>,c) \<Longrightarrow> \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
 @proof 
-  @have "of_rat(\<real>,c) = Real({c}\<^sub>\<rat>)" @then
-  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S {c}\<^sub>\<rat>)`n \<le>\<^sub>\<rat> r" @then
+  @have "of_rat(\<real>,c) = Real({c}\<^sub>\<rat>)"
+  @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S {c}\<^sub>\<rat>)`n \<le>\<^sub>\<rat> r"
   @have "\<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @with @have "X`n -\<^sub>\<rat> c \<le>\<^sub>\<rat> r" @end
 @qed
 
@@ -278,11 +278,11 @@ lemma diff_le_rat_real2 [backward1]:
   "X \<in>. \<R> \<Longrightarrow> Y \<in>. \<R> \<Longrightarrow> c \<in>. \<rat> \<Longrightarrow> r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<Longrightarrow> Real(X) -\<^sub>\<real> Real(Y) \<le>\<^sub>\<real> of_rat(\<real>,c) \<Longrightarrow>
    \<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. X`m -\<^sub>\<rat> Y`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
 @proof 
-  @obtain s t where "s >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "t >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = s +\<^sub>\<rat> t" @then
-  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. (X -\<^sub>S Y)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> s" @then
-  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>\<rat> X`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> t" @then
+  @obtain s t where "s >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "t >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = s +\<^sub>\<rat> t"
+  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. (X -\<^sub>S Y)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> s"
+  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>\<rat> X`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> t"
   @have "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. X`m -\<^sub>\<rat> Y`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @with
-    @have "X`m -\<^sub>\<rat> Y`n = (X`m -\<^sub>\<rat> X`n) +\<^sub>\<rat> (X`n -\<^sub>\<rat> Y`n)" @then
+    @have "X`m -\<^sub>\<rat> Y`n = (X`m -\<^sub>\<rat> X`n) +\<^sub>\<rat> (X`n -\<^sub>\<rat> Y`n)"
     @have "t +\<^sub>\<rat> (c +\<^sub>\<rat> s) = c +\<^sub>\<rat> (s +\<^sub>\<rat> t)" @end
 @qed
 setup {* del_prfstep_thm @{thm diff_le_rat_real} *}
@@ -295,7 +295,7 @@ lemma abs_diff_le_rat_real2D [backward1]:
     @have "Real(X) -\<^sub>\<real> Real(Y) \<le>\<^sub>\<real> of_rat(\<real>,c)" @end
   @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. Y`m -\<^sub>\<rat> X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @with
     @have "Real(Y) -\<^sub>\<real> Real(X) \<le>\<^sub>\<real> of_rat(\<real>,c)" @end
-  @let "k = max(\<nat>,i,j)" @then
+  @let "k = max(\<nat>,i,j)"
   @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
 @qed
 setup {* del_prfstep_thm @{thm diff_le_rat_real2} *}
@@ -303,9 +303,9 @@ setup {* del_prfstep_thm @{thm diff_le_rat_real2} *}
 lemma le_rat_realI [resolve]:
   "X \<in>. \<R> \<Longrightarrow> c \<in>. \<rat> \<Longrightarrow> \<forall>r>\<^sub>\<rat>\<zero>\<^sub>\<rat>. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r \<Longrightarrow> Real(X) \<le>\<^sub>\<real> of_rat(\<real>,c)"
 @proof
-  @have "of_rat(\<real>,c) = Real({c}\<^sub>\<rat>)" @then
+  @have "of_rat(\<real>,c) = Real({c}\<^sub>\<rat>)"
   @have "\<forall>r>\<^sub>\<rat>\<zero>\<^sub>\<rat>. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S {c}\<^sub>\<rat>)`n \<le>\<^sub>\<rat> r" @with
-    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @then
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S {c}\<^sub>\<rat>)`n \<le>\<^sub>\<rat> r" @with @have "X`n -\<^sub>\<rat> c \<le>\<^sub>\<rat> r" @end
   @end
 @qed
@@ -321,11 +321,11 @@ lemma abs_diff_le_rat_realI [resolve]:
 @proof 
   @have "Real(X) -\<^sub>\<real> Real(Y) \<le>\<^sub>\<real> of_rat(\<real>,c)" @with
     @have "\<forall>r. r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S Y)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r)" @with
-      @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @then
+      @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
       @have "\<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S Y)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @end @end
   @have "Real(Y) -\<^sub>\<real> Real(X) \<le>\<^sub>\<real> of_rat(\<real>,c)" @with
     @have "\<forall>r. r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. (Y -\<^sub>S X)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r)" @with
-      @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @then
+      @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
       @have "\<forall>n\<ge>\<^sub>\<nat>k. (Y -\<^sub>S X)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @end @end
 @qed
 setup {* del_prfstep_thm @{thm diff_le_rat_realI} *}
@@ -335,7 +335,7 @@ lemma abs_diff_le_rat_realI' [backward1]:
    \<bar>Real(X) -\<^sub>\<real> Real(Y)\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,c)"
 @proof 
   @have "\<forall>r. r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r)" @with
-    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> c" @then
+    @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> c"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @end
 @qed
   
@@ -344,7 +344,7 @@ lemma converges_to_in_rat [resolve]:
    \<forall>r>\<^sub>\<rat>\<zero>\<^sub>\<rat>. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R \<le>\<^sub>R of_rat(R,r) \<Longrightarrow> converges_to(X,s)"
 @proof 
   @have "\<forall>r'. r' >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r')" @with
-    @obtain r where "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "of_rat(R,r) <\<^sub>R r'" @then
+    @obtain r where "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "of_rat(R,r) <\<^sub>R r'"
     @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R \<le>\<^sub>R of_rat(R,r)" @end
 @qed
 
@@ -366,7 +366,7 @@ lemma err_less_than_r [backward]: "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>\<Longri
   
 lemma err_converge_to_zero [backward]: "r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<Longrightarrow> \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. err`n <\<^sub>\<rat> r"
 @proof 
-  @obtain "k\<in>.\<nat>" where "err`k <\<^sub>\<rat> r" @then
+  @obtain "k\<in>.\<nat>" where "err`k <\<^sub>\<rat> r"
   @have "\<forall>n\<ge>\<^sub>\<nat>k. err`n <\<^sub>\<rat> r"
 @qed
 setup {* del_prfstep_thm @{thm err_def} *}
@@ -388,7 +388,7 @@ lemma Diag_prop [backward]:
 lemma Diag_prop_ge_nat [backward]:
   "X \<in> seqs(\<real>) \<Longrightarrow> n \<in>. \<nat> \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow> \<exists>k\<ge>\<^sub>\<nat>i. \<forall>i\<ge>\<^sub>\<nat>k. \<bar>rep(\<R>,X`n)`i -\<^sub>\<rat> Diag(X)`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n"
 @proof 
-  @obtain "k\<in>.\<nat>" where "\<forall>i\<ge>\<^sub>\<nat>k. \<bar>rep(\<R>,X`n)`i -\<^sub>\<rat> Diag(X)`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n" @then
+  @obtain "k\<in>.\<nat>" where "\<forall>i\<ge>\<^sub>\<nat>k. \<bar>rep(\<R>,X`n)`i -\<^sub>\<rat> Diag(X)`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n"
   @have "max(\<nat>,k,i) \<ge>\<^sub>\<nat> i"
 @qed
 setup {* del_prfstep_thm @{thm Diag_def} *}
@@ -401,17 +401,17 @@ lemma ord_field_exists_sum4 [backward]:
 lemma Diag_is_cauchy [forward]:
   "cauchy(X) \<Longrightarrow> X \<in> seqs(\<real>) \<Longrightarrow> cauchy(Diag(X))"
 @proof @contradiction
-  @let "W = Diag(X)" @then
-  @obtain r where "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<not>(\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>W`m -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> r)" @then
-  @obtain r1 r2 r3 where "r1 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r2 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r3 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = r1 +\<^sub>\<rat> (r2 +\<^sub>\<rat> r3) +\<^sub>\<rat> r1" @then
-  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. err`n <\<^sub>\<rat> r1" @then
-  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>\<real> X`n\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,r2)" @then
+  @let "W = Diag(X)"
+  @obtain r where "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<not>(\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>W`m -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> r)"
+  @obtain r1 r2 r3 where "r1 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r2 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r3 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = r1 +\<^sub>\<rat> (r2 +\<^sub>\<rat> r3) +\<^sub>\<rat> r1"
+  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. err`n <\<^sub>\<rat> r1"
+  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>\<real> X`n\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,r2)"
   @have "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>W`m -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> r" @with
-    @let "Sm = rep(\<R>,X`m)" "Sn = rep(\<R>,X`n)" @then
-    @obtain "k1\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k1. \<bar>Sm`k' -\<^sub>\<rat> W`m\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`m" @then
-    @obtain "k2\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k2. \<bar>Sn`k' -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n" @then
-    @obtain "k3\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k3. \<forall>k''\<ge>\<^sub>\<nat>k3. \<bar>Sm`k' -\<^sub>\<rat> Sn`k''\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> r2 +\<^sub>\<rat> r3" @then
-    @obtain k where "k \<ge>\<^sub>\<nat> k1" "k \<ge>\<^sub>\<nat> k2" "k \<ge>\<^sub>\<nat> k3" @then
+    @let "Sm = rep(\<R>,X`m)" "Sn = rep(\<R>,X`n)"
+    @obtain "k1\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k1. \<bar>Sm`k' -\<^sub>\<rat> W`m\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`m"
+    @obtain "k2\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k2. \<bar>Sn`k' -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n"
+    @obtain "k3\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k3. \<forall>k''\<ge>\<^sub>\<nat>k3. \<bar>Sm`k' -\<^sub>\<rat> Sn`k''\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> r2 +\<^sub>\<rat> r3"
+    @obtain k where "k \<ge>\<^sub>\<nat> k1" "k \<ge>\<^sub>\<nat> k2" "k \<ge>\<^sub>\<nat> k3"
     @have "\<bar>W`m -\<^sub>\<rat> Sn`k\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`m +\<^sub>\<rat> (r2 +\<^sub>\<rat> r3)"
   @end
 @qed
@@ -419,14 +419,14 @@ lemma Diag_is_cauchy [forward]:
 lemma Diag_converges [forward]:
   "cauchy(X) \<Longrightarrow> X \<in> seqs(\<real>) \<Longrightarrow> converges_to(X,Real(Diag(X)))"
 @proof @contradiction
-  @let "W = Diag(X)" @then
-  @obtain r where "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<real> Real(W)\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,r))" @then
-  @obtain s t where "s >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "t >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = s +\<^sub>\<rat> t" @then
-  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. err`n <\<^sub>\<rat> s" @then
-  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>W`m -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> t" @then
+  @let "W = Diag(X)"
+  @obtain r where "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<real> Real(W)\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,r))"
+  @obtain s t where "s >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "t >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = s +\<^sub>\<rat> t"
+  @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. err`n <\<^sub>\<rat> s"
+  @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>W`m -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> t"
   @have "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n -\<^sub>\<real> Real(W)\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,r)" @with
-    @let "Sn = rep(\<R>,X`n)" @then
-    @obtain k where "k\<ge>\<^sub>\<nat>j" "\<forall>k'\<ge>\<^sub>\<nat>k. \<bar>Sn`k' -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n" @then
+    @let "Sn = rep(\<R>,X`n)"
+    @obtain k where "k\<ge>\<^sub>\<nat>j" "\<forall>k'\<ge>\<^sub>\<nat>k. \<bar>Sn`k' -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n"
     @have "\<forall>p\<ge>\<^sub>\<nat>k. \<bar>Sn`p -\<^sub>\<rat> W`p\<bar>\<^sub>\<rat> <\<^sub>\<rat> r"
   @end
 @qed

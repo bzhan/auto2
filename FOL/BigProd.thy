@@ -47,7 +47,7 @@ definition singleton_prod_map :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where 
 lemma singleton_prod_map_is_bijective [typing]:
   "singleton_prod_map(a,B) \<in> Pi({a},B) \<cong> B(a)"
 @proof
-  @let "inv = (\<lambda>x\<in>B(a). Tup({a}, \<lambda>_. x)\<in>Pi({a},B))" @then
+  @let "inv = (\<lambda>x\<in>B(a). Tup({a}, \<lambda>_. x)\<in>Pi({a},B))"
   @have "inverse_pair(singleton_prod_map(a,B), inv)"
 @qed
 
@@ -57,9 +57,9 @@ definition doubleton_prod_map :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" whe
 lemma doubleton_prod_map_is_bijective:
   "a \<noteq> b \<Longrightarrow> doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<cong> B(a)\<times>B(b)"
 @proof
-  @have "doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<rightarrow> B(a)\<times>B(b)" @then
-  @let "inv = (\<lambda>p\<in>B(a)\<times>B(b). Tup({a,b}, \<lambda>c. if c = a then fst(p) else snd(p)) \<in> Pi({a,b},B))" @then
-  @have "inv \<in> B(a)\<times>B(b) \<rightarrow> Pi({a,b},B)" @then
+  @have "doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<rightarrow> B(a)\<times>B(b)"
+  @let "inv = (\<lambda>p\<in>B(a)\<times>B(b). Tup({a,b}, \<lambda>c. if c = a then fst(p) else snd(p)) \<in> Pi({a,b},B))"
+  @have "inv \<in> B(a)\<times>B(b) \<rightarrow> Pi({a,b},B)"
   @have "inverse_pair(doubleton_prod_map(a,b,B), inv)"
 @qed
 
@@ -130,7 +130,7 @@ lemma restrict_prod_is_proj [rewrite]:
 lemma proj_is_surj [backward]:
   "a \<in> I \<Longrightarrow> \<forall>a\<in>I. B(a) \<noteq> \<emptyset> \<Longrightarrow> surjective(projf(I,B,a))"
 @proof
-  @have "projf(I,B,a) = singleton_prod_map(a,B) \<circ> projf_set(I,{a},B)" @then
+  @have "projf(I,B,a) = singleton_prod_map(a,B) \<circ> projf_set(I,{a},B)"
   @have "surjective(projf_set(I,{a},B))"
 @qed
 
@@ -144,10 +144,10 @@ lemma prod_non_empty [rewrite]:
   @contradiction
   @case "\<forall>a\<in>I. B(a) \<noteq> \<emptyset>" @with
     @contradiction
-    @have "I \<noteq> \<emptyset>" @then @obtain "a \<in> I" @then
+    @have "I \<noteq> \<emptyset>" @obtain "a \<in> I"
     @have "surjective(projf(I,B,a))" @end
   @case "Pi(I,B) \<noteq> \<emptyset>" @with
-    @obtain "f \<in> Pi(I,B)" @then
+    @obtain "f \<in> Pi(I,B)"
     @have "\<forall>a\<in>I. B(a) \<noteq> \<emptyset>" @with @have "f`a \<in> B(a)" @end @end
 @qed
 
@@ -296,7 +296,7 @@ lemma prod_set_disjoint [backward1]:
   "a \<in> I \<Longrightarrow> X(a) \<inter> Y(a) = \<emptyset> \<Longrightarrow> Pi(I,X) \<inter> Pi(I,Y) = \<emptyset>"
 @proof
   @contradiction
-  @obtain x where "x \<in> Pi(I,X) \<inter> Pi(I,Y)" @then @have "x`a \<in> X(a) \<inter> Y(a)"
+  @obtain x where "x \<in> Pi(I,X) \<inter> Pi(I,Y)" @have "x`a \<in> X(a) \<inter> Y(a)"
 @qed
 
 lemma prod_mutually_disjoint:
@@ -307,8 +307,8 @@ lemma prod_is_partition:
   "\<forall>b\<in>L. is_partition(S(b),X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(S(b)) \<Longrightarrow>
    is_partition(Pi(L,S), \<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))"  
 @proof
-  @have "Pi(L,S) = Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a))" @then
-  @let "F = (\<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))" @then
+  @have "Pi(L,S) = Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a))"
+  @let "F = (\<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))"
   @have "(\<Union>f\<in>Pi(L,J). F`f) = (\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
 @qed
 
@@ -339,14 +339,14 @@ lemma ext_prod_fun_inj:
   "F \<in> Pi(I,\<lambda>a. X(a)\<rightarrow>Y(a)) \<Longrightarrow> \<forall>a\<in>I. injective(F`a) \<Longrightarrow> injective(ext_prod_fun(I,X,Y,F))"
 @proof
   @case "\<forall>a\<in>I. X(a) \<noteq> \<emptyset>" @with
-    @let "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. left_inverse(F`a)))" @then
+    @let "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. left_inverse(F`a)))"
     @have "R \<circ> ext_prod_fun(I,X,Y,F) = id_fun(Pi(I,X))" @end
 @qed
 
 lemma ext_prod_fun_surj:
   "F \<in> Pi(I,\<lambda>a. X(a)\<rightarrow>Y(a)) \<Longrightarrow> \<forall>a\<in>I. surjective(F`a) \<Longrightarrow> surjective(ext_prod_fun(I,X,Y,F))"
 @proof
-  @let "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. right_inverse(F`a)))" @then
+  @let "R = ext_prod_fun(I,Y,X, Tup(I, \<lambda>a. right_inverse(F`a)))"
   @have "ext_prod_fun(I,X,Y,F) \<circ> R = id_fun(Pi(I,Y))"
 @qed
 

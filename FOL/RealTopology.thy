@@ -8,7 +8,7 @@ lemma open_interval_to_abs [rewrite]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> a \<in>. R \<Longrightarrow> y \<in> open_interval(R,x -\<^sub>R a, x +\<^sub>R a) \<longleftrightarrow> (y \<in>. R \<and> \<bar>y -\<^sub>R x\<bar>\<^sub>R <\<^sub>R a)"
 @proof
   @contradiction
-  @have "y -\<^sub>R x <\<^sub>R a" @then @have "y -\<^sub>R x >\<^sub>R -\<^sub>R a"
+  @have "y -\<^sub>R x <\<^sub>R a" @have "y -\<^sub>R x >\<^sub>R -\<^sub>R a"
 @qed
       
 section {* Topology on real numbers *}
@@ -16,10 +16,10 @@ section {* Topology on real numbers *}
 lemma real_topology_is_openD [backward]:
   "is_open(\<real>,U) \<Longrightarrow> x \<in> U \<Longrightarrow> \<exists>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U"
 @proof
-  @obtain a b where "x \<in> open_interval(\<real>,a,b)" "open_interval(\<real>,a,b) \<subseteq> U" @then
-  @have "x -\<^sub>\<real> a >\<^sub>\<real> \<zero>\<^sub>\<real>" @then
-  @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "c <\<^sub>\<real> min(\<real>, x -\<^sub>\<real> a, b -\<^sub>\<real> x)" @then
-  @have "open_interval(\<real>, x -\<^sub>\<real> c, x +\<^sub>\<real> c) \<subseteq> open_interval(\<real>,a,b)" @then
+  @obtain a b where "x \<in> open_interval(\<real>,a,b)" "open_interval(\<real>,a,b) \<subseteq> U"
+  @have "x -\<^sub>\<real> a >\<^sub>\<real> \<zero>\<^sub>\<real>"
+  @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "c <\<^sub>\<real> min(\<real>, x -\<^sub>\<real> a, b -\<^sub>\<real> x)"
+  @have "open_interval(\<real>, x -\<^sub>\<real> c, x +\<^sub>\<real> c) \<subseteq> open_interval(\<real>,a,b)"
   @have "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U" @with
     @have "y \<in> open_interval(\<real>, x -\<^sub>\<real> c, x +\<^sub>\<real> c)" @end
 @qed
@@ -27,7 +27,7 @@ lemma real_topology_is_openD [backward]:
 lemma real_topology_is_openD_less [backward]:
   "is_open(\<real>,U) \<Longrightarrow> x \<in> U \<Longrightarrow> d >\<^sub>\<real> \<zero>\<^sub>\<real> \<Longrightarrow> \<exists>c>\<^sub>\<real>\<zero>\<^sub>\<real>. c \<le>\<^sub>\<real> d \<and> (\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U)"
 @proof
-  @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U" @then
+  @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U"
   @have "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> min(\<real>,c,d) \<longrightarrow> y \<in> U"
 @qed
 
@@ -35,8 +35,8 @@ lemma real_topology_is_openI [forward]:
   "U \<subseteq> real \<Longrightarrow> \<forall>x\<in>U. \<exists>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U \<Longrightarrow> is_open(\<real>,U)"
 @proof
   @have "\<forall>x\<in>U. \<exists>a b. x \<in> open_interval(\<real>,a,b) \<and> open_interval(\<real>,a,b) \<subseteq> U" @with
-    @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U" @then
-    @have "x \<in> open_interval(\<real>,x -\<^sub>\<real> c, x +\<^sub>\<real> c)" @then
+    @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U"
+    @have "x \<in> open_interval(\<real>,x -\<^sub>\<real> c, x +\<^sub>\<real> c)"
     @have "\<forall>y\<in>open_interval(\<real>,x -\<^sub>\<real> c, x +\<^sub>\<real> c). y \<in> U" @end
 @qed
 
@@ -58,21 +58,21 @@ lemma real2_topology_is_openI [forward]:
   "U \<subseteq> real2 \<Longrightarrow> \<forall>x\<in>U. \<exists>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,c) \<longrightarrow> y \<in> U \<Longrightarrow> is_open(\<real>\<^sup>2, U)"
 @proof
   @have "\<forall>x\<in>U. \<exists>V W. is_open(\<real>,V) \<and> is_open(\<real>,W) \<and> x \<in>V\<times>W \<and> V\<times>W \<subseteq> U" @with
-    @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,c) \<longrightarrow> y \<in> U" @then
-    @let "V = open_interval(\<real>, fst(x) -\<^sub>\<real> c, fst(x) +\<^sub>\<real> c)" @then
-    @let "W = open_interval(\<real>, snd(x) -\<^sub>\<real> c, snd(x) +\<^sub>\<real> c)" @then
+    @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,c) \<longrightarrow> y \<in> U"
+    @let "V = open_interval(\<real>, fst(x) -\<^sub>\<real> c, fst(x) +\<^sub>\<real> c)"
+    @let "W = open_interval(\<real>, snd(x) -\<^sub>\<real> c, snd(x) +\<^sub>\<real> c)"
     @have "\<forall>y\<in>V \<times> W. y \<in> U" @with @have "real2_dist_bound(x,y,c)" @end
-    @have "is_open(\<real>,V)" @then @have "is_open(\<real>,W)" @end
+    @have "is_open(\<real>,V)" @have "is_open(\<real>,W)" @end
 @qed
 
 lemma real2_topology_is_openD [backward]:
   "is_open(\<real>\<^sup>2, U) \<Longrightarrow> x \<in> U \<Longrightarrow> \<exists>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,c) \<longrightarrow> y \<in> U"
 @proof
-  @obtain V W where "is_open(\<real>,V)" "is_open(\<real>,W)" "x \<in> V\<times>W" "V\<times>W \<subseteq> U" @then
-  @obtain c' where "c' >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y1\<in>.\<real>. \<bar>y1 -\<^sub>\<real> fst(x)\<bar>\<^sub>\<real> <\<^sub>\<real> c' \<longrightarrow> y1 \<in> V" @then
-  @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "c \<le>\<^sub>\<real> c'" "\<forall>y2\<in>.\<real>. \<bar>y2 -\<^sub>\<real> snd(x)\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y2 \<in> W" @then
+  @obtain V W where "is_open(\<real>,V)" "is_open(\<real>,W)" "x \<in> V\<times>W" "V\<times>W \<subseteq> U"
+  @obtain c' where "c' >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y1\<in>.\<real>. \<bar>y1 -\<^sub>\<real> fst(x)\<bar>\<^sub>\<real> <\<^sub>\<real> c' \<longrightarrow> y1 \<in> V"
+  @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "c \<le>\<^sub>\<real> c'" "\<forall>y2\<in>.\<real>. \<bar>y2 -\<^sub>\<real> snd(x)\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y2 \<in> W"
   @have "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,c) \<longrightarrow> y \<in> U" @with
-    @have "\<bar>fst(y) -\<^sub>\<real> fst(x)\<bar>\<^sub>\<real> <\<^sub>\<real> c'" @then @have "y \<in> V \<times> W" @end
+    @have "\<bar>fst(y) -\<^sub>\<real> fst(x)\<bar>\<^sub>\<real> <\<^sub>\<real> c'" @have "y \<in> V \<times> W" @end
 @qed
 setup {* del_prfstep_thm @{thm real2_topology_def} *}
 setup {* add_rewrite_rule_back @{thm real2_topology_def} *}
@@ -98,10 +98,10 @@ lemma real_fun_continuousI [forward]:
   "real_fun(f) \<Longrightarrow> \<forall>x\<in>.\<real>. real_continuous_at(f,x) \<Longrightarrow> continuous(f)"
 @proof
   @have "\<forall>V\<in>open_sets(\<real>). is_open(\<real>, f -`` V)" @with
-    @let "U = f -`` V" @then @have "U \<subseteq> real" @then
+    @let "U = f -`` V" @have "U \<subseteq> real"
     @have "\<forall>x\<in>U. (\<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> y \<in> U)" @with
-      @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> V" @then
-      @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @then
+      @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> V"
+      @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c"
       @have "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> y \<in> U" @with @have "f`y \<in> V" @end
     @end
   @end
@@ -111,8 +111,8 @@ lemma real_fun_continuousD [resolve]:
   "real_fun(f) \<Longrightarrow> continuous(f) \<Longrightarrow> x \<in>. \<real> \<Longrightarrow> real_continuous_at(f,x)"
 @proof
   @have "\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with
-    @let "V = open_interval(\<real>, f`x -\<^sub>\<real> c, f`x +\<^sub>\<real> c)" @then
-    @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> y \<in> f -`` V" @then
+    @let "V = open_interval(\<real>, f`x -\<^sub>\<real> c, f`x +\<^sub>\<real> c)"
+    @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> y \<in> f -`` V"
     @have "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with @have "f`y \<in> V" @end
   @end
 @qed
@@ -140,10 +140,10 @@ lemma real2_fun_continuousI [forward]:
   "f \<in> \<real>\<^sup>2 \<rightharpoonup> \<real> \<Longrightarrow> \<forall>x\<in>.\<real>\<^sup>2. real2_continuous_at(f,x) \<Longrightarrow> continuous(f)"
 @proof
   @have "\<forall>V\<in>open_sets(\<real>). is_open(\<real>\<^sup>2, f -`` V)" @with
-    @let "U = f -`` V" @then @have "U \<subseteq> real2" @then
+    @let "U = f -`` V" @have "U \<subseteq> real2"
     @have "\<forall>x\<in>U. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> y \<in> U" @with
-      @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> V" @then
-      @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @then
+      @obtain c where "c >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> V"
+      @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c"
       @have "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> y \<in> U" @with @have "f`y \<in> V" @end
     @end
   @end
@@ -153,8 +153,8 @@ lemma real2_fun_continuousD [resolve]:
   "x \<in>. \<real>\<^sup>2 \<Longrightarrow> f \<in> \<real>\<^sup>2 \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> real2_continuous_at(f,x)"
 @proof
   @have "\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with
-    @let "V = open_interval(\<real>, f`x -\<^sub>\<real> c, f`x +\<^sub>\<real> c)" @then
-    @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> y \<in> f -`` V" @then
+    @let "V = open_interval(\<real>, f`x -\<^sub>\<real> c, f`x +\<^sub>\<real> c)"
+    @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> y \<in> f -`` V"
     @have "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with @have "f`y \<in> V" @end
   @end
 @qed
@@ -170,10 +170,10 @@ setup {* del_prfstep_thm @{thm real_add_def} *}
 
 lemma real_add_continuous [forward]: "continuous(real_add)"
 @proof
-  @let "f = real_add" @then
+  @let "f = real_add"
   @have "\<forall>x\<in>.\<real>\<^sup>2. real2_continuous_at(f,x)" @with
     @have "\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with
-      @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "c = d +\<^sub>\<real> d" @then
+      @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "c = d +\<^sub>\<real> d"
       @have "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with
         @have "fst(y) +\<^sub>\<real> snd(y) -\<^sub>\<real> (fst(x) +\<^sub>\<real> snd(x)) = fst(y) -\<^sub>\<real> fst(x) +\<^sub>\<real> (snd(y) -\<^sub>\<real> snd(x))" @end
     @end        
@@ -189,8 +189,8 @@ setup {* del_prfstep_thm @{thm real_neg_def} *}
 
 lemma real_neg_continuous [forward]: "continuous(real_neg)"
 @proof
-  @let "f = real_neg" @then
-  @have "real_fun(f)" @then
+  @let "f = real_neg"
+  @have "real_fun(f)"
   @have "\<forall>x\<in>.\<real>. real_continuous_at(f,x)" @with
     @have "\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with
       @have "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with
@@ -209,23 +209,23 @@ setup {* del_prfstep_thm @{thm real_mult_def} *}
 lemma real_mult_continuous_aux [backward]:
   "x \<in>. \<real>\<^sup>2 \<Longrightarrow> c >\<^sub>\<real> \<zero>\<^sub>\<real> \<Longrightarrow> \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>real_mult`y -\<^sub>\<real> real_mult`x\<bar>\<^sub>\<real> <\<^sub>\<real> c"
 @proof
-  @let "x1 = fst(x)" "x2 = snd(x)" @then
+  @let "x1 = fst(x)" "x2 = snd(x)"
   @have "\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real> >\<^sub>\<real> 0\<^sub>\<real>" @with
     @have "\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> \<ge>\<^sub>\<real> 0\<^sub>\<real>" @with @have "\<bar>x1\<bar>\<^sub>\<real> \<ge>\<^sub>\<real> 0\<^sub>\<real>" @end @end
-  @have "min(\<real>,1\<^sub>\<real>,c /\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>)) >\<^sub>\<real> 0\<^sub>\<real>" @then
-  @obtain d where "d >\<^sub>\<real> 0\<^sub>\<real>" "d <\<^sub>\<real> min(\<real>,1\<^sub>\<real>,c /\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>))" @then
+  @have "min(\<real>,1\<^sub>\<real>,c /\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>)) >\<^sub>\<real> 0\<^sub>\<real>"
+  @obtain d where "d >\<^sub>\<real> 0\<^sub>\<real>" "d <\<^sub>\<real> min(\<real>,1\<^sub>\<real>,c /\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>))"
   @have "\<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>real_mult`y -\<^sub>\<real> real_mult`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @with
-    @let "y1 = fst(y)" "y2 = snd(y)" @then
-    @have "c >\<^sub>\<real> d *\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>)" @then
-    @have "c >\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>) *\<^sub>\<real> d +\<^sub>\<real> d *\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real>" @then
-    @have "y1 *\<^sub>\<real> y2 -\<^sub>\<real> x1 *\<^sub>\<real> x2 = y1 *\<^sub>\<real> (y2 -\<^sub>\<real> x2) +\<^sub>\<real> (y1 -\<^sub>\<real> x1) *\<^sub>\<real> x2" @then
-    @have "\<bar>y1\<bar>\<^sub>\<real> <\<^sub>\<real> \<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> d" @then
+    @let "y1 = fst(y)" "y2 = snd(y)"
+    @have "c >\<^sub>\<real> d *\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>)"
+    @have "c >\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>) *\<^sub>\<real> d +\<^sub>\<real> d *\<^sub>\<real> \<bar>x2\<bar>\<^sub>\<real>"
+    @have "y1 *\<^sub>\<real> y2 -\<^sub>\<real> x1 *\<^sub>\<real> x2 = y1 *\<^sub>\<real> (y2 -\<^sub>\<real> x2) +\<^sub>\<real> (y1 -\<^sub>\<real> x1) *\<^sub>\<real> x2"
+    @have "\<bar>y1\<bar>\<^sub>\<real> <\<^sub>\<real> \<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> d"
     @have "\<bar>y1 *\<^sub>\<real> (y2 -\<^sub>\<real> x2)\<bar>\<^sub>\<real> <\<^sub>\<real> (\<bar>x1\<bar>\<^sub>\<real> +\<^sub>\<real> 1\<^sub>\<real>) *\<^sub>\<real> d" @end
 @qed
 
 lemma real_mult_continuous [forward]: "continuous(real_mult)"
 @proof
-  @let "f = real_mult" @then
+  @let "f = real_mult"
   @have "\<forall>x\<in>.\<real>\<^sup>2. real2_continuous_at(f,x)" @with
     @have "\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c" @end
 @qed
@@ -235,7 +235,7 @@ lemma real_add_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> G = Mor(X,\<real>,\<lambda>x. g(x)) \<Longrightarrow>
    F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> G \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) +\<^sub>\<real> g(x)))"
 @proof
-  @have (@rule) "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)" @then
+  @have (@rule) "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)"
   @have "Mor(X, \<real>, \<lambda>x. f(x) +\<^sub>\<real> g(x)) = real_add \<circ>\<^sub>m prod_top_map(F,G) \<circ>\<^sub>m diag_top_map(X)"
 @qed
       
@@ -243,14 +243,14 @@ lemma real_mult_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> G = Mor(X,\<real>,\<lambda>x. g(x)) \<Longrightarrow>
    F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> G \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) *\<^sub>\<real> g(x)))"
 @proof
-  @have (@rule) "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)" @then
+  @have (@rule) "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)"
   @have "Mor(X,\<real>,\<lambda>x. f(x) *\<^sub>\<real> g(x)) = real_mult \<circ>\<^sub>m prod_top_map(F,G) \<circ>\<^sub>m diag_top_map(X)"
 @qed
       
 lemma real_neg_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. -\<^sub>\<real> f(x)))"
 @proof
-  @have (@rule) "\<forall>x\<in>.X. F`x = f(x)" @then
+  @have (@rule) "\<forall>x\<in>.X. F`x = f(x)"
   @have "Mor(X, \<real>, \<lambda>x. -\<^sub>\<real> f(x)) = real_neg \<circ>\<^sub>m F"
 @qed
 
@@ -258,14 +258,14 @@ lemma real_minus_fun_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> G = Mor(X,\<real>,\<lambda>x. g(x)) \<Longrightarrow>
    F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> G \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) -\<^sub>\<real> g(x)))"
 @proof
-  @have (@rule) "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)" @then
+  @have (@rule) "\<forall>x\<in>.X. F`x = f(x) \<and> G`x = g(x)"
   @have "Mor(X, \<real>, \<lambda>x. f(x) -\<^sub>\<real> g(x)) = Mor(X, \<real>, \<lambda>x. f(x) +\<^sub>\<real> (-\<^sub>\<real> g(x)))"
 @qed
 
 lemma real_divide_const_continuous [backward]:
   "F = Mor(X,\<real>,\<lambda>x. f(x)) \<Longrightarrow> F \<in> X \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> c \<in> units(\<real>) \<Longrightarrow> continuous(Mor(X,\<real>,\<lambda>x. f(x) /\<^sub>\<real> c))"
 @proof
-  @have (@rule) "\<forall>x\<in>.X. F`x = f(x)" @then
+  @have (@rule) "\<forall>x\<in>.X. F`x = f(x)"
   @have "Mor(X,\<real>,\<lambda>x. f(x) /\<^sub>\<real> c) = Mor(X,\<real>,\<lambda>x. f(x) *\<^sub>\<real> (1\<^sub>\<real> /\<^sub>\<real> c))"
 @qed
 
@@ -276,8 +276,8 @@ lemma continuous_on_converge_seq [backward]:
    Y = Seq(\<real>,\<lambda>n. f`(X`n)) \<Longrightarrow> converges_to(Y,f`s)"
 @proof
   @have "\<forall>r>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>Y`n -\<^sub>\<real> f`s\<bar>\<^sub>\<real> <\<^sub>\<real> r" @with
-    @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> s\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`s\<bar>\<^sub>\<real> <\<^sub>\<real> r" @then
-    @obtain "k \<in>. \<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<real> s\<bar>\<^sub>\<real> <\<^sub>\<real> d" @then
+    @obtain d where "d >\<^sub>\<real> \<zero>\<^sub>\<real>" "\<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> s\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`s\<bar>\<^sub>\<real> <\<^sub>\<real> r"
+    @obtain "k \<in>. \<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>\<real> s\<bar>\<^sub>\<real> <\<^sub>\<real> d"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>Y`n -\<^sub>\<real> f`s\<bar>\<^sub>\<real> <\<^sub>\<real> r"
   @end
 @qed
@@ -289,8 +289,8 @@ lemma real_connected [forward]: "connected(\<real>)" by auto2
 lemma real_connected_interval [resolve]:
   "a <\<^sub>\<real> b \<Longrightarrow> connected_subset(\<real>,closed_interval(\<real>,a,b))"
 @proof
-  @let "I = closed_interval(\<real>,a,b)" @then
-  @let "A = ord_subspace(\<real>,I)" "B = suborder(\<real>,I)" "C = subspace(\<real>,I)" @then
+  @let "I = closed_interval(\<real>,a,b)"
+  @let "A = ord_subspace(\<real>,I)" "B = suborder(\<real>,I)" "C = subspace(\<real>,I)"
   @have "linear_continuum(A)" @with @have "eq_str_order(A,B)" @end
   @have "eq_str_top(C,A)"
 @qed
@@ -299,9 +299,9 @@ lemma intermediate_value_theorem [backward1]:
   "real_fun(f) \<Longrightarrow> continuous(f) \<Longrightarrow> a <\<^sub>\<real> b \<Longrightarrow> y \<in> closed_interval(\<real>,f`a,f`b) \<Longrightarrow>
    \<exists>x\<in>closed_interval(\<real>,a,b). f`x = y"
 @proof
-  @let "I = closed_interval(\<real>,a,b)" @then
-  @have "connected_subset(\<real>,f``I)" @then
-  @have "order_convex(\<real>,f``I)" @then
+  @let "I = closed_interval(\<real>,a,b)"
+  @have "connected_subset(\<real>,f``I)"
+  @have "order_convex(\<real>,f``I)"
   @have "closed_interval(\<real>,f`a,f`b) \<subseteq> f``I"
 @qed
 
@@ -321,12 +321,12 @@ lemma rempe_gillen_challenge:
 @proof
   @contradiction
   @have "seq_incr(S)" @with @have "\<forall>n\<in>.\<nat>. S`(n +\<^sub>\<nat> 1) \<ge>\<^sub>\<real> S`n" @end
-  @obtain x where "converges_to(S,x)" @then
-  @let "T = Seq(\<real>,\<lambda>n. f`(S`n))" @then
-  @have "converges_to(T,f`x)" @then
+  @obtain x where "converges_to(S,x)"
+  @let "T = Seq(\<real>,\<lambda>n. f`(S`n))"
+  @have "converges_to(T,f`x)"
   @have "converges_to(T,x)" @with
     @have "\<forall>r>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>T`n -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> r" @with
-      @obtain "k \<in>. \<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>S`n -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> r" @then
+      @obtain "k \<in>. \<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>S`n -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> r"
       @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>T`n -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> r" @with @have "T`n = S`(n +\<^sub>\<nat> 1)" @end @end
   @end
 @qed

@@ -7,7 +7,7 @@ keywords "@proof" :: prf_block % "proof"
   and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
   and "@qed" :: prf_decl % "proof"
   and "@induct" "@strong_induct" :: prf_decl % "proof"
-  and "@with" "@then" "where" "arbitrary" "@rule" :: quasi_command
+  and "@with" "where" "arbitrary" "@rule" :: quasi_command
 begin
 
 ML_file "../util.ML"

@@ -54,7 +54,7 @@ lemma real_topology_sub_closed_interval_closed [backward]:
   "a \<in>. \<real> \<Longrightarrow> b \<in>. \<real> \<Longrightarrow> c \<in>. \<real> \<Longrightarrow> d \<in>. \<real> \<Longrightarrow> A = closed_interval(\<real>,a,b) \<Longrightarrow>
    B = closed_interval(\<real>,c,d) \<Longrightarrow> B \<subseteq> A \<Longrightarrow> is_closed(subspace(\<real>,A),B)"
 @proof
-  @have "is_closed(\<real>,A)" @then @have "is_closed(\<real>,B)"
+  @have "is_closed(\<real>,A)" @have "is_closed(\<real>,B)"
 @qed
 
 lemma I1_closed [resolve]: "is_closed(I,carrier(I1))" by auto2
@@ -64,7 +64,7 @@ lemma restrict_real_fun [backward]:
   "B \<subseteq> carrier(\<real>) \<Longrightarrow> B' = subspace(\<real>,B) \<Longrightarrow>
    Mor(A,B',f) \<in> A \<rightharpoonup> B' \<Longrightarrow> Mor(A,\<real>,f) \<in> A \<rightharpoonup>\<^sub>T \<real> \<Longrightarrow> continuous(Mor(A,B',f))"
 @proof
-  @have (@rule) "\<forall>x\<in>.A. Mor(A,B',f)`x = f(x)" @then
+  @have (@rule) "\<forall>x\<in>.A. Mor(A,B',f)`x = f(x)"
   @have "Mor(A,B',f) = mor_restrict_image_top(Mor(A,\<real>,f),B)"
 @qed
 
@@ -158,7 +158,7 @@ setup {* del_prfstep_thm @{thm inv_homotopy_def} *}
 lemma homotopic_inv [resolve]:
   "homotopic(f,g) \<Longrightarrow> homotopic(g,f)"
 @proof
-  @obtain F where "is_homotopy(f,g,F)" @then
+  @obtain F where "is_homotopy(f,g,F)"
   @have "is_homotopy(g,f,inv_homotopy(f,g,F))"
 @qed
 
@@ -200,7 +200,7 @@ lemma I1_I2_union [rewrite]: "X \<times> carrier(I1) \<union> X \<times> carrier
 lemma compose_is_homotopy:
   "is_homotopy(f,g,F) \<Longrightarrow> is_homotopy(g,h,G) \<Longrightarrow> is_homotopy(f,h,compose_homotopy(f,g,h,F,G))"
 @proof
-  @let "X = source_str(f)" "Y = target_str(f)" @then
+  @let "X = source_str(f)" "Y = target_str(f)"
   @have "compose_homotopy(f,g,h,F,G) \<in> X \<times>\<^sub>T I \<rightharpoonup>\<^sub>T Y"
 @qed
 setup {* add_forward_prfstep_cond @{thm compose_is_homotopy} [with_term "compose_homotopy(?f,?g,?h,?F,?G)"] *}
@@ -216,8 +216,8 @@ setup {* del_prfstep_thm @{thm compose_homotopy_def} *}
 lemma homotopic_trans [forward]:
   "homotopic(f,g) \<Longrightarrow> homotopic(g,h) \<Longrightarrow> homotopic(f,h)"
 @proof
-  @obtain F where "is_homotopy(f,g,F)" @then
-  @obtain G where "is_homotopy(g,h,G)" @then
+  @obtain F where "is_homotopy(f,g,F)"
+  @obtain G where "is_homotopy(g,h,G)"
   @have "is_homotopy(f,h,compose_homotopy(f,g,h,F,G))"
 @qed
 
@@ -228,7 +228,7 @@ lemma homotopy_maps_comp1 [backward]:
 lemma homotopic_comp1 [backward]:
   "continuous(h) \<Longrightarrow> target_str(h) = source_str(f) \<Longrightarrow> homotopic(f,g) \<Longrightarrow> homotopic(f \<circ>\<^sub>m h, g \<circ>\<^sub>m h)"
 @proof
-  @obtain F where "is_homotopy(f,g,F)" @then
+  @obtain F where "is_homotopy(f,g,F)"
   @have "is_homotopy(f \<circ>\<^sub>m h, g \<circ>\<^sub>m h, F \<circ>\<^sub>m prod_top_map(h,id_mor(I)))"
 @qed
 
@@ -239,7 +239,7 @@ lemma homotopy_maps_comp2 [backward]:
 lemma homotopic_comp2 [backward]:
   "continuous(h) \<Longrightarrow> target_str(f) = source_str(h) \<Longrightarrow> homotopic(f,g) \<Longrightarrow> homotopic(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g)"
 @proof
-  @obtain F where "is_homotopy(f,g,F)" @then
+  @obtain F where "is_homotopy(f,g,F)"
   @have "is_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)"
 @qed
     
@@ -311,8 +311,8 @@ lemma homotopy_equivalent_sym [forward]:
 lemma homotopy_equivalent_trans [forward]:
   "homotopy_equivalent(X,Y) \<Longrightarrow> homotopy_equivalent(Y,Z) \<Longrightarrow> homotopy_equivalent(X,Z)"
 @proof
-  @obtain "f\<in>X\<rightharpoonup>\<^sub>TY" "f'\<in>Y\<rightharpoonup>\<^sub>TX" where "homotopy_equiv_pair(f,f')" @then
-  @obtain "g\<in>Y\<rightharpoonup>\<^sub>TZ" "g'\<in>Z\<rightharpoonup>\<^sub>TY" where "homotopy_equiv_pair(g,g')" @then
+  @obtain "f\<in>X\<rightharpoonup>\<^sub>TY" "f'\<in>Y\<rightharpoonup>\<^sub>TX" where "homotopy_equiv_pair(f,f')"
+  @obtain "g\<in>Y\<rightharpoonup>\<^sub>TZ" "g'\<in>Z\<rightharpoonup>\<^sub>TY" where "homotopy_equiv_pair(g,g')"
   @have "homotopy_equiv_pair(g \<circ>\<^sub>m f, f' \<circ>\<^sub>m g')" @with
     @have "homotopic((g \<circ>\<^sub>m f) \<circ>\<^sub>m (f' \<circ>\<^sub>m g'), id_mor(Z))" @with
       @have "homotopic(g \<circ>\<^sub>m (f \<circ>\<^sub>m f') \<circ>\<^sub>m g', g \<circ>\<^sub>m id_mor(Y) \<circ>\<^sub>m g')" @end

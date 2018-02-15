@@ -229,7 +229,7 @@ lemma qsurj_proj_is_inj:
   "F \<noteq> \<emptyset> \<Longrightarrow> R = eq_fst_rel(E,F) \<Longrightarrow> f = (\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)//R)) \<Longrightarrow> bijective(f)"
 @proof
   @have "f \<in> E \<rightarrow> (E\<times>F) // R" @with
-    @obtain "a \<in> F" @then @have (@rule) "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)" @end
+    @obtain "a \<in> F" @have (@rule) "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)" @end
   @have "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" @with
     @contradiction @have "f`rep(R,S) = S" @end
 @qed
@@ -511,7 +511,7 @@ lemma prod_quotient_isomorphism:
   "equiv(R) \<Longrightarrow> equiv(S) \<Longrightarrow> A = carrier(R) \<Longrightarrow> B = carrier(S) \<Longrightarrow>
    prod_quotient_isomorphism(R,S) \<in> (A\<times>B)//prod_equiv(R,S) \<cong> (A//R) \<times> (B//S)"
 @proof
-  @have "surjective(qsurj(R) \<times>\<^sub>f qsurj(S))" @then
+  @have "surjective(qsurj(R) \<times>\<^sub>f qsurj(S))"
   @have "fun_equiv(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv(R,S)"
 @qed
 
@@ -540,7 +540,7 @@ lemma compat_meta_binI [backward]:
   "equiv(R) \<Longrightarrow> compat_meta_bin1(R,f) \<Longrightarrow> compat_meta_bin2(R,f) \<Longrightarrow> compat_meta_bin(R,f)"
 @proof
   @have "\<forall>x1 x2 y1 y2. x1 \<sim>\<^sub>R x2 \<longrightarrow> y1 \<sim>\<^sub>R y2 \<longrightarrow> f(x1,y1) \<sim>\<^sub>R f(x2,y2)" @with
-    @have "f(x1,y1) \<sim>\<^sub>R f(x2,y1)" @then @have "f(x2,y1) \<sim>\<^sub>R f(x2,y2)" @end
+    @have "f(x1,y1) \<sim>\<^sub>R f(x2,y1)" @have "f(x2,y1) \<sim>\<^sub>R f(x2,y2)" @end
 @qed
 
 lemma compat_meta_binD [backward2]:

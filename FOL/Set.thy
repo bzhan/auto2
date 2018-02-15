@@ -208,7 +208,7 @@ definition The :: "(i \<Rightarrow> o) \<Rightarrow> i"  (binder "THE " 10) wher
    THE x. P(x) satisfies P. *)
 setup {* add_prfstep_check_req ("THE x. P(x)", "\<exists>!x. P(x)") *}
 lemma theI' [forward]: "\<exists>!x. P(x) \<Longrightarrow> P (THE x. P(x))"
-  @proof @obtain "a" where "P(a)" @then @have "(THE x. P(x)) = a" @qed
+  @proof @obtain "a" where "P(a)" @have "(THE x. P(x)) = a" @qed
 
 (* When trying to show (THE x. P(x)) = a, there is an alternative,
    since because we already know term a satisfies predicate P. *)
@@ -307,7 +307,7 @@ translations
   "{b. x\<in>A}" \<rightleftharpoons> "CONST RepFun(A, \<lambda>x. b)"
 
 lemma repfun_nonempty [backward]: "A \<noteq> \<emptyset> \<Longrightarrow> {b(x). x\<in>A} \<noteq> \<emptyset>"
-  @proof @obtain "a \<in> A" @then @have "b(a) \<in> {b(x). x\<in>A}" @qed
+  @proof @obtain "a \<in> A" @have "b(a) \<in> {b(x). x\<in>A}" @qed
 
 section \<open>Parametrized union and intersection\<close>
 

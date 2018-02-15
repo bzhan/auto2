@@ -91,7 +91,7 @@ lemma map_of_alist_to_aset [rewrite]:
 lemma map_of_aset_delete [rewrite]:
   "unique_keys_set S \<Longrightarrow> (k, v) \<in> S \<Longrightarrow> map_of_aset (S - {(k, v)}) = delete_map k (map_of_aset S)"
 @proof
-  @let "T = S - {(k, v)}" @then
+  @let "T = S - {(k, v)}"
   @let "M = map_of_aset S" "N = map_of_aset T"
   @have (@rule) "\<forall>x. N\<langle>x\<rangle> = (delete_map k M) \<langle>x\<rangle>" @with
     @case "M\<langle>x\<rangle> = None" @case "x = k"

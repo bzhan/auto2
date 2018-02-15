@@ -34,13 +34,13 @@ lemma ord_basis_eq_str [rewrite]:
 
 lemma ord_basis_is_basis [forward]:
   "linorder(X) \<Longrightarrow> collection_is_basis(ord_basis(X))"
-@proof @let "\<B> = ord_basis(X)" @then @have "\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. U \<inter> V \<in> \<B>" @qed
+@proof @let "\<B> = ord_basis(X)" @have "\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. U \<inter> V \<in> \<B>" @qed
 
 lemma ord_basis_union [rewrite]:
   "linorder(X) \<Longrightarrow> card_ge2(carrier(X)) \<Longrightarrow> \<Union>ord_basis(X) = carrier(X)"
 @proof
   @have "\<forall>x\<in>.X. x \<in> \<Union>ord_basis(X)" @with
-    @obtain "y\<in>.X" where "y \<noteq> x" @then
+    @obtain "y\<in>.X" where "y \<noteq> x"
     @case "y <\<^sub>X x" @with @have "x \<in> greater_interval(X,y)" @end
     @case "y >\<^sub>X x" @with @have "x \<in> less_interval(X,y)" @end
   @end
@@ -90,14 +90,14 @@ lemma order_top_is_openI [forward]:
 lemma order_top_is_openD_gt [backward2]:
   "order_topology(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> a \<in> U \<Longrightarrow> \<exists>M. M >\<^sub>X a \<Longrightarrow> \<exists>c >\<^sub>X a. closed_open_interval(X,a,c) \<subseteq> U"
 @proof
-  @obtain "W\<in>ord_basis(X)" where "a \<in> W \<and> W \<subseteq> U" @then
+  @obtain "W\<in>ord_basis(X)" where "a \<in> W \<and> W \<subseteq> U"
   @case "\<exists>p\<in>.X. \<exists>q\<in>.X. W = open_interval(X,p,q)"
 @qed
 
 lemma order_top_is_openD_lt [backward2]:
   "order_topology(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> a \<in> U \<Longrightarrow> \<exists>M. M <\<^sub>X a \<Longrightarrow> \<exists>c <\<^sub>X a. open_closed_interval(X,c,a) \<subseteq> U"
 @proof
-  @obtain "W\<in>ord_basis(X)" where "a \<in> W \<and> W \<subseteq> U" @then
+  @obtain "W\<in>ord_basis(X)" where "a \<in> W \<and> W \<subseteq> U"
   @case "\<exists>p\<in>.X. \<exists>q\<in>.X. W = open_interval(X,p,q)"
 @qed
 
@@ -105,9 +105,9 @@ lemma order_top_is_openD_unbounded [backward2]:
   "order_topology(X) \<Longrightarrow> order_unbounded(X) \<Longrightarrow>
    is_open(X,U) \<Longrightarrow> x \<in> U \<Longrightarrow> \<exists>a b. x \<in> open_interval(X,a,b) \<and> open_interval(X,a,b) \<subseteq> U"
 @proof
-  @obtain b where "b >\<^sub>X x" "closed_open_interval(X,x,b) \<subseteq> U" @then
-  @obtain a where "a <\<^sub>X x" "open_closed_interval(X,a,x) \<subseteq> U" @then
-  @have "x \<in> open_interval(X,a,b)" @then
+  @obtain b where "b >\<^sub>X x" "closed_open_interval(X,x,b) \<subseteq> U"
+  @obtain a where "a <\<^sub>X x" "open_closed_interval(X,a,x) \<subseteq> U"
+  @have "x \<in> open_interval(X,a,b)"
   @have "open_interval(X,a,b) = open_closed_interval(X,a,x) \<union> closed_open_interval(X,x,b)"
 @qed
 
@@ -262,9 +262,9 @@ lemma order_top_from_order_finer1 [resolve]:
   @case "x \<in> A" @with @have "A \<inter> less_interval(X,x) = less_interval(suborder(X,A),x)" @end
   @have (@rule) "A \<inter> less_interval(X,x) = \<emptyset> \<or> A \<subseteq> less_interval(X,x)" @with
     @contradiction
-    @obtain "b \<in> A" where "b \<in> less_interval(X,x)" @then
-    @obtain "c \<in> A" where "c \<notin> less_interval(X,x)" @then
-    @have "closed_interval(X,b,c) \<subseteq> A" @then
+    @obtain "b \<in> A" where "b \<in> less_interval(X,x)"
+    @obtain "c \<in> A" where "c \<notin> less_interval(X,x)"
+    @have "closed_interval(X,b,c) \<subseteq> A"
     @have "x \<in> closed_interval(X,b,c)" @end
 @qed
 
@@ -275,9 +275,9 @@ lemma order_top_from_order_finer2 [resolve]:
   @case "x \<in> A" @with @have "A \<inter> greater_interval(X,x) = greater_interval(suborder(X,A),x)" @end
   @have (@rule) "A \<inter> greater_interval(X,x) = \<emptyset> \<or> A \<subseteq> greater_interval(X,x)" @with
     @contradiction
-    @obtain "b \<in> A" where "b \<in> greater_interval(X,x)" @then
-    @obtain "c \<in> A" where "c \<notin> greater_interval(X,x)" @then
-    @have "closed_interval(X,c,b) \<subseteq> A" @then
+    @obtain "b \<in> A" where "b \<in> greater_interval(X,x)"
+    @obtain "c \<in> A" where "c \<notin> greater_interval(X,x)"
+    @have "closed_interval(X,c,b) \<subseteq> A"
     @have "x \<in> closed_interval(X,c,b)" @end
 @qed
 
@@ -285,8 +285,8 @@ lemma order_top_from_order_finer3 [resolve]:
   "order_topology(X) \<Longrightarrow> card_ge2(A) \<Longrightarrow> order_convex(X,A) \<Longrightarrow>
    Y = order_top_from_order(suborder(X,A)) \<Longrightarrow> is_open(Y, A \<inter> open_interval(X,x,y))"
 @proof
-  @have "open_interval(X,x,y) = less_interval(X,y) \<inter> greater_interval(X,x)" @then
-  @have "A \<inter> open_interval(X,x,y) = (A \<inter> less_interval(X,y)) \<inter> (A \<inter> greater_interval(X,x))" @then
+  @have "open_interval(X,x,y) = less_interval(X,y) \<inter> greater_interval(X,x)"
+  @have "A \<inter> open_interval(X,x,y) = (A \<inter> less_interval(X,y)) \<inter> (A \<inter> greater_interval(X,x))"
   @have "is_open(Y, A \<inter> less_interval(X,y))"
 @qed
 
@@ -294,10 +294,10 @@ lemma order_top_from_order_eq_sub [backward]:
   "order_topology(X) \<Longrightarrow> card_ge2(A) \<Longrightarrow> order_convex(X,A) \<Longrightarrow>
    eq_str_top(ord_subspace(X,A),order_top_from_order(suborder(X,A)))"
 @proof
-  @let "Y = order_top_from_order(suborder(X,A))" @then
-  @let "Z = ord_subspace(X,A)" @then
-  @have "top_space_finer(Z,Y)" @then
-  @let "\<B> = {A \<inter> U. U \<in> ord_basis(X)}" @then
+  @let "Y = order_top_from_order(suborder(X,A))"
+  @let "Z = ord_subspace(X,A)"
+  @have "top_space_finer(Z,Y)"
+  @let "\<B> = {A \<inter> U. U \<in> ord_basis(X)}"
   @have "top_has_basis(Z,\<B>)" @with @have "eq_str_top(subspace(X,A),Z)" @end
   @have "top_space_finer(Y,Z)" @with @have "\<forall>U\<in>\<B>. is_open(Y,U)" @end
 @qed

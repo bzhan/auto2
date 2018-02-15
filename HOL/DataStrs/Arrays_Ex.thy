@@ -56,7 +56,7 @@ lemma rev_swap_eval [rewrite]:
   @subgoal "(xs = xs, i = i, j = j)"
   @unfold "rev_swap xs i j"
   @case "i < j" @with
-    @case "k < i" @then @case "k > j" @then @have "j - (k - i) = j - k + i"
+    @case "k < i" @case "k > j" @have "j - (k - i) = j - k + i"
   @end @end
 @qed
 
@@ -117,7 +117,7 @@ lemma sublist_append [rewrite]:
   @let "xs1 = sublist l r xs" "xs2 = sublist l m xs" "xs3 = sublist m r xs"
   @have "length (xs2 @ xs3) = (r - m) + (m - l)"
   @have "\<forall>i<length xs1. xs1 ! i = (xs2 @ xs3) ! i" @with
-    @case "i < length xs2" @then
+    @case "i < length xs2"
     @have "i - length xs2 < length xs3"
   @end
 @qed

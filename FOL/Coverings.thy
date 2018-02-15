@@ -49,7 +49,7 @@ lemma image_covering: "surjective(f) \<Longrightarrow> f \<in> A \<rightarrow> B
 lemma vImage_covering: "g \<in> C \<rightarrow> A \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
   is_covering(C, \<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
 @proof
-  @let "Y = (\<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))" @then
+  @let "Y = (\<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
   @have "\<forall>x\<in>C. \<exists>p\<in>I. x \<in> Y ` p" @with
     @contradiction @obtain "a\<in>I" where "g`x \<in> a" @end
 @qed
@@ -78,7 +78,7 @@ lemma vImage_set_disjoint [backward2]:
   "f \<in> A \<rightarrow> B \<Longrightarrow> X \<subseteq> B \<Longrightarrow> Y \<subseteq> B \<Longrightarrow> X \<inter> Y = \<emptyset> \<Longrightarrow> f -`` X \<inter> f -`` Y = \<emptyset>"
 @proof
   @contradiction
-  @obtain "b \<in> (f -`` X) \<inter> (f -`` Y)" @then @have "f ` b \<in> X \<inter> Y"
+  @obtain "b \<in> (f -`` X) \<inter> (f -`` Y)" @have "f ` b \<in> X \<inter> Y"
 @qed
 
 lemma vImage_mutually_disjoint [backward2]:

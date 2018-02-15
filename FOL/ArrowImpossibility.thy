@@ -44,7 +44,7 @@ setup {* del_prfstep_thm @{thm linorder_space_def} *}
   
 lemma exists_linorder [resolve]: "\<exists>R. R \<in> linorder_space(S)"
 @proof
-  @obtain "R\<in>raworder_space(S)" where "well_order(R)" @then
+  @obtain "R\<in>raworder_space(S)" where "well_order(R)"
   @have "R \<in> linorder_space(S)"
 @qed
       
@@ -93,13 +93,13 @@ setup {* del_prfstep_thm @{thm mk_bot_def} *}
 lemma complete_Lin [backward]:
   "a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> a \<noteq> b \<Longrightarrow> \<exists>R\<in>linorder_space(S). prefer(R,a,b)"
 @proof
-  @obtain "R \<in> linorder_space(S)" @then @let "R' = mk_top(R,b)"
+  @obtain "R \<in> linorder_space(S)" @let "R' = mk_top(R,b)"
 @qed
       
 lemma complete_Lin3 [backward]:
   "distinct3(S,a,b,c) \<Longrightarrow> \<exists>R\<in>linorder_space(S). prefer3(R,a,b,c)"
 @proof
-  @obtain "R \<in> linorder_space(S)" where "a <\<^sub>R b" @then @let "R' = mk_top(R,c)"
+  @obtain "R \<in> linorder_space(S)" where "a <\<^sub>R b" @let "R' = mk_top(R,c)"
 @qed
       
 lemma complete_Lin_mk_top [backward]:
@@ -194,16 +194,16 @@ lemma strict_neutrality1:
 @proof
   @have "\<forall>P\<in>Prof(I,Cs). \<forall>P'\<in>Prof(I,Cs). (\<forall>i\<in>I. eq_prefer(P`i,a,b, P'`i,a,b')) \<longrightarrow> eq_prefer(F`P,a,b, F`P',a,b')" @with
     @case "prefer(F`P,a,b)" @with
-      @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (ifb prefer(P`i,a,b) then prefer3(P''`i,a,b,b') else prefer3(P''`i,b,b',a))" @then
-      @have "\<forall>i\<in>I. prefer(P''`i,b,b')" @then
-      @have "\<forall>i\<in>I. eq_prefer(P`i,a,b, P''`i,a,b)" @then
-      @have "\<forall>i\<in>I. eq_prefer(P`i,a,b, P''`i,a,b')" @then
+      @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (ifb prefer(P`i,a,b) then prefer3(P''`i,a,b,b') else prefer3(P''`i,b,b',a))"
+      @have "\<forall>i\<in>I. prefer(P''`i,b,b')"
+      @have "\<forall>i\<in>I. eq_prefer(P`i,a,b, P''`i,a,b)"
+      @have "\<forall>i\<in>I. eq_prefer(P`i,a,b, P''`i,a,b')"
       @have "\<forall>i\<in>I. eq_prefer(P''`i,a,b', P'`i,a,b')" @end
     @case "prefer(F`P',a,b')" @with
-      @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (ifb prefer(P`i,b,a) then prefer3(P''`i,b',b,a) else prefer3(P''`i,a,b',b))" @then
-      @have "\<forall>i\<in>I. prefer(P''`i,b',b)" @then
-      @have "\<forall>i\<in>I. eq_prefer(P`i,b,a, P''`i,b,a)" @then
-      @have "\<forall>i\<in>I. eq_prefer(P`i,b,a, P''`i,b',a)" @then
+      @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (ifb prefer(P`i,b,a) then prefer3(P''`i,b',b,a) else prefer3(P''`i,a,b',b))"
+      @have "\<forall>i\<in>I. prefer(P''`i,b',b)"
+      @have "\<forall>i\<in>I. eq_prefer(P`i,b,a, P''`i,b,a)"
+      @have "\<forall>i\<in>I. eq_prefer(P`i,b,a, P''`i,b',a)"
       @have "\<forall>i\<in>I. eq_prefer(P''`i,b',a, P'`i,b',a)" @end
   @end
 @qed
@@ -212,7 +212,7 @@ setup {* add_backward2_prfstep_cond @{thm strict_neutrality1} [with_cond "?b \<n
 lemma strict_neutrality2:
   "arrow_conds(I,Cs,F) \<Longrightarrow> distinct3(Cs,a,b,b') \<Longrightarrow> strict_neutral(I,Cs,F,b,a,b',a)"
 @proof
-  @have "strict_neutral(I,Cs,F,a,b,a,b')" @then
+  @have "strict_neutral(I,Cs,F,a,b,a,b')"
   @have "\<forall>P\<in>Prof(I,Cs). \<forall>P'\<in>Prof(I,Cs). (\<forall>i\<in>I. eq_prefer(P`i,b,a, P'`i,b',a)) \<longrightarrow> eq_prefer(F`P,b,a, F`P',b',a)" @with
     @have "\<forall>i\<in>I. eq_prefer(P`i,a,b, P'`i,a,b')" @end
 @qed
@@ -222,8 +222,8 @@ lemma strict_neutrality_trans [forward]:
   "strict_neutral(I,Cs,F,a,b,a'',b'') \<Longrightarrow> strict_neutral(I,Cs,F,a'',b'',a',b') \<Longrightarrow> a'' \<noteq> b'' \<Longrightarrow> strict_neutral(I,Cs,F,a,b,a',b')"
 @proof
   @have "\<forall>P\<in>Prof(I,Cs). \<forall>P'\<in>Prof(I,Cs). (\<forall>i\<in>I. eq_prefer(P`i,a,b, P'`i,a',b')) \<longrightarrow> eq_prefer(F`P,a,b, F`P',a',b')" @with
-    @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (ifb prefer(P`i,a,b) then prefer(P''`i,a'',b'') else prefer(P''`i,b'',a''))" @then
-    @have "\<forall>i\<in>I. eq_prefer(P`i,a,b, P''`i,a'',b'')" @then
+    @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (ifb prefer(P`i,a,b) then prefer(P''`i,a'',b'') else prefer(P''`i,b'',a''))"
+    @have "\<forall>i\<in>I. eq_prefer(P`i,a,b, P''`i,a'',b'')"
     @have "\<forall>i\<in>I. eq_prefer(P''`i,a'',b'', P'`i,a',b')" @end
 @qed
 
@@ -232,13 +232,13 @@ lemma strict_neutrality [backward2]:
    strict_neutral(I,Cs,F,a,b,a',b')"
 @proof
   @have "strict_neutral(I,Cs,F,a,b,b,a)" @with
-    @obtain "c\<in>Cs" where "distinct3(Cs,a,b,c)" @then @have "strict_neutral(I,Cs,F,a,b,a,c)" @then
-    @have "strict_neutral(I,Cs,F,a,c,b,c)" @then @have "strict_neutral(I,Cs,F,b,c,b,a)" @end
-  @have "strict_neutral(I,Cs,F,a,b,a,b)" @then
+    @obtain "c\<in>Cs" where "distinct3(Cs,a,b,c)" @have "strict_neutral(I,Cs,F,a,b,a,c)"
+    @have "strict_neutral(I,Cs,F,a,c,b,c)" @have "strict_neutral(I,Cs,F,b,c,b,a)" @end
+  @have "strict_neutral(I,Cs,F,a,b,a,b)"
   @case "b' = a" @with @have "strict_neutral(I,Cs,F,b,a,a',a)" @end
   @case "a' = b" @with @have "strict_neutral(I,Cs,F,b,a,b,b')" @end
-  @case "b' = b" @then @case "a' = a" @then  (* All distinct *)
-  @have "strict_neutral(I,Cs,F,a,b,a,b')" @then
+  @case "b' = b" @case "a' = a"  (* All distinct *)
+  @have "strict_neutral(I,Cs,F,a,b,a,b')"
   @have "strict_neutral(I,Cs,F,a,b',a',b')"
 @qed
 
@@ -246,29 +246,29 @@ section {* Arrow's theorem *}
 
 lemma Arrow: "finite(I) \<Longrightarrow> card_ge3(Cs) \<Longrightarrow> arrow_conds(I,Cs,F) \<Longrightarrow> \<exists>i\<in>I. dictator(I,Cs,F,i)"
 @proof
-  @let "N = card(I)" @then
-  @have "equipotent(I, nat_less_range(N))" @then
-  @obtain "h \<in> I \<cong> nat_less_range(N)" @then
-  @obtain "a\<in>Cs" "b\<in>Cs" where "a \<noteq> b" @then
-  @obtain "P\<in>nat\<rightarrow>Prof(I,Cs)" where "\<forall>n\<in>nat. \<forall>i\<in>I. ifb h`i \<ge>\<^sub>\<nat> n then prefer(P`n`i,a,b) else prefer(P`n`i,b,a)" @then
+  @let "N = card(I)"
+  @have "equipotent(I, nat_less_range(N))"
+  @obtain "h \<in> I \<cong> nat_less_range(N)"
+  @obtain "a\<in>Cs" "b\<in>Cs" where "a \<noteq> b"
+  @obtain "P\<in>nat\<rightarrow>Prof(I,Cs)" where "\<forall>n\<in>nat. \<forall>i\<in>I. ifb h`i \<ge>\<^sub>\<nat> n then prefer(P`n`i,a,b) else prefer(P`n`i,b,a)"
   @have "prefer(F`(P`0),a,b)" @with
     @have "\<forall>i\<in>I. prefer(P`0`i,a,b)" @with
       @have "ifb h`i \<ge>\<^sub>\<nat> 0 then prefer(P`0`i,a,b) else prefer(P`0`i,b,a)" @end @end
   @have "prefer(F`(P`N),b,a)" @with
     @have "\<forall>i\<in>I. prefer(P`N`i,b,a)" @with
       @have "ifb h`i \<ge>\<^sub>\<nat> N then prefer(P`N`i,a,b) else prefer(P`N`i,b,a)" @end @end
-  @obtain n where "n <\<^sub>\<nat> N" "\<not>prefer(F`(P`n),b,a) \<and> prefer(F`(P`(n +\<^sub>\<nat> 1)),b,a)" @then
+  @obtain n where "n <\<^sub>\<nat> N" "\<not>prefer(F`(P`n),b,a) \<and> prefer(F`(P`(n +\<^sub>\<nat> 1)),b,a)"
   @have "dictator(I,Cs,F, inverse(h)`n)" @with
     @have "\<forall>P'\<in>Prof(I,Cs). \<forall>a' b'. prefer(P'`(inverse(h)`n),a',b') \<longrightarrow> prefer(F`P',a',b')" @with
-      @obtain "c'\<in>Cs" where "distinct3(Cs,a',b',c')" @then
+      @obtain "c'\<in>Cs" where "distinct3(Cs,a',b',c')"
       @obtain "P''\<in>Prof(I,Cs)" where "\<forall>i\<in>I. (
         ifb h`i <\<^sub>\<nat> n then eq_prefer(P'`i,a',b', P''`i,a',b') \<and> prefer(P''`i,a',c') \<and> prefer(P''`i,b',c') else
         ifb h`i >\<^sub>\<nat> n then eq_prefer(P'`i,a',b', P''`i,a',b') \<and> prefer(P''`i,c',a') \<and> prefer(P''`i,c',b') else
-        prefer3(P''`i,a',c',b'))" @then
+        prefer3(P''`i,a',c',b'))"
       @have "eq_prefer(F`P',a',b', F`P'',a',b')" @with
         @have "\<forall>i\<in>I. eq_prefer(P'`i,a',b', P''`i,a',b')" @end
       @have "eq_prefer(F`P'',c',b', F`(P`n),a,b)" @with
-        @have "\<forall>i\<in>I. eq_prefer(P''`i,c',b', P`n`i,a,b)" @then
+        @have "\<forall>i\<in>I. eq_prefer(P''`i,c',b', P`n`i,a,b)"
         @have "strict_neutral(I,Cs,F,c',b',a,b)" @end
       @have "eq_prefer(F`P'',a',c', F`(P`(n +\<^sub>\<nat> 1)),b,a)" @with
         @have "\<forall>i\<in>I. eq_prefer(P''`i,a',c', P`(n +\<^sub>\<nat> 1)`i,b,a)" @with

@@ -63,7 +63,7 @@ fun unfold_cmd s state =
 
 val _ =
   Outer_Syntax.command @{command_keyword "@unfold"} "unfold a term"
-    ((Parse.term --| Scan.option @{keyword "@then"}) >>
+    (Parse.term >>
         (fn s =>
             Toplevel.proof (fn state => unfold_cmd s state)))
 

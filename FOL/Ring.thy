@@ -72,8 +72,8 @@ lemma comm_ring_is_unit2 [forward]:
 lemma comm_ring_prod_unit [forward]:
   "is_comm_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x *\<^sub>R y \<in> units(R) \<Longrightarrow> x \<in> units(R) \<and> y \<in> units(R)"
 @proof
-  @obtain "z\<in>.R" where "z *\<^sub>R (x *\<^sub>R y) = \<one>\<^sub>R" "(x *\<^sub>R y) *\<^sub>R z = \<one>\<^sub>R" @then
-  @have "(y *\<^sub>R z) *\<^sub>R x = \<one>\<^sub>R" @then @have "y *\<^sub>R (x *\<^sub>R z) = (y *\<^sub>R x) *\<^sub>R z"
+  @obtain "z\<in>.R" where "z *\<^sub>R (x *\<^sub>R y) = \<one>\<^sub>R" "(x *\<^sub>R y) *\<^sub>R z = \<one>\<^sub>R"
+  @have "(y *\<^sub>R z) *\<^sub>R x = \<one>\<^sub>R" @have "y *\<^sub>R (x *\<^sub>R z) = (y *\<^sub>R x) *\<^sub>R z"
 @qed
 
 lemma inv_distrib_comm_ring [rewrite]:
@@ -207,7 +207,7 @@ lemma divide_cancel_right [rewrite]:
 lemma divide_cancel_left [rewrite]:
   "is_comm_ring(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> z *\<^sub>G y \<in> units(G) \<Longrightarrow>
    (z *\<^sub>G x) /\<^sub>G (z *\<^sub>G y) = x /\<^sub>G y \<and> y \<in> units(G)"
-@proof @have "z *\<^sub>G x = x *\<^sub>G z" @then @have "z *\<^sub>G y = y *\<^sub>G z" @qed
+@proof @have "z *\<^sub>G x = x *\<^sub>G z" @have "z *\<^sub>G y = y *\<^sub>G z" @qed
 
 lemma divide_cross:
   "is_comm_ring(G) \<Longrightarrow> p \<in>. G \<Longrightarrow> q \<in> units(G) \<Longrightarrow> r \<in>. G \<Longrightarrow> s \<in> units(G) \<Longrightarrow>
@@ -220,20 +220,20 @@ lemma divide_mult:
    (p /\<^sub>G q) *\<^sub>G (r /\<^sub>G s) = (p *\<^sub>G r) /\<^sub>G (q *\<^sub>G s) \<and>
    q \<in>. G \<and> s \<in>. G \<and> p *\<^sub>G r \<in>. G \<and> q *\<^sub>G s \<in> units(G)"
 @proof
-  @have "(p *\<^sub>G inv(G,q)) *\<^sub>G (r *\<^sub>G inv(G,s)) = p *\<^sub>G (inv(G,q) *\<^sub>G r) *\<^sub>G inv(G,s)" @then
+  @have "(p *\<^sub>G inv(G,q)) *\<^sub>G (r *\<^sub>G inv(G,s)) = p *\<^sub>G (inv(G,q) *\<^sub>G r) *\<^sub>G inv(G,s)"
   @have "p *\<^sub>G (r *\<^sub>G inv(G,q)) *\<^sub>G inv(G,s) = (p *\<^sub>G r) *\<^sub>G (inv(G,q) *\<^sub>G inv(G,s))"
 @qed
 
 lemma comm_ring_units_minus [typing]:
   "is_comm_ring(G) \<Longrightarrow> p \<in> units(G) \<Longrightarrow> -\<^sub>G p \<in> units(G)"
 @proof
-  @obtain "q\<in>.G" where "p *\<^sub>G q = \<one>\<^sub>G" @then @have "(-\<^sub>G p) *\<^sub>G (-\<^sub>G q) = p *\<^sub>G q"
+  @obtain "q\<in>.G" where "p *\<^sub>G q = \<one>\<^sub>G" @have "(-\<^sub>G p) *\<^sub>G (-\<^sub>G q) = p *\<^sub>G q"
 @qed
 
 lemma comm_ring_units_minus_back [typing]:
   "is_comm_ring(G) \<Longrightarrow> p \<in>. G \<Longrightarrow> -\<^sub>G p \<in> units(G) \<Longrightarrow> p \<in> units(G)"
 @proof
-  @obtain "q\<in>.G" where "(-\<^sub>G p) *\<^sub>G q = \<one>\<^sub>G" @then @have "p *\<^sub>G (-\<^sub>G q) = -\<^sub>G p *\<^sub>G q"
+  @obtain "q\<in>.G" where "(-\<^sub>G p) *\<^sub>G q = \<one>\<^sub>G" @have "p *\<^sub>G (-\<^sub>G q) = -\<^sub>G p *\<^sub>G q"
 @qed
 
 lemma inv_neg [rewrite]:
@@ -249,8 +249,8 @@ lemma divide_inv2:
   "is_comm_ring(G) \<Longrightarrow> p \<in>. G \<Longrightarrow> q \<in> units(G) \<Longrightarrow> (-\<^sub>G p) /\<^sub>G q \<in> units(G) \<Longrightarrow>
    inv(G,(-\<^sub>G p) /\<^sub>G q) = (-\<^sub>G q) /\<^sub>G p \<and> p \<in> units(G) \<and> q \<in>. G \<and> -\<^sub>G q \<in>. G"
 @proof
-  @have "(-\<^sub>G p) /\<^sub>G q = -\<^sub>G (p /\<^sub>G q)" @then
-  @have "p = -\<^sub>G (-\<^sub>G p)" @then
+  @have "(-\<^sub>G p) /\<^sub>G q = -\<^sub>G (p /\<^sub>G q)"
+  @have "p = -\<^sub>G (-\<^sub>G p)"
   @have "(-\<^sub>G q) /\<^sub>G p = -\<^sub>G (q /\<^sub>G p)"
 @qed
       
@@ -324,11 +324,11 @@ lemma ord_ring_nonzero [forward]:
 
 lemma ord_ring_ordered_left_iff [rewrite]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> z +\<^sub>R x \<le>\<^sub>R z +\<^sub>R y \<longleftrightarrow> x \<le>\<^sub>R y"
-@proof @have "x = (-\<^sub>R z) +\<^sub>R (x +\<^sub>R z)" @then @have "y = (-\<^sub>R z) +\<^sub>R (y +\<^sub>R z)" @qed
+@proof @have "x = (-\<^sub>R z) +\<^sub>R (x +\<^sub>R z)" @have "y = (-\<^sub>R z) +\<^sub>R (y +\<^sub>R z)" @qed
 
 lemma ord_ring_ordered_right_iff [rewrite]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> x +\<^sub>R z \<le>\<^sub>R y +\<^sub>R z \<longleftrightarrow> x \<le>\<^sub>R y"
-@proof @have "x +\<^sub>R z = z +\<^sub>R x" @then @have "y +\<^sub>R z = z +\<^sub>R y" @qed
+@proof @have "x +\<^sub>R z = z +\<^sub>R x" @have "y +\<^sub>R z = z +\<^sub>R y" @qed
       
 (* The main results for automatic simplification *)
 lemma ord_ring_le_switch_left:
@@ -376,8 +376,8 @@ lemma ord_ring_gt_equiv [rewrite]:
 lemma ord_ring_mult_le_right [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> x \<ge>\<^sub>R y \<Longrightarrow> z \<ge>\<^sub>R \<zero>\<^sub>R \<Longrightarrow> x *\<^sub>R z \<ge>\<^sub>R y *\<^sub>R z"
 @proof
-  @have "x -\<^sub>R y \<ge>\<^sub>R \<zero>\<^sub>R" @then
-  @have "x *\<^sub>R z -\<^sub>R y *\<^sub>R z = (x -\<^sub>R y) *\<^sub>R z" @then
+  @have "x -\<^sub>R y \<ge>\<^sub>R \<zero>\<^sub>R"
+  @have "x *\<^sub>R z -\<^sub>R y *\<^sub>R z = (x -\<^sub>R y) *\<^sub>R z"
   @have "x *\<^sub>R z -\<^sub>R y *\<^sub>R z \<ge>\<^sub>R \<zero>\<^sub>R"
 @qed
 
@@ -387,7 +387,7 @@ lemma ord_ring_mult_le_left [backward1, backward2]:
 
 lemma ord_ring_mult_lt_right [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> integral_domain(R) \<Longrightarrow> x >\<^sub>R y \<Longrightarrow> z >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> x *\<^sub>R z >\<^sub>R y *\<^sub>R z"
-@proof @have "x \<noteq> y" @then @have "x *\<^sub>R z \<noteq> y *\<^sub>R z" @qed
+@proof @have "x \<noteq> y" @have "x *\<^sub>R z \<noteq> y *\<^sub>R z" @qed
 
 lemma ord_ring_mult_lt_left [backward1, backward2]:
   "is_ord_ring(R) \<Longrightarrow> integral_domain(R) \<Longrightarrow> x >\<^sub>R y \<Longrightarrow> z >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> z *\<^sub>R x >\<^sub>R z *\<^sub>R y"
@@ -492,7 +492,7 @@ setup {* del_prfstep_thm @{thm ord_ring_of_nat_Suc} *}
 
 lemma ord_field_char_zero' [backward]:
   "is_ord_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> n \<noteq> 0 \<Longrightarrow> of_nat(R,n) >\<^sub>R \<zero>\<^sub>R"
-@proof @obtain "m\<in>.\<nat>" where "n = m +\<^sub>\<nat> 1" @then @have "of_nat(R,m) \<ge>\<^sub>R \<zero>\<^sub>R" @qed
+@proof @obtain "m\<in>.\<nat>" where "n = m +\<^sub>\<nat> 1" @have "of_nat(R,m) \<ge>\<^sub>R \<zero>\<^sub>R" @qed
 
 lemma ord_ring_of_nat_le [backward]:
   "is_ord_ring(R) \<Longrightarrow> m \<le>\<^sub>\<nat> n \<Longrightarrow> of_nat(R,m) \<le>\<^sub>R of_nat(R,n)"
@@ -520,13 +520,13 @@ lemma ord_ring_of_nat_ge_one [backward]:
 
 lemma ord_ring_has_pos_greater [backward]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y\<in>.R. y >\<^sub>R \<zero>\<^sub>R \<and> y \<ge>\<^sub>R x"
-@proof @let "m = max(R,\<one>\<^sub>R,x)" @then @have "\<one>\<^sub>R >\<^sub>R \<zero>\<^sub>R" @qed
+@proof @let "m = max(R,\<one>\<^sub>R,x)" @have "\<one>\<^sub>R >\<^sub>R \<zero>\<^sub>R" @qed
 
 lemma ord_ring_is_unbounded [forward]:
   "is_ord_ring(R) \<Longrightarrow> order_unbounded(R)"
 @proof
   @have (@rule) "\<forall>x\<in>.R. \<exists>y. y <\<^sub>R x" @with
-    @have "x <\<^sub>R x +\<^sub>R 1\<^sub>R" @then @have "x -\<^sub>R 1\<^sub>R <\<^sub>R x" @end
+    @have "x <\<^sub>R x +\<^sub>R 1\<^sub>R" @have "x -\<^sub>R 1\<^sub>R <\<^sub>R x" @end
   @have (@rule) "\<forall>x\<in>.R. \<exists>y. y >\<^sub>R x" @with @have "x +\<^sub>R 1\<^sub>R >\<^sub>R x" @end
 @qed
 

@@ -24,9 +24,9 @@ lemma seq_has_increment_induct [backward1]:
 @proof
   @var_induct "N \<in> nat" arbitrary k @with
     @subgoal "N = N' +\<^sub>\<nat> 1"
-      @obtain k1 where "k1\<ge>\<^sub>\<nat>k" "X`k1 -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N') *\<^sub>R a" @then
-      @obtain k2 where "k2\<ge>\<^sub>\<nat>k1" "X`k2 -\<^sub>R X`k1 \<ge>\<^sub>R a" @then
-      @have "X`k2 -\<^sub>R X`k = (X`k2 -\<^sub>R X`k1) +\<^sub>R (X`k1 -\<^sub>R X`k)" @then
+      @obtain k1 where "k1\<ge>\<^sub>\<nat>k" "X`k1 -\<^sub>R X`k \<ge>\<^sub>R of_nat(R,N') *\<^sub>R a"
+      @obtain k2 where "k2\<ge>\<^sub>\<nat>k1" "X`k2 -\<^sub>R X`k1 \<ge>\<^sub>R a"
+      @have "X`k2 -\<^sub>R X`k = (X`k2 -\<^sub>R X`k1) +\<^sub>R (X`k1 -\<^sub>R X`k)"
       @have "(of_nat(R,N') +\<^sub>R 1\<^sub>R) *\<^sub>R a = a +\<^sub>R of_nat(R,N') *\<^sub>R a"
     @endgoal
   @end
@@ -37,11 +37,11 @@ lemma monotone_cauchy [forward]:
    is_archimedean(R) \<Longrightarrow> cauchy(X)"
 @proof
   @contradiction
-  @obtain a where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R \<ge>\<^sub>R a" @then
-  @have "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a" @then
-  @obtain "M\<in>.R" where "\<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R M" @then
-  @obtain "N\<in>nat" where "of_nat(R,N) *\<^sub>R a >\<^sub>R (M -\<^sub>R X`0)" @then
-  @obtain n where "n \<ge>\<^sub>\<nat> 0" "X`n -\<^sub>R X`0 \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a" @then @have "X`n \<le>\<^sub>R M"
+  @obtain a where "a >\<^sub>R \<zero>\<^sub>R" "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R \<ge>\<^sub>R a"
+  @have "\<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. X`n -\<^sub>R X`k \<ge>\<^sub>R a"
+  @obtain "M\<in>.R" where "\<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R M"
+  @obtain "N\<in>nat" where "of_nat(R,N) *\<^sub>R a >\<^sub>R (M -\<^sub>R X`0)"
+  @obtain n where "n \<ge>\<^sub>\<nat> 0" "X`n -\<^sub>R X`0 \<ge>\<^sub>R of_nat(R,N) *\<^sub>R a" @have "X`n \<le>\<^sub>R M"
 @qed
 
 lemma monotone_incr_converges [forward]:
@@ -51,7 +51,7 @@ lemma monotone_incr_converges [forward]:
 lemma monotone_decr_converges [forward]:
   "is_sequence(X) \<Longrightarrow> seq_decr(X) \<Longrightarrow> lower_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow>
    cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> converges(X)"
-@proof @have "upper_bounded(seq_neg(X))" @then @have "seq_incr(seq_neg(X))" @qed
+@proof @have "upper_bounded(seq_neg(X))" @have "seq_incr(seq_neg(X))" @qed
 
 section {* A simple test for vanishing of sequences *}
 
@@ -70,7 +70,7 @@ setup {* del_prfstep_thm @{thm half_seq_def} *}
 lemma ord_field_divide_le_trans1 [backward1]:
   "is_ord_field(R) \<Longrightarrow> d \<in>. R \<Longrightarrow> c >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> e >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> a \<le>\<^sub>R b /\<^sub>R c \<Longrightarrow>
    b \<le>\<^sub>R d /\<^sub>R e \<Longrightarrow> a \<le>\<^sub>R d /\<^sub>R (e *\<^sub>R c)"
-@proof @have "a *\<^sub>R c \<le>\<^sub>R b" @then @have "a \<le>\<^sub>R d /\<^sub>R e /\<^sub>R c" @qed
+@proof @have "a *\<^sub>R c \<le>\<^sub>R b" @have "a \<le>\<^sub>R d /\<^sub>R e /\<^sub>R c" @qed
 
 lemma half_seq_induct [resolve]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> half_seq(X) \<Longrightarrow> n \<in> nat \<Longrightarrow>
@@ -85,16 +85,16 @@ lemma half_seq_abs_decr [forward]:
 lemma ord_field_divide_le_trans2 [forward]:
   "is_ord_field(R) \<Longrightarrow> b \<in>. R \<Longrightarrow> a >\<^sub>R b /\<^sub>R c \<Longrightarrow> d \<le>\<^sub>R b /\<^sub>R a \<Longrightarrow> a >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> c >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> c >\<^sub>R d"
 @proof
-  @have "a *\<^sub>R c >\<^sub>R b" @then @have "d *\<^sub>R a \<le>\<^sub>R b" @then @have "a *\<^sub>R c >\<^sub>R a *\<^sub>R d"
+  @have "a *\<^sub>R c >\<^sub>R b" @have "d *\<^sub>R a \<le>\<^sub>R b" @have "a *\<^sub>R c >\<^sub>R a *\<^sub>R d"
 @qed
 
 lemma half_seq_vanishes [forward]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> half_seq(X) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> vanishes(X)"
 @proof
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)" @with
-    @obtain "k\<in>nat" where "2\<^sub>R ^\<^sub>R k >\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R r" @then
+    @obtain "k\<in>nat" where "2\<^sub>R ^\<^sub>R k >\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R r"
     @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @with
-      @have "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R k)" @then
+      @have "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`0\<bar>\<^sub>R /\<^sub>R (2\<^sub>R ^\<^sub>R k)"
       @have "\<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R" @end @end
 @qed
 setup {* del_prfstep_thm @{thm ord_field_divide_le_trans2} *}
@@ -145,7 +145,7 @@ lemma DCSeqs_le [backward]:
 lemma dedekind_complete [resolve]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> dedekind_cut(R,U) \<Longrightarrow> \<exists>x\<in>.R. \<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U"
 @proof
-  @let "A = fst(DCSeqs(R,U))" "B = snd(DCSeqs(R,U))" @then
+  @let "A = fst(DCSeqs(R,U))" "B = snd(DCSeqs(R,U))"
   @have "converges(A)" @with
     @have "seq_incr(A)" @with @have "\<forall>n\<in>.\<nat>. A`(n +\<^sub>\<nat> 1) \<ge>\<^sub>R A`n" @end
     @have "upper_bounded(A)" @with
@@ -154,16 +154,16 @@ lemma dedekind_complete [resolve]:
     @have "seq_decr(B)" @with @have "\<forall>n\<in>.\<nat>. B`(n +\<^sub>\<nat> 1) \<le>\<^sub>R B`n" @end
     @have "lower_bounded(B)" @with
       @have "\<forall>n\<in>.\<nat>. B`n \<ge>\<^sub>R A`0" @with @var_induct "n \<in>. \<nat>" @end @end @end
-  @obtain x where "converges_to(B,x)" @then
-  @let "S = seq_ring(R)" @then
+  @obtain x where "converges_to(B,x)"
+  @let "S = seq_ring(R)"
   @have "vanishes(B -\<^sub>S A)" @with @have "half_seq(B -\<^sub>S A)" @end
   @have (@rule) "\<forall>n\<in>nat. A`n \<in> U" @with @var_induct "n \<in> nat" @end
   @have (@rule) "\<forall>n\<in>nat. B`n \<notin> U" @with @var_induct "n \<in> nat" @end
   @have "\<forall>y\<in>.R. y <\<^sub>R x \<longleftrightarrow> y \<in> U" @with
     @case "y <\<^sub>R x" @with @obtain "n\<in>nat" where "y <\<^sub>R A`n" @end
     @case "y \<in> U" @with
-      @have "x \<in> U" @then @obtain x' where "x' >\<^sub>R x" "x' \<in> U" @then
-      @obtain "n\<in>nat" where "x' >\<^sub>R B`n" @then @have "B`n \<notin> U"
+      @have "x \<in> U" @obtain x' where "x' >\<^sub>R x" "x' \<in> U"
+      @obtain "n\<in>nat" where "x' >\<^sub>R B`n" @have "B`n \<notin> U"
     @end
   @end
 @qed
@@ -173,16 +173,16 @@ section {* Least upper bound property *}
 lemma least_upper_bound_complete [forward]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<Longrightarrow> has_sup(R,S)"
 @proof
-  @let "U = carrier(R) \<midarrow> upper_bound(R,S)" @then
+  @let "U = carrier(R) \<midarrow> upper_bound(R,S)"
   @have "dedekind_cut(R,U)" @with
     @have "U \<noteq> \<emptyset>" @with
-      @obtain "x \<in> S" @then @obtain y where "y <\<^sub>R x" @then @have "y \<in> U" @end
+      @obtain "x \<in> S" @obtain y where "y <\<^sub>R x" @have "y \<in> U" @end
     @have "U \<noteq> carrier(R)" @with
-      @obtain "z \<in> upper_bound(R,S)" @then @have "z \<notin> U" @end
+      @obtain "z \<in> upper_bound(R,S)" @have "z \<notin> U" @end
     @have "\<forall>a\<in>U. \<exists>b >\<^sub>R a. b \<in> U" @with
-      @obtain "c \<in> S" where "a <\<^sub>R c" @then @obtain b where "a <\<^sub>R b \<and> b <\<^sub>R c" @then @have "b \<in> U" @end @end
-  @obtain "y\<in>.R" where "\<forall>z\<in>.R. z <\<^sub>R y \<longleftrightarrow> z \<in> U" @then
-  @have "y \<notin> U" @then @have "y \<in> upper_bound(R,S)" @then
+      @obtain "c \<in> S" where "a <\<^sub>R c" @obtain b where "a <\<^sub>R b \<and> b <\<^sub>R c" @have "b \<in> U" @end @end
+  @obtain "y\<in>.R" where "\<forall>z\<in>.R. z <\<^sub>R y \<longleftrightarrow> z \<in> U"
+  @have "y \<notin> U" @have "y \<in> upper_bound(R,S)"
   @have "has_sup(R,S) \<and> sup(R,S) = y"
 @qed
 

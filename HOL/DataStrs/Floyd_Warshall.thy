@@ -267,7 +267,7 @@ lemma fw_invariant_aux_2 [backward]:
   "j \<le> n \<Longrightarrow> i'' \<le> i \<Longrightarrow> j'' \<le> j \<Longrightarrow> (fw M n k i j)\<langle>i',j'\<rangle> \<le> (fw M n k i'' j'')\<langle>i',j'\<rangle>"
 @proof @induct i @with
   @subgoal "i = Suc i"
-    @case "i'' = Suc i" @then
+    @case "i'' = Suc i"
     @have "(fw M n k (Suc i) j) \<langle>i',j'\<rangle> \<le> (fw M n k (Suc i) 0) \<langle>i',j'\<rangle>"
     @have "(fw M n k (Suc i) 0) \<langle>i',j'\<rangle> \<le> (fw M n k i n) \<langle>i',j'\<rangle>"
     @have "(fw M n k i n) \<langle>i',j'\<rangle> \<le> (fw M n k i j) \<langle>i',j'\<rangle>"
@@ -279,7 +279,7 @@ lemma fw_invariant [backward]:
    (fw M n k i j)\<langle>i', j'\<rangle> \<le> (fw M n k' i'' j'')\<langle>i',j'\<rangle>"
 @proof @induct k @with
   @subgoal "k = Suc k"
-    @case "k' = Suc k" @then
+    @case "k' = Suc k"
     @have "(fw M n (Suc k) i j)\<langle>i',j'\<rangle> \<le> (fw M n (Suc k) 0 0)\<langle>i',j'\<rangle>"
     @have "(fw M n (Suc k) 0 0)\<langle>i',j'\<rangle> \<le> (fw M n k n n)\<langle>i',j'\<rangle>"
     @have "(fw M n k n n)\<langle>i',j'\<rangle> \<le> (fw M n k i j)\<langle>i',j'\<rangle>"
@@ -361,7 +361,7 @@ lemma fw_mono [backward]:
   "i \<le> n \<Longrightarrow> j \<le> n \<Longrightarrow> i' \<le> n \<Longrightarrow> j' \<le> n \<Longrightarrow> (fw M n k i j)\<langle>i',j'\<rangle> \<le> M\<langle>i',j'\<rangle>"
 @proof @cases k @with
   @subgoal "k = 0"
-    @case "i < i'" @then
+    @case "i < i'"
     @case "j' \<le> j" @with
       @have "(fw M n 0 i j)\<langle>i',j'\<rangle> \<le> (fw M n 0 i' j')\<langle>i',j'\<rangle>"
     @end
@@ -437,7 +437,7 @@ lemma fw_step_Suc [backward]:
       @subgoal "j = Suc j"
         @have "(fw M n (Suc k) 0 j)\<langle>0,Suc j\<rangle> = M'\<langle>0,Suc j\<rangle>"
         @have "(fw M n (Suc k) 0 j)\<langle>0,Suc k\<rangle> = M'\<langle>0,Suc k\<rangle>" @with
-          @case "j < Suc k" @then
+          @case "j < Suc k"
           @have "(fw M n (Suc k) 0 k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
           @have "(fw M n (Suc k) 0 j)\<langle>0,Suc k\<rangle> = (fw M n (Suc k) 0 (Suc k))\<langle>0,Suc k\<rangle>"
         @end
@@ -451,7 +451,7 @@ lemma fw_step_Suc [backward]:
         @have "(fw M n (Suc k) i n)\<langle>Suc i,0\<rangle> = M'\<langle>Suc i,0\<rangle>"
         @have "(fw M n (Suc k) i n)\<langle>Suc i,Suc k\<rangle> = M'\<langle>Suc i,Suc k\<rangle>"
         @have "(fw M n (Suc k) i n)\<langle>Suc k,0\<rangle> = M'\<langle>Suc k,0\<rangle>" @with
-          @case "i < Suc k" @then
+          @case "i < Suc k"
           @have "(fw M n (Suc k) k n)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
           @have "(fw M n (Suc k) i n)\<langle>Suc k,0\<rangle> = (fw M n (Suc k) (Suc k) 0)\<langle>Suc k,0\<rangle>"
         @end
@@ -459,19 +459,19 @@ lemma fw_step_Suc [backward]:
       @subgoal "j = Suc j"
         @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc i,Suc j\<rangle> = M'\<langle>Suc i,Suc j\<rangle>"
         @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc i,Suc k\<rangle> = M'\<langle>Suc i,Suc k\<rangle>" @with
-          @case "j < Suc k" @then
+          @case "j < Suc k"
           @have "(fw M n (Suc k) (Suc i) k)\<langle>Suc i,Suc k\<rangle> = M'\<langle>Suc i,Suc k\<rangle>"
           @have "(fw M n (Suc k) (Suc i) k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>" @with
-            @case "Suc i \<le> Suc k" @then
+            @case "Suc i \<le> Suc k"
             @have "(fw M n (Suc k) (Suc i) k)\<langle>Suc k,Suc k\<rangle> = (fw M n (Suc k) (Suc k) (Suc k))\<langle>Suc k,Suc k\<rangle>"
             @have "(fw M n (Suc k) (Suc k) k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
           @end
           @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc i,Suc k\<rangle> = (fw M n (Suc k) (Suc i) (Suc k))\<langle>Suc i,Suc k\<rangle>"
         @end
         @have "(fw M n (Suc k) (Suc i) j)\<langle>Suc k,Suc j\<rangle> = M'\<langle>Suc k,Suc j\<rangle>" @with
-          @case "Suc i \<le> Suc k" @then
+          @case "Suc i \<le> Suc k"
           @have "(fw M n (Suc k) (Suc k) j)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>" @with
-            @case "j < Suc k" @then
+            @case "j < Suc k"
             @have "(fw M n (Suc k) (Suc k) j)\<langle>Suc k,Suc k\<rangle> = (fw M n (Suc k) (Suc k) (Suc k))\<langle>Suc k,Suc k\<rangle>"
             @have "(fw M n (Suc k) (Suc k) k)\<langle>Suc k,Suc k\<rangle> = M'\<langle>Suc k,Suc k\<rangle>"
           @end
@@ -528,7 +528,7 @@ lemma remove_cycles_neg_cycles_aux' [backward1]:
   @subgoal "xss = zs # xss"
     @let "xs'' = ys @ j # concat (map (\<lambda>xs. xs @ [j]) xss) @ as"
     @let "t = concat (map (\<lambda>xs. xs @ [j]) xss) @ as"
-    @case "len M i j xs'' \<le> len M i j xs" @then
+    @case "len M i j xs'' \<le> len M i j xs"
     @have "len M j j (concat (map (\<lambda>xs. xs @ [j]) (zs # xss)) @ as) < len M j j t"
     @have "len M j j (zs @ j # t) < len M j j t"
   @endgoal @end
@@ -723,8 +723,8 @@ section {* Result under the absence of negative cycles *}
 lemma distinct_list_single_elem_decomp [resolve]:
   "distinct xs \<Longrightarrow> set xs \<subseteq> {0} \<Longrightarrow> xs = [] \<or> xs = [0::'a::zero]"
 @proof
-  @case "xs = []" @then @have "xs = hd xs # tl xs"
-  @case "tl xs = []" @then @have "tl xs = hd (tl xs) # tl (tl xs)"
+  @case "xs = []" @have "xs = hd xs # tl xs"
+  @case "tl xs = []" @have "tl xs = hd (tl xs) # tl (tl xs)"
 @qed
 
 theorem fw_shortest_path_up_to [backward2]:

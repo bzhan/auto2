@@ -222,7 +222,7 @@ lemma tree_search_correct [rewrite]:
   @induct t @with
     @subgoal "t = Node l y m r"
       @let "t = Node l y m r"
-      @case "is_overlap (int y) x" @then
+      @case "is_overlap (int y) x"
       @case "l \<noteq> Tip \<and> tmax l \<ge> low x" @with
         @obtain "p\<in>tree_set l" where "high (int p) = tmax l"
         @case "is_overlap (int p) x"

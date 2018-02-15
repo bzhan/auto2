@@ -211,7 +211,7 @@ lemma dense_order_closed_interval:
    dense_order(S)"
 @proof
   @have "\<forall>x y. x <\<^sub>S y \<longrightarrow> (\<exists>z. x <\<^sub>S z \<and> z <\<^sub>S y)" @with
-    @obtain z where "x <\<^sub>R z \<and> z <\<^sub>R y" @then @have "x <\<^sub>S z" @end
+    @obtain z where "x <\<^sub>R z \<and> z <\<^sub>R y" @have "x <\<^sub>S z" @end
 @qed
 setup {* add_forward_prfstep_cond @{thm dense_order_closed_interval} [with_term "?S"] *}
 
@@ -220,7 +220,7 @@ lemma linear_continuum_closed_interval:
    linear_continuum(S)"
 @proof
   @have "\<forall>T. T \<noteq> \<emptyset> \<longrightarrow> upper_bound(S,T) \<noteq> \<emptyset> \<longrightarrow> has_sup(S,T)" @with
-    @have "has_sup(R,T)" @then
+    @have "has_sup(R,T)"
     @have "has_sup(S,T) \<and> sup(S,T) = sup(R,T)"
   @end
 @qed
