@@ -842,6 +842,12 @@ fun add_hoare_triple_prfstep hoare_th thy =
       thy |> update_hoare_triple hoare_th'
     end
 
+fun assn_terms P =
+    P |> ACUtil.dest_ac assn_ac_info
+      |> filter_out is_pure_assn
+      |> maps (snd o Term.strip_comb)
+      |> distinct (op aconv)
+
 fun code_pos_terms ts =
     let
       val t = the_single ts
@@ -850,7 +856,7 @@ fun code_pos_terms ts =
       else let
         val (P, c, _) = t |> dest_not |> dest_hoare_triple
       in
-        [P, get_first_cmd c]
+        assn_terms P @ [get_first_cmd c]
       end
     end
 
@@ -862,7 +868,7 @@ fun entail_terms ts =
       else let
         val (P, Q) = t |> dest_not |> dest_entail
       in
-        [P, Q]
+        assn_terms P @ [Q]
       end
     end
 
