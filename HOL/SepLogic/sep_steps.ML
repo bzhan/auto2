@@ -17,23 +17,43 @@ sig
   val update_hoare_triple: thm -> theory -> theory
   val get_hoare_triples: theory -> string -> thm list
 
-  val add_forward_ent_prfstep: thm -> theory -> theory
-  val add_backward_ent_prfstep: thm -> theory -> theory
-  val add_rewrite_ent_rule: thm -> theory -> theory
+  val is_bind_cmd: term -> bool
+  val get_first_cmd: term -> term
 
   val TY_CODE_POS: string
   val TY_ENTAIL: string
 
+  val is_neg_hoare_triple: term -> bool
+  val is_neg_entail: term -> bool
+  val norm_precond: Proof.context -> conv
+  val norm_entail_conds: Proof.context -> conv
+  val is_implies_item: box_item -> bool
+
+  val hoare_goal_update: Proof.context -> box_id * thm -> raw_update
+  val entail_goal_update: Proof.context -> box_id * thm -> raw_update
+
+  val init_entail: proofstep
+  val entails_resolve: proofstep
   val init_pos: proofstep
+
+  val add_forward_ent_prfstep: thm -> theory -> theory
+  val add_backward_ent_prfstep: thm -> theory -> theory
+  val add_rewrite_ent_rule: thm -> theory -> theory
+
   val rewrite_pos: proofstep
+  val normalize_hoare_cv: conv
+  val contract_hoare_cv: Proof.context -> conv
+  val match_hoare_th: box_id -> incr_context -> thm -> thm -> box_item ->
+                      raw_update list
+  val match_hoare_prop: proofstep
   val match_hoare_disj: proofstep
   val match_assn_pure: proofstep
   val hoare_create_case: proofstep
+  val entail_pure: proofstep
+  val entail_create_case: proofstep
   val hoare_triple: proofstep
 
-  val contract_hoare_cv: Proof.context -> conv
   val add_hoare_triple_prfstep: thm -> theory -> theory
-
   val add_sep_logic_proofsteps: theory -> theory
 end;
 
@@ -240,7 +260,7 @@ fun entail_goal_update ctxt (id, th) =
       val (res_th', rest) =
           res_th |> Logic_ProofSteps.split_conj_gen_th ctxt
                  |> filter_split (is_neg_entail o prop_of')
-      val _ = assert (length res_th' = 1) "hoare_entail_update"
+      val _ = assert (length res_th' = 1) "entail_goal_update"
 
       val res_th' =
           res_th' |> the_single
@@ -383,7 +403,7 @@ fun entails_resolve_fn ictxt item =
       val (P, Q) = dest_entail (get_neg (prop_of' prop))
       val cP = Thm.cterm_of ctxt P
       val Q' = strip_pure_assn Q
-      val insts = (AssnMatcher.assn_match_all_strict ctxt (Q', cP) (id, fo_init))
+      val insts = (AssnMatcher.assn_match_strict ctxt (Q', cP) (id, fo_init))
                       |> IncrContext.replace_id_for_type ictxt
 
       fun process_inst ((id', _), mod_th) =
@@ -612,10 +632,10 @@ fun match_hoare_th id ictxt hoare_th goal item =
                 (AssnMatcher.assn_match_all ctxt (P'', cP) (id', inst))
                     |> IncrContext.replace_id_for_type ictxt
 
-            fun process_inst' ((id'', inst''), ent_th) =
+            fun process_inst' ((id'', inst'), ent_th) =
                 let
                   val hoare_th =
-                      (Util.subst_thm ctxt inst'' hoare_th)
+                      (Util.subst_thm ctxt inst' hoare_th)
                           |> apply_to_thm' (Conv.arg1_conv (Conv.rewr_conv eq_th))
                           |> apply_to_thm' normalize_hoare_cv
                           |> apply_to_thm (UtilLogic.to_meta_conv ctxt)

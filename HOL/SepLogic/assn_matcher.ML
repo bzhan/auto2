@@ -14,7 +14,7 @@ sig
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val assn_match_all:
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
-  val assn_match_all_strict:
+  val assn_match_strict:
       Proof.context -> term * cterm -> id_inst -> id_inst_th list
   val triv_assn_matcher: assn_matcher
   val emp_assn_matcher: assn_matcher
@@ -87,7 +87,7 @@ fun assn_match_all ctxt (pat, ct) (id, inst) =
         val insts = assn_match_all ctxt (A, ct) (id, inst)
 
         (* th is t ==> A(s) * t'. Match B(s) with t', with result t'
-             ==> B(s) * t''. Produce t ==> (A(s) * B(s)) * t''
+           ==> B(s) * t''. Produce t ==> (A(s) * B(s)) * t''
          *)
         fun process_inst ((id', inst'), th) =
             let
@@ -114,7 +114,7 @@ fun assn_match_all ctxt (pat, ct) (id, inst) =
       assn_match_term ctxt (pat, ct) (id, inst)
 
 (* Guarantees that every term in t is matched. Returns t ==> pat(s). *)
-fun assn_match_all_strict ctxt (pat, ct) (id, inst) =
+fun assn_match_strict ctxt (pat, ct) (id, inst) =
     let
       val inst = assn_match_all ctxt (pat, ct) (id, inst)
       fun process_inst ((id', inst'), th) =
@@ -122,7 +122,7 @@ fun assn_match_all_strict ctxt (pat, ct) (id, inst) =
             val rhs = th |> prop_of' |> dest_entail |> snd
             val _ = assert (UtilArith.is_times rhs andalso
                             dest_arg1 rhs aconv Util.subst_term_norm inst' pat)
-                           "assn_match_all"
+                           "assn_match_strict"
           in
             if dest_arg rhs aconv emp then
               [((id', inst'), th |> apply_to_entail_r reduce_emp_right)]

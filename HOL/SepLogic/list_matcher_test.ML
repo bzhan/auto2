@@ -93,7 +93,7 @@ val test_list_prop_matcher =
          [([], "sngr_assn a 1 * os_list ys q * os_list zs r")])
       ]
     in
-      map (test AssnMatcher.assn_match_all_strict "test_list_prop_matcher") test_data
+      map (test AssnMatcher.assn_match_strict "test_list_prop_matcher") test_data
     end
 
 end
