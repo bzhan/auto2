@@ -406,21 +406,11 @@ fun process_fact_all items (st as {ctxt, ...}) =
          |> fold (process_prfstep sc incr_ctxt incr_items items') prfsteps
     end
 
-fun is_shadowing_prfstep prfstep_name ctxt =
-    if Util.is_prefix_str "$" prfstep_name then false
-    else let
-      val {priority, ...} = ProofStepData.get_prfstep_by_name ctxt prfstep_name
-    in
-      priority <= PRIORITY_SHADOW
-    end
-
-fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
+fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
                       (st as {uid_next, ctxt, ...}) =
     case raw_updt of
         AddItems {id, raw_items = ritems, ...} =>
-        if not (is_shadowing_prfstep prfstep_name ctxt) andalso
-           exists (Status.query_shadowed st id) source then st
-        else let
+        let
           val (ctxt', subst) = BoxItem.obtain_variant_frees (ctxt, ritems)
           val ritems' =
               ritems |> map (BoxItem.instantiate subst)
@@ -475,13 +465,10 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, source, ...})
         end
       | _ => raise Fail "process_add_items: wrong type of update"
 
-fun process_add_boxes (updt as {sc, prfstep_name, raw_updt, source, ...})
-                      (st as {ctxt, ...}) =
+fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
     case raw_updt of
         AddBoxes {id, inits, ...} =>
-        if not (is_shadowing_prfstep prfstep_name ctxt) andalso
-           exists (Status.query_shadowed st id) source then st
-        else let
+        let
           (* First form the raw items, possibly containing internal
              schematic variables.
            *)
