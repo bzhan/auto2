@@ -21,9 +21,6 @@ imports
   (* Dynamic array *)
   DynamicArray
   
-  (* Reverse on arrays *)
-  Reverse
-  
   (* Quicksort *)
   Quicksort_Impl
   

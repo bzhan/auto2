@@ -1,5 +1,5 @@
 theory Quicksort_Impl
-imports Reverse "../DataStrs/Quicksort"
+imports Arrays_Impl "../DataStrs/Quicksort"
 begin
 
 partial_function (heap) part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> nat Heap" where
