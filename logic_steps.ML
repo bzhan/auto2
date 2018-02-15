@@ -233,13 +233,12 @@ fun exists_elim_fn ictxt {id, prop, ...} =
          (is_neg t andalso is_obj_all (dest_not t)) orelse
          (is_neg t andalso is_ball (dest_not t)) then
         let
-          val th = prop |> apply_to_thm' (UtilLogic.normalize_exists ctxt)
-          val (vars, _) = (UtilLogic.strip_exists (prop_of' th))
-                              |> Util.replace_vars ctxt
-                              |> Util.replace_internal_vars
-          val xs = map (fst o Term.dest_Free) vars
+          val (ritems, th') =
+              prop |> apply_to_thm' (UtilLogic.normalize_exists ctxt)
+                   |> Update.apply_exists_ritems ctxt
         in
-          Update.apply_exists ctxt xs (id, th)
+          [AddItems {id = id, sc = NONE,
+                     raw_items = ritems @ [Update.thm_to_ritem th']}]
         end
       else []
     end

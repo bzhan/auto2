@@ -34,10 +34,7 @@ sig
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
 
-  val apply_exists_ritems: Proof.context -> string list -> thm ->
-                           raw_item list * thm
-  val apply_exists: Proof.context -> string list -> box_id * thm ->
-                    raw_update list
+  val apply_exists_ritems: Proof.context -> thm -> raw_item list * thm
   val update_info: Proof.context -> box_id -> raw_item list -> string
   val source_info: update -> string
 end;
@@ -151,27 +148,16 @@ fun thm_update (id, th) =
 
 (* Apply the given existence theorem and return the list of resulting ritems.
  *)
-fun apply_exists_ritems ctxt xs ex_th =
+fun apply_exists_ritems ctxt ex_th =
     let
-      val ex_th' = ex_th |> apply_to_thm' (UtilLogic.normalize_exists ctxt)
-      val (vars, body) = ex_th' |> prop_of' |> UtilLogic.strip_exists
-                                |> apsnd mk_Trueprop
-                                |> Util.replace_names xs
-
-      val new_th = body |> Thm.cterm_of ctxt |> Thm.assume
-      val ritems = map (BoxItem.var_to_fact) vars @
-                   [Handler (vars, body, ex_th)]
+      val (vars, body) = (UtilLogic.strip_exists (prop_of' ex_th))
+                            |> Util.replace_vars ctxt
+                            |> Util.replace_internal_vars
+                            |> apsnd mk_Trueprop
     in
-      (ritems, new_th)
-    end
-
-(* Calls the previous function, and directly produces the update. *)
-fun apply_exists ctxt xs (id, ex_th) =
-    let
-      val (ritems, new_th) = apply_exists_ritems ctxt xs ex_th
-    in
-      [AddItems {id = id, sc = NONE,
-                 raw_items = ritems @ [thm_to_ritem new_th]}]
+      if null vars then ([], ex_th)
+      else (map (BoxItem.var_to_fact) vars @ [Handler (vars, body, ex_th)],
+            Thm.assume (Thm.cterm_of ctxt body))
     end
 
 fun update_info ctxt id ritems =

@@ -220,15 +220,9 @@ fun hoare_goal_update ctxt (id, th) =
       AddItems {id = id, sc = SOME 1,
                 raw_items = [Fact (TY_CODE_POS, [Thm.prop_of th], th)]}
     else let
-      val th' = th |> apply_to_thm' (normalize_hoare_goal_cv ctxt)
-      val (vars, _) = (UtilLogic.strip_exists (prop_of' th'))
-                          |> Util.replace_vars ctxt
-                          |> Util.replace_internal_vars
-      val xs = map (fst o Term.dest_Free) vars
-
       val (ex_ritems, res_th) =
-          if length xs = 0 then ([], th')
-          else Update.apply_exists_ritems ctxt xs th'
+          th |> apply_to_thm' (normalize_hoare_goal_cv ctxt)
+             |> Update.apply_exists_ritems ctxt
 
       val (res_th', rest) =
           res_th |> Logic_ProofSteps.split_conj_gen_th ctxt
@@ -249,15 +243,9 @@ fun entail_goal_update ctxt (id, th) =
       AddItems {id = id, sc = SOME 1,
                 raw_items = [Fact (TY_ENTAIL, [Thm.prop_of th], th)]}
     else let
-      val th' = th |> apply_to_thm' (normalize_entail_goal_cv ctxt)
-      val (vars, _) = (UtilLogic.strip_exists (prop_of' th'))
-                          |> Util.replace_vars ctxt
-                          |> Util.replace_internal_vars
-      val xs = map (fst o Term.dest_Free) vars
-
       val (ex_ritems, res_th) =
-          if length xs = 0 then ([], th')
-          else Update.apply_exists_ritems ctxt xs th'
+          th |> apply_to_thm' (normalize_entail_goal_cv ctxt)
+             |> Update.apply_exists_ritems ctxt
 
       val (res_th', rest) =
           res_th |> Logic_ProofSteps.split_conj_gen_th ctxt

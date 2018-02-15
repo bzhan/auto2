@@ -107,7 +107,6 @@ sig
                                   term list * (term list * term)
   val replace_vars: Proof.context -> term list * term -> term list * term
   val replace_internal_vars: term list * term -> term list * term
-  val replace_names: string list -> term list * term -> term list * term
   val rename_abs_term: term list -> term -> term
   val print_term_detail: Proof.context -> term -> string
 
@@ -583,14 +582,6 @@ fun replace_internal_vars (vars, body) =
       val subst = vars ~~ vars'
     in
       (vars', subst_atomic subst body)
-    end
-
-fun replace_names xs (vars, t) =
-    let
-      val vars' = map (fn (v, x) => Free (x, fastype_of v)) (vars ~~ xs)
-      val subst = vars ~~ vars'
-    in
-      (vars', subst_atomic subst t)
     end
 
 fun rename_abs_term vars t =
