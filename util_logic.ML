@@ -94,8 +94,6 @@ sig
   val is_ex_form_gen: term -> bool
   val normalize_exists: Proof.context -> conv
   val strip_exists: term -> term list * term
-  val is_def_eq: term -> bool
-  val swap_one_eq_to_front: conv
 
   (* Wrapper around common tactics. *)
   val prove_by_tac: (Proof.context -> int -> tactic) -> Proof.context ->
@@ -573,25 +571,6 @@ fun strip_exists t =
         | _ => raise Fail "strip_exists"
     else
       ([], t)
-
-fun is_def_eq t =
-    if not (is_eq_term t) then false
-    else let
-      val (lhs, rhs) = dest_eq t
-    in
-      Term.is_Var lhs andalso not (Term.is_Var rhs) andalso
-      not (Util.is_subterm lhs rhs)
-    end
-
-fun swap_one_eq_to_front ct =
-    case Thm.term_of ct of
-        @{const Pure.imp} $ A $ _ =>
-        if is_Trueprop A andalso is_def_eq (dest_Trueprop A) then
-          Conv.arg1_conv UtilBase.to_meta_eq_cv ct
-        else
-          ((Conv.arg_conv swap_one_eq_to_front)
-               then_conv (Conv.rewr_conv Drule.swap_prems_eq)) ct
-      | _ => Conv.no_conv ct
 
 (* Generic wrapper function. tac can be arith_tac, simp_tac, etc. *)
 fun prove_by_tac tac ctxt ths goal =

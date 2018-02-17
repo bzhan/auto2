@@ -129,8 +129,6 @@ sig
   val send_first_to_hyps: thm -> thm
   val send_all_to_hyps: thm -> thm
   val subst_thm_atomic: (cterm * cterm) list -> thm -> thm
-  val meta_use_vardef: thm -> thm
-  val meta_use_vardefs: thm -> thm
   val subst_term_norm: Type.tyenv * Envir.tenv -> term -> term
   val concl_conv_n: int -> conv -> conv
   val concl_conv: conv -> conv
@@ -138,6 +136,7 @@ sig
   val skip_n_conv: int -> conv -> conv
   val pattern_rewr_conv: term -> (term * thm) list -> conv
   val eq_cong_th: int -> term -> term -> Proof.context -> thm
+  val forall_elim_sch: thm -> thm
 
   (* Conversions *)
   val reverse_eta_conv: Proof.context -> conv
@@ -704,27 +703,6 @@ fun subst_thm_atomic subst th =
          |> funpow (length chyps) send_first_to_hyps
     end
 
-(* Given th where the first premise is in the form ?A == t, replace ?A
-   by t in the rest of th, and remove the first premise.
- *)
-fun meta_use_vardef th =
-    let
-      val thy = Thm.theory_of_thm th
-      val ((ix, T), ct) =
-          th |> Thm.prems_of |> hd |> Logic.dest_equals
-             |> apfst Term.dest_Var |> apsnd (Thm.global_cterm_of thy)
-    in
-      (Thm.reflexive ct) RS (Thm.instantiate ([], [((ix, T), ct)]) th)
-    end
-
-fun meta_use_vardefs th =
-    case Thm.prop_of th of
-        @{const Pure.imp} $ A $ _ =>
-        if is_meta_eq A andalso Term.is_Var (fst (Logic.dest_equals A)) then
-          th |> meta_use_vardef |> meta_use_vardefs
-        else th
-      | _ => th
-
 (* Substitution into terms used in auto2. Substitute types first and
    instantiate the types in the table of term instantiations. Also
    perform beta_norm at the end.
@@ -858,6 +836,27 @@ fun eq_cong_th i bi A ctxt =
       val eq_A = comb_equiv (cf, eqs)
     in
       Thm.implies_intr (Thm.cprop_of eq_i) eq_A
+    end
+
+(* Convert theorems of form !!x y. P x y into P ?x ?y (arbitrary
+   number of quantifiers).
+ *)
+fun forall_elim_sch th =
+    let
+      val thy = Thm.theory_of_thm th
+    in
+      case Thm.prop_of th of
+          Const (@{const_name Pure.all}, _) $ Abs (x, T, _) =>
+          let
+            val var_xs = map fst (Term.add_var_names (Thm.prop_of th) [])
+            val x' = if member (op =) var_xs x then
+                        singleton (Name.variant_list var_xs) x
+                     else x
+          in
+            th |> Thm.forall_elim (Thm.global_cterm_of thy (Var ((x', 0), T)))
+               |> forall_elim_sch
+          end
+        | _ => th
     end
 
 (* Given P of function type, produce P == %x. P x. *)

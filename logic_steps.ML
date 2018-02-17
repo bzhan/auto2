@@ -28,7 +28,6 @@ sig
   val disj_to_update: bool -> term -> box_id * int option * thm -> raw_update
   val dest_tname_of_disj: cterm list -> term * cterm list
   val is_match_prem_only: box_item -> bool
-  val forall_elim_sch: thm -> thm
   val analyze_disj_th: Proof.context -> thm -> term * thm
   val disj_rewr_terms: term list -> term list
   val output_disj_fn: item_output
@@ -624,27 +623,6 @@ fun get_disj_head t =
     else if is_neg t andalso is_bex (dest_not t) then conj
     else imp
 
-(* Convert theorems of form !!x y. P x y into P ?x ?y (arbitrary
-   number of quantifiers).
- *)
-fun forall_elim_sch th =
-    let
-      val thy = Thm.theory_of_thm th
-    in
-      case Thm.prop_of th of
-          Const (@{const_name Pure.all}, _) $ Abs (x, T, _) =>
-          let
-            val var_xs = map fst (Term.add_var_names (Thm.prop_of th) [])
-            val x' = if member (op =) var_xs x then
-                        singleton (Name.variant_list var_xs) x
-                     else x
-          in
-            th |> Thm.forall_elim (Thm.global_cterm_of thy (Var ((x', 0), T)))
-               |> forall_elim_sch
-          end
-        | _ => th
-    end
-
 (* Given a theorem th, return equivalent theorem in disjunctive form,
    with possible schematic variables. Also return whether th is
    "active", that is, whether it is originally a conjunctive goal or
@@ -655,7 +633,7 @@ fun analyze_disj_th ctxt th =
       val head = get_disj_head (prop_of' th)
       val th' = th |> apply_to_thm' (norm_all_disj ctxt)
                    |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
-                   |> forall_elim_sch
+                   |> Util.forall_elim_sch
     in
       (head, th')
     end
@@ -1001,69 +979,6 @@ val disj_match_iff_prfstep =
      priority = PRIORITY_ADD,
      func = OneStep disj_match_iff_fn}
 
-fun swap_disj ct =
-    Conv.every_conv [rewr_obj_eq (obj_sym UtilBase.disj_assoc_th),
-                     Conv.arg1_conv (rewr_obj_eq UtilBase.disj_commute_th),
-                     rewr_obj_eq UtilBase.disj_assoc_th] ct
-
-fun move_outmost u ct =
-    let
-      val t = Thm.term_of ct
-    in
-      if u aconv t then Conv.all_conv ct
-      else if not (is_disj t) then
-        raise Fail "move_outmost: u not found in ct."
-      else let
-        val (a, b) = Util.dest_binop_args t
-      in
-        if u aconv a then Conv.all_conv ct
-        else if is_disj b then
-          Conv.every_conv [Conv.arg_conv (move_outmost u),
-                           swap_disj] ct
-        else if u aconv b then
-          rewr_obj_eq UtilBase.disj_commute_th ct
-        else
-          raise Fail "move_outmost: u not found in ct."
-      end
-    end
-
-fun disj_use_vardef ictxt item =
-    if not (IncrContext.is_single_ictxt ictxt) then []
-    else if is_match_prem_only item then []
-    else let
-      val ctxt = IncrContext.context_of ictxt
-      val {id, tname, prop, ...} = item
-      val (disj_head, csubs) = dest_tname_of_disj tname
-      val subs = map Thm.term_of csubs
-      val len = length subs
-      fun is_vardef t = is_eq_term t andalso is_Var (dest_arg1 t)
-    in
-      if len = 1 then [] else
-      case find_first (is_vardef o get_neg) subs of
-          NONE => []
-        | SOME t =>
-          let
-            val (t1, _) = dest_eq (get_neg t)
-            val cv = Conv.every_conv [
-                  move_outmost t,
-                  rewr_obj_eq (obj_sym UtilBase.imp_conv_disj_th)]
-            val prop' =
-                prop |> apply_to_thm' cv
-                     |> Thm.forall_intr (Thm.cterm_of ctxt t1)
-                     |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
-                     |> apply_to_thm' (rewr_obj_eq UtilBase.use_vardef_th)
-          in
-            [ShadowItem {id = id, item = item},
-             disj_to_update false disj_head (id, SOME (len - 1), prop')]
-          end
-    end
-
-val disj_use_vardef_prfstep =
-    {name = "disj_use_vardef",
-     args = [TypedUniv TY_DISJ],
-     priority = PRIORITY_NORM,
-     func = OneStep disj_use_vardef}
-
 (* For active case, create box checking the next case. *)
 fun disj_create_case_fn ictxt {id, tname, ...} =
     if not (IncrContext.is_single_ictxt ictxt) then [] else
@@ -1130,7 +1045,7 @@ val add_disj_proofsteps =
 
     ] #> fold add_prfstep [
       match_update_prfstep, match_one_sch_prfstep, disj_match_iff_prfstep,
-      disj_create_case_prfstep, disj_shadow_prfstep, disj_use_vardef_prfstep
+      disj_create_case_prfstep, disj_shadow_prfstep
     ]
 
 (* Normalizers *)
@@ -1186,6 +1101,8 @@ fun disj_normalizer ctxt ritem =
             let
               val (disj_head, disj_th) = analyze_disj_th ctxt th
               val prem_only = Auto2_State.lookup_prem_only ctxt t
+              val disj_th = if prem_only then disj_th
+                            else snd (Normalizer.meta_use_vardefs disj_th)
             in
               disj_to_ritems prem_only disj_head disj_th
             end

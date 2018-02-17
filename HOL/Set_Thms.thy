@@ -34,7 +34,7 @@ setup {* add_forward_prfstep (equiv_forward_th @{thm Set.empty_iff}) *}
 lemma set_membership_distinct [forward]: "x \<in> s \<Longrightarrow> y \<notin> s \<Longrightarrow> x \<noteq> y" by auto
 lemma non_empty_exist_elt [backward]: "U \<noteq> {} \<Longrightarrow> \<exists>x. x \<in> U" by blast
 lemma non_univ_exist_compl [backward]: "U \<noteq> UNIV \<Longrightarrow> \<exists>x. x \<notin> U" by blast
-lemma univ_member_all [resolve]: "U = UNIV \<Longrightarrow> x \<in> U" by simp
+setup {* add_resolve_prfstep @{thm Set.UNIV_I} *}
 
 subsection {* Insert *}
 

@@ -88,7 +88,6 @@ val eq_True_th = @{thm HOL.eqTrueI}
 val eq_True_inv_th = @{thm HOL.eqTrueE}
 val disj_True1_th = @{thm HOL.simp_thms(30)}
 val disj_True2_th = @{thm HOL.simp_thms(29)}
-val use_vardef_th = @{thm HOL.simp_thms(41)}
 val ex_vardef_th = @{thm HOL.simp_thms(37)}
 val imp_conv_disj_th = @{thm imp_conv_disj}
 val de_Morgan_conj_th = @{thm de_Morgan_conj}

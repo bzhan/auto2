@@ -101,7 +101,6 @@ val eq_True_th = @{thm eq_True}
 val eq_True_inv_th = @{thm eq_True_inv}
 val disj_True1_th = @{thm disj_True1}
 val disj_True2_th = @{thm disj_True2}
-val use_vardef_th = @{thm use_vardef}
 val ex_vardef_th = @{thm ex_vardef}
 val imp_conv_disj_th = @{thm imp_conv_disj}
 val de_Morgan_conj_th = @{thm de_Morgan_conj}

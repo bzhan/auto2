@@ -62,7 +62,6 @@ sig
   val eq_True_inv_th: thm
   val disj_True1_th: thm
   val disj_True2_th: thm
-  val use_vardef_th: thm
   val ex_vardef_th: thm
   val imp_conv_disj_th: thm
   val de_Morgan_conj_th: thm

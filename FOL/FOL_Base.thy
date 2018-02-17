@@ -48,7 +48,6 @@ theorem eq_True: "A \<Longrightarrow> A \<longleftrightarrow> True" by simp
 theorem eq_True_inv: "A \<longleftrightarrow> True \<Longrightarrow> A" by simp
 theorem disj_True1: "(True \<or> A) \<longleftrightarrow> True" by simp
 theorem disj_True2: "(A \<or> True) \<longleftrightarrow> True" by simp
-theorem use_vardef: "(\<forall>x. x = t \<longrightarrow> P(x)) \<longleftrightarrow> P(t)" by simp
 theorem ex_vardef: "\<exists>x. x = a" by simp
 theorem nn_create: "A \<Longrightarrow> \<not>\<not>A" by auto
 theorem all_trivial: "(\<forall>x. P) \<longleftrightarrow> P" by auto

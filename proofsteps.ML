@@ -901,28 +901,25 @@ fun add_basic_prfstep_cond th mode conds thy =
       val ctxt = Proof_Context.init_global thy
       val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
 
-      (* Intermediate form, with definitional eqs in front. *)
-      val th_defs = th |> apply_to_thm (UtilLogic.to_obj_conv_on_horn ctxt')
-                       |> apply_to_thm (
-            Conv.repeat_conv UtilLogic.swap_one_eq_to_front)
+      (* Replace variable definitions, obtaining list of replacements
+         and the new theorem.
+       *)
+      val (pairs, th) =
+          th |> apply_to_thm (UtilLogic.to_obj_conv_on_horn ctxt')
+             |> Normalizer.meta_use_vardefs
+             |> apsnd (Util.update_name_of_thm th "")
 
       (* List of definitions used. *)
-      val def_subst = th_defs |> Thm.prems_of |> filter Util.is_meta_eq
-                              |> map Logic.dest_equals
       fun print_def_subst (lhs, rhs) =
           writeln ("Apply def " ^ (Syntax.string_of_term ctxt' lhs) ^ " = " ^
                    (Syntax.string_of_term ctxt' rhs))
-      val _ = map print_def_subst def_subst
+      val _ = map print_def_subst pairs
 
       fun def_subst_fun cond =
           case cond of
               WithItem ("TERM", t) =>
-              WithItem ("TERM", fold (fn pair => Term.subst_atomic [pair])
-                                     def_subst t)
+              WithItem ("TERM", Normalizer.def_subst pairs t)
             | _ => cond
-
-      val th = th_defs |> Util.meta_use_vardefs
-                       |> Util.update_name_of_thm th ""
     in
       if null conds andalso mode = MODE_FORWARD andalso
          Property.can_add_property_update th thy then

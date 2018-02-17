@@ -11,6 +11,13 @@ sig
   val get_normalizers: theory -> (string * normalizer) list
   val normalize: Proof.context -> raw_item -> raw_item list
   val normalize_keep: Proof.context -> raw_item -> raw_item list
+
+  (* Normalization of definition of variable *)
+  val is_def_eq: term -> bool
+  val swap_eq_to_front: conv
+  val meta_use_vardef: thm -> (term * term) * thm
+  val meta_use_vardefs: thm -> (term * term) list * thm
+  val def_subst: (term * term) list -> term -> term
 end;
 
 structure Normalizer : NORMALIZER =
@@ -86,5 +93,119 @@ fun normalize_keep ctxt ritem =
       if length norm_ritems = 1 then norm_ritems
       else ritem :: norm_ritems
     end
+
+(* Normalization of variable definition *)
+
+(* Check whether t is of the form ?A = t, where t does not contain ?A. *)
+
+fun is_def_eq t =
+    if not (is_eq_term t) then false
+    else let
+      val (lhs, rhs) = dest_eq t
+    in
+      Term.is_Var lhs andalso not (Term.is_Var rhs) andalso
+      not (Util.is_subterm lhs rhs)
+    end
+
+fun is_def_eq' t =
+    is_Trueprop t andalso is_def_eq (dest_Trueprop t)
+
+fun is_neg_def_eq t =
+    is_neg t andalso is_def_eq (dest_not t)
+
+(* Given t of the form A_1 ==> ... ==> A_n ==> C, swap all A_i of the
+   form ?A = t to the front.
+ *)
+fun swap_eq_to_front ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if Util.is_implies t then
+        if is_def_eq' (dest_arg1 t) then
+          Conv.all_conv ct
+        else
+          Conv.every_conv [Conv.arg_conv swap_eq_to_front,
+                           Conv.rewr_conv Drule.swap_prems_eq] ct
+      else
+        Conv.no_conv ct
+    end
+
+(* Given th where the first premise is in the form ?A = t, replace ?A
+   by t in the rest of th, and remove the first premise.
+ *)
+fun meta_use_vardef th =
+    let
+      val (lhs, rhs) = th |> Thm.cprop_of |> Thm.dest_arg1
+                          |> Thm.dest_arg |> Util.dest_binop_cargs
+    in
+      (apply2 Thm.term_of (lhs, rhs),
+       th |> Util.subst_thm_atomic [(lhs, rhs)]
+          |> apply_to_thm (Conv.arg1_conv UtilBase.to_meta_eq_cv)
+          |> Thm.elim_implies (Thm.reflexive rhs))
+    end
+
+fun disj_ts t =
+    if is_disj t then dest_arg1 t :: disj_ts (dest_arg t)
+    else [t]
+
+fun swap_disj ct =
+    Conv.every_conv [rewr_obj_eq (obj_sym UtilBase.disj_assoc_th),
+                     Conv.arg1_conv (rewr_obj_eq UtilBase.disj_commute_th),
+                     rewr_obj_eq UtilBase.disj_assoc_th] ct
+
+fun disj_swap_eq_to_front' ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_disj t then
+        if is_neg_def_eq (dest_arg1 t) then
+          Conv.all_conv ct
+        else if is_disj (dest_arg t) then
+          Conv.every_conv [Conv.arg_conv disj_swap_eq_to_front',
+                           swap_disj] ct
+        else if is_neg_def_eq (dest_arg t) then
+          rewr_obj_eq UtilBase.disj_commute_th ct
+        else
+          Conv.no_conv ct
+      else
+        Conv.no_conv ct
+    end
+
+fun disj_swap_eq_to_front ct =
+    Conv.every_conv [
+      Trueprop_conv disj_swap_eq_to_front',
+      Trueprop_conv (rewr_obj_eq (obj_sym UtilBase.imp_conv_disj_th)),
+      Conv.rewr_conv (meta_sym UtilBase.atomize_imp_th)
+    ] ct
+
+fun meta_use_vardefs th =
+    if exists is_def_eq' (Thm.prems_of th) then
+      let
+        val (pair, th') = th |> apply_to_thm swap_eq_to_front
+                             |> meta_use_vardef
+        val (pairs, th'') = meta_use_vardefs th'
+      in
+        (pair :: pairs, th'')
+      end
+    else if is_Trueprop (Thm.prop_of th) then
+      let
+        val ts = disj_ts (prop_of' th)
+      in
+        if length ts > 1 andalso exists is_neg_def_eq ts then
+          let
+            val (pair, th') = th |> apply_to_thm disj_swap_eq_to_front
+                                 |> meta_use_vardef
+            val (pairs, th'') = meta_use_vardefs th'
+          in
+            (pair :: pairs, th'')
+          end
+        else
+          ([], th)
+      end
+    else
+      ([], th)
+
+fun def_subst pairs t =
+    fold (fn p => Term.subst_atomic [p]) pairs t
 
 end  (* structure Normalizer. *)
