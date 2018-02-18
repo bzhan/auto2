@@ -9,7 +9,7 @@ definition is_uf :: "nat \<Rightarrow> (nat\<times>nat) set \<Rightarrow> uf \<R
         \<up>(ufa_invar l) * \<up>(ufa_\<alpha> l = R) * \<up>(length l = n) * \<up>(length szl = n))"
 setup {* add_rewrite_ent_rule @{thm is_uf_def} *}
 
-definition uf_init :: "nat \<Rightarrow> uf Heap" where [sep_proc]:
+definition uf_init :: "nat \<Rightarrow> uf Heap" where
   "uf_init n = do {
      l \<leftarrow> Array.of_list [0..<n];
      szl \<leftarrow> Array.new n (1::nat);
@@ -24,7 +24,6 @@ partial_function (heap) uf_rep_of :: "nat array \<Rightarrow> nat \<Rightarrow> 
      n \<leftarrow> Array.nth p i;
      if n = i then return i else uf_rep_of p n
    }"
-declare uf_rep_of.simps [sep_proc]
   
 lemma uf_rep_of_rule [hoare_triple]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow>
@@ -42,7 +41,6 @@ partial_function (heap) uf_compress :: "nat \<Rightarrow> nat \<Rightarrow> nat 
       Array.upd i ci p;
       return ()
     })"
-declare uf_compress.simps [sep_proc]
 
 lemma uf_compress_rule [hoare_triple]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow>
@@ -51,7 +49,7 @@ lemma uf_compress_rule [hoare_triple]:
    <\<lambda>_. \<exists>\<^sub>Al'. p \<mapsto>\<^sub>a l' * \<up>(ufa_invar l' \<and> length l' = length l \<and> (\<forall>i<length l. rep_of l' i = rep_of l i))>"
 @proof @prop_induct "ufa_invar l \<and> i < length l" @qed
 
-definition uf_rep_of_c :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where [sep_proc]:
+definition uf_rep_of_c :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "uf_rep_of_c p i = do {
     ci \<leftarrow> uf_rep_of p i;
     uf_compress i ci p;
@@ -66,8 +64,8 @@ lemma uf_rep_of_c_rule [hoare_triple]:
                           (\<forall>i<length l. rep_of l' i = rep_of l i))>"
   by auto2
 
-definition uf_cmp :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where [sep_proc]:
-  "uf_cmp u i j \<equiv> do {
+definition uf_cmp :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool Heap" where
+  "uf_cmp u i j = do {
     n \<leftarrow> Array.len (snd u);
     if (i\<ge>n \<or> j\<ge>n) then return False
     else do {
@@ -82,8 +80,8 @@ lemma uf_cmp_rule [hoare_triple]:
    uf_cmp u i j
    <\<lambda>r. is_uf n R u * \<up>(r \<longleftrightarrow> (i,j)\<in>R)>" by auto2
 
-definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf Heap" where [sep_proc]:
-  "uf_union u i j \<equiv> do {
+definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf Heap" where
+  "uf_union u i j = do {
     ci \<leftarrow> uf_rep_of (snd u) i;
     cj \<leftarrow> uf_rep_of (snd u) j;
     if (ci = cj) then return u

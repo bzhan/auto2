@@ -45,20 +45,20 @@ section {* Operations *}
 
 subsection {* Basic operations *}
 
-definition tree_empty :: "('a, 'b) btree Heap" where [sep_proc]:
-  "tree_empty \<equiv> return None"
+definition tree_empty :: "('a, 'b) btree Heap" where
+  "tree_empty = return None"
 
 lemma tree_empty_rule [hoare_triple]:
   "<emp> tree_empty <btree Tip>" by auto2
 
-definition tree_is_empty :: "('a, 'b) btree \<Rightarrow> bool Heap" where [sep_proc]:
-  "tree_is_empty b \<equiv> return (b = None)"
+definition tree_is_empty :: "('a, 'b) btree \<Rightarrow> bool Heap" where
+  "tree_is_empty b = return (b = None)"
 
 lemma tree_is_empty_rule:
   "<btree t b> tree_is_empty b <\<lambda>r. btree t b * \<up>(r \<longleftrightarrow> t = Tip)>" by auto2
 
 definition btree_constr ::
-  "('a::heap, 'b::heap) btree \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where [sep_proc]:
+  "('a::heap, 'b::heap) btree \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_constr lp k v rp = do { p \<leftarrow> ref (Node lp k v rp); return (Some p) }"
 
 lemma btree_constr_rule [hoare_triple]:
@@ -83,7 +83,6 @@ partial_function (heap) btree_insert ::
          q \<leftarrow> btree_insert k v (rsub t);
          p := Node (lsub t) (key t) (val t) q;
          return (Some p)}) })"
-declare btree_insert.simps [sep_proc]
 
 lemma btree_insert_to_fun [hoare_triple]:
   "<btree t b>
@@ -104,7 +103,6 @@ partial_function (heap) btree_del_min :: "('a::heap, 'b::heap) btree \<Rightarro
          r \<leftarrow> btree_del_min (lsub t);
          p := Node (snd r) (key t) (val t) (rsub t);
          return (fst r, Some p) }) })"
-declare btree_del_min.simps [sep_proc]
 
 lemma btree_del_min_to_fun [hoare_triple]:
   "<btree t b * \<up>(b \<noteq> None)>
@@ -112,7 +110,7 @@ lemma btree_del_min_to_fun [hoare_triple]:
    <\<lambda>(r,p). btree (snd (del_min t)) p * \<up>(r = fst (del_min t))>\<^sub>t"
 @proof @induct t arbitrary b @qed
 
-definition btree_del_elt :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where [sep_proc]:
+definition btree_del_elt :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_del_elt b = (case b of
      None \<Rightarrow> raise ''del_elt: empty tree''
    | Some p \<Rightarrow> do {
@@ -146,7 +144,6 @@ partial_function (heap) btree_delete ::
          q \<leftarrow> btree_delete x (rsub t);
          p := Node (lsub t) (key t) (val t) q;
          return (Some p)}) })"
-declare btree_delete.simps [sep_proc]
 
 lemma btree_delete_to_fun [hoare_triple]:
   "<btree t b>
@@ -165,7 +162,6 @@ partial_function (heap) btree_search ::
       (if x = key t then return (Some (val t))
        else if x < key t then btree_search x (lsub t)
        else btree_search x (rsub t)) })"
-declare btree_search.simps [sep_proc]
 
 lemma btree_search_correct [hoare_triple]:
   "<btree t b * \<up>(tree_sorted t)>

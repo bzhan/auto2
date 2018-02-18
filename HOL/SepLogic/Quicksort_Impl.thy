@@ -12,7 +12,6 @@ partial_function (heap) part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<
        else do {
          swap a l r;
          part1 a l (r - 1) p }})"
-declare part1.simps [sep_proc]
 
 lemma part1_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <p \<mapsto>\<^sub>a xs>
@@ -23,7 +22,7 @@ lemma part1_to_fun [hoare_triple]:
 @qed
 
 (* Partition function. *)
-definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where [sep_proc]:
+definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "partition a l r = do {
      p \<leftarrow> Array.nth a r;
      m \<leftarrow> part1 a l (r - 1) p;
@@ -47,7 +46,6 @@ partial_function (heap) quicksort :: "'a::{heap,linorder} array \<Rightarrow> na
        (if l < p - 1 then quicksort a l (p - 1) else return ());
        (if p + 1 < r then quicksort a (p + 1) r else return ())
      })"
-declare quicksort.simps [sep_proc]
 
 lemma quicksort_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
@@ -70,7 +68,7 @@ lemma quicksort_to_fun [hoare_triple]:
   @apply_induct_hyp "(p-1)-l" l "p-1" xs1
 @qed
 
-definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where [sep_proc]:
+definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where
   "quicksort_all a = do {
      n \<leftarrow> Array.len a;
      if n = 0 then return ()

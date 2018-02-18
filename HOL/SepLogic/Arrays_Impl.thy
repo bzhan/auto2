@@ -11,7 +11,6 @@ fun array_copy :: "'a::heap array \<Rightarrow> 'a array \<Rightarrow> nat \<Rig
       x \<leftarrow> Array.nth a n;
       Array.upd n x b;
       return () }"
-declare array_copy.simps [sep_proc]
 
 lemma array_copy_rule [hoare_triple]:
   "n \<le> length as \<Longrightarrow> n \<le> length bs \<Longrightarrow>
@@ -22,7 +21,7 @@ lemma array_copy_rule [hoare_triple]:
 
 section {* Swap *}
 
-definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where [sep_proc]:
+definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "swap a i j = do {
      x \<leftarrow> Array.nth a i;
      y \<leftarrow> Array.nth a j;
@@ -45,7 +44,6 @@ fun rev :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uni
      rev a (i + 1) (j - 1)
    }
    else return ())"
-declare rev.simps [sep_proc]
 
 lemma rev_to_fun [hoare_triple]:
   "j < length xs \<Longrightarrow>

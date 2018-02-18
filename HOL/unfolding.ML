@@ -2,6 +2,8 @@
 
 signature UNFOLDING =
 sig
+  val get_unfold_thms_by_name: theory -> string -> thm list
+  val get_unfold_thms: theory -> term -> thm list
   val unfold: theory -> conv
   val unfold_cmd: string -> Proof.state -> Proof.state
 end;
@@ -9,17 +11,19 @@ end;
 structure Unfolding : UNFOLDING =
 struct
 
+fun get_unfold_thms_by_name thy nm =
+    let
+      val simp_nm = nm ^ ".simps"
+      val def_nm = nm ^ "_def"
+    in
+      Global_Theory.get_thms thy simp_nm
+      handle ERROR _ => Global_Theory.get_thms thy def_nm
+                        handle ERROR _ => raise Fail "get_unfold_thms"
+    end
+
 fun get_unfold_thms thy t =
     case Term.head_of t of
-        Const (nm, _) =>
-        let
-          val simp_nm = nm ^ ".simps"
-          val def_nm = nm ^ "_def"
-        in
-          Global_Theory.get_thms thy simp_nm
-          handle ERROR _ => Global_Theory.get_thms thy def_nm
-                            handle ERROR _ => raise Fail "get_unfold_thms"
-        end
+        Const (nm, _) => get_unfold_thms_by_name thy nm
       | _ => raise Fail "get_unfold_thms"
 
 (* Unfold the given term. *)

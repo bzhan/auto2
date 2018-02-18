@@ -2,7 +2,6 @@
 
 (* Data stored for each imperative command *)
 type proc_info = {
-  proc_defs: thm list,
   hoare_triples: thm list
 }
 
@@ -12,7 +11,6 @@ sig
   val normalize_entail_goal_cv: Proof.context -> conv
 
   val empty_proc_info: proc_info
-  val add_proc_def: thm -> theory -> theory
   val get_proc_def: theory -> string -> thm list
   val update_hoare_triple: thm -> theory -> theory
   val get_hoare_triples: theory -> string -> thm list
@@ -123,29 +121,7 @@ structure Data = Theory_Data (
   val merge = Symtab.merge (op pointer_eq)
 )
 
-val empty_proc_info = {proc_defs = [], hoare_triples = []}
-
-(* Add imperative command with the given definitions. *)
-fun add_proc_def th thy =
-    let
-      val th = if Util.is_meta_eq (Thm.prop_of th) then to_obj_eq th
-               else th
-      val nm = th |> prop_of' |> dest_arg1 |> name_of_sep_proc
-      val {proc_defs, hoare_triples} =
-          the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
-      val new_info =
-          {proc_defs = th :: proc_defs, hoare_triples = hoare_triples}
-    in
-      thy |> Data.map (Symtab.update (nm, new_info))
-    end
-
-fun get_proc_def thy nm =
-    let
-      val {hoare_triples, proc_defs, ...} =
-          the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
-    in
-      if null hoare_triples then proc_defs else []
-    end
+val empty_proc_info = {hoare_triples = []}
 
 (* Add the given theorem as a Hoare triple. Remove previous Hoare
    triples for this theorem.
@@ -154,10 +130,7 @@ fun update_hoare_triple hoare_th thy =
     let
       val (_, c, _) = dest_hoare_triple (prop_of' hoare_th)
       val nm = name_of_sep_proc c
-      val {proc_defs, ...} =
-          the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
-      val new_info =
-          {proc_defs = proc_defs, hoare_triples = [hoare_th]}
+      val new_info = {hoare_triples = [hoare_th]}
     in
       thy |> Data.map (Symtab.update (nm, new_info))
     end
@@ -165,11 +138,17 @@ fun update_hoare_triple hoare_th thy =
 (* Obtain list of Hoare triples for the given command *)
 fun get_hoare_triples thy nm =
     let
-      val {hoare_triples, ...} =
+      val {hoare_triples} =
           the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
     in
       hoare_triples
     end
+
+fun get_proc_def thy nm =
+    if nm = @{const_name bind} then []
+    else if null (get_hoare_triples thy nm) then
+      Unfolding.get_unfold_thms_by_name thy nm
+    else []
 
 fun is_bind_cmd c =
     case c of
@@ -868,7 +847,6 @@ val add_sep_logic_proofsteps =
 end  (* structure SepLogic *)
 
 val _ = Theory.setup SepLogic.add_sep_logic_proofsteps
-val add_proc_def = SepLogic.add_proc_def
 val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
 val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
 val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep

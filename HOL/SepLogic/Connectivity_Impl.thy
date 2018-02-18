@@ -10,7 +10,6 @@ fun connected_rel_imp :: "nat \<Rightarrow> (nat \<times> nat) list \<Rightarrow
     p \<leftarrow> connected_rel_imp n es k;
     p' \<leftarrow> uf_union p (fst (es ! k)) (snd (es ! k));
     return p' }"
-declare connected_rel_imp.simps [sep_proc]
 
 lemma connected_rel_imp_to_fun [hoare_triple]:
   "is_valid_graph n (set es) \<Longrightarrow> k \<le> length es \<Longrightarrow>
