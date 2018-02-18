@@ -129,7 +129,7 @@ val empty_proc_info = {hoare_triples = []}
 fun update_hoare_triple hoare_th thy =
     let
       val (_, c, _) = dest_hoare_triple (prop_of' hoare_th)
-      val nm = name_of_sep_proc c
+      val nm = Util.get_head_name c
       val new_info = {hoare_triples = [hoare_th]}
     in
       thy |> Data.map (Symtab.update (nm, new_info))
@@ -405,7 +405,7 @@ fun init_pos_fn ictxt item =
       val thy = Proof_Context.theory_of ctxt
 
       val (_, c, _) = dest_hoare_triple (get_neg (prop_of' prop))
-      val nm = name_of_sep_proc c
+      val nm = Util.get_head_name c
       val proc_defs = get_proc_def thy nm
 
       fun process_proc_def proc_def =
@@ -767,7 +767,7 @@ fun hoare_triple_fn ictxt item =
 
       val {id, prop = goal, ...} = item
       val (_, c, _) = goal |> prop_of' |> dest_not |> dest_hoare_triple
-      val hoare_ths = c |> get_first_cmd |> name_of_sep_proc
+      val hoare_ths = c |> get_first_cmd |> Util.get_head_name
                         |> get_hoare_triples thy
     in
       maps (fn hoare_th => match_hoare_th id ictxt hoare_th goal item) hoare_ths

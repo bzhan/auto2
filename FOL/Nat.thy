@@ -1,6 +1,5 @@
 theory Nat
 imports Ordinal Semiring
-keywords "@var_induct" :: prf_decl % "proof"
 begin
 
 section {* Axiom of infinity *}
@@ -26,9 +25,6 @@ definition nat :: i where [rewrite]:
 setup {* register_wellform_data ("Suc(n)", ["n \<in> nat"]) *}
 
 lemma nat_bnd_mono [resolve]: "bnd_mono(Inf, \<lambda>X. {0} \<union> {Suc(i). i \<in> X})" by auto2
-
-ML_file "fol_var_induct.ML"
-attribute_setup var_induct = {* setup_attrib add_var_induct_data *}
 
 lemma nat_induct [var_induct]:
   "n \<in> nat \<Longrightarrow> P(0) \<Longrightarrow> \<forall>x\<in>nat. P(x) \<longrightarrow> P(Suc(x)) \<Longrightarrow> P(n)"

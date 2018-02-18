@@ -693,11 +693,8 @@ fun add_prfstep_check_req (t_str, req_str) thy =
     let
       val ctxt = Proof_Context.init_global thy
       val t = Proof_Context.read_term_pattern ctxt t_str
-      val f = Term.head_of t
       val vars = map Free (Term.add_frees t [])
-      val _ = assert (Term.is_Const f)
-                     "add_prfstep_check_req: head must be Const."
-      val (c, _) = Term.dest_Const f
+      val c = Util.get_head_name t
       val ctxt' = fold Util.declare_free_term vars ctxt
       val req = Proof_Context.read_term_pattern ctxt' req_str
 

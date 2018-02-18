@@ -22,9 +22,7 @@ fun get_unfold_thms_by_name thy nm =
     end
 
 fun get_unfold_thms thy t =
-    case Term.head_of t of
-        Const (nm, _) => get_unfold_thms_by_name thy nm
-      | _ => raise Fail "get_unfold_thms"
+    get_unfold_thms_by_name thy (Util.get_head_name t)
 
 (* Unfold the given term. *)
 fun unfold thy ct =
@@ -39,8 +37,9 @@ fun unfold_cmd s state =
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
 
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
+                              |> Auto2_State.subgoal_of
+                              |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
 
       val t = Syntax.read_term ctxt s

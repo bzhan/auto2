@@ -4,8 +4,8 @@ signature INDUCT_PROOFSTEPS =
 sig
   val add_induct_data: string -> term * thm -> theory -> theory
   val add_typed_induct_data: string -> typ * thm -> theory -> theory
-  val get_typed_ind_th: theory -> string -> typ -> thm option
-  val get_term_ind_th: theory -> string -> term -> thm option
+  val get_typed_ind_th: theory -> string -> typ -> thm
+  val get_term_ind_th: theory -> string -> term -> thm
 
   val check_strong_ind_prop: term -> term list * term
   val add_strong_induct_rule: thm -> theory -> theory
@@ -42,17 +42,15 @@ fun add_typed_induct_data str (ty, ind_th) =
 
 fun get_typed_ind_th thy ind_type ty =
     let
-      val tab = Data.get thy
-      fun typ_can_match t' =
-          let val _ = Sign.typ_match thy (type_of t', ty) Vartab.empty in true end
-          handle Type.TYPE_MATCH => false
+      val typ_can_match =
+          can (fn t' => Sign.typ_match thy (type_of t', ty) Vartab.empty)
     in
-      case Symtab.lookup tab ind_type of
-          NONE => NONE
+      case Symtab.lookup (Data.get thy) ind_type of
+          NONE => raise Fail (ind_type ^ ": cannot find theorem.")
         | SOME lst =>
           case find_first (fn (t', _) => typ_can_match t') lst of
-              NONE => NONE
-            | SOME (_, ind_th) => SOME ind_th
+              NONE => raise Fail (ind_type ^ ": cannot find theorem.")
+            | SOME (_, ind_th) => ind_th
     end
 
 fun get_term_ind_th thy ind_type t =
@@ -67,32 +65,9 @@ fun get_term_ind_th thy ind_type t =
           end
           handle Pattern.MATCH => NONE
     in
-      get_first match_data data
-    end
-
-fun get_head_ind_th thy ind_type t =
-    let
-      val data = Symtab.lookup_list (Data.get thy) ind_type
-      val (fhead, args) = Term.strip_comb t
-
-      fun match_data (fhead', th) =
-          let
-            val (nm, _) = Term.dest_Const fhead
-            val (nm', _) = Term.dest_Const fhead'
-          in
-            if nm = nm' then
-              let
-                val (_, pat_args) = th |> concl_of' |> Term.strip_comb
-                val inst = Util.first_order_match_list
-                               thy (pat_args ~~ args) fo_init
-              in
-                SOME (Util.subst_thm_thy thy inst th)
-              end
-              handle Pattern.MATCH => raise Fail "get_head_ind_th"
-            else NONE
-          end
-    in
-      get_first match_data data
+      case get_first match_data data of
+          NONE => raise Fail (ind_type ^ ": cannot find theorem.")
+        | SOME ind_th => ind_th
     end
 
 (* Check a strong induction theorem ind_th is of the right form, and
@@ -178,28 +153,40 @@ fun add_cases_rule ind_th thy =
 fun add_fun_induct_rule (t, ind_th) thy =
     thy |> add_induct_data "fun_induct" (t, ind_th)
 
+(* Obtain the induction statement. *)
+fun get_induct_stmt ctxt (filt_A, ind_vars, stmt, arbitrary) =
+    case stmt of
+        NONE =>
+        let
+          val (_, (As, C)) = ctxt |> Auto2_State.get_selected
+                                  |> Auto2_State.subgoal_of
+                                  |> Util.strip_meta_horn
+          val obj_As = As |> map dest_Trueprop |> filter filt_A
+          val obj_C = dest_Trueprop C
+        in
+          (UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C)))
+              |> fold Util.lambda_abstract (rev ind_vars)
+        end
+      | SOME s =>
+        (UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt s)))
+            |> fold Util.lambda_abstract (rev ind_vars)
+
 fun strong_induct_cmd (s, t) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
-      val var = s |> Syntax.read_term ctxt
+      val var = Syntax.read_term ctxt s
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
       val prop = Auto2_State.get_selected ctxt
-      val (vars, (assums, concl)) = prop |> Auto2_State.subgoal_of |> Thm.term_of
-                                         |> Util.strip_meta_horn
+      val (vars, _) = prop |> Auto2_State.subgoal_of
+                           |> Util.strip_meta_horn
 
-      val P = (UtilLogic.list_obj_horn (arbitraries, (map dest_Trueprop assums, dest_Trueprop concl)))
-                  |> Util.lambda_abstract var
+      val P = get_induct_stmt ctxt (K true, [var], NONE, arbitraries)
+      val ind_th = get_typed_ind_th thy "strong_induct" (type_of var)
 
-      val ty = type_of var
-      val ind_th = the (get_typed_ind_th thy "strong_induct" ty)
-                   handle Option.Option =>
-                          raise Fail "strong_induct: ind_th not found."
-
-      val (var_P, var_n) = ind_th |> Thm.concl_of |> dest_Trueprop
-                                  |> Term.dest_comb
+      val (var_P, var_n) = ind_th |> concl_of' |> Term.dest_comb
       val inst = fold (Pattern.match thy) [(var_P, P), (var_n, var)] fo_init
       val ind_th =
           ind_th |> Util.subst_thm ctxt inst
@@ -220,7 +207,7 @@ fun strong_induct_cmd (s, t) state =
 
       val prop = prop |> Auto2_Outer.refine_subgoal_th ind_th
 
-      val stmt = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn |> snd
+      val stmt = prop |> Auto2_State.subgoal_of |> Util.strip_meta_horn |> snd
                       |> fst |> hd |> dest_Trueprop
     in
       state |> Proof.map_contexts (Auto2_State.set_head_th prop)
@@ -248,7 +235,7 @@ fun apply_induct_hyp_cmd s state =
                  handle Option.Option => raise Fail "apply_induct_hyp: no induct_stmt"
 
       val prop = Auto2_State.get_selected ctxt
-      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Thm.term_of |> Util.strip_meta_horn
+      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Util.strip_meta_horn
       val _ = assert (member (op aconv) As (Thm.term_of stmt))
                      "apply_induct_hyp: induct_stmt not found among As."
       val cAs = map (Thm.cterm_of ctxt) As
@@ -266,9 +253,11 @@ fun apply_induct_hyp_cmd s state =
                          |> map Util.send_all_to_hyps
       val concl = th |> fold Thm.elim_implies prems_th
                      |> fold Thm.implies_intr (rev cAs)
-      val _ = writeln ("Obtained " ^ (concl |> Thm.concl_of |> Syntax.string_of_term ctxt))
+      val _ = writeln ("Obtained " ^
+                       Syntax.string_of_term ctxt (Thm.concl_of concl))
     in
-      state |> Proof.map_contexts (Auto2_State.map_head_th (Auto2_Outer.have_after_qed ctxt concl))
+      state |> Proof.map_contexts (
+        Auto2_State.map_head_th (Auto2_Outer.have_after_qed ctxt concl))
     end
 
 val _ =
@@ -277,40 +266,81 @@ val _ =
     ((Scan.repeat Parse.term) >> (fn s =>
          Toplevel.proof (fn state => apply_induct_hyp_cmd s state)))
 
+fun solve_goals ind_th pats_opt filt_As state =
+    let
+      val {context = ctxt, ...} = Proof.goal state
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
+                              |> Auto2_State.subgoal_of
+                              |> Util.strip_meta_horn
+      val use_As = filter filt_As As
+      val cAs = map (Thm.cterm_of ctxt) As
+      val ind_goals =
+          ind_th |> Thm.prems_of
+                 |> map (fn t => Logic.list_implies (use_As, t))
+                 |> map (Thm.cterm_of ctxt)
+                 |> map (UtilLogic.to_meta_conv ctxt)
+  in
+    case pats_opt of
+        NONE =>
+        let
+          (* Solve the right side, obtain the left side. *)
+          fun solve_eq eq =
+              Thm.equal_elim (meta_sym eq)
+                             (Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq))
+
+          val ths = ind_goals |> map solve_eq
+                              |> map Util.send_all_to_hyps
+          val ind_concl = ind_th |> fold Thm.elim_implies ths
+                                 |> fold Thm.implies_intr (rev cAs)
+          val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+        in
+          state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+        end
+      | SOME pats =>
+        let
+          (* Create new block with the subgoals *)
+          fun after_qed ths prop =
+              let
+                val ths' =
+                    (ind_goals ~~ ths)
+                        |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
+                        |> map Util.send_all_to_hyps
+
+                val ind_concl =
+                    ind_th |> fold Thm.elim_implies ths'
+                           |> fold Thm.implies_intr (rev cAs)
+              in
+                Auto2_Outer.have_after_qed ctxt ind_concl prop
+              end
+
+          val _ = writeln ("Patterns: " ^ Util.string_of_terms ctxt pats)
+          val new_frame =
+              Auto2_State.multiple_frame (
+                pats ~~ map Thm.rhs_of ind_goals, SOME ([], after_qed))
+        in
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
+        end
+    end
+
 fun case_induct_cmd s state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
 
       val start = Syntax.read_term ctxt s
-      val ind_th = the (get_term_ind_th thy "case_induct" start)
-                   handle Option.Option =>
-                          raise Fail "case_induct: cannot find theorem."
+      val ind_th = get_term_ind_th thy "case_induct" start
 
       (* Obtain list of assumptions *)
-      val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
-      val cAs = map (Thm.cterm_of ctxt) As
+      val (_, (_, C)) = ctxt |> Auto2_State.get_selected
+                             |> Auto2_State.subgoal_of
+                             |> Util.strip_meta_horn
 
       (* Instantiate the induction theorem *)
       val var_P = concl_of' ind_th
       val inst = Pattern.match thy (var_P, dest_Trueprop C) fo_init
       val ind_th = Util.subst_thm_thy thy inst ind_th
-
-      val ind_goals =
-          ind_th |> Thm.prems_of
-                 |> map (fn t => Logic.list_implies (As, t))
-                 |> map (Thm.cterm_of ctxt)
-
-      val ths = (map (Auto2_Outer.auto2_solve ctxt) ind_goals)
-                    |> map Util.send_all_to_hyps
-
-      val ind_concl = ind_th |> fold Thm.elim_implies ths
-                             |> fold Thm.implies_intr (rev cAs)
-
-      val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
     in
-      state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+      state |> solve_goals ind_th NONE (K true)
     end
 
 val _ =
@@ -322,66 +352,28 @@ val _ =
 val for_stmt =
     Scan.option (@{keyword "for"} |-- Parse.term)
 
-fun get_prop_induct_stmt ctxt start =
-    let
-      val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
-      val start_As = strip_conj start
-      val As' = As |> map dest_Trueprop |> subtract (op aconv) start_As
-      val C' = dest_Trueprop C
-    in
-      UtilLogic.list_obj_imp (As', C')
-    end
-
 fun prop_induct_cmd (s, t) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
 
       val start = Syntax.read_term ctxt s
-      val stmt = if is_none t then get_prop_induct_stmt ctxt start
-                 else Syntax.read_term ctxt (the t)
-      val _ = writeln ("Induct statement: " ^ (stmt |> Syntax.string_of_term ctxt))
 
-      val ind_th = the (get_term_ind_th thy "prop_induct" start)
-                   handle Option.Option =>
-                          raise Fail "prop_induct: cannot find theorem."
+      val ind_th = get_term_ind_th thy "prop_induct" start
 
-      val (var_P, args) = ind_th |> Thm.concl_of |> dest_Trueprop |> Term.strip_comb
-      val P = fold Util.lambda_abstract (rev args) stmt
+      val (var_P, args) = ind_th |> concl_of' |> Term.strip_comb
+
+      val start_As = strip_conj start
+      val filt_A = (fn t => not (member (op aconv) start_As t))
+      val P = get_induct_stmt ctxt (filt_A, args, t, [])
+      val _ = writeln ("Induct statement: " ^ Syntax.string_of_term ctxt P)
+
       val inst = Pattern.match thy (var_P, P) fo_init
 
       (* Instantiate the induction theorem *)
-      val ind_th = ind_th |> Util.subst_thm_thy thy inst
-
-      (* Obtain list of assumptions *)
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
-      val cAs = map (Thm.cterm_of ctxt) As
-
-      val ind_goals =
-          ind_th |> Thm.prems_of
-                 |> map (fn t => Logic.list_implies (As, t))
-                 |> map (Thm.cterm_of ctxt)
-                 |> map (UtilLogic.to_meta_conv ctxt)
-
-      fun solve_eq eq =
-          let
-            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
-          in
-            Thm.equal_elim (meta_sym eq) th
-          end
-
-      val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
-
-      val ind_concl = ind_th |> fold Thm.elim_implies ths
-                             |> fold Thm.implies_intr (rev cAs)
-      val _ = writeln ("Obtained " ^
-                       (ind_concl |> Thm.concl_of |> Syntax.string_of_term ctxt))
-
-      val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+      val ind_th = Util.subst_thm_thy thy inst ind_th
     in
-      state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+      state |> solve_goals ind_th NONE (K true)
     end
 
 val _ =
@@ -389,21 +381,6 @@ val _ =
     ((Parse.term -- for_stmt) >>
         (fn (s, t) =>
             Toplevel.proof (fn state => prop_induct_cmd (s, t) state)))
-
-(* Obtain the induction statement. *)
-fun get_induct_stmt ctxt (ind_vars, stmt, arbitrary) =
-    if is_some stmt then
-      UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt (the stmt)))
-    else
-      let
-        val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                                |> Thm.term_of |> Util.strip_meta_horn
-        val all_vars = ind_vars @ arbitrary
-        val obj_As = map dest_Trueprop (filter (Util.occurs_frees all_vars) As)
-        val obj_C = dest_Trueprop C
-      in
-        UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
-      end
 
 (* Given an induction subgoal of the form !!x_i. A_i ==> C, retrieve
    the list of induction patterns.
@@ -426,72 +403,24 @@ fun induct_cmd ind_ty_str (s, t, u, v) state =
       val thy = Proof_Context.theory_of ctxt
       val var = Syntax.read_term ctxt s
       val arbitraries = map (Syntax.read_term ctxt) u
-      val stmt = get_induct_stmt ctxt ([var], t, arbitraries)
-      val ty = type_of var
-      val (arbitraries, _) = UtilLogic.strip_obj_horn stmt
 
-      val ind_th = the (get_typed_ind_th thy ind_ty_str ty)
-                   handle Option.Option =>
-                          raise Fail "var_induct: cannot find theorem."
+      val filt_A = Util.occurs_frees (var :: arbitraries)
+      val P = get_induct_stmt ctxt (filt_A, [var], t, arbitraries)
+      val ind_th = get_typed_ind_th thy ind_ty_str (type_of var)
 
       (* Instantiate the induction theorem *)
       val concl = concl_of' ind_th
       val (var_P, var_n) = Term.dest_comb concl
 
-      val P_inst = Term.lambda var stmt
-      val inst = fold (Pattern.match thy) [(var_P, P_inst), (var_n, var)] fo_init
+      val inst = fold (Pattern.match thy) [(var_P, P), (var_n, var)] fo_init
       val ind_th' = Util.subst_thm_thy thy inst ind_th
 
-      (* Obtain list of assumptions *)
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
-      val cAs = map (Thm.cterm_of ctxt) As
-      val use_As = As |> filter_out (Util.occurs_frees (var :: arbitraries))
-
-      val ind_goals =
-          ind_th' |> Thm.prems_of
-                  |> map (fn t => Logic.list_implies (use_As, t))
-                  |> map (Thm.cterm_of ctxt)
-                  |> map (UtilLogic.to_meta_conv ctxt)
-
-      fun solve_eq eq =
-          let
-            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
-          in
-            Thm.equal_elim (meta_sym eq) th
-          end
-  in
-    if is_none v then
-      let
-        val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
-        val ind_concl = ind_th' |> fold Thm.elim_implies ths
-                                |> fold Thm.implies_intr (rev cAs)
-        val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
-      in
-        state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
-      end
-    else
-      let
-        (* Create new block with the subgoals *)
-        fun after_qed ths prop =
-            let
-              val ths' = (ind_goals ~~ ths)
-                            |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
-                            |> map Util.send_all_to_hyps
-              val ind_concl = ind_th' |> fold Thm.elim_implies ths'
-                                      |> fold Thm.implies_intr (rev cAs)
-            in
-              Auto2_Outer.have_after_qed ctxt ind_concl prop
-            end
-
-        val pats = ind_th |> Thm.prems_of |> map (retrieve_pat [var])
-        val _ = writeln ("Patterns: " ^ (Util.string_of_terms ctxt pats))
-        val new_frame =
-            Auto2_State.multiple_frame (
-              pats ~~ map Thm.rhs_of ind_goals, SOME ([], after_qed))
-        in
-          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
-        end
+      val pats =
+          case v of
+              NONE => NONE
+            | _ => SOME (map (retrieve_pat [var]) (Thm.prems_of ind_th))
+    in
+      state |> solve_goals ind_th' pats (not o filt_A)
     end
 
 val _ =
@@ -509,23 +438,20 @@ val _ =
               fn state => induct_cmd "cases" (s, NONE, [], v) state)))
 
 fun get_fun_induct_th thy t =
-    case get_head_ind_th thy "fun_induct" t of
-        SOME th => th
-      | NONE =>
-        case Term.head_of t of
-            Const (nm, _) =>
-            let
-              val ind_th = Global_Theory.get_thm thy (nm ^ ".induct")
-                           handle ERROR _ =>
-                                  raise Fail "fun_induct: cannot find theorem"
-              val (_, args) = Term.strip_comb t
-              val (_, pat_args) = ind_th |> concl_of' |> Term.strip_comb
-              val inst = Util.first_order_match_list
-                             thy (pat_args ~~ args) fo_init
-            in
-              Util.subst_thm_thy thy inst ind_th
-            end
-          | _ => raise Fail "fun_induct: cannot find theorem."
+    let
+      val ind_th =
+          get_term_ind_th thy "fun_induct" (Term.head_of t)
+          handle Fail _ =>
+                 Global_Theory.get_thm thy (Util.get_head_name t ^ ".induct")
+                 handle ERROR _ => raise Fail "fun_induct: cannot find theorem."
+
+      val (_, args) = Term.strip_comb t
+      val (_, pat_args) = ind_th |> concl_of' |> Term.strip_comb
+      val inst = Util.first_order_match_list
+                     thy (pat_args ~~ args) fo_init
+    in
+      Util.subst_thm_thy thy inst ind_th
+    end
 
 fun fun_induct_cmd (s, t, u) state =
     let
@@ -535,65 +461,20 @@ fun fun_induct_cmd (s, t, u) state =
       val arbitraries = map (Syntax.read_term ctxt) t
 
       val ind_th = get_fun_induct_th thy expr
-      val (var_P, vars) = ind_th |> Thm.concl_of |> dest_Trueprop
-                                 |> Term.strip_comb
-      val stmt = get_induct_stmt ctxt (vars, NONE, arbitraries)
+      val (var_P, vars) = ind_th |> concl_of' |> Term.strip_comb
 
       (* Instantiate the induction theorem *)
-      val P = fold Util.lambda_abstract (rev vars) stmt
+      val filt_A = Util.occurs_frees (vars @ arbitraries)
+      val P = get_induct_stmt ctxt (filt_A, vars, NONE, arbitraries)
       val inst = Pattern.match thy (var_P, P) fo_init
       val ind_th' = Util.subst_thm_thy thy inst ind_th
 
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
-      val cAs = map (Thm.cterm_of ctxt) As
-      val use_As = As |> filter_out (Util.occurs_frees (vars @ arbitraries))
-
-      val ind_goals =
-          ind_th' |> Thm.prems_of
-                  |> map (fn t => Logic.list_implies (use_As, t))
-                  |> map (Thm.cterm_of ctxt)
-                  |> map (UtilLogic.to_meta_conv ctxt)
-
-      fun solve_eq eq =
-          let
-            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
-          in
-            Thm.equal_elim (meta_sym eq) th
-          end
+      val pats =
+          case u of
+              NONE => NONE
+            | SOME _ => SOME (map (retrieve_pat vars) (Thm.prems_of ind_th))
     in
-      if is_none u then
-        let
-          val ths = (map solve_eq ind_goals) |> map Util.send_all_to_hyps
-          val ind_concl = ind_th' |> fold Thm.elim_implies ths
-                                  |> fold Thm.implies_intr (rev cAs)
-          val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
-        in
-          state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
-        end
-      else
-        let
-          (* Create new block with the subgoals *)
-          fun after_qed ths prop =
-              let
-                val ths' =
-                    (ind_goals ~~ ths)
-                        |> map (fn (eq, th) => Thm.equal_elim (meta_sym eq) th)
-                        |> map Util.send_all_to_hyps
-                val ind_concl = ind_th' |> fold Thm.elim_implies ths'
-                                        |> fold Thm.implies_intr (rev cAs)
-              in
-                Auto2_Outer.have_after_qed ctxt ind_concl prop
-              end
-
-          val pats = ind_th |> Thm.prems_of |> map (retrieve_pat vars)
-          val _ = writeln ("Patterns: " ^ (Util.string_of_terms ctxt pats))
-          val new_frame =
-              Auto2_State.multiple_frame (
-                pats ~~ map Thm.rhs_of ind_goals, SOME ([], after_qed))
-        in
-          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
-        end
+      state |> solve_goals ind_th' pats (not o filt_A)
     end
 
 val _ =

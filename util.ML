@@ -84,6 +84,7 @@ sig
   val dest_binop_args: term -> term * term
   val dest_args: term -> term list
   val dest_argn: int -> term -> term
+  val get_head_name: term -> string
   val is_meta_eq: term -> bool
   val occurs_frees: term list -> term -> bool
   val occurs_free: term -> term -> bool
@@ -390,6 +391,12 @@ fun dest_args t = t |> Term.strip_comb |> snd
 
 (* Return the nth argument of t, counting from left and starting at zero. *)
 fun dest_argn n t = nth (dest_args t) n
+
+(* Return the name of the head function. *)
+fun get_head_name t =
+    case Term.head_of t of
+        Const (nm, _) => nm
+      | _ => raise Fail "get_head_name"
 
 (* Whether the term is of the form A == B. *)
 fun is_meta_eq t =
@@ -842,22 +849,19 @@ fun eq_cong_th i bi A ctxt =
    number of quantifiers).
  *)
 fun forall_elim_sch th =
-    let
-      val thy = Thm.theory_of_thm th
-    in
-      case Thm.prop_of th of
-          Const (@{const_name Pure.all}, _) $ Abs (x, T, _) =>
-          let
-            val var_xs = map fst (Term.add_var_names (Thm.prop_of th) [])
-            val x' = if member (op =) var_xs x then
-                        singleton (Name.variant_list var_xs) x
-                     else x
-          in
-            th |> Thm.forall_elim (Thm.global_cterm_of thy (Var ((x', 0), T)))
-               |> forall_elim_sch
-          end
-        | _ => th
-    end
+    case Thm.prop_of th of
+        Const (@{const_name Pure.all}, _) $ Abs (x, T, _) =>
+        let
+          val var_xs = map fst (Term.add_var_names (Thm.prop_of th) [])
+          val x' = if member (op =) var_xs x then
+                     singleton (Name.variant_list var_xs) x
+                   else x
+          val thy = Thm.theory_of_thm th
+        in
+          th |> Thm.forall_elim (Thm.global_cterm_of thy (Var ((x', 0), T)))
+             |> forall_elim_sch
+        end
+      | _ => th
 
 (* Given P of function type, produce P == %x. P x. *)
 fun reverse_eta_conv ctxt ct =

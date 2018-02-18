@@ -16,8 +16,9 @@ fun get_induct_stmt ctxt (var, prem, stmt, arbitrary) =
       UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt (the stmt)))
     else
       let
-        val (_, (As, C)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                                |> Thm.term_of |> Util.strip_meta_horn
+        val (_, (As, C)) = ctxt |> Auto2_State.get_selected
+                                |> Auto2_State.subgoal_of
+                                |> Util.strip_meta_horn
         val all_vars = var :: arbitrary
         val obj_As = As |> filter (Util.occurs_frees all_vars)
                         |> map dest_Trueprop
@@ -50,8 +51,9 @@ fun var_induct_cmd ((n, s), t, u, v) state =
       val ind_th' = Util.subst_thm_thy thy inst ind_th
 
       (* Obtain list of assumptions *)
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected |> Auto2_State.subgoal_of
-                              |> Thm.term_of |> Util.strip_meta_horn
+      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
+                              |> Auto2_State.subgoal_of
+                              |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
       val use_As = As |> filter_out (Util.occurs_frees (var :: arbitraries))
 

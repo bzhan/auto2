@@ -27,7 +27,7 @@ sig
   val lookup_prem_only: Proof.context -> term -> bool
   val get_head: Proof.context -> auto2_frame
   val get_selected: Proof.context -> thm
-  val subgoal_of: thm -> cterm
+  val subgoal_of: thm -> term
 end;
 
 structure Auto2_State : AUTO2_STATE =
@@ -161,7 +161,7 @@ fun get_selected ctxt =
     end
 
 fun subgoal_of prop =
-    prop |> Thm.cprop_of |> Drule.strip_imp_prems |> the_single
+    the_single (Thm.prems_of prop)
     handle List.Empty => error "subgoal_of"
 
 end  (* structure Auto2_State *)

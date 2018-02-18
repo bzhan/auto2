@@ -17,7 +17,6 @@ sig
 
   val is_hoare_triple: term -> bool
   val dest_hoare_triple: term -> term * term * term
-  val name_of_sep_proc: term -> string
 
   val mult_emp_left: conv
   val mult_emp_right: conv
@@ -99,11 +98,6 @@ fun dest_hoare_triple t =
     case t of
         Const (@{const_name hoare_triple}, _) $ P $ c $ Q => (P, c, Q)
       | _ => raise Fail "dest_hoare_triple"
-
-fun name_of_sep_proc c =
-    case Term.head_of c of
-        Const (nm, _) => nm
-      | _ => raise Fail "name_of_sep_proc"
 
 (* Convert A to emp * A *)
 val mult_emp_left = rewr_obj_eq (obj_sym @{thm mult_1})

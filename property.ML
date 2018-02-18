@@ -127,10 +127,7 @@ fun is_property_prem' thy t =
 fun is_property_prem_ctxt' ctxt t =
     is_property_prem' (Proof_Context.theory_of ctxt) t
 
-fun get_property_name t =
-    case Term.head_of t of
-        Const (c, _) => c
-      | _ => raise Fail "get_property_name: not a constant."
+val get_property_name = Util.get_head_name
 
 fun get_property_names ts =
     ts |> map get_property_name |> distinct (op =)

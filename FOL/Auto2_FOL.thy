@@ -6,7 +6,7 @@ keywords "@proof" :: prf_block % "proof"
   and "@have" "@case" "@obtain" "@let" "@contradiction" :: prf_decl % "proof"
   and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
   and "@qed" :: prf_decl % "proof"
-  and "@induct" "@strong_induct" :: prf_decl % "proof"
+  and "@induct" "@strong_induct" "@var_induct" :: prf_decl % "proof"
   and "@with" "where" "arbitrary" "@rule" :: quasi_command
 begin
 
@@ -37,6 +37,7 @@ ML_file "../auto2_outer.ML"
 ML_file "extra_fol.ML"
 ML_file "fol_induct.ML"
 ML_file "alg_assoc.ML"
+ML_file "fol_var_induct.ML"
 
 method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac) *} "auto2 prover"
 
@@ -53,5 +54,6 @@ attribute_setup typing2 = {* setup_attrib add_typing2_rule *}
 attribute_setup backward_replace = {* setup_attrib add_backward_replace *}
 attribute_setup script_induct = {* setup_attrib add_script_induct_data *}
 attribute_setup strong_induct = {* setup_attrib add_strong_induct_data *}
+attribute_setup var_induct = {* setup_attrib add_var_induct_data *}
 
 end

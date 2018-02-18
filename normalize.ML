@@ -124,7 +124,7 @@ fun inj_args thy t =
       val (f, args) = Term.strip_comb t
     in
       if Term.is_Const f andalso
-         Symtab.defined (InjStructData.get thy) (fst (Term.dest_Const f)) then
+         Symtab.defined (InjStructData.get thy) (Util.get_head_name f) then
         maps (inj_args thy) args
       else
         [t]
@@ -197,8 +197,7 @@ fun meta_use_vardef th =
             end
           else
             let
-              val (f, _) = Term.strip_comb lhs
-              val (nm, _) = Term.dest_Const f
+              val nm = Util.get_head_name lhs
               val data = InjStructData.get thy
               val inj_th = the (Symtab.lookup data nm)
                            handle Option.Option => raise Fail "meta_use_vardef"
