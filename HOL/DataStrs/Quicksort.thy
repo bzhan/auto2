@@ -36,22 +36,16 @@ setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 lemma part1_basic:
   "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow>
    outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
-@proof @fun_induct "part1 xs l r a" @with
-  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
-@qed
+@proof @fun_induct "part1 xs l r a" @unfold "part1 xs l r a" @qed
 setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"] *}
 
 lemma part1_partitions1 [backward]:
   "r < length xs \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow> l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> a"
-@proof @fun_induct "part1 xs l r a" @with
-  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
-@qed
+@proof @fun_induct "part1 xs l r a" @unfold "part1 xs l r a" @qed
 
 lemma part1_partitions2 [backward]:
   "r < length xs \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow> rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> a"
-@proof @fun_induct "part1 xs l r a" @with
-  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
-@qed
+@proof @fun_induct "part1 xs l r a" @unfold "part1 xs l r a" @qed
 
 section {* Paritition function *}
 
@@ -109,11 +103,7 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
 
 lemma quicksort_basic [rewrite_arg]:
   "mset (quicksort xs l r) = mset xs \<and> outer_remains xs (quicksort xs l r) l r"
-@proof @fun_induct "quicksort xs l r" @with
-  @subgoal "(xs = xs, l = l, r = r)"
-    @unfold "quicksort xs l r"
-  @end
-@qed
+@proof @fun_induct "quicksort xs l r" @unfold "quicksort xs l r" @qed
 
 lemma quicksort_trivial1 [rewrite]:
   "l \<ge> r \<Longrightarrow> quicksort xs l r = xs"
@@ -144,8 +134,7 @@ lemma sorted_pivoted_list [forward]:
 
 lemma quicksort_sorts [forward_arg]:
   "r < length xs \<Longrightarrow> sorted (sublist l (r + 1) (quicksort xs l r))"
-@proof @fun_induct "quicksort xs l r" @with
-  @subgoal "(xs = xs, l = l, r = r)"
+@proof @fun_induct "quicksort xs l r"
   @case "l \<ge> r" @with @case "l = r" @end
   @case "r \<ge> length xs"
   @let "p = fst (partition xs l r)"
@@ -163,7 +152,7 @@ lemma quicksort_sorts [forward_arg]:
     @have "sorted (sublist l p xs3)"
     @have "sorted (sublist (p + 1) (r + 1) xs3)"
   @end
-  @unfold "quicksort xs l r" @end
+  @unfold "quicksort xs l r"
 @qed
 
 lemma quicksort_sorts_all [rewrite]:

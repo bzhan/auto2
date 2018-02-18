@@ -17,9 +17,7 @@ lemma part1_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <p \<mapsto>\<^sub>a xs>
    part1 p l r a
    <\<lambda>rs. p \<mapsto>\<^sub>a snd (Quicksort.part1 xs l r a) * \<up>(rs = fst (Quicksort.part1 xs l r a))>"
-@proof @fun_induct "Quicksort.part1 xs l r a" @with
-  @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "Quicksort.part1 xs l r a" @end
-@qed
+@proof @fun_induct "Quicksort.part1 xs l r a" @unfold "Quicksort.part1 xs l r a" @qed
 
 (* Partition function. *)
 definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
@@ -55,11 +53,7 @@ lemma quicksort_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
    quicksort a l r
    <\<lambda>_. a \<mapsto>\<^sub>a Quicksort.quicksort xs l r>"
-@proof @fun_induct "Quicksort.quicksort xs l r" @with
-  @subgoal "(xs = xs, l = l, r = r)"
-    @unfold "Quicksort.quicksort xs l r"
-  @end
-@qed
+@proof @fun_induct "Quicksort.quicksort xs l r" @unfold "Quicksort.quicksort xs l r" @qed
 
 definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where
   "quicksort_all a = do {

@@ -50,11 +50,7 @@ lemma rev_to_fun [hoare_triple]:
    <p \<mapsto>\<^sub>a xs>
    rev p i j
    <\<lambda>_. p \<mapsto>\<^sub>a rev_swap xs i j>"
-@proof @fun_induct "rev_swap xs i j" @with
-  @subgoal "(xs = xs, i = i, j = j)"
-    @unfold "rev_swap xs i j"
-  @end
-@qed
+@proof @fun_induct "rev_swap xs i j" @unfold "rev_swap xs i j" @qed
 
 lemma rev_is_rev [hoare_triple]:
   "xs \<noteq> [] \<Longrightarrow>

@@ -42,19 +42,15 @@ setup {* add_prfstep_check_req ("rev_swap xs i j", "j < length xs") *}
 
 lemma rev_swap_length [rewrite_arg]:
   "j < length xs \<Longrightarrow> length (rev_swap xs i j) = length xs"
-@proof @fun_induct "rev_swap xs i j" @with 
-  @subgoal "(xs = xs, i = i, j = j)" @unfold "rev_swap xs i j" @end
-@qed
+@proof @fun_induct "rev_swap xs i j" @unfold "rev_swap xs i j" @qed
 
 lemma rev_swap_eval [rewrite]:
   "j < length xs \<Longrightarrow> (rev_swap xs i j) ! k =
     (if k < i then xs ! k else if k > j then xs ! k else xs ! (j - (k - i)))"
-@proof @fun_induct "rev_swap xs i j" @with
-  @subgoal "(xs = xs, i = i, j = j)"
-  @unfold "rev_swap xs i j"
+@proof @fun_induct "rev_swap xs i j" @unfold "rev_swap xs i j"
   @case "i < j" @with
     @case "k < i" @case "k > j" @have "j - (k - i) = j - k + i"
-  @end @end
+  @end
 @qed
 
 lemma rev_swap_is_rev [rewrite]:

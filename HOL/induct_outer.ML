@@ -22,6 +22,9 @@ sig
   val induct_cmd:
       string -> string * string option * string list * string option ->
       Proof.state -> Proof.state
+  val is_simple_fun_induct: thm -> bool
+  val fun_induct_cmd:
+      string * string list * string option -> Proof.state -> Proof.state
 end;
 
 structure Induct_ProofSteps : INDUCT_PROOFSTEPS =
@@ -447,10 +450,22 @@ fun get_fun_induct_th thy t =
 
       val (_, args) = Term.strip_comb t
       val (_, pat_args) = ind_th |> concl_of' |> Term.strip_comb
-      val inst = Util.first_order_match_list
-                     thy (pat_args ~~ args) fo_init
+      val inst = Util.first_order_match_list thy (pat_args ~~ args) fo_init
     in
       Util.subst_thm_thy thy inst ind_th
+    end
+
+fun is_simple_fun_induct ind_th =
+    let
+      val prems = Thm.prems_of ind_th
+    in
+      if length prems > 1 then false
+      else let
+        val (var, (_, C)) = Util.strip_meta_horn (the_single prems)
+        val (_, args) = Term.strip_comb (dest_Trueprop C)
+      in
+        eq_list (op aconv) (var, args)
+      end
     end
 
 fun fun_induct_cmd (s, t, u) state =
@@ -462,19 +477,56 @@ fun fun_induct_cmd (s, t, u) state =
 
       val ind_th = get_fun_induct_th thy expr
       val (var_P, vars) = ind_th |> concl_of' |> Term.strip_comb
-
-      (* Instantiate the induction theorem *)
-      val filt_A = Util.occurs_frees (vars @ arbitraries)
-      val P = get_induct_stmt ctxt (filt_A, vars, NONE, arbitraries)
-      val inst = Pattern.match thy (var_P, P) fo_init
-      val ind_th' = Util.subst_thm_thy thy inst ind_th
-
-      val pats =
-          case u of
-              NONE => NONE
-            | SOME _ => SOME (map (retrieve_pat vars) (Thm.prems_of ind_th))
     in
-      state |> solve_goals ind_th' pats (not o filt_A)
+      if is_simple_fun_induct ind_th then
+        let
+          val _ = assert (is_none u) "fun_induct: simple induction."
+
+          val prop = Auto2_State.get_selected ctxt
+
+          (* Instantiate the induction theorem *)
+          val P = get_induct_stmt ctxt (K true, vars, NONE, arbitraries)
+          val inst = Pattern.match thy (var_P, P) fo_init
+          val ind_th =
+              ind_th |> Util.subst_thm_thy thy inst
+                     |> apply_to_thm (Conv.binop_conv (
+                                         UtilLogic.to_meta_conv ctxt))
+
+          val assum = hd (Drule.cprems_of ind_th)
+
+          val (vars', _) = prop |> Auto2_State.subgoal_of
+                                |> Util.strip_meta_horn
+
+          val ind_th =
+              ind_th |> Util.send_first_to_hyps
+                     |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
+                     |> fold Thm.forall_intr (map (Thm.cterm_of ctxt) vars')
+                     |> Thm.implies_intr assum
+
+          val t' = case Thm.prop_of ind_th of
+                       imp $ A $ B => imp $ Util.rename_abs_term vars A $ B
+                     | _ => raise Fail "fun_induct"
+
+          val ind_th = ind_th |> Thm.renamed_prop t'
+
+          val prop = prop |> Auto2_Outer.refine_subgoal_th ind_th
+        in
+          state |> Proof.map_contexts (Auto2_State.set_head_th prop)
+        end
+      else
+        let
+          (* Instantiate the induction theorem *)
+          val filt_A = Util.occurs_frees (vars @ arbitraries)
+          val P = get_induct_stmt ctxt (filt_A, vars, NONE, arbitraries)
+          val inst = Pattern.match thy (var_P, P) fo_init
+          val ind_th' = ind_th |> Util.subst_thm_thy thy inst
+
+          val prems = Thm.prems_of ind_th
+          val pats = case u of NONE => NONE
+                             | SOME _ => SOME (map (retrieve_pat vars) prems)
+        in
+          state |> solve_goals ind_th' pats (not o filt_A)
+        end
     end
 
 val _ =
