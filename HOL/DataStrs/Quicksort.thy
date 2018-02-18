@@ -32,7 +32,6 @@ function part1 :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rig
      else part1 (list_swap xs l r) l (r - 1) a)"
   by auto
   termination by (relation "measure (\<lambda>(_,l,r,_). r - l)") auto
-setup {* add_unfolding_rule @{thm part1.simps} *}
 setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
 setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 setup {* add_fun_induct_rule (@{term part1}, @{thm part1.induct}) *}
@@ -59,7 +58,7 @@ lemma part1_partitions2 [backward]:
 
 section {* Paritition function *}
 
-definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a list)" where [unfold]:
+definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a list)" where
   "partition xs l r = (
     let p = xs ! r;
       (m, xs') = part1 xs l (r - 1) p;
@@ -110,7 +109,6 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
   by auto
   termination apply (relation "measure (\<lambda>(a, l, r). (r - l))")
   apply auto by auto2+
-setup {* add_unfolding_rule @{thm quicksort.simps} *}
 
 lemma quicksort_trivial [rewrite]:
   "l \<ge> r \<Longrightarrow> quicksort xs l r = xs"

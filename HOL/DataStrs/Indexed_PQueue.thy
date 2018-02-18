@@ -169,7 +169,6 @@ section {* Basic operations on indexed_queue *}
 fun idx_pqueue_swap_fun :: "(nat \<times> 'a) list \<times> nat option list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) list \<times> nat option list" where
   "idx_pqueue_swap_fun (xs, m) i j = (
     list_swap xs i j, (m [fst (xs ! i) := Some j] [fst (xs ! j) := Some i]))"
-setup {* add_unfolding_rule @{thm idx_pqueue_swap_fun.simps} *}
 
 lemma index_of_pqueue_swap [forward_arg]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
@@ -186,7 +185,6 @@ lemma snd_idx_pqueue_swap [rewrite]:
 
 fun idx_pqueue_push_fun :: "nat \<Rightarrow> 'a \<Rightarrow> 'a idx_pqueue \<Rightarrow> 'a idx_pqueue" where
   "idx_pqueue_push_fun k v (xs, m) = (xs @ [(k, v)], list_update m k (Some (length xs)))"
-declare idx_pqueue_push_fun.simps [unfold]
 
 lemma idx_pqueue_push_correct [forward_arg]:
   "index_of_pqueue (xs, m) \<Longrightarrow> k < length m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow>
@@ -196,7 +194,6 @@ lemma idx_pqueue_push_correct [forward_arg]:
 
 fun idx_pqueue_pop_fun :: "'a idx_pqueue \<Rightarrow> 'a idx_pqueue" where
   "idx_pqueue_pop_fun (xs, m) = (butlast xs, list_update m (fst (last xs)) None)"
-declare idx_pqueue_pop_fun.simps [unfold]
 
 lemma idx_pqueue_pop_correct [forward_arg]:
   "index_of_pqueue (xs, m) \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> r = idx_pqueue_pop_fun (xs, m) \<Longrightarrow>
@@ -227,7 +224,6 @@ function idx_bubble_down_fun :: "'a::linorder idx_pqueue \<Rightarrow> nat \<Rig
     else (xs, m))"
   by pat_completeness auto
   termination by (relation "measure (\<lambda>((xs,_),k). (length xs - k))") (simp_all, auto2+)
-setup {* add_unfolding_rule @{thm idx_bubble_down_fun.simps} *}
 setup {* add_fun_induct_rule (@{term idx_bubble_down_fun}, @{thm idx_bubble_down_fun.induct}) *}
 
 lemma idx_bubble_down_fun_correct:
@@ -262,7 +258,6 @@ fun idx_bubble_up_fun :: "'a::linorder idx_pqueue \<Rightarrow> nat \<Rightarrow
         idx_bubble_up_fun (idx_pqueue_swap_fun (xs, m) k (par k)) (par k)
       else (xs, m)
     else (xs, m))"
-setup {* add_unfolding_rule @{thm idx_bubble_up_fun.simps} *}
 setup {* add_fun_induct_rule (@{term idx_bubble_up_fun}, @{thm idx_bubble_up_fun.induct}) *}
 
 lemma idx_bubble_up_fun_correct:
@@ -288,7 +283,6 @@ fun delete_min_idx_pqueue_fun :: "'a::linorder idx_pqueue \<Rightarrow> (nat \<t
     let (xs', m') = idx_pqueue_swap_fun (xs, m) 0 (length xs - 1);
         a'' = idx_pqueue_pop_fun (xs', m')
      in (last xs', idx_bubble_down_fun a'' 0))"
-setup {* add_unfolding_rule @{thm delete_min_idx_pqueue_fun.simps} *}
 
 lemma delete_min_idx_pqueue_correct:
   "index_of_pqueue (xs, m) \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> res = delete_min_idx_pqueue_fun (xs, m) \<Longrightarrow>
@@ -317,7 +311,6 @@ fun insert_idx_pqueue_fun :: "nat \<Rightarrow> 'a::linorder \<Rightarrow> 'a id
   "insert_idx_pqueue_fun k v x = (
     let x' = idx_pqueue_push_fun k v x in
       idx_bubble_up_fun x' (length (fst x') - 1))"
-setup {* add_unfolding_rule @{thm insert_idx_pqueue_fun.simps} *}
 
 lemma insert_idx_pqueue_correct [forward_arg]:
   "index_of_pqueue (xs, m) \<Longrightarrow> k < length m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow>
@@ -344,7 +337,6 @@ fun update_idx_pqueue_fun :: "nat \<Rightarrow> 'a::linorder \<Rightarrow> 'a id
     in
       if snd (xs ! i) \<le> v then idx_bubble_down_fun (xs', m) i
       else idx_bubble_up_fun (xs', m) i)"
-setup {* add_unfolding_rule @{thm update_idx_pqueue_fun.simps} *}
 
 lemma update_idx_pqueue_correct [forward_arg]:
   "index_of_pqueue (xs, m) \<Longrightarrow> k < length m \<Longrightarrow>

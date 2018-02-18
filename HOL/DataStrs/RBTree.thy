@@ -150,7 +150,7 @@ setup {* fold del_prfstep_thm (@{thms rbt_set.simps} @ @{thms rbt_sorted.simps})
 
 section {* Balance function *}
 
-definition balanceR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite,unfold]:
+definition balanceR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balanceR l k v r =
    (if cl r = R then
       let lr = lsub r; rr = rsub r in
@@ -159,7 +159,7 @@ definition balanceR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightar
       else Node l B k v r
     else Node l B k v r)"
   
-definition balance :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite,unfold]:
+definition balance :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balance l k v r =
    (if cl l = R then
       let ll = lsub l; rl = rsub l in
@@ -277,7 +277,7 @@ theorem rbt_search_correct [rewrite]:
     
 section {* balL and balR *}
 
-definition balL :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite,unfold]:
+definition balL :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balL l k v r = (let lr = lsub r in
    if cl l = R then Node (Node (lsub l) B (key l) (val l) (rsub l)) R k v r
    else if r = Leaf then Node l R k v r
@@ -289,7 +289,7 @@ definition balL :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow>
 setup {* register_wellform_data ("balL l k v r", ["black_depth l + 1 = black_depth r"]) *}
 setup {* add_prfstep_check_req ("balL l k v r", "black_depth l + 1 = black_depth r") *}
   
-definition balR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite,unfold]:
+definition balR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balR l k v r = (let rl = rsub l in
    if cl r = R then Node l R k v (Node (lsub r) B (key r) (val r) (rsub r))
    else if l = Leaf then Node l R k v r
@@ -358,7 +358,6 @@ fun combine :: "('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) r
      else
        Node (combine (Node l1 c1 k1 v1 r1) l2) R k2 v2 r2)"
 setup {* fold add_rewrite_rule @{thms combine.simps(1,2)} *}
-setup {* add_unfolding_rule @{thm combine.simps(3)} *}
 setup {* add_fun_induct_rule (@{term combine}, @{thm combine.induct}) *}
 
 lemma combine_bd [forward_arg]:
@@ -415,7 +414,6 @@ fun del :: "'a::linorder \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" 
        else if cl r = B then balR l k v (del x r)
        else Node l R k v (del x r))"
 setup {* add_rewrite_rule @{thm del.simps(1)} *}
-setup {* add_unfolding_rule @{thm del.simps(2)} *}
 
 lemma del_bd [forward_arg]:
   "bd_inv t \<Longrightarrow> cl_inv t \<Longrightarrow> bd_inv (del x t) \<and> (

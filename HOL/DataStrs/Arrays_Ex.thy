@@ -4,9 +4,8 @@ begin
 
 section {* List swap *}
 
-definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
+definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where [rewrite]:
   "list_swap xs i j = xs[i := xs ! j, j := xs ! i]"
-setup {* add_rewrite_rule @{thm list_swap_def} *}
 setup {* register_wellform_data ("list_swap xs i j", ["i < length xs", "j < length xs"]) *}
 setup {* add_prfstep_check_req ("list_swap xs i j", "i < length xs \<and> j < length xs") *}
 
@@ -38,7 +37,6 @@ lemma rev_nth [rewrite]:
 
 fun rev_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "rev_swap xs i j = (if i < j then rev_swap (list_swap xs i j) (i + 1) (j - 1) else xs)"
-setup {* add_unfolding_rule @{thm rev_swap.simps} *}
 setup {* register_wellform_data ("rev_swap xs i j", ["j < length xs"]) *}
 setup {* add_prfstep_check_req ("rev_swap xs i j", "j < length xs") *}
 setup {* add_fun_induct_rule (@{term rev_swap}, @{thm rev_swap.induct}) *}

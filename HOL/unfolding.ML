@@ -2,7 +2,6 @@
 
 signature UNFOLDING =
 sig
-  val add_unfolding_rule: thm -> theory -> theory
   val unfold: theory -> conv
   val unfold_cmd: string -> Proof.state -> Proof.state
 end;
@@ -10,32 +9,23 @@ end;
 structure Unfolding : UNFOLDING =
 struct
 
-structure Data = Theory_Data (
-  type T = thm list Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge_list Thm.eq_thm_prop
-)
-
-(* Add the given theorem as an unfolding rule. *)
-fun add_unfolding_rule th thy =
-    let
-      val (lhs, _) = th |> prop_of' |> dest_eq
-      val nm = case Term.head_of lhs of
-                   Const (nm, _) => nm
-                 | _ => raise Fail "add_unfolding_rule"
-    in
-      thy |> Data.map (Symtab.map_default (nm, []) (cons th))
-    end
+fun get_unfold_thms thy t =
+    case Term.head_of t of
+        Const (nm, _) =>
+        let
+          val simp_nm = nm ^ ".simps"
+          val def_nm = nm ^ "_def"
+        in
+          Global_Theory.get_thms thy simp_nm
+          handle ERROR _ => Global_Theory.get_thms thy def_nm
+                            handle ERROR _ => raise Fail "get_unfold_thms"
+        end
+      | _ => raise Fail "get_unfold_thms"
 
 (* Unfold the given term. *)
 fun unfold thy ct =
     let
-      val t = Thm.term_of ct
-      val nm = case Term.head_of t of
-                   Const (nm, _) => nm
-                 | _ => raise Fail "unfold"
-      val ths = Symtab.lookup_list (Data.get thy) nm
+      val ths = get_unfold_thms thy (Thm.term_of ct)
     in
       Conv.first_conv (map rewr_obj_eq ths) ct
     end
@@ -68,5 +58,3 @@ val _ =
             Toplevel.proof (fn state => unfold_cmd s state)))
 
 end  (* structure Unfolding *)
-
-val add_unfolding_rule = Unfolding.add_unfolding_rule

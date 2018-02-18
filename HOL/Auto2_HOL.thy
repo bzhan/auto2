@@ -55,6 +55,5 @@ attribute_setup rewrite_bidir = {* setup_attrib add_rewrite_rule_bidir *}
 attribute_setup forward_arg1 = {* setup_attrib add_forward_arg1_prfstep *}
 attribute_setup forward_arg = {* setup_attrib add_forward_arg_prfstep *}
 attribute_setup rewrite_arg = {* setup_attrib add_rewrite_arg_rule *}
-attribute_setup unfold = {* setup_attrib add_unfolding_rule *}
 
 end
