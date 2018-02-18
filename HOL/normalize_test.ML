@@ -69,7 +69,14 @@ val test_use_vardefs =
         ("!s. ~s = f x | P s", "P (f x)"),
         ("!s t. ~s = f x | ~t = g x | P s t", "P (f x) (g x)"),
         ("!s t. ~x < y | ~s = f x | ~t = g y | P s t", "~x < y | P (f x) (g y)"),
-        ("!s. P s | ~s = f x", "P (f x)")
+        ("!s. P s | ~s = f x", "P (f x)"),
+
+        ("!a b. (a,b) = c --> P a b", "P (fst c) (snd c)"),
+        ("!a b. (a,b) ~= c | P a b", "P (fst c) (snd c)"),
+        ("!a b c. (a,(b,c)) = d --> P a b c",
+         "P (fst d) (fst (snd d)) (snd (snd d))"),
+        ("!a b c. ((a,b),c) = d --> P a b c",
+         "P (fst (fst d)) (snd (fst d)) (snd d)")
       ]
     in
       map test test_data

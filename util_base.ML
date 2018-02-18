@@ -78,7 +78,6 @@ sig
 
   (* Theorems for proofstep module *)
   val atomize_conjL_th: thm
-  val atomize_conjL2_th: thm
   val backward_conv_th: thm
   val backward1_conv_th: thm
   val backward2_conv_th: thm

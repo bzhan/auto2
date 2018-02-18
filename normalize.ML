@@ -13,9 +13,11 @@ sig
   val normalize_keep: Proof.context -> raw_item -> raw_item list
 
   (* Normalization of definition of variable *)
-  val is_def_eq: term -> bool
+  val add_inj_struct_data: thm -> theory -> theory
+
+  val is_def_eq: theory -> term -> bool
   val swap_eq_to_front: conv
-  val meta_use_vardef: thm -> (term * term) * thm
+  val meta_use_vardef: thm -> (term * term) list * thm
   val meta_use_vardefs: thm -> (term * term) list * thm
   val def_subst: (term * term) list -> term -> term
 end;
@@ -96,22 +98,54 @@ fun normalize_keep ctxt ritem =
 
 (* Normalization of variable definition *)
 
+structure InjStructData = Theory_Data (
+  type T = thm Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge pointer_eq
+)
+
+fun add_inj_struct_data th thy =
+    let
+      val (lhs, _) = th |> prop_of' |> dest_eq |> fst |> dest_eq
+      val (f, _) = Term.strip_comb lhs
+    in
+      case f of
+          Const (nm, _) =>
+          InjStructData.map (Symtab.update_new (nm, th)) thy
+        | _ => raise Fail "add_inj_struct_data"
+    end
+
 (* Check whether t is of the form ?A = t, where t does not contain ?A. *)
 
-fun is_def_eq t =
+fun inj_args thy t =
+    if Term.is_Var t then [t]
+    else let
+      val (f, args) = Term.strip_comb t
+    in
+      if Term.is_Const f andalso
+         Symtab.defined (InjStructData.get thy) (fst (Term.dest_Const f)) then
+        maps (inj_args thy) args
+      else
+        [t]
+    end
+
+fun is_def_eq thy t =
     if not (is_eq_term t) then false
     else let
       val (lhs, rhs) = dest_eq t
+      val (l_args, r_args) = apply2 (inj_args thy) (lhs, rhs)
     in
-      Term.is_Var lhs andalso not (Term.is_Var rhs) andalso
-      not (Util.is_subterm lhs rhs)
+      forall Term.is_Var l_args andalso
+      not (forall Term.is_Var r_args) andalso
+      forall (fn t => not (Util.is_subterm t rhs)) l_args
     end
 
-fun is_def_eq' t =
-    is_Trueprop t andalso is_def_eq (dest_Trueprop t)
+fun is_def_eq' thy t =
+    is_Trueprop t andalso is_def_eq thy (dest_Trueprop t)
 
-fun is_neg_def_eq t =
-    is_neg t andalso is_def_eq (dest_not t)
+fun is_neg_def_eq thy t =
+    is_neg t andalso is_def_eq thy (dest_not t)
 
 (* Given t of the form A_1 ==> ... ==> A_n ==> C, swap all A_i of the
    form ?A = t to the front.
@@ -119,9 +153,10 @@ fun is_neg_def_eq t =
 fun swap_eq_to_front ct =
     let
       val t = Thm.term_of ct
+      val thy = Thm.theory_of_cterm ct
     in
       if Util.is_implies t then
-        if is_def_eq' (dest_arg1 t) then
+        if is_def_eq' thy (dest_arg1 t) then
           Conv.all_conv ct
         else
           Conv.every_conv [Conv.arg_conv swap_eq_to_front,
@@ -130,18 +165,51 @@ fun swap_eq_to_front ct =
         Conv.no_conv ct
     end
 
-(* Given th where the first premise is in the form ?A = t, replace ?A
-   by t in the rest of th, and remove the first premise.
+(* Given th where the first premise is in the form ?A = t, or f ?A_1
+   ... ?A_n = t, where f is injective, replace ?A or each ?A_i in the
+   rest of th, and remove the first premise.
  *)
 fun meta_use_vardef th =
-    let
-      val (lhs, rhs) = th |> Thm.cprop_of |> Thm.dest_arg1
-                          |> Thm.dest_arg |> Util.dest_binop_cargs
+    if not (Util.is_implies (Thm.prop_of th)) then
+      ([], th)
+    else let
+      val cprem = th |> Thm.cprop_of |> Thm.dest_arg1 |> Thm.dest_arg
+      val prem = Thm.term_of cprem
+      val thy = Thm.theory_of_thm th
     in
-      (apply2 Thm.term_of (lhs, rhs),
-       th |> Util.subst_thm_atomic [(lhs, rhs)]
-          |> apply_to_thm (Conv.arg1_conv UtilBase.to_meta_eq_cv)
-          |> Thm.elim_implies (Thm.reflexive rhs))
+      if is_conj prem then
+        th |> apply_to_thm (Conv.rewr_conv (meta_sym @{thm atomize_conjL}))
+           |> meta_use_vardef
+      else if is_def_eq thy prem then
+        let
+          val (c_lhs, c_rhs) = cdest_eq cprem
+          val (lhs, rhs) = dest_eq prem
+        in
+          if Term.is_Var lhs then
+            let
+              val (pairs, th') =
+                  th |> Util.subst_thm_atomic [(c_lhs, c_rhs)]
+                     |> apply_to_thm (Conv.arg1_conv UtilBase.to_meta_eq_cv)
+                     |> Thm.elim_implies (Thm.reflexive c_rhs)
+                     |> meta_use_vardef
+            in
+              ((lhs, rhs) :: pairs, th')
+            end
+          else
+            let
+              val (f, _) = Term.strip_comb lhs
+              val (nm, _) = Term.dest_Const f
+              val data = InjStructData.get thy
+              val inj_th = the (Symtab.lookup data nm)
+                           handle Option.Option => raise Fail "meta_use_vardef"
+            in
+              th |> apply_to_thm (
+                Conv.arg1_conv (Conv.arg_conv (rewr_obj_eq inj_th)))
+                 |> meta_use_vardef
+            end
+        end
+      else
+        ([], th)
     end
 
 fun disj_ts t =
@@ -156,14 +224,15 @@ fun swap_disj ct =
 fun disj_swap_eq_to_front' ct =
     let
       val t = Thm.term_of ct
+      val thy = Thm.theory_of_cterm ct
     in
       if is_disj t then
-        if is_neg_def_eq (dest_arg1 t) then
+        if is_neg_def_eq thy (dest_arg1 t) then
           Conv.all_conv ct
         else if is_disj (dest_arg t) then
           Conv.every_conv [Conv.arg_conv disj_swap_eq_to_front',
                            swap_disj] ct
-        else if is_neg_def_eq (dest_arg t) then
+        else if is_neg_def_eq thy (dest_arg t) then
           rewr_obj_eq UtilBase.disj_commute_th ct
         else
           Conv.no_conv ct
@@ -179,31 +248,35 @@ fun disj_swap_eq_to_front ct =
     ] ct
 
 fun meta_use_vardefs th =
-    if exists is_def_eq' (Thm.prems_of th) then
-      let
-        val (pair, th') = th |> apply_to_thm swap_eq_to_front
-                             |> meta_use_vardef
-        val (pairs, th'') = meta_use_vardefs th'
-      in
-        (pair :: pairs, th'')
-      end
-    else if is_Trueprop (Thm.prop_of th) then
-      let
-        val ts = disj_ts (prop_of' th)
-      in
-        if length ts > 1 andalso exists is_neg_def_eq ts then
-          let
-            val (pair, th') = th |> apply_to_thm disj_swap_eq_to_front
-                                 |> meta_use_vardef
-            val (pairs, th'') = meta_use_vardefs th'
-          in
-            (pair :: pairs, th'')
-          end
-        else
-          ([], th)
-      end
-    else
-      ([], th)
+    let
+      val thy = Thm.theory_of_thm th
+    in
+      if exists (is_def_eq' thy) (Thm.prems_of th) then
+        let
+          val (pairs, th') = th |> apply_to_thm swap_eq_to_front
+                                |> meta_use_vardef
+          val (pairs', th'') = meta_use_vardefs th'
+        in
+          (pairs @ pairs', th'')
+        end
+      else if is_Trueprop (Thm.prop_of th) then
+        let
+          val ts = disj_ts (prop_of' th)
+        in
+          if length ts > 1 andalso exists (is_neg_def_eq thy) ts then
+            let
+              val (pairs, th') = th |> apply_to_thm disj_swap_eq_to_front
+                                    |> meta_use_vardef
+              val (pairs', th'') = meta_use_vardefs th'
+            in
+              (pairs @ pairs', th'')
+            end
+          else
+            ([], th)
+        end
+      else
+        ([], th)
+    end
 
 fun def_subst pairs t =
     fold (fn p => Term.subst_atomic [p]) pairs t

@@ -805,9 +805,8 @@ fun atomize_conj_cv keep_last ct =
        (if keep_last then 2 else 1) then
       Conv.all_conv ct
     else
-      ((Conv.arg_conv (atomize_conj_cv keep_last))
-           then_conv (if keep_last then Conv.rewr_conv UtilBase.atomize_conjL2_th
-                      else Conv.rewr_conv UtilBase.atomize_conjL_th)) ct
+      Conv.every_conv [Conv.arg_conv (atomize_conj_cv keep_last),
+                       Conv.rewr_conv UtilBase.atomize_conjL_th] ct
 
 (* Swap the last premise to become the first. *)
 fun swap_prem_to_front ct =

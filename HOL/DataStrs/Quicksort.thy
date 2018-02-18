@@ -38,7 +38,7 @@ setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
 setup {* add_fun_induct_rule (@{term part1}, @{thm part1.induct}) *}
 
 lemma part1_basic:
-  "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
+  "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow>
    outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
 @proof @fun_induct "part1 xs l r a" @with
   @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
@@ -46,15 +46,13 @@ lemma part1_basic:
 setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"] *}
 
 lemma part1_partitions1 [backward]:
-  "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
-   l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> a"
+  "r < length xs \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow> l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> a"
 @proof @fun_induct "part1 xs l r a" @with
   @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
 @qed
 
 lemma part1_partitions2 [backward]:
-  "r < length xs \<Longrightarrow> rs = fst (part1 xs l r a) \<Longrightarrow> xs' = snd (part1 xs l r a) \<Longrightarrow>
-   rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> a"
+  "r < length xs \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow> rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> a"
 @proof @fun_induct "part1 xs l r a" @with
   @subgoal "(xs = xs, l = l, r = r, a = a)" @unfold "part1 xs l r a" @end
 @qed
@@ -71,18 +69,18 @@ definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat
 setup {* register_wellform_data ("partition xs l r", ["l < r", "r < length xs"]) *}
 
 lemma partition_basic:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs' = snd (partition xs l r) \<Longrightarrow>
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> (rs, xs') = partition xs l r \<Longrightarrow>
    outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
 @proof @unfold "partition xs l r" @qed
 setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "partition ?xs ?l ?r"] *}
   
 lemma partition_partitions1 [forward]:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
-   x \<in> set (sublist l rs xs'') \<Longrightarrow> x \<le> xs'' ! rs"
-@proof @unfold "partition xs l r" @obtain i where "i \<ge> l" "i < rs" "x = xs'' ! i" @qed
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> (rs, xs') = partition xs l r \<Longrightarrow>
+   x \<in> set (sublist l rs xs') \<Longrightarrow> x \<le> xs' ! rs"
+@proof @unfold "partition xs l r" @obtain i where "i \<ge> l" "i < rs" "x = xs' ! i" @qed
 
 lemma partition_partitions2 [forward]:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> rs = fst (partition xs l r) \<Longrightarrow> xs'' = snd (partition xs l r) \<Longrightarrow>
+  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> (rs, xs'') = partition xs l r \<Longrightarrow>
    x \<in> set (sublist (rs + 1) (r + 1) xs'') \<Longrightarrow> x \<ge> xs'' ! rs"
 @proof @unfold "partition xs l r"
   @obtain i where "i \<ge> rs + 1" "i < r + 1" "x = xs'' ! i"

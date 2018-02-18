@@ -72,7 +72,18 @@ theorem Bex_def': "(\<exists>x\<in>S. P(x)) \<longleftrightarrow> (\<exists>x. x
 theorem Ball_def': "(\<forall>x\<in>S. P(x)) \<longleftrightarrow> (\<forall>x. x \<in> S \<longrightarrow> P(x))" using Ball_def by auto
 
 (* Taking conjunction of assumptions *)
-theorem atomize_conjL2: "(A \<Longrightarrow> B \<Longrightarrow> C \<Longrightarrow> D) \<equiv> (A \<and> B \<Longrightarrow> C \<Longrightarrow> D)" by (rule equal_intr_rule) auto
+
+theorem atomize_conjL: "(A \<Longrightarrow> B \<Longrightarrow> PROP C) \<equiv> (A \<and> B \<Longrightarrow> PROP C)"
+proof
+  assume 1: "A \<Longrightarrow> B \<Longrightarrow> PROP C" and 2: "A \<and> B"
+    have 3: "A" using 2 by auto
+    have 4: "B" using 2 by auto
+    show "PROP C" using 1[OF 3 4] by assumption
+next
+  assume 1: "A \<and> B \<Longrightarrow> PROP C" and 2: A and 3: B
+    have 4: "A \<and> B" using 2 3 by auto
+    show "PROP C" using 1[OF 4] by assumption
+qed
 
 (* Other rules *)
 theorem imp_conv_disj: "(P \<longrightarrow> Q) \<longleftrightarrow> (\<not>P \<or> Q)" by auto

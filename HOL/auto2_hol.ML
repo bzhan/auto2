@@ -102,8 +102,7 @@ val swap_ex_conj_th = @{thm swap_ex_conj}
 val all_trivial_th = @{thm HOL.simp_thms(35)}
 val case_split_th = @{thm HOL.case_split}
 
-val atomize_conjL_th = @{thm atomize_conjL}
-val atomize_conjL2_th = @{thm atomize_conjL2}
+val atomize_conjL_th = @{thm HOL_Base.atomize_conjL}
 val backward_conv_th = @{thm backward_conv}
 val backward1_conv_th = @{thm backward1_conv}
 val backward2_conv_th = @{thm backward2_conv}

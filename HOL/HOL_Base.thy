@@ -33,6 +33,6 @@ theorem Bex_def': "(\<exists>x\<in>S. P x) \<longleftrightarrow> (\<exists>x. x 
 theorem Ball_def': "(\<forall>x\<in>S. P x) \<longleftrightarrow> (\<forall>x. x \<in> S \<longrightarrow> P x)" by auto
 
 (* Taking conjunction of assumptions *)
-theorem atomize_conjL2: "(A \<Longrightarrow> B \<Longrightarrow> C \<Longrightarrow> D) \<equiv> (A \<and> B \<Longrightarrow> C \<Longrightarrow> D)" by (rule equal_intr_rule) auto
+lemma atomize_conjL: "(A \<Longrightarrow> B \<Longrightarrow> PROP C) \<equiv> (A \<and> B \<Longrightarrow> PROP C)" by (rule equal_intr_rule) auto
 
 end

@@ -84,6 +84,9 @@ theorem Least_equality' [backward1]:
   "P (x::('a::order)) \<Longrightarrow> \<forall>y. P y \<longrightarrow> x \<le> y \<Longrightarrow> Least P = x" by (simp add: Least_equality)
 
 (* Pairs. *)
+lemma pair_inj: "(a,b) = c \<longleftrightarrow> a = fst c \<and> b = snd c" by auto
+setup {* Normalizer.add_inj_struct_data @{thm pair_inj} *}
+
 setup {* add_rewrite_rule @{thm fst_conv} *}
 setup {* add_rewrite_rule @{thm snd_conv} *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm prod.simps(1)}) *}
