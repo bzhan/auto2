@@ -125,22 +125,6 @@ lemma sublist_Cons [rewrite]:
   @have "sublist l r xs = sublist l (l + 1) xs @ sublist (l + 1) r xs"
 @qed
 
-lemma sorted_triv_sublist [backward]:
-  "r + 1 \<le> length xs \<Longrightarrow> l \<ge> r \<Longrightarrow> sorted (sublist l (r + 1) xs)"
-@proof @case "l = r" @qed
-
-lemma sorted_pivoted_list [forward]:
-  "l \<le> p \<Longrightarrow> p + 1 \<le> r \<Longrightarrow> r \<le> length xs \<Longrightarrow>
-   sorted (sublist (p + 1) r xs) \<Longrightarrow> sorted (sublist l p xs) \<Longrightarrow>
-   \<forall>x\<in>set (sublist l p xs). x \<le> xs ! p \<Longrightarrow> \<forall>y\<in>set (sublist (p + 1) r xs). xs ! p \<le> y \<Longrightarrow>
-   sorted (sublist l r xs)"
-@proof
-  @have "sublist p r xs = (xs ! p) # sublist (p + 1) r xs"
-  @have "sorted (sublist p r xs)"
-  @case "p = 0"
-  @have "sublist l r xs = sublist l p xs @ sublist p r xs"
-@qed
-
 lemma sublist_equalityI:
   "i \<le> j \<Longrightarrow> j \<le> length xs \<Longrightarrow> length xs = length ys \<Longrightarrow>
    \<forall>k. i \<le> k \<longrightarrow> k < j \<longrightarrow> xs ! k = ys ! k \<Longrightarrow> sublist i j xs = sublist i j ys"

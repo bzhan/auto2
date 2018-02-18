@@ -29,7 +29,8 @@ definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarro
      v \<leftarrow> Array.nth a m;
      m' \<leftarrow> return (if v \<le> p then m + 1 else m);
      swap a m' r;
-     return m' }"
+     return m'
+   }"
 
 lemma partition_to_fun [hoare_triple]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
@@ -39,40 +40,33 @@ lemma partition_to_fun [hoare_triple]:
 
 (* Quicksort function *)
 partial_function (heap) quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
-  "quicksort a l r = (
+  "quicksort a l r = do {
+     len \<leftarrow> Array.len a;
      if l \<ge> r then return ()
-     else do {
+     else if r < len then do {
        p \<leftarrow> partition a l r;
-       (if l < p - 1 then quicksort a l (p - 1) else return ());
-       (if p + 1 < r then quicksort a (p + 1) r else return ())
-     })"
+       quicksort a l (p - 1);
+       quicksort a (p + 1) r
+     }
+     else return ()
+   }"
 
 lemma quicksort_to_fun [hoare_triple]:
   "r < length xs \<Longrightarrow> <a \<mapsto>\<^sub>a xs>
    quicksort a l r
    <\<lambda>_. a \<mapsto>\<^sub>a Quicksort.quicksort xs l r>"
-@proof
-  @let "d = r - l"
-  @strong_induct d arbitrary l r xs
-  @unfold "Quicksort.quicksort xs l r"
-  @case "l \<ge> r"
-  @let "p = fst (Quicksort.partition xs l r)"
-  @let "xs1 = snd (Quicksort.partition xs l r)"
-  @let "xs2 = Quicksort.quicksort xs1 l (p - 1)"
-  @case "p + 1 \<ge> r" @with
-    @case "l \<ge> p - 1"
-    @apply_induct_hyp "(p-1)-l" l "p-1" xs1
+@proof @fun_induct "Quicksort.quicksort xs l r" @with
+  @subgoal "(xs = xs, l = l, r = r)"
+    @unfold "Quicksort.quicksort xs l r"
   @end
-  @apply_induct_hyp "r-(p+1)" "p+1" r xs2
-  @case "l \<ge> p - 1"
-  @apply_induct_hyp "(p-1)-l" l "p-1" xs1
 @qed
 
 definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap" where
   "quicksort_all a = do {
      n \<leftarrow> Array.len a;
      if n = 0 then return ()
-     else quicksort a 0 (n - 1) }"
+     else quicksort a 0 (n - 1)
+   }"
 
 theorem quicksort_sorts_basic [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs>
