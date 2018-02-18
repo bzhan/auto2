@@ -224,7 +224,6 @@ function idx_bubble_down_fun :: "'a::linorder idx_pqueue \<Rightarrow> nat \<Rig
     else (xs, m))"
   by pat_completeness auto
   termination by (relation "measure (\<lambda>((xs,_),k). (length xs - k))") (simp_all, auto2+)
-setup {* add_fun_induct_rule (@{term idx_bubble_down_fun}, @{thm idx_bubble_down_fun.induct}) *}
 
 lemma idx_bubble_down_fun_correct:
   "r = idx_bubble_down_fun x k \<Longrightarrow> is_heap_partial1 (fst x) k \<Longrightarrow>
@@ -258,7 +257,6 @@ fun idx_bubble_up_fun :: "'a::linorder idx_pqueue \<Rightarrow> nat \<Rightarrow
         idx_bubble_up_fun (idx_pqueue_swap_fun (xs, m) k (par k)) (par k)
       else (xs, m)
     else (xs, m))"
-setup {* add_fun_induct_rule (@{term idx_bubble_up_fun}, @{thm idx_bubble_up_fun.induct}) *}
 
 lemma idx_bubble_up_fun_correct:
   "r = idx_bubble_up_fun x k \<Longrightarrow> is_heap_partial2 (fst x) k \<Longrightarrow>

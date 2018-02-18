@@ -39,7 +39,6 @@ fun rev_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a li
   "rev_swap xs i j = (if i < j then rev_swap (list_swap xs i j) (i + 1) (j - 1) else xs)"
 setup {* register_wellform_data ("rev_swap xs i j", ["j < length xs"]) *}
 setup {* add_prfstep_check_req ("rev_swap xs i j", "j < length xs") *}
-setup {* add_fun_induct_rule (@{term rev_swap}, @{thm rev_swap.induct}) *}
 
 lemma rev_swap_length [rewrite_arg]:
   "j < length xs \<Longrightarrow> length (rev_swap xs i j) = length xs"

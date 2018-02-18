@@ -508,6 +508,25 @@ val _ =
             Toplevel.proof (
               fn state => induct_cmd "cases" (s, NONE, [], v) state)))
 
+fun get_fun_induct_th thy t =
+    case get_head_ind_th thy "fun_induct" t of
+        SOME th => th
+      | NONE =>
+        case Term.head_of t of
+            Const (nm, _) =>
+            let
+              val ind_th = Global_Theory.get_thm thy (nm ^ ".induct")
+                           handle ERROR _ =>
+                                  raise Fail "fun_induct: cannot find theorem"
+              val (_, args) = Term.strip_comb t
+              val (_, pat_args) = ind_th |> concl_of' |> Term.strip_comb
+              val inst = Util.first_order_match_list
+                             thy (pat_args ~~ args) fo_init
+            in
+              Util.subst_thm_thy thy inst ind_th
+            end
+          | _ => raise Fail "fun_induct: cannot find theorem."
+
 fun fun_induct_cmd (s, t, u) state =
     let
       val {context = ctxt, ...} = Proof.goal state
@@ -515,9 +534,7 @@ fun fun_induct_cmd (s, t, u) state =
       val expr = Syntax.read_term ctxt s
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val ind_th = the (get_head_ind_th thy "fun_induct" expr)
-                       handle Option.Option =>
-                              raise Fail "fun_induct: cannot find theorem."
+      val ind_th = get_fun_induct_th thy expr
       val (var_P, vars) = ind_th |> Thm.concl_of |> dest_Trueprop
                                  |> Term.strip_comb
       val stmt = get_induct_stmt ctxt (vars, NONE, arbitraries)

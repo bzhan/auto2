@@ -34,7 +34,6 @@ function part1 :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rig
   termination by (relation "measure (\<lambda>(_,l,r,_). r - l)") auto
 setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
 setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
-setup {* add_fun_induct_rule (@{term part1}, @{thm part1.induct}) *}
 
 lemma part1_basic:
   "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow>
