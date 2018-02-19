@@ -4,10 +4,9 @@ begin
 
 type_synonym uf = "nat array \<times> nat array"
   
-definition is_uf :: "nat \<Rightarrow> (nat\<times>nat) set \<Rightarrow> uf \<Rightarrow> assn" where
+definition is_uf :: "nat \<Rightarrow> (nat\<times>nat) set \<Rightarrow> uf \<Rightarrow> assn" where [rewrite_ent]:
   "is_uf n R u = (\<exists>\<^sub>Al szl. snd u \<mapsto>\<^sub>a l * fst u \<mapsto>\<^sub>a szl *
         \<up>(ufa_invar l) * \<up>(ufa_\<alpha> l = R) * \<up>(length l = n) * \<up>(length szl = n))"
-setup {* add_rewrite_ent_rule @{thm is_uf_def} *}
 
 definition uf_init :: "nat \<Rightarrow> uf Heap" where
   "uf_init n = do {

@@ -38,10 +38,9 @@ lemma rep_of_induct:
 @proof @prop_induct "rep_of_dom (l, i)" @qed
 setup {* add_prop_induct_rule @{thm rep_of_induct} *}
 
-lemma rep_of_bound:
+lemma rep_of_bound [forward_arg1]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of l i < length l"
 @proof @prop_induct "ufa_invar l \<and> i < length l" @qed
-setup {* add_forward_prfstep_cond @{thm rep_of_bound} [with_term "rep_of ?l ?i"] *}
 
 lemma rep_of_idem [rewrite]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of l (rep_of l i) = rep_of l i" by auto2
@@ -52,10 +51,9 @@ lemma rep_of_idx [rewrite]:
 definition ufa_\<alpha> :: "nat list \<Rightarrow> (nat \<times> nat) set" where [rewrite]:
   "ufa_\<alpha> l = {(x, y). x < length l \<and> y < length l \<and> rep_of l x = rep_of l y}"
 
-lemma ufa_\<alpha>_memI [backward]:
+lemma ufa_\<alpha>_memI [backward, forward_arg]:
   "x < length l \<Longrightarrow> y < length l \<Longrightarrow> rep_of l x = rep_of l y \<Longrightarrow> (x, y) \<in> ufa_\<alpha> l"
   by (simp add: ufa_\<alpha>_def)
-setup {* add_forward_prfstep_cond @{thm ufa_\<alpha>_memI} [with_term "ufa_\<alpha> ?l"] *}
   
 lemma ufa_\<alpha>_memD [forward]:
   "(x, y) \<in> ufa_\<alpha> l \<Longrightarrow> x < length l \<and> y < length l \<and> rep_of l x = rep_of l y"
@@ -80,14 +78,13 @@ lemma ufa_init_correct [rewrite]:
 abbreviation ufa_union :: "nat list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list" where
   "ufa_union l x y \<equiv> l[rep_of l x := rep_of l y]"
 
-lemma ufa_union_invar:
+lemma ufa_union_invar [forward_arg]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow> ufa_invar l'"
 @proof
   @have "\<forall>i<length l'. rep_of_dom (l', i) \<and> l' ! i < length l'" @with
     @prop_induct "ufa_invar l \<and> i < length l"
   @end
 @qed
-setup {* add_forward_prfstep_cond @{thm ufa_union_invar} [with_term "?l'"] *}
 
 lemma ufa_union_aux [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow>
@@ -109,14 +106,13 @@ lemma ufa_union_correct [rewrite]:
 abbreviation ufa_compress :: "nat list \<Rightarrow> nat \<Rightarrow> nat list" where
   "ufa_compress l x \<equiv> l[x := rep_of l x]"
 
-lemma ufa_compress_invar:
+lemma ufa_compress_invar [forward_arg]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> l' = ufa_compress l x \<Longrightarrow> ufa_invar l'"
 @proof
   @have "\<forall>i<length l'. rep_of_dom (l', i) \<and> l' ! i < length l'" @with
     @prop_induct "ufa_invar l \<and> i < length l"
   @end
 @qed
-setup {* add_forward_prfstep_cond @{thm ufa_compress_invar} [with_term "?l'"] *}
   
 lemma ufa_compress_aux [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> l' = ufa_compress l x \<Longrightarrow> i < length l' \<Longrightarrow>
