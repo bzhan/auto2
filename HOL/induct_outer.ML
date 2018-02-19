@@ -174,6 +174,46 @@ fun get_induct_stmt ctxt (filt_A, ind_vars, stmt, arbitrary) =
         (UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt s)))
             |> fold Util.lambda_abstract (rev ind_vars)
 
+fun apply_simple_induct_th ind_th vars arbitraries prem_only state =
+    let
+      val {context = ctxt, ...} = Proof.goal state
+      val prop = Auto2_State.get_selected ctxt
+
+      val (vars', _) = prop |> Auto2_State.subgoal_of
+                            |> Util.strip_meta_horn
+
+      val ind_th =
+          ind_th |> apply_to_thm (Conv.binop_conv (UtilLogic.to_meta_conv ctxt))
+
+      val assum = hd (Drule.cprems_of ind_th)
+      val ind_th =
+          ind_th |> Util.send_first_to_hyps
+                 |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
+                 |> fold Thm.forall_intr (map (Thm.cterm_of ctxt) vars')
+                 |> Thm.implies_intr assum
+
+      val t' = case Thm.prop_of ind_th of
+                   imp $ A $ B => imp $ Util.rename_abs_term vars A $ B
+                 | _ => raise Fail "strong_induct_cmd"
+
+      val ind_th = ind_th |> Thm.renamed_prop t'
+
+      val prop = prop |> Auto2_Outer.refine_subgoal_th ind_th
+    in
+      if prem_only then
+        let
+          val (_, (As, _)) = prop |> Auto2_State.subgoal_of
+                                  |> Util.strip_meta_horn
+          val stmt = dest_Trueprop (hd As)
+        in
+          state |> Proof.map_contexts (Auto2_State.set_head_th prop)
+                |> Proof.map_contexts (Auto2_State.set_induct_stmt stmt)
+                |> Proof.map_contexts (Auto2_State.add_prem_only stmt)
+        end
+      else
+        state |> Proof.map_contexts (Auto2_State.set_head_th prop)
+    end
+
 fun strong_induct_cmd (s, t) state =
     let
       val {context = ctxt, ...} = Proof.goal state
@@ -182,40 +222,14 @@ fun strong_induct_cmd (s, t) state =
 
       val arbitraries = map (Syntax.read_term ctxt) t
 
-      val prop = Auto2_State.get_selected ctxt
-      val (vars, _) = prop |> Auto2_State.subgoal_of
-                           |> Util.strip_meta_horn
-
       val P = get_induct_stmt ctxt (K true, [var], NONE, arbitraries)
       val ind_th = get_typed_ind_th thy "strong_induct" (type_of var)
 
       val (var_P, var_n) = ind_th |> concl_of' |> Term.dest_comb
       val inst = fold (Pattern.match thy) [(var_P, P), (var_n, var)] fo_init
-      val ind_th =
-          ind_th |> Util.subst_thm ctxt inst
-                 |> apply_to_thm (Conv.binop_conv (UtilLogic.to_meta_conv ctxt))
-
-      val assum = hd (Drule.cprems_of ind_th)
-      val ind_th =
-          ind_th |> Util.send_first_to_hyps
-                 |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
-                 |> fold Thm.forall_intr (map (Thm.cterm_of ctxt) vars)
-                 |> Thm.implies_intr assum
-
-      val t' = case Thm.prop_of ind_th of
-                   imp $ A $ B => imp $ Util.rename_abs_term [var] A $ B
-                 | _ => raise Fail "strong_induct_cmd"
-
-      val ind_th = ind_th |> Thm.renamed_prop t'
-
-      val prop = prop |> Auto2_Outer.refine_subgoal_th ind_th
-
-      val stmt = prop |> Auto2_State.subgoal_of |> Util.strip_meta_horn |> snd
-                      |> fst |> hd |> dest_Trueprop
+      val ind_th = Util.subst_thm ctxt inst ind_th
     in
-      state |> Proof.map_contexts (Auto2_State.set_head_th prop)
-            |> Proof.map_contexts (Auto2_State.set_induct_stmt stmt)
-            |> Proof.map_contexts (Auto2_State.add_prem_only stmt)
+      state |> apply_simple_induct_th ind_th [var] arbitraries true
     end
 
 val arbitrary =
@@ -235,7 +249,8 @@ fun apply_induct_hyp_cmd s state =
 
       val induct_stmt = Auto2_State.get_last_induct_stmt ctxt
       val stmt = induct_stmt |> the |> mk_Trueprop |> Thm.cterm_of ctxt
-                 handle Option.Option => raise Fail "apply_induct_hyp: no induct_stmt"
+                 handle Option.Option =>
+                        raise Fail "apply_induct_hyp: no induct_stmt"
 
       val prop = Auto2_State.get_selected ctxt
       val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Util.strip_meta_horn
@@ -482,36 +497,12 @@ fun fun_induct_cmd (s, t, u) state =
         let
           val _ = assert (is_none u) "fun_induct: simple induction."
 
-          val prop = Auto2_State.get_selected ctxt
-
           (* Instantiate the induction theorem *)
           val P = get_induct_stmt ctxt (K true, vars, NONE, arbitraries)
           val inst = Pattern.match thy (var_P, P) fo_init
-          val ind_th =
-              ind_th |> Util.subst_thm_thy thy inst
-                     |> apply_to_thm (Conv.binop_conv (
-                                         UtilLogic.to_meta_conv ctxt))
-
-          val assum = hd (Drule.cprems_of ind_th)
-
-          val (vars', _) = prop |> Auto2_State.subgoal_of
-                                |> Util.strip_meta_horn
-
-          val ind_th =
-              ind_th |> Util.send_first_to_hyps
-                     |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) arbitraries)
-                     |> fold Thm.forall_intr (map (Thm.cterm_of ctxt) vars')
-                     |> Thm.implies_intr assum
-
-          val t' = case Thm.prop_of ind_th of
-                       imp $ A $ B => imp $ Util.rename_abs_term vars A $ B
-                     | _ => raise Fail "fun_induct"
-
-          val ind_th = ind_th |> Thm.renamed_prop t'
-
-          val prop = prop |> Auto2_Outer.refine_subgoal_th ind_th
+          val ind_th = Util.subst_thm_thy thy inst ind_th
         in
-          state |> Proof.map_contexts (Auto2_State.set_head_th prop)
+          state |> apply_simple_induct_th ind_th vars arbitraries false
         end
       else
         let
