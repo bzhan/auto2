@@ -6,11 +6,15 @@ Current version of the program works with Isabelle2017.
 
 Papers:
 
-Formalization of the fundamental group in untyped set theory using
-auto2 (ITP 2017): https://arxiv.org/abs/1707.04757
+Efficient verification of imperative programs using auto2 (TACAS
+2018): https://arxiv.org/abs/1610.06996. Code at v0.3 (0774b32).
 
-AUTO2, a saturation-based heuristic prover for higher-order logic
-(ITP 2016): http://arxiv.org/abs/1605.07577
+Formalization of the fundamental group in untyped set theory using
+auto2 (ITP 2017): https://arxiv.org/abs/1707.04757. Code at v0.2
+(60daebd).
+
+AUTO2, a saturation-based heuristic prover for higher-order logic (ITP
+2016): http://arxiv.org/abs/1605.07577. Code at v0.1 (18b96cb).
 
 Description of the examples:
 
