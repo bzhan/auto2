@@ -33,9 +33,8 @@ definition Equiv :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Right
 lemma Equiv_is_rawequiv [typing]: "Equiv(S,R) \<in> rawequiv_space(S)" by auto2
 
 (* Evaluation of equiv *)
-definition eq_sim :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where eq_sim_def [rewrite_bidir]:
-  "eq_sim(R,x,y) \<longleftrightarrow> \<langle>x,y\<rangle> \<in> equiv_graph(R)"
-abbreviation eq_sim_notation ("(_/ \<sim>\<^sub>_ _)" [51,51,51] 50) where "x \<sim>\<^sub>R y \<equiv> eq_sim(R,x,y)"
+definition eq_sim :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" ("(_/ \<sim>\<^sub>_ _)" [51,51,51] 50) where [rewrite_bidir]:
+  "x \<sim>\<^sub>R y \<longleftrightarrow> \<langle>x,y\<rangle> \<in> equiv_graph(R)"
 setup {* register_wellform_data ("x \<sim>\<^sub>R y", ["x \<in>. R", "y \<in>. R"]) *}
 
 lemma Equiv_eval [rewrite]:
@@ -84,7 +83,7 @@ lemma subset_is_equiv:
 section {* Equivalence relation *}  (* Bourbaki II.6.1 *)
 
 definition equiv :: "i \<Rightarrow> o" where [rewrite]:
-  "equiv(R) \<longleftrightarrow> (rawequiv(R) \<and> equiv_on(\<lambda>x y. x \<sim>\<^sub>R y, carrier(R)))"
+  "equiv(R) \<longleftrightarrow> rawequiv(R) \<and> equiv_on(\<lambda>x y. x \<sim>\<^sub>R y, carrier(R))"
 setup {* add_property_const @{term equiv} *}
 
 (* Self-contained condition for equiv. *)
@@ -185,7 +184,7 @@ setup {* fold del_prfstep_thm [@{thm rep_def}, @{thm quotient_set_def}] *}
 
 (* Definition of canonical surjection *)
 definition qsurj :: "i \<Rightarrow> i" where [rewrite]:
-  "qsurj(R) = (\<lambda>x\<in>carrier(R). equiv_class(R,x)\<in>(carrier(R)//R))"
+  "qsurj(R) = (\<lambda>x\<in>carrier(R). equiv_class(R,x)\<in>carrier(R)//R)"
 
 lemma qsurj_is_fun [typing]: "qsurj(R) \<in> carrier(R) \<rightarrow> carrier(R)//R" by auto2
 

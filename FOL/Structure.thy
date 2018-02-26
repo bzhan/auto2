@@ -305,7 +305,7 @@ definition order_graph :: "i \<Rightarrow> i" where [rewrite]:
   "order_graph(R) = fst(snd(snd(R)))"
 
 (* Evaluation of order *)
-definition le :: "[i, i, i] \<Rightarrow> o" where le_def [rewrite_bidir]:
+definition le :: "[i, i, i] \<Rightarrow> o" where [rewrite_bidir]:
   "le(R,x,y) \<longleftrightarrow> \<langle>x,y\<rangle> \<in> order_graph(R)"
 abbreviation le_notation ("(_/ \<le>\<^sub>_ _)" [51,51,51] 50) where "x \<le>\<^sub>R y \<equiv> le(R,x,y)"
 setup {* register_wellform_data ("x \<le>\<^sub>R y", ["x \<in>. R", "y \<in>. R"]) *}

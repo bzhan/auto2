@@ -64,7 +64,7 @@ lemma nat_case_type [backward]:
   @obtain "k'\<in>nat" where "k = Suc(k')"
 @qed
 
-definition nat_rec :: "[i, [i, i] \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
+definition nat_rec :: "[i, i \<Rightarrow> i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
   "nat_rec(a,b,k) = wfrec(mem_rel(nat), \<lambda>n f. nat_case(a, \<lambda>m. b(m, f`m), n), k)"
 setup {* register_wellform_data ("nat_rec(a,b,k)", ["k \<in> nat"]) *}
 
