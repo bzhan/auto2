@@ -33,9 +33,9 @@ definition rect_inter_next :: "nat operation array \<Rightarrow> int_tree \<Righ
   "rect_inter_next a b k = do {
     oper \<leftarrow> Array.nth a k;
     if is_INS oper then
-      int_tree_insert (IdxInterval (op_int oper) (op_idx oper)) b
+      IntervalTree_Impl.insert_impl (IdxInterval (op_int oper) (op_idx oper)) b
     else
-      int_tree_delete (IdxInterval (op_int oper) (op_idx oper)) b }"
+      IntervalTree_Impl.delete_impl (IdxInterval (op_int oper) (op_idx oper)) b }"
 
 lemma op_int_is_interval:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
@@ -57,7 +57,7 @@ partial_function (heap) rect_inter_impl ::
      else do {
        oper \<leftarrow> Array.nth a k;
        (if is_INS oper then do {
-          overlap \<leftarrow> int_tree_search (op_int oper) b;
+          overlap \<leftarrow> IntervalTree_Impl.search_impl (op_int oper) b;
           if overlap then return True
           else if k = n - 1 then return False
           else do {

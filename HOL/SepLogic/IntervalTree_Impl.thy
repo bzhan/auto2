@@ -115,28 +115,28 @@ lemma int_tree_constr_rule [hoare_triple]:
 
 subsection {* Insertion *}
   
-partial_function (heap) int_tree_insert :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
-  "int_tree_insert v b = (case b of
+partial_function (heap) insert_impl :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
+  "insert_impl v b = (case b of
     None \<Rightarrow> int_tree_constr None v None
   | Some p \<Rightarrow> do {
     t \<leftarrow> !p;
     (if v = val t then do {
        return (Some p) }
      else if v < val t then do {
-       q \<leftarrow> int_tree_insert v (lsub t);
+       q \<leftarrow> insert_impl v (lsub t);
        m \<leftarrow> compute_tmax (val t) q (rsub t);
        p := Node q (val t) m (rsub t);
        return (Some p) }
      else do {
-       q \<leftarrow> int_tree_insert v (rsub t);
+       q \<leftarrow> insert_impl v (rsub t);
        m \<leftarrow> compute_tmax (val t) (lsub t) q;
        p := Node (lsub t) (val t) m q;
        return (Some p) })})"
 
 lemma int_tree_insert_to_fun [hoare_triple]:
   "<int_tree t b>
-   int_tree_insert v b
-   <int_tree (tree_insert v t)>"
+    insert_impl v b
+   <int_tree (insert v t)>"
 @proof @induct t arbitrary b @qed
 
 subsection {* Deletion *}
@@ -178,8 +178,8 @@ lemma int_tree_del_elt_to_fun [hoare_triple]:
    int_tree_del_elt b
    <int_tree (delete_elt_tree (interval_tree.Node lt v m rt))>\<^sub>t" by auto2
 
-partial_function (heap) int_tree_delete :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
-  "int_tree_delete x b = (case b of
+partial_function (heap) delete_impl :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
+  "delete_impl x b = (case b of
      None \<Rightarrow> return None
    | Some p \<Rightarrow> do {
       t \<leftarrow> !p;
@@ -187,43 +187,43 @@ partial_function (heap) int_tree_delete :: "nat idx_interval \<Rightarrow> int_t
          r \<leftarrow> int_tree_del_elt b;
          return r }
        else if x < val t then do {
-         q \<leftarrow> int_tree_delete x (lsub t);
+         q \<leftarrow> delete_impl x (lsub t);
          m \<leftarrow> compute_tmax (val t) q (rsub t);
          p := Node q (val t) m (rsub t);
          return (Some p) }
        else do {
-         q \<leftarrow> int_tree_delete x (rsub t);
+         q \<leftarrow> delete_impl x (rsub t);
          m \<leftarrow> compute_tmax (val t) (lsub t) q;
          p := Node (lsub t) (val t) m q;
          return (Some p) })})"
 
 lemma int_tree_delete_to_fun [hoare_triple]:
   "<int_tree t b>
-   int_tree_delete x b
-   <int_tree (tree_delete x t)>\<^sub>t"
+    delete_impl x b
+   <int_tree (delete x t)>\<^sub>t"
 @proof @induct t arbitrary b @qed
 
 subsection {* Search *}
 
-partial_function (heap) int_tree_search :: "nat interval \<Rightarrow> int_tree \<Rightarrow> bool Heap" where
-  "int_tree_search x b = (case b of
+partial_function (heap) search_impl :: "nat interval \<Rightarrow> int_tree \<Rightarrow> bool Heap" where
+  "search_impl x b = (case b of
      None \<Rightarrow> return False
    | Some p \<Rightarrow> do {
       t \<leftarrow> !p;
       (if is_overlap (int (val t)) x then return True
        else case lsub t of
-           None \<Rightarrow> do { b \<leftarrow> int_tree_search x (rsub t); return b }
+           None \<Rightarrow> do { b \<leftarrow> search_impl x (rsub t); return b }
          | Some lp \<Rightarrow> do {
             lt \<leftarrow> !lp;
             if tmax lt \<ge> low x then
-              do { b \<leftarrow> int_tree_search x (lsub t); return b }
+              do { b \<leftarrow> search_impl x (lsub t); return b }
             else
-              do { b \<leftarrow> int_tree_search x (rsub t); return b }})})"
+              do { b \<leftarrow> search_impl x (rsub t); return b }})})"
 
-lemma int_tree_search_correct [hoare_triple]:
+lemma search_impl_correct [hoare_triple]:
   "<int_tree t b>
-   int_tree_search x b
-   <\<lambda>r. int_tree t b * \<up>(r \<longleftrightarrow> tree_search t x)>"
+    search_impl x b
+   <\<lambda>r. int_tree t b * \<up>(r \<longleftrightarrow> search t x)>"
 @proof @induct t arbitrary b @with
   @subgoal "t = interval_tree.Node l v m r"
     @case "is_overlap (int v) x"
@@ -242,17 +242,17 @@ theorem int_tree_empty_rule [hoare_triple]:
 
 theorem int_tree_insert_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
-   int_tree_insert x b
+   insert_impl x b
    <int_tree_set (S \<union> {x})>" by auto2
 
 theorem int_tree_delete_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval (int x))>
-   int_tree_delete x b
+   delete_impl x b
    <int_tree_set (S - {x})>\<^sub>t" by auto2
 
 theorem int_tree_search_rule [hoare_triple]:
   "<int_tree_set S b * \<up>(is_interval x)>
-   int_tree_search x b
+   search_impl x b
    <\<lambda>r. int_tree_set S b * \<up>(r \<longleftrightarrow> has_overlap S x)>" by auto2
 
 setup {* del_prfstep_thm @{thm int_tree_set_def} *}

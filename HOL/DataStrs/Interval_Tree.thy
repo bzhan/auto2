@@ -98,31 +98,31 @@ lemma is_interval_tree_lr [forward]:
 
 section {* Insertion on trees *}
 
-fun tree_insert :: "nat idx_interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
-  "tree_insert x Tip = Node Tip x (high (int x)) Tip"
-| "tree_insert x (Node l y m r) =
+fun insert :: "nat idx_interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
+  "insert x Tip = Node Tip x (high (int x)) Tip"
+| "insert x (Node l y m r) =
     (if x = y then Node l y m r
      else if x < y then
-       let l' = tree_insert x l in
+       let l' = insert x l in
            Node l' y (max3 y (tmax l') (tmax r)) r
      else
-       let r' = tree_insert x r in
+       let r' = insert x r in
            Node l y (max3 y (tmax l) (tmax r')) r')"
-setup {* fold add_rewrite_rule @{thms tree_insert.simps} *}
+setup {* fold add_rewrite_rule @{thms insert.simps} *}
 
 lemma tree_insert_in_traverse [rewrite]:
-  "tree_sorted t \<Longrightarrow> in_traverse (tree_insert x t) = ordered_insert x (in_traverse t)"
+  "tree_sorted t \<Longrightarrow> in_traverse (insert x t) = ordered_insert x (in_traverse t)"
 @proof @induct t @qed
 
 lemma tree_insert_on_set [rewrite]:
-  "tree_sorted t \<Longrightarrow> tree_set (tree_insert it t) = {it} \<union> tree_set t" by auto2
+  "tree_sorted t \<Longrightarrow> tree_set (insert it t) = {it} \<union> tree_set t" by auto2
 
 lemma tree_insert_max_inv [forward]:
-  "tree_max_inv t \<Longrightarrow> tree_max_inv (tree_insert x t)"
+  "tree_max_inv t \<Longrightarrow> tree_max_inv (insert x t)"
 @proof @induct t @qed
 
 lemma tree_insert_all_inv [forward]:
-  "is_interval_tree t \<Longrightarrow> is_interval (int it) \<Longrightarrow> is_interval_tree (tree_insert it t)" by auto2
+  "is_interval_tree t \<Longrightarrow> is_interval (int it) \<Longrightarrow> is_interval_tree (insert it t)" by auto2
 
 section {* Deletion on trees *}
 
@@ -179,45 +179,45 @@ lemma delete_elt_interval_inv [forward_arg]:
 lemma delete_elt_all_inv [forward_arg]:
   "is_interval_tree t \<Longrightarrow> t \<noteq> Tip \<Longrightarrow> is_interval_tree (delete_elt_tree t)" by auto2
 
-fun tree_delete :: "nat idx_interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
-  "tree_delete x Tip = Tip"
-| "tree_delete x (Node l y m r) =
+fun delete :: "nat idx_interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
+  "delete x Tip = Tip"
+| "delete x (Node l y m r) =
     (if x = y then delete_elt_tree (Node l y m r)
      else if x < y then
-       let l' = tree_delete x l;
+       let l' = delete x l;
            m' = max3 y (tmax l') (tmax r) in Node l' y m' r
      else
-       let r' = tree_delete x r;
+       let r' = delete x r;
            m' = max3 y (tmax l) (tmax r') in Node l y m' r')"
-setup {* fold add_rewrite_rule @{thms tree_delete.simps} *}
+setup {* fold add_rewrite_rule @{thms delete.simps} *}
 
 lemma tree_delete_in_traverse [rewrite]:
-  "tree_sorted t \<Longrightarrow> in_traverse (tree_delete x t) = remove_elt_list x (in_traverse t)"
+  "tree_sorted t \<Longrightarrow> in_traverse (delete x t) = remove_elt_list x (in_traverse t)"
 @proof @induct t @qed
 
 lemma tree_delete_max_inv [forward]:
-  "tree_max_inv t \<Longrightarrow> tree_max_inv (tree_delete x t)"
+  "tree_max_inv t \<Longrightarrow> tree_max_inv (delete x t)"
 @proof @induct t @qed
     
 lemma tree_delete_all_inv [forward]:
-  "is_interval_tree t \<Longrightarrow> is_interval_tree (tree_delete x t)"
-@proof @have "tree_set (tree_delete x t) \<subseteq> tree_set t" @qed
+  "is_interval_tree t \<Longrightarrow> is_interval_tree (delete x t)"
+@proof @have "tree_set (delete x t) \<subseteq> tree_set t" @qed
 
 lemma tree_delete_on_set [rewrite]:
-  "tree_sorted t \<Longrightarrow> tree_set (tree_delete x t) = tree_set t - {x}" by auto2
+  "tree_sorted t \<Longrightarrow> tree_set (delete x t) = tree_set t - {x}" by auto2
 
 section {* Search on interval trees *}
 
-fun tree_search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" where
-  "tree_search Tip x = False"
-| "tree_search (Node l y m r) x =
+fun search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" where
+  "search Tip x = False"
+| "search (Node l y m r) x =
    (if is_overlap (int y) x then True
-    else if l \<noteq> Tip \<and> tmax l \<ge> low x then tree_search l x
-    else tree_search r x)"
-setup {* fold add_rewrite_rule @{thms tree_search.simps} *}
+    else if l \<noteq> Tip \<and> tmax l \<ge> low x then search l x
+    else search r x)"
+setup {* fold add_rewrite_rule @{thms search.simps} *}
 
-lemma tree_search_correct [rewrite]:
-  "is_interval_tree t \<Longrightarrow> is_interval x \<Longrightarrow> tree_search t x \<longleftrightarrow> has_overlap (tree_set t) x"
+lemma search_correct [rewrite]:
+  "is_interval_tree t \<Longrightarrow> is_interval x \<Longrightarrow> search t x \<longleftrightarrow> has_overlap (tree_set t) x"
 @proof
   @induct t @with
     @subgoal "t = Node l y m r"

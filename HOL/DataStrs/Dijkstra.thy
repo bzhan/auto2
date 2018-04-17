@@ -186,7 +186,8 @@ lemma derive_dist [backward2]:
   @have "is_shortest_path G 0 m p" @with
     @have "p \<in> path_set G 0 m"
     @have "\<forall>p'\<in>path_set G 0 m. path_weight G p' \<ge> path_weight G p" @with
-      @obtain p1 p2 where "joinable G p1 p2" "p' = path_join G p1 p2" "int_pts p1 \<subseteq> V" "hd p2 \<notin> V"
+      @obtain p1 p2 where "joinable G p1 p2" "p' = path_join G p1 p2"
+                          "int_pts p1 \<subseteq> V" "hd p2 \<notin> V"
       @let "x = last p1"
       @have "dist_on G 0 x V \<ge> dist_on G 0 m V"
       @have "p1 \<in> path_set_on G 0 x V"

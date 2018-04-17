@@ -44,8 +44,9 @@ partial_function (heap) uf_compress :: "nat \<Rightarrow> nat \<Rightarrow> nat 
 lemma uf_compress_rule [hoare_triple]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow>
    <p \<mapsto>\<^sub>a l>
-   uf_compress i (rep_of l i) p
-   <\<lambda>_. \<exists>\<^sub>Al'. p \<mapsto>\<^sub>a l' * \<up>(ufa_invar l' \<and> length l' = length l \<and> (\<forall>i<length l. rep_of l' i = rep_of l i))>"
+    uf_compress i (rep_of l i) p
+   <\<lambda>_. \<exists>\<^sub>Al'. p \<mapsto>\<^sub>a l' * \<up>(ufa_invar l' \<and> length l' = length l \<and>
+              (\<forall>i<length l. rep_of l' i = rep_of l i))>"
 @proof @prop_induct "ufa_invar l \<and> i < length l" @qed
 
 definition uf_rep_of_c :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
