@@ -1,3 +1,9 @@
+(* Imperative implementation of indexed priority queue.
+
+   The data structure is also verified in the AFP entry
+   Refine_Imperative_HOL by Peter Lammich.
+*)
+
 theory Indexed_PQueue_Impl
   imports DynamicArray "../DataStrs/Indexed_PQueue"
 begin

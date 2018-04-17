@@ -1,3 +1,9 @@
+(* Imperative implementations of common array operations.
+
+   Imperative reverse on arrays is also verified in
+   Imperative_HOL/ex/Imperative_Reverse in the Isabelle library.
+*)
+
 theory Arrays_Impl
   imports SepAuto "../DataStrs/Arrays_Ex"
 begin

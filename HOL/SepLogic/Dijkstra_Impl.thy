@@ -1,3 +1,9 @@
+(* Imperative implementation of Dijkstra's shortest path algorithm.
+
+   The algorithm is also verified in the AFP entry Dijkstra_Shortest_Path
+   by Benedikt Nordhoff and Peter Lammich.
+*)
+
 theory Dijkstra_Impl
 imports Indexed_PQueue_Impl "../DataStrs/Dijkstra"
 begin

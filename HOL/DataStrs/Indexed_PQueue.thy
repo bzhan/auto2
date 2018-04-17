@@ -1,3 +1,9 @@
+(* Verification of indexed priority queue: functional part.
+
+   The data structure is also verified in the AFP entry
+   Refine_Imperative_HOL by Peter Lammich.
+*)
+
 theory Indexed_PQueue
   imports Arrays_Ex Mapping_Str
 begin

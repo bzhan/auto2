@@ -23,8 +23,9 @@ Description of the examples:
   intersection.
 
 - HOL/SepLogic: verification of imperative programs using separation
-  logic. Foundation of separation logic follows "A Separation Logic
-  Framework for Imperative HOL" in Isabelle AFP.
+  logic. Foundation of separation logic, and several of the examples,
+  follow "A Separation Logic Framework for Imperative HOL" in Isabelle
+  AFP.
 
 - HOL/Primes_Ex: elementary number theory of primes, up to the proof
   of infinitude of primes and the unique factorization

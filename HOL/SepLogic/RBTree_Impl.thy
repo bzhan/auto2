@@ -1,4 +1,4 @@
-(* Red-black trees. *)
+(* Verification of imperative red-black trees. *)
 
 theory RBTree_Impl
   imports "../DataStrs/RBTree" SepAuto

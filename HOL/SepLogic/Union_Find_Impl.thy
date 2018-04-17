@@ -1,3 +1,7 @@
+(* Development follows theory Union_Find of AFP entry
+   Separation_Logic_Imperative_HOL by Lammich and Meis.
+*)
+
 theory Union_Find_Impl
 imports "../DataStrs/Union_Find" SepAuto
 begin

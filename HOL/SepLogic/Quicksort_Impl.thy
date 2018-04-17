@@ -1,3 +1,7 @@
+(* Imperative implementation of quicksort. Also verified in
+   Imperative_HOL/ex/Imperative_Quicksort in the Isabelle library.
+*)
+
 theory Quicksort_Impl
 imports Arrays_Impl "../DataStrs/Quicksort"
 begin

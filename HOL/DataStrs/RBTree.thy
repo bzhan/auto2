@@ -1,4 +1,5 @@
-(* Verification of functional red-black trees. *)
+(* Verification of functional red-black trees. See also theory
+   HOL/Library/RBT_Impl in the Isabelle distribution. *)
 
 theory RBTree
 imports Lists_Ex

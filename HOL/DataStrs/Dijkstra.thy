@@ -1,3 +1,9 @@
+(* Verification of Dijkstra's algorithm: function part.
+
+   The algorithm is also verified in the AFP entry Dijkstra_Shortest_Path
+   by Benedikt Nordhoff and Peter Lammich.
+*)
+
 theory Dijkstra
   imports Mapping_Str Arrays_Ex
 begin
