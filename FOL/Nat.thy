@@ -70,7 +70,7 @@ setup {* register_wellform_data ("nat_rec(a,b,k)", ["k \<in> nat"]) *}
 
 lemma nat_rec_0 [rewrite]: "nat_rec(a,b,0) = a" by auto2
 lemma nat_rec_Suc [rewrite]: "m \<in> nat \<Longrightarrow> nat_rec(a,b,Suc(m)) = b(m, nat_rec(a,b,m))"
-  @proof @have "m \<in> rel_vsection(mem_rel(nat),Suc(m))" @qed
+  @proof @have "m \<in> ord_pred(mem_rel(nat),Suc(m))" @qed
 setup {* del_prfstep_thm @{thm nat_rec_def} *}
 
 lemma nat_rec_type [backward]:

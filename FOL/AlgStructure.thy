@@ -198,7 +198,7 @@ definition OrdRing :: "[i, i, i \<Rightarrow> i \<Rightarrow> i, i, i \<Rightarr
       \<langle>z,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,\<langle>u,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>,\<emptyset>\<rangle>"
 
 (* Recall definition of order_graph and le for this section *)
-setup {* add_rewrite_rule @{thm order_graph_def} #> add_rewrite_rule_bidir @{thm le_def} *}
+setup {* fold add_rewrite_rule [@{thm order_graph_def}, @{thm le_def}] *}
 
 lemma OrdRing_is_ord_ring_raw [backward]:
   "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow>

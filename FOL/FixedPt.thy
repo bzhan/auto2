@@ -1,7 +1,7 @@
 (* Fixed point theorems *)
 
 theory FixedPt
-imports Functions
+imports OrderRel
 begin
 
 (* h is a function from Pow(D) to itself, and is monotone in the sense that
@@ -154,36 +154,24 @@ lemma trans_cl_induct [script_induct]:
 @qed
 setup {* del_prfstep_thm @{thm trans_cl_def} *}
 
-definition trans :: "i \<Rightarrow> o" where [rewrite]:
-  "trans(r) \<longleftrightarrow> (is_rel(r) \<and>
-    (\<forall>x\<in>source(r). \<forall>y\<in>source(r). \<forall>z\<in>source(r). rel(r,x,y) \<longrightarrow> rel(r,y,z) \<longrightarrow> rel(r,x,z)))"
-setup {* add_property_const @{term trans} *}
-
-lemma transD [forward]:
-  "trans(r) \<Longrightarrow> is_rel(r)"
-  "trans(r) \<Longrightarrow> x \<in> source(r) \<Longrightarrow> y \<in> source(r) \<Longrightarrow> z \<in> target(r) \<Longrightarrow>
-     rel(r,x,y) \<Longrightarrow> rel(r,y,z) \<Longrightarrow> rel(r,x,z)" by auto2+
-setup {* del_prfstep_thm_eqforward @{thm trans_def} *}
-
 definition rel_trans_cl :: "i \<Rightarrow> i" where [rewrite]:
-  "rel_trans_cl(R) = Rel(source(R), \<lambda>x y. \<langle>x,y\<rangle> \<in> trans_cl(graph(R)))"
-setup {* register_wellform_data ("rel_trans_cl(R)", ["source(R) = target(R)"]) *}
+  "rel_trans_cl(R) = Order(carrier(R), \<lambda>x y. \<langle>x,y\<rangle> \<in> trans_cl(order_graph(R)))"
 
 lemma rel_trans_cl_is_rel [typing]:
-  "is_rel(R) \<Longrightarrow> rel_trans_cl(R) \<in> rel_space(source(R))" by auto2
+  "raworder(R) \<Longrightarrow> rel_trans_cl(R) \<in> raworder_space(carrier(R))" by auto2
 
 lemma rel_trans_clI1:
-  "is_rel(R) \<Longrightarrow> rel(R,x,y) \<Longrightarrow> rel(rel_trans_cl(R),x,y)"
-@proof @have "\<langle>x,y\<rangle> \<in> graph(R)" @qed
+  "raworder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> le(rel_trans_cl(R),x,y)"
+@proof @have "\<langle>x,y\<rangle> \<in> order_graph(R)" @qed
 setup {* add_forward_prfstep_cond @{thm rel_trans_clI1} [with_term "rel_trans_cl(?R)"] *}
 
-lemma rel_trans_clI2 [forward]: "is_rel(R) \<Longrightarrow> trans(rel_trans_cl(R))" by auto2
+lemma rel_trans_clI2 [forward]: "raworder(R) \<Longrightarrow> trans(rel_trans_cl(R))" by auto2
 
 lemma rel_trans_cl_induct [script_induct]:
-  "rel(rel_trans_cl(R),a,b) \<Longrightarrow> is_rel(R) \<Longrightarrow> \<forall>y. rel(R,a,y) \<longrightarrow> P(y) \<Longrightarrow>
-   \<forall>y z. rel(rel_trans_cl(R),a,y) \<longrightarrow> rel(R,y,z) \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(b)"
+  "le(rel_trans_cl(R),a,b) \<Longrightarrow> raworder(R) \<Longrightarrow> \<forall>y. a \<le>\<^sub>R y \<longrightarrow> P(y) \<Longrightarrow>
+   \<forall>y z. le(rel_trans_cl(R),a,y) \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(b)"
 @proof
-  @induct "\<langle>a,b\<rangle>\<in>trans_cl(graph(R))" "P(b)"
+  @induct "\<langle>a,b\<rangle>\<in>trans_cl(order_graph(R))" "P(b)"
 @qed
 
 setup {* del_prfstep_thm @{thm rel_trans_cl_def} *}

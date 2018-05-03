@@ -41,8 +41,6 @@ lemma equipotent_sym [forward]: "equipotent(S,T) \<Longrightarrow> equipotent(T,
 lemma equipotent_trans [backward2]: "equipotent(S,T) \<Longrightarrow> equipotent(T,U) \<Longrightarrow> equipotent(S,U)"
 @proof @obtain "f \<in> S \<cong> T" @obtain "g \<in> T \<cong> U" @have "g \<circ> f \<in> S \<cong> U" @qed
 
-lemma bij_is_equiv_meta_real: "equiv_meta_rel(equipotent)" by auto2
-
 lemma equipotent_empty [forward]: "equipotent(X,\<emptyset>) \<Longrightarrow> X = \<emptyset>"
 @proof @obtain "f \<in> X \<cong> \<emptyset>" @have "X \<rightarrow> \<emptyset> \<noteq> \<emptyset>" @qed
 

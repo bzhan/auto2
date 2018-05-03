@@ -20,16 +20,16 @@ lemma no_mem_cycle2 [resolve]: "x \<in> y \<Longrightarrow> y \<notin> x"
 section {* Membership relation is well-founded *}
 
 definition mem_rel :: "i \<Rightarrow> i" where [rewrite]:
-  "mem_rel(A) = Rel(A, \<lambda>x y. x \<in> y)"
+  "mem_rel(A) = Order(A, \<lambda>x y. x \<in> y)"
 
-lemma mem_rel_is_rel [typing]: "mem_rel(A) \<in> rel_space(A)" by auto2
+lemma mem_rel_is_rel [typing]: "mem_rel(A) \<in> raworder_space(A)" by auto2
 lemma mem_rel_eval [rewrite]:
-  "x \<in> source(mem_rel(A)) \<Longrightarrow> y \<in> source(mem_rel(A)) \<Longrightarrow> rel(mem_rel(A),x,y) \<longleftrightarrow> x \<in> y" by auto2
+  "R = mem_rel(A) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> x \<in> y" by auto2
 setup {* del_prfstep_thm @{thm mem_rel_def} *}
 
 lemma wf_mem_rel [forward]: "wf(mem_rel(A))"
 @proof
-  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. rel_minimal(mem_rel(A),B,x))" @with
+  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(mem_rel(A),B,x))" @with
     @obtain "x\<in>B" where "x \<inter> B = \<emptyset>" @end
 @qed
 
@@ -64,7 +64,7 @@ section {* Induction on ordinals *}
 
 lemma ord_induct' [strong_induct]:
   "ord(k) \<and> i \<in> k \<Longrightarrow> \<forall>x\<in>k. (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(i)"
-@proof @strong_induct "wf(mem_rel(k)) \<and> i \<in> source(mem_rel(k))" @qed
+@proof @strong_induct "wf(mem_rel(k)) \<and> i \<in>. mem_rel(k)" @qed
 
 lemma ord_induct [script_induct]:
   "ord(i) \<Longrightarrow> \<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(i)"

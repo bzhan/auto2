@@ -367,6 +367,7 @@ lemma order_eq [backward]:
 
 setup {* fold del_prfstep_thm [
   @{thm ord_form_def}, @{thm raworder_space_def}, @{thm Order_def}, @{thm le_def}] *}
+setup {* add_rewrite_rule_back @{thm le_def} *}
 
 setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm order_graph_def}] *}
 

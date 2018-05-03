@@ -2,18 +2,27 @@ theory OrderRel
 imports EquivRel Morphism
 begin
 
+section {* Transitive relations *}
+
+definition trans :: "i \<Rightarrow> o" where [rewrite]:
+  "trans(R) \<longleftrightarrow> (
+    raworder(R) \<and>
+    (\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z))"
+setup {* add_property_const @{term trans} *}
+
+lemma transD [forward]:
+  "trans(R) \<Longrightarrow> raworder(R)"
+  "trans(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R z \<Longrightarrow> x \<le>\<^sub>R z" by auto2+
+setup {* del_prfstep_thm_eqforward @{thm trans_def} *}
+
 section {* Preorder and order relations *}  (* Bourbaki III.1.1 -- III.1.2 *)
   
 definition preorder :: "i \<Rightarrow> o" where [rewrite]:
-  "preorder(R) \<longleftrightarrow> (
-    raworder(R) \<and>
-    (\<forall>x\<in>.R. x \<le>\<^sub>R x) \<and>
-    (\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z))"
+  "preorder(R) \<longleftrightarrow> trans(R) \<and> (\<forall>x\<in>.R. x \<le>\<^sub>R x)"
 setup {* add_property_const @{term preorder} *}
   
 lemma preorderD [forward]:
-  "preorder(R) \<Longrightarrow> raworder(R)"
-  "preorder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R z \<Longrightarrow> x \<le>\<^sub>R z" by auto2+
+  "preorder(R) \<Longrightarrow> trans(R)" by auto2
 
 lemma preorderD' [backward]:
   "preorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> x \<le>\<^sub>R x" by auto2
