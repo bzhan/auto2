@@ -118,7 +118,12 @@ lemma wftrec_unfold [rewrite]:
    wftrec(r,H,a) = H(a, Tup(rel_vsection(r,a), \<lambda>x. wftrec(r,H,x)))" by auto2
 setup {* del_prfstep_thm @{thm wftrec_def} *}
 
-(* Definition that does not assume transitivity. *)
+(* Definition that does not assume transitivity.
+
+   Assuming r is a well-founded relation and a is an element in source(r),
+   H is a meta-function indicating how to obtain value at x from a mapping
+   from x and the family of values at the set r^-1(x).
+*)
 definition wfrec :: "[i, [i, i] \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
   "wfrec(r,H,a) = wftrec(rel_trans_cl(r), \<lambda>x f. H(x, proj_set(f,rel_vsection(r,x))), a)"
 setup {* register_wellform_data ("wfrec(r,H,a)", ["a \<in> source(r)"]) *}
