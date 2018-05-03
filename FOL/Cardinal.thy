@@ -4,15 +4,11 @@ theory Cardinal
   imports Finite
 begin
 
-declare [[print_trace]]
-
 section \<open>Least ordinal satisfying a property\<close>
 
 (* Least ordinal satisfying property P. *)
 definition least_ord :: "(i \<Rightarrow> o) \<Rightarrow> i"  (binder "\<mu> " 10) where [rewrite]:
   "(\<mu> i. P(i)) = (THE i. ord(i) \<and> P(i) \<and> (\<forall>j\<in>i. \<not>P(j)))"
-
-declare ord_linear[resolve]
 
 (* Show the definition of least_ord make sense. *)
 lemma least_ord_eq [backward]:

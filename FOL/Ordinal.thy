@@ -80,7 +80,8 @@ lemma ord_double_induct [script_induct]:
 @qed
 
 (* Ordinals are linearly ordered *)
-lemma ord_linear: "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<or> i = j \<or> j \<in> i"
+lemma ord_linear [resolve]:
+  "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<or> i = j \<or> j \<in> i"
 @proof
   @induct "ord(i) \<and> ord(j)" "i \<in> j \<or> i = j \<or> j \<in> i"
 @qed
