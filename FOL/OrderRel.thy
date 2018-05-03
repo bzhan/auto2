@@ -2,49 +2,14 @@ theory OrderRel
 imports EquivRel Morphism
 begin
 
-section {* Meta order relations *}
-  
-(* Definition for meta order relation *)
-definition refl_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
-  "refl_meta_rel(R) \<longleftrightarrow> (\<forall>x y. R(x,y) \<longrightarrow> R(x,x) \<and> R(y,y))"
-
-definition antisym_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
-  "antisym_meta_rel(R) \<longleftrightarrow> (\<forall>x y. R(x,y) \<longrightarrow> R(y,x) \<longrightarrow> x = y)"
-
-lemma antisym_meta_relD [forward]:
-  "antisym_meta_rel(R) \<Longrightarrow> R(x,y) \<Longrightarrow> R(y,x) \<Longrightarrow> x = y" by auto2
-setup {* del_prfstep_thm_eqforward @{thm antisym_meta_rel_def} *}
-
-definition preorder_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
-  "preorder_meta_rel(R) \<longleftrightarrow> (refl_meta_rel(R) \<and> trans_meta_rel(R))"
-
-definition preorder_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
-  "preorder_on(R,E) \<longleftrightarrow> (preorder_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
-
-definition order_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
-  "order_meta_rel(R) \<longleftrightarrow> (preorder_meta_rel(R) \<and> antisym_meta_rel(R))"
-
-definition order_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
-  "order_on(R,E) \<longleftrightarrow> (order_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
-
-(* Examples *)
-lemma eq_is_order_meta_rel: "order_meta_rel(\<lambda>x y. x = y)" by auto2
-lemma subset_is_order_meta_rel: "order_meta_rel(\<lambda>x y. x \<subseteq> y)" by auto2
-lemma inv_is_meta_order: "order_meta_rel(R) \<Longrightarrow> order_meta_rel(\<lambda>x y. R(y,x))" by auto2
-
 section {* Preorder and order relations *}  (* Bourbaki III.1.1 -- III.1.2 *)
-
-definition preorder :: "i \<Rightarrow> o" where [rewrite]:
-  "preorder(R) \<longleftrightarrow> (raworder(R) \<and> preorder_on(\<lambda>x y. x \<le>\<^sub>R y, carrier(R)))"
-setup {* add_property_const @{term preorder} *}
   
-(* Self-contained condition for preorder. *)
-lemma preorder_iff [rewrite]:
+definition preorder :: "i \<Rightarrow> o" where [rewrite]:
   "preorder(R) \<longleftrightarrow> (
     raworder(R) \<and>
     (\<forall>x\<in>.R. x \<le>\<^sub>R x) \<and>
-    (\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z))" by auto2
-setup {* del_prfstep_thm @{thm preorder_def} *}
+    (\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z))"
+setup {* add_property_const @{term preorder} *}
   
 lemma preorderD [forward]:
   "preorder(R) \<Longrightarrow> raworder(R)"
@@ -52,25 +17,16 @@ lemma preorderD [forward]:
 
 lemma preorderD' [backward]:
   "preorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> x \<le>\<^sub>R x" by auto2
-setup {* del_prfstep_thm_eqforward @{thm preorder_iff} *}
+setup {* del_prfstep_thm_eqforward @{thm preorder_def} *}
   
 definition order :: "i \<Rightarrow> o" where [rewrite]:
-  "order(R) \<longleftrightarrow> (raworder(R) \<and> order_on(\<lambda>x y. x \<le>\<^sub>R y, carrier(R)))"
+  "order(R) \<longleftrightarrow> (preorder(R) \<and> (\<forall>x y. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y))"
 setup {* add_property_const @{term order} *}
-
-(* Self-contained condition for order. *)
-lemma order_iff [rewrite]:
-  "order(R) \<longleftrightarrow> (preorder(R) \<and> (\<forall>x y. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y))" by auto2
-setup {* del_prfstep_thm @{thm order_def} *}
   
 lemma orderD [forward]:
   "order(R) \<Longrightarrow> preorder(R)"
   "order(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R x \<Longrightarrow> x = y" by auto2+
-setup {* del_prfstep_thm_eqforward @{thm order_iff} *}
-  
-(* Condition in terms of order_on. *)
-lemma induced_pre_order: "preorder_on(R,E) \<Longrightarrow> preorder(Order(E,R))" by auto2
-lemma induced_order: "order_on(R,E) \<Longrightarrow> order(Order(E,R))" by auto2
+setup {* del_prfstep_thm_eqforward @{thm order_def} *}
 
 (* Small exercise: opposite order *)
 definition opp_order :: "i \<Rightarrow> i" where [rewrite]:

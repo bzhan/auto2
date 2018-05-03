@@ -54,50 +54,16 @@ setup {* fold del_prfstep_thm [
 
 setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm equiv_graph_def}] *}
 
-section {* Meta equivalence relations *}
-
-(* Definition of meta equivalence relation *)
-definition sym_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
-  "sym_meta_rel(R) \<longleftrightarrow> (\<forall>x y. R(x,y) \<longrightarrow> R(y,x))"
-
-definition trans_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
-  "trans_meta_rel(R) \<longleftrightarrow> (\<forall>x y z. R(x,y) \<longrightarrow> R(y,z) \<longrightarrow> R(x,z))"
-
-lemma trans_meta_relD [forward]:
-  "trans_meta_rel(R) \<Longrightarrow> R(x,y) \<Longrightarrow> \<forall>z. R(y,z) \<longrightarrow> R(x,z)" by auto2
-setup {* del_prfstep_thm_eqforward @{thm trans_meta_rel_def} *}
-
-definition equiv_meta_rel :: "[i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> o" where [rewrite]:
-  "equiv_meta_rel(R) \<longleftrightarrow> (sym_meta_rel(R) \<and> trans_meta_rel(R))"
-
-definition equiv_on :: "[i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
-  "equiv_on(R,E) \<longleftrightarrow> (equiv_meta_rel(R) \<and> (\<forall>x. x \<in> E \<longleftrightarrow> R(x,x)))"
-
-(* Examples *)
-lemma eq_is_equiv_meta_rel: "equiv_meta_rel(\<lambda>x y. x = y)" by auto2
-lemma eq_on_E_is_equiv: "equiv_on(\<lambda>x y. x = y \<and> x \<in> E, E)" by auto2
-lemma all_rel_is_equiv: "equiv_on(\<lambda>x y. x \<in> E \<and> y \<in> E, E)" by auto2
-lemma subset_is_equiv:
-  "A \<subseteq> E \<Longrightarrow> equiv_on(\<lambda>x y. x \<in> E \<and> y \<in> E \<and> (x = y \<or> (x \<in> A \<and> y \<in> A)), E)" by auto2
-
 section {* Equivalence relation *}  (* Bourbaki II.6.1 *)
 
-definition equiv :: "i \<Rightarrow> o" where [rewrite]:
-  "equiv(R) \<longleftrightarrow> rawequiv(R) \<and> equiv_on(\<lambda>x y. x \<sim>\<^sub>R y, carrier(R))"
-setup {* add_property_const @{term equiv} *}
-
 (* Self-contained condition for equiv. *)
-lemma equiv_iff [rewrite]:
+definition equiv :: "i \<Rightarrow> o" where [rewrite]:
   "equiv(R) \<longleftrightarrow> (
     rawequiv(R) \<and>
     (\<forall>x\<in>.R. x \<sim>\<^sub>R x) \<and>
     (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x)) \<and>
-    (\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z)" by auto2
-setup {* del_prfstep_thm @{thm equiv_def} *}
-
-(* Condition in terms of equiv_on. *)
-lemma induced_equiv_is_equiv:
-  "equiv_on(R,E) \<Longrightarrow> equiv(Equiv(E,R))" by auto2
+    (\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z)"
+setup {* add_property_const @{term equiv} *}
 
 lemma equivD:
   "equiv(R) \<Longrightarrow> rawequiv(R)"
@@ -108,7 +74,7 @@ setup {* add_forward_prfstep @{thm equivD(1)} *}
 setup {* add_backward_prfstep @{thm equivD(2)} *}
 setup {* add_rewrite_rule @{thm equivD(3)} *}
 setup {* add_forward_prfstep_cond @{thm equivD(4)} [with_cond "?x \<noteq> ?z"] *}
-setup {* del_prfstep_thm_eqforward @{thm equiv_iff} *}
+setup {* del_prfstep_thm_eqforward @{thm equiv_def} *}
 
 definition equiv_space :: "i \<Rightarrow> i" where [rewrite]:
   "equiv_space(S) = {R\<in>rawequiv_space(S). equiv(R)}"
@@ -250,9 +216,6 @@ definition partition_mem :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
 
 definition partition_equiv :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "partition_equiv(X,u,v) \<longleftrightarrow> (u \<in> \<Union>X \<and> v \<in> \<Union>X \<and> (partition_mem(X,u) = partition_mem(X,u)))"
-
-lemma partition_equiv_is_equiv:
-  "is_partition_sets(E,X) \<Longrightarrow> equiv_on(partition_equiv(X),E)" by auto2
 
 section {* Predicate compatible with an equivalence relation *}  (* Bourbaki II.6.3 *)
 
