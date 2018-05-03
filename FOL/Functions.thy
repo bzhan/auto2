@@ -1,5 +1,5 @@
 theory Functions
-imports Relations Choice
+imports Choice
 begin
 
 section {* Functions *}  (* Bourbaki II.3.4 -- II.3.6 *)
