@@ -201,6 +201,8 @@ fun nat_neq (m, n) =
 val nat_linorder_th = @{thm nat_is_linorder}
 val nat_order_th = nat_linorder_th RS @{thm linorderD(1)}
 val nat_preorder_th = nat_order_th RS @{thm orderD(1)}
+val nat_trans_th = nat_preorder_th RS @{thm preorderD(1)}
+val nat_raworder_th = nat_trans_th RS @{thm transD(1)}
 
 (* Produce the theorem m < n. *)
 fun nat_less (m, n) =
@@ -209,7 +211,7 @@ fun nat_less (m, n) =
       val le_th = nat_le (m, n)
       val neq_th = nat_neq (m, n)
     in
-      [nat_preorder_th, le_th, neq_th] MRS @{thm preorder_lessI}
+      [nat_raworder_th, le_th, neq_th] MRS @{thm preorder_lessI}
     end
 
 val add_nat_arith_proofsteps =
