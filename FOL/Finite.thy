@@ -25,64 +25,64 @@ lemma glue_function2_bij [backward]:
 
 section {* Equipotent condition *}
 
-definition equipotent :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "equipotent(S,T) \<longleftrightarrow> (\<exists>f. f \<in> S \<cong> T)"
+definition equipotent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<approx>\<^sub>S" 50) where [rewrite]:
+  "S \<approx>\<^sub>S T \<longleftrightarrow> (\<exists>f. f \<in> S \<cong> T)"
   
-lemma equipotentI [resolve]: "f \<in> S \<cong> T \<Longrightarrow> equipotent(S,T)" by auto2
-lemma equipotentE [backward]: "equipotent(S,T) \<Longrightarrow> \<exists>f. f \<in> S \<cong> T" by auto2
+lemma equipotentI [resolve]: "f \<in> S \<cong> T \<Longrightarrow> S \<approx>\<^sub>S T" by auto2
+lemma equipotentE [backward]: "S \<approx>\<^sub>S T \<Longrightarrow> \<exists>f. f \<in> S \<cong> T" by auto2
 setup {* del_prfstep_thm @{thm equipotent_def} *}
 
-lemma equipotent_refl [resolve]: "equipotent(X,X)"
+lemma equipotent_refl [resolve]: "X \<approx>\<^sub>S X"
 @proof @have "id_fun(X) \<in> X \<cong> X" @qed
 
-lemma equipotent_sym [forward]: "equipotent(S,T) \<Longrightarrow> equipotent(T,S)"
+lemma equipotent_sym [forward]: "S \<approx>\<^sub>S T \<Longrightarrow> T \<approx>\<^sub>S S"
 @proof @obtain "f \<in> S \<cong> T" @have "bijective(inverse(f))" @qed
 
-lemma equipotent_trans [backward2]: "equipotent(S,T) \<Longrightarrow> equipotent(T,U) \<Longrightarrow> equipotent(S,U)"
+lemma equipotent_trans [backward2]: "S \<approx>\<^sub>S T \<Longrightarrow> T \<approx>\<^sub>S U \<Longrightarrow> S \<approx>\<^sub>S U"
 @proof @obtain "f \<in> S \<cong> T" @obtain "g \<in> T \<cong> U" @have "g \<circ> f \<in> S \<cong> U" @qed
 
-lemma equipotent_empty [forward]: "equipotent(X,\<emptyset>) \<Longrightarrow> X = \<emptyset>"
+lemma equipotent_empty [forward]: "X \<approx>\<^sub>S \<emptyset> \<Longrightarrow> X = \<emptyset>"
 @proof @obtain "f \<in> X \<cong> \<emptyset>" @have "X \<rightarrow> \<emptyset> \<noteq> \<emptyset>" @qed
 
-lemma equipotent_singleton [resolve]: "equipotent({a},{b})"
+lemma equipotent_singleton [resolve]: "{a} \<approx>\<^sub>S {b}"
 @proof @have "(\<lambda>x\<in>{a}. b\<in>{b}) \<in> {a} \<cong> {b}" @qed
 
 lemma equipotent_union [backward1]:
-  "A \<inter> C = \<emptyset> \<Longrightarrow> B \<inter> D = \<emptyset> \<Longrightarrow> equipotent(A,B) \<Longrightarrow> equipotent(C,D) \<Longrightarrow>
-   equipotent(A \<union> C, B \<union> D)"
+  "A \<inter> C = \<emptyset> \<Longrightarrow> B \<inter> D = \<emptyset> \<Longrightarrow> A \<approx>\<^sub>S B \<Longrightarrow> C \<approx>\<^sub>S D \<Longrightarrow> A \<union> C \<approx>\<^sub>S B \<union> D"
 @proof
   @obtain "f \<in> A \<cong> B" @obtain "g \<in> C \<cong> D"
   @have "glue_function2(f,g) \<in> (A \<union> C) \<cong> (B \<union> D)"
 @qed
 
 lemma equipotent_cons [backward1]:
-  "x \<notin> A \<Longrightarrow> y \<notin> B \<Longrightarrow> equipotent(A,B) \<Longrightarrow> equipotent(cons(x,A), cons(y,B))"
+  "x \<notin> A \<Longrightarrow> y \<notin> B \<Longrightarrow> A \<approx>\<^sub>S B \<Longrightarrow> cons(x,A) \<approx>\<^sub>S cons(y,B)"
 @proof
   @have "cons(x,A) = {x} \<union> A" @have "cons(y,B) = {y} \<union> B"
 @qed
 
 lemma equipotent_minus1 [backward]:
-  "a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> equipotent(S \<midarrow> {a}, S \<midarrow> {b})"
+  "a \<in> S \<Longrightarrow> b \<in> S \<Longrightarrow> S \<midarrow> {a} \<approx>\<^sub>S S \<midarrow> {b}"
 @proof
   @case "a = b"
   @have "a \<in> S \<midarrow> {b}" @have "b \<in> S \<midarrow> {a}"
   @let "T = S \<midarrow> {a} \<midarrow> {b}"
-  @have "equipotent({b},{a})"
+  @have "{b} \<approx>\<^sub>S {a}"
   @have "S \<midarrow> {a} = T \<union> {b}" @have "S \<midarrow> {b} = T \<union> {a}"
 @qed
 
 lemma equipotent_minus1_gen [backward2]:
-  "equipotent(A,B) \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> B \<Longrightarrow> equipotent(A \<midarrow> {x}, B \<midarrow> {y})"
+  "A \<approx>\<^sub>S B \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> B \<Longrightarrow> A \<midarrow> {x} \<approx>\<^sub>S B \<midarrow> {y}"
 @proof
   @obtain "f \<in> A \<cong> B"
-  @have "equipotent(A \<midarrow> {x}, B \<midarrow> {f`x})" @with
-    @have "func_restrict_image(func_restrict(f,A\<midarrow>{x})) \<in> A \<midarrow> {x} \<cong> B \<midarrow> {f`x}" @end
+  @have "A \<midarrow> {x} \<approx>\<^sub>S B \<midarrow> {f`x}" @with
+    @have "func_restrict_image(func_restrict(f,A\<midarrow>{x})) \<in> A \<midarrow> {x} \<cong> B \<midarrow> {f`x}"
+  @end
 @qed
 
 section {* Schroeder-Bernstein Theorem *}
 
 lemma schroeder_bernstein [forward]:
-  "injective(f) \<Longrightarrow> injective(g) \<Longrightarrow> f \<in> X \<rightarrow> Y \<Longrightarrow> g \<in> Y \<rightarrow> X \<Longrightarrow> equipotent(X,Y)"
+  "injective(f) \<Longrightarrow> injective(g) \<Longrightarrow> f \<in> X \<rightarrow> Y \<Longrightarrow> g \<in> Y \<rightarrow> X \<Longrightarrow> X \<approx>\<^sub>S Y"
 @proof
   @let "X_A = lfp(X, \<lambda>W. X \<midarrow> g``(Y \<midarrow> f``W))"
   @let "X_B = X \<midarrow> X_A" "Y_A = f``X_A" "Y_B = Y \<midarrow> Y_A"
@@ -115,14 +115,14 @@ lemma nat_less_range_Suc [rewrite_back]: "n \<in> nat \<Longrightarrow> [n +\<^s
 lemma nat_less_range_Suc_diff [rewrite]: "n \<in>. \<nat> \<Longrightarrow> [n +\<^sub>\<nat> 1] \<midarrow> {n} = [n]" by auto2
 
 lemma equipotent_nat_less_range [forward]:
-  "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> equipotent([m], [n]) \<Longrightarrow> m = n"
+  "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> [m] \<approx>\<^sub>S [n] \<Longrightarrow> m = n"
 @proof
   @var_induct "m \<in> nat" arbitrary n @with
     @subgoal "m = m' +\<^sub>\<nat> 1"
       @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1"
       @have "[m'] = [m' +\<^sub>\<nat> 1] \<midarrow> {m'}"
       @have "[n'] = [n' +\<^sub>\<nat> 1] \<midarrow> {n'}"
-      @have "equipotent([m'], [n'])"
+      @have "[m'] \<approx>\<^sub>S [n']"
     @endgoal
   @end
 @qed
@@ -130,64 +130,64 @@ lemma equipotent_nat_less_range [forward]:
 section {* Cardinality on finite sets *}
   
 definition finite :: "i \<Rightarrow> o" where [rewrite]:
-  "finite(X) \<longleftrightarrow> (\<exists>n\<in>nat. equipotent(X, [n]))"
+  "finite(X) \<longleftrightarrow> (\<exists>n\<in>nat. X \<approx>\<^sub>S [n])"
 setup {* add_property_const @{term finite} *}
 
-lemma finiteI [forward]: "n \<in> nat \<Longrightarrow> equipotent(X, [n]) \<Longrightarrow> finite(X)" by auto2
-lemma finiteD [backward]: "finite(X) \<Longrightarrow> \<exists>n\<in>nat. equipotent(X, [n])" by auto2
+lemma finiteI [forward]: "n \<in> nat \<Longrightarrow> X \<approx>\<^sub>S [n] \<Longrightarrow> finite(X)" by auto2
+lemma finiteD [backward]: "finite(X) \<Longrightarrow> \<exists>n\<in>nat. X \<approx>\<^sub>S [n]" by auto2
 setup {* del_prfstep_thm @{thm finite_def} *}
 
 lemma finite_empty [forward]: "finite(\<emptyset>)"
-  @proof @have "equipotent(\<emptyset>,[0])" @qed
+  @proof @have "\<emptyset> \<approx>\<^sub>S [0]" @qed
 
 lemma finite_nat_less_range: "k \<in> nat \<Longrightarrow> finite([k])"
-  @proof @have "equipotent([k], [k])" @qed
+  @proof @have "[k] \<approx>\<^sub>S [k]" @qed
 setup {* add_forward_prfstep_cond @{thm finite_nat_less_range} [with_term "[?k]"] *}
 
 lemma finite_cons [forward]: "finite(X) \<Longrightarrow> finite(cons(a,X))"
 @proof
   @contradiction
-  @obtain "n\<in>nat" where "equipotent(X, [n])"
-  @have "equipotent(cons(a,X), [n +\<^sub>\<nat> 1])" @with
+  @obtain "n\<in>nat" where "X \<approx>\<^sub>S [n]"
+  @have "cons(a,X) \<approx>\<^sub>S [n +\<^sub>\<nat> 1]" @with
     @have "[n +\<^sub>\<nat> 1] = cons(n,[n])" @end
 @qed
 
 lemma finite_diff_singleton: "finite(X) \<Longrightarrow> finite(X \<midarrow> {a})"
 @proof
   @case "a \<notin> X"
-  @obtain "n\<in>nat" where "equipotent(X, [n])"
+  @obtain "n\<in>nat" where "X \<approx>\<^sub>S [n]"
   @have "n \<noteq> 0"
   @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1"
-  @have "equipotent(X \<midarrow> {a}, [n'])" @with @have "[n'] = [n] \<midarrow> {n'}" @end
+  @have "X \<midarrow> {a} \<approx>\<^sub>S [n']" @with @have "[n'] = [n] \<midarrow> {n'}" @end
 @qed
 setup {* add_forward_prfstep_cond @{thm finite_diff_singleton} [with_term "?X \<midarrow> {?a}"] *}
 
 definition card :: "i \<Rightarrow> i" where [rewrite]:
-  "card(X) = (THE n. n \<in> nat \<and> equipotent(X, [n]))"
+  "card(X) = (THE n. n \<in> nat \<and> X \<approx>\<^sub>S [n])"
 
 lemma card_unique [forward]:
-  "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> equipotent(X, [m]) \<Longrightarrow> equipotent(X, [n]) \<Longrightarrow> m = n"
-@proof @have "equipotent([m], [n])" @qed
+  "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> X \<approx>\<^sub>S [m] \<Longrightarrow> X \<approx>\<^sub>S [n] \<Longrightarrow> m = n"
+@proof @have "[m] \<approx>\<^sub>S [n]" @qed
 
 lemma card_type [typing]: "finite(X) \<Longrightarrow> card(X) \<in> nat" by auto2
-lemma card_equipotent [resolve]: "finite(X) \<Longrightarrow> equipotent(X, [card(X)])" by auto2
-lemma cardI [rewrite]: "n \<in> nat \<Longrightarrow> equipotent(X, [n]) \<Longrightarrow> card(X) = n" by auto2
+lemma card_equipotent [resolve]: "finite(X) \<Longrightarrow> X \<approx>\<^sub>S [card(X)]" by auto2
+lemma cardI [rewrite]: "n \<in> nat \<Longrightarrow> X \<approx>\<^sub>S [n] \<Longrightarrow> card(X) = n" by auto2
 setup {* del_prfstep_thm @{thm card_def} *}
 
 lemma card_empty [rewrite]: "card(\<emptyset>) = 0"
-@proof @have "equipotent(\<emptyset>, [0])" @qed
+@proof @have "\<emptyset> \<approx>\<^sub>S [0]" @qed
 
 lemma card_empty' [forward]: "finite(X) \<Longrightarrow> card(X) = 0 \<Longrightarrow> X = \<emptyset>"
-@proof @have "equipotent(X,[0])" @qed
+@proof @have "X \<approx>\<^sub>S [0]" @qed
 
 lemma card_nat_less_range [rewrite]: "k \<in> nat \<Longrightarrow> card([k]) = k"
-@proof @have "equipotent([k], [k])" @qed
+@proof @have "[k] \<approx>\<^sub>S [k]" @qed
 
 lemma card_cons [rewrite]:
   "finite(X) \<Longrightarrow> a \<notin> X \<Longrightarrow> n = card(X) \<Longrightarrow> card(cons(a,X)) = n +\<^sub>\<nat> 1"
 @proof
-  @have "equipotent(X,[n])" @have "[n +\<^sub>\<nat> 1] = cons(n,[n])"
-  @have "equipotent(cons(a,X),cons(n,[n]))"
+  @have "X \<approx>\<^sub>S [n]" @have "[n +\<^sub>\<nat> 1] = cons(n,[n])"
+  @have "cons(a,X) \<approx>\<^sub>S cons(n,[n])"
 @qed
 
 no_notation nat_less_range ("[_]")

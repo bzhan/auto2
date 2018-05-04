@@ -110,7 +110,7 @@ lemma ordermap_bij [forward]:
 section \<open>Cardinals\<close>
 
 definition cardinal :: "i \<Rightarrow> i" where [rewrite]:
-  "cardinal(A) = (\<mu> i. equipotent(i,A))"
+  "cardinal(A) = (\<mu> i. i \<approx>\<^sub>S A)"
 
 definition card :: "i \<Rightarrow> o" where [rewrite]:
   "card(i) \<longleftrightarrow> (i = cardinal(i))"
@@ -120,10 +120,10 @@ section \<open>Basic properties of cardinals\<close>
 
 (* Without assuming axiom of choice *)
 lemma cardinal_equipotent_gen [resolve]:
-  "well_order(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> equipotent(A,cardinal(A))"
+  "well_order(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> A \<approx>\<^sub>S cardinal(A)"
 @proof
   @let "i = ordertype(r)"
-  @have "equipotent(A,i)" @with
+  @have "A \<approx>\<^sub>S i" @with
     @have "ordermap_fun(r) \<in> A \<cong> ordertype(r)"
   @end
 @qed
@@ -132,24 +132,24 @@ lemma card_is_ordinal_gen [forward]:
   "well_order(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> ord(cardinal(A))"
 @proof
   @let "i = ordertype(r)"
-  @have "equipotent(A,i)" @with
+  @have "A \<approx>\<^sub>S i" @with
     @have "ordermap_fun(r) \<in> A \<cong> ordertype(r)"
   @end
 @qed
 
 lemma cardinal_cong_gen [resolve]:
   "well_order(r) \<Longrightarrow> well_order(s) \<Longrightarrow> A = carrier(r) \<Longrightarrow> B = carrier(s) \<Longrightarrow>
-   equipotent(A,B) \<Longrightarrow> cardinal(A) = cardinal(B)"
+   A \<approx>\<^sub>S B \<Longrightarrow> cardinal(A) = cardinal(B)"
 @proof
-  @have "equipotent(A,cardinal(A))"
-  @have "equipotent(B,cardinal(B))"
+  @have "A \<approx>\<^sub>S cardinal(A)"
+  @have "B \<approx>\<^sub>S cardinal(B)"
   @have "cardinal(A) \<le>\<^sub>O cardinal(B)"
   @have "cardinal(B) \<le>\<^sub>O cardinal(A)"
 @qed
 
 (* With axiom of choice. Will make this assumption from now on. *)
 lemma cardinal_equipotent [resolve]:
-  "equipotent(A,cardinal(A))"
+  "A \<approx>\<^sub>S cardinal(A)"
 @proof
   @obtain "R\<in>raworder_space(A)" where "well_order(R)"
 @qed
@@ -161,7 +161,7 @@ lemma card_is_ordinal [forward]:
 @qed
 
 lemma cardinal_cong [resolve]:
-  "equipotent(A,B) \<Longrightarrow> cardinal(A) = cardinal(B)"
+  "A \<approx>\<^sub>S B \<Longrightarrow> cardinal(A) = cardinal(B)"
 @proof
   @obtain "R\<in>raworder_space(A)" where "well_order(R)"
   @obtain "S\<in>raworder_space(B)" where "well_order(S)"
@@ -169,22 +169,19 @@ lemma cardinal_cong [resolve]:
 
 lemma card_is_cardinal [forward]:
   "card(cardinal(A))"
-@proof @have "equipotent(A,cardinal(A))" @qed
+@proof @have "A \<approx>\<^sub>S cardinal(A)" @qed
 
 section \<open>Ordering on cardinality\<close>
 
-definition le_potent :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "le_potent(S,T) \<longleftrightarrow> (\<exists>f\<in>S\<rightarrow>T. injective(f))"
+definition le_potent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<lesssim>\<^sub>S" 50) where [rewrite]:
+  "S \<lesssim>\<^sub>S T \<longleftrightarrow> (\<exists>f\<in>S\<rightarrow>T. injective(f))"
 
-lemma le_potentI [resolve]: "injective(f) \<Longrightarrow> f \<in> A \<rightarrow> B \<Longrightarrow> le_potent(A,B)" by auto2
-lemma le_potentE [resolve]: "le_potent(S,T) \<Longrightarrow> \<exists>f\<in>S\<rightarrow>T. injective(f)" by auto2
+lemma le_potentI [resolve]: "injective(f) \<Longrightarrow> f \<in> A \<rightarrow> B \<Longrightarrow> A \<lesssim>\<^sub>S B" by auto2
+lemma le_potentE [resolve]: "S \<lesssim>\<^sub>S T \<Longrightarrow> \<exists>f\<in>S\<rightarrow>T. injective(f)" by auto2
 setup {* del_prfstep_thm @{thm le_potent_def} *}
 
-definition less_potent :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "less_potent(S,T) \<longleftrightarrow> le_potent(S,T) \<and> \<not>equipotent(S,T)"
-
 lemma le_potent_trans [forward]:
-  "equipotent(A,B) \<Longrightarrow> le_potent(B,C) \<Longrightarrow> le_potent(A,C)"
+  "A \<approx>\<^sub>S B \<Longrightarrow> B \<lesssim>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
 @proof
   @obtain "f \<in> A \<cong> B"
   @obtain "g \<in> B \<rightarrow> C" where "injective(g)"
@@ -193,28 +190,28 @@ lemma le_potent_trans [forward]:
 @qed
 
 lemma schroeder_bernstein_potent [forward]:
-  "le_potent(S,T) \<Longrightarrow> le_potent(T,S) \<Longrightarrow> equipotent(S,T)"
+  "S \<lesssim>\<^sub>S T \<Longrightarrow> T \<lesssim>\<^sub>S S \<Longrightarrow> S \<approx>\<^sub>S T"
 @proof
   @obtain "f\<in>S\<rightarrow>T" where "injective(f)"
   @obtain "g\<in>T\<rightarrow>S" where "injective(g)"
 @qed
 
 lemma subset_le_potent [resolve]:
-  "S \<subseteq> T \<Longrightarrow> le_potent(S,T)"
+  "S \<subseteq> T \<Longrightarrow> S \<lesssim>\<^sub>S T"
 @proof
   @let "f = Fun(S,T,\<lambda>x. x)"
   @have "injective(f)" @have "f \<in> S \<rightarrow> T"
 @qed
 
 lemma pow_le_potent [resolve]:
-  "le_potent(S,Pow(S))"
+  "S \<lesssim>\<^sub>S Pow(S)"
 @proof
   @let "f = Fun(S,Pow(S),\<lambda>x. {x})"
   @have "injective(f)" @have "f \<in> S \<rightarrow> Pow(S)"
 @qed
 
 lemma ord_le_potent [resolve]:
-  "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<Longrightarrow> le_potent(i,j)" by auto2
+  "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<Longrightarrow> i \<lesssim>\<^sub>S j" by auto2
 
 section \<open>Two successor function for cardinals\<close>
 
@@ -225,10 +222,10 @@ lemma pow_cardinal_is_cardinal [forward]:
   "card(pow_cardinal(K))" by auto2
 
 lemma pow_cardinal_equipotent [resolve]:
-  "equipotent(Pow(K),pow_cardinal(K))" by auto2
+  "Pow(K) \<approx>\<^sub>S pow_cardinal(K)" by auto2
 
 lemma cantor_non_equipotent [resolve]:
-  "\<not>equipotent(K,Pow(K))"
+  "\<not> K \<approx>\<^sub>S Pow(K)"
 @proof
   @contradiction
   @obtain f where "f \<in> K \<cong> Pow(K)"
@@ -237,16 +234,16 @@ lemma cantor_non_equipotent [resolve]:
 @qed
 
 lemma cantor_non_lepotent [resolve]:
-  "\<not>le_potent(Pow(K),K)"
-@proof @have "le_potent(K,Pow(K))" @qed
+  "\<not> Pow(K) \<lesssim>\<^sub>S K"
+@proof @have "K \<lesssim>\<^sub>S Pow(K)" @qed
 
 lemma pow_cardinal_less [resolve]:
   "card(K) \<Longrightarrow> K \<in> pow_cardinal(K)"
 @proof
   @let "L = pow_cardinal(K)"
-  @have "equipotent(Pow(K),L)"
+  @have "Pow(K) \<approx>\<^sub>S L"
   @have (@rule) "K \<in> L \<or> K = L \<or> L \<in> K"
-  @case "L \<in> K" @with @have "le_potent(L,K)" @end
+  @case "L \<in> K" @with @have "L \<lesssim>\<^sub>S K" @end
 @qed
 
 (* Assume K is a cardinal in this definition *)

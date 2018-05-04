@@ -247,7 +247,7 @@ section {* Arrow's theorem *}
 lemma Arrow: "finite(I) \<Longrightarrow> card_ge3(Cs) \<Longrightarrow> arrow_conds(I,Cs,F) \<Longrightarrow> \<exists>i\<in>I. dictator(I,Cs,F,i)"
 @proof
   @let "N = card(I)"
-  @have "equipotent(I, nat_less_range(N))"
+  @have "I \<approx>\<^sub>S nat_less_range(N)"
   @obtain "h \<in> I \<cong> nat_less_range(N)"
   @obtain "a\<in>Cs" "b\<in>Cs" where "a \<noteq> b"
   @obtain "P\<in>nat\<rightarrow>Prof(I,Cs)" where "\<forall>n\<in>nat. \<forall>i\<in>I. ifb h`i \<ge>\<^sub>\<nat> n then prefer(P`n`i,a,b) else prefer(P`n`i,b,a)"
