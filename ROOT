@@ -82,11 +82,10 @@ session Auto2_FOL = FOL +
   theories
     "FOL/Pelletier"
     "FOL/BigProd"
-    "FOL/WellOrder"
+    "FOL/Cardinal"
     "FOL/SetSum"
     "FOL/Coset"
     "FOL/Abs"
-    "FOL/Finite"
     "FOL/Divides"
     "FOL/Rat"
     "FOL/Lattice"

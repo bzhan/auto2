@@ -10,7 +10,7 @@ lemma rel_minimalD [forward]:
 setup {* del_prfstep_thm_eqforward @{thm ord_minimal_def} *}
 
 definition wf :: "i \<Rightarrow> o" where [rewrite]:
-  "wf(r) \<longleftrightarrow> refl_order(r) \<and> (\<forall>Z\<in>Pow(carrier(r)). Z \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>Z. ord_minimal(r,Z,x)))"
+  "wf(r) \<longleftrightarrow> refl_order(r) \<and> (\<forall>Z. Z \<subseteq> carrier(r) \<longrightarrow> Z \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>Z. ord_minimal(r,Z,x)))"
 setup {* add_property_const @{term wf} *}
 
 lemma wfD1 [forward]: "wf(r) \<Longrightarrow> refl_order(r)" by auto2
@@ -38,7 +38,7 @@ lemma wf_trans_cl [forward]:
 @proof
   @let "A = carrier(r)"
   @let "s = rel_rtrans_cl(r)"
-  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(s,B,x))" @with
+  @have "\<forall>B. B \<subseteq> A \<longrightarrow> B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(s,B,x))" @with
     @contradiction
     @let "B' = {x\<in>A. \<exists>y\<in>B. y <\<^sub>s x}"
     @obtain "m\<in>B'" where "ord_minimal(r,B',m)"

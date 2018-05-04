@@ -1,5 +1,5 @@
 theory WellOrder
-imports Interval
+imports Interval Wfrec
 begin
 
 section {* Operation of adjoining a greatest element to an order *}
@@ -54,13 +54,33 @@ section {* Well-ordered sets *}  (* Bourbaki III.2.1 *)
 
 (* Definition of well_order *)
 definition well_order :: "i \<Rightarrow> o" where [rewrite]:
-  "well_order(R) \<longleftrightarrow> (linorder(R) \<and> (\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(R,X)))"
+  "well_order(R) \<longleftrightarrow> linorder(R) \<and> wf(R)"
 setup {* add_property_const @{term well_order} *}
 
-lemma well_orderD1 [forward]: "well_order(R) \<Longrightarrow> linorder(R)" by auto2
+(* With linorder condition, wf is equivalent to the condition that each
+   nonempty subset has a least element. We use this condition here. *)
+lemma well_orderD1 [forward]:
+  "well_order(R) \<Longrightarrow> linorder(R)"
+  "well_order(R) \<Longrightarrow> wf(R)" by auto2+
+
 lemma well_orderD2 [forward, backward]:
-  "well_order(R) \<Longrightarrow> X \<subseteq> carrier(R) \<Longrightarrow> X \<noteq> \<emptyset> \<Longrightarrow> has_least(R,X)" by auto2
-setup {* del_prfstep_thm_eqforward @{thm well_order_def} *}
+  "well_order(R) \<Longrightarrow> X \<subseteq> carrier(R) \<Longrightarrow> X \<noteq> \<emptyset> \<Longrightarrow> has_least(R,X)"
+@proof
+  @obtain "x\<in>X" where "ord_minimal(R,X,x)"
+  @have "has_least(R,X) \<and> least(R,X) = x"
+@qed
+
+lemma well_orderI' [forward]:
+  "wf(R) \<Longrightarrow> linorder(R) \<Longrightarrow> well_order(R)" by auto2
+
+lemma well_orderI [backward]:
+  "linorder(R) \<and> (\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(R,X)) \<Longrightarrow> well_order(R)"
+@proof
+  @have "\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>X. ord_minimal(R,X,x))" @with
+    @have "ord_minimal(R,X,least(R,X))"
+  @end
+@qed
+setup {* del_prfstep_thm @{thm well_order_def} *}
 
 lemma wellorder_iso [forward]:
   "well_order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> well_order(S)"
@@ -69,14 +89,16 @@ lemma wellorder_iso [forward]:
   @have "\<forall>X. X \<subseteq> carrier(S) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(S,X)" @with
     @let "U = f -`` X"
     @have "has_least(R,U)"
-    @have "has_least(S,X) \<and> least(S,X) = f ` least(R,U)" @end
+    @have "has_least(S,X) \<and> least(S,X) = f ` least(R,U)"
+  @end
 @qed
 
 lemma well_order_suborder:
   "well_order(R) \<Longrightarrow> linorder(A) \<Longrightarrow> is_suborder(A,R) \<Longrightarrow> well_order(A)"
 @proof
   @have "\<forall>X. X \<subseteq> carrier(A) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(A,X)" @with
-    @have "has_least(A,X) \<and> least(A,X) = least(R,X)" @end
+    @have "has_least(A,X) \<and> least(A,X) = least(R,X)"
+  @end
 @qed
 
 lemma well_order_adjoin [resolve]:
@@ -85,7 +107,8 @@ lemma well_order_adjoin [resolve]:
   @have "\<forall>X. X \<subseteq> carrier(R)\<union>{a} \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(R ++ a,X)" @with
     @contradiction
     @have "has_least(R,X\<midarrow>{a})"
-    @have "has_least(R ++ a, X\<midarrow>{a}) \<and> least(R ++ a, X\<midarrow>{a}) = least(R, X\<midarrow>{a})" @end
+    @have "has_least(R ++ a, X\<midarrow>{a}) \<and> least(R ++ a, X\<midarrow>{a}) = least(R, X\<midarrow>{a})"
+  @end
 @qed
 
 (* Segments. Correspond to less_intervals for well_order. The main result in
@@ -394,7 +417,9 @@ lemma zorn_subsets:
 @proof
   @have "inductive_order(R)" @with
     @have "\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> linorder(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset>" @with
-      @have "\<Union>X \<in> upper_bound(R,X)" @end @end
+      @have "\<Union>X \<in> upper_bound(R,X)"
+    @end
+  @end
 @qed
 
 end

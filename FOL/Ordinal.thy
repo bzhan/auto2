@@ -34,7 +34,7 @@ setup {* del_prfstep_thm @{thm mem_rel_def} *}
 
 lemma wf_mem_rel [forward]: "wf(mem_rel(A))"
 @proof
-  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(mem_rel(A),B,x))" @with
+  @have "\<forall>B. B \<subseteq> A \<longrightarrow> B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(mem_rel(A),B,x))" @with
     @obtain "x\<in>B" where "x \<inter> B = \<emptyset>" @end
 @qed
 
