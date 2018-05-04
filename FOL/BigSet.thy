@@ -50,12 +50,6 @@ lemma UN_nonempty [backward]:
 lemma INT_double_eq [rewrite_back]:
   "\<forall>x\<in>L. J(x) \<noteq> \<emptyset> \<Longrightarrow> L \<noteq> \<emptyset> \<Longrightarrow> (\<Inter>a\<in>(\<Union>x\<in>L. J(x)). X(a)) = (\<Inter>x\<in>L. \<Inter>a\<in>J(x). X(a))" by auto2
 
-lemma UN_image [rewrite]:
-  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, \<Union>a\<in>I. X(a)) = (\<Union>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
-
-lemma INT_image [backward]:
-  "is_rel2(\<Gamma>) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> rel_image(\<Gamma>, \<Inter>a\<in>I. X(a)) \<subseteq> (\<Inter>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
-
 lemma INT_image_eq [rewrite]:
   "injective(f) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> f `` (\<Inter>a\<in>I. X(a)) = (\<Inter>a\<in>I. f `` X(a))" by auto2
 
@@ -93,12 +87,6 @@ lemma Un_with_complement [rewrite]:
 
 lemma Int_with_complement [rewrite]:
   "A \<inter> (E \<midarrow> A) = \<emptyset>" by auto2
-
-lemma Un_image [rewrite]:
-  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<union> B) = rel_image(\<Gamma>, A) \<union> rel_image(\<Gamma>, B)" by auto2
-
-lemma Int_image [resolve]:
-  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<inter> B) \<subseteq> rel_image(\<Gamma>, A) \<inter> rel_image(\<Gamma>, B)" by auto2
 
 lemma Int_vImage [rewrite]:
   "is_function(f) \<Longrightarrow> f -`` (A \<inter> B) = (f -`` A) \<inter> (f -`` B)" by auto2

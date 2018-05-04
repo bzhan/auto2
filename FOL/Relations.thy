@@ -1,5 +1,5 @@
 theory Relations
-imports Structure
+imports Structure BigSet
 begin
 
 section {* Relations *}
@@ -179,5 +179,19 @@ lemma id_rel_comp1 [rewrite]:
 
 lemma id_rel_comp2 [rewrite]:
   "rel_form(\<Gamma>) \<Longrightarrow> \<Gamma> \<circ>\<^sub>r id_rel(source(\<Gamma>)) = \<Gamma>" by auto2
+
+(* Results on BigSet *)
+
+lemma UN_image [rewrite]:
+  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, \<Union>a\<in>I. X(a)) = (\<Union>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
+
+lemma INT_image [backward]:
+  "is_rel2(\<Gamma>) \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> rel_image(\<Gamma>, \<Inter>a\<in>I. X(a)) \<subseteq> (\<Inter>a\<in>I. rel_image(\<Gamma>, X(a)))" by auto2
+
+lemma Un_image [rewrite]:
+  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<union> B) = rel_image(\<Gamma>, A) \<union> rel_image(\<Gamma>, B)" by auto2
+
+lemma Int_image [resolve]:
+  "is_rel2(\<Gamma>) \<Longrightarrow> rel_image(\<Gamma>, A \<inter> B) \<subseteq> rel_image(\<Gamma>, A) \<inter> rel_image(\<Gamma>, B)" by auto2
 
 end
