@@ -90,7 +90,7 @@ lemma ordermap_fun_eval [rewrite]:
 setup {* del_prfstep_thm @{thm ordermap_fun_def} *}
 
 lemma ordermap_inj [forward]:
-  "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> linorder(r) \<Longrightarrow> injective(ordermap_fun(r))"
+  "wf(r) \<Longrightarrow> linorder(r) \<Longrightarrow> injective(ordermap_fun(r))"
 @proof
   @let "f = ordermap_fun(r)"
   @have "\<forall>x\<in>.r. \<forall>y\<in>.r. x \<noteq> y \<longrightarrow> f`x \<noteq> f`y" @with
@@ -104,7 +104,7 @@ lemma ordermap_inj [forward]:
 @qed
 
 lemma ordermap_bij [forward]:
-  "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> linorder(r) \<Longrightarrow> bijective(ordermap_fun(r))"
+  "wf(r) \<Longrightarrow> linorder(r) \<Longrightarrow> bijective(ordermap_fun(r))"
   by auto2
 
 section \<open>Cardinals\<close>
@@ -118,7 +118,7 @@ definition card :: "i \<Rightarrow> o" where [rewrite]:
 section \<open>Basic properties of cardinals\<close>
 
 lemma cardinal_equipotent [resolve]:
-  "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> linorder(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> equipotent(A,cardinal(A))"
+  "wf(r) \<Longrightarrow> linorder(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> equipotent(A,cardinal(A))"
 @proof
   @let "i = ordertype(r)"
   @have "equipotent(A,i)" @with
@@ -127,7 +127,7 @@ lemma cardinal_equipotent [resolve]:
 @qed
 
 lemma card_is_ordinal:
-  "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> linorder(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> ord(cardinal(A))"
+  "wf(r) \<Longrightarrow> linorder(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> ord(cardinal(A))"
 @proof
   @let "i = ordertype(r)"
   @have "equipotent(A,i)" @with

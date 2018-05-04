@@ -124,7 +124,9 @@ lemma rtrans_cl_full_induct [script_induct]:
 setup {* del_prfstep_thm @{thm rtrans_cl_def} *}
 
 lemma rtrans_cl_induct [script_induct]:
-  "\<langle>a,b\<rangle>\<in>rtrans_cl(r) \<Longrightarrow> \<forall>y z. \<langle>a,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(a) \<Longrightarrow> P(b)"
+  "\<langle>a,b\<rangle> \<in> rtrans_cl(r) \<Longrightarrow>
+   \<forall>y z. \<langle>a,y\<rangle>\<in>rtrans_cl(r) \<longrightarrow> \<langle>y,z\<rangle>\<in>r \<longrightarrow> y \<noteq> z \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow>
+   P(a) \<Longrightarrow> P(b)"
 @proof
   @induct "\<langle>a,b\<rangle> \<in> rtrans_cl(r)" "fst(\<langle>a,b\<rangle>) = a \<longrightarrow> P(snd(\<langle>a,b\<rangle>))"
 @qed
@@ -137,43 +139,31 @@ lemma rtrans_cl_trans [forward]:
 @qed
 setup {* del_prfstep_thm @{thm rtrans_cl_eq} *}
 
-definition trans_cl :: "i \<Rightarrow> i" where [rewrite]:
-  "trans_cl(r) = r \<circ>\<^sub>g rtrans_cl(r)"
+definition rel_rtrans_cl :: "i \<Rightarrow> i" where [rewrite]:
+  "rel_rtrans_cl(R) = Order(carrier(R), \<lambda>x y. \<langle>x,y\<rangle> \<in> rtrans_cl(order_graph(R)))"
 
-lemma trans_cl_is_graph [forward]: "is_graph(trans_cl(r))" by auto2
-lemma trans_clI1 [typing2]: "\<langle>a,b\<rangle> \<in> r \<Longrightarrow> \<langle>a,b\<rangle> \<in> trans_cl(r)"
-  @proof @have "b \<in> gr_field(r)" @qed
-lemma trans_clI2 [forward]: "\<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<langle>b,c\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<langle>a,c\<rangle> \<in> trans_cl(r)" by auto2
+lemma rel_rtrans_cl_is_rel [typing]:
+  "raworder(R) \<Longrightarrow> rel_rtrans_cl(R) \<in> raworder_space(carrier(R))" by auto2
 
-lemma trans_cl_induct [script_induct]:
-  "\<langle>a,b\<rangle> \<in> trans_cl(r) \<Longrightarrow> \<forall>y. \<langle>a,y\<rangle> \<in> r \<longrightarrow> P(y) \<Longrightarrow>
-   \<forall>y z. \<langle>a,y\<rangle> \<in> trans_cl(r) \<longrightarrow> \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(b)"
-@proof
-  @obtain y where "\<langle>a,y\<rangle> \<in> rtrans_cl(r) \<and> \<langle>y,b\<rangle> \<in> r"
-  @induct "\<langle>a,y\<rangle> \<in> rtrans_cl(r)" "\<forall>z. \<langle>y,z\<rangle> \<in> r \<longrightarrow> P(z)"
-@qed
-setup {* del_prfstep_thm @{thm trans_cl_def} *}
-
-definition rel_trans_cl :: "i \<Rightarrow> i" where [rewrite]:
-  "rel_trans_cl(R) = Order(carrier(R), \<lambda>x y. \<langle>x,y\<rangle> \<in> trans_cl(order_graph(R)))"
-
-lemma rel_trans_cl_is_rel [typing]:
-  "raworder(R) \<Longrightarrow> rel_trans_cl(R) \<in> raworder_space(carrier(R))" by auto2
-
-lemma rel_trans_clI1:
-  "raworder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> le(rel_trans_cl(R),x,y)"
+lemma rel_rtrans_clI1:
+  "raworder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> le(rel_rtrans_cl(R),x,y)"
 @proof @have "\<langle>x,y\<rangle> \<in> order_graph(R)" @qed
-setup {* add_forward_prfstep_cond @{thm rel_trans_clI1} [with_term "rel_trans_cl(?R)"] *}
+setup {* add_forward_prfstep_cond @{thm rel_rtrans_clI1} [with_term "rel_rtrans_cl(?R)"] *}
 
-lemma rel_trans_clI2 [forward]: "raworder(R) \<Longrightarrow> trans(rel_trans_cl(R))" by auto2
-
-lemma rel_trans_cl_induct [script_induct]:
-  "le(rel_trans_cl(R),a,b) \<Longrightarrow> raworder(R) \<Longrightarrow> \<forall>y. a \<le>\<^sub>R y \<longrightarrow> P(y) \<Longrightarrow>
-   \<forall>y z. le(rel_trans_cl(R),a,y) \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(b)"
+lemma rel_rtrans_clI2 [forward]: "raworder(R) \<Longrightarrow> trans(rel_rtrans_cl(R))" by auto2
+lemma rel_rtrans_clI3 [forward]: "refl_order(R) \<Longrightarrow> preorder(rel_rtrans_cl(R))"
 @proof
-  @induct "\<langle>a,b\<rangle>\<in>trans_cl(order_graph(R))" "P(b)"
+  @let "S = rel_rtrans_cl(R)"
+  @have "\<forall>x\<in>.S. x \<le>\<^sub>S x" @with @have "\<langle>x,x\<rangle> \<in> order_graph(R)" @end
 @qed
 
-setup {* del_prfstep_thm @{thm rel_trans_cl_def} *}
+lemma rel_rtrans_cl_induct [script_induct]:
+  "le(rel_rtrans_cl(R),a,b) \<Longrightarrow> raworder(R) \<Longrightarrow>
+   \<forall>y z. le(rel_rtrans_cl(R),a,y) \<longrightarrow> y <\<^sub>R z \<longrightarrow> P(y) \<longrightarrow> P(z) \<Longrightarrow> P(a) \<Longrightarrow> P(b)"
+@proof
+  @induct "\<langle>a,b\<rangle>\<in>rtrans_cl(order_graph(R))" "P(b)"
+@qed
+
+setup {* del_prfstep_thm @{thm rel_rtrans_cl_def} *}
 
 end

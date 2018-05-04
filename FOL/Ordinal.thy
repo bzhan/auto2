@@ -20,11 +20,16 @@ lemma no_mem_cycle2 [resolve]: "x \<in> y \<Longrightarrow> y \<notin> x"
 section {* Membership relation is well-founded *}
 
 definition mem_rel :: "i \<Rightarrow> i" where [rewrite]:
-  "mem_rel(A) = Order(A, \<lambda>x y. x \<in> y)"
+  "mem_rel(A) = Order(A, \<lambda>x y. x = y \<or> x \<in> y)"
 
 lemma mem_rel_is_rel [typing]: "mem_rel(A) \<in> raworder_space(A)" by auto2
 lemma mem_rel_eval [rewrite]:
-  "R = mem_rel(A) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> x \<in> y" by auto2
+  "R = mem_rel(A) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> (x = y \<or> x \<in> y)" by auto2
+lemma mem_rel_less_eval [rewrite]:
+  "R = mem_rel(A) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x <\<^sub>R y \<longleftrightarrow> x \<in> y"
+@proof
+  @case "x \<in> y" @with @have "x \<noteq> y" @end
+@qed
 setup {* del_prfstep_thm @{thm mem_rel_def} *}
 
 lemma wf_mem_rel [forward]: "wf(mem_rel(A))"
@@ -32,6 +37,8 @@ lemma wf_mem_rel [forward]: "wf(mem_rel(A))"
   @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(mem_rel(A),B,x))" @with
     @obtain "x\<in>B" where "x \<inter> B = \<emptyset>" @end
 @qed
+
+lemma refl_mem_rel [forward]: "refl_order(mem_rel(A))" by auto2
 
 section {* Definition of ordinals *}
 

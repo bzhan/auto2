@@ -16,16 +16,25 @@ lemma transD [forward]:
 setup {* del_prfstep_thm_eqforward @{thm trans_def} *}
 
 section {* Preorder and order relations *}  (* Bourbaki III.1.1 -- III.1.2 *)
-  
+
+definition refl_order :: "i \<Rightarrow> o" where [rewrite]:
+  "refl_order(R) \<longleftrightarrow> raworder(R) \<and> (\<forall>x\<in>.R. x \<le>\<^sub>R x)"
+setup {* add_property_const @{term refl_order} *}
+
+lemma refl_orderD [forward]:
+  "refl_order(R) \<Longrightarrow> raworder(R)" by auto2
+
+lemma refl_orderD2 [backward]:
+  "refl_order(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> x \<le>\<^sub>R x" by auto2
+setup {* del_prfstep_thm_eqforward @{thm refl_order_def} *}
+
 definition preorder :: "i \<Rightarrow> o" where [rewrite]:
-  "preorder(R) \<longleftrightarrow> trans(R) \<and> (\<forall>x\<in>.R. x \<le>\<^sub>R x)"
+  "preorder(R) \<longleftrightarrow> trans(R) \<and> refl_order(R)"
 setup {* add_property_const @{term preorder} *}
   
 lemma preorderD [forward]:
-  "preorder(R) \<Longrightarrow> trans(R)" by auto2
-
-lemma preorderD' [backward]:
-  "preorder(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> x \<le>\<^sub>R x" by auto2
+  "preorder(R) \<Longrightarrow> trans(R)"
+  "preorder(R) \<Longrightarrow> refl_order(R)" by auto2+
 setup {* del_prfstep_thm_eqforward @{thm preorder_def} *}
   
 definition order :: "i \<Rightarrow> o" where [rewrite]:
@@ -109,7 +118,7 @@ lemma order_trans [forward]:
   "order(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y <\<^sub>R z \<Longrightarrow> x <\<^sub>R z" by auto2+
 
 lemma preorder_lessI [forward, backward1, backward2]:
-  "preorder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> x \<noteq> y \<Longrightarrow> x <\<^sub>R y" by auto2
+  "raworder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> x \<noteq> y \<Longrightarrow> x <\<^sub>R y" by auto2
 
 lemma order_lessE [forward]: "raworder(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> x \<le>\<^sub>R y" by auto2
 lemma order_less_to_neg [forward]: "order(R) \<Longrightarrow> x <\<^sub>R y \<Longrightarrow> \<not>y \<le>\<^sub>R x" by auto2

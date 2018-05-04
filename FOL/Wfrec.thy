@@ -3,50 +3,58 @@ imports FixedPt
 begin
 
 definition ord_minimal :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "ord_minimal(r,Z,x) \<longleftrightarrow> (\<forall>y\<in>.r. y \<le>\<^sub>r x \<longrightarrow> y \<notin> Z)"
+  "ord_minimal(r,Z,x) \<longleftrightarrow> (\<forall>y\<in>.r. y <\<^sub>r x \<longrightarrow> y \<notin> Z)"
 
 lemma rel_minimalD [forward]:
-  "y \<in>. r \<Longrightarrow> ord_minimal(r,Z,x) \<Longrightarrow> y \<le>\<^sub>r x \<Longrightarrow> y \<notin> Z" by auto2
+  "y \<in>. r \<Longrightarrow> ord_minimal(r,Z,x) \<Longrightarrow> y <\<^sub>r x \<Longrightarrow> y \<notin> Z" by auto2
 setup {* del_prfstep_thm_eqforward @{thm ord_minimal_def} *}
 
 definition wf :: "i \<Rightarrow> o" where [rewrite]:
-  "wf(r) \<longleftrightarrow> raworder(r) \<and> (\<forall>Z\<in>Pow(carrier(r)). Z \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>Z. ord_minimal(r,Z,x)))"
+  "wf(r) \<longleftrightarrow> refl_order(r) \<and> (\<forall>Z\<in>Pow(carrier(r)). Z \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>Z. ord_minimal(r,Z,x)))"
 setup {* add_property_const @{term wf} *}
 
-lemma wfD1 [forward]: "wf(r) \<Longrightarrow> raworder(r)" by auto2
+lemma wfD1 [forward]: "wf(r) \<Longrightarrow> refl_order(r)" by auto2
 lemma wfD2 [backward]: "wf(r) \<Longrightarrow> Z \<noteq> \<emptyset> \<Longrightarrow> \<exists>x\<in>Z. ord_minimal(r,Z,x)" by auto2
 setup {* del_prfstep_thm_eqforward @{thm wf_def} *}
 
-(* Given \<langle>a,b\<rangle> \<in> r^+, take a' to be the predecessor of b in the chain from a to b. *)
-lemma rel_trans_cl_prev [backward]:
-  "raworder(R) \<Longrightarrow> S = rel_trans_cl(R) \<Longrightarrow> a \<le>\<^sub>S b \<Longrightarrow>
-   \<exists>a'\<in>.R. a' \<le>\<^sub>R b \<and> (a = a' \<or> le(S,a,a'))"
+lemma wf_to_order [forward]:
+  "wf(R) \<Longrightarrow> trans(R) \<Longrightarrow> order(R)"
 @proof
-  @induct "le(rel_trans_cl(R),a,b)" "\<exists>a'\<in>.R. a' \<le>\<^sub>R b \<and> (a = a' \<or> a \<le>\<^sub>S a')"
+  @have "\<forall>x y. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y" @with
+    @let "Z = {x,y}"
+    @obtain "z\<in>Z" where "ord_minimal(R,Z,z)"
+  @end
+@qed
+
+(* Given \<langle>a,b\<rangle> \<in> r^+, take a' to be the predecessor of b in the chain from a to b. *)
+lemma rel_rtrans_cl_prev [backward]:
+  "raworder(R) \<Longrightarrow> S = rel_rtrans_cl(R) \<Longrightarrow> a <\<^sub>S b \<Longrightarrow> \<exists>a'\<in>.R. a' <\<^sub>R b \<and> a \<le>\<^sub>S a'"
+@proof
+  @induct "le(rel_rtrans_cl(R),a,b)" "a \<noteq> b \<longrightarrow> (\<exists>a'\<in>.R. a' <\<^sub>R b \<and> a \<le>\<^sub>S a')"
 @qed
 
 lemma wf_trans_cl [forward]:
-  "wf(r) \<Longrightarrow> wf(rel_trans_cl(r))"
+  "wf(r) \<Longrightarrow> wf(rel_rtrans_cl(r))"
 @proof
   @let "A = carrier(r)"
-  @let "r' = rel_trans_cl(r)"
-  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(r',B,x))" @with
+  @let "s = rel_rtrans_cl(r)"
+  @have "\<forall>B\<in>Pow(A). B \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>B. ord_minimal(s,B,x))" @with
     @contradiction
-    @let "B' = {x\<in>A. \<exists>y\<in>B. le(r',y,x)}"
+    @let "B' = {x\<in>A. \<exists>y\<in>B. y <\<^sub>s x}"
     @obtain "m\<in>B'" where "ord_minimal(r,B',m)"
     @have "m \<in> B" @with
-      @obtain "y \<in> B" where "le(r',y,m)"
-      @obtain "y' \<in> A" where "le(r,y',m)" "(y=y' \<or> le(r',y,y'))"
+      @obtain "y \<in> B" where "y <\<^sub>s m"
+      @obtain "y' \<in> A" where "y' <\<^sub>r m" "y \<le>\<^sub>s y'"
     @end
-    @have "\<forall>y\<in>carrier(r). le(r',y,m) \<longrightarrow> y \<notin> B" @with
-      @obtain "y' \<in> A" where "le(r,y',m)" "(y=y' \<or> le(r',y,y'))"
+    @have "\<forall>y\<in>.r. y <\<^sub>s m \<longrightarrow> y \<notin> B" @with
+      @obtain "y' \<in> A" where "y' <\<^sub>r m" "y \<le>\<^sub>s y'"
     @end
   @end
 @qed
 
 (* Well-founded induction *)
 lemma wf_induct [strong_induct]:
-  "wf(r) \<and> a \<in>. r \<Longrightarrow> \<forall>x\<in>.r. (\<forall>y\<in>.r. y \<le>\<^sub>r x \<longrightarrow> P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(a)"
+  "wf(r) \<and> a \<in>. r \<Longrightarrow> \<forall>x\<in>.r. (\<forall>y\<in>.r. y <\<^sub>r x \<longrightarrow> P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(a)"
 @proof
   @let "Z = {z \<in>. r. \<not>P(z)}"
   @case "Z = \<emptyset>" @with @have "a \<notin> Z" @end
@@ -54,11 +62,11 @@ lemma wf_induct [strong_induct]:
 @qed
 
 definition ord_pred :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "ord_pred(r,a) = {x\<in>.r. x \<le>\<^sub>r a}"
+  "ord_pred(r,a) = {x\<in>.r. x <\<^sub>r a}"
 setup {* register_wellform_data ("ord_pred(r,a)", ["a \<in>. r"]) *}
 
-lemma ord_predI [typing2,backward]: "raworder(r) \<Longrightarrow> x \<le>\<^sub>r a \<Longrightarrow> x \<in> ord_pred(r,a)" by auto2
-lemma ord_predE [forward]: "x \<in> ord_pred(r,a) \<Longrightarrow> x \<le>\<^sub>r a" by auto2
+lemma ord_predI [typing2,backward]: "raworder(r) \<Longrightarrow> x <\<^sub>r a \<Longrightarrow> x \<in> ord_pred(r,a)" by auto2
+lemma ord_predE [forward]: "x \<in> ord_pred(r,a) \<Longrightarrow> x <\<^sub>r a" by auto2
 setup {* del_prfstep_thm @{thm ord_pred_def} *}
 
 (* f is a family indexed by ord_pred(r,a) (set of all x such that le(r,x,a)),
@@ -81,9 +89,9 @@ setup {* del_prfstep_thm @{thm is_recfun_def} *}
    followed by two corollaries. *)
 lemma is_recfun_agree [forward]:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> is_recfun(r,a,H,f) \<Longrightarrow> is_recfun(r,b,H,g) \<Longrightarrow>
-   \<forall>x. le(r,x,a) \<longrightarrow> le(r,x,b) \<longrightarrow> f`x = g`x"
+   \<forall>x. less(r,x,a) \<longrightarrow> less(r,x,b) \<longrightarrow> f`x = g`x"
 @proof
-  @have "\<forall>x. x \<le>\<^sub>r a \<longrightarrow> x \<le>\<^sub>r b \<longrightarrow> f`x = g`x" @with
+  @have "\<forall>x. x <\<^sub>r a \<longrightarrow> x <\<^sub>r b \<longrightarrow> f`x = g`x" @with
     @strong_induct "wf(r) \<and> x \<in>. r"
   @end
 @qed
@@ -135,7 +143,7 @@ setup {* del_prfstep_thm @{thm wftrec_def} *}
    from x and the family of values at the set r^-1(x).
 *)
 definition wfrec :: "[i, [i, i] \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
-  "wfrec(r,H,a) = wftrec(rel_trans_cl(r), \<lambda>x f. H(x, proj_set(f,ord_pred(r,x))), a)"
+  "wfrec(r,H,a) = wftrec(rel_rtrans_cl(r), \<lambda>x f. H(x, proj_set(f,ord_pred(r,x))), a)"
 setup {* register_wellform_data ("wfrec(r,H,a)", ["a \<in> source(r)"]) *}
 
 lemma wfrec_unfold [rewrite]:
