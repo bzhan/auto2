@@ -81,7 +81,7 @@ lemma equipotent_minus1_gen [backward2]:
 
 section {* Schroeder-Bernstein Theorem *}
 
-lemma schroeder_bernstein:
+lemma schroeder_bernstein [forward]:
   "injective(f) \<Longrightarrow> injective(g) \<Longrightarrow> f \<in> X \<rightarrow> Y \<Longrightarrow> g \<in> Y \<rightarrow> X \<Longrightarrow> equipotent(X,Y)"
 @proof
   @let "X_A = lfp(X, \<lambda>W. X \<midarrow> g``(Y \<midarrow> f``W))"

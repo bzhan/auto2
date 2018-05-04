@@ -114,6 +114,7 @@ definition cardinal :: "i \<Rightarrow> i" where [rewrite]:
 
 definition card :: "i \<Rightarrow> o" where [rewrite]:
   "card(i) \<longleftrightarrow> (i = cardinal(i))"
+setup {* add_property_const @{term card} *}
 
 section \<open>Basic properties of cardinals\<close>
 
@@ -136,6 +137,16 @@ lemma card_is_ordinal_gen [forward]:
   @end
 @qed
 
+lemma cardinal_cong_gen [resolve]:
+  "well_order(r) \<Longrightarrow> well_order(s) \<Longrightarrow> A = carrier(r) \<Longrightarrow> B = carrier(s) \<Longrightarrow>
+   equipotent(A,B) \<Longrightarrow> cardinal(A) = cardinal(B)"
+@proof
+  @have "equipotent(A,cardinal(A))"
+  @have "equipotent(B,cardinal(B))"
+  @have "cardinal(A) \<le>\<^sub>O cardinal(B)"
+  @have "cardinal(B) \<le>\<^sub>O cardinal(A)"
+@qed
+
 (* With axiom of choice. Will make this assumption from now on. *)
 lemma cardinal_equipotent [resolve]:
   "equipotent(A,cardinal(A))"
@@ -147,6 +158,115 @@ lemma card_is_ordinal [forward]:
   "ord(cardinal(A))"
 @proof
   @obtain "R\<in>raworder_space(A)" where "well_order(R)"
+@qed
+
+lemma cardinal_cong [resolve]:
+  "equipotent(A,B) \<Longrightarrow> cardinal(A) = cardinal(B)"
+@proof
+  @obtain "R\<in>raworder_space(A)" where "well_order(R)"
+  @obtain "S\<in>raworder_space(B)" where "well_order(S)"
+@qed
+
+lemma card_is_cardinal [forward]:
+  "card(cardinal(A))"
+@proof @have "equipotent(A,cardinal(A))" @qed
+
+section \<open>Ordering on cardinality\<close>
+
+definition le_potent :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
+  "le_potent(S,T) \<longleftrightarrow> (\<exists>f\<in>S\<rightarrow>T. injective(f))"
+
+lemma le_potentI [resolve]: "injective(f) \<Longrightarrow> f \<in> A \<rightarrow> B \<Longrightarrow> le_potent(A,B)" by auto2
+lemma le_potentE [resolve]: "le_potent(S,T) \<Longrightarrow> \<exists>f\<in>S\<rightarrow>T. injective(f)" by auto2
+setup {* del_prfstep_thm @{thm le_potent_def} *}
+
+definition less_potent :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
+  "less_potent(S,T) \<longleftrightarrow> le_potent(S,T) \<and> \<not>equipotent(S,T)"
+
+lemma le_potent_trans [forward]:
+  "equipotent(A,B) \<Longrightarrow> le_potent(B,C) \<Longrightarrow> le_potent(A,C)"
+@proof
+  @obtain "f \<in> A \<cong> B"
+  @obtain "g \<in> B \<rightarrow> C" where "injective(g)"
+  @let "h = g \<circ> f"
+  @have "h \<in> A \<rightarrow> C" @have "injective(h)"
+@qed
+
+lemma schroeder_bernstein_potent [forward]:
+  "le_potent(S,T) \<Longrightarrow> le_potent(T,S) \<Longrightarrow> equipotent(S,T)"
+@proof
+  @obtain "f\<in>S\<rightarrow>T" where "injective(f)"
+  @obtain "g\<in>T\<rightarrow>S" where "injective(g)"
+@qed
+
+lemma subset_le_potent [resolve]:
+  "S \<subseteq> T \<Longrightarrow> le_potent(S,T)"
+@proof
+  @let "f = Fun(S,T,\<lambda>x. x)"
+  @have "injective(f)" @have "f \<in> S \<rightarrow> T"
+@qed
+
+lemma pow_le_potent [resolve]:
+  "le_potent(S,Pow(S))"
+@proof
+  @let "f = Fun(S,Pow(S),\<lambda>x. {x})"
+  @have "injective(f)" @have "f \<in> S \<rightarrow> Pow(S)"
+@qed
+
+lemma ord_le_potent [resolve]:
+  "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<Longrightarrow> le_potent(i,j)" by auto2
+
+section \<open>Two successor function for cardinals\<close>
+
+definition pow_cardinal :: "i \<Rightarrow> i" where [rewrite]:
+  "pow_cardinal(K) = cardinal(Pow(K))"
+
+lemma pow_cardinal_is_cardinal [forward]:
+  "card(pow_cardinal(K))" by auto2
+
+lemma pow_cardinal_equipotent [resolve]:
+  "equipotent(Pow(K),pow_cardinal(K))" by auto2
+
+lemma cantor_non_equipotent [resolve]:
+  "\<not>equipotent(K,Pow(K))"
+@proof
+  @contradiction
+  @obtain f where "f \<in> K \<cong> Pow(K)"
+  @let "S = {x \<in> K. x \<notin> f`x}"
+  @have "\<forall>x\<in>K. f`x \<noteq> S" @with @case "x \<in> f`x" @end
+@qed
+
+lemma cantor_non_lepotent [resolve]:
+  "\<not>le_potent(Pow(K),K)"
+@proof @have "le_potent(K,Pow(K))" @qed
+
+lemma pow_cardinal_less [resolve]:
+  "card(K) \<Longrightarrow> K \<in> pow_cardinal(K)"
+@proof
+  @let "L = pow_cardinal(K)"
+  @have "equipotent(Pow(K),L)"
+  @have (@rule) "K \<in> L \<or> K = L \<or> L \<in> K"
+  @case "L \<in> K" @with @have "le_potent(L,K)" @end
+@qed
+
+(* Assume K is a cardinal in this definition *)
+definition succ_cardinal :: "i \<Rightarrow> i" where [rewrite]:
+  "succ_cardinal(K) = (\<mu> L. card(L) \<and> K \<in> L)"
+
+lemma succ_cardinal_is_cardinal:
+  "card(K) \<Longrightarrow> card(succ_cardinal(K)) \<and> K \<in> succ_cardinal(K)"
+@proof
+  @let "P = pow_cardinal(K)"
+  @have "card(P) \<and> K \<in> P"
+@qed
+setup {* add_forward_prfstep (conj_left_th @{thm succ_cardinal_is_cardinal}) *}
+setup {* add_resolve_prfstep (conj_right_th @{thm succ_cardinal_is_cardinal}) *}
+
+lemma succ_cardinal_ineq [backward]:
+  "card(K) \<Longrightarrow> succ_cardinal(K) \<le>\<^sub>O pow_cardinal(K)"
+@proof
+  @let "P = pow_cardinal(K)"
+  @have "card(P) \<and> K \<in> P"
 @qed
 
 end
