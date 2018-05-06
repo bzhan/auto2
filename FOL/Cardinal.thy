@@ -275,9 +275,114 @@ lemma succ_cardinal_ineq [backward]:
   @have "card(P) \<and> K \<in> P"
 @qed
 
-definition limit_ord [rewrite]:
-  "limit_ord(i) \<longleftrightarrow> (ord(i) \<and> 0 \<in> i \<and> (\<forall>y. y \<in> i \<longrightarrow> succ(y) \<in> i))"
+definition limit_ord :: "i \<Rightarrow> o" where [rewrite]:
+  "limit_ord(i) \<longleftrightarrow> (ord(i) \<and> \<emptyset> \<in> i \<and> (\<forall>y. y \<in> i \<longrightarrow> succ(y) \<in> i))"
 setup {* add_property_const @{term limit_ord} *}
+
+lemma limit_ordD [forward]:
+  "limit_ord(i) \<Longrightarrow> ord(i)"
+  "limit_ord(i) \<Longrightarrow> \<emptyset> \<in> i" by auto2+
+
+lemma limit_ordD2 [backward]:
+  "limit_ord(i) \<Longrightarrow> y \<in> i \<Longrightarrow> succ(y) \<in> i" by auto2
+
+lemma limit_ord_not_succ [resolve]:
+  "\<not>limit_ord(succ(a))" by auto2
+setup {* del_prfstep_thm_eqforward @{thm limit_ord_def} *}
+
+section \<open>Transfinite induction on ordinals\<close>
+
+(* Given G a meta-function taking the family of values less than an ordinal i
+   to the value at i, return the value at i. *)
+definition trans_seq :: "(i \<Rightarrow> i) \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
+  "trans_seq(G,a) = wfrec(mem_rel(succ(a)), \<lambda>_ f. G(f), a)"
+
+lemma trans_seq_eq1 [backward]:
+  "ord(b) \<Longrightarrow> a \<in> b \<Longrightarrow> i \<in> a \<Longrightarrow> wfrec(mem_rel(b),H,i) = wfrec(mem_rel(a),H,i)"
+@proof
+  @let "r = mem_rel(a)" "s = mem_rel(b)"
+  @have "\<forall>x. ord(x) \<longrightarrow> x \<in> a \<longrightarrow> (\<forall>y\<in>x. y \<in> a \<longrightarrow> wfrec(s, H, y) = wfrec(r, H, y)) \<longrightarrow> wfrec(s, H, x) = wfrec(r, H, x)" @with
+    @have "wfrec(s,H,x) = H(x, Tup(x, \<lambda>x. wfrec(s,H,x)))"
+    @have "wfrec(r,H,x) = H(x, Tup(x, \<lambda>x. wfrec(r,H,x)))"
+    @have "Tup(x, \<lambda>x. wfrec(s,H,x)) = Tup(x, \<lambda>x. wfrec(r,H,x))"
+  @end
+  @induct "ord(i)" "i \<in> a \<longrightarrow> wfrec(s,H,i) = wfrec(r,H,i)"
+@qed
+
+lemma not_limit_ordinal_eq [backward1]:
+  "ord(a) \<Longrightarrow> \<emptyset> \<in> a \<Longrightarrow> \<not>limit_ord(a) \<Longrightarrow> \<exists>b. a = succ(b)"
+@proof
+  @obtain b where "b \<in> a" "succ(b) \<notin> a"
+  @have (@rule) "a \<in> succ(b) \<or> a = succ(b) \<or> succ(b) \<in> a"
+@qed
+
+lemma empty_ord [resolve]: "ord(\<emptyset>)" by auto2
+
+lemma nonzero_ordinal [resolve]: "ord(a) \<Longrightarrow> x \<in> a \<Longrightarrow> \<emptyset> \<in> a"
+@proof @have "ord(\<emptyset>)" @have (@rule) "\<emptyset> \<in> x \<or> \<emptyset> = x \<or> x \<in> \<emptyset>" @qed
+
+lemma ord_mem_succ [backward]: "ord(a) \<Longrightarrow> i \<in> a \<Longrightarrow> succ(i) \<in> succ(a)"
+@proof
+  @case "limit_ord(a)"
+  @have "\<emptyset> \<in> a"
+  @obtain b where "a = succ(b)"
+  @have "\<forall>x xa. ord(x) \<longrightarrow> (\<forall>y\<in>x. \<forall>x. x \<in> y \<longrightarrow> succ(x) \<in> succ(y)) \<longrightarrow> xa \<in> x \<longrightarrow> succ(xa) \<in> succ(x)" @with
+    @case "limit_ord(x)"
+    @obtain y where "x = succ(y)"
+    @have "xa \<in> succ(y)"
+    @have (@rule) "xa = y \<or> xa \<in> y"
+    @case "xa = y"
+  @end
+  @induct "ord(a)" "(\<forall>x. x \<in> a \<longrightarrow> succ(x) \<in> succ(a))"
+@qed
+
+lemma trans_seq_unfold [rewrite]:
+  "ord(a) \<Longrightarrow> trans_seq(G,a) = G(Tup(a, \<lambda>x. trans_seq(G,x)))"
+@proof
+  @let "r = mem_rel(succ(a))"
+  @have "trans_seq(G,a) = G(Tup(a, \<lambda>x. wfrec(r, \<lambda>_ f. G(f), x)))"
+  @have "\<forall>x\<in>a. trans_seq(G,x) = wfrec(r, \<lambda>_ f. G(f), x)" @with
+    @have "trans_seq(G,x) = wfrec(mem_rel(succ(x)), \<lambda>_ f. G(f), x)"
+    @have "wfrec(r, \<lambda>_ f. G(f), x) = wfrec(mem_rel(succ(x)), \<lambda>_ f. G(f), x)"
+  @end
+@qed
+
+setup {* del_prfstep_thm @{thm trans_seq_def} *}
+
+definition pred :: "i \<Rightarrow> i" where [rewrite]:
+  "pred(x) = (THE y. x = succ(y))"
+setup {* register_wellform_data ("pred(x)", ["\<not>limit_ord(x)", "\<emptyset> \<in> x"]) *}
+
+lemma pred_eq [rewrite]:
+  "ord(x) \<Longrightarrow> \<not>limit_ord(x) \<Longrightarrow> \<emptyset> \<in> x \<Longrightarrow> succ(pred(x)) = x" by auto2
+
+lemma pred_eq2 [rewrite]:
+  "ord(x) \<Longrightarrow> pred(succ(x)) = x" by auto2
+setup {* del_prfstep_thm @{thm pred_def} *}
+
+(* Another definition of transfinite induction *)
+definition trans_seq2 :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
+  "trans_seq2(g1,G2,G3,a) =
+     trans_seq(\<lambda>f. if source(f) = \<emptyset> then g1
+                   else if limit_ord(source(f)) then G3(f)
+                   else G2(pred(source(f))), a)"
+
+lemma trans_seq2_unfold1 [rewrite]:
+  "trans_seq2(g1,G2,G3,\<emptyset>) = g1"
+@proof @have "ord(\<emptyset>)" @qed
+
+lemma trans_seq2_unfold2 [rewrite]:
+  "ord(a) \<Longrightarrow> trans_seq2(g1,G2,G3,succ(a)) = G2(a)"
+@proof
+  @have "\<not>limit_ord(succ(a))"
+  @have "\<emptyset> \<in> succ(a)"
+  @have "pred(succ(a)) = a"
+@qed
+
+lemma trans_seq2_unfold3 [rewrite]:
+  "limit_ord(a) \<Longrightarrow> trans_seq2(g1,G2,G3,a) = G3(Tup(a, \<lambda>x. trans_seq2(g1,G2,G3,x)))" by auto2
+
+setup {* del_prfstep_thm @{thm trans_seq2_def} *}
 
 section \<open>Natural numbers as cardinals\<close>
 
