@@ -365,14 +365,14 @@ definition trans_seq2 :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> (i \
   "trans_seq2(g1,G2,G3,a) =
      trans_seq(\<lambda>f. if source(f) = \<emptyset> then g1
                    else if limit_ord(source(f)) then G3(f)
-                   else G2(pred(source(f))), a)"
+                   else G2(f`pred(source(f))), a)"
 
 lemma trans_seq2_unfold1 [rewrite]:
   "trans_seq2(g1,G2,G3,\<emptyset>) = g1"
 @proof @have "ord(\<emptyset>)" @qed
 
 lemma trans_seq2_unfold2 [rewrite]:
-  "ord(a) \<Longrightarrow> trans_seq2(g1,G2,G3,succ(a)) = G2(a)"
+  "ord(a) \<Longrightarrow> trans_seq2(g1,G2,G3,succ(a)) = G2(trans_seq2(g1,G2,G3,a))"
 @proof
   @have "\<not>limit_ord(succ(a))"
   @have "\<emptyset> \<in> succ(a)"
@@ -383,6 +383,59 @@ lemma trans_seq2_unfold3 [rewrite]:
   "limit_ord(a) \<Longrightarrow> trans_seq2(g1,G2,G3,a) = G3(Tup(a, \<lambda>x. trans_seq2(g1,G2,G3,x)))" by auto2
 
 setup {* del_prfstep_thm @{thm trans_seq2_def} *}
+
+section \<open>Union of cardinals is a cardinal\<close>
+
+lemma card_less [resolve]:
+  "card(c) \<Longrightarrow> i \<in> c \<Longrightarrow> \<not>i \<approx>\<^sub>S c"
+@proof
+  @contradiction
+  @have "c \<le>\<^sub>O i"
+@qed
+
+lemma union_card [backward]:
+  "\<forall>x\<in>S. card(x) \<Longrightarrow> card(\<Union>S)"
+@proof
+  @have "(\<mu> i. i \<approx>\<^sub>S \<Union>S) = \<Union>S" @with
+    @have "\<forall>i\<in>\<Union>S. \<not>i \<approx>\<^sub>S \<Union>S" @with
+      @obtain c where "i \<in> c" "c \<in> S"
+      @have "\<not>c \<lesssim>\<^sub>S i" @with
+        @have "i \<lesssim>\<^sub>S c"
+      @end
+      @have "c \<lesssim>\<^sub>S \<Union>S" @with
+        @have "c \<subseteq> \<Union>S"
+      @end
+    @end
+  @end
+@qed
+  
+section \<open>Aleph numbers\<close>
+
+definition aleph :: "i \<Rightarrow> i" where [rewrite]:
+  "aleph(i) = trans_seq2(nat,succ_cardinal,\<lambda>f. \<Union>(Tup_image(f,source(f))),i)"
+
+lemma aleph_unfold1 [rewrite]:
+  "aleph(\<emptyset>) = nat" by auto2
+
+lemma aleph_unfold2 [rewrite]:
+  "ord(a) \<Longrightarrow> aleph(succ(a)) = succ_cardinal(aleph(a))" by auto2
+
+lemma aleph_unfold3 [rewrite]:
+  "limit_ord(a) \<Longrightarrow> aleph(a) = \<Union>{aleph(c). c \<in> a}" by auto2
+
+section \<open>Beth numbers\<close>
+
+definition beth :: "i \<Rightarrow> i" where [rewrite]:
+  "beth(i) = trans_seq2(nat,pow_cardinal,\<lambda>f. \<Union>(Tup_image(f,source(f))),i)"
+
+lemma beth_unfold1 [rewrite]:
+  "beth(\<emptyset>) = nat" by auto2
+
+lemma beth_unfold2 [rewrite]:
+  "ord(a) \<Longrightarrow> beth(succ(a)) = pow_cardinal(beth(a))" by auto2
+
+lemma beth_unfold3 [rewrite]:
+  "limit_ord(a) \<Longrightarrow> beth(a) = \<Union>{beth(c). c \<in> a}" by auto2
 
 section \<open>Natural numbers as cardinals\<close>
 
@@ -447,7 +500,28 @@ lemma nat_cardinal [forward]:
   @have "(\<mu> i. i \<approx>\<^sub>S nat) = nat"
 @qed
 
-lemma "ord(i) \<Longrightarrow> wf(mem_rel(i))"
-  by auto2
+section \<open>Aleph and Beth numbers are cardinals\<close>
+
+lemma aleph_cardinal [forward]:
+  "ord(a) \<Longrightarrow> card(aleph(a))"
+@proof
+  @have "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. card(aleph(y))) \<longrightarrow> card(aleph(x))" @with
+    @case "x = \<emptyset>"
+    @case "limit_ord(x)"
+    @obtain y where "x = succ(y)"
+  @end
+  @induct "ord(a)" "card(aleph(a))"
+@qed
+
+lemma beth_cardinal [forward]:
+  "ord(a) \<Longrightarrow> card(beth(a))"
+@proof
+  @have "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. card(beth(y))) \<longrightarrow> card(beth(x))" @with
+    @case "x = \<emptyset>"
+    @case "limit_ord(x)"
+    @obtain y where "x = succ(y)"
+  @end
+  @induct "ord(a)" "card(beth(a))"
+@qed
 
 end
