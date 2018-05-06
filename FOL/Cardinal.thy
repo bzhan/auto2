@@ -189,6 +189,15 @@ lemma le_potent_trans [forward]:
   @have "h \<in> A \<rightarrow> C" @have "injective(h)"
 @qed
 
+lemma le_potent_trans2 [forward]:
+  "A \<lesssim>\<^sub>S B \<Longrightarrow> B \<approx>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
+@proof
+  @obtain "f \<in> A \<rightarrow> B" where "injective(f)"
+  @obtain "g \<in> B \<cong> C"
+  @let "h = g \<circ> f"
+  @have "h \<in> A \<rightarrow> C" @have "injective(h)"
+@qed
+
 lemma schroeder_bernstein_potent [forward]:
   "S \<lesssim>\<^sub>S T \<Longrightarrow> T \<lesssim>\<^sub>S S \<Longrightarrow> S \<approx>\<^sub>S T"
 @proof
@@ -265,5 +274,75 @@ lemma succ_cardinal_ineq [backward]:
   @let "P = pow_cardinal(K)"
   @have "card(P) \<and> K \<in> P"
 @qed
+
+definition limit_ord [rewrite]:
+  "limit_ord(i) \<longleftrightarrow> (ord(i) \<and> 0 \<in> i \<and> (\<forall>y. y \<in> i \<longrightarrow> succ(y) \<in> i))"
+setup {* add_property_const @{term limit_ord} *}
+
+section \<open>Natural numbers as cardinals\<close>
+
+declare nat_def [rewrite]
+declare nat_bnd_mono [resolve]
+declare nat_unfold [rewrite]
+declare Zero_def [rewrite]
+declare nat_add_1 [rewrite_back]
+declare Suc_def [rewrite]
+
+lemma nat_into_ordinal [resolve]:
+  "n \<in> nat \<Longrightarrow> ord(n)"
+@proof @var_induct "n \<in> nat" @qed
+
+lemma nat_ordinal [resolve]:
+  "ord(nat)"
+@proof
+  @have "trans_set(nat)" @with
+    @have "\<forall>x\<in>nat. x \<subseteq> nat" @with
+      @var_induct "x \<in> nat"
+    @end
+  @end
+  @have "\<forall>n\<in>nat. trans_set(n)" @with
+    @have "ord(n)"
+  @end
+@qed
+
+lemma nat_limit_ordinal [forward]:
+  "limit_ord(nat)" by auto2
+
+lemma nat_Suc_diff [rewrite]:
+  "n \<in> nat \<Longrightarrow> Suc(n) \<midarrow> {n} = n" by auto2
+
+(* TODO: unify with proof of equipotent_nat_less_range in Finite *)
+lemma equipotent_nat_less_range [forward]:
+  "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> m \<approx>\<^sub>S n \<Longrightarrow> m = n"
+@proof
+  @var_induct "m \<in> nat" arbitrary n @with
+    @subgoal "m = m' +\<^sub>\<nat> 1"
+      @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1"
+      @have "m' = Suc(m') \<midarrow> {m'}"
+      @have "n' = Suc(n') \<midarrow> {n'}"
+      @have "m' \<approx>\<^sub>S n'"
+    @endgoal
+  @end
+@qed
+
+lemma nat_not_equipotent [resolve]:
+  "x \<in> nat \<Longrightarrow> \<not> x \<approx>\<^sub>S nat"
+@proof
+  @contradiction
+  @have "Suc(x) \<lesssim>\<^sub>S nat"
+  @have "nat \<approx>\<^sub>S x"
+  @have "x \<approx>\<^sub>S Suc(x)" @with
+    @have "x \<lesssim>\<^sub>S Suc(x)"
+  @end
+@qed
+
+lemma nat_cardinal [forward]:
+  "card(nat)"
+@proof
+  @have "(\<mu> i. i \<approx>\<^sub>S nat) = nat"
+@qed
+
+lemma "ord(i) \<Longrightarrow> wf(mem_rel(i))"
+  by auto2
 
 end
