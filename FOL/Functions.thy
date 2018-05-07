@@ -15,7 +15,7 @@ setup {* del_prfstep_thm @{thm image_on_def} *}
 
 lemma image_on_empty [rewrite]: "is_function(f) \<Longrightarrow> f `` \<emptyset> = \<emptyset>" by auto2
 lemma image_on_mono [backward]: "is_function(f) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> f `` A \<subseteq> f `` B" by auto2
-    
+
 definition image :: "i \<Rightarrow> i" where image_def [rewrite_bidir]:
   "image(f) = f `` source(f)"
 lemma image_in_target: "is_function(f) \<Longrightarrow> image(f) \<subseteq> target(f)" by auto2

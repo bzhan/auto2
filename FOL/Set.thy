@@ -146,6 +146,8 @@ lemma union_compl2 [rewrite]: "A \<subseteq> X \<Longrightarrow> (X \<midarrow> 
 lemma Int_empty1 [forward]: "A \<inter> B = \<emptyset> \<Longrightarrow> x \<in> A \<Longrightarrow> x \<notin> B"
   @proof @contradiction @have "x \<in> A \<inter> B" @qed
 lemma Int_empty2 [forward]: "A \<inter> B = \<emptyset> \<Longrightarrow> x \<in> B \<Longrightarrow> x \<notin> A" by auto2
+lemma Int_diff_union [rewrite]: "(X \<inter> Y) \<union> (X \<midarrow> Y) = X" by auto2
+lemma Int_diff_Int [rewrite]: "(X \<inter> Y) \<inter> (X \<midarrow> Y) = \<emptyset>" by auto2
 
 section \<open>Strict subsets\<close>
 

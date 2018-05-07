@@ -157,7 +157,7 @@ lemma card_is_ordinal [forward]:
   @obtain "R\<in>raworder_space(A)" where "well_order(R)"
 @qed
 
-lemma cardinal_cong [resolve]:
+lemma cardinal_from_cong [resolve]:
   "A \<approx>\<^sub>S B \<Longrightarrow> cardinal(A) = cardinal(B)"
 @proof
   @obtain "R\<in>raworder_space(A)" where "well_order(R)"
@@ -168,6 +168,13 @@ lemma card_is_cardinal [forward]:
   "card(cardinal(A))"
 @proof @have "A \<approx>\<^sub>S cardinal(A)" @qed
 
+lemma cardinal_to_cong [resolve]:
+  "cardinal(A) = cardinal(B) \<Longrightarrow> A \<approx>\<^sub>S B"
+@proof
+  @have "A \<approx>\<^sub>S cardinal(A)"
+  @have "B \<approx>\<^sub>S cardinal(B)"
+@qed
+
 section \<open>Ordering on cardinality\<close>
 
 definition le_potent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<lesssim>\<^sub>S" 50) where [rewrite]:
@@ -177,7 +184,19 @@ lemma le_potentI [resolve]: "injective(f) \<Longrightarrow> f \<in> A \<rightarr
 lemma le_potentE [resolve]: "S \<lesssim>\<^sub>S T \<Longrightarrow> \<exists>f\<in>S\<rightarrow>T. injective(f)" by auto2
 setup {* del_prfstep_thm @{thm le_potent_def} *}
 
+definition less_potent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<prec>\<^sub>S" 50) where [rewrite]:
+  "S \<prec>\<^sub>S T \<longleftrightarrow> (S \<lesssim>\<^sub>S T \<and> \<not>S \<approx>\<^sub>S T)"
+
 lemma le_potent_trans [forward]:
+  "A \<lesssim>\<^sub>S B \<Longrightarrow> B \<lesssim>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
+@proof
+  @obtain "f \<in> A \<rightarrow> B" where "injective(f)"
+  @obtain "g \<in> B \<rightarrow> C" where "injective(g)"
+  @let "h = g \<circ> f"
+  @have "h \<in> A \<rightarrow> C" @have "injective(h)"
+@qed
+
+lemma le_potent_eq_trans [forward]:
   "A \<approx>\<^sub>S B \<Longrightarrow> B \<lesssim>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
 @proof
   @obtain "f \<in> A \<cong> B"
@@ -186,7 +205,7 @@ lemma le_potent_trans [forward]:
   @have "h \<in> A \<rightarrow> C" @have "injective(h)"
 @qed
 
-lemma le_potent_trans2 [forward]:
+lemma le_potent_trans_eq [forward]:
   "A \<lesssim>\<^sub>S B \<Longrightarrow> B \<approx>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
 @proof
   @obtain "f \<in> A \<rightarrow> B" where "injective(f)"
@@ -420,6 +439,7 @@ lemma aleph_unfold2 [rewrite]:
 
 lemma aleph_unfold3 [rewrite]:
   "limit_ord(a) \<Longrightarrow> aleph(a) = \<Union>{aleph(c). c \<in> a}" by auto2
+setup {* del_prfstep_thm @{thm aleph_def} *}
 
 section \<open>Beth numbers\<close>
 
@@ -434,6 +454,7 @@ lemma beth_unfold2 [rewrite]:
 
 lemma beth_unfold3 [rewrite]:
   "limit_ord(a) \<Longrightarrow> beth(a) = \<Union>{beth(c). c \<in> a}" by auto2
+setup {* del_prfstep_thm @{thm beth_def} *}
 
 section \<open>Natural numbers as cardinals\<close>
 
@@ -523,5 +544,10 @@ lemma beth_cardinal [forward]:
     @endgoal
   @end
 @qed
+
+setup {* fold del_prfstep_thm [@{thm nat_def}, @{thm nat_bnd_mono}, @{thm nat_unfold},
+  @{thm Zero_def}, @{thm nat_add_1}, @{thm Suc_def}] *}
+
+setup {* fold del_prfstep_thm [@{thm trans_set_def}, @{thm cardinal_def}, @{thm card_def}] *}
 
 end

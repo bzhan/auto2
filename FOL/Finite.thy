@@ -23,6 +23,21 @@ lemma glue_function2_bij [backward]:
   "f \<in> A \<cong> B \<Longrightarrow> g \<in> C \<cong> D \<Longrightarrow> A \<inter> C = \<emptyset> \<Longrightarrow> B \<inter> D = \<emptyset> \<Longrightarrow>
    glue_function2(f,g) \<in> (A \<union> C) \<cong> (B \<union> D)" by auto2
 
+lemma glue_function2_image1 [rewrite]:
+  "surjective(f) \<Longrightarrow> is_function(g) \<Longrightarrow> glue_function2(f,g) `` source(f) = target(f)"
+@proof
+  @let "h = glue_function2(f,g)"
+  @have "\<forall>x. x \<in> h``source(f) \<longleftrightarrow> x \<in> target(f)" @with
+    @case "x \<in> h``source(f)" @with
+      @obtain y where "y \<in> source(f)" "h`y = x"
+    @end
+    @case "x \<in> target(f)" @with
+      @obtain y where "y \<in> source(f)" "f`y = x"
+      @have "h`y = x"
+    @end
+  @end
+@qed
+
 section {* Equipotent condition *}
 
 definition equipotent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<approx>\<^sub>S" 50) where [rewrite]:
