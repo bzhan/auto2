@@ -6,7 +6,7 @@ sig
   val delete_induct_data: string -> thm -> theory -> theory
   val add_induct_data_with_prem: string -> term * thm -> theory -> theory
   val lookup_induct_data: string -> theory -> term -> thm option
-  val induct_cmd: string * string -> Proof.state -> Proof.state
+  val induct_cmd: string * string * string option -> Proof.state -> Proof.state
   val strong_induct_cmd: string * string list -> Proof.state -> Proof.state
 end;
 
@@ -62,7 +62,7 @@ fun lookup_induct_data str thy t =
       get_first match_data data
     end
 
-fun induct_cmd (s, t) state =
+fun induct_cmd (s, t, u) state =
     let
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
@@ -85,26 +85,72 @@ fun induct_cmd (s, t) state =
                               |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
 
+
+      fun retrieve_pat t =
+          let
+            val t = dest_Trueprop t
+            val (vars, (_, C)) = UtilLogic.strip_obj_horn t
+            val pat_vars = map (fn t => let val (x, T) = dest_Free t in
+                                          Var ((x,0), T)
+                                        end) vars
+          in
+            Term.subst_atomic (vars ~~ pat_vars) C
+          end
+
+      val prem = hd (Thm.prems_of ind_th)
+      val ind_prems = tl (Thm.prems_of ind_th)
+      val pats = prem :: map retrieve_pat ind_prems
+
       val ind_goals =
           ind_th |> Thm.prems_of
                  |> map (fn t => Logic.list_implies (As, t))
+                 |> map (Thm.cterm_of ctxt)
+                 |> map (UtilLogic.to_meta_conv ctxt)
 
-      val ths = (map (Auto2_Outer.auto2_solve ctxt o Thm.cterm_of ctxt) ind_goals)
-                    |> map Util.send_all_to_hyps
-
-      val ind_concl = (ths MRS ind_th)
-                          |> fold Thm.implies_intr (rev cAs)
-
-      val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+      fun solve_eq eq =
+          let
+            val th = Auto2_Outer.auto2_solve ctxt (Thm.rhs_of eq)
+          in
+            Thm.equal_elim (meta_sym eq) th
+          end
     in
-      state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+      if is_none u then
+        let
+          val ths = (map solve_eq ind_goals)
+                        |> map Util.send_all_to_hyps
+          val ind_concl = (ths MRS ind_th)
+                              |> fold Thm.implies_intr (rev cAs)
+          val after_qed = Auto2_Outer.have_after_qed ctxt ind_concl
+        in
+          state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
+        end
+      else
+        let
+          fun after_qed ths prop =
+              let
+                val ths' = (ind_goals ~~ ths)
+                               |> map (fn (eq, th) =>
+                                          Thm.equal_elim (meta_sym eq) th)
+                               |> map Util.send_all_to_hyps
+                val ind_concl = (ths' MRS ind_th)
+                                    |> fold Thm.implies_intr (rev cAs)
+              in
+                Auto2_Outer.have_after_qed ctxt ind_concl prop
+              end
+
+          val new_frame =
+              Auto2_State.multiple_frame (pats ~~ map Thm.rhs_of ind_goals,
+                                          SOME ([], after_qed))
+        in
+          state |> Proof.map_contexts (Auto2_State.push_head new_frame)
+        end
     end
 
 val _ =
   Outer_Syntax.command @{command_keyword "@induct"} "apply induction"
-    ((Parse.term -- Parse.term) >>
-        (fn (s, t) =>
-            Toplevel.proof (fn state => induct_cmd (s, t) state)))
+    (Parse.term -- Parse.term -- Scan.option @{keyword "@with"} >>
+        (fn ((s, t), u) =>
+            Toplevel.proof (fn state => induct_cmd (s, t, u) state)))
 
 fun strong_induct_cmd (s, t) state =
     let
@@ -169,7 +215,7 @@ val arbitrary =
 val _ =
   Outer_Syntax.command @{command_keyword "@strong_induct"}
     "apply strong induction"
-    ((Parse.term -- arbitrary) >> (fn (s, t) =>
+    (Parse.term -- arbitrary >> (fn (s, t) =>
         Toplevel.proof (fn state => strong_induct_cmd (s, these t) state)))
 
 end  (* structure ScriptInduct_Data *)

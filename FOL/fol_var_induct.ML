@@ -1,5 +1,11 @@
 (* Induction on variables *)
 
+(* Syntax after @var_induct: either "P(n)" or "n in P(n, ...)". In the
+   first case, n is the unique free variable in P(n), and is taken to
+   be the induction variable. In the second case, there are more than
+   one free variables in P(n, ...), so the induction variable need to
+   be explicitly stated.
+ *)
 fun read_var_spec ctxt (n, s) =
     let
       val prem = Syntax.read_term ctxt s
@@ -11,22 +17,24 @@ fun read_var_spec ctxt (n, s) =
       (var, prem)
     end
 
+(* Obtain the induction statement. *)
 fun get_induct_stmt ctxt (var, prem, stmt, arbitrary) =
-    if is_some stmt then
-      UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt (the stmt)))
-    else
-      let
-        val (_, (As, C)) = ctxt |> Auto2_State.get_selected
-                                |> Auto2_State.subgoal_of
-                                |> Util.strip_meta_horn
-        val all_vars = var :: arbitrary
-        val obj_As = As |> filter (Util.occurs_frees all_vars)
-                        |> map dest_Trueprop
-                        |> remove (op aconv) prem
-        val obj_C = dest_Trueprop C
-      in
-        UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
-      end
+    case stmt of
+        NONE =>
+        let
+          val (_, (As, C)) = ctxt |> Auto2_State.get_selected
+                                  |> Auto2_State.subgoal_of
+                                  |> Util.strip_meta_horn
+          val all_vars = var :: arbitrary
+          val obj_As = As |> filter (Util.occurs_frees all_vars)
+                          |> map dest_Trueprop
+                          |> remove (op aconv) prem
+          val obj_C = dest_Trueprop C
+        in
+          UtilLogic.list_obj_horn (arbitrary, (obj_As, obj_C))
+        end
+      | SOME s =>
+        UtilLogic.list_obj_horn (arbitrary, ([], Syntax.read_term ctxt s))
 
 fun var_induct_cmd ((n, s), t, u, v) state =
     let

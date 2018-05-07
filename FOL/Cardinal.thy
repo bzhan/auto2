@@ -25,21 +25,18 @@ definition le_ord :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<le>\<^sub>O"
 lemma least_ord_le [backward]:
   "P(i) \<Longrightarrow> ord(i) \<Longrightarrow> (\<mu> i. P(i)) \<le>\<^sub>O i"
 @proof
-  @have "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. P(y) \<longrightarrow> (\<mu> i. P(i)) \<in> y) \<longrightarrow> P(x) \<longrightarrow> (\<mu> i. P(i)) \<le>\<^sub>O x" @with
-    @contradiction
-    @have "(\<mu> i. P(i)) = x"
-  @end
   @induct "ord(i)" "P(i) \<longrightarrow> (\<mu> i. P(i)) \<le>\<^sub>O i"
 @qed
 
 lemma least_ord_prop:
   "ord(i) \<Longrightarrow> P(i) \<Longrightarrow> P(\<mu> i. P(i))"
 @proof
-  @have "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. P(y) \<longrightarrow> P(\<mu> i. P(i))) \<longrightarrow> P(x) \<longrightarrow> P(\<mu> i. P(i))" @with
-    @contradiction
-    @have "(\<mu> i. P(i)) = x"
+  @induct "ord(i)" "\<not>P(i) \<or> P(\<mu> i. P(i))" @with
+    @subgoal "\<not>P(x) \<or> P(\<mu> i. P(i))"
+      @contradiction
+      @have "(\<mu> i. P(i)) = x"
+    @endgoal
   @end
-  @induct "ord(i)" "P(i) \<longrightarrow> P(\<mu> i. P(i))"
 @qed
 setup {* add_forward_prfstep_cond @{thm least_ord_prop} [with_term "\<mu> i. ?P(i)"] *}
 
@@ -301,12 +298,13 @@ lemma trans_seq_eq1 [backward]:
   "ord(b) \<Longrightarrow> a \<in> b \<Longrightarrow> i \<in> a \<Longrightarrow> wfrec(mem_rel(b),H,i) = wfrec(mem_rel(a),H,i)"
 @proof
   @let "r = mem_rel(a)" "s = mem_rel(b)"
-  @have "\<forall>x. ord(x) \<longrightarrow> x \<in> a \<longrightarrow> (\<forall>y\<in>x. y \<in> a \<longrightarrow> wfrec(s, H, y) = wfrec(r, H, y)) \<longrightarrow> wfrec(s, H, x) = wfrec(r, H, x)" @with
-    @have "wfrec(s,H,x) = H(x, Tup(x, \<lambda>x. wfrec(s,H,x)))"
-    @have "wfrec(r,H,x) = H(x, Tup(x, \<lambda>x. wfrec(r,H,x)))"
-    @have "Tup(x, \<lambda>x. wfrec(s,H,x)) = Tup(x, \<lambda>x. wfrec(r,H,x))"
+  @induct "ord(i)" "i \<in> a \<longrightarrow> wfrec(s,H,i) = wfrec(r,H,i)" @with
+    @subgoal "wfrec(s, H, x) = wfrec(r, H, x)"
+      @have "wfrec(s,H,x) = H(x, Tup(x, \<lambda>x. wfrec(s,H,x)))"
+      @have "wfrec(r,H,x) = H(x, Tup(x, \<lambda>x. wfrec(r,H,x)))"
+      @have "Tup(x, \<lambda>x. wfrec(s,H,x)) = Tup(x, \<lambda>x. wfrec(r,H,x))"
+    @endgoal
   @end
-  @induct "ord(i)" "i \<in> a \<longrightarrow> wfrec(s,H,i) = wfrec(r,H,i)"
 @qed
 
 lemma not_limit_ordinal_eq [backward1]:
@@ -324,16 +322,16 @@ lemma nonzero_ordinal [resolve]: "ord(a) \<Longrightarrow> x \<in> a \<Longright
 lemma ord_mem_succ [backward]: "ord(a) \<Longrightarrow> i \<in> a \<Longrightarrow> succ(i) \<in> succ(a)"
 @proof
   @case "limit_ord(a)"
-  @have "\<emptyset> \<in> a"
   @obtain b where "a = succ(b)"
-  @have "\<forall>x xa. ord(x) \<longrightarrow> (\<forall>y\<in>x. \<forall>x. x \<in> y \<longrightarrow> succ(x) \<in> succ(y)) \<longrightarrow> xa \<in> x \<longrightarrow> succ(xa) \<in> succ(x)" @with
-    @case "limit_ord(x)"
-    @obtain y where "x = succ(y)"
-    @have "xa \<in> succ(y)"
-    @have (@rule) "xa = y \<or> xa \<in> y"
-    @case "xa = y"
+  @induct "ord(a)" "(\<forall>x. x \<in> a \<longrightarrow> succ(x) \<in> succ(a))" @with
+    @subgoal "succ(x) \<in> succ(xa)"  (* Direction is just wrong *)
+      @case "limit_ord(x)"
+      @obtain y where "x = succ(y)"
+      @have "xa \<in> succ(y)"
+      @have (@rule) "xa = y \<or> xa \<in> y"
+      @case "xa = y"
+    @endgoal
   @end
-  @induct "ord(a)" "(\<forall>x. x \<in> a \<longrightarrow> succ(x) \<in> succ(a))"
 @qed
 
 lemma trans_seq_unfold [rewrite]:
@@ -505,23 +503,25 @@ section \<open>Aleph and Beth numbers are cardinals\<close>
 lemma aleph_cardinal [forward]:
   "ord(a) \<Longrightarrow> card(aleph(a))"
 @proof
-  @have "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. card(aleph(y))) \<longrightarrow> card(aleph(x))" @with
-    @case "x = \<emptyset>"
-    @case "limit_ord(x)"
-    @obtain y where "x = succ(y)"
+  @induct "ord(a)" "card(aleph(a))" @with
+    @subgoal "card(aleph(x))"
+      @case "x = \<emptyset>"
+      @case "limit_ord(x)"
+      @obtain y where "x = succ(y)"
+    @endgoal
   @end
-  @induct "ord(a)" "card(aleph(a))"
 @qed
 
 lemma beth_cardinal [forward]:
   "ord(a) \<Longrightarrow> card(beth(a))"
 @proof
-  @have "\<forall>x. ord(x) \<longrightarrow> (\<forall>y\<in>x. card(beth(y))) \<longrightarrow> card(beth(x))" @with
-    @case "x = \<emptyset>"
-    @case "limit_ord(x)"
-    @obtain y where "x = succ(y)"
+  @induct "ord(a)" "card(beth(a))" @with
+    @subgoal "card(beth(x))"
+      @case "x = \<emptyset>"
+      @case "limit_ord(x)"
+      @obtain y where "x = succ(y)"
+    @endgoal
   @end
-  @induct "ord(a)" "card(beth(a))"
 @qed
 
 end

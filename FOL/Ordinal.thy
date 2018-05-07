@@ -81,9 +81,11 @@ lemma ord_double_induct [script_induct]:
   "ord(i) \<and> ord(j) \<Longrightarrow> 
    \<forall>x y. ord(x) \<longrightarrow> ord(y) \<longrightarrow> (\<forall>x'\<in>x. P(x',y)) \<longrightarrow> (\<forall>y'\<in>y. P(x,y')) \<longrightarrow> P(x,y) \<Longrightarrow> P(i,j)"
 @proof
-  @have "\<forall>i' j'. ord(i') \<longrightarrow> (\<forall>i\<in>i'. \<forall>j. ord(j) \<longrightarrow> P(i, j)) \<longrightarrow> ord(j') \<longrightarrow> P(i', j')" @with
-    @induct "ord(j')" "P(i',j')" @end
-  @induct "ord(i)" "\<forall>j. ord(j) \<longrightarrow> P(i,j)"
+  @induct "ord(i)" "\<forall>j. ord(j) \<longrightarrow> P(i,j)" @with
+    @subgoal "P(i',j')"
+      @induct "ord(j')" "P(i',j')"
+    @endgoal
+  @end
 @qed
 
 (* Ordinals are linearly ordered *)
