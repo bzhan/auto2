@@ -473,7 +473,8 @@ lemma continuousI_neighs [forward]:
    \<forall>x\<in>.X. \<forall>V\<in>neighs(Y,f`x). \<exists>U\<in>neighs(X,x). f``U \<subseteq> V \<Longrightarrow> continuous(f)"
 @proof
   @have "\<forall>V\<in>open_sets(Y). is_open(X,f-``V)" @with
-    @have "\<forall>x\<in>f-``V. \<exists>U\<in>neighs(X,x). U \<subseteq> f-``V" @end
+    @have "\<forall>x\<in>f-``V. \<exists>U\<in>neighs(X,x). U \<subseteq> f-``V"
+  @end
 @qed
 
 lemma continuousI_basis [forward]:
@@ -521,7 +522,13 @@ lemma mor_restrict_top_vImage [rewrite]:
   "is_morphism(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> B \<subseteq> target(f) \<Longrightarrow> (f |\<^sub>T A) -`` B = A \<inter> (f -`` B)" by auto2
 
 lemma mor_restrict_top_image [rewrite]:
-  "is_morphism(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> image(f |\<^sub>T A) = f `` A" by auto2
+  "is_morphism(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> image(f |\<^sub>T A) = f `` A"
+@proof
+  @have "\<forall>x\<in>f``A. x \<in> image(f |\<^sub>T A)" @with
+    @obtain "y \<in> A" where "f`y = x"
+    @have "(f |\<^sub>T A) ` y = x"
+  @end
+@qed
   
 definition mor_restrict_image_top :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "mor_restrict_image_top(f,A) = Mor(source_str(f),subspace(target_str(f),A),\<lambda>x. f`x)"
@@ -542,21 +549,6 @@ lemma mor_restrict_image_top_eval [rewrite]:
   "is_morphism(f) \<Longrightarrow> g = mor_restrict_image_top(f,A) \<Longrightarrow> image(f) \<subseteq> A \<Longrightarrow>
    x \<in> source(g) \<Longrightarrow> g`x = f`x" by auto2
 setup {* del_prfstep_thm @{thm mor_restrict_image_top_def} *}
-  
-definition mor_restrict2_top :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "mor_restrict2_top(f,A,B) = Mor(subspace(source_str(f),A),subspace(target_str(f),B),\<lambda>x. f`x)"
-setup {* register_wellform_data ("mor_restrict2_top(f,A,B)", ["A \<subseteq> source(f)", "f``A \<subseteq> B", "B \<subseteq> target(f)"]) *}
-setup {* add_prfstep_check_req ("mor_restrict2_top(f,A,B)", "A \<subseteq> source(f) \<and> f``A \<subseteq> B \<and> B \<subseteq> target(f)") *}
-
-lemma mor_restrict2_top_is_continuous [typing]:
-  "continuous(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> f``A \<subseteq> B \<Longrightarrow>
-   B \<subseteq> target(f) \<Longrightarrow> X' = subspace(X,A) \<Longrightarrow> Y' = subspace(Y,B) \<Longrightarrow> mor_restrict2_top(f,A,B) \<in> X' \<rightharpoonup>\<^sub>T Y'"
-@proof @have "mor_restrict2_top(f,A,B) = mor_restrict_image_top(f |\<^sub>T A, B)" @qed
-      
-lemma mor_restrict2_top_eval [rewrite]:
-  "is_morphism(f) \<Longrightarrow> g = mor_restrict2_top(f,A,B) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> f``A \<subseteq> B \<Longrightarrow>
-   x \<in> source(g) \<Longrightarrow> g`x = f`x" by auto2
-setup {* del_prfstep_thm @{thm mor_restrict2_top_def} *}
   
 lemma continuous_paste_open:
   "is_morphism_top(f) \<Longrightarrow> X = source_str(f) \<Longrightarrow> Y = target_str(f) \<Longrightarrow>

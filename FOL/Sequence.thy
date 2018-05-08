@@ -134,7 +134,7 @@ lemma boundedD_less [resolve]:
 @proof
   @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r +\<^sub>R \<one>\<^sub>R"
 @qed
-      
+
 lemma bounded_on_tail [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r \<Longrightarrow> bounded(X)"
 @proof
@@ -144,7 +144,10 @@ lemma bounded_on_tail [forward]:
   @obtain "f \<in> nat \<rightarrow> carrier(R)" where "f = (\<lambda>i\<in>nat. \<bar>X`i\<bar>\<^sub>R \<in> carrier(R))"
   @let "m = max(R,r,greatest(R,f `` S))"
   @have "has_greatest(R,f``S)"
-  @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R m" @with @have "\<bar>X`n\<bar>\<^sub>R = f`n" @end
+  @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R m" @with
+    @have "\<bar>X`n\<bar>\<^sub>R = f`n"
+    @case "n <\<^sub>\<nat> k" @with @have "f`n \<in> f``S" @end
+  @end
 @qed
 
 lemma bounded_less_on_tail [forward]:
@@ -168,7 +171,8 @@ lemma vanishesE_nat_ge [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> vanishes(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> i \<in>. \<nat> \<Longrightarrow>
    \<exists>k\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
 @proof
-  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r" @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
+  @obtain "j\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
+  @have "\<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>X`n\<bar>\<^sub>R <\<^sub>R r"
 @qed
 
 lemma not_vanishesD [backward]:
@@ -204,7 +208,8 @@ lemma cauchyI2 [forward]:
   @have "\<forall>r. r >\<^sub>R \<zero>\<^sub>R \<longrightarrow> (\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)" @with
     @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s"
     @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s"
-    @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @end
+    @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r"
+  @end
 @qed
 
 lemma cauchyE_nat_ge [backward1]:
@@ -231,7 +236,8 @@ lemma cauchy_from_vanishes [forward]:
     @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s"
     @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`n\<bar>\<^sub>R <\<^sub>R s"
     @have "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r" @with
-      @have "X`m -\<^sub>R X`n = X`m +\<^sub>R (-\<^sub>R X`n)" @end
+      @have "X`m -\<^sub>R X`n = X`m +\<^sub>R (-\<^sub>R X`n)"
+    @end
   @end
 @qed
 

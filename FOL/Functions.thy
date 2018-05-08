@@ -8,18 +8,26 @@ section {* Functions *}  (* Bourbaki II.3.4 -- II.3.6 *)
 definition image_on :: "i \<Rightarrow> i \<Rightarrow> i" (infixl "``" 90) where [rewrite]:
   "f `` A = {y\<in>target(f). \<exists>x\<in>source(f). x\<in>A \<and> f`x=y}"
 
-lemma image_onI: "is_function(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> x \<in> A \<Longrightarrow> f ` x \<in> f `` A" by auto2
-setup {* add_forward_prfstep_cond @{thm image_onI} [with_term "?f ` ?x", with_term "?f `` ?A"] *}
-lemma image_on_iff [rewrite]: "is_function(f) \<Longrightarrow> y \<in> f `` A \<longleftrightarrow> (\<exists>x\<in>source(f). x \<in> A \<and> f`x = y)" by auto2
+lemma image_onI [backward]: "is_function(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> x \<in> A \<Longrightarrow> f ` x \<in> f `` A" by auto2
+lemma image_onD [forward]: "is_function(f) \<Longrightarrow> y \<in> f `` A \<Longrightarrow> \<exists>x\<in>source(f). x \<in> A \<and> f`x = y" by auto2
 setup {* del_prfstep_thm @{thm image_on_def} *}
 
 lemma image_on_empty [rewrite]: "is_function(f) \<Longrightarrow> f `` \<emptyset> = \<emptyset>" by auto2
 lemma image_on_mono [backward]: "is_function(f) \<Longrightarrow> A \<subseteq> B \<Longrightarrow> f `` A \<subseteq> f `` B" by auto2
 
+lemma image_non_empty [backward]: "is_function(f) \<Longrightarrow> S \<subseteq> source(f) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> f `` S \<noteq> \<emptyset>"
+@proof
+  @obtain x where "x \<in> S"
+  @have "f`x \<in> f``S"
+@qed
+
 definition image :: "i \<Rightarrow> i" where image_def [rewrite_bidir]:
   "image(f) = f `` source(f)"
 lemma image_in_target: "is_function(f) \<Longrightarrow> image(f) \<subseteq> target(f)" by auto2
 setup {* add_forward_prfstep_cond @{thm image_in_target} [with_term "image(?f)"] *}
+
+lemma imageI: "is_function(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> f`x \<in> image(f)" by auto2
+setup {* add_forward_prfstep_cond @{thm imageI} [with_term "?f`?x", with_term "image(?f)"] *}
 
 (* Inverse image under a function *)
 definition fVImage :: "i \<Rightarrow> i \<Rightarrow> i"  (infixl "-``" 90) where [rewrite]:
@@ -34,6 +42,13 @@ lemma fVImage_mono [backward]: "is_function(f) \<Longrightarrow> A \<subseteq> B
 lemma fVImage_compl [rewrite]: "is_function(f) \<Longrightarrow> f -`` (target(f) \<midarrow> A) = source(f) \<midarrow> (f -`` A)" by auto2    
 lemma fVImage_union [rewrite]: "is_function(f) \<Longrightarrow> (f -`` A) \<union> (f -`` B) = f -`` (A \<union> B)" by auto2
 lemma fVImage_target [rewrite]: "is_function(f) \<Longrightarrow> f -`` target(f) = source(f)" by auto2
+
+lemma fVImage_subset [backward1]: "is_function(f) \<Longrightarrow> U \<subseteq> source(f) \<Longrightarrow> f `` U \<subseteq> V \<Longrightarrow> U \<subseteq> f -`` V"
+@proof
+  @have "\<forall>x'\<in>U. x'\<in>f-``V" @with
+    @have "f`x' \<in> f``U" @have "f`x' \<in> V"
+  @end
+@qed
 
 (* Here we characterize when a function space is empty. *)
 lemma empty_fun_space [rewrite]: "A \<rightarrow> B = \<emptyset> \<longleftrightarrow> A \<noteq> \<emptyset> \<and> B = \<emptyset>"
@@ -56,6 +71,9 @@ definition id_fun :: "i \<Rightarrow> i" where [rewrite]:
 lemma id_fun_is_function [typing]: "id_fun(A) \<in> A \<rightarrow> A" by auto2
 lemma id_fun_eval [rewrite]: "x \<in> source(id_fun(A)) \<Longrightarrow> id_fun(A) ` x = x" by auto2
 setup {* del_prfstep_thm @{thm id_fun_def} *}
+
+lemma id_fun_image [rewrite]: "S \<subseteq> A \<Longrightarrow> id_fun(A) `` S = S"
+@proof @have "\<forall>x\<in>S. x \<in> id_fun(A)``S" @with @have "id_fun(A)`x = x" @end @qed
 
 (* Constant function *)
 definition const_fun :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
@@ -85,7 +103,14 @@ lemma func_restrict_trans [rewrite]:
    func_restrict(func_restrict(f,A),B) = func_restrict(f,B)" by auto2
 
 lemma func_restrict_fImage [rewrite]:
-  "is_function(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> func_restrict(f,A) `` A = f `` A" by auto2
+  "is_function(f) \<Longrightarrow> A \<subseteq> source(f) \<Longrightarrow> func_restrict(f,A) `` A = f `` A"
+@proof
+  @let "g = func_restrict(f,A)"
+  @have "\<forall>x\<in>f``A. x \<in> g``A" @with
+    @obtain y where "y \<in> A" "f`y = x"
+    @have "g`y \<in> g``A"
+  @end
+@qed
 
 definition func_coincide :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "func_coincide(f,g,E) \<longleftrightarrow> (E \<subseteq> source(f) \<and> E \<subseteq> source(g) \<and> (\<forall>x\<in>E. f`x = g`x))"
@@ -436,13 +461,18 @@ lemma exists_pullback_surj [backward1]:
 @qed
 
 lemma exists_pullback_inj:
-  "injective(g) \<Longrightarrow> g \<in> F \<rightarrow> E \<Longrightarrow> f \<in> G \<rightarrow> E \<Longrightarrow> F \<noteq> \<emptyset> \<Longrightarrow> f``G \<subseteq> g``F \<Longrightarrow>
+  "injective(g) \<Longrightarrow> g \<in> F \<rightarrow> E \<Longrightarrow> f \<in> G \<rightarrow> E \<Longrightarrow> F \<noteq> \<emptyset> \<Longrightarrow> image(f) \<subseteq> image(g) \<Longrightarrow>
    \<exists>!h. h\<in>G\<rightarrow>F \<and> f = g \<circ> h"
 @proof
   @have "\<exists>h\<in>G\<rightarrow>F. f = g \<circ> h" @with
     @obtain "r \<in> E \<rightarrow> F" where "r \<circ> g = id_fun(F)"
-    @obtain "h \<in> G \<rightarrow> F" where "h = r \<circ> f" @end
-  @contradiction @have (@rule) "\<forall>x\<in>G. f`x \<subseteq> g``F"
+    @obtain "h \<in> G \<rightarrow> F" where "h = r \<circ> f"
+  @end
+  @have "\<forall>h1 h2. h1 \<in> G \<rightarrow> F \<and> f = g \<circ> h1 \<longrightarrow> h2 \<in> G \<rightarrow> F \<and> f = g \<circ> h2 \<longrightarrow> h1 = h2" @with
+    @have "\<forall>x\<in>G. h1`x = h2`x" @with
+      @have "g`(h1`x) = g`(h2`x)"
+    @end
+  @end
 @qed
 
 section {* Function of two arguments *}  (* Bourbaki II.3.9 *)

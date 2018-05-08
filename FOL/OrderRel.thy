@@ -514,28 +514,6 @@ lemma sup_trans:
   "order(R) \<Longrightarrow> f \<in> I \<rightarrow> carrier(R) \<Longrightarrow> g \<in> I \<rightarrow> carrier(R) \<Longrightarrow> \<forall>a\<in>I. f`a \<le>\<^sub>R g`a \<Longrightarrow>
    has_supf(R,f) \<Longrightarrow> has_supf(R,g) \<Longrightarrow> supf(R,f) \<le>\<^sub>R supf(R,g)" by auto2
 
-lemma sup_cover:
-  "order(R) \<Longrightarrow> f \<in> I \<rightarrow> carrier(R) \<Longrightarrow> J \<in> L \<rightarrow> Pow(I) \<Longrightarrow> (\<Union>b\<in>L. J`b) = I \<Longrightarrow>
-   \<forall>b\<in>L. has_sup(R,f``(J`b)) \<Longrightarrow> has_supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R)) \<Longrightarrow>
-   has_supf(R,f) \<and> supf(R,f) = supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R))" by auto2
-
-lemma sup_cover_inv:
-  "order(R) \<Longrightarrow> f \<in> I \<rightarrow> carrier(R) \<Longrightarrow> J \<in> L \<rightarrow> Pow(I) \<Longrightarrow> (\<Union>b\<in>L. J`b) = I \<Longrightarrow>
-   \<forall>b\<in>L. has_sup(R,f``(J`b)) \<Longrightarrow> has_supf(R,f) \<Longrightarrow>
-   has_supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R)) \<and>
-   supf(R, \<lambda>b\<in>L. sup(R,f``(J`b))\<in>carrier(R)) = supf(R,f)" by auto2
-
-lemma sup_double_family:
-  "order(R) \<Longrightarrow> f \<in> I\<times>J \<rightarrow> carrier(R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R,f``({a}\<times>J)) \<Longrightarrow>
-   has_supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R)) \<Longrightarrow>
-   has_supf(R,f) \<and> supf(R,f) = supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R))" by auto2
-
-lemma sup_double_family_inv:
-  "order(R) \<Longrightarrow> f \<in> I\<times>J \<rightarrow> carrier(R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R,f``({a}\<times>J)) \<Longrightarrow>
-   has_supf(R,f) \<Longrightarrow>
-   has_supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R)) \<and>
-   supf(R, \<lambda>a\<in>I. sup(R,f``({a}\<times>J))\<in>carrier(R)) = supf(R,f)" by auto2
-
 lemma sup_prod:
   "\<forall>a\<in>I. order(R`a) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<Longrightarrow>
    has_sup(prod_rel(I,R),A) \<and> sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))" by auto2

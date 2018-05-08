@@ -390,8 +390,17 @@ lemma inj_compat_double:
 
 lemma second_isomorphism_theorem:
   "E = carrier(R) \<Longrightarrow> A \<subseteq> E \<Longrightarrow> R_A = subset_equiv(R,A) \<Longrightarrow>
-   func_restrict_image(induced_fun_double(inj_fun(A,E),R_A,R)) \<in> A//R_A \<cong> qsurj(R) `` A" by auto2
-
+   func_restrict_image(induced_fun_double(inj_fun(A,E),R_A,R)) \<in> A//R_A \<cong> qsurj(R) `` A"
+@proof
+  @let "f = induced_fun_double(inj_fun(A,E),R_A,R)"
+  @have "image(f) = qsurj(R) `` A" @with
+    @have "\<forall>x\<in>qsurj(R) `` A. x \<in> image(f)" @with
+      @obtain "y \<in> A" where "qsurj(R)`y = x"
+      @have "f`equiv_class(R_A,y) = x"
+    @end
+  @end
+@qed
+  
 section {* Quotients of equivalence relations *}  (* Bourbaki II.6.7 *)
 
 (* Finer condition can be defined on all relations *)
