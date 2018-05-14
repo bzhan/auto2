@@ -489,7 +489,7 @@ lemma nat_Suc_diff [rewrite]:
   "n \<in> nat \<Longrightarrow> Suc(n) \<midarrow> {n} = n" by auto2
 
 (* TODO: unify with proof of equipotent_nat_less_range in Finite *)
-lemma equipotent_nat_less_range [forward]:
+lemma equipotent_nat_less_range [backward1]:
   "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> m \<approx>\<^sub>S n \<Longrightarrow> m = n"
 @proof
   @var_induct "m \<in> nat" arbitrary n @with
@@ -511,6 +511,7 @@ lemma nat_not_equipotent [resolve]:
   @have "x \<approx>\<^sub>S Suc(x)" @with
     @have "x \<lesssim>\<^sub>S Suc(x)"
   @end
+  @have "x = Suc(x)"
 @qed
 
 lemma nat_cardinal [forward]:
