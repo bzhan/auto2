@@ -21,7 +21,11 @@ setup {* del_prfstep_thm @{thm glue_function2_def} *}
 
 lemma glue_function2_bij [backward]:
   "f \<in> A \<cong> B \<Longrightarrow> g \<in> C \<cong> D \<Longrightarrow> A \<inter> C = \<emptyset> \<Longrightarrow> B \<inter> D = \<emptyset> \<Longrightarrow>
-   glue_function2(f,g) \<in> (A \<union> C) \<cong> (B \<union> D)" by auto2
+   glue_function2(f,g) \<in> (A \<union> C) \<cong> (B \<union> D)"
+@proof
+  @have (@rule) "\<forall>y\<in>B. \<exists>x\<in>A. f`x = y"
+  @have (@rule) "\<forall>y\<in>D. \<exists>x\<in>C. g`x = y"
+@qed
 
 lemma glue_function2_image1 [rewrite]:
   "surjective(f) \<Longrightarrow> is_function(g) \<Longrightarrow> glue_function2(f,g) `` source(f) = target(f)"
@@ -89,6 +93,7 @@ lemma equipotent_minus1_gen [backward2]:
   "A \<approx>\<^sub>S B \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> B \<Longrightarrow> A \<midarrow> {x} \<approx>\<^sub>S B \<midarrow> {y}"
 @proof
   @obtain "f \<in> A \<cong> B"
+  @have (@rule) "\<forall>y'\<in>B. \<exists>x\<in>A. f`x = y'"
   @have "A \<midarrow> {x} \<approx>\<^sub>S B \<midarrow> {f`x}" @with
     @have "func_restrict_image(func_restrict(f,A\<midarrow>{x})) \<in> A \<midarrow> {x} \<cong> B \<midarrow> {f`x}"
   @end

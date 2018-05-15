@@ -212,8 +212,7 @@ lemma surjectiveD:
   "surjective(f) \<Longrightarrow> is_function(f)"
   "surjective(f) \<Longrightarrow> y \<in> target(f) \<Longrightarrow> \<exists>x\<in>source(f). f ` x = y"
   "surjective(f) \<Longrightarrow> image(f) = target(f)" by auto2+
-setup {* fold add_forward_prfstep @{thms surjectiveD(1-2)} *}
-setup {* add_fixed_sc ("Functions.surjectiveD_2", 500) *}
+setup {* add_forward_prfstep @{thm surjectiveD(1)} *}
 setup {* add_backward_prfstep @{thm surjectiveD(2)} *}
 setup {* add_rewrite_rule @{thm surjectiveD(3)} *}
 
@@ -251,10 +250,18 @@ lemma surjective_to_singleton [backward2]:
   "f \<in> A \<rightarrow> {x} \<Longrightarrow> A \<noteq> \<emptyset> \<Longrightarrow> surjective(f)" by auto2
 
 lemma surj_source_nonempty [forward, backward]:
-  "surjective(f) \<Longrightarrow> target(f) \<noteq> \<emptyset> \<Longrightarrow> source(f) \<noteq> \<emptyset>" by auto2
+  "surjective(f) \<Longrightarrow> target(f) \<noteq> \<emptyset> \<Longrightarrow> source(f) \<noteq> \<emptyset>"
+@proof
+  @obtain b where "b \<in> target(f)"
+  @obtain "a \<in> source(f)" where "f`a = b"
+@qed
     
 lemma surjective_inv_image [backward2]:
-  "surjective(f) \<Longrightarrow> U \<subseteq> target(f) \<Longrightarrow> U \<noteq> \<emptyset> \<Longrightarrow> f -`` U \<noteq> \<emptyset>" by auto2
+  "surjective(f) \<Longrightarrow> U \<subseteq> target(f) \<Longrightarrow> U \<noteq> \<emptyset> \<Longrightarrow> f -`` U \<noteq> \<emptyset>"
+@proof
+  @obtain u where "u \<in> U"
+  @obtain "x \<in> source(f)" where "f`x = u"
+@qed
 
 (* Properties of bijective functions *)
 lemma bijective_exist_unique [backward]:
@@ -320,7 +327,12 @@ lemma inverse_of_inj [rewrite]:
   "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f -`` (f `` X) = X" by auto2
 
 lemma inverse_of_surj [rewrite]:
-  "surjective(f) \<Longrightarrow> Y \<subseteq> target(f) \<Longrightarrow> f `` (f -`` Y) = Y" by auto2
+  "surjective(f) \<Longrightarrow> Y \<subseteq> target(f) \<Longrightarrow> f `` (f -`` Y) = Y"
+@proof
+  @have "\<forall>y\<in>Y. y \<in> f``(f-``Y)" @with
+    @obtain "x\<in>source(f)" where "f`x = y"
+  @end
+@qed
 
 lemma inverse_is_left_inv [rewrite]:
   "bijective(f) \<Longrightarrow> inverse(f) \<circ> f = id_fun(source(f))" by auto2
@@ -356,29 +368,6 @@ lemma right_inverse_unique:
   @have "\<forall>x\<in>B. s`x = s'`x" @with @have "f`(s`x) = x" @end
 @qed
 
-(* Two functions are inverses of each other. This pattern occurs very frequently. *)
-definition inverse_pair :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "inverse_pair(f,g) \<longleftrightarrow> (is_function(f) \<and> is_function(g) \<and> source(f) = target(g) \<and> target(f) = source(g) \<and>
-                          f \<circ> g = id_fun(source(g)) \<and> g \<circ> f = id_fun(source(f)))"
-
-lemma inverse_pair_bijective [forward]:
-  "inverse_pair(f,g) \<Longrightarrow> source(f) = target(g) \<and> source(g) = target(f) \<and> bijective(f) \<and> bijective(g)" by auto2
-
-lemma inverse_pairI [backward]:
-  "is_function(f) \<Longrightarrow> is_function(g) \<Longrightarrow> source(f) = target(g) \<Longrightarrow> source(g) = target(f) \<Longrightarrow>
-   \<forall>x\<in>source(g). f`(g`x) = x \<Longrightarrow> \<forall>x\<in>source(f). g`(f`x) = x \<Longrightarrow> inverse_pair(f,g)" by auto2
-
-lemma inverse_pairE [rewrite]:
-  "inverse_pair(f,g) \<Longrightarrow> f \<circ> g = id_fun(source(g))"
-  "inverse_pair(f,g) \<Longrightarrow> g \<circ> f = id_fun(source(f))" by auto2+
-setup {* del_prfstep_thm @{thm inverse_pair_def} *}
-
-lemma inverse_pair_inverse [rewrite]: "func_form(g) \<Longrightarrow> inverse_pair(f,g) \<Longrightarrow> inverse(f) = g"
-  @proof @have "g \<circ> f = id_fun(source(f))" @qed
-
-lemma inverse_pair_inverse2 [rewrite]: "func_form(f) \<Longrightarrow> inverse_pair(f,g) \<Longrightarrow> inverse(g) = f"
-  @proof @have "g \<circ> f = id_fun(source(f))" @qed
-
 (* Six parts of Theorem 1 in Bourbaki II.3.8. May be easier with existence
    of left/right-inverse, but not necessary. *)
 lemma comp_is_inj:
@@ -386,7 +375,13 @@ lemma comp_is_inj:
 setup {* add_forward_prfstep_cond @{thm comp_is_inj} [with_term "?f' \<circ> ?f"] *}
 
 lemma comp_is_surj:
-  "surjective(f) \<Longrightarrow> surjective(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> surjective(f' \<circ> f)" by auto2
+  "surjective(f) \<Longrightarrow> surjective(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> surjective(f' \<circ> f)"
+@proof
+  @have "\<forall>z\<in>target(f'). \<exists>x\<in>source(f). (f' \<circ> f) ` x = z" @with
+    @obtain "y \<in> source(f')" where "f' ` y = z"
+    @obtain "x \<in> source(f)" where "f ` x = y"
+  @end
+@qed
 setup {* add_forward_prfstep_cond @{thm comp_is_surj} [with_term "?f' \<circ> ?f"] *}
 
 lemma comp_is_inj_to_first_inj [forward]:
@@ -397,11 +392,20 @@ lemma comp_is_inj_to_first_inj [forward]:
 @qed
 
 lemma comp_is_surj_to_second_surj [forward]:
-  "is_function(f) \<Longrightarrow> is_function(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> surjective(f' \<circ> f) \<Longrightarrow> surjective(f')" by auto2
+  "is_function(f) \<Longrightarrow> is_function(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> surjective(f' \<circ> f) \<Longrightarrow> surjective(f')"
+@proof
+  @have "\<forall>y\<in>target(f'). \<exists>x\<in>source(f'). f' ` x = y" @with
+    @obtain "x \<in> source(f)" where "(f' \<circ> f) ` x = y"
+  @end
+@qed
 
 lemma comp_is_surj_to_first_surj [forward]:
   "is_function(f) \<Longrightarrow> injective(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> surjective(f' \<circ> f) \<Longrightarrow> surjective(f)"
-@proof @contradiction @have "f = inverse(f') \<circ> (f' \<circ> f)" @qed
+@proof
+  @have "\<forall>y\<in>target(f). \<exists>x\<in>source(f). f ` x = y" @with
+    @obtain "x \<in> source(f)" where "(f' \<circ> f) ` x = f' ` y"
+  @end
+@qed
 
 lemma comp_is_inj_to_second_inj [forward]:
   "surjective(f) \<Longrightarrow> func_form(f') \<Longrightarrow> target(f) = source(f') \<Longrightarrow> injective(f' \<circ> f) \<Longrightarrow> injective(f')"
@@ -409,11 +413,21 @@ lemma comp_is_inj_to_second_inj [forward]:
 
 lemma inverse_unique [rewrite]:
   "bijective(f) \<Longrightarrow> func_form(g) \<Longrightarrow> target(f) = source(g) \<Longrightarrow>
-   g \<circ> f = id_fun(source(f)) \<Longrightarrow> inverse(f) = g" by auto2
+   g \<circ> f = id_fun(source(f)) \<Longrightarrow> inverse(f) = g"
+@proof
+  @have "\<forall>x\<in>target(f). inverse(f)`x = g`x" @with
+    @obtain "y\<in>source(f)" where "f`y = x"
+  @end
+@qed
 
 lemma inverse_unique' [rewrite]:
   "bijective(f) \<Longrightarrow> func_form(g) \<Longrightarrow> target(g) = source(f) \<Longrightarrow>
-   f \<circ> g = id_fun(target(f)) \<Longrightarrow> inverse(f) = g" by auto2
+   f \<circ> g = id_fun(target(f)) \<Longrightarrow> inverse(f) = g"
+@proof
+  @have "\<forall>x\<in>target(f). inverse(f)`x = g`x" @with
+    @have "f ` (g ` x) = (f \<circ> g) ` x"
+  @end
+@qed
 
 (* Now we construct the left and right inverses explicitly. *)
 lemma exists_right_inverse [resolve]:
@@ -458,6 +472,11 @@ lemma exists_pullback_surj [backward1]:
     @obtain "s \<in> F \<rightarrow> E" where "g \<circ> s = id_fun(F)"
     @obtain "h \<in> F \<rightarrow> G" where "h = f \<circ> s"
   @end
+  @have "\<forall>h1 h2. h1 \<in> F \<rightarrow> G \<and> f = h1 \<circ> g \<longrightarrow> h2 \<in> F \<rightarrow> G \<and> f = h2 \<circ> g \<longrightarrow> h1 = h2" @with
+    @have "\<forall>x\<in>F. h1`x = h2`x" @with
+      @obtain "y\<in>E" where "g`y = x"
+    @end
+  @end
 @qed
 
 lemma exists_pullback_inj:
@@ -474,6 +493,31 @@ lemma exists_pullback_inj:
     @end
   @end
 @qed
+
+section {* Inverse pair *}
+
+(* Two functions are inverses of each other. This pattern occurs very frequently. *)
+definition inverse_pair :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
+  "inverse_pair(f,g) \<longleftrightarrow> (is_function(f) \<and> is_function(g) \<and> source(f) = target(g) \<and> target(f) = source(g) \<and>
+                          f \<circ> g = id_fun(source(g)) \<and> g \<circ> f = id_fun(source(f)))"
+
+lemma inverse_pair_bijective [forward]:
+  "inverse_pair(f,g) \<Longrightarrow> source(f) = target(g) \<and> source(g) = target(f) \<and> bijective(f) \<and> bijective(g)" by auto2
+
+lemma inverse_pairI [backward]:
+  "is_function(f) \<Longrightarrow> is_function(g) \<Longrightarrow> source(f) = target(g) \<Longrightarrow> source(g) = target(f) \<Longrightarrow>
+   \<forall>x\<in>source(g). f`(g`x) = x \<Longrightarrow> \<forall>x\<in>source(f). g`(f`x) = x \<Longrightarrow> inverse_pair(f,g)" by auto2
+
+lemma inverse_pairE [rewrite]:
+  "inverse_pair(f,g) \<Longrightarrow> f \<circ> g = id_fun(source(g))"
+  "inverse_pair(f,g) \<Longrightarrow> g \<circ> f = id_fun(source(f))" by auto2+
+setup {* del_prfstep_thm @{thm inverse_pair_def} *}
+
+lemma inverse_pair_inverse [rewrite]: "func_form(g) \<Longrightarrow> inverse_pair(f,g) \<Longrightarrow> inverse(f) = g"
+@proof @have "g \<circ> f = id_fun(source(f))" @qed
+
+lemma inverse_pair_inverse2 [rewrite]: "func_form(f) \<Longrightarrow> inverse_pair(f,g) \<Longrightarrow> inverse(g) = f"
+@proof @have "g \<circ> f = id_fun(source(f))" @qed
 
 section {* Function of two arguments *}  (* Bourbaki II.3.9 *)
 
@@ -523,7 +567,14 @@ lemma prod_map_inj [forward]:
   "injective(u) \<Longrightarrow> injective(v) \<Longrightarrow> injective(u \<times>\<^sub>f v)" by auto2
 
 lemma prod_map_surj [forward]:
-  "surjective(u) \<Longrightarrow> surjective(v) \<Longrightarrow> surjective(u \<times>\<^sub>f v)" by auto2
+  "surjective(u) \<Longrightarrow> surjective(v) \<Longrightarrow> surjective(u \<times>\<^sub>f v)"
+@proof
+  @let "f = u \<times>\<^sub>f v"
+  @have "\<forall>q\<in>target(f). \<exists>p\<in>source(f). f`p = q" @with
+    @obtain "x\<in>source(u)" where "u`x = fst(q)"
+    @obtain "y\<in>source(v)" where "v`y = snd(q)"
+  @end
+@qed
 
 lemma prod_map_bij [forward]:
   "bijective(u) \<Longrightarrow> bijective(v) \<Longrightarrow> bijective(u \<times>\<^sub>f v)" by auto2
@@ -537,7 +588,10 @@ lemma prod_map_id_fun [rewrite]:
   "id_fun(A) \<times>\<^sub>f id_fun(B) = id_fun(A\<times>B)" by auto2
 
 lemma prod_inverse [rewrite]:
-  "bijective(u) \<Longrightarrow> bijective(v) \<Longrightarrow> inverse(u) \<times>\<^sub>f inverse(v) = inverse(u \<times>\<^sub>f v)" by auto2
+  "bijective(u) \<Longrightarrow> bijective(v) \<Longrightarrow> inverse(u) \<times>\<^sub>f inverse(v) = inverse(u \<times>\<^sub>f v)"
+@proof
+  @have "inverse_pair(inverse(u) \<times>\<^sub>f inverse(v), u \<times>\<^sub>f v)"
+@qed
 
 section {* Extension of a function to Pow *}  (* Bourbaki II.5.1 *)
 
@@ -654,6 +708,8 @@ lemma uncurry_eval [rewrite]:
 setup {* del_prfstep_thm @{thm uncurry_def} *}
 
 lemma curry_bijective [forward]: "bijective(curry(A,B,D))"
-  @proof @have "inverse_pair(curry(A,B,D), uncurry(A,B,D))" @qed
+@proof
+  @have "inverse_pair(curry(A,B,D), uncurry(A,B,D))"
+@qed
 
 end

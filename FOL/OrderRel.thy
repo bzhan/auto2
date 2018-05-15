@@ -166,7 +166,14 @@ lemma ord_isomorphicI [forward]: "f \<in> R \<cong>\<^sub>O S \<Longrightarrow> 
 lemma ord_isomorphicD [resolve]: "ord_isomorphic(R,S) \<Longrightarrow> \<exists>f. f \<in> R \<cong>\<^sub>O S" by auto2
 
 lemma preorder_iso [forward]: "preorder(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> preorder(S)" by auto2
-lemma order_iso [forward]: "order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> order(S)" by auto2
+lemma order_iso [forward]: "order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> order(S)"
+@proof
+  @obtain f where "f \<in> R \<cong>\<^sub>O S"
+  @have "\<forall>x y. x \<le>\<^sub>S y \<longrightarrow> y \<le>\<^sub>S x \<longrightarrow> x = y" @with
+    @obtain "x'\<in>.R" where "f`x' = x"
+    @obtain "y'\<in>.R" where "f`y' = y"
+  @end
+@qed
 setup {* del_prfstep_thm @{thm ord_isomorphic_def} *}
   
 section {* Ordering on subsets and products *}  (* Bourbaki III.1.4 *)
@@ -268,9 +275,6 @@ lemma greater_elts_strict_decr:
 
 lemma inj_to_strict_incr: "incr(f) \<Longrightarrow> injective(f) \<Longrightarrow> strict_incr(f)" by auto2
 lemma inj_to_strict_decr: "decr(f) \<Longrightarrow> injective(f) \<Longrightarrow> strict_decr(f)" by auto2
-
-lemma bij_to_ord_isomorphism:
-  "bijective(f) \<Longrightarrow> ord_isomorphism(f) \<longleftrightarrow> incr(f) \<and> incr(inverse_mor(f))" by auto2
 
 lemma restrict_image_incr [forward]:
   "incr(f) \<Longrightarrow> incr(mor_restrict_image_ord(f))" by auto2
@@ -586,7 +590,13 @@ setup {* del_prfstep_thm_eqforward @{thm linorder_def} *}
 
 lemma linorder_iso [forward]:
   "linorder(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> linorder(S)"
-@proof @obtain "f \<in> R \<cong>\<^sub>O S" @qed
+@proof
+  @obtain "f \<in> R \<cong>\<^sub>O S"
+  @have "\<forall>x\<in>.S. \<forall>y\<in>.S. x \<le>\<^sub>S y \<or> x \<ge>\<^sub>S y" @with
+    @obtain "x'\<in>.R" where "f`x' = x"
+    @obtain "y'\<in>.R" where "f`y' = y"
+  @end
+@qed
 
 lemma linorder_suborder:
   "linorder(R) \<Longrightarrow> A \<subseteq> carrier(R) \<Longrightarrow> linorder(suborder(R,A))" by auto2

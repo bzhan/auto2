@@ -244,7 +244,11 @@ setup {* add_forward_prfstep_cond @{thm injective_induced_group_mor}
   [with_term "induced_group_mor(?f,kernel(?f))"] *}
 
 lemma induced_group_mor_image [rewrite]:
-  "mor_form(f) \<Longrightarrow> is_group_hom(f) \<Longrightarrow> image(induced_group_mor(f,kernel(f))) = image(f)" by auto2
+  "mor_form(f) \<Longrightarrow> is_group_hom(f) \<Longrightarrow> image(induced_group_mor(f,kernel(f))) = image(f)"
+@proof
+  @let "q = qsurj_group(source_str(f),kernel(f))"
+  @have (@rule) "\<forall>y\<in>target(q). \<exists>x\<in>source(q). q`x = y"
+@qed
 
 lemma first_isomorphism_theorem [typing]:
   "mor_form(f) \<Longrightarrow> is_group_hom(f) \<Longrightarrow> G = source_str(f) \<Longrightarrow> K = kernel(f) \<Longrightarrow>
@@ -252,6 +256,7 @@ lemma first_isomorphism_theorem [typing]:
     
 lemma first_isomorphism_theorem_surj [typing]:
   "mor_form(f) \<Longrightarrow> is_group_hom(f) \<Longrightarrow> surjective(f) \<Longrightarrow> G = source_str(f) \<Longrightarrow> K = kernel(f) \<Longrightarrow>
-   induced_group_mor(f,K) \<in> G //\<^sub>G K \<cong>\<^sub>G target_str(f)" by auto2
+   induced_group_mor(f,K) \<in> G //\<^sub>G K \<cong>\<^sub>G target_str(f)"
+@proof @have (@rule) "\<forall>y\<in>target(f). \<exists>x\<in>source(f). f`x = y" @qed
 
 end

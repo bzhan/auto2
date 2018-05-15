@@ -86,6 +86,7 @@ lemma wellorder_iso [forward]:
   "well_order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> well_order(S)"
 @proof
   @obtain "f \<in> R \<cong>\<^sub>O S"
+  @have (@rule) "\<forall>y\<in>.S. \<exists>x\<in>.R. f`x = y"
   @have "\<forall>X. X \<subseteq> carrier(S) \<longrightarrow> X \<noteq> \<emptyset> \<longrightarrow> has_least(S,X)" @with
     @let "U = f -`` X"
     @have "has_least(R,U)"

@@ -245,6 +245,7 @@ lemma schroeder_bernstein [forward]:
   @let "f' = func_restrict_image(func_restrict(f,X_A))"
   @let "g' = func_restrict_image(func_restrict(g,Y_B))"
   @have "glue_function2(f', inverse(g')) \<in> (X_A \<union> X_B) \<cong> (Y_A \<union> Y_B)"
+  @have "X = X_A \<union> X_B" @have "Y = Y_A \<union> Y_B"
 @qed
 
 section \<open>Two successor function for cardinals\<close>

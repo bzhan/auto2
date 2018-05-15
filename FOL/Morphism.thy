@@ -180,11 +180,21 @@ lemma inverse_is_right_inv [rewrite]:
 
 lemma inverse_mor_unique [rewrite]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> mor_form(g) \<Longrightarrow> target_str(f) = source_str(g) \<Longrightarrow>
-   g \<circ>\<^sub>m f = id_mor(source_str(f)) \<Longrightarrow> inverse_mor(f) = g" by auto2
+   g \<circ>\<^sub>m f = id_mor(source_str(f)) \<Longrightarrow> inverse_mor(f) = g"
+@proof
+  @have "\<forall>x\<in>target(f). inverse_mor(f)`x = g`x" @with
+    @obtain "y\<in>source(f)" where "f`y = x"
+  @end
+@qed
 
 lemma inverse_mor_unique' [rewrite]:
   "is_morphism(f) \<Longrightarrow> bijective(f) \<Longrightarrow> mor_form(g) \<Longrightarrow> target_str(g) = source_str(f) \<Longrightarrow>
-   f \<circ>\<^sub>m g = id_mor(source_str(f)) \<Longrightarrow> inverse_mor(f) = g" by auto2
+   f \<circ>\<^sub>m g = id_mor(source_str(g)) \<Longrightarrow> inverse_mor(f) = g"
+@proof
+  @have "\<forall>x\<in>target(f). inverse_mor(f)`x = g`x" @with
+    @have "f ` (g ` x) = (f \<circ> g) ` x"
+  @end
+@qed
 
 section {* Left and right inverses *}
 
@@ -224,7 +234,7 @@ setup {* del_prfstep_thm @{thm inverse_mor_pair_def} *}
 lemma inverse_mor_pair_inverse [rewrite]:
   "mor_form(g) \<Longrightarrow> inverse_mor_pair(f,g) \<Longrightarrow> inverse_mor(f) = g"
 @proof @have "g \<circ>\<^sub>m f = id_mor(source_str(f))" @qed
-    
+
 lemma inverse_mor_pair_inverse2 [rewrite]:
   "mor_form(f) \<Longrightarrow> inverse_mor_pair(f,g) \<Longrightarrow> inverse_mor(g) = f"
 @proof @have "g \<circ>\<^sub>m f = id_mor(source_str(f))" @qed
@@ -241,6 +251,11 @@ lemma exists_pullback_surj_mor [backward1]:
   @have "\<exists>h\<in>F\<rightharpoonup>G. f = h \<circ>\<^sub>m g" @with
     @obtain "s\<in>F\<rightharpoonup>E" where "g \<circ>\<^sub>m s = id_mor(F)"
     @obtain "h\<in>F\<rightharpoonup>G" where "h = f \<circ>\<^sub>m s"
+  @end
+  @have "\<forall>h1 h2. h1 \<in> F \<rightharpoonup> G \<and> f = h1 \<circ>\<^sub>m g \<longrightarrow> h2 \<in> F \<rightharpoonup> G \<and> f = h2 \<circ>\<^sub>m g \<longrightarrow> h1 = h2" @with
+    @have "\<forall>x\<in>.F. h1`x = h2`x" @with
+      @obtain "y\<in>.E" where "g`y = x"
+    @end
   @end
 @qed
 

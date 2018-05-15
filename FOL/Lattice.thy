@@ -231,6 +231,7 @@ lemma join_ord_isomorphism [forward]:
   "join_semilattice(R) \<Longrightarrow> ord_isomorphic(R,S) \<Longrightarrow> join_semilattice(S)"
 @proof
   @obtain "f \<in> R \<cong>\<^sub>O S"
+  @have (@rule) "\<forall>y\<in>.S. \<exists>x\<in>.R. f`x = y"
   @let "g = inverse(f)"
   @have "\<forall>x\<in>.S. \<forall>y\<in>.S. \<exists>z. z \<ge>\<^sub>S x \<and> z \<ge>\<^sub>S y \<and> (\<forall>z'. z' \<ge>\<^sub>S x \<longrightarrow> z' \<ge>\<^sub>S y \<longrightarrow> z' \<ge>\<^sub>S z)" @with
     @have "f ` (g ` x \<squnion>\<^sub>R g ` y) \<ge>\<^sub>S x"
@@ -240,6 +241,7 @@ lemma join_ord_isomorphism [forward]:
 lemma join_eval_ord_isomorphism [rewrite]:
   "join_semilattice(R) \<Longrightarrow> f \<in> R \<cong>\<^sub>O S \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> f ` (x \<squnion>\<^sub>R y) = f ` x \<squnion>\<^sub>S f ` y"
 @proof
+  @have (@rule) "\<forall>y'\<in>.S. \<exists>x\<in>.R. f`x = y'"
   @let "g = inverse(f)" 
   @have "x \<squnion>\<^sub>R y = g ` (f ` x \<squnion>\<^sub>S f ` y)" @with
     @have "\<forall>z. z \<ge>\<^sub>R x \<longrightarrow> z \<ge>\<^sub>R y \<longrightarrow> z \<ge>\<^sub>R g ` (f ` x \<squnion>\<^sub>S f ` y)"  @with

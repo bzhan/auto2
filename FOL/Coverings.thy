@@ -34,24 +34,37 @@ lemma join_covering_eval [rewrite]:
    target(X) = Pow(E) \<Longrightarrow> join_covering(X,Y)`p = X`fst(p) \<inter> Y`snd(p)" by auto2
 setup {* del_prfstep_thm @{thm join_covering_def} *}
 
-lemma join_is_covering: "X \<in> I \<rightarrow> Pow(E) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(E) \<Longrightarrow> is_covering(E,X) \<Longrightarrow>
-  is_covering(E,Y) \<Longrightarrow> is_covering(E, join_covering(X,Y))" by auto2
+lemma join_is_covering:
+  "X \<in> I \<rightarrow> Pow(E) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(E) \<Longrightarrow> is_covering(E,X) \<Longrightarrow>
+   is_covering(E,Y) \<Longrightarrow> is_covering(E, join_covering(X,Y))" by auto2
 
-lemma join_is_finer: "X \<in> I \<rightarrow> Pow(E) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(E) \<Longrightarrow>
-  finer_covering(join_covering(X,Y),X) \<and> finer_covering(join_covering(X,Y),Y)" by auto2
+lemma join_is_finer:
+  "X \<in> I \<rightarrow> Pow(E) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(E) \<Longrightarrow>
+   finer_covering(join_covering(X,Y),X) \<and> finer_covering(join_covering(X,Y),Y)" by auto2
 
-lemma join_is_finer_maximal: "X \<in> I \<rightarrow> Pow(E) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(E) \<Longrightarrow> Z \<in> L \<rightarrow> Pow(E) \<Longrightarrow>
-  finer_covering(Z,X) \<Longrightarrow> finer_covering(Z,Y) \<Longrightarrow> finer_covering(Z,join_covering(X,Y))" by auto2
+lemma join_is_finer_maximal:
+  "X \<in> I \<rightarrow> Pow(E) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(E) \<Longrightarrow> Z \<in> L \<rightarrow> Pow(E) \<Longrightarrow>
+   finer_covering(Z,X) \<Longrightarrow> finer_covering(Z,Y) \<Longrightarrow> finer_covering(Z,join_covering(X,Y))" by auto2
 
-lemma image_covering: "surjective(f) \<Longrightarrow> f \<in> A \<rightarrow> B \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
-  is_covering(B, \<lambda>a\<in>I. (f``(X`a))\<in>Pow(B))" by auto2
+lemma image_covering:
+  "surjective(f) \<Longrightarrow> f \<in> A \<rightarrow> B \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
+   is_covering(B, \<lambda>a\<in>I. (f``(X`a))\<in>Pow(B))"
+@proof
+  @let "Y = (\<lambda>a\<in>I. (f``(X`a))\<in>Pow(B))"
+  @have "\<forall>x\<in>B. \<exists>p\<in>I. x \<in> Y ` p" @with
+    @obtain "a\<in>A" where "f`a = x"
+  @end
+@qed
 
-lemma vImage_covering: "g \<in> C \<rightarrow> A \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
-  is_covering(C, \<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
+lemma vImage_covering:
+  "g \<in> C \<rightarrow> A \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
+   is_covering(C, \<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
 @proof
   @let "Y = (\<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
   @have "\<forall>x\<in>C. \<exists>p\<in>I. x \<in> Y ` p" @with
-    @contradiction @obtain "a\<in>I" where "g`x \<in> a" @end
+    @contradiction
+    @obtain "a\<in>I" where "g`x \<in> a"
+  @end
 @qed
 
 lemma product_covering: "X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(B) \<Longrightarrow>

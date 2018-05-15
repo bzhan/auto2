@@ -24,10 +24,12 @@ lemma Inter_Un_distrib:
 section {* Parametrized union and intersection *}  (* Bourbaki II.4.1 -- II.4.4 *)
 
 lemma UN_surj [rewrite]:
-  "surjective(f) \<Longrightarrow> is_function(B) \<Longrightarrow> f \<in> K \<rightarrow> I \<Longrightarrow> (\<Union>x\<in>K. B`(f`x)) = (\<Union>x\<in>I. B`x)" by auto2
+  "surjective(f) \<Longrightarrow> is_function(B) \<Longrightarrow> f \<in> K \<rightarrow> I \<Longrightarrow> (\<Union>x\<in>K. B`(f`x)) = (\<Union>x\<in>I. B`x)"
+@proof @have (@rule) "\<forall>y\<in>I. \<exists>x\<in>K. f`x = y" @qed
 
 lemma INT_surj [rewrite]:
-  "surjective(f) \<Longrightarrow> is_function(B) \<Longrightarrow> f \<in> K \<rightarrow> I \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> (\<Inter>x\<in>K. B`(f`x)) = (\<Inter>x\<in>I. B`x)" by auto2
+  "surjective(f) \<Longrightarrow> is_function(B) \<Longrightarrow> f \<in> K \<rightarrow> I \<Longrightarrow> I \<noteq> \<emptyset> \<Longrightarrow> (\<Inter>x\<in>K. B`(f`x)) = (\<Inter>x\<in>I. B`x)"
+@proof @have (@rule) "\<forall>y\<in>I. \<exists>x\<in>K. f`x = y" @qed
 
 lemma UN_image_subset [resolve]:
   "\<forall>x\<in>I. X(x) \<subseteq> Y(x) \<Longrightarrow> (\<Union>x\<in>I. X(x)) \<subseteq> (\<Union>x\<in>I. Y(x))" by auto2

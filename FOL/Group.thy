@@ -278,10 +278,19 @@ lemma iso_refl [typing]: "is_group(G) \<Longrightarrow> id_mor(G) \<in> G \<cong
 
 lemma iso_trans [typing]:
   "is_group_iso(f) \<Longrightarrow> is_group_iso(g) \<Longrightarrow> target_str(f) = source_str(g) \<Longrightarrow>
-   g \<circ>\<^sub>m f \<in> source_str(f) \<cong>\<^sub>G target_str(g)" by auto2
+   g \<circ>\<^sub>m f \<in> source_str(f) \<cong>\<^sub>G target_str(g)"
+@proof
+  @have (@rule) "\<forall>y\<in>target(f). \<exists>x\<in>source(f). f`x = y"
+  @have (@rule) "\<forall>y\<in>target(g). \<exists>x\<in>source(g). g`x = y"
+@qed
 
 lemma iso_sym [typing]:
-  "is_group_iso(f) \<Longrightarrow> inverse_mor(f) \<in> target_str(f) \<cong>\<^sub>G source_str(f)" by auto2
+  "is_group_iso(f) \<Longrightarrow> inverse_mor(f) \<in> target_str(f) \<cong>\<^sub>G source_str(f)"
+@proof
+  @let "g = inverse_mor(f)"
+  @have (@rule) "\<forall>y\<in>target(f). \<exists>x\<in>source(f). f`x = y"
+  @have (@rule) "\<forall>y\<in>target(g). \<exists>x\<in>source(g). g`x = y"
+@qed
 
 section {* Image of a homomorphism *}
   
@@ -294,11 +303,15 @@ lemma image_is_subgroup:
     @have "\<forall>x\<in>image(f). \<forall>y\<in>image(f). x *\<^sub>H y \<in> image(f)" @with
       @obtain "x'\<in>source(f)" where "f`x' = x"
       @obtain "y'\<in>source(f)" where "f`y' = y"
-      @have "f`(x' *\<^sub>G y') = x *\<^sub>H y" @end @end
+      @have "f`(x' *\<^sub>G y') = x *\<^sub>H y"
+    @end
+  @end
   @have "subset_inv_closed(H, image(f))" @with
     @have "\<forall>x\<in>image(f). inv(H,x) \<in> image(f)" @with
       @obtain "x'\<in>source(f)" where "f`x' = x"
-      @have "f`(inv(G,x')) = inv(H,x)" @end @end
+      @have "f`(inv(G,x')) = inv(H,x)"
+    @end
+  @end
 @qed
 setup {* add_forward_prfstep_cond @{thm image_is_subgroup} [with_term "image(?f)"] *}
 

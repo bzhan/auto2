@@ -609,7 +609,10 @@ lemma top_inverse_pair_homeomorphism [forward]:
 
 lemma homeomorphismD [backward]:
   "homeomorphism(f) \<Longrightarrow> is_open(source_str(f),U) \<Longrightarrow> is_open(target_str(f),f``U)"
-@proof @have "inverse_mor(f) -`` U = f``U" @qed
+@proof
+  @have (@rule) "\<forall>y\<in>target(f). \<exists>x\<in>source(f). f`x = y"
+  @have "inverse_mor(f) -`` U = f``U"
+@qed
 
 definition top_iso_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<cong>\<^sub>T" 60) where [rewrite]:
   "top_iso_space(X,Y) = {f \<in> mor_space(X,Y). homeomorphism(f)}"

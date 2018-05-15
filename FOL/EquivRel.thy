@@ -332,7 +332,12 @@ setup {* add_forward_prfstep_cond @{thm fun_equiv_compat} [with_term "fun_equiv(
 
 (* Canonical decomposition. *)
 lemma injective_induced_fun:
-  "func_form(f) \<Longrightarrow> injective(induced_fun(f,fun_equiv(f)))" by auto2
+  "func_form(f) \<Longrightarrow> g = induced_fun(f,fun_equiv(f)) \<Longrightarrow> injective(g)"
+@proof
+  @have "\<forall>x\<in>source(g). \<forall>y\<in>source(g). g`x = g`y \<longrightarrow> x = y" @with
+    @let "x = rep(fun_equiv(f),x)" "y' = rep(fun_equiv(f),y)"
+  @end
+@qed
 setup {* add_forward_prfstep_cond @{thm injective_induced_fun} [with_term "induced_fun(?f,fun_equiv(?f))"] *}
 
 (* Putting everything together, statement of canonical decomposition. *)
@@ -342,7 +347,15 @@ lemma canonical_decomposition:
 
 lemma first_isomorphism_theorem [typing]:
   "func_form(f) \<Longrightarrow> A = source(f) \<Longrightarrow> R = fun_equiv(f) \<Longrightarrow>
-   func_restrict_image(induced_fun(f,R)) \<in> A//R \<cong> f``A" by auto2
+   func_restrict_image(induced_fun(f,R)) \<in> A//R \<cong> f``A"
+@proof
+  @let "i = induced_fun(f,R)"
+  @let "g = func_restrict_image(induced_fun(f,R))"
+  @have "\<forall>z\<in>i``source(i). z \<in> f``A" @with
+    @obtain "y\<in>source(g)" where "g`y = z"
+    @obtain "x\<in>source(qsurj(R))" where "qsurj(R)`x = y"
+  @end
+@qed
 
 lemma first_isomorphism_theorem_surj [typing]:
   "func_form(f) \<Longrightarrow> surjective(f) \<Longrightarrow> A = source(f) \<Longrightarrow> R = fun_equiv(f) \<Longrightarrow>
@@ -393,10 +406,14 @@ lemma second_isomorphism_theorem:
    func_restrict_image(induced_fun_double(inj_fun(A,E),R_A,R)) \<in> A//R_A \<cong> qsurj(R) `` A"
 @proof
   @let "f = induced_fun_double(inj_fun(A,E),R_A,R)"
-  @have "image(f) = qsurj(R) `` A" @with
-    @have "\<forall>x\<in>qsurj(R) `` A. x \<in> image(f)" @with
+  @have "\<forall>x. x \<in> image(f) \<longleftrightarrow> x \<in> qsurj(R) `` A" @with
+    @case "x \<in> qsurj(R) `` A" @with
       @obtain "y \<in> A" where "qsurj(R)`y = x"
       @have "f`equiv_class(R_A,y) = x"
+    @end
+    @case "x \<in> image(f)" @with
+      @obtain "y \<in> source(f)" where "f`y = x"
+      @let "y' = rep(R_A,y)"
     @end
   @end
 @qed
@@ -458,7 +475,10 @@ lemma vImage_finer [resolve]:
 (* Any equivalence relation T on E//S is the quotient between a coarser equivalence relation R and S. *)
 lemma equiv_is_quotient_rel:
   "equiv(S) \<Longrightarrow> equiv(T) \<Longrightarrow> carrier(T) = carrier(S)//S \<Longrightarrow> T = quotient_rel(vImage_equiv(qsurj(S),T),S)"
-@proof @have "finer_rel(S,vImage_equiv(qsurj(S),T))" @qed
+@proof
+  @have "finer_rel(S,vImage_equiv(qsurj(S),T))"
+  @have (@rule) "\<forall>y\<in>target(qsurj(S)). \<exists>x\<in>source(qsurj(S)). qsurj(S)`x = y"
+@qed
 
 section {* Product of two equivalence relations *}  (* Bourbaki II.6.8 *)
 

@@ -136,7 +136,10 @@ lemma proj_is_surj [backward]:
 
 lemma proj_is_surj' [backward]:
   "\<forall>a\<in>I. B(a) \<noteq> \<emptyset> \<Longrightarrow> a \<in> I \<Longrightarrow> b \<in> B(a) \<Longrightarrow> \<exists>f\<in>Pi(I,B). f`a = b"
-@proof @have "surjective(projf(I,B,a))" @qed
+@proof
+  @have "surjective(projf(I,B,a))"
+  @obtain "f\<in>Pi(I,B)" where "projf(I,B,a)`f = b"
+@qed
 
 lemma prod_non_empty [rewrite]:
   "Pi(I,B) \<noteq> \<emptyset> \<longleftrightarrow> (\<forall>a\<in>I. B(a) \<noteq> \<emptyset>)"
@@ -159,7 +162,11 @@ lemma prod_subset1 [backward]:
 
 lemma prod_subset2:
   "Pi(I,X) \<subseteq> Pi(I,Y) \<Longrightarrow> \<forall>a\<in>I. X(a) \<noteq> \<emptyset> \<Longrightarrow> \<forall>a\<in>I. X(a) \<subseteq> Y(a)"
-@proof @have (@rule) "\<forall>a\<in>I. surjective(projf(I,X,a))" @qed
+@proof
+  @have (@rule) "\<forall>a\<in>I. \<forall>y\<in>X(a). \<exists>f\<in>Pi(I,X). projf(I,X,a)`f = y" @with
+    @have "surjective(projf(I,X,a))"
+  @end
+@qed
 
 section {* Associativity of products *}  (* Bourbaki II.5.5 *)
 
