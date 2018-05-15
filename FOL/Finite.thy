@@ -94,20 +94,6 @@ lemma equipotent_minus1_gen [backward2]:
   @end
 @qed
 
-section {* Schroeder-Bernstein Theorem *}
-
-lemma schroeder_bernstein [forward]:
-  "injective(f) \<Longrightarrow> injective(g) \<Longrightarrow> f \<in> X \<rightarrow> Y \<Longrightarrow> g \<in> Y \<rightarrow> X \<Longrightarrow> X \<approx>\<^sub>S Y"
-@proof
-  @let "X_A = lfp(X, \<lambda>W. X \<midarrow> g``(Y \<midarrow> f``W))"
-  @let "X_B = X \<midarrow> X_A" "Y_A = f``X_A" "Y_B = Y \<midarrow> Y_A"
-  @have "X \<midarrow> g``Y_B = X_A"
-  @have "g``Y_B = X_B"
-  @let "f' = func_restrict_image(func_restrict(f,X_A))"
-  @let "g' = func_restrict_image(func_restrict(g,Y_B))"
-  @have "glue_function2(f', inverse(g')) \<in> (X_A \<union> X_B) \<cong> (Y_A \<union> Y_B)"
-@qed
-
 section {* Set of first n natural numbers *}
 
 definition nat_less_range :: "i \<Rightarrow> i" where [rewrite]:

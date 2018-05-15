@@ -214,13 +214,6 @@ lemma le_potent_trans_eq [forward]:
   @have "h \<in> A \<rightarrow> C" @have "injective(h)"
 @qed
 
-lemma schroeder_bernstein_potent [forward]:
-  "S \<lesssim>\<^sub>S T \<Longrightarrow> T \<lesssim>\<^sub>S S \<Longrightarrow> S \<approx>\<^sub>S T"
-@proof
-  @obtain "f\<in>S\<rightarrow>T" where "injective(f)"
-  @obtain "g\<in>T\<rightarrow>S" where "injective(g)"
-@qed
-
 lemma subset_le_potent [resolve]:
   "S \<subseteq> T \<Longrightarrow> S \<lesssim>\<^sub>S T"
 @proof
@@ -237,6 +230,22 @@ lemma pow_le_potent [resolve]:
 
 lemma ord_le_potent [resolve]:
   "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<Longrightarrow> i \<lesssim>\<^sub>S j" by auto2
+
+section {* Schroeder-Bernstein Theorem *}
+
+lemma schroeder_bernstein [forward]:
+  "X \<lesssim>\<^sub>S Y \<Longrightarrow> Y \<lesssim>\<^sub>S X \<Longrightarrow> X \<approx>\<^sub>S Y"
+@proof
+  @obtain "f\<in>X\<rightarrow>Y" where "injective(f)"
+  @obtain "g\<in>Y\<rightarrow>X" where "injective(g)"
+  @let "X_A = lfp(X, \<lambda>W. X \<midarrow> g``(Y \<midarrow> f``W))"
+  @let "X_B = X \<midarrow> X_A" "Y_A = f``X_A" "Y_B = Y \<midarrow> Y_A"
+  @have "X \<midarrow> g``Y_B = X_A"
+  @have "g``Y_B = X_B"
+  @let "f' = func_restrict_image(func_restrict(f,X_A))"
+  @let "g' = func_restrict_image(func_restrict(g,Y_B))"
+  @have "glue_function2(f', inverse(g')) \<in> (X_A \<union> X_B) \<cong> (Y_A \<union> Y_B)"
+@qed
 
 section \<open>Two successor function for cardinals\<close>
 
