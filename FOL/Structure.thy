@@ -122,14 +122,6 @@ lemma proj_set_eval [rewrite]:
 setup {* fold del_prfstep_thm [
   @{thm is_family_def}, @{thm Tup_def}, @{thm Pi_def}, @{thm proj_set_def}] *}
 
-(* Projection of a set *)
-definition projs :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "projs(S,a) = {f`a. f \<in> S}"
-
-lemma projs_mem [rewrite]: "x \<in> projs(S,a) \<longleftrightarrow> (\<exists>f\<in>S. x = f`a)" by auto2
-lemma projs_memI [typing2]: "f \<in> S \<Longrightarrow> f`a \<in> projs(S,a)" by auto2
-setup {* del_prfstep_thm @{thm projs_def} *}
-
 section {* Functions *}
 
 (* A function is a relation where every element in the source corresponds

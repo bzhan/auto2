@@ -518,21 +518,6 @@ lemma sup_trans:
   "order(R) \<Longrightarrow> f \<in> I \<rightarrow> carrier(R) \<Longrightarrow> g \<in> I \<rightarrow> carrier(R) \<Longrightarrow> \<forall>a\<in>I. f`a \<le>\<^sub>R g`a \<Longrightarrow>
    has_supf(R,f) \<Longrightarrow> has_supf(R,g) \<Longrightarrow> supf(R,f) \<le>\<^sub>R supf(R,g)" by auto2
 
-lemma sup_prod:
-  "\<forall>a\<in>I. order(R`a) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> \<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<Longrightarrow>
-   has_sup(prod_rel(I,R),A) \<and> sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))" by auto2
-
-lemma sup_prod_inv:
-  "\<forall>a\<in>I. order(R`a) \<Longrightarrow> A \<subseteq> prod_src(I,R) \<Longrightarrow> has_sup(prod_rel(I,R),A) \<Longrightarrow>
-   sup(prod_rel(I,R),A) = Tup(I, \<lambda>a. sup(R`a,projs(A,a)))"
-@proof
-  @let "M = sup(prod_rel(I,R),A)"
-  @have (@rule) "\<forall>a\<in>I. \<forall>x\<in>upper_bound(R`a,projs(A,a)). le(R`a,M`a,x)" @with
-    @let "f = Tup(I, \<lambda>b. if b = a then x else M`b)"
-    @have "f \<in> upper_bound(prod_rel(I,R),A)" @end
-  @have (@rule) "\<forall>a\<in>I. has_sup(R`a,projs(A,a)) \<and> sup(R`a,projs(A,a)) = M`a"
-@qed
-
 lemma sup_subset1:
   "order(R) \<Longrightarrow> F \<subseteq> carrier(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> has_sup(suborder(R,F),A) \<Longrightarrow>
    sup(R,A) \<le>\<^sub>R sup(suborder(R,F),A)" by auto2
