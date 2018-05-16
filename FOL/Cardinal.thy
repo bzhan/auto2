@@ -352,10 +352,10 @@ lemma union_card [backward]:
 section \<open>Aleph numbers\<close>
 
 definition aleph :: "i \<Rightarrow> i" where [rewrite]:
-  "aleph(i) = trans_seq2(nat,succ_cardinal,\<lambda>f. \<Union>(Tup_image(f,source(f))),i)"
+  "aleph(i) = trans_seq2(\<omega>,succ_cardinal,\<lambda>f. \<Union>(Tup_image(f,source(f))),i)"
 
 lemma aleph_unfold1 [rewrite]:
-  "aleph(\<emptyset>) = nat" by auto2
+  "aleph(\<emptyset>) = \<omega>" by auto2
 
 lemma aleph_unfold2 [rewrite]:
   "ord(a) \<Longrightarrow> aleph(succ(a)) = succ_cardinal(aleph(a))" by auto2
@@ -367,10 +367,10 @@ setup {* del_prfstep_thm @{thm aleph_def} *}
 section \<open>Beth numbers\<close>
 
 definition beth :: "i \<Rightarrow> i" where [rewrite]:
-  "beth(i) = trans_seq2(nat,pow_cardinal,\<lambda>f. \<Union>(Tup_image(f,source(f))),i)"
+  "beth(i) = trans_seq2(\<omega>,pow_cardinal,\<lambda>f. \<Union>(Tup_image(f,source(f))),i)"
 
 lemma beth_unfold1 [rewrite]:
-  "beth(\<emptyset>) = nat" by auto2
+  "beth(\<emptyset>) = \<omega>" by auto2
 
 lemma beth_unfold2 [rewrite]:
   "ord(a) \<Longrightarrow> beth(succ(a)) = pow_cardinal(beth(a))" by auto2
@@ -382,9 +382,9 @@ setup {* del_prfstep_thm @{thm beth_def} *}
 section \<open>Natural numbers as cardinals\<close>
 
 lemma nat_cardinal [forward]:
-  "card(nat)"
+  "card(\<omega>)"
 @proof
-  @have "(\<mu> i. i \<approx>\<^sub>S nat) = nat"
+  @have "(\<mu> i. i \<approx>\<^sub>S \<omega>) = \<omega>"
 @qed
 
 section \<open>Aleph and Beth numbers are cardinals\<close>

@@ -41,12 +41,16 @@ lemma nat_Suc_inj [forward]: "Suc(a) = Suc(b) \<Longrightarrow> a = b" by auto2
 
 section {* Natural numbers as an ordinal *}
 
+(* First infinite cardinal. *)
+definition omega_ord :: i  ("\<omega>") where [rewrite]:
+  "\<omega> = nat"
+
 lemma nat_into_ordinal [resolve]:
   "n \<in> nat \<Longrightarrow> ord(n)"
 @proof @var_induct "n \<in> nat" @qed
 
-lemma nat_ordinal [resolve]:
-  "ord(nat)"
+lemma nat_ordinal [forward]:
+  "ord(\<omega>)"
 @proof
   @have "trans_set(nat)" @with
     @have "\<forall>x\<in>nat. x \<subseteq> nat" @with
@@ -59,10 +63,7 @@ lemma nat_ordinal [resolve]:
 @qed
 
 lemma nat_limit_ordinal [forward]:
-  "limit_ord(nat)" by auto2
-
-lemma nat_Suc_diff [rewrite]:
-  "n \<in> nat \<Longrightarrow> Suc(n) \<midarrow> {n} = n" by auto2
+  "limit_ord(\<omega>)" by auto2
 
 (* TODO: unify with proof of equipotent_nat_less_range in Finite *)
 lemma equipotent_nat_less_range [backward1]:
@@ -79,11 +80,11 @@ lemma equipotent_nat_less_range [backward1]:
 @qed
 
 lemma nat_not_equipotent [resolve]:
-  "x \<in> nat \<Longrightarrow> \<not> x \<approx>\<^sub>S nat"
+  "x \<in> \<omega> \<Longrightarrow> \<not> x \<approx>\<^sub>S \<omega>"
 @proof
   @contradiction
-  @have "Suc(x) \<lesssim>\<^sub>S nat"
-  @have "nat \<approx>\<^sub>S x"
+  @have "Suc(x) \<lesssim>\<^sub>S \<omega>"
+  @have "\<omega> \<approx>\<^sub>S x"
   @have "x \<approx>\<^sub>S Suc(x)" @with
     @have "x \<lesssim>\<^sub>S Suc(x)"
   @end
@@ -91,6 +92,8 @@ lemma nat_not_equipotent [resolve]:
 @qed
 
 setup {* fold del_prfstep_thm [@{thm nat_def}, @{thm nat_bnd_mono}, @{thm nat_unfold}] *}
+setup {* del_prfstep_thm @{thm omega_ord_def} *}
+setup {* add_resolve_prfstep @{thm omega_ord_def} *}
 
 abbreviation One ("1") where "1 \<equiv> Suc(0)"
 abbreviation Two ("2") where "2 \<equiv> Suc(1)"
