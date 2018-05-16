@@ -351,9 +351,9 @@ fun process_add_terms item (st as {ctxt, ...}) =
                               |> filter qualify_term
                               |> filter_out exists_item
 
-      (* New terms have the same score as the source item. *)
+      (* New terms have score of the source item plus 1. *)
       val updt =
-          {sc = sc, prfstep_name = "$TERM", source = [item],
+          {sc = sc + 1, prfstep_name = "$TERM", source = [item],
            raw_updt = AddItems {id = id, sc = NONE,
                                 raw_items = map BoxItem.term_to_fact terms2}}
     in
