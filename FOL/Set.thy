@@ -343,24 +343,21 @@ definition Sigma :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "Sigma(A,B) = (\<Union>x\<in>A. \<Union>y\<in>B(x). {\<langle>x,y\<rangle>})"
 
 lemma Sigma_iff [rewrite]:
-  "\<langle>a, b\<rangle> \<in> Sigma(A, B) \<longleftrightarrow> a \<in> A \<and> b \<in> B(a)" by auto2
-
-lemma Sigma_split: "p \<in> Sigma(A,B) \<Longrightarrow> p = \<langle>fst(p), snd(p)\<rangle>" by auto2
-setup {* add_forward_prfstep_cond @{thm Sigma_split} [with_cond "?p \<noteq> \<langle>?a, ?b\<rangle>"] *}
+  "p \<in> Sigma(A, B) \<longleftrightarrow> p = \<langle>fst(p),snd(p)\<rangle> \<and> fst(p) \<in> A \<and> snd(p) \<in> B(fst(p))" by auto2
 setup {* del_prfstep_thm @{thm Sigma_def} *}
-
-lemma fst_type: "p \<in> Sigma(A, B) \<Longrightarrow> fst(p) \<in> A" by auto2
-
-lemma snd_type: "p \<in> Sigma(A, B) \<Longrightarrow> snd(p) \<in> B(fst(p))" by auto2
 
 section \<open>Product set\<close>
 
-abbreviation cart_prod :: "[i, i] \<Rightarrow> i"  (infixr "\<times>" 80) where
+definition cart_prod :: "[i, i] \<Rightarrow> i"  (infixr "\<times>" 80) where [rewrite]:
   "A \<times> B \<equiv> Sigma(A, \<lambda>_. B)"
+
+lemma prod_memD [forward]:
+  "p \<in> A \<times> B \<Longrightarrow> p = \<langle>fst(p),snd(p)\<rangle> \<and> fst(p) \<in> A \<and> snd(p) \<in> B" by auto2
 
 lemma prod_memI: "a \<in> A \<Longrightarrow> \<forall>b\<in>B. \<langle>a,b\<rangle> \<in> A\<times>B" by auto2
 setup {* add_forward_prfstep_cond @{thm prod_memI} [with_term "?A\<times>?B"] *}
 setup {* add_fixed_sc ("Set.prod_memI", 500) *}
+setup {* del_prfstep_thm @{thm cart_prod_def} *}
 
 lemma prod_memI' [backward,backward1,backward2]:
   "a \<in> A \<Longrightarrow> b \<in> B \<Longrightarrow> \<langle>a,b\<rangle> \<in> A \<times> B" by auto2
