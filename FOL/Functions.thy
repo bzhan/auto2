@@ -436,7 +436,6 @@ lemma exists_right_inverse [resolve]:
 
 definition right_inverse :: "i \<Rightarrow> i" where [rewrite]:
   "right_inverse(f) = (SOME s\<in>target(f)\<rightarrow>source(f). f \<circ> s = id_fun(target(f)))"
-setup {* register_wellform_data ("right_inverse(f)", ["surjective(f)"]) *}
 
 lemma right_inverse_prop:
   "surjective(f) \<Longrightarrow>
@@ -454,7 +453,7 @@ lemma exists_left_inverse [backward]:
 
 definition left_inverse :: "i \<Rightarrow> i" where [rewrite]:
   "left_inverse(f) = (SOME r\<in>target(f)\<rightarrow>source(f). r \<circ> f = id_fun(source(f)))"
-setup {* register_wellform_data ("left_inverse(f)", ["injective(f)", "source(f) \<noteq> \<emptyset>"]) *}
+setup {* register_wellform_data ("left_inverse(f)", ["source(f) \<noteq> \<emptyset>"]) *}
 setup {* add_prfstep_check_req ("left_inverse(f)", "source(f) \<noteq> \<emptyset>") *}
 
 lemma left_inverse_prop:
@@ -579,7 +578,7 @@ lemma prod_map_surj [forward]:
 lemma prod_map_bij [forward]:
   "bijective(u) \<Longrightarrow> bijective(v) \<Longrightarrow> bijective(u \<times>\<^sub>f v)" by auto2
 
-lemma prod_map_comp [rewrite]:
+lemma prod_map_comp [resolve]:
   "is_function(u) \<Longrightarrow> is_function(u') \<Longrightarrow> is_function(v) \<Longrightarrow> is_function(v') \<Longrightarrow>
    target(u) = source(u') \<Longrightarrow> target(v) = source(v') \<Longrightarrow>
    (u' \<circ> u) \<times>\<^sub>f (v' \<circ> v) = (u' \<times>\<^sub>f v') \<circ> (u \<times>\<^sub>f v)" by auto2
@@ -587,8 +586,8 @@ lemma prod_map_comp [rewrite]:
 lemma prod_map_id_fun [rewrite]:
   "id_fun(A) \<times>\<^sub>f id_fun(B) = id_fun(A\<times>B)" by auto2
 
-lemma prod_inverse [rewrite]:
-  "bijective(u) \<Longrightarrow> bijective(v) \<Longrightarrow> inverse(u) \<times>\<^sub>f inverse(v) = inverse(u \<times>\<^sub>f v)"
+lemma prod_inverse [resolve]:
+  "bijective(u) \<Longrightarrow> bijective(v) \<Longrightarrow> inverse(u \<times>\<^sub>f v) = inverse(u) \<times>\<^sub>f inverse(v)"
 @proof
   @have "inverse_pair(inverse(u) \<times>\<^sub>f inverse(v), u \<times>\<^sub>f v)"
 @qed
@@ -612,7 +611,7 @@ lemma pow_ext_comp [rewrite]:
 lemma pow_ext_id [rewrite]:
   "pow_ext(id_fun(A)) = id_fun(Pow(A))" by auto2
 
-lemma pow_ext_surj [backward]:
+lemma pow_ext_surj [forward]:
   "is_function(f) \<Longrightarrow> surjective(f) \<Longrightarrow> surjective(pow_ext(f))"
 @proof
   @let "A = source(f)" "B = target(f)"
@@ -620,13 +619,14 @@ lemma pow_ext_surj [backward]:
   @have "pow_ext(f \<circ> s) = pow_ext(f) \<circ> pow_ext(s)"
 @qed
 
-lemma pow_ext_inj [backward]:
+lemma pow_ext_inj [forward]:
   "injective(f) \<Longrightarrow> injective(pow_ext(f))"
 @proof
   @let "U = source(pow_ext(f))"
   @have (@rule) "\<forall>S\<in>U. \<forall>T\<in>U. f `` S = f `` T \<longrightarrow> S = T" @with
     @have "\<forall>x. x \<in> S \<longleftrightarrow> x \<in> T" @with
-      @contradiction @have "f`x \<in> f``S"
+      @case "x \<in> S" @with @have "f`x \<in> f``S" @end
+      @case "x \<in> T" @with @have "f`x \<in> f``T" @end
     @end
   @end
 @qed
