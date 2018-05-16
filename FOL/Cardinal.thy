@@ -125,7 +125,7 @@ lemma cardinal_equipotent_gen [resolve]:
   @end
 @qed
 
-lemma card_is_ordinal_gen [forward]:
+lemma card_is_ordinal_gen:
   "well_order(r) \<Longrightarrow> A = carrier(r) \<Longrightarrow> ord(cardinal(A))"
 @proof
   @let "i = ordertype(r)"
@@ -133,6 +133,7 @@ lemma card_is_ordinal_gen [forward]:
     @have "ordermap_fun(r) \<in> A \<cong> ordertype(r)"
   @end
 @qed
+setup {* add_forward_prfstep_cond @{thm card_is_ordinal_gen} [with_term "cardinal(?A)"] *}
 
 lemma cardinal_cong_gen [resolve]:
   "well_order(r) \<Longrightarrow> well_order(s) \<Longrightarrow> A = carrier(r) \<Longrightarrow> B = carrier(s) \<Longrightarrow>
@@ -173,79 +174,6 @@ lemma cardinal_to_cong [resolve]:
 @proof
   @have "A \<approx>\<^sub>S cardinal(A)"
   @have "B \<approx>\<^sub>S cardinal(B)"
-@qed
-
-section \<open>Ordering on cardinality\<close>
-
-definition le_potent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<lesssim>\<^sub>S" 50) where [rewrite]:
-  "S \<lesssim>\<^sub>S T \<longleftrightarrow> (\<exists>f\<in>S\<rightarrow>T. injective(f))"
-
-lemma le_potentI [resolve]: "injective(f) \<Longrightarrow> f \<in> A \<rightarrow> B \<Longrightarrow> A \<lesssim>\<^sub>S B" by auto2
-lemma le_potentE [resolve]: "S \<lesssim>\<^sub>S T \<Longrightarrow> \<exists>f\<in>S\<rightarrow>T. injective(f)" by auto2
-setup {* del_prfstep_thm @{thm le_potent_def} *}
-
-definition less_potent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<prec>\<^sub>S" 50) where [rewrite]:
-  "S \<prec>\<^sub>S T \<longleftrightarrow> (S \<lesssim>\<^sub>S T \<and> \<not>S \<approx>\<^sub>S T)"
-
-lemma le_potent_trans [forward]:
-  "A \<lesssim>\<^sub>S B \<Longrightarrow> B \<lesssim>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
-@proof
-  @obtain "f \<in> A \<rightarrow> B" where "injective(f)"
-  @obtain "g \<in> B \<rightarrow> C" where "injective(g)"
-  @let "h = g \<circ> f"
-  @have "h \<in> A \<rightarrow> C" @have "injective(h)"
-@qed
-
-lemma le_potent_eq_trans [forward]:
-  "A \<approx>\<^sub>S B \<Longrightarrow> B \<lesssim>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
-@proof
-  @obtain "f \<in> A \<cong> B"
-  @obtain "g \<in> B \<rightarrow> C" where "injective(g)"
-  @let "h = g \<circ> f"
-  @have "h \<in> A \<rightarrow> C" @have "injective(h)"
-@qed
-
-lemma le_potent_trans_eq [forward]:
-  "A \<lesssim>\<^sub>S B \<Longrightarrow> B \<approx>\<^sub>S C \<Longrightarrow> A \<lesssim>\<^sub>S C"
-@proof
-  @obtain "f \<in> A \<rightarrow> B" where "injective(f)"
-  @obtain "g \<in> B \<cong> C"
-  @let "h = g \<circ> f"
-  @have "h \<in> A \<rightarrow> C" @have "injective(h)"
-@qed
-
-lemma subset_le_potent [resolve]:
-  "S \<subseteq> T \<Longrightarrow> S \<lesssim>\<^sub>S T"
-@proof
-  @let "f = Fun(S,T,\<lambda>x. x)"
-  @have "injective(f)" @have "f \<in> S \<rightarrow> T"
-@qed
-
-lemma pow_le_potent [resolve]:
-  "S \<lesssim>\<^sub>S Pow(S)"
-@proof
-  @let "f = Fun(S,Pow(S),\<lambda>x. {x})"
-  @have "injective(f)" @have "f \<in> S \<rightarrow> Pow(S)"
-@qed
-
-lemma ord_le_potent [resolve]:
-  "ord(i) \<Longrightarrow> ord(j) \<Longrightarrow> i \<in> j \<Longrightarrow> i \<lesssim>\<^sub>S j" by auto2
-
-section {* Schroeder-Bernstein Theorem *}
-
-lemma schroeder_bernstein [forward]:
-  "X \<lesssim>\<^sub>S Y \<Longrightarrow> Y \<lesssim>\<^sub>S X \<Longrightarrow> X \<approx>\<^sub>S Y"
-@proof
-  @obtain "f\<in>X\<rightarrow>Y" where "injective(f)"
-  @obtain "g\<in>Y\<rightarrow>X" where "injective(g)"
-  @let "X_A = lfp(X, \<lambda>W. X \<midarrow> g``(Y \<midarrow> f``W))"
-  @let "X_B = X \<midarrow> X_A" "Y_A = f``X_A" "Y_B = Y \<midarrow> Y_A"
-  @have "X \<midarrow> g``Y_B = X_A"
-  @have "g``Y_B = X_B"
-  @let "f' = func_restrict_image(func_restrict(f,X_A))"
-  @let "g' = func_restrict_image(func_restrict(g,Y_B))"
-  @have "glue_function2(f', inverse(g')) \<in> (X_A \<union> X_B) \<cong> (Y_A \<union> Y_B)"
-  @have "X = X_A \<union> X_B" @have "Y = Y_A \<union> Y_B"
 @qed
 
 section \<open>Two successor function for cardinals\<close>
@@ -300,21 +228,6 @@ lemma succ_cardinal_ineq [backward]:
   @let "P = pow_cardinal(K)"
   @have "card(P) \<and> K \<in> P"
 @qed
-
-definition limit_ord :: "i \<Rightarrow> o" where [rewrite]:
-  "limit_ord(i) \<longleftrightarrow> (ord(i) \<and> \<emptyset> \<in> i \<and> (\<forall>y. y \<in> i \<longrightarrow> succ(y) \<in> i))"
-setup {* add_property_const @{term limit_ord} *}
-
-lemma limit_ordD [forward]:
-  "limit_ord(i) \<Longrightarrow> ord(i)"
-  "limit_ord(i) \<Longrightarrow> \<emptyset> \<in> i" by auto2+
-
-lemma limit_ordD2 [backward]:
-  "limit_ord(i) \<Longrightarrow> y \<in> i \<Longrightarrow> succ(y) \<in> i" by auto2
-
-lemma limit_ord_not_succ [resolve]:
-  "\<not>limit_ord(succ(a))" by auto2
-setup {* del_prfstep_thm_eqforward @{thm limit_ord_def} *}
 
 section \<open>Transfinite induction on ordinals\<close>
 
@@ -468,62 +381,6 @@ setup {* del_prfstep_thm @{thm beth_def} *}
 
 section \<open>Natural numbers as cardinals\<close>
 
-declare nat_def [rewrite]
-declare nat_bnd_mono [resolve]
-declare nat_unfold [rewrite]
-declare Zero_def [rewrite]
-declare nat_add_1 [rewrite_back]
-declare Suc_def [rewrite]
-
-lemma nat_into_ordinal [resolve]:
-  "n \<in> nat \<Longrightarrow> ord(n)"
-@proof @var_induct "n \<in> nat" @qed
-
-lemma nat_ordinal [resolve]:
-  "ord(nat)"
-@proof
-  @have "trans_set(nat)" @with
-    @have "\<forall>x\<in>nat. x \<subseteq> nat" @with
-      @var_induct "x \<in> nat"
-    @end
-  @end
-  @have "\<forall>n\<in>nat. trans_set(n)" @with
-    @have "ord(n)"
-  @end
-@qed
-
-lemma nat_limit_ordinal [forward]:
-  "limit_ord(nat)" by auto2
-
-lemma nat_Suc_diff [rewrite]:
-  "n \<in> nat \<Longrightarrow> Suc(n) \<midarrow> {n} = n" by auto2
-
-(* TODO: unify with proof of equipotent_nat_less_range in Finite *)
-lemma equipotent_nat_less_range [backward1]:
-  "m \<in> nat \<Longrightarrow> n \<in> nat \<Longrightarrow> m \<approx>\<^sub>S n \<Longrightarrow> m = n"
-@proof
-  @var_induct "m \<in> nat" arbitrary n @with
-    @subgoal "m = m' +\<^sub>\<nat> 1"
-      @obtain "n'\<in>nat" where "n = n' +\<^sub>\<nat> 1"
-      @have "m' = Suc(m') \<midarrow> {m'}"
-      @have "n' = Suc(n') \<midarrow> {n'}"
-      @have "m' \<approx>\<^sub>S n'"
-    @endgoal
-  @end
-@qed
-
-lemma nat_not_equipotent [resolve]:
-  "x \<in> nat \<Longrightarrow> \<not> x \<approx>\<^sub>S nat"
-@proof
-  @contradiction
-  @have "Suc(x) \<lesssim>\<^sub>S nat"
-  @have "nat \<approx>\<^sub>S x"
-  @have "x \<approx>\<^sub>S Suc(x)" @with
-    @have "x \<lesssim>\<^sub>S Suc(x)"
-  @end
-  @have "x = Suc(x)"
-@qed
-
 lemma nat_cardinal [forward]:
   "card(nat)"
 @proof
@@ -555,9 +412,6 @@ lemma beth_cardinal [forward]:
     @endgoal
   @end
 @qed
-
-setup {* fold del_prfstep_thm [@{thm nat_def}, @{thm nat_bnd_mono}, @{thm nat_unfold},
-  @{thm Zero_def}, @{thm nat_add_1}, @{thm Suc_def}] *}
 
 setup {* fold del_prfstep_thm [@{thm trans_set_def}, @{thm cardinal_def}, @{thm card_def}] *}
 

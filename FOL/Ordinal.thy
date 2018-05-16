@@ -95,4 +95,21 @@ lemma ord_linear [resolve]:
   @induct "ord(i) \<and> ord(j)" "i \<in> j \<or> i = j \<or> j \<in> i"
 @qed
 
+section \<open>Limit ordinals\<close>
+
+definition limit_ord :: "i \<Rightarrow> o" where [rewrite]:
+  "limit_ord(i) \<longleftrightarrow> (ord(i) \<and> \<emptyset> \<in> i \<and> (\<forall>y. y \<in> i \<longrightarrow> succ(y) \<in> i))"
+setup {* add_property_const @{term limit_ord} *}
+
+lemma limit_ordD [forward]:
+  "limit_ord(i) \<Longrightarrow> ord(i)"
+  "limit_ord(i) \<Longrightarrow> \<emptyset> \<in> i" by auto2+
+
+lemma limit_ordD2 [backward]:
+  "limit_ord(i) \<Longrightarrow> y \<in> i \<Longrightarrow> succ(y) \<in> i" by auto2
+
+lemma limit_ord_not_succ [resolve]:
+  "\<not>limit_ord(succ(a))" by auto2
+setup {* del_prfstep_thm_eqforward @{thm limit_ord_def} *}
+
 end
