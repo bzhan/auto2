@@ -414,13 +414,14 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
           val (ctxt', subst) = BoxItem.obtain_variant_frees (ctxt, ritems)
           val ritems' =
               ritems |> map (BoxItem.instantiate subst)
-                     |> (if Util.is_prefix_str "$" prfstep_name then
+                     |> (if prfstep_name = "$RESOLVE" orelse
+                            prfstep_name = "$INIT_BOX" then
                            maps (Normalizer.normalize_keep ctxt')
                          else
                            maps (Normalizer.normalize ctxt'))
                      |> distinct BoxItem.eq_ritem
           val (dup_ritems, new_ritems) =
-              if prfstep_name = "$SCRIPT" orelse sc = 0 then ([], ritems')
+              if sc = 0 then ([], ritems')
               else Status.find_ritems_exact st id ritems'
 
           val _ = if null dup_ritems orelse
@@ -469,35 +470,17 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
     case raw_updt of
         AddBoxes {id, inits, ...} =>
         let
-          (* First form the raw items, possibly containing internal
-             schematic variables.
-           *)
-          val vars = maps Update.dest_init_var inits
           val assums = maps Update.dest_init_assum inits
-          val ritems = map BoxItem.var_to_fact vars @
-                       map (Update.thm_to_ritem o Thm.assume o Thm.cterm_of ctxt)
+          val ritems = map (Update.thm_to_ritem o Thm.assume o Thm.cterm_of ctxt)
                            assums
           val _ = assert (forall (fn t => fastype_of t = propT) assums)
                          "process_add_boxes: assumption is not of type prop."
 
-          (* Obtain the fresh variables, and replace into both the raw
-             items and the initial facts.
-           *)
-          val (ctxt', subst) = BoxItem.obtain_variant_frees (ctxt, ritems)
-          val ritems' = ritems |> map (BoxItem.instantiate subst)
-                               |> maps (Normalizer.normalize_keep ctxt')
-
-          val subst_fun = Term.subst_atomic (map (apply2 Thm.term_of) subst)
-          fun subst_init init =
-              case init of
-                  InitVar v => InitVar (subst_fun v)
-                | InitAssum assum => InitAssum (subst_fun assum)
-          val inits' = map subst_init inits
-
           (* Find neg_form and check if already present. *)
-          val neg_form_opt = Status.find_neg_form st id inits'
+          val neg_form_opt = if id = [] then NONE else
+                             Status.find_neg_form st id inits
 
-          val prev_prim_box = Status.find_prim_box st id inits'
+          val prev_prim_box = Status.find_prim_box st id inits
         in
           (* Do nothing if there is already a box with the same
              assumptions and conclusions.
@@ -511,16 +494,26 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
                       tracing ("Add box under " ^ BoxID.string_of_box_id id ^ " (" ^
                                Update.source_info updt ^ ")")
                     else ()
-            val init_box = Box.init_box inits'
-            val (prim_id, st') = st |> Status.map_context (K ctxt')
+            val init_box = Box.init_box inits
+            val (prim_id, st') = st |> Status.map_context (K ctxt)
                                     |> Status.add_prim_box id init_box
             val new_id = [prim_id]
             val _ = if Config.get ctxt print_trace then
                       tracing (
                         (BoxID.string_of_box_id new_id) ^ ": " ^
                         (Box.short_string_of_box
-                             ctxt' (Status.get_box st' new_id)))
+                             ctxt (Status.get_box st' new_id)))
                     else ()
+
+            val ritem = the_single ritems
+            val ritems' =
+                case ritem of
+                    Handler _ => [ritem]
+                  | Fact (ty_str, _, th) =>
+                    if ty_str = TY_PROP then
+                      map Update.thm_to_ritem (
+                        Logic_ProofSteps.split_not_imp_th th)
+                    else [ritem]
 
             val item_updt = {
               sc = sc, prfstep_name = "$INIT_BOX", source = [],
@@ -548,17 +541,12 @@ fun apply_update (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
 fun init_status ctxt subgoal =
     let
       (* Free variables are implicitly quantified over at the front. *)
-      val vars = map Free (Term.add_frees subgoal [])
-
-      val (vars2, (assums, concl)) =
-        (Util.strip_meta_horn subgoal) |> Util.replace_horn_vars ctxt
-      val inits = map InitVar (vars @ vars2) @ map InitAssum assums @ [InitAssum (get_neg' concl)]
+      val inits = [InitAssum (get_neg' subgoal)]
       val raw_updt = AddBoxes {id = [], sc = NONE, inits = inits}
       val updt = {sc = 0, prfstep_name = "$INIT", source = [],
                   raw_updt = raw_updt}
     in
-      ctxt |> fold Util.declare_free_term vars2
-           |> Status.empty_status
+      ctxt |> Status.empty_status
            |> Status.add_composite_box [] |> Status.add_item BoxItem.null_item
            |> apply_update updt
     end
@@ -606,7 +594,8 @@ fun auto2_tac ctxt state =
               "Subgoal 1 of " ^ (string_of_int (length subgoals)) ^ ":\n" ^
               (Syntax.string_of_term ctxt subgoal) ^ "\n")
         val subgoal_norm = Conv.every_conv [
-            Util.normalize_meta_horn ctxt, UtilLogic.to_obj_conv_on_horn ctxt] c_subgoal
+            Util.normalize_meta_horn ctxt,
+            UtilLogic.to_obj_conv ctxt] c_subgoal
         val st = ProofStatus.init_status ctxt (Util.rhs_of subgoal_norm)
         val (steps', st') =
             Util.timer ("Total time: ",
@@ -614,9 +603,7 @@ fun auto2_tac ctxt state =
         val _ = writeln ("Finished in " ^
                          (string_of_int (steps - steps')) ^ " steps.")
         val th = Status.get_resolve_th st' [0]
-        val vars = map Free (Term.add_frees subgoal [])
-        val th' = th |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) vars)
-                     |> Thm.equal_elim (meta_sym subgoal_norm)
+        val th' = th |> Thm.equal_elim (meta_sym subgoal_norm)
       in
         Seq.single (Thm.implies_elim state th')
       end

@@ -204,7 +204,7 @@ fun hoare_goal_update ctxt (id, th) =
              |> Update.apply_exists_ritems ctxt
 
       val (res_th', rest) =
-          res_th |> Logic_ProofSteps.split_conj_gen_th ctxt
+          res_th |> UtilLogic.split_conj_gen_th
                  |> filter_split (is_neg_hoare_triple o prop_of')
       val _ = assert (length res_th' = 1) "hoare_goal_update"
 
@@ -227,7 +227,7 @@ fun entail_goal_update ctxt (id, th) =
              |> Update.apply_exists_ritems ctxt
 
       val (res_th', rest) =
-          res_th |> Logic_ProofSteps.split_conj_gen_th ctxt
+          res_th |> UtilLogic.split_conj_gen_th
                  |> filter_split (is_neg_entail o prop_of')
       val _ = assert (length res_th' = 1) "entail_goal_update"
 
@@ -399,8 +399,7 @@ val entails_resolve =
 (* Initialize CODE_POS item from a Hoare triple goal. *)
 fun init_pos_fn ictxt item =
     let
-      val {id, sc, prop, ...} = item
-      val _ = assert (sc = 0) "init_pos"
+      val {id, prop, ...} = item
       val ctxt = IncrContext.context_of ictxt
       val thy = Proof_Context.theory_of ctxt
 

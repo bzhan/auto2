@@ -84,6 +84,7 @@ sig
   val to_obj_conv_on_horn: Proof.context -> conv
   val to_meta_conv: Proof.context -> conv
   val split_conj_th: thm -> thm list
+  val split_conj_gen_th: thm -> thm list
   val split_not_disj_th: thm -> thm list
   val strip_horn': thm -> term list * term
   val mk_conjs_th: thm list -> thm
@@ -427,6 +428,13 @@ fun obj_sym_th th = th |> obj_sym |> Util.update_name_of_thm th "@sym"
 fun split_conj_th th =
     if is_conj (prop_of' th) then
       (th RS UtilBase.conjunct1_th) :: (split_conj_th (th RS UtilBase.conjunct2_th))
+    else [th]
+
+(* More general form. *)
+fun split_conj_gen_th th =
+    if is_conj (prop_of' th) then
+      maps split_conj_gen_th [th RS UtilBase.conjunct1_th,
+                              th RS UtilBase.conjunct2_th]
     else [th]
 
 (* Given th of form ~ (A1 | ... | An), return theorems ~ A1, ... ~ An. *)

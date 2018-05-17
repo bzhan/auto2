@@ -42,6 +42,7 @@ sig
   val add_disj_proofsteps: theory -> theory
 
   (* Normalizers *)
+  val split_not_imp_th: thm -> thm list
   val split_conj_gen_th: Proof.context -> thm -> thm list
   val eq_normalizer: normalizer
   val property_normalizer: normalizer
@@ -131,7 +132,8 @@ fun eq_elim_fn ictxt (item1 as {id, prop, ...}) item2 =
       val process_inst_A = elim_shadow to_meta_eq
       val process_inst_B = elim_shadow (meta_sym o to_meta_eq)
       val process_inst_nA = elim_shadow (UtilLogic.make_neg_eq o to_meta_eq)
-      val process_inst_nB = elim_shadow (UtilLogic.make_neg_eq o meta_sym o to_meta_eq)
+      val process_inst_nB =
+          elim_shadow (UtilLogic.make_neg_eq o meta_sym o to_meta_eq)
     in
       maps process_inst_A inst_A @ maps process_inst_B inst_B @
       maps process_inst_nA inst_nA @ maps process_inst_nB inst_nB
@@ -543,14 +545,35 @@ fun disj_prop_match ctxt (id, (tyinst, inst)) (t, (var_t, ts), (var_u, cus)) =
       handle Type.TYPE_MATCH => []
     end
 
-(* Normalize (A_1 & A_2 & ... & A_m) & (B_1 & B_2 & ... & B_n) *)
-fun norm_conj_clauses ct =
+fun norm_conj_de_Morgan ct =
     let
-      val (arg1, _) = Util.dest_binop_args (Thm.term_of ct)
+      val t = Thm.term_of ct
     in
-      if is_conj arg1 then
-        Conv.every_conv [rewr_obj_eq UtilBase.conj_assoc_th,
-                         Conv.arg_conv norm_conj_clauses] ct
+      if is_neg t andalso is_disj (dest_not t) then
+        Conv.every_conv [rewr_obj_eq UtilBase.de_Morgan_disj_th,
+                         Conv.arg_conv norm_conj_de_Morgan] ct
+      else
+        Conv.all_conv ct
+    end
+
+fun norm_conj_not_imp ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_neg t andalso is_imp (dest_not t) then
+        Conv.every_conv [rewr_obj_eq UtilBase.not_imp_th,
+                         Conv.arg_conv norm_conj_not_imp] ct
+      else
+        Conv.all_conv ct
+    end
+
+fun norm_nn_cancel ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_neg t andalso is_neg (dest_not t) then
+        Conv.every_conv [rewr_obj_eq UtilBase.nn_cancel_th,
+                         norm_nn_cancel] ct
       else
         Conv.all_conv ct
     end
@@ -560,14 +583,12 @@ fun norm_conj ct =
       val t = Thm.term_of ct
       val _ = assert (fastype_of t = boolT) "norm_conj: wrong type"
     in
-      if is_conj t then
-        Conv.every_conv [Conv.binop_conv norm_conj, norm_conj_clauses] ct
-      else if is_neg t andalso is_neg (dest_not t) then
-        Conv.every_conv [rewr_obj_eq UtilBase.nn_cancel_th, norm_conj] ct
+      if is_neg t andalso is_neg (dest_not t) then
+        norm_nn_cancel ct
       else if is_neg t andalso is_imp (dest_not t) then
-        Conv.every_conv [rewr_obj_eq UtilBase.not_imp_th, norm_conj] ct
+        norm_conj_not_imp ct
       else if is_neg t andalso is_disj (dest_not t) then
-        Conv.every_conv [rewr_obj_eq UtilBase.de_Morgan_disj_th, norm_conj] ct
+        norm_conj_de_Morgan ct
       else
         Conv.all_conv ct
     end
@@ -591,7 +612,8 @@ fun disj_to_ritems prem_only disj_head th =
                       UtilLogic.term_of_bool prem_only :: disj :: strip_disj (prop_of' th),
                       th)
           in
-            map th_to_ritem (th |> apply_to_thm' norm_conj |> UtilLogic.split_conj_th)
+            map th_to_ritem (th |> apply_to_thm' norm_conj
+                                |> UtilLogic.split_conj_th)
           end
         else
           [Fact (TY_PROP, [prop_of' th], th)]
@@ -984,20 +1006,13 @@ fun disj_create_case_fn ictxt {id, tname, ...} =
     if not (IncrContext.is_single_ictxt ictxt) then [] else
     if exists Util.has_vars (map Thm.term_of tname) then [] else
     let
-      val ctxt = IncrContext.context_of ictxt
       val (disj_head, csubs) = dest_tname_of_disj tname
     in
       if not (is_active_head disj_head) then []
       else if length csubs = 1 then []
       else let
         val subs = map Thm.term_of csubs
-        val goal = get_neg (hd subs)
-        val (vars, (As, C)) = (UtilLogic.strip_obj_horn goal)
-                                  |> Util.replace_horn_vars ctxt
-                                  |> Util.replace_horn_internal_vars
-        val inits =
-            map InitVar vars @ map (InitAssum o mk_Trueprop) As @
-            [InitAssum (mk_Trueprop (get_neg C))]
+        val inits = [InitAssum (mk_Trueprop (hd subs))]
       in
         [AddBoxes {id = id, sc = NONE, inits = inits}]
       end
@@ -1049,6 +1064,10 @@ val add_disj_proofsteps =
     ]
 
 (* Normalizers *)
+
+fun split_not_imp_th th =
+    th |> apply_to_thm' norm_conj_not_imp
+       |> UtilLogic.split_conj_th
 
 (* Generalized form of splitting A & B. Also deal with cases ~(A | B)
    and ~(A --> B).
