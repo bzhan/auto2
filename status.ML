@@ -211,8 +211,6 @@ sig
 
   val find_fact: status -> box_id -> term -> thm option
   val find_ritem_exact: status -> box_id -> raw_item -> bool
-  val find_ritems_exact:
-      status -> box_id -> raw_item list -> raw_item list * raw_item list
   val invoke_handler: Proof.context -> term list * term * thm -> thm -> thm
   val get_on_resolve: status -> box_id -> int -> thm -> thm
   val find_prim_box: status -> box_id -> term -> box_id option
@@ -390,59 +388,6 @@ fun find_ritem_exact (st as {ctxt, ...}) id ritem =
           in
             exists eq_item (get_all_items true st id)
           end
-
-(* Attempt to find the given ritems at id or its ancestors.
-
-   If there are new variables among the ritems, convert each ritem
-   (other than variables) into patterns, then attempt to match each of
-   the patterns with items in the state.
-
-   If there are no new variables among the ritems, try to find each of
-   the ritems individually.
-
-   Return two lists of ritems: those found at id and those not found.
- *)
-fun find_ritems_exact st id ritems =
-    let
-      val thy = theory_of st
-      val (var_ritems, ritems') =
-          ritems |> filter_split (BoxItem.match_ty_str_raw TY_VAR)
-    in
-      if null var_ritems then
-        filter_split (find_ritem_exact st id) ritems
-      else let
-        val vars = maps BoxItem.get_tname_raw var_ritems
-        val sch_vars = vars |> map dest_Free
-                            |> map (fn (x, T) => Var ((x, 0), T))
-        val subst = vars ~~ sch_vars
-        val items = get_all_items true st id
-
-        fun find_ritem ritem insts =
-            case ritem of
-                Handler _ => insts
-              | Fact (ty_str, tname, _) =>
-                if exists Util.has_vars tname then [] else
-                let
-                  val tname' = map (Term.subst_atomic subst) tname
-
-                  fun process_inst cts inst =
-                      [Util.first_order_match_list
-                           thy (tname' ~~ map Thm.term_of cts) inst]
-                      handle Pattern.MATCH => []
-
-                  fun match_item {ty_str = ty2, tname = ts2, ...} =
-                      if ty_str <> ty2 then []
-                      else if length tname' <> length ts2 then []
-                      else maps (process_inst ts2) insts
-                in
-                  maps match_item items
-                end
-
-        val inst = fold find_ritem ritems' [fo_init]
-      in
-        if null inst then ([], ritems) else (ritems, [])
-      end
-    end
 
 (* Invoke a single handler (vars, t, ex_th) on the theorem th. *)
 fun invoke_handler ctxt (vars, t, ex_th) th =

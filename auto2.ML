@@ -416,7 +416,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
                      |> distinct BoxItem.eq_ritem
           val (dup_ritems, new_ritems) =
               if sc = 0 then ([], ritems')
-              else Status.find_ritems_exact st id ritems'
+              else filter_split (Status.find_ritem_exact st id) ritems'
 
           val _ = if null dup_ritems orelse
                      not (Config.get ctxt print_trace) orelse
