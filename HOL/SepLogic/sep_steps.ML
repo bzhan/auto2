@@ -696,9 +696,8 @@ fun hoare_create_case_fn ictxt item =
       if Util.is_implies (Thm.prop_of prop) then
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
-          val assum = get_neg' A
         in
-          [AddBoxes {id = id, sc = SOME 1, inits = [InitAssum assum]}]
+          [AddBoxes {id = id, sc = SOME 1, init_assum = get_neg' A}]
         end
       else []
     end
@@ -744,9 +743,8 @@ fun entail_create_case_fn ictxt item =
       if Util.is_implies (Thm.prop_of prop) then
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
-          val assum = get_neg' A
         in
-          [AddBoxes {id = id, sc = SOME 1, inits = [InitAssum assum]}]
+          [AddBoxes {id = id, sc = SOME 1, init_assum = get_neg' A}]
         end
       else []
     end

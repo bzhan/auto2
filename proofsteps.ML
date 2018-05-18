@@ -371,7 +371,7 @@ fun gen_prfstep name descs =
 
       fun case_to_update ((id, inst), _) assum =
           AddBoxes {id = id, sc = NONE,
-                    inits = [InitAssum (Util.subst_term_norm inst assum)]}
+                    init_assum = Util.subst_term_norm inst assum}
       fun cases_to_update inst_ths = map (case_to_update inst_ths) cases
 
       val priority =

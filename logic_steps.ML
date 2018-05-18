@@ -1012,9 +1012,8 @@ fun disj_create_case_fn ictxt {id, tname, ...} =
       else if length csubs = 1 then []
       else let
         val subs = map Thm.term_of csubs
-        val inits = [InitAssum (mk_Trueprop (hd subs))]
       in
-        [AddBoxes {id = id, sc = NONE, inits = inits}]
+        [AddBoxes {id = id, sc = NONE, init_assum = mk_Trueprop (hd subs)}]
       end
     end
 

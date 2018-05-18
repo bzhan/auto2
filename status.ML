@@ -1,10 +1,9 @@
 (* Definition of updates and proof status. *)
 
 datatype update_type = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
-datatype init_info = InitVar of term | InitAssum of term
 datatype raw_update
   = AddItems of {id: box_id, sc: int option, raw_items: raw_item list}
-  | AddBoxes of {id: box_id, sc: int option, inits: init_info list}
+  | AddBoxes of {id: box_id, sc: int option, init_assum: term}
   | ResolveBox of {id: box_id, th: thm}
   | ShadowItem of {id: box_id, item: box_item}
 type update = {sc: int, prfstep_name: string, source: box_item list,
@@ -19,15 +18,6 @@ fun target_of_update raw_updt =
 
 signature UPDATE =
 sig
-  val dest_init_var: init_info -> term list
-  val dest_init_assum: init_info -> term list
-  val is_init_assum: init_info -> bool
-  val build_init_infos: term list * term list -> init_info list
-  val string_of_init_info: Proof.context -> init_info -> string
-  val get_neg_form: init_info list -> term
-  val get_neg_form_obj: Proof.context -> init_info list -> term
-  val get_neg_form_thm: Proof.context -> init_info list -> thm -> thm
-
   val type_of_update: raw_update -> update_type
   val string_of_update_type: update_type -> string
   val string_of_raw_update: Proof.context -> raw_update -> string
@@ -41,65 +31,6 @@ end;
 
 structure Update : UPDATE =
 struct
-
-fun dest_init_var init = case init of InitVar t => [t] | _ => []
-fun dest_init_assum init = case init of InitAssum t => [t] | _ => []
-fun is_init_assum init = case init of InitAssum _ => true | _ => false
-fun build_init_infos (vars, assums) = map InitVar vars @ map InitAssum assums
-fun string_of_init_info ctxt init =
-    case init of
-        InitVar t => ("Var " ^ (Syntax.string_of_term ctxt t))
-      | InitAssum assum => ("Assum " ^ (Syntax.string_of_term ctxt assum))
-
-(* Given list of initial variables and assumptions, return the
-   contradiction derived from them. Each initial variable becomes !!,
-   the last assumption is negated, and each assumption before the last
-   becomes ==>.
- *)
-fun get_neg_form inits =
-    if null inits then pFalse
-    else let
-      fun mk_all (x, T) t = Logic.all_const T $ Term.absfree (x, T) t
-      val concl = inits |> List.last |> dest_init_assum |> the_single
-                        |> get_neg'
-                  handle List.Empty =>
-                         raise Fail "get_neg_form: last init should be prop."
-
-      fun fold_init init t =
-          case init of
-              InitVar v => mk_all (dest_Free v) t
-            | InitAssum assum => Logic.mk_implies (assum, t)
-    in
-      fold fold_init (tl (rev inits)) concl
-    end
-
-fun get_neg_form_obj ctxt inits =
-    inits |> get_neg_form |> Thm.cterm_of ctxt
-          |> UtilLogic.to_obj_conv ctxt |> Util.rhs_of
-
-(* Given a contradiction th, returns a new theorem with assumptions
-   pulled into the proposition of th. The resulting form of th is the
-   same as that returned by get_neg_form.
- *)
-fun get_neg_form_thm ctxt inits th =
-    if null inits then th
-    else let
-      val _ = assert (Thm.prop_of th aconv pFalse)
-                     "get_neg_form_thm: input th should be a contradiction."
-      val tl_assum =
-          inits |> List.last |> dest_init_assum |> the_single
-          handle List.Empty =>
-                 raise Fail "get_neg_form_thm: last init should be prop."
-
-      fun fold_init init th =
-          case init of
-              InitVar v => Thm.forall_intr (Thm.cterm_of ctxt v) th
-            | InitAssum assum => th |> Thm.implies_intr (Thm.cterm_of ctxt assum)
-    in
-      th |> Thm.implies_intr (Thm.cterm_of ctxt tl_assum)
-         |> apply_to_thm UtilLogic.rewrite_from_contra_form
-         |> fold fold_init (tl (rev inits))
-    end
 
 fun type_of_update raw_updt =
     case raw_updt of
@@ -121,8 +52,8 @@ fun string_of_raw_update ctxt raw_updt =
         "Add items " ^ (Util.string_of_list (
                            ItemIO.string_of_raw_item ctxt) raw_items) ^
         " to box " ^ (BoxID.string_of_box_id id)
-      | AddBoxes {id, inits, ...} =>
-        "Add box " ^ (Util.string_of_list (string_of_init_info ctxt) inits) ^
+      | AddBoxes {id, init_assum, ...} =>
+        "Add box " ^ (Syntax.string_of_term ctxt init_assum) ^
         " under box " ^ (BoxID.string_of_box_id id)
       | ResolveBox {id, ...} =>
         "Resolve box " ^ (BoxID.string_of_box_id id)
@@ -172,17 +103,15 @@ fun source_info {prfstep_name, source, ...} =
 
 end  (* structure Update. *)
 
-type box = {inits: init_info list,
+type box = {init_assum: term,
             handlers: (term list * term * thm) list,
             items: (box_item * box_id list) Inttab.table,
             resolve_th: thm option}
 
 signature BOX =
 sig
-  val init_box: init_info list -> box
-  val get_inits: box -> init_info list
-  val get_init_vars: box -> term list
-  val get_init_assums: box -> term list
+  val init_box: term -> box
+  val get_init_assum: box -> term
 
   val add_handler: term list * term * thm -> box -> box
   val get_handlers: box -> (term list * term * thm) list
@@ -203,19 +132,18 @@ end;
 structure Box : BOX =
 struct
 
-fun init_box inits = {inits = inits, handlers = [], items = Inttab.empty,
-                      resolve_th = NONE}
-fun get_inits {inits, ...} = inits
-fun get_init_vars {inits, ...} = maps Update.dest_init_var inits
-fun get_init_assums {inits, ...} = maps Update.dest_init_assum inits
+fun init_box init_assum =
+    {init_assum = init_assum, handlers = [], items = Inttab.empty,
+     resolve_th = NONE}
+fun get_init_assum {init_assum, ...} = init_assum
 
-fun add_handler (vars, t, ex_th) {inits, handlers, items, resolve_th} =
-    {inits = inits, handlers = cons (vars, t, ex_th) handlers, items = items,
-     resolve_th = resolve_th}
+fun add_handler (vars, t, ex_th) {init_assum, handlers, items, resolve_th} =
+    {init_assum = init_assum, handlers = cons (vars, t, ex_th) handlers,
+     items = items, resolve_th = resolve_th}
 fun get_handlers {handlers, ...} = handlers
 
-fun map_items f {inits, handlers, items, resolve_th} =
-    {inits = inits, handlers = handlers, items = f items,
+fun map_items f {init_assum, handlers, items, resolve_th} =
+    {init_assum = init_assum, handlers = handlers, items = f items,
      resolve_th = resolve_th}
 
 fun add_item (item as {uid, ...}) box =
@@ -233,16 +161,17 @@ fun get_items incl_removed {items, ...} =
 fun lookup_item {items, ...} uid =
     Inttab.lookup items uid
 
-fun set_resolve_th th {inits, handlers, items, ...} =
-    {inits = inits, handlers = handlers, items = items, resolve_th = SOME th}
+fun set_resolve_th th {init_assum, handlers, items, ...} =
+    {init_assum = init_assum, handlers = handlers, items = items,
+     resolve_th = SOME th}
 
 fun get_resolve_th {resolve_th, ...} =
     case resolve_th of
         NONE => raise Fail "get_resolve_th: box not resolved."
       | SOME th => th
 
-fun short_string_of_box ctxt {inits, ...} =
-    Update.get_neg_form inits |> Syntax.string_of_term ctxt
+fun short_string_of_box ctxt {init_assum, ...} =
+    Syntax.string_of_term ctxt init_assum
 
 end  (* structure Box. *)
 
@@ -280,13 +209,9 @@ sig
   val add_composite_box: box_id -> status -> status
 
   val get_items: bool -> status -> box_id -> box_item list
-  val get_inits: status -> box_id -> init_info list
-  val get_init_vars: status -> box_id -> term list
   val get_init_assums: status -> box_id -> term list
   val get_handlers: status -> box_id -> (term list * term * thm) list
   val get_all_items: bool -> status -> box_id -> box_item list
-  val get_all_inits: status -> box_id -> init_info list
-  val get_all_init_vars: status -> box_id -> term list
   val get_all_init_assums: status -> box_id -> term list
   val get_all_handlers: status -> box_id -> (term list * term * thm) list
   val add_item: box_item -> status -> status
@@ -300,13 +225,12 @@ sig
   val get_resolve_th: status -> box_id -> thm
 
   val find_fact: status -> box_id -> term -> thm option
-  val find_neg_form: status -> box_id -> init_info list -> thm option
   val find_ritem_exact: status -> box_id -> raw_item -> bool
   val find_ritems_exact:
       status -> box_id -> raw_item list -> raw_item list * raw_item list
   val invoke_handler: Proof.context -> term list * term * thm -> thm -> thm
   val get_on_resolve: status -> box_id -> int -> thm -> thm
-  val find_prim_box: status -> box_id -> init_info list -> box_id option
+  val find_prim_box: status -> box_id -> term -> box_id option
   val map_queue: (Updates_Heap.T -> Updates_Heap.T) -> status -> status
   val add_to_queue: update -> status -> status
   val delmin_from_queue: status -> status
@@ -378,20 +302,16 @@ fun add_composite_box id (st as {uid_next, boxes, queue, ctxt}) =
       raise Fail "Try to add a primitive box as a composite"
     else
       {uid_next = uid_next,
-       boxes = Boxidtab.update_new (id, Box.init_box []) boxes,
+       boxes = Boxidtab.update_new (id, Box.init_box pFalse) boxes,
        queue = queue, ctxt = ctxt}
 
 fun get_for_box f st id = if exist_box st id then f (get_box st id) else []
 fun get_all_for_box f st id = maps (get_for_box f st) (get_eq_ancestors st id)
 fun get_items b     = get_for_box (Box.get_items b)
-val get_inits       = get_for_box Box.get_inits
-val get_init_vars   = get_for_box Box.get_init_vars
-val get_init_assums = get_for_box Box.get_init_assums
+val get_init_assums = get_for_box (fn box => [Box.get_init_assum box])
 val get_handlers    = get_for_box Box.get_handlers
 fun get_all_items b     = get_all_for_box (Box.get_items b)
-val get_all_inits       = get_all_for_box Box.get_inits
-val get_all_init_vars   = get_all_for_box Box.get_init_vars
-val get_all_init_assums = get_all_for_box Box.get_init_assums
+val get_all_init_assums = get_all_for_box (fn box => [Box.get_init_assum box])
 val get_all_handlers    = get_all_for_box Box.get_handlers
 
 fun add_item (item as {id, ...}) = map_box id (Box.add_item item)
@@ -441,16 +361,6 @@ fun find_fact (st as {ctxt, ...}) id t =
           [] => NONE
         | (_, th) :: _ => SOME th
     end
-
-fun find_neg_form st id inits =
-    if length inits = 1 andalso Update.is_init_assum (the_single inits) then
-      let
-        val t = inits |> maps Update.dest_init_assum |> the_single
-                      |> dest_Trueprop |> get_neg
-      in
-        find_fact st id t
-      end
-    else NONE
 
 (* Find item with the exact ty_str and tname, whose id is an
    eq-ancestor of the given id.
@@ -556,13 +466,12 @@ fun get_on_resolve (st as {ctxt, ...}) id i th =
                           |> filter (BoxID.is_eq_ancestor ctxt [prim_id])
                           |> filter (BoxID.is_eq_descendent ctxt id)
       val handlers = maps (get_handlers st) retro_ids
-      val inits = get_inits st [prim_id]
+      val init_assum = the_single (get_init_assums st [prim_id])
       val th' = th |> fold (invoke_handler ctxt) handlers
-                   |> Update.get_neg_form_thm ctxt inits
+                   |> Thm.implies_intr (Thm.cterm_of ctxt init_assum)
+                   |> apply_to_thm UtilLogic.rewrite_from_contra_form
       val _ = assert (prim_id <> 0 orelse null (Thm.hyps_of th'))
                      "get_on_resolve: did not remove all hypothesis at box 0."
-      val _ = assert (Thm.prop_of th' aconv Update.get_neg_form inits)
-                     "get_on_resolve: wrong value from get_neg_form_thm."
     in
       th'
     end
@@ -571,22 +480,20 @@ fun get_on_resolve (st as {ctxt, ...}) id i th =
    exactly with the given initial facts. Note we cannot yet handle new
    variables.
  *)
-fun find_prim_box (st as {ctxt, ...}) id inits =
+fun find_prim_box (st as {ctxt, ...}) id init_assum =
     let
-      val vars = maps Update.dest_init_var inits
-      val assums = maps Update.dest_init_assum inits
       fun agree_at_id id' =
           let
             val parent = BoxID.get_parent_prim ctxt (the_single id')
             val is_equiv_t = RewriteTable.is_equiv_t parent ctxt
           in
-            eq_set is_equiv_t (vars, get_init_vars st id') andalso
-            eq_set is_equiv_t (assums, get_init_assums st id')
+            is_equiv_t (init_assum, the_single (get_init_assums st id'))
           end
 
       fun can_test_id id' =
           case id' of
-              [prim_id'] => BoxID.is_eq_ancestor ctxt (BoxID.get_parent_prim ctxt prim_id') id
+              [prim_id'] =>
+              BoxID.is_eq_ancestor ctxt (BoxID.get_parent_prim ctxt prim_id') id
             | _ => false
 
       val ids_to_test = get_all_ids st |> filter can_test_id

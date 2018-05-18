@@ -18,19 +18,14 @@ fun item_score ritem =
         if ty_str = TY_VAR then 10  (* cost of introducing a variable. *)
         else Integer.sum (map size_of_term tname)
 
-fun init_score init =
-    case init of
-        InitVar _ => 0
-      | InitAssum t => size_of_term t
-
 fun items_score raw_items = Util.max int_ord (map item_score raw_items)
 
 fun get_score raw_updt =
     case raw_updt of
         AddItems {raw_items, sc, ...} =>
         (case sc of NONE => items_score raw_items | SOME n => n)
-      | AddBoxes {inits, sc, ...} =>
-        (case sc of NONE => 20 + 5 * Integer.sum (map init_score inits)
+      | AddBoxes {init_assum, sc, ...} =>
+        (case sc of NONE => 20 + 5 * size_of_term init_assum
                   | SOME n => n)
       | ResolveBox _ => ~1
       | ShadowItem _ => ~1
@@ -468,19 +463,19 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
 
 fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
     case raw_updt of
-        AddBoxes {id, inits, ...} =>
+        AddBoxes {id, init_assum, ...} =>
         let
-          val assums = maps Update.dest_init_assum inits
-          val ritems = map (Update.thm_to_ritem o Thm.assume o Thm.cterm_of ctxt)
-                           assums
-          val _ = assert (forall (fn t => fastype_of t = propT) assums)
+          val ritem = init_assum |> Thm.cterm_of ctxt
+                                  |> Thm.assume |> Update.thm_to_ritem
+          val _ = assert (fastype_of init_assum = propT)
                          "process_add_boxes: assumption is not of type prop."
 
           (* Find neg_form and check if already present. *)
           val neg_form_opt = if id = [] then NONE else
-                             Status.find_neg_form st id inits
+                             init_assum |> dest_Trueprop |> get_neg
+                                        |> Status.find_fact st id
 
-          val prev_prim_box = Status.find_prim_box st id inits
+          val prev_prim_box = Status.find_prim_box st id init_assum
         in
           (* Do nothing if there is already a box with the same
              assumptions and conclusions.
@@ -494,7 +489,7 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
                       tracing ("Add box under " ^ BoxID.string_of_box_id id ^ " (" ^
                                Update.source_info updt ^ ")")
                     else ()
-            val init_box = Box.init_box inits
+            val init_box = Box.init_box init_assum
             val (prim_id, st') = st |> Status.map_context (K ctxt)
                                     |> Status.add_prim_box id init_box
             val new_id = [prim_id]
@@ -505,7 +500,6 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
                              ctxt (Status.get_box st' new_id)))
                     else ()
 
-            val ritem = the_single ritems
             val ritems' =
                 case ritem of
                     Handler _ => [ritem]
@@ -541,8 +535,7 @@ fun apply_update (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
 fun init_status ctxt subgoal =
     let
       (* Free variables are implicitly quantified over at the front. *)
-      val inits = [InitAssum (get_neg' subgoal)]
-      val raw_updt = AddBoxes {id = [], sc = NONE, inits = inits}
+      val raw_updt = AddBoxes {id = [], sc = NONE, init_assum = get_neg' subgoal}
       val updt = {sc = 0, prfstep_name = "$INIT", source = [],
                   raw_updt = raw_updt}
     in
