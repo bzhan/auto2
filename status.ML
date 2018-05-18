@@ -105,8 +105,7 @@ end  (* structure Update. *)
 
 type box = {init_assum: term,
             handlers: (term list * term * thm) list,
-            items: (box_item * box_id list) Inttab.table,
-            resolve_th: thm option}
+            items: (box_item * box_id list) Inttab.table}
 
 signature BOX =
 sig
@@ -122,10 +121,6 @@ sig
   val is_item_removed: box_item * box_id list -> bool
   val get_items: bool -> box -> box_item list
   val lookup_item: box -> int -> (box_item * box_id list) option
-
-  val set_resolve_th: thm -> box -> box
-  val get_resolve_th: box -> thm
-
   val short_string_of_box: Proof.context -> box -> string
 end;
 
@@ -133,18 +128,16 @@ structure Box : BOX =
 struct
 
 fun init_box init_assum =
-    {init_assum = init_assum, handlers = [], items = Inttab.empty,
-     resolve_th = NONE}
+    {init_assum = init_assum, handlers = [], items = Inttab.empty}
 fun get_init_assum {init_assum, ...} = init_assum
 
-fun add_handler (vars, t, ex_th) {init_assum, handlers, items, resolve_th} =
+fun add_handler (vars, t, ex_th) {init_assum, handlers, items} =
     {init_assum = init_assum, handlers = cons (vars, t, ex_th) handlers,
-     items = items, resolve_th = resolve_th}
+     items = items}
 fun get_handlers {handlers, ...} = handlers
 
-fun map_items f {init_assum, handlers, items, resolve_th} =
-    {init_assum = init_assum, handlers = handlers, items = f items,
-     resolve_th = resolve_th}
+fun map_items f {init_assum, handlers, items} =
+    {init_assum = init_assum, handlers = handlers, items = f items}
 
 fun add_item (item as {uid, ...}) box =
     map_items (Inttab.update_new (uid, (item, []))) box
@@ -160,15 +153,6 @@ fun get_items incl_removed {items, ...} =
 
 fun lookup_item {items, ...} uid =
     Inttab.lookup items uid
-
-fun set_resolve_th th {init_assum, handlers, items, ...} =
-    {init_assum = init_assum, handlers = handlers, items = items,
-     resolve_th = SOME th}
-
-fun get_resolve_th {resolve_th, ...} =
-    case resolve_th of
-        NONE => raise Fail "get_resolve_th: box not resolved."
-      | SOME th => th
 
 fun short_string_of_box ctxt {init_assum, ...} =
     Syntax.string_of_term ctxt init_assum
@@ -187,6 +171,7 @@ type status = {
   uid_next: int,
   boxes: box Boxidtab.table,
   queue: Updates_Heap.T,
+  resolve_th: thm option,
   ctxt: Proof.context
 }
 
@@ -200,6 +185,8 @@ sig
   val incr_uid: int -> status -> status
   val map_box: box_id -> (box -> box) -> status -> status
   val map_context: (Proof.context -> Proof.context) -> status -> status
+  val set_resolve_th: thm -> status -> status
+  val get_resolve_th: status -> thm
   val add_prim_box: box_id -> box -> status -> int * status
   val add_resolved: box_id -> status -> status
   val get_all_ids: status -> box_id list
@@ -221,8 +208,6 @@ sig
   val add_shadowed: box_id * box_item -> status -> status
   val query_shadowed: status -> box_id -> box_item -> bool
   val query_removed: status -> box_item -> bool
-  val set_resolve_th: box_id -> thm -> status -> status
-  val get_resolve_th: status -> box_id -> thm
 
   val find_fact: status -> box_id -> term -> thm option
   val find_ritem_exact: status -> box_id -> raw_item -> bool
@@ -240,7 +225,8 @@ structure Status : STATUS =
 struct
 
 fun empty_status ctxt =
-    {uid_next = 1, boxes = Boxidtab.empty, queue = Updates_Heap.empty, ctxt = ctxt}
+    {uid_next = 1, boxes = Boxidtab.empty, queue = Updates_Heap.empty,
+     ctxt = ctxt, resolve_th = NONE}
 
 fun theory_of {ctxt, ...} = Proof_Context.theory_of ctxt
 
@@ -249,26 +235,37 @@ fun get_box {boxes, ...} id =
     the (Boxidtab.lookup boxes id)
     handle Option.Option => raise Fail "get_box: id not found."
 
-fun incr_uid n {uid_next, boxes, queue, ctxt} =
-    {uid_next = uid_next + n, boxes = boxes, queue = queue, ctxt = ctxt}
+fun incr_uid n {uid_next, boxes, queue, ctxt, resolve_th} =
+    {uid_next = uid_next + n, boxes = boxes, queue = queue, ctxt = ctxt,
+     resolve_th = resolve_th}
 
-fun map_box id f {uid_next, boxes, queue, ctxt} =
+fun map_box id f {uid_next, boxes, queue, ctxt, resolve_th} =
     {uid_next = uid_next, boxes = Boxidtab.map_entry id f boxes,
-     queue = queue, ctxt = ctxt}
+     queue = queue, ctxt = ctxt, resolve_th = resolve_th}
 
-fun map_context f {uid_next, boxes, queue, ctxt} =
-    {uid_next = uid_next, boxes = boxes, queue = queue, ctxt = f ctxt}
+fun map_context f {uid_next, boxes, queue, ctxt, resolve_th} =
+    {uid_next = uid_next, boxes = boxes, queue = queue, ctxt = f ctxt,
+     resolve_th = resolve_th}
 
-fun add_prim_box parent_id new_box {uid_next, boxes, queue, ctxt} =
+fun set_resolve_th th {uid_next, boxes, queue, ctxt, ...} =
+    {uid_next = uid_next, boxes = boxes, queue = queue, ctxt = ctxt,
+     resolve_th = SOME th}
+
+fun get_resolve_th {resolve_th, ...} =
+    case resolve_th of
+        NONE => raise Fail "get_resolve_th: not resolved."
+      | SOME th => th
+
+fun add_prim_box parent_id new_box {uid_next, boxes, queue, ctxt, resolve_th} =
     let
       val (id, ctxt') = BoxID.add_prim_id parent_id ctxt
     in
       (id, {uid_next = uid_next,
             boxes = Boxidtab.update_new ([id], new_box) boxes, queue = queue,
-            ctxt = ctxt'})
+            ctxt = ctxt', resolve_th = resolve_th})
     end
 
-fun add_resolved id {uid_next, boxes, queue, ctxt} =
+fun add_resolved id {uid_next, boxes, queue, ctxt, resolve_th} =
     let
       val ctxt' = BoxID.add_resolved id ctxt
     in
@@ -276,7 +273,8 @@ fun add_resolved id {uid_next, boxes, queue, ctxt} =
        ctxt = ctxt' |> RewriteTable.clean_resolved id
                     |> PropertyData.clean_resolved id
                     |> WellformData.clean_resolved id
-                    |> Auto2Data.invoke_clean_resolved id}
+                    |> Auto2Data.invoke_clean_resolved id,
+       resolve_th = resolve_th}
     end
 
 fun get_all_ids {boxes, ...} = Boxidtab.keys boxes
@@ -295,7 +293,7 @@ fun get_eq_ancestors (st as {ctxt, ...}) id =
 (* Add box with the given composite id to status. Assuming this ID is
    not already present in status.
  *)
-fun add_composite_box id (st as {uid_next, boxes, queue, ctxt}) =
+fun add_composite_box id (st as {uid_next, boxes, queue, ctxt, resolve_th}) =
     if exist_box st id then
       raise Fail "Try to add a composite box that already exists"
     else if length id = 1 then
@@ -303,7 +301,7 @@ fun add_composite_box id (st as {uid_next, boxes, queue, ctxt}) =
     else
       {uid_next = uid_next,
        boxes = Boxidtab.update_new (id, Box.init_box pFalse) boxes,
-       queue = queue, ctxt = ctxt}
+       queue = queue, ctxt = ctxt, resolve_th = resolve_th}
 
 fun get_for_box f st id = if exist_box st id then f (get_box st id) else []
 fun get_all_for_box f st id = maps (get_for_box f st) (get_eq_ancestors st id)
@@ -343,9 +341,6 @@ fun query_shadowed (st as {ctxt, ...}) shadow_id {uid, id, ...} =
         exists (BoxID.is_eq_descendent ctxt shadow_id) shadow_ids
 
 fun query_removed st (item as {id, ...}) = query_shadowed st id item
-
-fun set_resolve_th id th st = st |> map_box id (Box.set_resolve_th th)
-fun get_resolve_th st id = Box.get_resolve_th (get_box st id)
 
 (* Try to find fact at id or above with the proposition t. Return SOME
    th if found.
@@ -501,8 +496,9 @@ fun find_prim_box (st as {ctxt, ...}) id init_assum =
       find_first agree_at_id ids_to_test
     end
 
-fun map_queue f {uid_next, boxes, queue, ctxt} =
-    {uid_next = uid_next, boxes = boxes, queue = f queue, ctxt = ctxt}
+fun map_queue f {uid_next, boxes, queue, ctxt, resolve_th} =
+    {uid_next = uid_next, boxes = boxes, queue = f queue, ctxt = ctxt,
+     resolve_th = resolve_th}
 
 fun add_to_queue updt = map_queue (Updates_Heap.insert updt)
 val delmin_from_queue = map_queue Updates_Heap.delete_min

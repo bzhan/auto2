@@ -182,13 +182,12 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
                             raw_updt = Logic_ProofSteps.logic_thm_update
                                            ctxt (cur_parent, res_obj_th)}
               in
-                st |> Status.set_resolve_th id res_th
-                   |> apply_update_instant updt
+                st |> apply_update_instant updt
               end
         in
           if BoxID.is_box_resolved ctxt id then st
           else if id = [0] then
-            st |> Status.set_resolve_th id (Status.get_on_resolve st id 0 th)
+            st |> Status.set_resolve_th (Status.get_on_resolve st id 0 th)
                |> Status.add_resolved id
           else
             st |> fold update_one (0 upto (length id) - 1)
@@ -595,10 +594,10 @@ fun auto2_tac ctxt state =
                         fn _ => ProofStatus.solve_root (steps, st))
         val _ = writeln ("Finished in " ^
                          (string_of_int (steps - steps')) ^ " steps.")
-        val th = Status.get_resolve_th st' [0]
-        val th' = th |> Thm.equal_elim (meta_sym subgoal_norm)
+        val th = st' |> Status.get_resolve_th
+                     |> Thm.equal_elim (meta_sym subgoal_norm)
       in
-        Seq.single (Thm.implies_elim state th')
+        Seq.single (Thm.implies_elim state th)
       end
     end
 
