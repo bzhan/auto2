@@ -21,7 +21,6 @@ sig
   val is_descendent: Proof.context -> box_id -> box_id -> bool
   val is_box_resolved: Proof.context -> box_id -> bool
   val is_box_unresolved: Proof.context -> box_id -> bool
-  val is_box_supported: Proof.context -> box_id -> bool
   val id_is_eq_ancestor: Proof.context -> box_id * 'a -> box_id * 'a -> bool
   val info_eq_better: Proof.context -> box_id * thm -> box_id * thm -> bool
   val merge_box_with_info:
@@ -177,9 +176,6 @@ fun is_box_resolved ctxt id =
     end
 
 val is_box_unresolved = not oo is_box_resolved
-
-fun is_box_supported ctxt id =
-    forall (fn prim_id => is_box_unresolved ctxt [prim_id]) id
 
 fun id_is_eq_ancestor ctxt (id, _) (id', _) = is_eq_ancestor ctxt id id'
 
