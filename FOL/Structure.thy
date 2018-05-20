@@ -277,7 +277,7 @@ definition eq_str_order :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "eq_str_order(G,H) \<longleftrightarrow> (raworder(G) \<and> raworder(H) \<and> carrier(G) = carrier(H) \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. x \<le>\<^sub>G y \<longleftrightarrow> x \<le>\<^sub>H y))"
 
 lemma eq_str_orderD1 [forward]: "eq_str_order(G,H) \<Longrightarrow> raworder(G) \<and> raworder(H) \<and> carrier(G) = carrier(H)" by auto2
-lemma eq_str_orderD2 [rewrite]: "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_order(G,H) \<Longrightarrow> x \<le>\<^sub>G y \<longleftrightarrow> x \<le>\<^sub>H y" by auto2
+lemma eq_str_orderD2 [rewrite]: "eq_str_order(G,H) \<Longrightarrow> x \<le>\<^sub>G y \<longleftrightarrow> x \<le>\<^sub>H y" by auto2
 lemma eq_str_orderD2' [rewrite]: "eq_str_order(G,H) \<Longrightarrow> order_graph(G) = order_graph(H)" by auto2
 lemma eq_str_order_sym [forward]: "eq_str_order(G,H) \<Longrightarrow> eq_str_order(H,G)" by auto2
 setup {* del_prfstep_thm_eqforward @{thm eq_str_order_def} *}

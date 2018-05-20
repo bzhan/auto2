@@ -327,11 +327,12 @@ lemma nat_less_to_Suc_le [resolve]: "x <\<^sub>\<nat> y \<Longrightarrow> Suc(x)
 lemma nat_le_to_Suc_le [backward2]: "x \<le>\<^sub>\<nat> y \<Longrightarrow> x \<noteq> y \<Longrightarrow> Suc(x) \<le>\<^sub>\<nat> y"
 @proof @have "x <\<^sub>\<nat> y" @qed
 
-lemma nat_comparable [resolve]: "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> \<not>x \<le>\<^sub>\<nat> y \<Longrightarrow> y \<le>\<^sub>\<nat> x"
-@proof @var_induct "x \<in>. \<nat>" for "x \<le>\<^sub>\<nat> y \<or> y \<le>\<^sub>\<nat> x" @qed
-
-lemma nat_is_linorder [forward]: "linorder(\<nat>)" by auto2
-setup {* del_prfstep_thm @{thm nat_comparable} *}
+lemma nat_is_linorder [forward]: "linorder(\<nat>)"
+@proof
+  @have "\<forall>x\<in>.\<nat>. \<forall>y\<in>.\<nat>. \<not>x \<le>\<^sub>\<nat> y \<longrightarrow> y \<le>\<^sub>\<nat> x" @with
+    @var_induct "x \<in>. \<nat>" for "x \<le>\<^sub>\<nat> y \<or> y \<le>\<^sub>\<nat> x"
+  @end
+@qed
 
 lemma nat_less_Suc_to_le [forward]: "b \<in> nat \<Longrightarrow> a <\<^sub>\<nat> Suc(b) \<Longrightarrow> a \<le>\<^sub>\<nat> b" by auto2
 
