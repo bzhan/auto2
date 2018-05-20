@@ -344,6 +344,7 @@ fun process_add_terms item (st as {ctxt, ...}) =
                               |> distinct (op aconv)
                               |> filter qualify_term
                               |> filter_out exists_item
+                              |> filter_out (fn t => fastype_of t = boolT)
 
       (* New terms have score of the source item plus 1. *)
       val updt =
