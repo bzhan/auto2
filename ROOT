@@ -26,15 +26,6 @@ session Primes = AUTO2 +
   theories
     "HOL/Primes_Ex"
 
-session Hoare = AUTO2 +
-  description {*
-    Examples in Hoare logic.
-  *}
-  theories
-    "HOL/Hoare/Hoare_Exp"
-    "HOL/Hoare/Hoare_Equiv"
-    "HOL/Hoare/Hoare_Rules"
-
 session DataStrs_Basic = AUTO2 +
   description {*
     Functional data structures.
