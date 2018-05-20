@@ -42,6 +42,7 @@ sig
   val obj_sym_cv: conv
 
   (* Theorems *)
+  val iffD_th: thm
   val nn_create_th: thm
   val nn_cancel_th: thm
   val to_contra_form_th: thm

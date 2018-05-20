@@ -67,6 +67,12 @@ theorem p20: "\<forall>x y. \<exists>z. \<forall>w. P(x) \<and> Q(y) \<longright
   @obtain z where "\<forall>w. P(x) \<and> Q(y) \<longrightarrow> R(z) \<and> S(w)"
 @qed
 
+theorem p21: "\<exists>x. p \<longrightarrow> F(x) \<Longrightarrow> \<exists>x. F(x) \<longrightarrow> p \<Longrightarrow> \<exists>x. p \<longleftrightarrow> F(x)"
+@proof
+  @case "p" @with @obtain x where "F(x)" @have "p \<longleftrightarrow> F(x)" @end
+  @case "\<not>p" @with @obtain x where "\<not>F(x)" @have "p \<longleftrightarrow> F(x)" @end
+@qed
+
 theorem p22: "\<forall>x::'a. p \<longleftrightarrow> F(x) \<Longrightarrow> p \<longleftrightarrow> (\<forall>x. F(x))"
 @proof
   @case "p" @obtain "x::'a" where "x = x"

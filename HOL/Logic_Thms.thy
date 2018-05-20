@@ -8,11 +8,8 @@ begin
 setup {* add_resolve_prfstep @{thm HOL.refl} *}
 setup {* add_forward_prfstep @{thm contra_triv} *}
 setup {* add_resolve_prfstep @{thm TrueI} *}
-setup {* add_forward_prfstep_cond @{thm TrueI} [with_term "True"] *}
 theorem FalseD [resolve]: "\<not>False" by simp
-setup {* add_forward_prfstep_cond @{thm FalseD} [with_term "False"] *}
 lemma exists_triv_eq [resolve]: "\<exists>x. x = x" by auto
-lemma False_le_True [resolve]: "False < True" by simp
 
 (* Not. *)
 setup {* add_forward_prfstep_cond @{thm HOL.not_sym} [with_filt (not_type_filter "s" boolT)] *}

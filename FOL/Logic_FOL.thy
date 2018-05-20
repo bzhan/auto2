@@ -9,9 +9,7 @@ section \<open>Trivial contradictions\<close>
 setup {* add_resolve_prfstep @{thm refl} *}
 setup {* add_forward_prfstep @{thm contra_triv} *}
 setup {* add_resolve_prfstep @{thm TrueI} *}
-setup {* add_forward_prfstep_cond @{thm TrueI} [with_term "True"] *}
 theorem FalseD [resolve]: "\<not>False" by simp
-setup {* add_forward_prfstep_cond @{thm FalseD} [with_term "False"] *}
 lemma exists_triv_eq [resolve]: "\<exists>x. x = x" by auto
 
 section \<open>If and only iff\<close>

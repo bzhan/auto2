@@ -5,7 +5,6 @@ sig
   (* General logic *)
   val shadow_prop_item: proofstep
   val shadow_term_item: proofstep
-  val eq_elim_prfstep: proofstep
   val cong_on_ineq_prfstep: proofstep
 
   val exists_elim_prfstep: proofstep
@@ -105,46 +104,6 @@ val shadow_term_item =
      args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
      priority = PRIORITY_URGENT,
      func = TwoStep shadow_item_fn}
-
-(* Given equality A = B between booleans and proposition A, B, ~A, ~B,
-   derive the other side of the equality (or its negation) and shadow
-   the equality.
- *)
-fun eq_elim_fn ictxt (item1 as {id, prop, ...}) item2 =
-    let
-      val (A, B) = dest_eq (prop_of' prop)
-      fun inst_t t = ItemIO.get_insts (PropMatch t) item2 ictxt (id, fo_init)
-      val (inst_A, inst_B) = (inst_t A, inst_t B)
-      val (inst_nA, inst_nB) = (inst_t (get_neg A), inst_t (get_neg B))
-
-      (* All the process_inst functions follow the same pattern, up to
-         transform function f for prop.
-       *)
-      fun elim_shadow f ((id', _), th) =
-          let
-            val th = Thm.equal_elim (make_trueprop_eq (f prop)) th
-          in
-            [AddItems {id = id', sc = SOME 1,
-                       raw_items = [Update.thm_to_ritem th]},
-             ShadowItem {id = id', item = item1}]
-          end
-
-      val process_inst_A = elim_shadow to_meta_eq
-      val process_inst_B = elim_shadow (meta_sym o to_meta_eq)
-      val process_inst_nA = elim_shadow (UtilLogic.make_neg_eq o to_meta_eq)
-      val process_inst_nB =
-          elim_shadow (UtilLogic.make_neg_eq o meta_sym o to_meta_eq)
-    in
-      maps process_inst_A inst_A @ maps process_inst_B inst_B @
-      maps process_inst_nA inst_nA @ maps process_inst_nB inst_nB
-    end
-
-val eq_elim_prfstep =
-    {name = "eq_elim",
-     args = [TypedMatch (TY_EQ, mk_eq (boolVar "A", boolVar "B")),
-             PropMatch (boolVar "C")],
-     priority = PRIORITY_SHADOW,
-     func = TwoStep eq_elim_fn}
 
 (* Given goal A = B, find rewrites of A and B to terms of the form
    f(a_1, ..., a_n) and g(b_1, ..., b_n), where all but one of the
@@ -250,7 +209,7 @@ val exists_elim_prfstep =
 
 val add_logic_proofsteps =
     fold add_prfstep [
-      shadow_prop_item, shadow_term_item, eq_elim_prfstep, cong_on_ineq_prfstep,
+      shadow_prop_item, shadow_term_item, cong_on_ineq_prfstep,
       exists_elim_prfstep
     ]
 
@@ -1084,7 +1043,11 @@ fun eq_normalizer _ ritem =
           let
             val (lhs, rhs) = dest_eq (prop_of' th)
           in
-            [Fact (TY_EQ, [lhs, rhs], th)]
+            if fastype_of lhs = boolT then
+              map Update.thm_to_ritem
+                  (UtilLogic.split_conj_th (th RS UtilBase.iffD_th))
+            else
+              [Fact (TY_EQ, [lhs, rhs], th)]
           end
         else [ritem]
 

@@ -14,6 +14,7 @@ theorem or_cancel1: "\<not>Q \<Longrightarrow> (P \<or> Q) = P" by auto
 theorem or_cancel2: "\<not>P \<Longrightarrow> (P \<or> Q) = Q" by auto
 theorem exE': "(\<And>x. P x \<Longrightarrow> Q) \<Longrightarrow> \<exists>x. P x \<Longrightarrow> Q" by auto
 theorem nn_create: "A \<Longrightarrow> \<not>\<not>A" by auto
+theorem iffD: "A \<longleftrightarrow> B \<Longrightarrow> (A \<longrightarrow> B) \<and> (B \<longrightarrow> A)" by auto
 
 theorem obj_sym: "Trueprop (t = s) \<equiv> Trueprop (s = t)" by (rule equal_intr_rule) auto
 theorem to_meta_eq: "Trueprop (t = s) \<equiv> (t \<equiv> s)" by (rule equal_intr_rule) auto

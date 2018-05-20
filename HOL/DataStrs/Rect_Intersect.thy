@@ -41,10 +41,10 @@ setup {* add_forward_prfstep_cond @{thm operation.disc(2)} [with_term "DEL ?x21.
 instantiation operation :: (linorder) linorder begin
 
 definition less: "(a < b) = (if pos a \<noteq> pos b then pos a < pos b else
-                             if is_INS a \<noteq> is_INS b then is_INS a > is_INS b
+                             if is_INS a \<noteq> is_INS b then is_INS a \<and> \<not>is_INS b
                              else if op_idx a \<noteq> op_idx b then op_idx a < op_idx b else op_int a < op_int b)"
 definition less_eq: "(a \<le> b) = (if pos a \<noteq> pos b then pos a < pos b else
-                              if is_INS a \<noteq> is_INS b then is_INS a > is_INS b
+                              if is_INS a \<noteq> is_INS b then is_INS a \<and> \<not>is_INS b
                               else if op_idx a \<noteq> op_idx b then op_idx a < op_idx b else op_int a \<le> op_int b)"
 
 instance proof
@@ -279,26 +279,27 @@ function rect_inter :: "nat rectangle list \<Rightarrow> nat idx_interval set \<
       else rect_inter rects (apply_ops_k_next rects S k) (k + 1))"
   by auto
   termination by (relation "measure (\<lambda>(rects,S,k). length (all_ops rects) - k)") auto
-setup {* fold add_rewrite_rule @{thms rect_inter.simps} *}
 
 lemma rect_inter_step_correct_ind [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow>
    rect_inter rects (xints_of rects (apply_ops_k rects n)) n \<longleftrightarrow>
    (\<exists>k<length ops. k \<ge> n \<and> has_overlap_at_k rects k)"
 @proof
-  @let "d = length ops - n"
-  @strong_induct d arbitrary n
+  @let "ints = xints_of rects (apply_ops_k rects n)"
+  @fun_induct "rect_inter rects ints n"
+  @unfold "rect_inter rects ints n"
   @case "n \<ge> length ops"
-  @case "is_INS (ops ! n) \<and> has_overlap (xints_of rects (apply_ops_k rects n)) (op_int (ops ! n))"
+  @case "is_INS (ops ! n) \<and> has_overlap ints (op_int (ops ! n))"
   @case "n = length ops - 1"
-  @apply_induct_hyp "length (all_ops rects) - (n + 1)" "n + 1"
 @qed
 
 lemma rect_inter_step_correct [rewrite]:
   "is_rect_list rects \<Longrightarrow> rect_inter rects {} 0 \<longleftrightarrow> has_rect_overlap rects"
 @proof
   @have "{} = xints_of rects (apply_ops_k rects 0)"
-  @have "rect_inter rects {} 0 = has_overlap_lst rects"
+  @have "rect_inter rects {} 0 = has_overlap_lst rects" @with
+    @unfold "rect_inter rects {} 0"
+  @end
 @qed
 
 end

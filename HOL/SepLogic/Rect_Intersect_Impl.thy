@@ -78,6 +78,7 @@ lemma rect_inter_to_fun_ind [hoare_triple]:
   @let "d = length (all_ops rects) - k"
   @strong_induct d arbitrary k S b
   @case "k \<ge> length (all_ops rects)"
+  @unfold "rect_inter rects S k"
   @case "is_INS (all_ops rects ! k)" @with
     @case "has_overlap S (op_int (all_ops rects ! k))"
     @case "k = length (all_ops rects) - 1"

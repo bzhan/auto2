@@ -81,6 +81,7 @@ val obj_sym_cv =
 
 (* Theorems *)
 val true_th = @{thm TrueI}
+val iffD_th = @{thm iffD}
 val nn_create_th = @{thm nn_create}
 val nn_cancel_th = @{thm FOL.cla_simps(12)}
 val to_contra_form_th = @{thm to_contra_form}

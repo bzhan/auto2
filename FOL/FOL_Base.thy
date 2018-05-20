@@ -37,6 +37,7 @@ section \<open>Theorems in logic used in auto2\<close>
 theorem to_contra_form: "Trueprop (A) \<equiv> (\<not>A \<Longrightarrow> False)" by (rule equal_intr_rule) auto
 theorem to_contra_form': "Trueprop (\<not>A) \<equiv> (A \<Longrightarrow> False)" by (rule equal_intr_rule) auto
 
+theorem iffD: "A \<longleftrightarrow> B \<Longrightarrow> (A \<longrightarrow> B) \<and> (B \<longrightarrow> A)" by auto
 theorem contra_triv: "\<not>A \<Longrightarrow> A \<Longrightarrow> False" by simp
 theorem or_intro1: "\<not> (P \<or> Q) \<Longrightarrow> \<not> P" by simp
 theorem or_intro2: "\<not> (P \<or> Q) \<Longrightarrow> \<not> Q" by simp
