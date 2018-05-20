@@ -5,7 +5,6 @@ sig
   (* General logic *)
   val shadow_prop_item: proofstep
   val shadow_term_item: proofstep
-  val cong_on_ineq_prfstep: proofstep
 
   val exists_elim_prfstep: proofstep
   val add_logic_proofsteps: theory -> theory
@@ -105,74 +104,6 @@ val shadow_term_item =
      priority = PRIORITY_URGENT,
      func = TwoStep shadow_item_fn}
 
-(* Given goal A = B, find rewrites of A and B to terms of the form
-   f(a_1, ..., a_n) and g(b_1, ..., b_n), where all but one of the
-   pairs a_i and b_i are equal. Reduce the equality goal to the goal
-   a_i = b_i for that i.
- *)
-fun cong_on_ineq_fn ictxt {id, prop, ...} =
-    let
-      val (cA, cB) = prop |> cprop_of' |> UtilLogic.get_cneg
-                          |> Util.dest_binop_cargs
-      val (A, B) = apply2 Thm.term_of (cA, cB)
-      val ctxt = IncrContext.context_of ictxt
-
-      fun process_A_equiv (id', eq_A) =
-          let
-            val A' = Util.rhs_of eq_A
-            val (f, argsA') = Term.strip_comb A'
-            fun process_i i =
-                let
-                  val ty_i = fastype_of (nth argsA' i)
-                  val args_pat = (take i argsA') @ [Var (("x",0), ty_i)] @
-                                 (drop (i + 1) argsA')
-                  val pat = Term.list_comb (f, args_pat)
-                  val insts =
-                      (Matcher.rewrite_match ctxt (pat, cB) (id', fo_init))
-                          |> IncrContext.replace_id_for_type ictxt
-
-                  fun process_inst ((id'', inst), eq_B) =
-                      let
-                        val tx = lookup_inst inst "x"
-                        val cv = Conv.every_conv [
-                              Conv.arg1_conv (Conv.rewr_conv (meta_sym eq_A)),
-                              Conv.arg_conv (Conv.rewr_conv eq_B),
-                              UtilBase.to_obj_eq_cv]
-                        val cong_th =
-                            (Util.eq_cong_th i tx A' ctxt)
-                                |> apply_to_thm (Util.concl_conv cv)
-                                |> apply_to_thm (Conv.arg1_conv UtilBase.to_obj_eq_cv)
-                                |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)
-                      in
-                        Update.thm_update (id'', prop RS cong_th)
-                      end
-                in
-                  map process_inst insts
-                end
-          in
-            (* Test only when f is a free variable (not a constant). *)
-            if Term.is_Free f then
-              maps process_i (0 upto (length argsA' - 1))
-            else []
-          end
-    in
-      (* Due to symmetry, only need to process one side. *)
-      if Term_Ord.termless (A, B) then
-        let
-          val A_equivs = (RewriteTable.get_head_equiv ctxt cA)
-                             |> BoxID.merge_box_with_info ctxt id
-        in
-          maps process_A_equiv A_equivs
-        end
-      else []
-    end
-
-val cong_on_ineq_prfstep =
-    {name = "cong_on_ineq",
-     args = [TypedMatch (TY_PROP, @{term_pat "?A ~= ?B"})],
-     priority = PRIORITY_ADD,
-     func = OneStep cong_on_ineq_fn}
-
 (* Given an assumption of the form EX x. A, we produce an assumption A
    with x in A replaced by a free variable. To avoid name collisions,
    when the update is produced x is replaced by an "internal" free
@@ -209,8 +140,7 @@ val exists_elim_prfstep =
 
 val add_logic_proofsteps =
     fold add_prfstep [
-      shadow_prop_item, shadow_term_item, cong_on_ineq_prfstep,
-      exists_elim_prfstep
+      shadow_prop_item, shadow_term_item, exists_elim_prfstep
     ]
 
 (* Given (x_1 ... x_n, A_1 ... A_n), create the corresponding

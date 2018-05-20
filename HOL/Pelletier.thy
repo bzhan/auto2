@@ -208,7 +208,12 @@ theorem p56: "(\<forall>x. (\<exists>y. F(y) \<and> x = f(y)) \<longrightarrow> 
 theorem p57: "F(f(a,b),f(b,c)) \<Longrightarrow> F(f(b,c),f(a,c)) \<Longrightarrow>
   \<forall>x y z. F(x,y) \<and> F(y,z) \<longrightarrow> F(x,z) \<Longrightarrow> F(f(a,b),f(a,c))" by auto2
 
-theorem p58: "\<forall>x y. f(x) = g(y) \<Longrightarrow> \<forall>x y. f(f(x)) = f(g(y))" by auto2
+theorem p58: "\<forall>x y. f(x) = g(y) \<Longrightarrow> \<forall>x y. f(f(x)) = f(g(y))"
+@proof
+  @have "\<forall>x y. f(f(x)) = f(g(y))" @with
+    @have "f(x) = g(y)"
+  @end
+@qed
 
 theorem p59: "\<forall>x::'a. F(x) \<longleftrightarrow> \<not>F(f(x)) \<Longrightarrow> \<exists>x. F(x) \<and> \<not>F(f(x))"
 @proof

@@ -89,10 +89,11 @@ setup {* del_prfstep_thm @{thm is_recfun_def} *}
    followed by two corollaries. *)
 lemma is_recfun_agree [forward]:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> is_recfun(r,a,H,f) \<Longrightarrow> is_recfun(r,b,H,g) \<Longrightarrow>
-   \<forall>x. less(r,x,a) \<longrightarrow> less(r,x,b) \<longrightarrow> f`x = g`x"
+   \<forall>x. x <\<^sub>r a \<longrightarrow> x <\<^sub>r b \<longrightarrow> f`x = g`x"
 @proof
   @have "\<forall>x. x <\<^sub>r a \<longrightarrow> x <\<^sub>r b \<longrightarrow> f`x = g`x" @with
     @strong_induct "wf(r) \<and> x \<in>. r"
+    @have (@rule) "\<forall>p1 p2. p1 = p2 \<longrightarrow> H(x,p1) = H(x,p2)" 
   @end
 @qed
 
@@ -122,6 +123,7 @@ lemma unfold_the_recfun:
 @proof
   @strong_induct "wf(r) \<and> a \<in>. r"
   @let "f = Tup(ord_pred(r,a), \<lambda>y. H(y, the_recfun(r,y,H)))"
+  @have (@rule) "\<forall>x p1 p2. p1 = p2 \<longrightarrow> H(x,p1) = H(x,p2)"
   @have "is_recfun(r,a,H,f)"
 @qed
 setup {* add_forward_prfstep_cond @{thm unfold_the_recfun} [with_term "the_recfun(?r,?a,?H)"] *}
@@ -133,7 +135,10 @@ setup {* register_wellform_data ("wftrec(r,H,a)", ["a \<in> source(r)"]) *}
 
 lemma wftrec_unfold [rewrite]:
   "wf(r) \<Longrightarrow> trans(r) \<Longrightarrow> a \<in>. r \<Longrightarrow>
-   wftrec(r,H,a) = H(a, Tup(ord_pred(r,a), \<lambda>x. wftrec(r,H,x)))" by auto2
+   wftrec(r,H,a) = H(a, Tup(ord_pred(r,a), \<lambda>x. wftrec(r,H,x)))"
+@proof
+  @have (@rule) "\<forall>p1 p2. p1 = p2 \<longrightarrow> H(a,p1) = H(a,p2)"
+@qed
 setup {* del_prfstep_thm @{thm wftrec_def} *}
 
 (* Definition that does not assume transitivity.
@@ -148,7 +153,10 @@ setup {* register_wellform_data ("wfrec(r,H,a)", ["a \<in> source(r)"]) *}
 
 lemma wfrec_unfold [rewrite]:
   "wf(r) \<Longrightarrow> a \<in>. r \<Longrightarrow>
-   wfrec(r,H,a) = H(a, Tup(ord_pred(r,a), \<lambda>x. wfrec(r,H,x)))" by auto2
+   wfrec(r,H,a) = H(a, Tup(ord_pred(r,a), \<lambda>x. wfrec(r,H,x)))"
+@proof
+  @have (@rule) "\<forall>p1 p2. p1 = p2 \<longrightarrow> H(a,p1) = H(a,p2)"
+@qed
 setup {* del_prfstep_thm @{thm wfrec_def} *}
 
 end

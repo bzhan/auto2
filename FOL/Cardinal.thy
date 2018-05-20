@@ -242,6 +242,7 @@ lemma trans_seq_eq1 [backward]:
   @let "r = mem_rel(a)" "s = mem_rel(b)"
   @induct "ord(i)" "i \<in> a \<longrightarrow> wfrec(s,H,i) = wfrec(r,H,i)" @with
     @subgoal "wfrec(s, H, x) = wfrec(r, H, x)"
+      @have (@rule) "\<forall>p1 p2. p1 = p2 \<longrightarrow> H(x,p1) = H(x,p2)"
       @have "wfrec(s,H,x) = H(x, Tup(x, \<lambda>x. wfrec(s,H,x)))"
       @have "wfrec(r,H,x) = H(x, Tup(x, \<lambda>x. wfrec(r,H,x)))"
       @have "Tup(x, \<lambda>x. wfrec(s,H,x)) = Tup(x, \<lambda>x. wfrec(r,H,x))"
@@ -280,6 +281,7 @@ lemma trans_seq_unfold [rewrite]:
   "ord(a) \<Longrightarrow> trans_seq(G,a) = G(Tup(a, \<lambda>x. trans_seq(G,x)))"
 @proof
   @let "r = mem_rel(succ(a))"
+  @have (@rule) "\<forall>p1 p2. p1 = p2 \<longrightarrow> G(p1) = G(p2)"
   @have "trans_seq(G,a) = G(Tup(a, \<lambda>x. wfrec(r, \<lambda>_ f. G(f), x)))"
   @have "\<forall>x\<in>a. trans_seq(G,x) = wfrec(r, \<lambda>_ f. G(f), x)" @with
     @have "trans_seq(G,x) = wfrec(mem_rel(succ(x)), \<lambda>_ f. G(f), x)"
@@ -320,7 +322,8 @@ lemma trans_seq2_unfold2 [rewrite]:
 @qed
 
 lemma trans_seq2_unfold3 [rewrite]:
-  "limit_ord(a) \<Longrightarrow> trans_seq2(g1,G2,G3,a) = G3(Tup(a, \<lambda>x. trans_seq2(g1,G2,G3,x)))" by auto2
+  "limit_ord(a) \<Longrightarrow> trans_seq2(g1,G2,G3,a) = G3(Tup(a, \<lambda>x. trans_seq2(g1,G2,G3,x)))"
+@proof @have (@rule) "\<forall>p1 p2. p1 = p2 \<longrightarrow> G3(p1) = G3(p2)" @qed
 
 setup {* del_prfstep_thm @{thm trans_seq2_def} *}
 
