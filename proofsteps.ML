@@ -55,8 +55,6 @@ sig
   val prfstep_pre_conv: string -> prfstep_descriptor list ->
                         (Proof.context -> conv) -> proofstep
   val prfstep_conv: string -> prfstep_descriptor list -> conv -> proofstep
-  val prfsteps_eval_fun': thm list -> thm list -> proofstep list
-  val prfsteps_eval_fun: thm list -> proofstep list
 end;
 
 structure ProofStep : PROOFSTEP =
@@ -426,33 +424,6 @@ fun prfstep_pre_conv name descs pre_cv =
 
 fun prfstep_conv name descs cv = prfstep_pre_conv name descs (K cv)
 
-(* Apply rewriting using ths in the top_conv order. When ths is the
-   set of simp rules of a certain function, this conversion expands
-   the function fully.
- *)
-fun eval_fun_conv ths ctxt ct =
-    let
-      fun eval_conv ct =
-          Conv.repeat_conv (Conv.first_conv (map rewr_obj_eq ths)) ct
-    in
-      Conv.top_conv (K eval_conv) ctxt ct
-    end
-
-(* Match the left side of each desc_ths. On each match, fully expand
-   using eval_fun_conv on the list of theorems ths.
- *)
-fun prfsteps_eval_fun' desc_ths ths =
-    let
-      fun get_prfstep th =
-          prfstep_pre_conv ((Util.name_of_thm th) ^ "@eval")
-                           [WithTerm (th |> prop_of' |> dest_eq |> fst)]
-                           (eval_fun_conv ths)
-    in
-      map get_prfstep desc_ths
-    end
-
-fun prfsteps_eval_fun ths = prfsteps_eval_fun' ths ths
-
 end  (* structure ProofStep *)
 
 val WithTerm = ProofStep.WithTerm
@@ -534,9 +505,6 @@ sig
   val add_rewrite_rule: thm -> theory -> theory
   val add_rewrite_rule_back: thm -> theory -> theory
   val add_rewrite_rule_bidir: thm -> theory -> theory
-
-  val add_eval_fun_prfsteps': thm list -> thm list -> theory -> theory
-  val add_eval_fun_prfsteps: thm list -> theory -> theory
 
   val setup_attrib: (thm -> theory -> theory) -> attribute context_parser
 end;
@@ -1039,18 +1007,6 @@ fun add_rewrite_rule_bidir_cond th conds =
 fun add_rewrite_rule th = add_rewrite_rule_cond th []
 fun add_rewrite_rule_back th = add_rewrite_rule_back_cond th []
 fun add_rewrite_rule_bidir th = add_rewrite_rule th #> add_rewrite_rule_back th
-
-fun add_eval_fun_prfsteps' desc_ths ths thy =
-    let
-      fun eval_thm_to_str th =
-          (Util.name_of_thm th) ^ ": " ^
-          (th |> Thm.prop_of |> Syntax.string_of_term_global thy)
-      val _ = writeln (cat_lines (map eval_thm_to_str desc_ths))
-    in
-      fold add_prfstep (ProofStep.prfsteps_eval_fun' desc_ths ths) thy
-    end
-
-fun add_eval_fun_prfsteps ths = add_eval_fun_prfsteps' ths ths
 
 fun setup_attrib f =
     Attrib.add_del
