@@ -89,8 +89,11 @@ lemma exists_prime [resolve]: "\<exists>p. prime(p)"
 lemma prime_factor_nat: "n \<in> nat \<Longrightarrow> n \<noteq> 1 \<Longrightarrow> \<exists>p. divides(\<nat>,p,n) \<and> prime(p)"
 @proof
   @strong_induct "n \<in> nat"
-  @case "prime(n)"
-  @case "n = \<zero>\<^sub>\<nat>" @with @obtain q where "prime(q)" @end
+  @case "prime(n)" @with @have "divides(\<nat>,n,n)" @end
+  @case "n = \<zero>\<^sub>\<nat>" @with
+    @obtain q where "prime(q)"
+    @have "divides(\<nat>,q,0)"
+  @end
 @qed
 
 end

@@ -885,7 +885,8 @@ fun add_basic_prfstep_cond th mode conds thy =
               WithItem ("TERM", Normalizer.def_subst pairs t)
             | _ => cond
     in
-      if null conds andalso mode = MODE_FORWARD andalso
+      if null conds andalso
+         (mode = MODE_FORWARD orelse mode = MODE_FORWARD') andalso
          Property.can_add_property_update th thy then
         Property.add_property_update th thy
       else let

@@ -94,10 +94,15 @@ fun add_property_const t thy =
 fun is_property thy t =
     let
       val _ = assert (fastype_of t = boolT) "is_property: wrong type"
+      val (f, ts) = Term.strip_comb t
     in
-      case Term.head_of t of
-          Const (c, _) => Symtab.defined (Data.get thy) c
-        | _ => false
+      if length ts <> 1 orelse not (Term.is_Const f) then false else
+      let
+        val T = fastype_of (the_single ts)
+        val (dT, _) = Term.strip_type T
+      in
+        length dT = 0 andalso T <> boolT
+      end
     end
 
 (* Insert the following constant as a property field. *)

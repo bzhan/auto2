@@ -308,7 +308,10 @@ lemma prod_set_disjoint [backward1]:
 
 lemma prod_mutually_disjoint:
   "\<forall>b\<in>L. mutually_disjoint(X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(F(b)) \<Longrightarrow>
-   mutually_disjoint(\<lambda>f\<in>Pi(L,J). (Pi(L, \<lambda>b. X(b)`(f`b)))\<in>Pow(Pi(L,F)))" by auto2
+   mutually_disjoint(\<lambda>f\<in>Pi(L,J). (Pi(L, \<lambda>b. X(b)`(f`b)))\<in>Pow(Pi(L,F)))"
+@proof
+  @have (@rule) "\<forall>b\<in>L. \<forall>x\<in>J(b). \<forall>y\<in>J(b). x \<noteq> y \<longrightarrow> X(b)`x \<inter> X(b)`y = \<emptyset>"
+@qed
 
 lemma prod_is_partition:
   "\<forall>b\<in>L. is_partition(S(b),X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(S(b)) \<Longrightarrow>
@@ -317,6 +320,7 @@ lemma prod_is_partition:
   @have "Pi(L,S) = Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a))"
   @let "F = (\<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))"
   @have "(\<Union>f\<in>Pi(L,J). F`f) = (\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
+  @have (@rule) "\<forall>b\<in>L. \<forall>x\<in>J(b). \<forall>y\<in>J(b). x \<noteq> y \<longrightarrow> X(b)`x \<inter> X(b)`y = \<emptyset>"
 @qed
 
 section {* Extension of mappings to products *}  (* Bourbaki II.5.7 *)

@@ -86,6 +86,12 @@ lemma singleton_disjoint [backward]: "a \<noteq> b \<Longrightarrow> {a} \<inter
 
 definition mutually_disjoint :: "i \<Rightarrow> o" where [rewrite]:
   "mutually_disjoint(X) \<longleftrightarrow> (\<forall>a\<in>source(X). \<forall>b\<in>source(X). a \<noteq> b \<longrightarrow> X`a \<inter> X`b = \<emptyset>)"
+setup {* add_property_const @{term mutually_disjoint} *}
+
+lemma mutually_disjointD:
+  "mutually_disjoint(X) \<Longrightarrow> a \<in> source(X) \<Longrightarrow> b \<in> source(X) \<Longrightarrow> a \<noteq> b \<Longrightarrow> X`a \<inter> X`b = \<emptyset>" by auto2
+setup {* add_forward_prfstep_cond @{thm mutually_disjointD} [with_term "?X`?a", with_term "?X`?b", with_cond "?a \<noteq> ?b"] *}
+setup {* del_prfstep_thm_eqforward @{thm mutually_disjoint_def} *}
 
 lemma vImage_set_disjoint [backward2]:
   "f \<in> A \<rightarrow> B \<Longrightarrow> X \<subseteq> B \<Longrightarrow> Y \<subseteq> B \<Longrightarrow> X \<inter> Y = \<emptyset> \<Longrightarrow> f -`` X \<inter> f -`` Y = \<emptyset>"
