@@ -52,7 +52,6 @@ section {* Mapping defined by a set of key-value pairs *}
 
 definition unique_keys_set :: "('a \<times> 'b) set \<Rightarrow> bool" where [rewrite]:
   "unique_keys_set S = (\<forall>i x y. (i, x) \<in> S \<longrightarrow> (i, y) \<in> S \<longrightarrow> x = y)"
-setup {* add_property_const @{term unique_keys_set} *}
 
 lemma unique_keys_setD [forward]: "unique_keys_set S \<Longrightarrow> (i, x) \<in> S \<Longrightarrow> (i, y) \<in> S \<Longrightarrow> x = y" by auto2
 setup {* del_prfstep_thm_eqforward @{thm unique_keys_set_def} *}

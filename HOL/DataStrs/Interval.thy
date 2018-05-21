@@ -28,7 +28,6 @@ qed end
 
 definition is_interval :: "('a::linorder) interval \<Rightarrow> bool" where [rewrite]:
   "is_interval it \<longleftrightarrow> (low it \<le> high it)"
-setup {* add_property_const @{term is_interval} *}
 
 section {* Definition of interval with an index *}
 

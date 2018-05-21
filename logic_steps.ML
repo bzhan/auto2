@@ -981,19 +981,14 @@ fun eq_normalizer _ ritem =
           end
         else [ritem]
 
-fun property_normalizer ctxt ritem =
+fun property_normalizer _ ritem =
     case ritem of
         Handler _ => [ritem]
       | Fact (ty_str, _, th) =>
         if ty_str <> TY_PROP then [ritem]
-        else let
-          val thy = Proof_Context.theory_of ctxt
-          val prop' = prop_of' th
-        in
-          if Property.is_property thy prop' then
-            [Fact (TY_PROPERTY, [prop'], th)]
-          else [ritem]
-        end
+        else if Property.is_property (prop_of' th) then
+          [Fact (TY_PROPERTY, [prop_of' th], th)]
+        else [ritem]
 
 fun disj_normalizer ctxt ritem =
     case ritem of

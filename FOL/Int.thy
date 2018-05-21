@@ -58,7 +58,6 @@ definition nonneg_int_raw :: "i \<Rightarrow> o" where [rewrite]:
 
 definition nonneg_int :: "i \<Rightarrow> o" where [rewrite]:
   "nonneg_int(x) \<longleftrightarrow> nonneg_int_raw(rep(\<R>,x))"
-setup {* add_property_const @{term nonneg_int} *}
 
 definition nonneg_ints :: i where [rewrite]:
   "nonneg_ints = {x\<in>int. nonneg_int(x)}"

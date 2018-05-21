@@ -44,11 +44,9 @@ section {* Definition of ordinals *}
 
 definition trans_set :: "i \<Rightarrow> o" where [rewrite]:
   "trans_set(i) \<longleftrightarrow> (\<forall>x\<in>i. x \<subseteq> i)"
-setup {* add_property_const @{term trans_set} *}
 
 definition ord :: "i \<Rightarrow> o" where [rewrite]:
   "ord(i) \<longleftrightarrow> (trans_set(i) \<and> (\<forall>x\<in>i. trans_set(x)))"
-setup {* add_property_const @{term ord} *}
 
 lemma ordI [backward]: "trans_set(i) \<and> (\<forall>j\<in>i. trans_set(j)) \<Longrightarrow> ord(i)" by auto2
 
@@ -99,7 +97,6 @@ section \<open>Limit ordinals\<close>
 
 definition limit_ord :: "i \<Rightarrow> o" where [rewrite]:
   "limit_ord(i) \<longleftrightarrow> (ord(i) \<and> \<emptyset> \<in> i \<and> (\<forall>y. y \<in> i \<longrightarrow> succ(y) \<in> i))"
-setup {* add_property_const @{term limit_ord} *}
 
 lemma limit_ordD [forward]:
   "limit_ord(i) \<Longrightarrow> ord(i)"

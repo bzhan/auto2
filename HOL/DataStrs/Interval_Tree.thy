@@ -31,7 +31,6 @@ fun tree_sorted :: "interval_tree \<Rightarrow> bool" where
   "tree_sorted Tip = True"
 | "tree_sorted (Node l it m r) = ((\<forall>x\<in>tree_set l. x < it) \<and> (\<forall>x\<in>tree_set r. it < x)
                                    \<and> tree_sorted l \<and> tree_sorted r)"
-setup {* add_property_const @{term tree_sorted} *}
 setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
 
 lemma tree_sorted_lr [forward]:
@@ -62,7 +61,6 @@ definition max3 :: "nat idx_interval \<Rightarrow> nat \<Rightarrow> nat \<Right
 fun tree_max_inv :: "interval_tree \<Rightarrow> bool" where
   "tree_max_inv Tip = True"
 | "tree_max_inv (Node l it m r) \<longleftrightarrow> (tree_max_inv l \<and> tree_max_inv r \<and> m = max3 it (tmax l) (tmax r))"
-setup {* add_property_const @{term tree_max_inv} *}
 setup {* fold add_rewrite_rule @{thms tree_max_inv.simps} *}
 
 lemma tree_max_is_max [resolve]:
@@ -87,11 +85,9 @@ section {* Condition on the values *}
 
 definition tree_interval_inv :: "interval_tree \<Rightarrow> bool" where [rewrite]:
   "tree_interval_inv t \<longleftrightarrow> (\<forall>p\<in>tree_set t. is_interval (int p))"
-setup {* add_property_const @{term tree_interval_inv} *}
 
 definition is_interval_tree :: "interval_tree \<Rightarrow> bool" where [rewrite]:
   "is_interval_tree t \<longleftrightarrow> (tree_sorted t \<and> tree_max_inv t \<and> tree_interval_inv t)"
-setup {* add_property_const @{term is_interval_tree} *}
 
 lemma is_interval_tree_lr [forward]:
   "is_interval_tree (Node l x m r) \<Longrightarrow> is_interval_tree l \<and> is_interval_tree r" by auto2

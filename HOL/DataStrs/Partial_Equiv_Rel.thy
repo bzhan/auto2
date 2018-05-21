@@ -6,7 +6,6 @@ section {* Partial equivalence relation *}
   
 definition part_equiv :: "('a \<times> 'a) set \<Rightarrow> bool" where [rewrite]:
   "part_equiv R \<longleftrightarrow> sym R \<and> trans R"
-setup {* add_property_const @{term part_equiv} *}
 
 lemma part_equivI [forward]: "sym R \<Longrightarrow> trans R \<Longrightarrow> part_equiv R" by auto2
 lemma part_equivD1 [forward]: "part_equiv R \<Longrightarrow> sym R" by auto2

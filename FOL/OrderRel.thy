@@ -8,7 +8,6 @@ definition trans :: "i \<Rightarrow> o" where [rewrite]:
   "trans(R) \<longleftrightarrow> (
     raworder(R) \<and>
     (\<forall>x y z. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R z \<longrightarrow> x \<le>\<^sub>R z))"
-setup {* add_property_const @{term trans} *}
 
 lemma transD [forward]:
   "trans(R) \<Longrightarrow> raworder(R)"
@@ -19,7 +18,6 @@ section {* Preorder and order relations *}  (* Bourbaki III.1.1 -- III.1.2 *)
 
 definition refl_order :: "i \<Rightarrow> o" where [rewrite]:
   "refl_order(R) \<longleftrightarrow> raworder(R) \<and> (\<forall>x\<in>.R. x \<le>\<^sub>R x)"
-setup {* add_property_const @{term refl_order} *}
 
 lemma refl_orderD [forward]:
   "refl_order(R) \<Longrightarrow> raworder(R)" by auto2
@@ -30,7 +28,6 @@ setup {* del_prfstep_thm_eqforward @{thm refl_order_def} *}
 
 definition preorder :: "i \<Rightarrow> o" where [rewrite]:
   "preorder(R) \<longleftrightarrow> trans(R) \<and> refl_order(R)"
-setup {* add_property_const @{term preorder} *}
   
 lemma preorderD [forward]:
   "preorder(R) \<Longrightarrow> trans(R)"
@@ -39,7 +36,6 @@ setup {* del_prfstep_thm_eqforward @{thm preorder_def} *}
   
 definition order :: "i \<Rightarrow> o" where [rewrite]:
   "order(R) \<longleftrightarrow> (preorder(R) \<and> (\<forall>x y. x \<le>\<^sub>R y \<longrightarrow> y \<le>\<^sub>R x \<longrightarrow> x = y))"
-setup {* add_property_const @{term order} *}
   
 lemma orderD [forward]:
   "order(R) \<Longrightarrow> preorder(R)"
@@ -133,12 +129,10 @@ section {* Isomorphism between orders *}
 
 definition is_ord_mor :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_mor(f) \<longleftrightarrow> is_morphism(f) \<and> preorder(source_str(f)) \<and> preorder(target_str(f))"
-setup {* add_property_const @{term is_ord_mor} *}
 
 definition ord_isomorphism :: "i \<Rightarrow> o" where [rewrite]:
   "ord_isomorphism(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
                        is_ord_mor(f) \<and> bijective(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> f`x \<le>\<^sub>S f`y))"
-setup {* add_property_const @{term ord_isomorphism} *}
 
 lemma ord_isomorphismD1 [forward]:
   "ord_isomorphism(f) \<Longrightarrow> is_ord_mor(f)"
@@ -242,22 +236,18 @@ section {* Increasing mappings *}  (* Bourbaki III.1.5 *)
 definition incr :: "i \<Rightarrow> o" where [rewrite]:
   "incr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
                 is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> f`x \<le>\<^sub>S f`y))"
-setup {* add_property_const @{term incr} *}
 
 definition decr :: "i \<Rightarrow> o" where [rewrite]:
   "decr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
                 is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> f`x \<ge>\<^sub>S f`y))"
-setup {* add_property_const @{term decr} *}
 
 definition strict_incr :: "i \<Rightarrow> o" where [rewrite]:
   "strict_incr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
                        is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x <\<^sub>R y \<longrightarrow> f`x <\<^sub>S f`y))"
-setup {* add_property_const @{term strict_incr} *}
 
 definition strict_decr :: "i \<Rightarrow> o" where [rewrite]:
   "strict_decr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
                        is_ord_mor(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x <\<^sub>R y \<longrightarrow> f`x >\<^sub>S f`y))"
-setup {* add_property_const @{term strict_decr} *}
 
 (* Examples *)
 lemma subset_order_less [rewrite]:
@@ -530,7 +520,6 @@ section {* Directed sets *}  (* Bourbaki III.1.10 *)
 
 definition right_directed :: "i \<Rightarrow> o" where [rewrite]:
   "right_directed(R) \<longleftrightarrow> order(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. \<exists>z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y)"
-setup {* add_property_const @{term right_directed} *}
 
 lemma right_directedE1 [forward]: "right_directed(R) \<Longrightarrow> order(R)" by auto2
 lemma right_directedE2 [backward]: "right_directed(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> \<exists>z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y" by auto2
@@ -565,7 +554,6 @@ section {* Totally ordered sets *}  (* Bourbaki III.1.12 *)
 
 definition linorder :: "i \<Rightarrow> o" where [rewrite]:
   "linorder(R) \<longleftrightarrow> (order(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y))"
-setup {* add_property_const @{term linorder} *}
   
 lemma linorderD [forward]:
   "linorder(R) \<Longrightarrow> order(R)"
@@ -699,7 +687,6 @@ lemma is_suborder_linorder [forward]: "linorder(R) \<Longrightarrow> is_suborder
 definition directed_rels :: "i \<Rightarrow> o" where [rewrite]:
   "directed_rels(X) \<longleftrightarrow> ((\<forall>R\<in>X. order(R)) \<and>
     (\<forall>R\<in>X. \<forall>S\<in>X. \<exists>T\<in>X. is_suborder(R,T) \<and> is_suborder(S,T)))"
-setup {* add_property_const @{term directed_rels} *}
 
 lemma directed_relsD1 [forward]:
   "directed_rels(X) \<Longrightarrow> R \<in> X \<Longrightarrow> order(R)" by auto2
@@ -787,7 +774,6 @@ section {* Linear continuum *}
   
 definition order_unbounded :: "i \<Rightarrow> o" where [rewrite]:
   "order_unbounded(R) \<longleftrightarrow> (\<forall>x\<in>.R. (\<exists>y. y <\<^sub>R x) \<and> (\<exists>y. y >\<^sub>R x))"
-setup {* add_property_const @{term order_unbounded} *}
 
 lemma order_unboundedD [backward]:
   "order_unbounded(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>y. y <\<^sub>R x"
@@ -796,7 +782,6 @@ setup {* del_prfstep_thm_eqforward @{thm order_unbounded_def} *}
 
 definition dense_order :: "i \<Rightarrow> o" where [rewrite]:
   "dense_order(R) \<longleftrightarrow> linorder(R) \<and> (\<forall>x y. x <\<^sub>R y \<longrightarrow> (\<exists>z. x <\<^sub>R z \<and> z <\<^sub>R y))"
-setup {* add_property_const @{term dense_order} *}
   
 lemma dense_orderI [forward]:
   "linorder(R) \<Longrightarrow> \<forall>x y. x <\<^sub>R y \<longrightarrow> (\<exists>z. x <\<^sub>R z \<and> z <\<^sub>R y) \<Longrightarrow> dense_order(R)" by auto2
@@ -807,7 +792,6 @@ setup {* del_prfstep_thm @{thm dense_order_def} *}
 
 definition linear_continuum :: "i \<Rightarrow> o" where [rewrite]:
   "linear_continuum(R) \<longleftrightarrow> dense_order(R) \<and> (\<forall>S. S \<noteq> \<emptyset> \<longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<longrightarrow> has_sup(R,S))"
-setup {* add_property_const @{term linear_continuum} *}
 
 lemma linear_continuumD [forward]: "linear_continuum(R) \<Longrightarrow> dense_order(R)" by auto2+
     

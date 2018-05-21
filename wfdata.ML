@@ -243,7 +243,6 @@ fun add_wellform_data_raw (t, (id, th)) ctxt =
 fun find_fact ctxt items (id, ct) =
     let
       val t = Thm.term_of ct
-      val thy = Proof_Context.theory_of ctxt
       val ictxt = SINGLE ctxt
 
       fun match_item item =
@@ -257,7 +256,7 @@ fun find_fact ctxt items (id, ct) =
       if is_eq_term t then  (* Equality case *)
         map (apsnd to_obj_eq)
             (RewriteTable.equiv_info ctxt id (cdest_eq ct))
-      else if Property.is_property thy t then  (* Property case *)
+      else if Property.is_property t then  (* Property case *)
         PropertyData.get_property ctxt (id, ct)
       else  (* General case *)
         maps match_item items

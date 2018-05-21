@@ -9,11 +9,9 @@ setup {* add_simple_datatype "rectangle" *}
 
 definition is_rect :: "('a::linorder) rectangle \<Rightarrow> bool" where [rewrite]:
   "is_rect rect \<longleftrightarrow> is_interval (xint rect) \<and> is_interval (yint rect)"
-setup {* add_property_const @{term is_rect} *}
 
 definition is_rect_list :: "('a::linorder) rectangle list \<Rightarrow> bool" where [rewrite]:
   "is_rect_list rects \<longleftrightarrow> (\<forall>i<length rects. is_rect (rects ! i))"
-setup {* add_property_const @{term is_rect_list} *}
 
 lemma is_rect_listD: "is_rect_list rects \<Longrightarrow> i < length rects \<Longrightarrow> is_rect (rects ! i)" by auto2
 setup {* add_forward_prfstep_cond @{thm is_rect_listD} [with_term "?rects ! ?i"] *}

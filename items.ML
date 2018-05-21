@@ -476,19 +476,14 @@ val eq_tname_typed_matcher =
 (* Obtain a proposition from the property table. *)
 val null_property_matcher =
     let
-      fun pre_match pat _ ctxt =
-          Property.is_property (Proof_Context.theory_of ctxt) pat
+      fun pre_match pat _ _ =
+          Property.is_property pat
 
       fun match pat _ ctxt (id, inst) =
-          let
-            val thy = Proof_Context.theory_of ctxt
-          in
-            if Util.has_vars pat then []
-            else if not (Property.is_property thy pat) then []
-            else
-              map (fn (id', th) => ((id', inst), th))
-                  (PropertyData.get_property_t ctxt (id, pat))
-          end
+          if Util.has_vars pat then []
+          else if not (Property.is_property pat) then []
+          else map (fn (id', th) => ((id', inst), th))
+                   (PropertyData.get_property_t ctxt (id, pat))
     in
       {pre_match = pre_match, match = match}
     end
@@ -499,17 +494,13 @@ val null_property_matcher =
 val term_property_matcher =
     let
       fun pre_match pat {tname, ...} ctxt =
-          let
-            val thy = Proof_Context.theory_of ctxt
-          in
-            Property.is_property thy pat andalso
-            Matcher.pre_match_head ctxt (
-              Property.get_property_arg pat, the_single tname)
-          end
+          Property.is_property pat andalso
+          Matcher.pre_match_head ctxt (
+            Property.get_property_arg pat, the_single tname)
 
       fun match pat {tname, ...} ctxt (id, inst) =
           if not (Util.has_vars pat) then [] else
-          if not (Property.is_property (Proof_Context.theory_of ctxt) pat) then
+          if not (Property.is_property pat) then
             []
           else let
             val arg = Property.get_property_arg pat

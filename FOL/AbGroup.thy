@@ -6,7 +6,6 @@ section {* Monoids *}
 
 definition is_ab_monoid :: "i \<Rightarrow> o" where [rewrite]:
   "is_ab_monoid(G) \<longleftrightarrow> (is_abgroup_raw(G) \<and> is_add_id(G) \<and> is_plus_comm(G) \<and> is_plus_assoc(G))"
-setup {* add_property_const @{term is_ab_monoid} *}
   
 lemma is_ab_monoidD [forward]:
   "is_ab_monoid(G) \<Longrightarrow> is_abgroup_raw(G)"
@@ -22,7 +21,6 @@ section {* Abelian groups *}
   
 definition has_add_inverse :: "i \<Rightarrow> o" where [rewrite]:
   "has_add_inverse(G) \<longleftrightarrow> (\<forall>x\<in>.G. \<exists>y\<in>.G. x +\<^sub>G y = \<zero>\<^sub>G)"
-setup {* add_property_const @{term "has_add_inverse"} *}
   
 lemma has_add_inverseD [backward]:
   "has_add_inverse(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> \<exists>y\<in>.G. x +\<^sub>G y = \<zero>\<^sub>G" by auto2
@@ -37,7 +35,6 @@ lemma has_add_inverse_abgroup_prop [forward]:
 
 definition is_abgroup :: "i \<Rightarrow> o" where [rewrite]:
   "is_abgroup(G) \<longleftrightarrow> (is_ab_monoid(G) \<and> has_add_inverse(G))"
-setup {* add_property_const @{term is_abgroup} *}
 
 lemma is_abgroupD [forward]:
   "is_abgroup(G) \<Longrightarrow> is_ab_monoid(G)"

@@ -6,7 +6,6 @@ begin
 definition join_semilattice :: "i \<Rightarrow> o" where [rewrite]:
   "join_semilattice(R) \<longleftrightarrow> order(R) \<and>
     (\<forall>x\<in>.R. \<forall>y\<in>.R. \<exists>z. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y \<and> (\<forall>z'. z' \<ge>\<^sub>R x \<longrightarrow> z' \<ge>\<^sub>R y \<longrightarrow> z' \<ge>\<^sub>R z))"
-setup {* add_property_const @{term join_semilattice} *}
 
 (* Next, we prove two results on how to *use* the join-semilattice property. *)
 lemma join_semilatticeD1 [forward]: "join_semilattice(R) \<Longrightarrow> order(R)" by auto2
@@ -64,7 +63,6 @@ lemma join_assoc [rewrite]:
 definition meet_semilattice :: "i \<Rightarrow> o" where [rewrite]:
   "meet_semilattice(R) \<longleftrightarrow> order(R) \<and>
     (\<forall>x\<in>.R. \<forall>y\<in>.R. \<exists>z. z \<le>\<^sub>R x \<and> z \<le>\<^sub>R y \<and> (\<forall>z'. z' \<le>\<^sub>R x \<longrightarrow> z' \<le>\<^sub>R y \<longrightarrow> z' \<le>\<^sub>R z))"
-setup {* add_property_const @{term meet_semilattice} *}
   
 lemma meet_semilatticeD1 [forward]: "meet_semilattice(R) \<Longrightarrow> order(R)" by auto2
     
@@ -108,7 +106,6 @@ lemma meet_assoc [rewrite]:
 (* An ordering is a lattice if it is both join-semilattice and meet-semilattice. *)
 definition lattice :: "i \<Rightarrow> o" where [rewrite]:
   "lattice(R) \<longleftrightarrow> join_semilattice(R) \<and> meet_semilattice(R)"
-setup {* add_property_const @{term lattice} *}
   
 (* The absorption rules. *)
 lemma lattice_absorb1 [rewrite]:
@@ -120,7 +117,6 @@ lemma lattice_absorb2 [rewrite]:
 (* Distributive lattices. *)
 definition distributive_lattice :: "i \<Rightarrow> o" where [rewrite]:
   "distributive_lattice(R) \<longleftrightarrow> (lattice(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. \<forall>z\<in>.R. x \<sqinter>\<^sub>R (y \<squnion>\<^sub>R z) = (x \<sqinter>\<^sub>R y) \<squnion>\<^sub>R (x \<sqinter>\<^sub>R z)))"
-setup {* add_property_const @{term distributive_lattice} *}
 
 lemma distributive_latticeD1 [forward]:
   "distributive_lattice(R) \<Longrightarrow> lattice(R)" by auto2
@@ -262,7 +258,6 @@ section {* Modular lattices *}
 
 definition modular_lattice :: "i \<Rightarrow> o" where [rewrite]:
   "modular_lattice(R) \<longleftrightarrow> (lattice(R) \<and> (\<forall>x y. x \<le>\<^sub>R y \<longrightarrow> (\<forall>z\<in>.R. x \<squnion>\<^sub>R (y \<sqinter>\<^sub>R z) = y \<sqinter>\<^sub>R (x \<squnion>\<^sub>R z))))"
-setup {* add_property_const @{term modular_lattice} *}
   
 lemma modular_latticeD1 [forward]:
   "modular_lattice(R) \<Longrightarrow> lattice(R)" by auto2

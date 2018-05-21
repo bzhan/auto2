@@ -14,7 +14,6 @@ lemma separation_sym [resolve]: "separation(X,A,B) \<Longrightarrow> separation(
 
 definition connected :: "i \<Rightarrow> o" where [rewrite]:
   "connected(X) \<longleftrightarrow> (is_top_space(X) \<and> \<not>(\<exists>U V. separation(X,U,V)))"
-setup {* add_property_const @{term connected} *}
   
 lemma connectedD1 [forward]: "connected(X) \<Longrightarrow> is_top_space(X)" by auto2
 lemma connectedD2 [resolve]: "connected(X) \<Longrightarrow> \<not>separation(X,U,V)" by auto2

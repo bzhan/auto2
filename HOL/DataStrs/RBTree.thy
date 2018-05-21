@@ -37,17 +37,14 @@ fun cl_inv :: "('a, 'b) rbt \<Rightarrow> bool" where
 | "cl_inv (Node l R k v r) = (cl_inv l \<and> cl_inv r \<and> cl l = B \<and> cl r = B)"
 | "cl_inv (Node l B k v r) = (cl_inv l \<and> cl_inv r)"
 setup {* fold add_rewrite_rule @{thms cl_inv.simps} *}
-setup {* add_property_const @{term cl_inv} *}
 
 fun bd_inv :: "('a, 'b) rbt \<Rightarrow> bool" where
   "bd_inv Leaf = True"
 | "bd_inv (Node l c k v r) = (bd_inv l \<and> bd_inv r \<and> black_depth l = black_depth r)"
 setup {* fold add_rewrite_rule @{thms bd_inv.simps} *}
-setup {* add_property_const @{term bd_inv} *}
 
 definition is_rbt :: "('a, 'b) rbt \<Rightarrow> bool" where [rewrite]:
   "is_rbt t = (cl_inv t \<and> bd_inv t)"
-setup {* add_property_const @{term is_rbt} *}
 
 lemma cl_invI: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (Node l B k v r)" by auto2
 setup {* add_forward_prfstep_cond @{thm cl_invI} [with_term "Node ?l B ?k ?v ?r"] *}
@@ -91,7 +88,6 @@ fun cl_inv' :: "('a, 'b) rbt \<Rightarrow> bool" where
   "cl_inv' Leaf = True"
 | "cl_inv' (Node l c k v r) = (cl_inv l \<and> cl_inv r)"
 setup {* fold add_rewrite_rule @{thms cl_inv'.simps} *}
-setup {* add_property_const @{term cl_inv'} *}
 
 lemma cl_inv'B [forward, backward1]:
   "cl_inv' t \<Longrightarrow> cl t = B \<Longrightarrow> cl_inv t"
@@ -134,7 +130,6 @@ fun rbt_sorted :: "('a::linorder, 'b) rbt \<Rightarrow> bool" where
   "rbt_sorted Leaf = True"
 | "rbt_sorted (Node l c k v r) = ((\<forall>x\<in>rbt_set l. x < k) \<and> (\<forall>x\<in>rbt_set r. k < x) \<and> rbt_sorted l \<and> rbt_sorted r)"
 setup {* fold add_rewrite_rule @{thms rbt_sorted.simps} *}
-setup {* add_property_const @{term rbt_sorted} *}
 
 lemma rbt_sorted_lr [forward]:
   "rbt_sorted (Node l c k v r) \<Longrightarrow> rbt_sorted l \<and> rbt_sorted r" by auto2

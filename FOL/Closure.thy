@@ -47,7 +47,6 @@ lemma closure_mem2 [forward]:
 
 definition hausdorff :: "i \<Rightarrow> o" where [rewrite]:
   "hausdorff(X) \<longleftrightarrow> (is_top_space(X) \<and> (\<forall>x\<in>.X. \<forall>y\<in>.X. x \<noteq> y \<longrightarrow> (\<exists>U\<in>neighs(X,x). \<exists>V\<in>neighs(X,y). U \<inter> V = \<emptyset>)))"
-setup {* add_property_const @{term hausdorff} *}
 
 lemma hausdorffD1 [forward]: "hausdorff(X) \<Longrightarrow> is_top_space(X)" by auto2
 lemma hausdorffD2 [backward]: "hausdorff(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> x \<noteq> y \<Longrightarrow> \<exists>U\<in>neighs(X,x). \<exists>V\<in>neighs(X,y). U \<inter> V = \<emptyset>" by auto2
@@ -55,7 +54,6 @@ setup {* del_prfstep_thm_eqforward @{thm hausdorff_def} *}
 
 definition T1_space :: "i \<Rightarrow> o" where [rewrite]:
   "T1_space(X) \<longleftrightarrow> (is_top_space(X) \<and> (\<forall>x\<in>.X. is_closed(X,{x})))"
-setup {* add_property_const @{term T1_space} *}
 
 lemma T1_spaceD1 [forward]: "T1_space(X) \<Longrightarrow> is_top_space(X)" by auto2
 lemma T1_spaceD2: "T1_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> is_closed(X,{x})" by auto2

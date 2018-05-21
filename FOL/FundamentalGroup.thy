@@ -6,7 +6,6 @@ section {* Definition of fundamental group *}
 
 definition is_loop :: "i \<Rightarrow> o" where [rewrite]:
   "is_loop(f) \<longleftrightarrow> (is_path(f) \<and> f`(0\<^sub>\<real>) = f`(1\<^sub>\<real>))"
-setup {* add_property_const @{term is_loop} *}
   
 lemma is_loopI [forward,backward]: "is_path(f) \<Longrightarrow> f`(0\<^sub>\<real>) = f`(1\<^sub>\<real>) \<Longrightarrow> is_loop(f)" by auto2
 lemma is_loopD [forward]:

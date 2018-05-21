@@ -6,7 +6,6 @@ section {* Definition of sequences as morphisms from Nat *}
 
 definition is_sequence :: "i \<Rightarrow> o" where [rewrite]:
   "is_sequence(X) \<longleftrightarrow> (mor_form(X) \<and> source_str(X) = \<nat>)"
-setup {* add_property_const @{term is_sequence} *}
 
 definition seqs :: "i \<Rightarrow> i" where [rewrite]:
   "seqs(R) = (\<nat> \<rightharpoonup> R)"
@@ -40,7 +39,6 @@ setup {* fold del_prfstep_thm [@{thm is_sequence_def}, @{thm seqs_def}, @{thm Se
   
 definition ord_ring_seq :: "i \<Rightarrow> o" where [rewrite]:
   "ord_ring_seq(X) \<longleftrightarrow> (is_sequence(X) \<and> is_ord_ring(target_str(X)))"
-setup {* add_property_const @{term ord_ring_seq} *}
 
 lemma ord_ring_seq_iff [forward]:
   "ord_ring_seq(X) \<Longrightarrow> is_sequence(X)"
@@ -50,7 +48,6 @@ setup {* del_prfstep_thm @{thm ord_ring_seq_def} *}
 
 definition ord_field_seq :: "i \<Rightarrow> o" where [rewrite]:
   "ord_field_seq(X) \<longleftrightarrow> (is_sequence(X) \<and> is_ord_field(target_str(X)))"
-setup {* add_property_const @{term ord_field_seq} *}
   
 lemma ord_field_seq_iff [forward]:
   "ord_field_seq(X) \<Longrightarrow> is_sequence(X)"
@@ -78,7 +75,6 @@ section {* Upper and lower bounds *}
   
 definition upper_bounded :: "i \<Rightarrow> o" where [rewrite]:
   "upper_bounded(X) \<longleftrightarrow> (let R = target_str(X) in \<exists>r\<in>.R. \<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R r)"
-setup {* add_property_const @{term upper_bounded} *}
   
 lemma upper_boundedD [resolve]:
   "upper_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r\<in>.R. \<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R r" by auto2
@@ -90,7 +86,6 @@ setup {* del_prfstep_thm @{thm upper_bounded_def} *}
 
 definition lower_bounded :: "i \<Rightarrow> o" where [rewrite]:
   "lower_bounded(X) \<longleftrightarrow> (let R = target_str(X) in \<exists>r\<in>.R. \<forall>n\<in>.\<nat>. X`n \<ge>\<^sub>R r)"
-setup {* add_property_const @{term lower_bounded} *}
   
 lemma lower_boundedD [resolve]:
   "lower_bounded(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r\<in>.R. \<forall>n\<in>.\<nat>. X`n \<ge>\<^sub>R r" by auto2
@@ -113,7 +108,6 @@ section {* Boundedness on sequences *}
 
 definition bounded :: "i \<Rightarrow> o" where bounded_def [rewrite]:
   "bounded(X) \<longleftrightarrow> (let R = target_str(X) in \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r)"
-setup {* add_property_const @{term bounded} *}
   
 lemma boundedI [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r \<Longrightarrow> bounded(X)"
@@ -158,7 +152,6 @@ section {* Vanishes condition on sequences *}
   
 definition vanishes :: "i \<Rightarrow> o" where [rewrite]:
   "vanishes(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)"
-setup {* add_property_const @{term vanishes} *}
 
 lemma vanishesI [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r \<Longrightarrow> vanishes(X)" by auto2
@@ -183,7 +176,6 @@ section {* Cauchy condition on sequences *}
 
 definition cauchy :: "i \<Rightarrow> o" where [rewrite]:
   "cauchy(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)"
-setup {* add_property_const @{term cauchy} *}
 
 lemma cauchyE [backward]:
   "ord_ring_seq(X) \<Longrightarrow> cauchy(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> 
@@ -342,7 +334,6 @@ lemma limit_unique [forward]:
       
 definition converges :: "i \<Rightarrow> o" where [rewrite]:
   "converges(X) \<longleftrightarrow> (\<exists>s. converges_to(X,s))"
-setup {* add_property_const @{term converges} *}
 
 lemma convergesI [forward]:
   "converges_to(X,x) \<Longrightarrow> converges(X)" by auto2
@@ -382,7 +373,6 @@ section {* Increasing and decreasing sequences *}
   
 definition seq_incr :: "i \<Rightarrow> o" where [rewrite]:
   "seq_incr(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<ge>\<^sub>R X`m)"
-setup {* add_property_const @{term seq_incr} *}
 
 lemma seq_incrE [backward]:
   "seq_incr(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> n \<ge>\<^sub>\<nat> m \<Longrightarrow> X`n \<ge>\<^sub>R X`m" by auto2
@@ -392,7 +382,6 @@ lemma seq_incrI [forward]:
 
 definition seq_decr :: "i \<Rightarrow> o" where [rewrite]:
   "seq_decr(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<le>\<^sub>R X`m)"
-setup {* add_property_const @{term seq_decr} *}
 
 lemma seq_decrE [backward]:
   "seq_decr(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> n \<ge>\<^sub>\<nat> m \<Longrightarrow> X`n \<le>\<^sub>R X`m" by auto2
@@ -424,7 +413,6 @@ lemma seq_decrI' [forward]:
 
 definition seq_abs_decr :: "i \<Rightarrow> o" where [rewrite]:
   "seq_abs_decr(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R)"
-setup {* add_property_const @{term seq_abs_decr} *}
   
 lemma seq_abs_decrE [backward]:
   "seq_abs_decr(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> n \<ge>\<^sub>\<nat> m \<Longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" by auto2

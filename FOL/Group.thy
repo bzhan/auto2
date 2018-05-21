@@ -6,7 +6,6 @@ section {* Monoids *}
   
 definition is_monoid :: "i \<Rightarrow> o" where [rewrite]:
   "is_monoid(G) \<longleftrightarrow> is_mult_id(G) \<and> is_times_assoc(G)"
-setup {* add_property_const @{term is_monoid} *}
 
 lemma is_monoidD [forward]:
   "is_monoid(G) \<Longrightarrow> is_mult_id(G)"
@@ -87,7 +86,6 @@ section {* Definition of groups *}
 
 definition is_group :: "i \<Rightarrow> o" where [rewrite]:
   "is_group(G) \<longleftrightarrow> is_monoid(G) \<and> carrier(G) = units(G)"
-setup {* add_property_const @{term is_group} *}
 
 lemma is_groupD [forward]:
   "is_group(G) \<Longrightarrow> is_monoid(G)"
@@ -226,7 +224,6 @@ section {* Homomorphisms and Isomorphisms *}
 definition is_group_hom :: "i \<Rightarrow> o" where [rewrite]:
   "is_group_hom(f) \<longleftrightarrow> (let S = source_str(f) in let T = target_str(f) in
     is_morphism(f) \<and> is_group(S) \<and> is_group(T) \<and> (\<forall>x\<in>.S. \<forall>y\<in>.S. f`(x *\<^sub>S y) = f`x *\<^sub>T f`y))"
-setup {* add_property_const @{term is_group_hom} *}
   
 lemma is_group_homD1 [forward]:
   "is_group_hom(f) \<Longrightarrow> is_morphism(f) \<and> is_group(source_str(f)) \<and> is_group(target_str(f))" by auto2
@@ -262,7 +259,6 @@ lemma group_hom_inv [rewrite]:
 
 definition is_group_iso :: "i \<Rightarrow> o" where [rewrite]:
   "is_group_iso(f) \<longleftrightarrow> (is_group_hom(f) \<and> bijective(f))"
-setup {* add_property_const @{term is_group_iso} *}
 
 definition group_iso_space :: "i \<Rightarrow> i \<Rightarrow> i"  (infix "\<cong>\<^sub>G" 60) where [rewrite]:
   "group_iso_space(G,H) = {f \<in> mor_space(G,H). is_group_iso(f)}"

@@ -6,7 +6,6 @@ section {* Set with at least two element *}
   
 definition card_ge2 :: "i \<Rightarrow> o" where [rewrite]:
   "card_ge2(X) \<longleftrightarrow> (\<exists>a\<in>X. \<exists>b\<in>X. a \<noteq> b)"
-setup {* add_property_const @{term card_ge2} *}
   
 lemma card_ge2I [backward2]: "{a,b} \<subseteq> X \<Longrightarrow> a \<noteq> b \<Longrightarrow> card_ge2(X)" by auto2
 lemma card_ge2_D1 [resolve]: "card_ge2(X) \<Longrightarrow> \<exists>a\<in>X. \<exists>b\<in>X. a \<noteq> b" by auto2
@@ -49,7 +48,6 @@ lemma ord_basis_union [rewrite]:
 definition order_topology :: "i \<Rightarrow> o" where [rewrite]:
   "order_topology(X) \<longleftrightarrow> (linorder(X) \<and> is_top_space_raw(X) \<and> card_ge2(carrier(X)) \<and>
     open_sets(X) = top_from_basis(ord_basis(X)))"
-setup {* add_property_const @{term order_topology} *}
 
 lemma order_topology_has_basis [forward]:
   "order_topology(X) \<Longrightarrow> top_has_basis(X,ord_basis(X))" by auto2
@@ -118,7 +116,6 @@ section {* Data structure for order topology *}
   
 definition is_ord_top_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_top_raw(R) \<longleftrightarrow> is_top_space_raw(R) \<and> raworder(R)"
-setup {* add_property_const @{term is_ord_top_raw} *}
   
 lemma is_ord_top_rawI [backward]:
   "T \<subseteq> Pow(S) \<Longrightarrow> G \<in> Pow(S\<times>S) \<Longrightarrow> is_ord_top_raw(\<langle>S,T,G,x\<rangle>)" by auto2
@@ -130,7 +127,6 @@ setup {* del_prfstep_thm @{thm is_ord_top_raw_def} *}
   
 definition ord_top_form :: "i \<Rightarrow> o" where [rewrite]:
   "ord_top_form(R) \<longleftrightarrow> (is_ord_top_raw(R) \<and> R = \<langle>carrier(R),open_sets(R),order_graph(R),\<emptyset>\<rangle>)"
-setup {* add_property_const @{term ord_top_form} *}
   
 lemma ord_top_form_to_raw [forward]: "ord_top_form(R) \<Longrightarrow> is_ord_top_raw(R)" by auto2
 

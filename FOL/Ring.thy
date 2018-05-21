@@ -7,7 +7,6 @@ section {* Rings *}
 definition is_ring :: "i \<Rightarrow> o" where [rewrite]:
   "is_ring(R) \<longleftrightarrow> (is_ring_raw(R) \<and> is_abgroup(R) \<and> is_monoid(R) \<and>
     is_left_distrib(R) \<and> is_right_distrib(R) \<and> \<zero>\<^sub>R \<noteq> \<one>\<^sub>R)"
-setup {* add_property_const @{term is_ring} *}
 
 lemma is_ringD [forward]:
   "is_ring(R) \<Longrightarrow> is_ring_raw(R)"
@@ -53,7 +52,6 @@ section {* Commutative rings *}
 
 definition is_comm_ring :: "i \<Rightarrow> o" where [rewrite]:
   "is_comm_ring(R) \<longleftrightarrow> (is_ring(R) \<and> is_times_comm(R))"
-setup {* add_property_const @{term is_comm_ring} *}
 
 lemma is_comm_ringD [forward]:
   "is_comm_ring(R) \<Longrightarrow> is_ring(R)"
@@ -283,7 +281,6 @@ section {* Integral domain *}
   
 definition integral_domain :: "i \<Rightarrow> o" where [rewrite]:
   "integral_domain(R) \<longleftrightarrow> (is_comm_ring(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x *\<^sub>R y = \<zero>\<^sub>R \<longrightarrow> x = \<zero>\<^sub>R \<or> y = \<zero>\<^sub>R))"
-setup {* add_property_const @{term integral_domain} *}
 
 lemma integral_domainD [forward]:
   "integral_domain(R) \<Longrightarrow> is_comm_ring(R)"
@@ -304,7 +301,6 @@ section {* Ordered rings *}
 definition is_ord_ring :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_ring(R) \<longleftrightarrow> (is_ord_ring_raw(R) \<and> is_comm_ring(R) \<and> linorder(R) \<and>
                        ord_ring_add_left(R) \<and> ord_ring_mult_pos(R))"
-setup {* add_property_const @{term is_ord_ring} *}
 
 lemma is_ord_ringD [forward]:
   "is_ord_ring(R) \<Longrightarrow> is_ord_ring_raw(R)"

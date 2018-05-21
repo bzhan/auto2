@@ -20,7 +20,6 @@ section {* Graphs *}
 
 definition is_graph :: "i \<Rightarrow> o" where [rewrite]:
   "is_graph(G) \<longleftrightarrow> (\<forall>x\<in>G. x = \<langle>fst(x),snd(x)\<rangle>)"
-setup {* add_property_const @{term is_graph} *}
 
 lemma is_graphE [forward]: "is_graph(G) \<Longrightarrow> x \<in> G \<Longrightarrow> x = \<langle>fst(x),snd(x)\<rangle>" by auto2
 setup {* del_prfstep_thm_eqforward @{thm is_graph_def} *}
@@ -78,7 +77,6 @@ section {* Families *}
 definition is_family :: "i \<Rightarrow> o" where [rewrite]:
   "is_family(F) \<longleftrightarrow> (let G = graph(F) in let S = source(F) in
      is_graph(G) \<and> gr_source(G) \<subseteq> S \<and> is_func_graph(G,S) \<and> F = \<langle>S,\<emptyset>,G,\<emptyset>\<rangle>)"
-setup {* add_property_const @{term is_family} *}
 
 (* Constructor for families. *)
 definition Tup :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> i" where [rewrite]:
@@ -128,7 +126,6 @@ section {* Functions *}
    to exactly one value in the target. *)
 definition is_function :: "i \<Rightarrow> o" where [rewrite]:
   "is_function(f) \<longleftrightarrow> graph(f) \<in> func_graphs(source(f),target(f))"
-setup {* add_property_const @{term is_function} *}
 
 lemma is_functionD [typing]:
   "is_function(F) \<Longrightarrow> graph(F) \<in> func_graphs(source(F),target(F))" by auto2
@@ -139,7 +136,6 @@ setup {* del_prfstep_thm @{thm is_function_def} *}
   
 definition func_form :: "i \<Rightarrow> o" where [rewrite]:
   "func_form(f) \<longleftrightarrow> is_function(f) \<and> f = \<langle>source(f),target(f),graph(f),\<emptyset>\<rangle>"
-setup {* add_property_const @{term func_form} *}
 
 lemma is_function_from_form [forward]: "func_form(f) \<Longrightarrow> is_function(f)" by auto2
 
@@ -236,7 +232,6 @@ abbreviation (input) ge :: "[i, i, i] \<Rightarrow> o" ("(_/ \<ge>\<^sub>_ _)" [
 (* General predicate on order. *)
 definition raworder :: "i \<Rightarrow> o" where [rewrite]:
   "raworder(R) \<longleftrightarrow> order_graph(R) \<in> Pow(carrier(R)\<times>carrier(R))"
-setup {* add_property_const @{term raworder} *}
 
 lemma raworderI [backward]:
   "G \<in> Pow(S\<times>S) \<Longrightarrow> raworder(\<langle>S,x1,G,x2\<rangle>)" by auto2
@@ -249,7 +244,6 @@ setup {* del_prfstep_thm @{thm raworder_def} *}
 (* Strict predicate on order. *)
 definition ord_form :: "i \<Rightarrow> o" where [rewrite]:
   "ord_form(R) \<longleftrightarrow> raworder(R) \<and> R = \<langle>carrier(R),\<emptyset>,order_graph(R),\<emptyset>\<rangle>"
-setup {* add_property_const @{term ord_form} *}
   
 lemma ord_form_to_raw [forward]: "ord_form(R) \<Longrightarrow> raworder(R)" by auto2
 

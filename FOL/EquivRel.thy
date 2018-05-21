@@ -11,7 +11,6 @@ definition equiv_graph :: "i \<Rightarrow> i" where [rewrite]:
 
 definition rawequiv :: "i \<Rightarrow> o" where [rewrite]:
   "rawequiv(R) \<longleftrightarrow> (\<exists>S G. R = \<langle>S,\<emptyset>,G,\<emptyset>\<rangle> \<and> G\<in>Pow(S\<times>S))"
-setup {* add_property_const @{term rawequiv} *}
 
 lemma rawequiv_graph_is_graph [forward]:
   "rawequiv(R) \<Longrightarrow> is_graph(equiv_graph(R))" by auto2
@@ -63,7 +62,6 @@ definition equiv :: "i \<Rightarrow> o" where [rewrite]:
     (\<forall>x\<in>.R. x \<sim>\<^sub>R x) \<and>
     (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x)) \<and>
     (\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z)"
-setup {* add_property_const @{term equiv} *}
 
 lemma equivD:
   "equiv(R) \<Longrightarrow> rawequiv(R)"

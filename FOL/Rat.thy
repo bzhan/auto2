@@ -59,7 +59,6 @@ definition nonneg_rat_raw :: "i \<Rightarrow> o" where [rewrite]:
 
 definition nonneg_rat :: "i \<Rightarrow> o" where [rewrite]:
   "nonneg_rat(x) \<longleftrightarrow> nonneg_rat_raw(rep(\<R>,x))"
-setup {* add_property_const @{term nonneg_rat} *}
 
 definition nonneg_rats :: i where [rewrite]:
   "nonneg_rats = {x\<in>rat. nonneg_rat(x)}"

@@ -6,7 +6,6 @@ section {* Cauchy completeness *}
   
 definition cauchy_complete_field :: "i \<Rightarrow> o" where [rewrite]:
   "cauchy_complete_field(R) \<longleftrightarrow> (is_ord_field(R) \<and> (\<forall>X\<in>seqs(R). cauchy(X) \<longrightarrow> converges(X)))"
-setup {* add_property_const @{term cauchy_complete_field} *}
 
 lemma cauchy_completeD [forward]:
   "cauchy_complete_field(R) \<Longrightarrow> is_ord_field(R)"
@@ -57,7 +56,6 @@ section {* A simple test for vanishing of sequences *}
 
 definition half_seq :: "i \<Rightarrow> o" where [rewrite]:
   "half_seq(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>n\<in>.\<nat>. \<bar>X`(n +\<^sub>\<nat> 1)\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R /\<^sub>R 2\<^sub>R)"
-setup {* add_property_const @{term half_seq} *}
 
 lemma half_seqD:
   "half_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> n \<in>. \<nat> \<Longrightarrow> \<bar>X`(n +\<^sub>\<nat> 1)\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R /\<^sub>R 2\<^sub>R" by auto2

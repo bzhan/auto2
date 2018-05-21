@@ -255,7 +255,6 @@ section {* Positive sequences *}
   
 definition pos_seq :: "i \<Rightarrow> o" where [rewrite]:
   "pos_seq(X) \<longleftrightarrow> (let R = target_str(X) in \<exists>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n >\<^sub>R r)"
-setup {* add_property_const @{term pos_seq} *}
 
 lemma pos_seqI [forward]:
   "R = target_str(X) \<Longrightarrow> \<forall>n\<ge>\<^sub>\<nat>k. X`n >\<^sub>R r \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> pos_seq(X)" by auto2
@@ -317,7 +316,6 @@ lemma pos_seq_minus [resolve]:
 
 definition nonneg_seq :: "i \<Rightarrow> o" where [rewrite]:
   "nonneg_seq(X) \<longleftrightarrow> pos_seq(X) \<or> vanishes(X)"
-setup {* add_property_const @{term nonneg_seq} *}
   
 lemma nonneg_seq_compat_vanishes [forward]:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> nonneg_seq(X) \<Longrightarrow>

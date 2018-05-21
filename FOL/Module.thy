@@ -21,7 +21,6 @@ section {* Module structure *}
 definition is_mod_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_mod_raw(M) \<longleftrightarrow> is_abgroup_raw(M) \<and> is_ring(mod_ring(M)) \<and>
       mtimes_fun(M) \<in> carrier(mod_ring(M)) \<times> carrier(M) \<rightarrow> carrier(M)"
-setup {* add_property_const @{term is_mod_raw} *}
 
 lemma is_mod_rawI [backward]:
   "is_ring(R) \<Longrightarrow> z \<in> S \<Longrightarrow> p \<in> S \<times> S \<rightarrow> S \<Longrightarrow> f \<in> carrier(R) \<times> S \<rightarrow> S \<Longrightarrow>
@@ -37,7 +36,6 @@ setup {* del_prfstep_thm @{thm is_mod_raw_def} *}
 
 definition mod_form :: "i \<Rightarrow> o" where [rewrite]:
   "mod_form(M) \<longleftrightarrow> is_mod_raw(M) \<and> M = \<langle>carrier(M),mod_ring(M),\<emptyset>,\<langle>\<zero>\<^sub>M,plus_fun(M)\<rangle>,\<emptyset>,mtimes_fun(M),\<emptyset>\<rangle>"
-setup {* add_property_const @{term mod_form} *}
 
 lemma mod_form_to_raw [forward]: "mod_form(M) \<Longrightarrow> is_mod_raw(M)" by auto2
 
@@ -92,7 +90,6 @@ definition is_mod :: "i \<Rightarrow> o" where [rewrite]:
     (\<forall>a\<in>.R. \<forall>x\<in>.M. \<forall>y\<in>.M. a \<bullet>\<^sub>M (x +\<^sub>M y) = a \<bullet>\<^sub>M x +\<^sub>M a \<bullet>\<^sub>M y) \<and>
     (\<forall>a\<in>.R. \<forall>b\<in>.R. \<forall>x\<in>.M. (a *\<^sub>R b) \<bullet>\<^sub>M x = a \<bullet>\<^sub>M (b \<bullet>\<^sub>M x)) \<and>
     (\<forall>x\<in>.M. \<one>\<^sub>R \<bullet>\<^sub>M x = x))"
-setup {* add_property_const @{term is_mod} *}
 
 lemma is_modD1 [forward]:
   "is_mod(M) \<Longrightarrow> is_ring(mod_ring(M))"

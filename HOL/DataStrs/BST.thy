@@ -46,7 +46,6 @@ fun tree_sorted :: "('a::linorder, 'b) tree \<Rightarrow> bool" where
 | "tree_sorted (Node l k v r) = ((\<forall>x\<in>tree_set l. x < k) \<and> (\<forall>x\<in>tree_set r. k < x)
                               \<and> tree_sorted l \<and> tree_sorted r)"
 setup {* fold add_rewrite_rule @{thms tree_sorted.simps} *}
-setup {* add_property_const @{term tree_sorted} *}
 
 lemma tree_sorted_lr [forward]:
   "tree_sorted (Node l k v r) \<Longrightarrow> tree_sorted l \<and> tree_sorted r" by auto2

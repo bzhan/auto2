@@ -13,7 +13,6 @@ setup {* register_wellform_data ("dist(X,x,y)", ["x \<in>. X", "y \<in>. X"]) *}
   
 definition is_metric_space_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_metric_space_raw(X) \<longleftrightarrow> (\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) \<in> real)"
-setup {* add_property_const @{term is_metric_space_raw} *}
   
 lemma is_metric_space_rawI [backward]:
   "\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) \<in> real \<Longrightarrow> is_metric_space_raw(X)" by auto2
@@ -27,7 +26,6 @@ definition is_metric_space :: "i \<Rightarrow> o" where [rewrite]:
     ((\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) = 0\<^sub>\<real> \<longleftrightarrow> x = y) \<and>
      (\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) = dist(X,y,x)) \<and>
      (\<forall>x\<in>.X. \<forall>y\<in>.X. \<forall>z\<in>.X. dist(X,x,y) +\<^sub>\<real> dist(X,y,z) \<ge>\<^sub>\<real> dist(X,x,z)))"
-setup {* add_property_const @{term is_metric_space} *}
   
 lemma is_metric_spaceD1 [forward]:
   "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> dist(X,x,y) = 0\<^sub>\<real> \<Longrightarrow> x = y" by auto2
@@ -143,7 +141,6 @@ lemma metric_top_space_is_topology [forward]:
 definition is_metric_top_space :: "i \<Rightarrow> o" where [rewrite]:
   "is_metric_top_space(X) \<longleftrightarrow> (is_metric_space(X) \<and> is_top_space(X) \<and>
     open_sets(X) = top_from_basis(metric_basis(X)))"
-setup {* add_property_const @{term is_metric_top_space} *}
 
 lemma metric_top_space_is_metric_top [forward]:
   "is_metric_space(A) \<Longrightarrow> is_metric_top_space(metric_top_space(A))"

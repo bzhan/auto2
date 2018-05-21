@@ -6,7 +6,6 @@ section {* Paths and homotopy between paths *}
 
 definition is_path :: "i \<Rightarrow> o" where [rewrite_bidir]:
   "is_path(f) \<longleftrightarrow> (f \<in> I \<rightharpoonup>\<^sub>T target_str(f))"
-setup {* add_property_const @{term is_path} *}
 
 definition is_path_homotopy :: "[i, i, i] \<Rightarrow> o" where [rewrite]:
   "is_path_homotopy(f,g,F) \<longleftrightarrow> (is_path(f) \<and> is_path(g) \<and> is_homotopy(f,g,F) \<and>
@@ -219,7 +218,6 @@ setup {* del_prfstep_thm @{thm linear_homotopy_eq} *}
 definition simply_connected :: "i \<Rightarrow> o" where [rewrite]:
   "simply_connected(X) \<longleftrightarrow> (is_top_space(X) \<and>
     (\<forall>f\<in>I\<rightharpoonup>\<^sub>TX. \<forall>g\<in>I\<rightharpoonup>\<^sub>TX. f`(0\<^sub>\<real>) = g`(0\<^sub>\<real>) \<longrightarrow> f`(1\<^sub>\<real>) = g`(1\<^sub>\<real>) \<longrightarrow> path_homotopic(f,g)))"
-setup {* add_property_const @{term simply_connected} *}
   
 lemma simply_connectedI [forward]:
   "is_top_space(X) \<Longrightarrow> \<forall>f\<in>I\<rightharpoonup>\<^sub>TX. \<forall>g\<in>I\<rightharpoonup>\<^sub>TX. f`(0\<^sub>\<real>) = g`(0\<^sub>\<real>) \<longrightarrow> f`(1\<^sub>\<real>) = g`(1\<^sub>\<real>) \<longrightarrow> path_homotopic(f,g) \<Longrightarrow>

@@ -18,7 +18,6 @@ setup {* add_prop_induct_rule @{thm rep_of.pinduct} *}
 
 definition ufa_invar :: "nat list \<Rightarrow> bool" where [rewrite]:
   "ufa_invar l = (\<forall>i<length l. rep_of_dom (l, i) \<and> l ! i < length l)"
-setup {* add_property_const @{term ufa_invar} *}
 
 lemma ufa_invarD:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of_dom (l, i) \<and> l ! i < length l" by auto2

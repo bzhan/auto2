@@ -14,7 +14,6 @@ definition is_open :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite_bidir]:
 
 definition is_top_space_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_top_space_raw(X) \<longleftrightarrow> open_sets(X) \<subseteq> Pow(carrier(X))"
-setup {* add_property_const @{term is_top_space_raw} *}
 
 lemma is_top_space_rawI [backward]:
   "T \<subseteq> Pow(S) \<Longrightarrow> is_top_space_raw(\<langle>S,T,x1\<rangle>)" by auto2
@@ -24,7 +23,6 @@ setup {* del_prfstep_thm @{thm is_top_space_raw_def} *}
 
 definition top_space_form :: "i \<Rightarrow> o" where [rewrite]:
   "top_space_form(X) \<longleftrightarrow> (is_top_space_raw(X) \<and> X = \<langle>carrier(X),open_sets(X),\<emptyset>\<rangle>)"
-setup {* add_property_const @{term top_space_form} *}
 
 lemma top_space_form_to_raw [forward]: "top_space_form(X) \<Longrightarrow> is_top_space_raw(X)" by auto2
 
@@ -63,7 +61,6 @@ section {* Definition of a topological space *}
 
 definition union_closed :: "i \<Rightarrow> o" where [rewrite]:
   "union_closed(X) \<longleftrightarrow> (\<forall>C. (\<forall>x\<in>source(C). is_open(X,C`x)) \<longrightarrow> is_open(X,\<Union>x\<in>source(C).C`x))"
-setup {* add_property_const @{term union_closed} *}
   
 lemma union_closedD1 [backward]:
   "union_closed(X) \<Longrightarrow> \<forall>U\<in>C. is_open(X,U) \<Longrightarrow> is_open(X,\<Union>C)"
@@ -81,7 +78,6 @@ setup {* del_prfstep_thm @{thm union_closed_def} *}
 
 definition finite_inter_closed :: "i \<Rightarrow> o" where [rewrite]:
   "finite_inter_closed(X) \<longleftrightarrow> (\<forall>U V. is_open(X,U) \<longrightarrow> is_open(X,V) \<longrightarrow> is_open(X,U \<inter> V))"
-setup {* add_property_const @{term finite_inter_closed} *}
   
 lemma finite_inter_closedD [backward1,backward2]:
   "finite_inter_closed(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> is_open(X,V) \<Longrightarrow> is_open(X,U \<inter> V)" by auto2
@@ -90,7 +86,6 @@ setup {* del_prfstep_thm_eqforward @{thm finite_inter_closed_def} *}
 definition is_top_space :: "i \<Rightarrow> o" where [rewrite]:
   "is_top_space(X) \<longleftrightarrow> (is_top_space_raw(X) \<and> is_open(X,\<emptyset>) \<and> is_open(X,carrier(X)) \<and>
                         union_closed(X) \<and> finite_inter_closed(X))"
-setup {* add_property_const @{term is_top_space} *}
 
 lemma is_top_spaceD1 [forward]:
   "is_top_space(X) \<Longrightarrow> is_top_space_raw(X)"
@@ -130,7 +125,6 @@ section {* Constructing a topological space from a basis *}
   
 definition collection_is_basis :: "i \<Rightarrow> o" where [rewrite]:
   "collection_is_basis(\<B>) \<longleftrightarrow> (\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. \<forall>x\<in>U\<inter>V. \<exists>W\<in>\<B>. x\<in>W \<and> W\<subseteq>U\<inter>V)"
-setup {* add_property_const @{term collection_is_basis} *}
   
 lemma collection_is_basisD [backward2]:
   "collection_is_basis(\<B>) \<Longrightarrow> x \<in> U \<inter> V \<Longrightarrow> U \<in> \<B> \<Longrightarrow> V \<in> \<B> \<Longrightarrow> \<exists>W\<in>\<B>. x \<in> W \<and> W \<subseteq> U \<inter> V" by auto2
@@ -399,7 +393,6 @@ section {* Continuous functions *}
 
 definition is_morphism_top :: "i \<Rightarrow> o" where [rewrite]:
   "is_morphism_top(f) \<longleftrightarrow> (is_morphism(f) \<and> is_top_space(source_str(f)) \<and> is_top_space(target_str(f)))"
-setup {* add_property_const @{term is_morphism_top} *}
 
 lemma is_morphism_topD [forward]:
   "is_morphism_top(f) \<Longrightarrow> is_morphism(f)"
@@ -413,7 +406,6 @@ setup {* del_prfstep_thm @{thm is_morphism_top_def} *}
 definition continuous :: "i \<Rightarrow> o" where [rewrite]:
   "continuous(f) \<longleftrightarrow> (is_morphism_top(f) \<and>
                       (\<forall>V\<in>open_sets(target_str(f)). is_open(source_str(f), f -`` V)))"
-setup {* add_property_const @{term continuous} *}
 
 lemma continuousD1 [forward]:
   "continuous(f) \<Longrightarrow> is_morphism_top(f)" by auto2
@@ -601,7 +593,6 @@ section {* Homeomorphisms *}
   
 definition homeomorphism :: "i \<Rightarrow> o" where [rewrite]:
   "homeomorphism(f) \<longleftrightarrow> (is_morphism_top(f) \<and> bijective(f) \<and> continuous(f) \<and> continuous(inverse_mor(f)))"
-setup {* add_property_const @{term homeomorphism} *}
 
 lemma top_inverse_pair_homeomorphism [forward]:
   "mor_form(g) \<Longrightarrow> mor_form(f) \<Longrightarrow> continuous(f) \<Longrightarrow> continuous(g) \<Longrightarrow> inverse_mor_pair(f,g) \<Longrightarrow>

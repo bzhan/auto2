@@ -45,7 +45,6 @@ section {* Real numbers as a ring *}
 
 definition nonneg_real :: "i \<Rightarrow> o" where [rewrite]:
   "nonneg_real(x) \<longleftrightarrow> nonneg_seq(rep(\<R>,x))"
-setup {* add_property_const @{term nonneg_real} *}
 
 definition nonneg_reals :: i where [rewrite]:
   "nonneg_reals = {x\<in>real. nonneg_real(x)}"

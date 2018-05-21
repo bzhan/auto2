@@ -86,7 +86,6 @@ lemma singleton_disjoint [backward]: "a \<noteq> b \<Longrightarrow> {a} \<inter
 
 definition mutually_disjoint :: "i \<Rightarrow> o" where [rewrite]:
   "mutually_disjoint(X) \<longleftrightarrow> (\<forall>a\<in>source(X). \<forall>b\<in>source(X). a \<noteq> b \<longrightarrow> X`a \<inter> X`b = \<emptyset>)"
-setup {* add_property_const @{term mutually_disjoint} *}
 
 lemma mutually_disjointD:
   "mutually_disjoint(X) \<Longrightarrow> a \<in> source(X) \<Longrightarrow> b \<in> source(X) \<Longrightarrow> a \<noteq> b \<Longrightarrow> X`a \<inter> X`b = \<emptyset>" by auto2
@@ -114,7 +113,6 @@ lemma glue_fun_on_mut_disj [backward1]:
 (* For partitions, usually definition in terms of sets is more convenient *)
 definition mutually_disjoint_sets :: "i \<Rightarrow> o" where [rewrite]:
   "mutually_disjoint_sets(X) \<longleftrightarrow> (\<forall>a\<in>X. \<forall>b\<in>X. a \<noteq> b \<longrightarrow> a \<inter> b = \<emptyset>)"
-setup {* add_property_const @{term mutually_disjoint_sets} *}
 
 definition is_partition_sets :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "is_partition_sets(E,X) \<longleftrightarrow> (E = \<Union>X \<and> mutually_disjoint_sets(X))"

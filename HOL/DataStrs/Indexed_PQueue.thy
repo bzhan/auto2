@@ -51,7 +51,6 @@ section {* Heap property *}
 (* The corresponding tree is a heap. *)
 definition is_heap :: "('a \<times> 'b::linorder) list \<Rightarrow> bool" where [rewrite]:
   "is_heap xs = (\<forall>i j. eq_pred i j \<longrightarrow> j < length xs \<longrightarrow> snd (xs ! i) \<le> snd (xs ! j))"
-setup {* add_property_const @{term is_heap} *}
 
 lemma is_heapD:
   "is_heap xs \<Longrightarrow> j < length xs \<Longrightarrow> eq_pred i j \<Longrightarrow> snd (xs ! i) \<le> snd (xs ! j)" by auto2
@@ -130,7 +129,6 @@ fun index_of_pqueue :: "'a idx_pqueue \<Rightarrow> bool" where
     (\<forall>i<length xs. fst (xs ! i) < length m \<and> m ! (fst (xs ! i)) = Some i) \<and>
     (\<forall>i. \<forall>k<length m. m ! k = Some i \<longrightarrow> i < length xs \<and> fst (xs ! i) = k))"
 setup {* add_rewrite_rule @{thm index_of_pqueue.simps} *}
-setup {* add_property_const @{term index_of_pqueue} *}
 
 lemma index_of_pqueueD1:
   "i < length xs \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>

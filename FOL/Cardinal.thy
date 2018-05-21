@@ -111,7 +111,6 @@ definition cardinal :: "i \<Rightarrow> i" where [rewrite]:
 
 definition card :: "i \<Rightarrow> o" where [rewrite]:
   "card(i) \<longleftrightarrow> (i = cardinal(i))"
-setup {* add_property_const @{term card} *}
 
 section \<open>Basic properties of cardinals\<close>
 

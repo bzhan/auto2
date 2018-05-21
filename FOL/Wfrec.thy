@@ -11,7 +11,6 @@ setup {* del_prfstep_thm_eqforward @{thm ord_minimal_def} *}
 
 definition wf :: "i \<Rightarrow> o" where [rewrite]:
   "wf(r) \<longleftrightarrow> refl_order(r) \<and> (\<forall>Z. Z \<subseteq> carrier(r) \<longrightarrow> Z \<noteq> \<emptyset> \<longrightarrow> (\<exists>x\<in>Z. ord_minimal(r,Z,x)))"
-setup {* add_property_const @{term wf} *}
 
 lemma wfD1 [forward]: "wf(r) \<Longrightarrow> refl_order(r)" by auto2
 lemma wfD2 [backward]: "wf(r) \<Longrightarrow> Z \<noteq> \<emptyset> \<Longrightarrow> \<exists>x\<in>Z. ord_minimal(r,Z,x)" by auto2

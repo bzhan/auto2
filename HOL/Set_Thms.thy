@@ -118,7 +118,6 @@ setup {* add_forward_prfstep_cond @{thm member_notin_contra} [with_term "?S - {?
 
 subsection {* Results on finite sets *}
 
-setup {* add_property_const @{term finite} *}
 setup {* add_resolve_prfstep @{thm Finite_Set.finite.emptyI} *}
 lemma set_finite_single [resolve]: "finite {x}" by simp
 setup {* add_rewrite_rule @{thm Finite_Set.finite_Un} *}

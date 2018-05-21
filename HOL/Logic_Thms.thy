@@ -95,11 +95,8 @@ setup {* add_rewrite_rule @{thm case_prod_beta} *}
 setup {* Normalizer.add_rewr_normalizer ("rewr_let", @{thm Let_def}) *}
 
 (* Equivalence relations *)  
-setup {* add_property_const @{term sym} *}
 setup {* add_forward_prfstep @{thm Relation.symD} *}
 setup {* add_backward_prfstep @{thm Relation.symI} *}
-
-setup {* add_property_const @{term trans} *}
 setup {* add_forward_prfstep @{thm Relation.transD} *}
 setup {* add_backward_prfstep @{thm Relation.transI} *}
 

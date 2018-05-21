@@ -19,12 +19,10 @@ setup {* fold add_property_field_const [@{term source_str}, @{term target_str}] 
 
 definition is_morphism :: "i \<Rightarrow> o" where [rewrite]:
   "is_morphism(f) \<longleftrightarrow> is_function(f) \<and> carrier(source_str(f)) = source(f) \<and> carrier(target_str(f)) = target(f)"
-setup {* add_property_const @{term is_morphism} *}
 
 definition mor_form :: "i \<Rightarrow> o" where [rewrite]:
   "mor_form(f) \<longleftrightarrow> is_morphism(f) \<and>
       f = \<langle>source(f),target(f),graph(f),source_str(f),target_str(f),\<emptyset>\<rangle>"
-setup {* add_property_const @{term mor_form} *}
 
 lemma is_morphism_gen_to_fun [forward]: "is_morphism(F) \<Longrightarrow> is_function(F)" by auto2
 lemma is_morphism_to_gen [forward]: "mor_form(F) \<Longrightarrow> is_morphism(F)" by auto2

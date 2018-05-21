@@ -6,7 +6,6 @@ section {* Fields *}
 
 definition is_field :: "i \<Rightarrow> o" where [rewrite]:
   "is_field(R) \<longleftrightarrow> (is_comm_ring(R) \<and> (\<forall>x\<in>.R. x \<noteq> \<zero>\<^sub>R \<longleftrightarrow> x \<in> units(R)))"
-setup {* add_property_const @{term is_field} *}
   
 lemma is_fieldD [forward]:
   "is_field(R) \<Longrightarrow> is_comm_ring(R)"
@@ -35,7 +34,6 @@ section {* Ordered fields *}
   
 definition is_ord_field :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_field(R) \<longleftrightarrow> (is_ord_ring(R) \<and> is_field(R))"
-setup {* add_property_const @{term is_ord_field} *}
   
 lemma is_ord_fieldD [forward]:
   "is_ord_field(R) \<Longrightarrow> is_ord_ring(R)"
@@ -149,7 +147,6 @@ section {* Archimedean Fields *}
   
 definition is_archimedean :: "i \<Rightarrow> o" where [rewrite]:
   "is_archimedean(R) \<longleftrightarrow> (is_ord_ring(R) \<and> (\<forall>x\<in>.R. \<exists>n\<in>nat. of_nat(R,n) \<ge>\<^sub>R x))"
-setup {* add_property_const @{term is_archimedean} *}
 
 lemma is_archimedeanI [forward]:
   "is_ord_ring(R) \<Longrightarrow> \<forall>x\<in>.R. \<exists>n\<in>nat. of_nat(R,n) \<ge>\<^sub>R x \<Longrightarrow> is_archimedean(R)" by auto2

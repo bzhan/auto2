@@ -195,7 +195,6 @@ section {* Injective, surjective, and bijective functions. *}
 
 definition injective :: "i \<Rightarrow> o" where [rewrite]:
   "injective(f) \<longleftrightarrow> (is_function(f) \<and> (\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y))"
-setup {* add_property_const @{term injective} *}
 
 lemma injectiveI [backward]:
   "is_function(f) \<Longrightarrow> (\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y) \<Longrightarrow> injective(f)" by auto2
@@ -206,7 +205,6 @@ lemma injectiveD [forward]:
 
 definition surjective :: "i \<Rightarrow> o" where [rewrite]:
   "surjective(f) \<longleftrightarrow> (is_function(f) \<and> image(f) = target(f))"
-setup {* add_property_const @{term surjective} *}
   
 lemma surjectiveD:
   "surjective(f) \<Longrightarrow> is_function(f)"
@@ -224,7 +222,6 @@ lemma surjectiveI' [forward]:
 
 definition bijective :: "i \<Rightarrow> o" where [rewrite]:
   "bijective(f) \<longleftrightarrow> (injective(f) \<and> surjective(f))"
-setup {* add_property_const @{term bijective} *}
 
 lemma bijectiveD [forward]:
   "bijective(f) \<Longrightarrow> injective(f)"
@@ -537,7 +534,6 @@ setup {* del_prfstep_thm @{thm curry_def} *}
 (* Constant functions *)
 definition is_const_fun :: "i \<Rightarrow> o" where [rewrite]:
   "is_const_fun(f) \<longleftrightarrow> (\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y)"
-setup {* add_property_const @{term is_const_fun} *}
 
 lemma is_const_funD [forward]:
   "is_const_fun(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> y \<in> source(f) \<Longrightarrow> f`x = f`y" by auto2

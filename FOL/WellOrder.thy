@@ -55,7 +55,6 @@ section {* Well-ordered sets *}  (* Bourbaki III.2.1 *)
 (* Definition of well_order *)
 definition well_order :: "i \<Rightarrow> o" where [rewrite]:
   "well_order(R) \<longleftrightarrow> linorder(R) \<and> wf(R)"
-setup {* add_property_const @{term well_order} *}
 
 (* With linorder condition, wf is equivalent to the condition that each
    nonempty subset has a least element. We use this condition here. *)
@@ -184,7 +183,6 @@ definition is_segment_rel :: "[i, i] \<Rightarrow> o" where [rewrite]:
 definition well_order_family :: "i \<Rightarrow> o" where [rewrite]:
   "well_order_family(X) \<longleftrightarrow> ((\<forall>R\<in>X. well_order(R)) \<and>
     (\<forall>R\<in>X. \<forall>S\<in>X. is_segment_rel(R,S) \<or> is_segment_rel(S,R)))"
-setup {* add_property_const @{term well_order_family} *}
 
 lemma well_order_familyD [forward]:
   "well_order_family(X) \<Longrightarrow> R \<in> X \<Longrightarrow> well_order(R)"
@@ -360,7 +358,6 @@ section {* Zorn's lemma *}  (* Bourbaki III.2.4 *)
 definition inductive_order :: "i \<Rightarrow> o" where [rewrite]:
   "inductive_order(R) \<longleftrightarrow> (order(R) \<and>
     (\<forall>X. X \<subseteq> carrier(R) \<longrightarrow> linorder(suborder(R,X)) \<longrightarrow> upper_bound(R,X) \<noteq> \<emptyset>))"
-setup {* add_property_const @{term inductive_order} *}
 
 lemma inductive_orderE1 [forward]: "inductive_order(R) \<Longrightarrow> order(R)" by auto2
 lemma inductive_orderE2 [backward]:

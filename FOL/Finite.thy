@@ -40,7 +40,6 @@ section {* Cardinality on finite sets *}
   
 definition finite :: "i \<Rightarrow> o" where [rewrite]:
   "finite(X) \<longleftrightarrow> (\<exists>n\<in>nat. X \<approx>\<^sub>S [n])"
-setup {* add_property_const @{term finite} *}
 
 lemma finiteI [forward]: "n \<in> nat \<Longrightarrow> X \<approx>\<^sub>S [n] \<Longrightarrow> finite(X)" by auto2
 lemma finiteD [backward]: "finite(X) \<Longrightarrow> \<exists>n\<in>nat. X \<approx>\<^sub>S [n]" by auto2

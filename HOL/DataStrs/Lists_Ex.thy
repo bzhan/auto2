@@ -28,7 +28,6 @@ section {* Strict sorted *}
 fun strict_sorted :: "'a::linorder list \<Rightarrow> bool" where
   "strict_sorted [] = True"
 | "strict_sorted (x # ys) = ((\<forall>y\<in>set ys. x < y) \<and> strict_sorted ys)"
-setup {* add_property_const @{term strict_sorted} *}
 setup {* fold add_rewrite_rule @{thms strict_sorted.simps} *}
 
 lemma strict_sorted_appendI [backward]:

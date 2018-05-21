@@ -81,7 +81,6 @@ section {* Continuous maps on the reals *}
   
 definition real_fun :: "i \<Rightarrow> o" where [rewrite]:
   "real_fun(f) \<longleftrightarrow> (f \<in> \<real> \<rightharpoonup> \<real>)"
-setup {* add_property_const @{term real_fun} *}
 
 definition real_continuous_at :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "real_continuous_at(f,x) \<longleftrightarrow> (\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c)"

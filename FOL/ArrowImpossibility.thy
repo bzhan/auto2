@@ -16,7 +16,6 @@ lemma distinct3_perms [resolve]:
   
 definition card_ge3 :: "i \<Rightarrow> o" where [rewrite]:
   "card_ge3(X) \<longleftrightarrow> (\<exists>a b c. distinct3(X,a,b,c))"
-setup {* add_property_const @{term card_ge3} *}
 
 lemma card_ge3I [resolve]: "distinct3(X,a,b,c) \<Longrightarrow> card_ge3(X)" by auto2
 lemma card_ge3_D1 [resolve]: "card_ge3(X) \<Longrightarrow> \<exists>a b c. distinct3(X,a,b,c)" by auto2

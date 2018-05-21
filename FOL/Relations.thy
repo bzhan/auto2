@@ -7,12 +7,10 @@ section {* Relations *}
 (* General predicate on relations. *)
 definition is_rel2 :: "i \<Rightarrow> o" where [rewrite]:
   "is_rel2(\<Gamma>) \<longleftrightarrow> graph(\<Gamma>) \<in> Pow(source(\<Gamma>)\<times>target(\<Gamma>))"
-setup {* add_property_const @{term is_rel2} *}
 
 (* Strict predicate on relations. *)
 definition rel_form :: "i \<Rightarrow> o" where [rewrite]:
   "rel_form(\<Gamma>) \<longleftrightarrow> is_rel2(\<Gamma>) \<and> \<Gamma> = \<langle>source(\<Gamma>),target(\<Gamma>),graph(\<Gamma>),\<emptyset>\<rangle>"
-setup {* add_property_const @{term rel_form} *}
   
 lemma is_rel2_from_form [forward]: "rel_form(\<Gamma>) \<Longrightarrow> is_rel2(\<Gamma>)" by auto2
 
@@ -62,7 +60,6 @@ abbreviation Rel :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Right
 
 definition is_rel :: "i \<Rightarrow> o" where [rewrite]:
   "is_rel(R) \<longleftrightarrow> is_rel2(R) \<and> source(R) = target(R)"
-setup {* add_property_const @{term is_rel} *}
 
 lemma is_relD [forward]:
   "is_rel(R) \<Longrightarrow> is_rel2(R)"

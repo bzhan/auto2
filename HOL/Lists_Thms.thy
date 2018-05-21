@@ -72,7 +72,6 @@ setup {* add_forward_prfstep_cond @{thm nth_mem} [with_term "?xs ! ?n"] *}
 
 section {* sorted *}
 
-setup {* add_property_const @{term sorted} *}
 setup {* fold add_resolve_prfstep [@{thm sorted.Nil}, @{thm sorted_single}] *}
 setup {* add_backward_prfstep (equiv_backward_th @{thm sorted_Cons}) *}
 
@@ -108,8 +107,6 @@ lemma sort_Nil [rewrite]: "sort [] = []" by auto
 lemma sort_singleton [rewrite]: "sort [a] = [a]" by auto
 
 section {* distinct *}
-
-setup {* add_property_const @{term distinct} *}
   
 lemma distinct_Nil [resolve]: "distinct []" by simp
 setup {* add_resolve_prfstep @{thm List.distinct_singleton} *}

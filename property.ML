@@ -1,7 +1,5 @@
 (* Theory data for properties. This data consists of the following parts:
 
-   - A table containing the list of predicates that are properties.
-
    - Two tables containing property update rules.
 
    - A table containing list of fields that can have properties.
@@ -9,9 +7,7 @@
 
 signature PROPERTY =
 sig
-  (* About the PropertyData table. *)
-  val add_property_const: term -> theory -> theory
-  val is_property: theory -> term -> bool
+  val is_property: term -> bool
   val add_property_field_const: term -> theory -> theory
   val is_property_field: theory -> term -> bool
   val strip_property_field: theory -> term -> term list
@@ -33,14 +29,6 @@ end;
 
 structure Property : PROPERTY =
 struct
-
-(* List of predicates that are properties. *)
-structure Data = Theory_Data (
-  type T = unit Symtab.table;
-  val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge (K true)
-)
 
 (* Rules deriving new properties of t from other properties of t. They
    are indexed under the names of the properties in the premises.
@@ -74,24 +62,8 @@ structure FieldData = Theory_Data (
   val merge = Symtab.merge (K true)
 )
 
-(* Insert the given constant as a property. The constant must be of
-   type "'a => bool".
- *)
-fun add_property_const t thy =
-    case Term.head_of t of
-        Const (c, T) =>
-        let
-          val (pTs, cT) = Term.strip_type T
-          val _ = if cT = boolT andalso length pTs = 1 then ()
-                  else error "Add property: input should be a predicate."
-          val _ = writeln ("Add predicate " ^ c ^ " as property.")
-        in
-          thy |> Data.map (Symtab.update_new (c, ()))
-        end
-      | _ => error "Add property: input should be a constant."
-
 (* Whether the term is a property predicate applied to a term. *)
-fun is_property thy t =
+fun is_property t =
     let
       val _ = assert (fastype_of t = boolT) "is_property: wrong type"
       val (f, ts) = Term.strip_comb t
@@ -146,7 +118,7 @@ fun strip_property_field thy t =
    schematic variable (up to property fields).
  *)
 fun is_property_prem thy t =
-    is_property thy t andalso is_property_field thy (dest_arg t)
+    is_property t andalso is_property_field thy (dest_arg t)
 
 val get_property_name = Util.get_head_name
 
@@ -198,7 +170,7 @@ fun can_add_property_update th thy =
     let
       val (prems, concl) = UtilLogic.strip_horn' th
     in
-      if is_property thy concl andalso forall (is_property_prem thy) prems
+      if is_property concl andalso forall (is_property_prem thy) prems
       then let
         val concl_arg = get_property_arg concl
         val all_vars = map Var (Term.add_vars (Thm.prop_of th) [])
@@ -223,7 +195,7 @@ fun can_add_property_update th thy =
 fun add_property_update th thy =
     let
       val (prems, concl) = UtilLogic.strip_horn' th
-      val _ = assert (is_property thy concl)
+      val _ = assert (is_property concl)
                      "add_property_update: concl must be a property constant."
       val _ = assert (forall (is_property_prem thy) prems)
                      "add_property_update: prem must be a property premise."
@@ -300,5 +272,4 @@ fun instantiate_property_update ctxt t th =
 
 end  (* structure Property. *)
 
-val add_property_const = Property.add_property_const
 val add_property_field_const = Property.add_property_field_const
