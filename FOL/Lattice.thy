@@ -186,7 +186,7 @@ lemma product_ord_is_order [forward]:
   "order(R) \<Longrightarrow> order(S) \<Longrightarrow> order(R \<times>\<^sub>O S)" by auto2
 
 lemma product_ord_eval [rewrite]:
-  "T = R \<times>\<^sub>O S \<Longrightarrow> x \<le>\<^sub>T y \<longleftrightarrow> (x \<in>. T \<and> y \<in>. T \<and> fst(x) \<le>\<^sub>R fst(y) \<and> snd(x) \<le>\<^sub>S snd(y))" by auto2
+  "T = R \<times>\<^sub>O S \<Longrightarrow> x \<in>. T \<Longrightarrow> y \<in>. T \<Longrightarrow> x \<le>\<^sub>T y \<longleftrightarrow> (fst(x) \<le>\<^sub>R fst(y) \<and> snd(x) \<le>\<^sub>S snd(y))" by auto2
 setup {* del_prfstep_thm @{thm product_ord_def} *}
 
 (* Product of two lattices is a lattice. *)
@@ -208,11 +208,19 @@ lemma product_ord_is_lattice [forward]:
 
 lemma product_ord_join_eval [rewrite]:
   "lattice(R) \<Longrightarrow> lattice(S) \<Longrightarrow> T = R \<times>\<^sub>O S \<Longrightarrow> x \<in>. T \<Longrightarrow> y \<in>. T \<Longrightarrow>
-   x \<squnion>\<^sub>T y = \<langle>fst(x) \<squnion>\<^sub>R fst(y), snd(x) \<squnion>\<^sub>S snd(y)\<rangle>" by auto2
-  
+   x \<squnion>\<^sub>T y = \<langle>fst(x) \<squnion>\<^sub>R fst(y), snd(x) \<squnion>\<^sub>S snd(y)\<rangle>"
+@proof
+  @have "\<langle>fst(x) \<squnion>\<^sub>R fst(y), snd(x) \<squnion>\<^sub>S snd(y)\<rangle> \<ge>\<^sub>T x"
+  @have "\<langle>fst(x) \<squnion>\<^sub>R fst(y), snd(x) \<squnion>\<^sub>S snd(y)\<rangle> \<ge>\<^sub>T y"
+@qed
+
 lemma product_ord_meet_eval [rewrite]:
   "lattice(R) \<Longrightarrow> lattice(S) \<Longrightarrow> T = R \<times>\<^sub>O S \<Longrightarrow> x \<in>. T \<Longrightarrow> y \<in>. T \<Longrightarrow>
-   x \<sqinter>\<^sub>T y = \<langle>fst(x) \<sqinter>\<^sub>R fst(y), snd(x) \<sqinter>\<^sub>S snd(y)\<rangle>" by auto2
+   x \<sqinter>\<^sub>T y = \<langle>fst(x) \<sqinter>\<^sub>R fst(y), snd(x) \<sqinter>\<^sub>S snd(y)\<rangle>"
+@proof
+  @have "\<langle>fst(x) \<sqinter>\<^sub>R fst(y), snd(x) \<sqinter>\<^sub>S snd(y)\<rangle> \<le>\<^sub>T x"
+  @have "\<langle>fst(x) \<sqinter>\<^sub>R fst(y), snd(x) \<sqinter>\<^sub>S snd(y)\<rangle> \<le>\<^sub>T y"
+@qed
 
 lemma product_ord_distrib_lattice [forward]:
   "distributive_lattice(R) \<Longrightarrow> distributive_lattice(S) \<Longrightarrow> distributive_lattice(R \<times>\<^sub>O S)" by auto2
