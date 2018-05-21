@@ -990,7 +990,7 @@ fun property_normalizer ctxt ritem =
           val thy = Proof_Context.theory_of ctxt
           val prop' = prop_of' th
         in
-          if Property.is_property_const thy prop' then
+          if Property.is_property thy prop' then
             [Fact (TY_PROPERTY, [prop'], th)]
           else [ritem]
         end

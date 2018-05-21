@@ -2,7 +2,7 @@
 
    - A table containing the list of predicates that are properties.
 
-   - A table containing the list of property update rules.
+   - Two tables containing property update rules.
 
    - A table containing list of fields that can have properties.
  *)
@@ -11,7 +11,7 @@ signature PROPERTY =
 sig
   (* About the PropertyData table. *)
   val add_property_const: term -> theory -> theory
-  val is_property_const: theory -> term -> bool
+  val is_property: theory -> term -> bool
   val add_property_field_const: term -> theory -> theory
   val is_property_field: theory -> term -> bool
   val strip_property_field: theory -> term -> term list
@@ -27,6 +27,7 @@ sig
   val can_add_property_update: thm -> theory -> bool
   val add_property_update: thm -> theory -> theory
   val lookup_property_update: theory -> string -> thm list
+  val lookup_property_update_fun: theory -> string -> thm list
   val instantiate_property_update: Proof.context -> term -> thm -> thm option
 end;
 
@@ -41,13 +42,21 @@ structure Data = Theory_Data (
   val merge = Symtab.merge (K true)
 )
 
-(* Rules deriving new properties of t from other properties of t, or
-   properties of f x_1 ... x_n from properties of x_1, ... x_n. In the
-   first case, they are indexed under the names of the properties in
-   the premises. In the second case, they are indexed under the name
-   of the head function f.
+(* Rules deriving new properties of t from other properties of t. They
+   are indexed under the names of the properties in the premises.
  *)
 structure UpdateData = Theory_Data (
+  type T = (thm list) Symtab.table;
+  val empty = Symtab.empty;
+  val extend = I;
+  val merge = Symtab.merge_list Thm.eq_thm_prop
+)
+
+(* Rules for deriving properties of f x_1 ... x_n from properties of
+   x_1, ... x_n. They are indexed under the name of the head function
+   f.
+ *)
+structure UpdateFunData = Theory_Data (
   type T = (thm list) Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
@@ -82,9 +91,9 @@ fun add_property_const t thy =
       | _ => error "Add property: input should be a constant."
 
 (* Whether the term is a property predicate applied to a term. *)
-fun is_property_const thy t =
+fun is_property thy t =
     let
-      val _ = assert (fastype_of t = boolT) "is_property_const: wrong type"
+      val _ = assert (fastype_of t = boolT) "is_property: wrong type"
     in
       case Term.head_of t of
           Const (c, _) => Symtab.defined (Data.get thy) c
@@ -115,6 +124,11 @@ fun is_property_field thy t =
         Symtab.defined (FieldData.get thy) c andalso is_property_field thy t'
       | _ => false
 
+(* Given a term t, return all possible ways to strip property field
+   constants from t. For example, if t is of the form f1(f2(x)), where
+   f1 and f2 are property constants, then the result is [f1(f2(x)),
+   f2(x), x].
+ *)
 fun strip_property_field thy t =
     case t of
         Const (c, _) $ t' =>
@@ -123,26 +137,29 @@ fun strip_property_field thy t =
         else [t]
       | _ => [t]
 
-(* Stricter condition than is_property_const: the argument must be a
+(* Stricter condition than is_property: the argument must be a
    schematic variable (up to property fields).
  *)
 fun is_property_prem thy t =
-    is_property_const thy t andalso is_property_field thy (dest_arg t)
+    is_property thy t andalso is_property_field thy (dest_arg t)
 
 val get_property_name = Util.get_head_name
 
 fun get_property_names ts =
     ts |> map get_property_name |> distinct (op =)
 
+(* Return the argument of the property. *)
 fun get_property_arg t =
     dest_arg t
     handle Fail "dest_arg" => raise Fail "get_property_arg: t in wrong form."
 
+(* Return the argument of the property theorem as a cterm. *)
 fun get_property_arg_th th =
     Thm.dest_arg (cprop_of' th)
     handle CTERM _ => raise Fail "get_property_carg"
          | Fail "dest_Trueprop" => raise Fail "get_property_carg"
 
+(* As in strip_property_field, except working with cterms. *)
 fun cstrip_property_field thy ct =
     case Thm.term_of ct of
         Const (c, _) $ _ =>
@@ -151,6 +168,7 @@ fun cstrip_property_field thy ct =
         else [ct]
       | _ => [ct]
 
+(* Return the complete list of arguments, considering property fields. *)
 fun get_property_arg_th_gen th =
     let
       val thy = Thm.theory_of_thm th
@@ -175,25 +193,32 @@ fun can_add_property_update th thy =
     let
       val (prems, concl) = UtilLogic.strip_horn' th
     in
-      if is_property_const thy concl andalso forall (is_property_prem thy) prems
+      if is_property thy concl andalso forall (is_property_prem thy) prems
       then let
         val concl_arg = get_property_arg concl
         val all_vars = map Var (Term.add_vars (Thm.prop_of th) [])
       in
-        if is_Var concl_arg then length all_vars = 1
-        else let
-          val args = Util.dest_args concl_arg
-        in
-          forall is_Var args andalso subset (op aconv) (all_vars, args)
-        end
+        if is_Var concl_arg then
+          (* First case: check that concl_arg is the only schematic Var. *)
+          length all_vars = 1
+        else
+          (* Second case: concl_arg is of the form f ?x1 ... ?xn. *)
+          let
+            val args = Util.dest_args concl_arg
+          in
+            forall is_Var args andalso subset (op aconv) (all_vars, args)
+          end
       end
       else false
     end
 
+(* Add the given theorem as a property update rule. Choose which table
+   to add the rule to.
+ *)
 fun add_property_update th thy =
     let
       val (prems, concl) = UtilLogic.strip_horn' th
-      val _ = assert (is_property_const thy concl)
+      val _ = assert (is_property thy concl)
                      "add_property_update: concl must be a property constant."
       val _ = assert (forall (is_property_prem thy) prems)
                      "add_property_update: prem must be a property premise."
@@ -201,18 +226,23 @@ fun add_property_update th thy =
       val all_vars = map Var (Term.add_vars (Thm.prop_of th) [])
     in
       if is_Var concl_arg then
-        (* First case. Each premise must also be about ?x. *)
+        (* First case. Each premise must also be about ?x. Add to
+           UpdateData table under the names of the predicates.
+         *)
         let
           val _ = assert (length all_vars = 1)
                          "add_property_update: extraneous Vars in th."
           val names = get_property_names prems
-          val _ = writeln ("Add property rule for " ^ (Util.string_of_list I names))
+          val _ = writeln ("Add property rule for " ^
+                           (Util.string_of_list I names))
         in
           thy |> UpdateData.map (
             fold (Symtab.update_list Thm.eq_thm_prop) (map (rpair th) names))
         end
       else
-        (* Second case. concl_arg in the form f ?x1 ... ?xn. *)
+        (* Second case. concl_arg in the form f ?x1 ... ?xn. Add to
+           UpdateFunData table under f.
+         *)
         let
           val (f, args) = Term.strip_comb concl_arg
           val c =
@@ -225,22 +255,26 @@ fun add_property_update th thy =
                          "add_property_update: extraneous Vars in th."
           val _ = writeln ("Add property rule for function " ^ c)
         in
-          thy |> UpdateData.map (
-            Symtab.update_list Thm.eq_thm_prop (c, th))
+          thy |> UpdateFunData.map (Symtab.update_list Thm.eq_thm_prop (c, th))
         end
     end
 
-(* Find rules registered under the given name. *)
+(* Find update rules of the form P1 x ==> ... ==> Pn x ==> P x, where
+   c is one of P1, ... Pn.
+ *)
 fun lookup_property_update thy c =
-    let
-      val data = UpdateData.get thy
-    in
-      Symtab.lookup_list data c
-    end
+    Symtab.lookup_list (UpdateData.get thy) c
+
+(* Find update rules of the form A1 ==> ... ==> An ==>
+   P(f(x1,...,xn)), where each A_i is a property on one of x_j. Here c
+   is the name of f.
+ *)
+fun lookup_property_update_fun thy c =
+    Symtab.lookup_list (UpdateFunData.get thy) c
 
 (* Instantiate th by matching t with the argument of the conclusion of
    th. Return NONE if instantiation is unsuccessful (because type does
-   not match)
+   not match).
  *)
 fun instantiate_property_update ctxt t th =
     let
@@ -250,9 +284,9 @@ fun instantiate_property_update ctxt t th =
     in
       if Sign.typ_instance thy (fastype_of t, fastype_of concl_arg) then
         let
+          val err_str = "instantiate_property_update: cannot match with t."
           val inst = Pattern.first_order_match thy (concl_arg, t) fo_init
-                     handle Pattern.MATCH =>
-                            raise Fail "inst_property: cannot match with t."
+                     handle Pattern.MATCH => raise Fail err_str
         in
           SOME (Util.subst_thm ctxt inst th)
         end

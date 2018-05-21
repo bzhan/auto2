@@ -477,14 +477,14 @@ val eq_tname_typed_matcher =
 val null_property_matcher =
     let
       fun pre_match pat _ ctxt =
-          Property.is_property_const (Proof_Context.theory_of ctxt) pat
+          Property.is_property (Proof_Context.theory_of ctxt) pat
 
       fun match pat _ ctxt (id, inst) =
           let
             val thy = Proof_Context.theory_of ctxt
           in
             if Util.has_vars pat then []
-            else if not (Property.is_property_const thy pat) then []
+            else if not (Property.is_property thy pat) then []
             else
               map (fn (id', th) => ((id', inst), th))
                   (PropertyData.get_property_t ctxt (id, pat))
@@ -502,15 +502,15 @@ val term_property_matcher =
           let
             val thy = Proof_Context.theory_of ctxt
           in
-            Property.is_property_const thy pat andalso
+            Property.is_property thy pat andalso
             Matcher.pre_match_head ctxt (
               Property.get_property_arg pat, the_single tname)
           end
 
       fun match pat {tname, ...} ctxt (id, inst) =
           if not (Util.has_vars pat) then [] else
-          if not (Property.is_property_const
-                      (Proof_Context.theory_of ctxt) pat) then []
+          if not (Property.is_property (Proof_Context.theory_of ctxt) pat) then
+            []
           else let
             val arg = Property.get_property_arg pat
           in

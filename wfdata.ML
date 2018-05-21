@@ -257,7 +257,7 @@ fun find_fact ctxt items (id, ct) =
       if is_eq_term t then  (* Equality case *)
         map (apsnd to_obj_eq)
             (RewriteTable.equiv_info ctxt id (cdest_eq ct))
-      else if Property.is_property_const thy t then  (* Property case *)
+      else if Property.is_property thy t then  (* Property case *)
         PropertyData.get_property ctxt (id, ct)
       else  (* General case *)
         maps match_item items

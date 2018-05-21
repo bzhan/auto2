@@ -143,8 +143,9 @@ fun apply_property_update_rule ctxt id th_opt =
                   |> map (fn (id', ths) => (id', ths MRS th))
         end
 
-(* Find relevant property updates for term t, apply these to get list
-   of new properties.
+(* Find relevant property updates for term t of the form f(x1,...x_n),
+   from new properties of x1, ... xn. Apply these to get list of new
+   properties.
  *)
 fun apply_property_update_on_term ctxt id t =
     if fastype_of t = boolT then [] else
@@ -152,7 +153,7 @@ fun apply_property_update_on_term ctxt id t =
         Const (c, _) =>
         let
           val thy = Proof_Context.theory_of ctxt
-          val updt_rules = Property.lookup_property_update thy c
+          val updt_rules = Property.lookup_property_update_fun thy c
           fun process_updt_rule th =
               th |> Property.instantiate_property_update ctxt t
                  |> apply_property_update_rule ctxt id
