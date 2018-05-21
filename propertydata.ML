@@ -1,10 +1,18 @@
+(* Table maintaining list of properties satisfied by terms currently
+   appearing in the proof.
+
+   Under each key t, maintain a list of (id, th), where th is of the
+   form P(t), with P a registered property constant.
+ *)
+
 signature PROPERTY_DATA =
 sig
   val clean_resolved: box_id -> Proof.context -> Proof.context
 
   val get_property_for_term: Proof.context -> term -> (box_id * thm) list
   val add_property_raw: box_id * thm -> Proof.context -> Proof.context
-  val convert_property: Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
+  val convert_property:
+      Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
 
   val get_property: Proof.context -> box_id * cterm -> (box_id * thm) list
   val get_property_t: Proof.context -> box_id * term -> (box_id * thm) list
@@ -29,6 +37,7 @@ structure Data = Proof_Data
   fun init _ = Termtab.empty
 )
 
+(* Remove all entries at or below id. *)
 fun clean_resolved id ctxt =
     let
       fun clean_property tb =
@@ -50,74 +59,88 @@ fun get_property_for_term ctxt t =
 fun add_property_raw (cur_info as (_, th)) ctxt =
     let
       val t = Property.get_property_arg (prop_of' th)
-      val property_t = get_property_for_term ctxt t
+      val props = get_property_for_term ctxt t
     in
-      if exists (fn info => BoxID.info_eq_better ctxt info cur_info)
-                property_t then ctxt
+      if exists (fn info => BoxID.info_eq_better ctxt info cur_info) props then
+        ctxt
       else
-        ctxt |> Data.map (
-          Termtab.update (
-            t, property_t |> filter_out (BoxID.info_eq_better ctxt cur_info)
-                          |> cons cur_info))
+        let
+          val props' = props |> filter_out (BoxID.info_eq_better ctxt cur_info)
+                             |> cons cur_info
+        in
+          ctxt |> Data.map (Termtab.update (t, props'))
+        end
     end
 
-(* Convert property P s to P t using equality s == t. Merge boxes
-   corresponding to the two theorems.
+(* Given th of the form P(s), and eq_th of the form s == t, return
+   P(t). Merge boxes corresponding to the two theorems.
  *)
 fun convert_property ctxt (id', eq_th) (id, th) =
     (BoxID.merge_boxes ctxt (id, id'),
      th |> apply_to_thm' (Conv.arg_conv (Conv.rewr_conv eq_th)))
 
-(* Attempt to retrieve property with the given statement from the table. *)
-fun get_property ctxt (id, cprop) =
+fun get_property_raw ctxt (id, prop) =
     let
-      val ct = Thm.dest_arg cprop
-      val t = Thm.term_of ct
-      fun head_agrees (_, th) =
-          Term.head_of (prop_of' th) aconv Term.head_of (Thm.term_of cprop)
-
-      val property_t =
-          if RewriteTable.in_table_raw_for_id ctxt (id, t) then
-            (get_property_for_term ctxt t)
-                |> filter head_agrees
-          else let
-            fun process_head_rep (id', eq_th) =
-                (get_property_for_term ctxt (Util.rhs_of eq_th))
-                    |> filter head_agrees
-                    |> map (convert_property ctxt (id', meta_sym eq_th))
-          in
-            (RewriteTable.subterm_simplify_info ctxt ct)
-                |> maps (RewriteTable.get_head_rep_with_id_th ctxt)
-                |> maps process_head_rep
-          end
+      val (P, t) = Term.dest_comb prop
     in
-      property_t |> BoxID.merge_box_with_info ctxt id
-                 |> Util.max_partial (BoxID.info_eq_better ctxt)
+      (get_property_for_term ctxt t)
+          |> filter (fn (_, th) => Term.head_of (prop_of' th) aconv P)
+          |> BoxID.merge_box_with_info ctxt id
+          |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
     end
 
+(* Attempt to retrieve property with the given statement from the
+   table. Here the statement is given as a certified term.
+ *)
+fun get_property ctxt (id, cprop) =
+    let
+      val (P, t) = Term.dest_comb (Thm.term_of cprop)
+    in
+      if RewriteTable.in_table_raw_for_id ctxt (id, t) then
+        get_property_raw ctxt (id, Thm.term_of cprop)
+      else let
+        val ct = Thm.dest_arg cprop
+        fun process_head_rep (id', eq_th) =
+            (get_property_raw ctxt (id, P $ Util.rhs_of eq_th))
+                |> map (convert_property ctxt (id', meta_sym eq_th))
+      in
+        (RewriteTable.subterm_simplify_info ctxt ct)
+            |> maps (RewriteTable.get_head_rep_with_id_th ctxt)
+            |> maps process_head_rep
+            |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+      end
+    end
+
+(* As above, except statement is only a term. *)
 fun get_property_t ctxt (id, prop) =
-    get_property ctxt (id, Thm.cterm_of ctxt prop)
+    let
+      val (_, t) = Term.dest_comb prop
+    in
+      if RewriteTable.in_table_raw_for_id ctxt (id, t) then
+        get_property_raw ctxt (id, prop)
+      else
+        get_property ctxt (id, Thm.cterm_of ctxt prop)
+    end
 
 (* th is an instantiated property update rule (without schematic
    variables). All premises and conclusions of th should be
-   properties. Apply this rule at id and below to get new property.
+   properties. Apply this rule at id and below to get new properties.
  *)
 fun apply_property_update_rule ctxt id th_opt =
     case th_opt of
         NONE => []
       | SOME th =>
         let
-          val cprems = map UtilLogic.dest_cTrueprop (Drule.cprems_of th)
+          val prems = map dest_Trueprop (Thm.prems_of th)
         in
-          if null cprems then [(id, th)]
-          else let
-            val p_ths = (map (get_property ctxt) (map (pair id) cprems))
-                            |> BoxID.get_all_merges_info ctxt
-                            |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
-            fun process_p_th (id', ths) = (id', ths MRS th)
-          in
-            map process_p_th p_ths
-          end
+          if null prems then
+            [(id, th)]
+          else
+            prems |> map (pair id)
+                  |> map (get_property_raw ctxt)
+                  |> BoxID.get_all_merges_info ctxt
+                  |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+                  |> map (fn (id', ths) => (id', ths MRS th))
         end
 
 (* Find relevant property updates for term t, apply these to get list
@@ -138,9 +161,9 @@ fun apply_property_update_on_term ctxt id t =
         end
       | _ => []
 
-(* Work out all consequences of updating the list of properties in the
-   rewrite table. This works in a similar manner to process_update_simp. One
-   complication is the need to apply property update rules.
+(* Work out all consequences of adding a list of properties. In
+   addition to propagating properties along equalities, need to apply
+   property update rules.
  *)
 fun process_update_property inits ctxt =
     let
@@ -154,10 +177,12 @@ fun process_update_property inits ctxt =
             val t = Property.get_property_arg (prop_of' th)
             val property_t = get_property_for_term ctxt t
           in
-            if exists (fn info => BoxID.info_eq_better ctxt info (id, th)) property_t then
+            if exists (fn info => BoxID.info_eq_better ctxt info (id, th))
+                      property_t then
               (to_process, ctxt)
             else
-              (insert eq_property (id, th) to_process, add_property_raw (id, th) ctxt)
+              (insert eq_property (id, th) to_process,
+               add_property_raw (id, th) ctxt)
           end
 
       fun update_step (to_process, ctxt) =
@@ -170,7 +195,8 @@ fun process_update_property inits ctxt =
                 (* Neighbors of t. Here th: P t, th': t = t', result: P t'. *)
                 fun process_neigh (id', eq_th) =
                     convert_property ctxt (id', eq_th) (id, th)
-                val new_property_neigh = map process_neigh (RewriteTable.equiv_neighs ctxt t)
+                val new_property_neigh =
+                    map process_neigh (RewriteTable.equiv_neighs ctxt t)
 
                 (* Derived properties of t. *)
                 val ts = Property.strip_property_field thy t
@@ -183,7 +209,8 @@ fun process_update_property inits ctxt =
                                           (Util.all_pairs (ts, updt_rules))
 
                 (* Derived properties of parent terms of t. *)
-                val parents_t = map (Thm.term_of) (RewriteTable.immediate_contains ctxt t)
+                val parents_t =
+                    map (Thm.term_of) (RewriteTable.immediate_contains ctxt t)
                 val new_property_ps =
                     maps (apply_property_update_on_term ctxt id) parents_t
               in
@@ -196,6 +223,7 @@ fun process_update_property inits ctxt =
       ([], ctxt) |> fold process_property inits |> update_step |> snd
     end
 
+(* Work out all consequences of adding an equality for the property table. *)
 fun process_rewrite_property (id, th) ctxt =
     let
       val (t1, t2) = (Util.lhs_of th, Util.rhs_of th)
@@ -209,8 +237,8 @@ fun process_rewrite_property (id, th) ctxt =
       ctxt |> process_update_property (t1_newp @ t2_newp)
     end
 
-(* First make sure t is in the table. Add property P t to the table,
-   and work out any consequences. The result is a consistent rewrite
+(* First make sure t is in the table. Add property P(t) to the table,
+   and work out any consequences. The result is a consistent property
    table.
  *)
 fun add_property (id, th) ctxt =
@@ -221,13 +249,12 @@ fun add_property (id, th) ctxt =
            |> process_update_property [(id, th)]
     end
 
-(* Return the list of new properties, as a list of (id, th). *)
+(* Return the list of properties that depend on prim_id, as a list of
+   (id, th).
+ *)
 fun get_new_property prim_id ctxt =
-    let
-      val property = Data.get ctxt
-    in
-      property |> Termtab.dest_list
-               |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
-    end
+    (Data.get ctxt)
+        |> Termtab.dest_list
+        |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
 
 end  (* structure PropertyData *)

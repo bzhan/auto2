@@ -1,3 +1,11 @@
+(* Theory data for properties. This data consists of the following parts:
+
+   - A table containing the list of predicates that are properties.
+
+   - A table containing the list of property update rules.
+
+   - A table containing list of fields that can have properties.
+ *)
 
 signature PROPERTY =
 sig
@@ -8,8 +16,6 @@ sig
   val is_property_field: theory -> term -> bool
   val strip_property_field: theory -> term -> term list
   val is_property_prem: theory -> term -> bool
-  val is_property_prem': theory -> term -> bool
-  val is_property_prem_ctxt': Proof.context -> term -> bool
   val get_property_name: term -> string
   val get_property_names: term list -> string list
   val get_property_arg: term -> term
@@ -27,8 +33,7 @@ end;
 structure Property : PROPERTY =
 struct
 
-(* Register for property predicates. *)
-
+(* List of predicates that are properties. *)
 structure Data = Theory_Data (
   type T = unit Symtab.table;
   val empty = Symtab.empty;
@@ -60,11 +65,14 @@ structure FieldData = Theory_Data (
   val merge = Symtab.merge (K true)
 )
 
+(* Insert the given constant as a property. The constant must be of
+   type "'a => bool".
+ *)
 fun add_property_const t thy =
     case Term.head_of t of
         Const (c, T) =>
         let
-          val (pTs, cT) = strip_type T
+          val (pTs, cT) = Term.strip_type T
           val _ = if cT = boolT andalso length pTs = 1 then ()
                   else error "Add property: input should be a predicate."
           val _ = writeln ("Add predicate " ^ c ^ " as property.")
@@ -83,11 +91,12 @@ fun is_property_const thy t =
         | _ => false
     end
 
+(* Insert the following constant as a property field. *)
 fun add_property_field_const t thy =
     case Term.head_of t of
         Const (c, T) =>
         let
-          val (pTs, _) = strip_type T
+          val (pTs, _) = Term.strip_type T
           val _ = if length pTs = 1 then ()
                   else error "Add property field: input should be a field."
           val _ = writeln ("Add field " ^ c ^ " as property field.")
@@ -103,8 +112,7 @@ fun is_property_field thy t =
     case t of
         Var _ => true
       | Const (c, _) $ t' =>
-        Symtab.defined (FieldData.get thy) c andalso
-        is_property_field thy t'
+        Symtab.defined (FieldData.get thy) c andalso is_property_field thy t'
       | _ => false
 
 fun strip_property_field thy t =
@@ -116,16 +124,10 @@ fun strip_property_field thy t =
       | _ => [t]
 
 (* Stricter condition than is_property_const: the argument must be a
-   schematic variable.
+   schematic variable (up to property fields).
  *)
 fun is_property_prem thy t =
     is_property_const thy t andalso is_property_field thy (dest_arg t)
-
-fun is_property_prem' thy t =
-    is_Trueprop t andalso is_property_prem thy (dest_Trueprop t)
-
-fun is_property_prem_ctxt' ctxt t =
-    is_property_prem' (Proof_Context.theory_of ctxt) t
 
 val get_property_name = Util.get_head_name
 
