@@ -95,62 +95,6 @@ fun source_info {prfstep_name, source, ...} =
 
 end  (* structure Update. *)
 
-type box = {init_assum: term,
-            handlers: (term list * term * thm) list,
-            items: (box_item * box_id list) Inttab.table}
-
-signature BOX =
-sig
-  val init_box: term -> box
-  val get_init_assum: box -> term
-
-  val add_handler: term list * term * thm -> box -> box
-  val get_handlers: box -> (term list * term * thm) list
-
-  val map_items: ((box_item * box_id list) Inttab.table ->
-                  (box_item * box_id list) Inttab.table) -> box -> box
-  val add_item: box_item -> box -> box
-  val is_item_removed: box_item * box_id list -> bool
-  val get_items: bool -> box -> box_item list
-  val lookup_item: box -> int -> (box_item * box_id list) option
-  val short_string_of_box: Proof.context -> box -> string
-end;
-
-structure Box : BOX =
-struct
-
-fun init_box init_assum =
-    {init_assum = init_assum, handlers = [], items = Inttab.empty}
-fun get_init_assum {init_assum, ...} = init_assum
-
-fun add_handler (vars, t, ex_th) {init_assum, handlers, items} =
-    {init_assum = init_assum, handlers = cons (vars, t, ex_th) handlers,
-     items = items}
-fun get_handlers {handlers, ...} = handlers
-
-fun map_items f {init_assum, handlers, items} =
-    {init_assum = init_assum, handlers = handlers, items = f items}
-
-fun add_item (item as {uid, ...}) box =
-    map_items (Inttab.update_new (uid, (item, []))) box
-    handle Inttab.DUP _ => raise Fail "add_item: item already exists."
-
-fun is_item_removed ({id, ...}, shadow_ids) =
-    member (op =) shadow_ids id
-
-fun get_items incl_removed {items, ...} =
-    items |> Inttab.dest |> map snd
-          |> (if incl_removed then I else filter_out is_item_removed)
-          |> map fst
-
-fun lookup_item {items, ...} uid =
-    Inttab.lookup items uid
-
-fun short_string_of_box ctxt {init_assum, ...} =
-    Syntax.string_of_term ctxt init_assum
-
-end  (* structure Box. *)
-
 structure Updates_Heap =
 Heap (
   type elem = update
@@ -158,8 +102,9 @@ Heap (
 )
 
 type status = {
-  uid_next: int,
-  boxes: box Boxidtab.table,
+  assums: term vector,
+  handlers: (box_id * (term list * term * thm)) list,
+  items: (box_item * box_id list) Inttab.table,
   queue: Updates_Heap.T,
   resolve_th: thm option,
   ctxt: Proof.context
@@ -168,33 +113,22 @@ type status = {
 signature STATUS =
 sig
   val empty_status: Proof.context -> status
-  val theory_of: status -> theory
-  val exist_box: status -> box_id -> bool
-  val get_box: status -> box_id -> box
 
-  val incr_uid: int -> status -> status
-  val map_box: box_id -> (box -> box) -> status -> status
   val map_context: (Proof.context -> Proof.context) -> status -> status
+  val add_handler: box_id * (term list * term * thm) -> status -> status
+  val get_handlers: status -> (box_id * (term list * term * thm)) list
+  val add_item: box_item -> status -> status
+  val get_items: status -> box_item list
+  val get_all_items_at_id: status -> box_id -> box_item list
+  val get_num_items: status -> int
   val set_resolve_th: thm -> status -> status
   val get_resolve_th: status -> thm
-  val add_prim_box: box_id -> box -> status -> int * status
+  val add_prim_box: box_id -> term -> status -> int * status
   val add_resolved: box_id -> status -> status
-  val get_all_ids: status -> box_id list
-  val get_resolved: status -> box_id list
-  val get_unresolved: status -> box_id list
-  val get_eq_ancestors: status -> box_id -> box_id list
-  val add_composite_box: box_id -> status -> status
-
-  val get_items: bool -> status -> box_id -> box_item list
   val get_init_assums: status -> box_id -> term list
-  val get_handlers: status -> box_id -> (term list * term * thm) list
-  val get_all_items: bool -> status -> box_id -> box_item list
-  val get_all_init_assums: status -> box_id -> term list
-  val get_all_handlers: status -> box_id -> (term list * term * thm) list
-  val add_item: box_item -> status -> status
-  val add_handler: box_id -> term list * term * thm -> status -> status
-  val lookup_item: status -> box_id -> int -> (box_item * box_id list) option
-  val lookup_item_all: status -> box_id -> int -> (box_item * box_id list) list
+  val get_init_assum: status -> int -> term
+
+  val lookup_item: status -> int -> (box_item * box_id list) option
   val add_shadowed: box_id * box_item -> status -> status
   val query_shadowed: status -> box_id -> box_item -> bool
   val query_removed: status -> box_item -> bool
@@ -203,7 +137,8 @@ sig
   val find_ritem_exact: status -> box_id -> raw_item -> bool
   val invoke_handler: Proof.context -> term list * term * thm -> thm -> thm
   val get_on_resolve: status -> box_id -> int -> thm -> thm
-  val find_prim_box: status -> box_id -> term -> box_id option
+  val find_prim_box: status -> box_id -> term -> int option
+
   val map_queue: (Updates_Heap.T -> Updates_Heap.T) -> status -> status
   val add_to_queue: update -> status -> status
   val delmin_from_queue: status -> status
@@ -213,51 +148,71 @@ structure Status : STATUS =
 struct
 
 fun empty_status ctxt =
-    {uid_next = 1, boxes = Boxidtab.empty, queue = Updates_Heap.empty,
-     ctxt = ctxt, resolve_th = NONE}
+    {assums = Vector.fromList [],
+     handlers = [],
+     items = Inttab.empty,
+     queue = Updates_Heap.empty,
+     ctxt = ctxt,
+     resolve_th = NONE}
 
-fun theory_of {ctxt, ...} = Proof_Context.theory_of ctxt
+fun map_context f {assums, handlers, items, queue, ctxt, resolve_th} =
+    {assums = assums, handlers = handlers, items = items, queue = queue,
+     ctxt = f ctxt, resolve_th = resolve_th}
 
-fun exist_box {boxes, ...} id = Boxidtab.defined boxes id
-fun get_box {boxes, ...} id =
-    the (Boxidtab.lookup boxes id)
-    handle Option.Option => raise Fail "get_box: id not found."
-
-fun incr_uid n {uid_next, boxes, queue, ctxt, resolve_th} =
-    {uid_next = uid_next + n, boxes = boxes, queue = queue, ctxt = ctxt,
-     resolve_th = resolve_th}
-
-fun map_box id f {uid_next, boxes, queue, ctxt, resolve_th} =
-    {uid_next = uid_next, boxes = Boxidtab.map_entry id f boxes,
+fun add_handler (id, handler) {assums, handlers, items, queue, ctxt,
+                               resolve_th} =
+    {assums = assums, handlers = (id, handler) :: handlers, items = items,
      queue = queue, ctxt = ctxt, resolve_th = resolve_th}
 
-fun map_context f {uid_next, boxes, queue, ctxt, resolve_th} =
-    {uid_next = uid_next, boxes = boxes, queue = queue, ctxt = f ctxt,
-     resolve_th = resolve_th}
+fun get_handlers {handlers, ...} = handlers
 
-fun set_resolve_th th {uid_next, boxes, queue, ctxt, ...} =
-    {uid_next = uid_next, boxes = boxes, queue = queue, ctxt = ctxt,
-     resolve_th = SOME th}
+fun map_items f {assums, handlers, items, queue, ctxt, resolve_th} =
+    {assums = assums, handlers = handlers, items = f items, queue = queue,
+     ctxt = ctxt, resolve_th = resolve_th}
+
+fun add_item (item as {uid, ...}) st =
+    st |> map_items (Inttab.update_new (uid, (item, [])))
+
+fun get_items {items, ...} =
+    items |> Inttab.dest |> map snd
+          |> filter_out (fn ({id, ...}, shadow_ids) =>
+                            member (op =) shadow_ids id)
+          |> map fst
+
+fun get_items_at_id (st as {ctxt, ...}) id =
+    st |> get_items
+       |> filter (fn {id = id', ...} => BoxID.is_eq_ancestor ctxt id' id)
+
+fun get_all_items_at_id {items, ctxt, ...} id =
+    items |> Inttab.dest |> map snd |> map fst
+          |> filter (fn {id = id', ...} => BoxID.is_eq_ancestor ctxt id' id)
+
+fun get_num_items {items, ...} = length (Inttab.dest items)
+
+fun set_resolve_th th {assums, handlers, items, queue, ctxt, ...} =
+    {assums = assums, handlers = handlers, items = items, queue = queue,
+     ctxt = ctxt, resolve_th = SOME th}
 
 fun get_resolve_th {resolve_th, ...} =
     case resolve_th of
         NONE => raise Fail "get_resolve_th: not resolved."
       | SOME th => th
 
-fun add_prim_box parent_id new_box {uid_next, boxes, queue, ctxt, resolve_th} =
+fun add_prim_box parent_id assum
+                 {assums, handlers, items, queue, ctxt, resolve_th} =
     let
       val (id, ctxt') = BoxID.add_prim_id parent_id ctxt
     in
-      (id, {uid_next = uid_next,
-            boxes = Boxidtab.update_new ([id], new_box) boxes, queue = queue,
+      (id, {assums = Vector.concat [assums, Vector.fromList [assum]],
+            handlers = handlers, items = items, queue = queue,
             ctxt = ctxt', resolve_th = resolve_th})
     end
 
-fun add_resolved id {uid_next, boxes, queue, ctxt, resolve_th} =
+fun add_resolved id {assums, handlers, items, queue, ctxt, resolve_th} =
     let
       val ctxt' = BoxID.add_resolved id ctxt
     in
-      {uid_next = uid_next, boxes = boxes, queue = queue,
+      {assums = assums, handlers = handlers, items = items, queue = queue,
        ctxt = ctxt' |> RewriteTable.clean_resolved id
                     |> PropertyData.clean_resolved id
                     |> WellformData.clean_resolved id
@@ -265,65 +220,32 @@ fun add_resolved id {uid_next, boxes, queue, ctxt, resolve_th} =
        resolve_th = resolve_th}
     end
 
-fun get_all_ids {boxes, ...} = Boxidtab.keys boxes
-fun get_resolved (st as {ctxt, ...}) =
-    filter (BoxID.is_box_resolved ctxt) (get_all_ids st)
-fun get_unresolved (st as {ctxt, ...}) =
-    filter_out (BoxID.is_box_resolved ctxt) (get_all_ids st)
+fun get_init_assums {assums, ctxt, ...} id =
+    let
+      val parents = BoxID.get_ancestors_prim ctxt id
+    in
+      map (fn pid => Vector.sub (assums, pid)) parents
+    end
 
-(* Returns list of generalized boxes currently in st that are
-   eq-ancestors of id. Note if id is unresolved, then all ancestors of
-   id must be unresolved.
- *)
-fun get_eq_ancestors (st as {ctxt, ...}) id =
-    filter (BoxID.is_eq_descendent ctxt id) (get_unresolved st)
+fun get_init_assum {assums, ...} prim_id =
+    Vector.sub (assums, prim_id)
 
-(* Add box with the given composite id to status. Assuming this ID is
-   not already present in status.
- *)
-fun add_composite_box id (st as {uid_next, boxes, queue, ctxt, resolve_th}) =
-    if exist_box st id then
-      raise Fail "Try to add a composite box that already exists"
-    else if length id = 1 then
-      raise Fail "Try to add a primitive box as a composite"
-    else
-      {uid_next = uid_next,
-       boxes = Boxidtab.update_new (id, Box.init_box pFalse) boxes,
-       queue = queue, ctxt = ctxt, resolve_th = resolve_th}
+fun lookup_item {items, ...} uid =
+    Inttab.lookup items uid
 
-fun get_for_box f st id = if exist_box st id then f (get_box st id) else []
-fun get_all_for_box f st id = maps (get_for_box f st) (get_eq_ancestors st id)
-fun get_items b     = get_for_box (Box.get_items b)
-val get_init_assums = get_for_box (fn box => [Box.get_init_assum box])
-val get_handlers    = get_for_box Box.get_handlers
-fun get_all_items b     = get_all_for_box (Box.get_items b)
-val get_all_init_assums = get_all_for_box (fn box => [Box.get_init_assum box])
-val get_all_handlers    = get_all_for_box Box.get_handlers
-
-fun add_item (item as {id, ...}) = map_box id (Box.add_item item)
-
-fun add_handler id handler = map_box id (Box.add_handler handler)
-
-fun lookup_item st id uid =
-    Box.lookup_item (get_box st id) uid
-
-fun lookup_item_all st id uid =
-    maps (fn id => the_list (lookup_item st id uid)) (get_eq_ancestors st id)
-
-fun add_shadowed (shadow_id, {uid, id, ...}) (st as {ctxt, ...}) =
-    case lookup_item st id uid of
+fun add_shadowed (shadow_id, {uid, ...}) (st as {ctxt, ...}) =
+    case lookup_item st uid of
         NONE => raise Fail "add_shadowed: item not found."
       | SOME (item, shadow_ids) =>
         let
           val shadow_ids' = (shadow_id :: shadow_ids)
                                 |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
         in
-          map_box id (
-            Box.map_items (Inttab.update (uid, (item, shadow_ids')))) st
+          st |> map_items (Inttab.update (uid, (item, shadow_ids')))
         end
 
-fun query_shadowed (st as {ctxt, ...}) shadow_id {uid, id, ...} =
-    case lookup_item st id uid of
+fun query_shadowed (st as {ctxt, ...}) shadow_id {uid, ...} =
+    case lookup_item st uid of
         NONE => raise Fail "query_shadowed: item not found."
       | SOME (_, shadow_ids) =>
         exists (BoxID.is_eq_descendent ctxt shadow_id) shadow_ids
@@ -336,7 +258,7 @@ fun query_removed st (item as {id, ...}) = query_shadowed st id item
 fun find_fact (st as {ctxt, ...}) id t =
     let
       val ct = Thm.cterm_of ctxt t
-      val items = get_all_items false st id
+      val items = get_items_at_id st id
       val res = (WellformData.find_fact ctxt items (id, ct))
                     |> filter (fn (id', _) => id' = id)
     in
@@ -368,7 +290,7 @@ fun find_ritem_exact (st as {ctxt, ...}) id ritem =
                 (PropertyData.get_property_t ctxt (id, prop))
                     |> filter (fn (id', _) => BoxID.is_eq_ancestor ctxt id' id)
           in
-            length infos > 0
+            not (null infos)
           end
         else
           let
@@ -376,7 +298,7 @@ fun find_ritem_exact (st as {ctxt, ...}) id ritem =
                 ty_str = ty2 andalso
                 eq_list (op aconv) (tname, map Thm.term_of ts2)
           in
-            exists eq_item (get_all_items true st id)
+            exists eq_item (get_all_items_at_id st id)
           end
 
 (* Invoke a single handler (vars, t, ex_th) on the theorem th. *)
@@ -394,11 +316,13 @@ fun get_on_resolve (st as {ctxt, ...}) id i th =
     let
       (* First get list of handlers to invoke. *)
       val prim_id = nth id i
-      val retro_ids = (get_unresolved st)
-                          |> filter (BoxID.is_eq_ancestor ctxt [prim_id])
-                          |> filter (BoxID.is_eq_descendent ctxt id)
-      val handlers = maps (get_handlers st) retro_ids
-      val init_assum = the_single (get_init_assums st [prim_id])
+      val handlers =
+          st |> get_handlers
+             |> filter (fn (id', _) =>
+                           BoxID.is_eq_ancestor ctxt [prim_id] id' andalso
+                           BoxID.is_eq_descendent ctxt id id')
+             |> map snd
+      val init_assum = get_init_assum st prim_id
       val th' = th |> fold (invoke_handler ctxt) handlers
                    |> Thm.implies_intr (Thm.cterm_of ctxt init_assum)
                    |> apply_to_thm UtilLogic.rewrite_from_contra_form
@@ -412,30 +336,27 @@ fun get_on_resolve (st as {ctxt, ...}) id i th =
    exactly with the given initial facts. Note we cannot yet handle new
    variables.
  *)
-fun find_prim_box (st as {ctxt, ...}) id init_assum =
+fun find_prim_box {assums, ctxt, ...} id init_assum =
     let
-      fun agree_at_id id' =
+      fun agree_at_id prim_id' =
           let
-            val parent = BoxID.get_parent_prim ctxt (the_single id')
+            val parent = BoxID.get_parent_prim ctxt prim_id'
             val is_equiv_t = RewriteTable.is_equiv_t parent ctxt
           in
-            is_equiv_t (init_assum, the_single (get_init_assums st id'))
+            is_equiv_t (init_assum, Vector.sub (assums, prim_id'))
           end
 
-      fun can_test_id id' =
-          case id' of
-              [prim_id'] =>
-              BoxID.is_eq_ancestor ctxt (BoxID.get_parent_prim ctxt prim_id') id
-            | _ => false
+      fun can_test_id prim_id' =
+          BoxID.is_eq_ancestor ctxt (BoxID.get_parent_prim ctxt prim_id') id
 
-      val ids_to_test = get_all_ids st |> filter can_test_id
+      val ids_to_test = filter can_test_id (0 upto (Vector.length assums - 1))
     in
       find_first agree_at_id ids_to_test
     end
 
-fun map_queue f {uid_next, boxes, queue, ctxt, resolve_th} =
-    {uid_next = uid_next, boxes = boxes, queue = f queue, ctxt = ctxt,
-     resolve_th = resolve_th}
+fun map_queue f {assums, handlers, items, queue, ctxt, resolve_th} =
+    {assums = assums, handlers = handlers, items = items, queue = f queue,
+     ctxt = ctxt, resolve_th = resolve_th}
 
 fun add_to_queue updt = map_queue (Updates_Heap.insert updt)
 val delmin_from_queue = map_queue Updates_Heap.delete_min

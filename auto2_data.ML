@@ -180,6 +180,7 @@ fun get_single_type ctxt =
       ctxt |> RewriteTable.clear_prim_id prim_id
            |> PropertyData.clear_prim_id prim_id
            |> WellformData.clear_prim_id prim_id
+           |> BoxID.remove_last
     end
 
 end  (* Auto2Data *)

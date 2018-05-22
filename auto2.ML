@@ -73,8 +73,11 @@ struct
 fun check_hyps id th (st as {ctxt, ...}) =
     let
       val hyps = Thm.hyps_of th
-      val inits = Status.get_all_init_assums st id
-      val handlers = map (fn (_, t, _) => t) (Status.get_all_handlers st id)
+      val inits = Status.get_init_assums st id
+      val handlers =
+          (Status.get_handlers st)
+              |> filter (fn (id', _) => BoxID.is_eq_ancestor ctxt id' id)
+              |> map (fn (_, (_, t, _)) => t)
       val extra = subtract (op aconv) (inits @ handlers) hyps
     in
       if null extra then ()
@@ -184,17 +187,11 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
    updates in queue.
 *)
 and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...})=
-    let
-      val id = Update.target_of_update raw_updt
-      val st' = if Status.exist_box st id then st
-                else Status.add_composite_box id st
-    in
-      if BoxID.is_box_resolved ctxt id then st else
-      case raw_updt of
-          ResolveBox _ => st' |> process_resolve updt
-        | ShadowItem _ => st' |> process_shadow updt
-        | _ => st' |> Status.add_to_queue updt
-    end
+    if BoxID.is_box_resolved ctxt (Update.target_of_update raw_updt) then st
+    else case raw_updt of
+             ResolveBox _ => st |> process_resolve updt
+           | ShadowItem _ => st |> process_shadow updt
+           | _ => st |> Status.add_to_queue updt
 
 fun process_step_single sc ictxt items (prfstep as {args, func, ...}) st =
     let
@@ -312,7 +309,8 @@ fun process_add_terms item (st as {ctxt, ...}) =
       val term_infos = map (pair id o Thm.cterm_of ctxt) (headt @ terms)
 
       val old_items =
-          (maps (Status.get_items false st) (Status.get_unresolved st))
+          (Status.get_items st)
+              |> filter_out (fn {id, ...} => BoxID.is_box_resolved ctxt id)
               |> remove BoxItem.eq_item item
 
       val ctxt' = ctxt |> Auto2Data.add_terms old_items term_infos
@@ -347,13 +345,15 @@ fun process_add_terms item (st as {ctxt, ...}) =
 fun process_fact_all items (st as {ctxt, ...}) =
     if null items then st else
     let
-      val id = #id (hd items)
       val sc = #sc (hd items)
 
       (* Obtain initial and incremental ictxt, and the list of
          relevant terms for that increment.
        *)
-      val items' = maps (Status.get_items false st) (Status.get_unresolved st)
+      val items' =
+          (Status.get_items st)
+              |> filter_out (fn {id, ...} => BoxID.is_box_resolved ctxt id)
+
       val old_items = subtract BoxItem.eq_item items items'
 
       val incr_ctxt = Auto2Data.get_incr_type old_items items ctxt
@@ -367,16 +367,12 @@ fun process_fact_all items (st as {ctxt, ...}) =
       (* List of items to consider for init and incr rounds. *)
       val init_items = filter_out (BoxItem.match_ty_str TY_PROPERTY) items
 
-      val incr_ids = Status.get_unresolved st |> filter (
-            fn id' => BoxID.is_box_unresolved ctxt (BoxID.merge_boxes ctxt (id, id')))
       val incr_items =
           if null ts then []
-          else (maps (Status.get_items false st) incr_ids)
-                   |> subtract BoxItem.eq_item items
-                   |> filter (fn {tname, ...} =>
-                                 exists (Util.has_subterm ts)
+          else old_items |> filter (
+              fn {tname, ...} => exists (Util.has_subterm ts)
                                         (map Thm.term_of tname))
-                   |> cons BoxItem.null_item
+                         |> cons BoxItem.null_item
 
       (* List of proofsteps to consider for init and incr rounds. *)
       val thy = Proof_Context.theory_of ctxt
@@ -388,7 +384,7 @@ fun process_fact_all items (st as {ctxt, ...}) =
     end
 
 fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
-                      (st as {uid_next, ctxt, ...}) =
+                      (st as {ctxt, ...}) =
     case raw_updt of
         AddItems {id, raw_items = ritems, ...} =>
         let
@@ -414,9 +410,11 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
                                 Update.update_info ctxt' id dup_ritems ^
                                 " (" ^ Update.source_info updt ^ ")")
 
-          val (handlers, ritems') = filter_split BoxItem.is_handler_raw new_ritems
+          val (handlers, ritems') =
+              filter_split BoxItem.is_handler_raw new_ritems
 
           val uid_incr = length ritems'
+          val uid_next = Status.get_num_items st
           val uid_string = if uid_incr = 1 then string_of_int uid_next
                            else string_of_int uid_next ^ "-" ^
                                 string_of_int (uid_next + uid_incr - 1)
@@ -437,13 +435,16 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
               map (fn i => BoxItem.mk_box_item
                                ctxt' (uid_next + i, id, sc, nth ritems' i))
                   (0 upto (length ritems' - 1))
+
+          val handlers_info =
+              map (fn handler => (id, BoxItem.dest_handler_raw handler))
+                  handlers
         in
           st |> Status.map_context (K ctxt')
-             |> fold (Status.add_handler id) (map BoxItem.dest_handler_raw handlers)
+             |> fold Status.add_handler handlers_info
              |> fold process_add_terms items
              |> fold Status.add_item items
              |> process_fact_all items
-             |> Status.incr_uid (length ritems')
         end
       | _ => raise Fail "process_add_items: wrong type of update"
 
@@ -452,7 +453,7 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
         AddBoxes {id, init_assum, ...} =>
         let
           val ritem = init_assum |> Thm.cterm_of ctxt
-                                  |> Thm.assume |> Update.thm_to_ritem
+                                 |> Thm.assume |> Update.thm_to_ritem
           val _ = assert (fastype_of init_assum = propT)
                          "process_add_boxes: assumption is not of type prop."
 
@@ -475,15 +476,12 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
                       tracing ("Add box under " ^ BoxID.string_of_box_id id ^ " (" ^
                                Update.source_info updt ^ ")")
                     else ()
-            val init_box = Box.init_box init_assum
             val (prim_id, st') = st |> Status.map_context (K ctxt)
-                                    |> Status.add_prim_box id init_box
+                                    |> Status.add_prim_box id init_assum
             val new_id = [prim_id]
             val _ = if Config.get ctxt print_trace then
-                      tracing (
-                        (BoxID.string_of_box_id new_id) ^ ": " ^
-                        (Box.short_string_of_box
-                             ctxt (Status.get_box st' new_id)))
+                      tracing (BoxID.string_of_box_id new_id ^ ": " ^
+                               Syntax.string_of_term ctxt init_assum)
                     else ()
 
             val ritems' =
@@ -509,8 +507,7 @@ fun apply_update (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
       val id = Update.target_of_update raw_updt
     in
       if BoxID.is_box_resolved ctxt id then st else
-      st |> not (Status.exist_box st id) ? Status.add_composite_box id
-         |> (case raw_updt of
+      st |> (case raw_updt of
                  AddItems _ => process_add_items updt
                | AddBoxes _ => process_add_boxes updt
                | ResolveBox _ => process_resolve updt
@@ -526,7 +523,7 @@ fun init_status ctxt subgoal =
                   raw_updt = raw_updt}
     in
       ctxt |> Status.empty_status
-           |> Status.add_composite_box [] |> Status.add_item BoxItem.null_item
+           |> Status.add_item BoxItem.null_item
            |> apply_update updt
     end
 

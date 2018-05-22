@@ -27,6 +27,7 @@ sig
       Proof.context -> box_id -> (box_id * 'a) list -> (box_id * 'a) list
   val merge_eq_infos: Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
   val add_prim_id: box_id -> Proof.context -> int * Proof.context
+  val remove_last: Proof.context -> Proof.context
   val add_resolved: box_id -> Proof.context -> Proof.context
 end;
 
@@ -195,6 +196,15 @@ fun add_prim_id parent_id ctxt =
       val parents' = Vector.concat [parents, Vector.fromList [parent_id]]
     in
       (prim_id, ctxt |> Data.map (K {parents = parents', resolved = resolved}))
+    end
+
+fun remove_last ctxt =
+    let
+      val {parents, resolved} = Data.get ctxt
+      val parents' = Vector.fromList (map (fn i => Vector.sub (parents, i))
+                                          (0 upto (Vector.length parents - 2)))
+    in
+      Data.map (K {parents = parents', resolved = resolved}) ctxt
     end
 
 fun add_resolved id ctxt =
