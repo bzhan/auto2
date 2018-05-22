@@ -8,6 +8,7 @@
 signature PROPERTY_DATA =
 sig
   val clean_resolved: box_id -> Proof.context -> Proof.context
+  val clear_prim_id: int -> Proof.context -> Proof.context
 
   val get_property_for_term: Proof.context -> term -> (box_id * thm) list
   val add_property_raw: box_id * thm -> Proof.context -> Proof.context
@@ -45,6 +46,18 @@ fun clean_resolved id ctxt =
              (fn _ => filter_out (BoxID.is_eq_ancestor ctxt id o fst))
     in
       ctxt |> Data.map clean_property
+    end
+
+fun clear_prim_id prim_id ctxt =
+    let
+      fun clear_one infos =
+          if exists (fn (id, _) => member (op =) id prim_id) infos then
+            infos |> map (fn (id, th) => ((remove (op =) prim_id id), th))
+                  |> Util.max_partial (BoxID.info_eq_better ctxt)
+          else
+            infos
+    in
+      ctxt |> Data.map (Termtab.map (fn _ => clear_one))
     end
 
 (* Retrieve the current list of properties for a term t. *)

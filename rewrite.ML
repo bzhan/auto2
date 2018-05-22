@@ -102,6 +102,7 @@ signature REWRITE_TABLE =
 sig
   (* Construction and modification. *)
   val clean_resolved: box_id -> Proof.context -> Proof.context
+  val clear_prim_id: int -> Proof.context -> Proof.context
 
   (* contain table. *)
   val add_contain: cterm -> term -> Proof.context -> Proof.context
@@ -212,6 +213,56 @@ fun clean_resolved id ctxt =
            reps = clean reps fst})
     end
 
+(* equiv_eq_better ctxt info1 info2 means info2 is extraneous in the
+   equiv table.
+ *)
+fun equiv_eq_better ctxt (id, th) (id', th') =
+    Util.rhs_of th aconv Util.rhs_of th' andalso BoxID.is_eq_ancestor ctxt id id'
+
+(* simp_eq_better ctxt info1 info2 means info2 is extraneous in the
+   simp table.
+ *)
+fun simp_eq_better ctxt (id, th) (id', th') =
+    if BoxID.is_eq_ancestor ctxt id id' then
+      let val (t, t') = (Util.rhs_of th, Util.rhs_of th')
+      in t aconv t' orelse Term_Ord.termless (t, t') end
+    else false
+
+fun clear_prim_id prim_id ctxt =
+    let
+      val {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
+          Data.get ctxt
+
+      fun clear_one cmp infos =
+          if exists (fn (id, _) => member (op =) id prim_id) infos then
+            infos |> map (fn (id, th) => ((remove (op =) prim_id id), th))
+                  |> Util.max_partial cmp
+          else
+            infos
+
+      fun clear cmp tb =
+          tb |> Termtab.map (fn _ => clear_one cmp)
+
+      fun clear_term_one (ids, ct) =
+          if exists (fn id => member (op =) id prim_id) ids then
+            (ids |> map (remove (op =) prim_id)
+                 |> Util.max_partial (BoxID.is_eq_ancestor ctxt), ct)
+          else
+            (ids, ct)
+
+      fun clear_term tb =
+          tb |> Termtab.map (fn _ => clear_term_one)
+    in
+      ctxt |> Data.map (
+        K {terms = clear_term terms,
+           equiv = clear (equiv_eq_better ctxt) equiv,
+           all_equiv = clear (equiv_eq_better ctxt) all_equiv,
+           contain = contain,
+           simp = clear (simp_eq_better ctxt) simp,
+           subsimp = clear (simp_eq_better ctxt) subsimp,
+           reps = clear (equiv_eq_better ctxt) reps})
+    end
+
 fun map_terms f {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
     {terms = f terms, equiv = equiv, all_equiv = all_equiv,
      contain = contain, simp = simp, subsimp = subsimp, reps = reps}
@@ -310,12 +361,6 @@ fun get_all_id_terms ctxt =
 
 (*** Basic manipulation of equiv table. ***)
 
-(* equiv_eq_better ctxt info1 info2 means info2 is extraneous in the
-   equiv table.
- *)
-fun equiv_eq_better ctxt (id, th) (id', th') =
-    Util.rhs_of th aconv Util.rhs_of th' andalso BoxID.is_eq_ancestor ctxt id id'
-
 fun has_equiv_eq_better ctxt infos info' =
     exists (fn info => equiv_eq_better ctxt info info') infos
 
@@ -364,15 +409,6 @@ fun get_all_equiv ctxt t =
     end
 
 (*** Basic manipulation of simp table. ***)
-
-(* simp_eq_better ctxt info1 info2 means info2 is extraneous in the
-   simp table.
- *)
-fun simp_eq_better ctxt (id, th) (id', th') =
-    if BoxID.is_eq_ancestor ctxt id id' then
-      let val (t, t') = (Util.rhs_of th, Util.rhs_of th')
-      in t aconv t' orelse Term_Ord.termless (t, t') end
-    else false
 
 (* Update rewrite of t under id to th: t == t'. Similar to
    add_equiv_raw.

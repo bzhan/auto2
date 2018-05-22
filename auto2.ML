@@ -363,12 +363,14 @@ fun process_fact_all items (st as {ctxt, ...}) =
        *)
       val items' = maps (Status.get_items false st) (Status.get_unresolved st)
       val old_items = subtract BoxItem.eq_item items items'
-      val ctxt' = Auto2Data.add_infos old_items items ctxt
-      val init_ctxt = SINGLE ctxt'
+
       val incr_ctxt = Auto2Data.get_incr_type old_items items ctxt
-      val ts = case incr_ctxt of
-                   LAST (_, ts) => map Thm.term_of ts
-                 | _ => raise Fail "process_fact_all"
+      val (ctxt', ts) =
+          case incr_ctxt of
+              LAST (ctxt', ts) => (Auto2Data.get_single_type ctxt',
+                                   map Thm.term_of ts)
+            | _ => raise Fail "process_fact_all"
+      val init_ctxt = SINGLE ctxt'
 
       (* List of items to consider for init and incr rounds. *)
       val init_items = filter_out (BoxItem.match_ty_str TY_PROPERTY) items

@@ -3,6 +3,7 @@
 signature WELLFORM_DATA =
 sig
   val clean_resolved: box_id -> Proof.context -> Proof.context
+  val clear_prim_id: int -> Proof.context -> Proof.context
   val initialize_wellform_data: term -> Proof.context -> Proof.context
 
   (* wellform table. *)
@@ -59,6 +60,18 @@ fun clean_resolved id ctxt =
           tb |> Termtab.map (fn _ => map clean_wellform_1)
     in
       ctxt |> Data.map clean_wellform
+    end
+
+fun clear_prim_id prim_id ctxt =
+    let
+      fun clear_one (ct, infos) =
+          if exists (fn (id, _) => member (op =) id prim_id) infos then
+            (ct, infos |> map (fn (id, th) => ((remove (op =) prim_id id), th))
+                       |> Util.max_partial (BoxID.info_eq_better ctxt))
+          else
+            (ct, infos)
+    in
+      ctxt |> Data.map (Termtab.map (fn _ => map clear_one))
     end
 
 (* Initialize wellform data for term t, with (currently) empty slots

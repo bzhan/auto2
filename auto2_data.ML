@@ -15,9 +15,11 @@ sig
   val invoke_resolve: Proof.context -> (box_id * thm) list
   val invoke_clean_resolved: box_id -> Proof.context -> Proof.context
   val relevant_terms_single: box_item -> cterm list
-  val add_terms: box_item list -> (box_id * cterm) list -> Proof.context -> Proof.context
-  val add_infos: box_item list -> box_item list -> Proof.context -> Proof.context
-  val get_incr_type: box_item list -> box_item list -> Proof.context -> incr_context
+  val add_terms:
+      box_item list -> (box_id * cterm) list -> Proof.context -> Proof.context
+  val get_incr_type:
+      box_item list -> box_item list -> Proof.context -> incr_context
+  val get_single_type: Proof.context -> Proof.context
 end;
 
 structure Auto2Data : AUTO2_DATA =
@@ -111,53 +113,11 @@ fun relevant_terms_single item =
       if ty_str = "EQ" then tname else []
     end
 
-(* Use the given items to update the current context data. Here
-   old_items is the list of existing items. items is the list of new
-   items. Update the rewrite table, property table, wellform table,
-   and the custom tables.
+(* Use the given items to update the current context data, producing
+   the incremental context. Here old_items is the list of existing
+   items. items is the list of new items. Update the rewrite table,
+   property table, wellform table, and the custom tables.
  *)
-fun add_infos old_items items ctxt =
-    let
-      (* List of terms on the two sides of new equalities, completing
-         by traversing along equivalence and containment.
-       *)
-      val relevant_terms =
-          items |> maps relevant_terms_single
-                |> RewriteTable.get_reachable_terms true ctxt
-                |> map Thm.term_of
-
-      (* Insert one item. *)
-      fun add_one_info item ctxt =
-          let
-            val {ty_str, id, prop, ...} = item
-          in
-            if ty_str = "EQ" then
-              let
-                val (edges, ctxt') = RewriteTable.add_rewrite (id, prop) ctxt
-              in
-                ctxt' |> fold PropertyData.process_rewrite_property edges
-                      |> fold invoke_add_rewrite edges
-              end
-            else if ty_str = "PROPERTY" then
-              PropertyData.add_property (id, prop) ctxt
-            else if ty_str = "PROP" then
-              invoke_add_fact (id, prop) ctxt
-            else ctxt
-          end
-
-      (* List of items that can potentially contribute new
-         wellformed-ness conditions.
-       *)
-      val match_items =
-          items @
-          filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
-                                            (map Thm.term_of tname)) old_items
-    in
-      ctxt |> fold add_one_info items
-           |> WellformData.complete_wellform_data match_items
-    end
-
-(* Like add_infos, except producing the incremental context. *)
 fun get_incr_type old_items items ctxt =
     let
       (* New primitive ID. *)
@@ -211,6 +171,15 @@ fun get_incr_type old_items items ctxt =
                        |> distinct (op aconvc)
     in
       LAST (ctxt'', RewriteTable.get_reachable_terms true ctxt new_ts)
+    end
+
+fun get_single_type ctxt =
+    let
+      val prim_id = BoxID.num_prim_id ctxt - 1
+    in
+      ctxt |> RewriteTable.clear_prim_id prim_id
+           |> PropertyData.clear_prim_id prim_id
+           |> WellformData.clear_prim_id prim_id
     end
 
 end  (* Auto2Data *)
