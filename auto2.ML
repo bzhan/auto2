@@ -61,8 +61,7 @@ val max_steps =
 signature PROOFSTATUS =
 sig
   val check_hyps: box_id -> thm -> status -> unit
-  val is_ictxt_resolved: status -> incr_context -> bool
-  val scoring: proofstep -> int -> box_item list -> incr_context -> status ->
+  val scoring: proofstep -> int -> box_item list -> status ->
                (box_item -> raw_update list) -> update list
   val process_shadow: update -> status -> status
   val process_resolve: update -> status -> status
@@ -94,20 +93,14 @@ fun check_hyps id th (st as {ctxt, ...}) =
       end
     end
 
-fun is_ictxt_resolved st ictxt =
-    case ictxt of
-        SINGLE _ => false
-      | LAST (_, id, _) => BoxID.is_box_resolved (#ctxt st) id
-
 (* Perform preliminary checks before matching the last item of a
    proofstep, and process the resulting updates.
  *)
-fun scoring {name, ...} sc items ictxt (st as {ctxt, ...}) func =
+fun scoring {name, ...} sc items (st as {ctxt, ...}) func =
     let
       val merged_id = BoxItem.merged_id ctxt items
     in
       if BoxID.is_box_resolved ctxt merged_id orelse
-         is_ictxt_resolved st ictxt orelse
          exists (Status.query_shadowed st merged_id) items then []
       else
         let
@@ -212,7 +205,6 @@ and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...})=
     end
 
 fun process_step_single sc ictxt items (prfstep as {args, func, ...}) st =
-    if is_ictxt_resolved st ictxt then st else
     let
       val arg = the_single (filter_out ItemIO.is_side_match args)
       val ctxt = IncrContext.context_of ictxt
@@ -224,7 +216,7 @@ fun process_step_single sc ictxt items (prfstep as {args, func, ...}) st =
 
       fun process_one_item item st =
           let
-            val updts = scoring prfstep sc [item] ictxt st (f ictxt)
+            val updts = scoring prfstep sc [item] st (f ictxt)
           in
             st |> fold apply_update_instant updts
           end
@@ -268,7 +260,7 @@ fun process_step_pair sc ictxt items items' (prfstep as {args, func, ...}) st =
                 if BoxItem.eq_item (left_item, right_item) then st else
                 let
                   val updts =
-                      scoring prfstep sc [left_item, right_item] ictxt st func
+                      scoring prfstep sc [left_item, right_item] st func
                 in
                   st |> fold apply_update_instant updts
                 end
@@ -298,7 +290,6 @@ fun process_prfstep sc ictxt items items' (prfstep as {args, ...}) (st as {ctxt,
                      Status.query_removed st item) items
     in
       if null items then st
-      else if is_ictxt_resolved st ictxt then st
       else if length (filter_out ItemIO.is_side_match args) = 1 then
         st |> process_step_single sc ictxt items prfstep
       else
@@ -376,7 +367,7 @@ fun process_fact_all items (st as {ctxt, ...}) =
       val init_ctxt = SINGLE ctxt'
       val incr_ctxt = Auto2Data.get_incr_type old_items items ctxt
       val ts = case incr_ctxt of
-                   LAST (_, _, ts) => map Thm.term_of ts
+                   LAST (_, ts) => map Thm.term_of ts
                  | _ => raise Fail "process_fact_all"
 
       (* List of items to consider for init and incr rounds. *)

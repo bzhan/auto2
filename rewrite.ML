@@ -26,7 +26,7 @@ fun print_infos' ctxt lst = cat_lines (map (print_info' ctxt) lst)
    stored as well.
  *)
 datatype incr_context = SINGLE of Proof.context
-                      | LAST of Proof.context * box_id * cterm list
+                      | LAST of Proof.context * cterm list
 
 signature INCR_CONTEXT =
 sig
@@ -45,7 +45,7 @@ structure IncrContext : INCR_CONTEXT =
 struct
 
 fun context_of ictxt =
-    case ictxt of SINGLE ctxt => ctxt | LAST (ctxt, _, _) => ctxt
+    case ictxt of SINGLE ctxt => ctxt | LAST (ctxt, _) => ctxt
 
 fun is_single_ictxt ictxt =
     case ictxt of SINGLE _ => true | _ => false
@@ -53,7 +53,7 @@ fun is_single_ictxt ictxt =
 fun filter_id_for_type ictxt insts =
     case ictxt of
         SINGLE _ => insts
-      | LAST (ctxt, _, _) =>
+      | LAST (ctxt, _) =>
         let
           val prim = (BoxID.num_prim_id ctxt) - 1
         in
@@ -64,12 +64,12 @@ fun filter_id_for_type ictxt insts =
 fun replace_id_for_type ictxt insts =
     case ictxt of
         SINGLE _ => insts
-      | LAST (ctxt, repl_id, _) =>
+      | LAST (ctxt, _) =>
         let
           val prim = (BoxID.num_prim_id ctxt) - 1
           fun process_info ((id, inst), th) =
               if member (op =) id prim then
-                [((BoxID.merge_boxes ctxt (repl_id, remove (op =) prim id), inst), th)]
+                [((remove (op =) prim id, inst), th)]
               else []
         in
           maps process_info insts

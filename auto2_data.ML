@@ -83,6 +83,9 @@ fun invoke_clean_resolved id ctxt =
       ctxt |> fold invoke1 (get_custom_data ctxt)
     end
 
+(* Procedure to add a new term. Here old_items is the list of existing
+   items. term_infos is a list of (id, ct) pairs.
+ *)
 fun add_terms old_items term_infos ctxt =
     let
       val ts = map (Thm.term_of o snd) term_infos
@@ -108,17 +111,22 @@ fun relevant_terms_single item =
       if ty_str = "EQ" then tname else []
     end
 
-(* Add the given (id, th) pairs to the rewrite table. Consider three
-   cases: where th is an equalitiy, a property, and an ordinary
-   theorem.
+(* Use the given items to update the current context data. Here
+   old_items is the list of existing items. items is the list of new
+   items. Update the rewrite table, property table, wellform table,
+   and the custom tables.
  *)
 fun add_infos old_items items ctxt =
     let
+      (* List of terms on the two sides of new equalities, completing
+         by traversing along equivalence and containment.
+       *)
       val relevant_terms =
           items |> maps relevant_terms_single
                 |> RewriteTable.get_reachable_terms true ctxt
                 |> map Thm.term_of
 
+      (* Insert one item. *)
       fun add_one_info item ctxt =
           let
             val {ty_str, id, prop, ...} = item
@@ -137,6 +145,9 @@ fun add_infos old_items items ctxt =
             else ctxt
           end
 
+      (* List of items that can potentially contribute new
+         wellformed-ness conditions.
+       *)
       val match_items =
           items @
           filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
@@ -146,16 +157,13 @@ fun add_infos old_items items ctxt =
            |> WellformData.complete_wellform_data match_items
     end
 
-(* Obtain the incremental context corresponding to the given (id, th)
-   pairs. Consider three cases: when th is an equality, a property,
-   and an ordinary theorem.
- *)
+(* Like add_infos, except producing the incremental context. *)
 fun get_incr_type old_items items ctxt =
     let
-      val id = #id (hd items)
-
+      (* New primitive ID. *)
       val (prim_id, ctxt') = BoxID.add_prim_id [] ctxt
 
+      (* List of relevant terms. *)
       val relevant_terms =
           items |> maps relevant_terms_single
                 |> RewriteTable.get_reachable_terms true ctxt
@@ -163,30 +171,38 @@ fun get_incr_type old_items items ctxt =
 
       fun add_one_info item ctxt =
           let
-            val {ty_str, prop, ...} = item
+            val {id, ty_str, prop, ...} = item
+            val id' = BoxID.merge_boxes ctxt (id, [prim_id])
           in
             if ty_str = "EQ" then
               let
-                val (edges, ctxt') = RewriteTable.add_rewrite ([prim_id], prop) ctxt
+                val (edges, ctxt') = RewriteTable.add_rewrite (id', prop) ctxt
               in
                 ctxt' |> fold PropertyData.process_rewrite_property edges
                       |> fold invoke_add_rewrite edges
               end
             else if ty_str = "PROPERTY" then
-              PropertyData.add_property ([prim_id], prop) ctxt
+              PropertyData.add_property (id', prop) ctxt
             else if ty_str = "PROP" then
-              invoke_add_fact ([prim_id], prop) ctxt
+              invoke_add_fact (id', prop) ctxt
             else ctxt
           end
 
+      fun merge_prim (item as {id, ...}) =
+          BoxItem.item_with_id (BoxID.merge_boxes ctxt' (id, [prim_id])) item
+
       val match_items =
-          map (BoxItem.item_with_id [prim_id]) items @
+          map merge_prim items @
           filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
                                             (map Thm.term_of tname)) old_items
 
       val ctxt'' = ctxt' |> fold add_one_info items
                          |> WellformData.complete_wellform_data match_items
 
+      (* Return the list of terms that may be affected. This include
+         terms with new equivalences, properties, or wellformedness
+         data.
+       *)
       val new_ts = (maps relevant_terms_single items @
                     maps (Property.get_property_arg_th_gen o snd o snd)
                          (PropertyData.get_new_property prim_id ctxt'') @
@@ -194,7 +210,7 @@ fun get_incr_type old_items items ctxt =
                         (WellformData.get_new_wellform_data prim_id ctxt''))
                        |> distinct (op aconvc)
     in
-      LAST (ctxt'', id, RewriteTable.get_reachable_terms true ctxt new_ts)
+      LAST (ctxt'', RewriteTable.get_reachable_terms true ctxt new_ts)
     end
 
 end  (* Auto2Data *)
