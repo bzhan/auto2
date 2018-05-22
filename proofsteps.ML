@@ -9,8 +9,12 @@ datatype proofstep_fn
   = OneStep of incr_context -> box_item -> raw_update list
   | TwoStep of incr_context -> box_item -> box_item -> raw_update list
 
-type proofstep =
-     {name: string, args: match_arg list, priority: int, func: proofstep_fn}
+type proofstep = {
+  name: string,
+  args: match_arg list,
+  priority: int,
+  func: proofstep_fn
+}
 
 datatype prfstep_descriptor = WithFact of term
                             | WithItem of string * term
@@ -138,12 +142,10 @@ fun neq_filter cond ctxt (id, inst) =
       if Util.has_vars t1 andalso Util.has_vars t2 then true
       else if Util.has_vars t1 then
         (Matcher.rewrite_match ctxt (t1, Thm.cterm_of ctxt t2) (id, fo_init))
-            |> filter (fn ((id', _), _) => id = id')
-            |> length |> equal 0
+            |> filter (fn ((id', _), _) => id = id') |> null
       else if Util.has_vars t2 then
         (Matcher.rewrite_match ctxt (t2, Thm.cterm_of ctxt t1) (id, fo_init))
-            |> filter (fn ((id', _), _) => id = id')
-            |> length |> equal 0
+            |> filter (fn ((id', _), _) => id = id') |> null
       else
         not (RewriteTable.is_equiv_t id ctxt (t1, t2))
     end
@@ -435,10 +437,9 @@ val size1_filter = ProofStep.size1_filter
 val not_type_filter = ProofStep.not_type_filter
 
 (* Table of proofsteps, categorized by type. *)
-datatype proofstep_table
-  = ProofStepTable of
-    {prfsteps: proofstep Symtab.table, sorted_prfsteps: proofstep list,
-     fixed_sc: int Symtab.table}
+type proofstep_table =
+     {prfsteps: proofstep Symtab.table, sorted_prfsteps: proofstep list,
+      fixed_sc: int Symtab.table}
 
 signature PROOFSTEP_DATA =
 sig
@@ -449,9 +450,9 @@ sig
   val del_prfstep_thm_str: string -> thm -> theory -> theory
   val del_prfstep_thm_eqforward: thm -> theory -> theory
   val add_fixed_sc: string * int -> theory -> theory
-  val get_prfstep_by_name: Proof.context -> string -> proofstep
-  val get_prfsteps: Proof.context -> proofstep list
-  val get_fixed_sc: Proof.context -> string -> int option
+  val get_prfstep_by_name: theory -> string -> proofstep
+  val get_prfsteps: theory -> proofstep list
+  val get_fixed_sc: theory -> string -> int option
 
   val add_prfstep_custom:
       (string * prfstep_descriptor list * int *
@@ -517,42 +518,40 @@ fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
 
 structure Data = Theory_Data (
   type T = proofstep_table;
-  val empty = ProofStepTable {
-        prfsteps = Symtab.empty, sorted_prfsteps = [], fixed_sc = Symtab.empty};
+  val empty = {prfsteps = Symtab.empty, sorted_prfsteps = [],
+               fixed_sc = Symtab.empty};
   val extend = I;
-  fun merge (
-    ProofStepTable {prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
-    ProofStepTable {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
-      ProofStepTable {
-        prfsteps = Symtab.merge ProofStep.eq_prfstep (p1, p2),
-        sorted_prfsteps = sort prfstep_ord (Library.merge ProofStep.eq_prfstep (sp1, sp2)),
-        fixed_sc = Symtab.merge (op =) (sc1, sc2)}
+  fun merge ({prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
+             {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
+      {prfsteps = Symtab.merge ProofStep.eq_prfstep (p1, p2),
+       sorted_prfsteps =
+       sort prfstep_ord (Library.merge ProofStep.eq_prfstep (sp1, sp2)),
+       fixed_sc = Symtab.merge (op =) (sc1, sc2)}
 )
 
-fun proofstep_data_of ctxt = Data.get (Proof_Context.theory_of ctxt)
-
+(* Add the given proof step. *)
 fun add_prfstep (prfstep as {args, ...}) =
-    if length (filter_out ItemIO.is_side_match args) >= 1 andalso
-       length (filter_out ItemIO.is_side_match args) <= 2 then
-      Data.map (
-        fn ProofStepTable {
-            prfsteps, sorted_prfsteps, fixed_sc} =>
-           if Util.is_prefix_str "$" (#name prfstep) then
-             error "Add prfstep: names beginning with $ is reserved."
+    Data.map (
+      fn {prfsteps, sorted_prfsteps, fixed_sc} =>
+         if Util.is_prefix_str "$" (#name prfstep) then
+           error "Add prfstep: names beginning with $ is reserved."
+         else let
+           val num_args = length (filter_out ItemIO.is_side_match args)
+         in
+           if num_args >= 1 andalso num_args <= 2 then
+             {prfsteps = Symtab.update_new (#name prfstep, prfstep) prfsteps,
+              sorted_prfsteps = sort prfstep_ord (sorted_prfsteps @ [prfstep]),
+              fixed_sc = fixed_sc}
            else
-             ProofStepTable {
-               prfsteps = Symtab.update_new (#name prfstep, prfstep) prfsteps,
-               sorted_prfsteps = sort prfstep_ord (sorted_prfsteps @ [prfstep]),
-               fixed_sc = fixed_sc})
-    else
-      error "add_proofstep: need 1 or 2 patterns."
+             error "add_proofstep: need 1 or 2 patterns."
+         end)
 
 (* Deleting a proofstep. For string inputs, try adding theory
    name. For theorem inputs, try all @-suffixes.
  *)
 fun del_prfstep_pred pred =
     Data.map (
-      fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
+      fn {prfsteps, sorted_prfsteps, fixed_sc} =>
          let
            val keys = Symtab.keys prfsteps
            val to_delete = filter pred keys
@@ -564,10 +563,9 @@ fun del_prfstep_pred pred =
              val _ = writeln (cat_lines (map (fn name => "Delete " ^ name)
                                              to_delete))
            in
-             ProofStepTable {
-               prfsteps = prfsteps |> fold Symtab.delete to_delete,
-               sorted_prfsteps = sorted_prfsteps |> subtract eq_name to_delete,
-               fixed_sc = fixed_sc |> fold Symtab.delete_safe to_delete}
+             {prfsteps = prfsteps |> fold Symtab.delete to_delete,
+              sorted_prfsteps = sorted_prfsteps |> subtract eq_name to_delete,
+              fixed_sc = fixed_sc |> fold Symtab.delete_safe to_delete}
            end
          end)
 
@@ -590,39 +588,36 @@ val del_prfstep_thm_eqforward = del_prfstep_thm_str "@eqforward"
 
 fun add_fixed_sc (prfstep_name, sc) =
     Data.map (
-      fn ProofStepTable {prfsteps, sorted_prfsteps, fixed_sc} =>
+      fn {prfsteps, sorted_prfsteps, fixed_sc} =>
          case find_first (equal prfstep_name) (Symtab.keys prfsteps) of
              NONE => error ("Add fixed sc: not found " ^ prfstep_name)
-           | _ => ProofStepTable {
-                   prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
+           | _ => {prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
                    fixed_sc = fixed_sc |> Symtab.update_new (prfstep_name, sc)})
 
-fun get_prfstep_by_name ctxt name =
+fun get_prfstep_by_name thy name =
     let
-      val ProofStepTable {prfsteps, ...} = proofstep_data_of ctxt
+      val {prfsteps, ...} = Data.get thy
     in
       case Symtab.lookup prfsteps name of
           NONE => raise Fail ("get_prfstep_by_name: not found " ^ name)
         | SOME prfstep => prfstep
     end
 
-fun get_prfsteps ctxt =
-    let
-      val ProofStepTable {sorted_prfsteps, ...} = proofstep_data_of ctxt
-    in
-      sorted_prfsteps
-    end
+fun get_prfsteps thy =
+    #sorted_prfsteps (Data.get thy)
 
-fun get_fixed_sc ctxt prfstep_name =
-    let val ProofStepTable {fixed_sc, ...} = proofstep_data_of ctxt in
-      Symtab.lookup fixed_sc prfstep_name
-    end
+fun get_fixed_sc thy prfstep_name =
+    Symtab.lookup (#fixed_sc (Data.get thy)) prfstep_name
 
 fun add_prfstep_custom (name, descs, priority, updt_fn) =
     add_prfstep (ProofStep.prfstep_custom name descs priority updt_fn)
-fun add_gen_prfstep (name, descs) = add_prfstep (ProofStep.gen_prfstep name descs)
+
+fun add_gen_prfstep (name, descs) =
+    add_prfstep (ProofStep.gen_prfstep name descs)
+
 fun add_prfstep_pre_conv (name, descs, pre_cv) =
     add_prfstep (ProofStep.prfstep_pre_conv name descs pre_cv)
+
 fun add_prfstep_conv (name, descs, cv) =
     add_prfstep (ProofStep.prfstep_conv name descs cv)
 

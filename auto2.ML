@@ -110,8 +110,9 @@ fun scoring {name, ...} sc items (st as {ctxt, ...}) func =
                 else if exists (Status.query_shadowed st id) items then []
                 else
                   let
+                    val thy = Proof_Context.theory_of ctxt
                     val add_sc =
-                        case ProofStepData.get_fixed_sc ctxt name of
+                        case ProofStepData.get_fixed_sc thy name of
                             NONE => Scores.get_score raw_updt
                           | SOME v => v
                   in
@@ -378,7 +379,8 @@ fun process_fact_all items (st as {ctxt, ...}) =
                    |> cons BoxItem.null_item
 
       (* List of proofsteps to consider for init and incr rounds. *)
-      val prfsteps = ProofStepData.get_prfsteps ctxt
+      val thy = Proof_Context.theory_of ctxt
+      val prfsteps = ProofStepData.get_prfsteps thy
     in
       st |> Status.map_context (K ctxt')
          |> fold (process_prfstep sc init_ctxt init_items items') prfsteps
