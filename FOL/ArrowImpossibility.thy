@@ -102,16 +102,14 @@ lemma complete_Lin3 [backward]:
 @qed
       
 lemma complete_Lin_mk_top [backward]:
-  "distinct3(S,a,b,c) \<Longrightarrow> R \<in> linorder_space(S) \<Longrightarrow>
+  "linorder(R) \<Longrightarrow> S = carrier(R) \<Longrightarrow> distinct3(S,a,b,c) \<Longrightarrow>
    \<exists>R'\<in>linorder_space(S). eq_prefer(R,a,b,R',a,b) \<and> prefer(R',a,c) \<and> prefer(R',b,c)"
 @proof @let "R' = mk_top(R,c)" @qed
-setup {* add_fixed_sc ("ArrowImpossibility.complete_Lin_mk_top@back", 1) *}
 
 lemma complete_Lin_mk_bot [backward]:
-  "distinct3(S,a,b,c) \<Longrightarrow> R \<in> linorder_space(S) \<Longrightarrow>
+  "linorder(R) \<Longrightarrow> S = carrier(R) \<Longrightarrow> distinct3(S,a,b,c) \<Longrightarrow>
    \<exists>R'\<in>linorder_space(S). eq_prefer(R,a,b,R',a,b) \<and> prefer(R',c,a) \<and> prefer(R',c,b)"
 @proof @let "R' = mk_bot(R,c)" @qed
-setup {* add_fixed_sc ("ArrowImpossibility.complete_Lin_mk_bot@back", 1) *}
 
 section {* Profiles and policies *}
   
@@ -182,11 +180,8 @@ setup {* add_prfstep_custom ("ex_fun",
     handle THM _ => []))
 *}
 
-lemma ex_ifb_fun [backward_replace]:
-  "(C \<longrightarrow> (\<exists>x\<in>S. P(x))) \<and> (\<not>C \<longrightarrow> (\<exists>x\<in>S. Q(x))) \<Longrightarrow> \<exists>x\<in>S. ifb C then P(x) else Q(x)"
-@proof @let "a = (if C then SOME x\<in>S. P(x) else SOME x\<in>S. Q(x))" @qed
-  
-lemma ex_eq [backward_replace]: "a \<in> S \<Longrightarrow> \<exists>x\<in>S. x = a" by auto2
+lemma ex_ifb_fun [backward]:
+  "ifb C then \<exists>x\<in>S. P(x) else \<exists>x\<in>S. Q(x) \<Longrightarrow> \<exists>x\<in>S. ifb C then P(x) else Q(x)" by auto2
 
 lemma strict_neutrality1:
   "arrow_conds(I,Cs,F) \<Longrightarrow> distinct3(Cs,a,b,b') \<Longrightarrow> strict_neutral(I,Cs,F,a,b,a,b')"
