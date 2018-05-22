@@ -101,7 +101,7 @@ fun scoring {name, ...} sc items (st as {ctxt, ...}) func =
           val raw_updts = func (List.last items)
           fun process_raw_updt raw_updt =
               let
-                val id = target_of_update raw_updt
+                val id = Update.target_of_update raw_updt
               in
                 (* Perform resolved and shadowed tests again since id
                    may be descendent of merged_id.
@@ -184,7 +184,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
 *)
 and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...})=
     let
-      val id = target_of_update raw_updt
+      val id = Update.target_of_update raw_updt
       val st' = if Status.exist_box st id then st
                 else Status.add_composite_box id st
     in
@@ -504,7 +504,7 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
 
 fun apply_update (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
     let
-      val id = target_of_update raw_updt
+      val id = Update.target_of_update raw_updt
     in
       if BoxID.is_box_resolved ctxt id then st else
       st |> not (Status.exist_box st id) ? Status.add_composite_box id

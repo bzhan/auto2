@@ -1,6 +1,5 @@
 (* Definition of updates and proof status. *)
 
-datatype update_type = ADD_ITEMS | ADD_BOXES | RESOLVE_BOX | SHADOW_ITEM
 datatype raw_update
   = AddItems of {id: box_id, sc: int option, raw_items: raw_item list}
   | AddBoxes of {id: box_id, sc: int option, init_assum: term}
@@ -9,17 +8,9 @@ datatype raw_update
 type update = {sc: int, prfstep_name: string, source: box_item list,
                raw_updt: raw_update}
 
-fun target_of_update raw_updt =
-    case raw_updt of
-        AddItems {id, ...} => id
-      | AddBoxes {id, ...} => id
-      | ResolveBox {id, ...} => id
-      | ShadowItem {id, ...} => id
-
 signature UPDATE =
 sig
-  val type_of_update: raw_update -> update_type
-  val string_of_update_type: update_type -> string
+  val target_of_update: raw_update -> box_id
   val string_of_raw_update: Proof.context -> raw_update -> string
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
@@ -32,20 +23,14 @@ end;
 structure Update : UPDATE =
 struct
 
-fun type_of_update raw_updt =
+fun target_of_update raw_updt =
     case raw_updt of
-        AddItems _ => ADD_ITEMS
-      | AddBoxes _ => ADD_BOXES
-      | ResolveBox _ => RESOLVE_BOX
-      | ShadowItem _ => SHADOW_ITEM
+        AddItems {id, ...} => id
+      | AddBoxes {id, ...} => id
+      | ResolveBox {id, ...} => id
+      | ShadowItem {id, ...} => id
 
-fun string_of_update_type updt_ty =
-    case updt_ty of
-        ADD_ITEMS => "ADD_ITEMS"
-      | ADD_BOXES => "ADD_BOXES"
-      | RESOLVE_BOX => "RESOLVE_BOX"
-      | SHADOW_ITEM => "SHADOW_ITEM"
-
+(* Debugging output for raw update. *)
 fun string_of_raw_update ctxt raw_updt =
     case raw_updt of
         AddItems {id, raw_items, ...} =>
@@ -61,23 +46,28 @@ fun string_of_raw_update ctxt raw_updt =
         "Shadow item " ^ (ItemIO.string_of_item ctxt item) ^
         " in box " ^ (BoxID.string_of_box_id id)
 
+(* Create raw_item from theorem. *)
 fun thm_to_ritem th =
     let
       val prop = Thm.prop_of th
       val _ = assert (is_Trueprop prop) "thm_update: prop is not Trueprop."
       val _ = assert (not (Util.has_vars prop))
-                     "thm_update: prop contains schematic variables."
+                     "thm_to_ritem: prop contains schematic variables."
     in
       Fact (TY_PROP, [dest_Trueprop prop], th)
     end
 
+(* Create raw_update from id and theorem. *)
 fun thm_update (id, th) =
     if Thm.prop_of th aconv pFalse then
       ResolveBox {id = id, th = th}
     else
       AddItems {id = id, sc = NONE, raw_items = [thm_to_ritem th]}
 
-(* Apply the given existence theorem and return the list of resulting ritems.
+(* Apply the given existence theorem. Return a pair (ritems, th),
+   ritems contain the new variables and the new handler, and th is the
+   instantiated property of the new variables, which can either be
+   processed further, or made into an ritem using thm_update.
  *)
 fun apply_exists_ritems ctxt ex_th =
     let
@@ -91,15 +81,17 @@ fun apply_exists_ritems ctxt ex_th =
             Thm.assume (Thm.cterm_of ctxt body))
     end
 
+(* Print a list of raw items. *)
 fun update_info ctxt id ritems =
     (Util.string_of_list' (ItemIO.string_of_raw_item ctxt)
                      (filter (not o BoxItem.is_handler_raw) ritems)) ^
     " at box " ^ (BoxID.string_of_box_id id)
 
-fun uid_string_of_item {uid, ...} = "(" ^ string_of_int uid ^ ")"
-
+(* Print the source of the update. *)
 fun source_info {prfstep_name, source, ...} =
-    prfstep_name ^ " on " ^ (Util.string_of_list' (uid_string_of_item) source)
+    prfstep_name ^ " on " ^
+    (Util.string_of_list'
+         (fn {uid, ...} => "(" ^ string_of_int uid ^ ")") source)
 
 end  (* structure Update. *)
 
@@ -162,9 +154,7 @@ end  (* structure Box. *)
 structure Updates_Heap =
 Heap (
   type elem = update
-  fun ord ({sc = sc1, raw_updt = ru1, ...}, {sc = sc2, raw_updt = ru2, ...}) =
-      prod_ord int_ord (list_ord int_ord)
-               ((sc1, target_of_update ru1), (sc2, target_of_update ru2))
+  fun ord ({sc = sc1, ...}, {sc = sc2, ...}) = int_ord (sc1, sc2)
 )
 
 type status = {
