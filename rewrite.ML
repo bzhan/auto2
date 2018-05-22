@@ -652,10 +652,6 @@ fun get_head_equiv ctxt cu =
       val u = Thm.term_of cu
       val _ = assert (not (Term.is_open u)) "get_all_head_equivs: u is open"
 
-      fun rep_eq_better (id1, th1) (id2, th2) =
-          BoxID.is_eq_ancestor ctxt id1 id2 andalso
-          is_equiv id2 ctxt (Thm.rhs_of th1, Thm.rhs_of th2)
-
       fun get_all_equiv_under_id (id', th') =
           (get_all_equiv ctxt (Util.rhs_of th'))
               |> map (BoxID.merge_eq_infos ctxt (id', th'))
@@ -666,7 +662,7 @@ fun get_head_equiv ctxt cu =
       else
         cu |> subterm_simplify_info ctxt
            |> maps (get_head_rep_with_id_th ctxt)
-           |> Util.max_partial rep_eq_better
+           |> Util.max_partial (equiv_eq_better ctxt)
            |> maps get_all_equiv_under_id
            |> cons ([], Thm.reflexive cu)
            |> Util.max_partial (equiv_eq_better ctxt)
