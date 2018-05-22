@@ -8,9 +8,6 @@ sig
   val add_typing2_rule_cond:
       thm -> pre_prfstep_descriptor list -> theory -> theory
   val add_typing2_rule: thm -> theory -> theory
-  val add_backward_replace_cond:
-      thm -> pre_prfstep_descriptor list -> theory -> theory
-  val add_backward_replace: thm -> theory -> theory
 end;
 
 structure Extra_FOL : EXTRA_FOL =
@@ -41,30 +38,6 @@ fun add_typing2_rule_cond th conds thy =
     end
 
 fun add_typing2_rule th = add_typing2_rule_cond th []
-
-fun add_backward_replace_cond th conds thy =
-    let
-      val ctxt = Proof_Context.init_global thy
-      val ctxt' = ctxt |> Variable.declare_term (Thm.prop_of th)
-      val th_name = Util.name_of_thm th
-      val concl = concl_of' th
-      val conds' = map (fn cond => cond ctxt') conds
-      fun prfstep_fn ((id, _), ths) items _ =
-          let
-            val th' = th |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)
-          in
-            [AddItems {
-                id = id, sc = SOME 1,
-                raw_items = [Update.thm_to_ritem (ths MRS th')]},
-             ShadowItem {id = id, item = the_single items}]
-          end
-          handle THM _ => []
-    in
-      add_prfstep_custom (
-        th_name, ([WithGoal concl] @ conds'), PRIORITY_SHADOW, prfstep_fn) thy
-    end
-
-fun add_backward_replace th = add_backward_replace_cond th []
 
 end  (* structure Extra_FOL *)
 
