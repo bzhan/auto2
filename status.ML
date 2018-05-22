@@ -391,9 +391,11 @@ fun find_ritem_exact (st as {ctxt, ...}) id ritem =
 
 (* Invoke a single handler (vars, t, ex_th) on the theorem th. *)
 fun invoke_handler ctxt (vars, t, ex_th) th =
-    th |> Thm.implies_intr (Thm.cterm_of ctxt t)
-       |> fold (UtilLogic.ex_elim ctxt) (rev vars)
-       |> Thm.elim_implies ex_th
+    if member (op aconv) (Thm.hyps_of th) t then
+      th |> Thm.implies_intr (Thm.cterm_of ctxt t)
+         |> fold (UtilLogic.ex_elim ctxt) (rev vars)
+         |> Thm.elim_implies ex_th
+    else th
 
 (* Derive the consequence if box id is resolved, to the parent id
    formed by getting parent at index i.

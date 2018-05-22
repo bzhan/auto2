@@ -5,7 +5,6 @@ sig
   val item_score: raw_item -> int
   val items_score: raw_item list -> int
   val get_score: raw_update -> int
-  val get_id_score: status -> raw_update -> int
 end;
 
 structure Scores : SCORES =
@@ -29,13 +28,6 @@ fun get_score raw_updt =
                   | SOME n => n)
       | ResolveBox _ => ~1
       | ShadowItem _ => ~1
-
-fun get_id_score {ctxt, ...} raw_updt =
-    let
-      val id = target_of_update raw_updt
-    in
-      length (BoxID.get_ancestors_prim ctxt id) + 1
-    end
 
 end  (* structure SCORES. *)
 
@@ -120,8 +112,7 @@ fun scoring {name, ...} sc items (st as {ctxt, ...}) func =
                   let
                     val add_sc =
                         case ProofStepData.get_fixed_sc ctxt name of
-                            NONE => Scores.get_score raw_updt *
-                                    Scores.get_id_score st raw_updt
+                            NONE => Scores.get_score raw_updt
                           | SOME v => v
                   in
                     [{sc = add_sc + max_sc, prfstep_name = name,
