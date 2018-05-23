@@ -37,8 +37,7 @@ fun unfold_cmd s state =
       val {context = ctxt, ...} = Proof.goal state
       val thy = Proof_Context.theory_of ctxt
 
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
-                              |> Auto2_State.subgoal_of
+      val (_, (As, _)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
       val cAs = map (Thm.cterm_of ctxt) As
 

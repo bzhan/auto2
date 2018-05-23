@@ -161,8 +161,7 @@ fun get_induct_stmt ctxt (filt_A, ind_vars, stmt, arbitrary) =
     case stmt of
         NONE =>
         let
-          val (_, (As, C)) = ctxt |> Auto2_State.get_selected
-                                  |> Auto2_State.subgoal_of
+          val (_, (As, C)) = ctxt |> Auto2_State.get_subgoal
                                   |> Util.strip_meta_horn
           val obj_As = As |> map dest_Trueprop |> filter filt_A
           val obj_C = dest_Trueprop C
@@ -179,7 +178,7 @@ fun apply_simple_induct_th ind_th vars arbitraries prem_only state =
       val {context = ctxt, ...} = Proof.goal state
       val prop = Auto2_State.get_selected ctxt
 
-      val (vars', _) = prop |> Auto2_State.subgoal_of
+      val (vars', _) = prop |> Thm.prems_of |> the_single
                             |> Util.strip_meta_horn
 
       val ind_th =
@@ -202,16 +201,16 @@ fun apply_simple_induct_th ind_th vars arbitraries prem_only state =
     in
       if prem_only then
         let
-          val (_, (As, _)) = prop |> Auto2_State.subgoal_of
+          val (_, (As, _)) = prop |> Thm.prems_of |> the_single
                                   |> Util.strip_meta_horn
           val stmt = dest_Trueprop (hd As)
         in
-          state |> Proof.map_contexts (Auto2_State.set_head_th prop)
+          state |> Proof.map_contexts (Auto2_State.map_head_th (K prop))
                 |> Proof.map_contexts (Auto2_State.set_induct_stmt stmt)
                 |> Proof.map_contexts (Auto2_State.add_prem_only stmt)
         end
       else
-        state |> Proof.map_contexts (Auto2_State.set_head_th prop)
+        state |> Proof.map_contexts (Auto2_State.map_head_th (K prop))
     end
 
 fun strong_induct_cmd (s, t) state =
@@ -253,7 +252,8 @@ fun apply_induct_hyp_cmd s state =
                         raise Fail "apply_induct_hyp: no induct_stmt"
 
       val prop = Auto2_State.get_selected ctxt
-      val (_, (As, _)) = prop |> Auto2_State.subgoal_of |> Util.strip_meta_horn
+      val (_, (As, _)) = prop |> Thm.prems_of |> the_single
+                              |> Util.strip_meta_horn
       val _ = assert (member (op aconv) As (Thm.term_of stmt))
                      "apply_induct_hyp: induct_stmt not found among As."
       val cAs = map (Thm.cterm_of ctxt) As
@@ -287,8 +287,7 @@ val _ =
 fun solve_goals ind_th pats_opt filt_As state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
-                              |> Auto2_State.subgoal_of
+      val (_, (As, _)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
       val use_As = filter filt_As As
       val cAs = map (Thm.cterm_of ctxt) As
@@ -349,8 +348,7 @@ fun case_induct_cmd s state =
       val ind_th = get_term_ind_th thy "case_induct" start
 
       (* Obtain list of assumptions *)
-      val (_, (_, C)) = ctxt |> Auto2_State.get_selected
-                             |> Auto2_State.subgoal_of
+      val (_, (_, C)) = ctxt |> Auto2_State.get_subgoal
                              |> Util.strip_meta_horn
 
       (* Instantiate the induction theorem *)

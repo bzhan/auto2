@@ -1,10 +1,21 @@
-(* Current state, function for modifying the goal. *)
+(* Data structure containing auto2's state for the proof language. *)
 
-type auto2_frame = {goals: (term * thm) list,
-                    selected: int option,
-                    induct_stmt: term option,
-                    prem_only: term list,
-                    after_qed: (term list * (thm list -> thm -> thm)) option}
+(* The state consists of a stack of frames. *)
+type auto2_frame = {
+  (* List of subgoals in the current frame. Each element is of the
+     form (pat, th), where pat is the pattern used to select the
+     subgoal, and th is the subgoal itself. *)
+  goals: (term * thm) list,
+  (* Index of the currently selected subgoal. *)
+  selected: int option,
+  (* Possible induction statement. *)
+  induct_stmt: term option,
+  (* List of forall statements that should only be matched to premises
+     of theorems (not in disj_match_update). *)
+  prem_only: term list,
+  (* Function to be called after all subgoals are resolved. *)
+  after_qed: (term list * (thm list -> thm -> thm)) option
+}
 
 type auto2_state = auto2_frame list
 
@@ -17,17 +28,17 @@ sig
   val simple_frame:
       cterm * (term list * (thm list -> thm -> thm)) option -> auto2_frame
   val multiple_frame:
-      (term * cterm) list * (term list * (thm list -> thm -> thm)) option -> auto2_frame
+      (term * cterm) list * (term list * (thm list -> thm -> thm)) option ->
+      auto2_frame
   val map_head_th: (thm -> thm) -> Proof.context -> Proof.context
-  val set_head_th: thm -> Proof.context -> Proof.context
   val set_selected: int option -> Proof.context -> Proof.context
   val set_induct_stmt: term -> Proof.context -> Proof.context
   val get_last_induct_stmt: Proof.context -> term option
   val add_prem_only: term -> Proof.context -> Proof.context
   val lookup_prem_only: Proof.context -> term -> bool
-  val get_head: Proof.context -> auto2_frame
+  val get_top_frame: Proof.context -> auto2_frame
   val get_selected: Proof.context -> thm
-  val subgoal_of: thm -> term
+  val get_subgoal: Proof.context -> term
 end;
 
 structure Auto2_State : AUTO2_STATE =
@@ -65,66 +76,69 @@ fun string_of_state ctxt =
 
 fun print_state ctxt = tracing (string_of_state ctxt)
 
+(* Number of frames in the current state. *)
 fun get_num_frame ctxt = length (Data.get ctxt)
 
-(* Remove the head (innermost layer) of auto2 state. *)
+(* Remove the top-most frame of the state. *)
 val pop_head =
-    Data.map (fn frames =>
-         case frames of
-             [] => error "pop_head"
-           | _ :: rest => rest)
+    Data.map (fn frames => case frames of
+                               [] => error "pop_head"
+                             | _ :: rest => rest)
 
 (* Push a head layer of auto2 state. *)
 fun push_head frame =
     Data.map (cons frame)
 
+(* Create a frame with a single goal, with statement ct. Note the
+   resulting pair is (ct, ct ==> (ct)).
+ *)
 fun simple_frame (ct, after_qed) =
     {goals = [(Thm.term_of ct, Goal.protect 1 (Thm.trivial ct))],
      selected = SOME 0, induct_stmt = NONE, prem_only = [],
      after_qed = after_qed}
 
+(* Create a frame with multiple goals. Here the input is a list of
+   (pat, ct) pairs. The goals are (pat, ct ==> (ct)) pairs.
+ *)
 fun multiple_frame (goals, after_qed) =
     {goals = map (apsnd (Goal.protect 1 o Thm.trivial)) goals,
      selected = NONE, induct_stmt = NONE, prem_only = [], after_qed = after_qed}
 
-(* Change the proof state at the head of the auto2 state. *)
+(* Modify the top frame of the auto2 state. *)
 fun map_head f =
-    Data.map (fn frames =>
-         case frames of
-             [] => error "map_head"
-           | frame :: rest => f frame :: rest)
-  
-fun map_frame_th f frame =
-  let
-    val {goals, selected, induct_stmt, prem_only, after_qed} = frame
-  in
-    case selected of
-      NONE => raise Fail "map_frame_th: no proposition selected"
-    | SOME i =>
-      if i < 0 orelse i >= length goals then
-        raise Fail "map_frame_th: unexpected selected"
-      else
-        {goals = nth_map i (apsnd f) goals,
-         selected = selected, induct_stmt = induct_stmt, prem_only = prem_only,
-         after_qed = after_qed}
-  end
-      
-fun map_head_th f = map_head (map_frame_th f)
+    Data.map (fn frames => case frames of
+                               [] => error "map_head"
+                             | frame :: rest => f frame :: rest)
 
-fun set_head_th th = map_head_th (K th)
+(* Modify the selected subgoal. *)
+fun map_head_th f =
+    map_head (
+      fn {goals, selected, induct_stmt, prem_only, after_qed} =>
+         case selected of
+             NONE => raise Fail "map_frame_th: no proposition selected"
+           | SOME i =>
+             if i < 0 orelse i >= length goals then
+               raise Fail "map_frame_th: unexpected selected"
+             else
+               {goals = nth_map i (apsnd f) goals,
+                selected = selected, induct_stmt = induct_stmt,
+                prem_only = prem_only, after_qed = after_qed})
 
+(* Set selected subgoal. *)
 fun set_selected sel =
     map_head (
       fn {goals, induct_stmt, prem_only, after_qed, ...} =>
          {goals = goals, selected = sel, induct_stmt = induct_stmt,
           prem_only = prem_only, after_qed = after_qed})
 
+(* Set induction statement. *)
 fun set_induct_stmt stmt =
     map_head (
       fn {goals, selected, prem_only, after_qed, ...} =>
          {goals = goals, selected = selected, induct_stmt = SOME stmt,
           prem_only = prem_only, after_qed = after_qed})
 
+(* Return the last induction statement. *)
 fun get_last_induct_stmt ctxt =
     let
       val frames = Data.get ctxt
@@ -132,12 +146,14 @@ fun get_last_induct_stmt ctxt =
       get_first #induct_stmt (rev frames)
     end
 
+(* Add a statement as matching with premise only. *)
 fun add_prem_only stmt =
     map_head (
       fn {goals, selected, induct_stmt, prem_only, after_qed} =>
          {goals = goals, selected = selected, induct_stmt = induct_stmt,
           prem_only = stmt :: prem_only, after_qed = after_qed})
 
+(* Check whether a statement is matching with premise only. *)
 fun lookup_prem_only ctxt t =
     let
       val prem_only = maps #prem_only (Data.get ctxt)
@@ -145,23 +161,25 @@ fun lookup_prem_only ctxt t =
       member (op aconv) prem_only t
     end
 
-fun get_head ctxt =
+(* Return the top frame of the state. *)
+fun get_top_frame ctxt =
     case Data.get ctxt of
       [] => raise Fail "Auto2 proof should start with @begin keyword"
     | st :: _ => st
 
-(* Given proof state of form A ==> C (with only one subgoal A), return A *)
+(* Return the goal theorem (of the form A ==> (C)). *)
 fun get_selected ctxt =
     let
-      val {goals, selected, ...} = get_head ctxt
+      val {goals, selected, ...} = get_top_frame ctxt
     in
       case selected of
           NONE => raise Fail "get_selected: no goal is selected."
         | SOME i => snd (nth goals i)
     end
 
-fun subgoal_of prop =
-    the_single (Thm.prems_of prop)
-    handle List.Empty => error "subgoal_of"
+(* Return the current subgoal. *)
+fun get_subgoal ctxt =
+    ctxt |> get_selected |> Thm.prems_of |> the_single
+    handle List.Empty => error "get_subgoal: should have exactly one premise."
 
 end  (* structure Auto2_State *)

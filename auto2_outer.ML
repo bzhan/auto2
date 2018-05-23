@@ -107,7 +107,7 @@ fun refine_subgoal_th th prop =
  *)
 fun have_after_qed ctxt th prop =
     let
-      val (vars, (_, concl)) = prop |> Auto2_State.subgoal_of
+      val (vars, (_, concl)) = prop |> Thm.prems_of |> the_single
                                     |> Util.strip_meta_horn
       val have_res = have_resolve ctxt vars th concl
     in
@@ -121,8 +121,7 @@ fun have_cmd (s, r, t) state =
       val (vars, (assums, concl)) = s |> Syntax.read_term ctxt
                                       |> UtilLogic.strip_obj_horn
 
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
-                              |> Auto2_State.subgoal_of
+      val (_, (As, _)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As @ map mk_Trueprop assums,
@@ -193,7 +192,7 @@ fun match_subgoal_pat thy t (i, pat) =
 fun subgoal_cmd s state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {goals, selected, ...} = Auto2_State.get_head ctxt
+      val {goals, selected, ...} = Auto2_State.get_top_frame ctxt
       val _ = assert (selected = NONE) "@subgoal: already selected a subgoal."
 
       (* Figure out which subgoal to select by matching *)
@@ -226,7 +225,7 @@ fun auto2_solve_goal ctxt prop =
     if is_goal_resolved prop then prop
     else let
       val (vars, (As, C)) =
-          prop |> Auto2_State.subgoal_of |> Util.strip_meta_horn
+          prop |> Thm.prems_of |> the_single |> Util.strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
       val th = auto2_solve ctxt (Thm.cterm_of ctxt body)
     in
@@ -246,7 +245,7 @@ val _ =
 fun endgoal_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {goals, selected, ...} = Auto2_State.get_head ctxt
+      val {goals, selected, ...} = Auto2_State.get_top_frame ctxt
       val _ = assert (length goals > 1 andalso is_some selected)
                      "@endgoal: called without a selection"
       val prop = snd (nth goals (the selected))
@@ -269,7 +268,7 @@ val _ =
 fun end_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val {goals, selected, after_qed, ...} = Auto2_State.get_head ctxt
+      val {goals, selected, after_qed, ...} = Auto2_State.get_top_frame ctxt
       val _ = assert ((length goals = 1 andalso selected = SOME 0) orelse
                       (length goals > 1 andalso selected = NONE))
                 "@end: cannot call within an selection."
@@ -295,7 +294,7 @@ fun qed_cmd state =
                      "Qed should be applied outside any 'with' blocks"
 
       val prop = Auto2_State.get_selected ctxt
-      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of
+      val (vars, (As, C)) = prop |> Thm.prems_of |> the_single
                                  |> Util.strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
 
@@ -305,7 +304,7 @@ fun qed_cmd state =
 
       val method = K (Method.CONTEXT_TACTIC (PRIMITIVE (K new_prop)))
     in
-      state |> Proof.map_contexts (Auto2_State.set_head_th new_prop)
+      state |> Proof.map_contexts (Auto2_State.map_head_th (K new_prop))
             |> Proof.refine_singleton (Method.Basic (K method))
             |> Proof.global_done_proof
     end
@@ -368,7 +367,7 @@ fun obtain_resolve ctxt vars th concl =
 fun obtain_after_qed ctxt ths prop =
     let
       val th = the_single ths
-      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of
+      val (vars, (As, C)) = prop |> Thm.prems_of |> the_single
                                  |> Util.strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
 
@@ -391,8 +390,7 @@ fun obtain_cmd (s, t, u) state =
 
       val C = conds |> list_conj |> fold mk_exists (rev vars) |> mk_Trueprop
 
-      val (_, (As, _)) = ctxt |> Auto2_State.get_selected
-                              |> Auto2_State.subgoal_of
+      val (_, (As, _)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As, C)
@@ -470,7 +468,7 @@ fun case_resolve ctxt vars th =
 fun case_after_qed ctxt ths prop =
     let
       val th = the_single ths
-      val (vars, _) = prop |> Auto2_State.subgoal_of
+      val (vars, _) = prop |> Thm.prems_of |> the_single
                            |> Util.strip_meta_horn
       val case_res = case_resolve ctxt vars th
     in
@@ -482,8 +480,7 @@ fun case_cmd (s, t) state =
       val {context = ctxt, ...} = Proof.goal state
       val B = s |> Syntax.read_term ctxt |> mk_Trueprop
 
-      val (_, (As, C)) = ctxt |> Auto2_State.get_selected
-                              |> Auto2_State.subgoal_of
+      val (_, (As, C)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As @ [B], C) |> Thm.cterm_of ctxt
@@ -541,7 +538,7 @@ fun contra_resolve ctxt vars As C =
  *)
 fun contra_after_qed ctxt prop =
     let
-      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of
+      val (vars, (As, C)) = prop |> Thm.prems_of |> the_single
                                  |> Util.strip_meta_horn
       val contra_res = contra_resolve ctxt vars As C
     in
@@ -597,7 +594,7 @@ fun let_resolve ctxt vars eq As C =
  *)
 fun let_after_qed_one ctxt eq prop =
     let
-      val (vars, (As, C)) = prop |> Auto2_State.subgoal_of
+      val (vars, (As, C)) = prop |> Thm.prems_of |> the_single
                                  |> Util.strip_meta_horn
       val let_res = let_resolve ctxt vars eq As C
     in
