@@ -102,7 +102,7 @@ Heap (
 )
 
 type status = {
-  assums: term vector,
+  assums: term list,
   handlers: (box_id * (term list * term * thm)) list,
   items: (box_item * box_id list) Inttab.table,
   queue: Updates_Heap.T,
@@ -148,7 +148,7 @@ structure Status : STATUS =
 struct
 
 fun empty_status ctxt =
-    {assums = Vector.fromList [],
+    {assums = [],
      handlers = [],
      items = Inttab.empty,
      queue = Updates_Heap.empty,
@@ -203,7 +203,7 @@ fun add_prim_box parent_id assum
     let
       val (id, ctxt') = BoxID.add_prim_id parent_id ctxt
     in
-      (id, {assums = Vector.concat [assums, Vector.fromList [assum]],
+      (id, {assums = assums @ [assum],
             handlers = handlers, items = items, queue = queue,
             ctxt = ctxt', resolve_th = resolve_th})
     end
@@ -224,11 +224,11 @@ fun get_init_assums {assums, ctxt, ...} id =
     let
       val parents = BoxID.get_ancestors_prim ctxt id
     in
-      map (fn pid => Vector.sub (assums, pid)) parents
+      map (nth assums) parents
     end
 
 fun get_init_assum {assums, ...} prim_id =
-    Vector.sub (assums, prim_id)
+    nth assums prim_id
 
 fun lookup_item {items, ...} uid =
     Inttab.lookup items uid
@@ -343,13 +343,13 @@ fun find_prim_box {assums, ctxt, ...} id init_assum =
             val parent = BoxID.get_parent_prim ctxt prim_id'
             val is_equiv_t = RewriteTable.is_equiv_t parent ctxt
           in
-            is_equiv_t (init_assum, Vector.sub (assums, prim_id'))
+            is_equiv_t (init_assum, nth assums prim_id')
           end
 
       fun can_test_id prim_id' =
           BoxID.is_eq_ancestor ctxt (BoxID.get_parent_prim ctxt prim_id') id
 
-      val ids_to_test = filter can_test_id (0 upto (Vector.length assums - 1))
+      val ids_to_test = filter can_test_id (0 upto (length assums - 1))
     in
       find_first agree_at_id ids_to_test
     end
