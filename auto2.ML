@@ -367,11 +367,14 @@ fun process_fact_all items (st as {ctxt, ...}) =
       (* List of items to consider for init and incr rounds. *)
       val init_items = filter_out (BoxItem.match_ty_str TY_PROPERTY) items
 
+      val incr_id = #id (hd items)
+      fun incr_filt {id, tname, ...} =
+          exists (Util.has_subterm ts) (map Thm.term_of tname) andalso
+          BoxID.is_box_unresolved ctxt (BoxID.merge_boxes ctxt (id, incr_id))
+
       val incr_items =
           if null ts then []
-          else old_items |> filter (
-              fn {tname, ...} => exists (Util.has_subterm ts)
-                                        (map Thm.term_of tname))
+          else old_items |> filter incr_filt
                          |> cons BoxItem.null_item
 
       (* List of proofsteps to consider for init and incr rounds. *)

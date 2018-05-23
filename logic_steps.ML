@@ -82,10 +82,9 @@ fun shadow_item_fn ictxt item1 item2 =
             (RewriteTable.subequiv_info ctxt id (tname1, tname2))
                 |> IncrContext.replace_id_for_type' ictxt |> map fst
                 |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
+
       val item_to_shadow =
-          if #sc item1 > #sc item2 orelse
-             (#sc item1 = #sc item2 andalso #uid item1 > #uid item2) then item1
-          else item2
+          if #uid item1 > #uid item2 then item1 else item2
       fun process_id id' =
           ShadowItem {id = id', item = item_to_shadow}
     in
