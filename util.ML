@@ -93,7 +93,6 @@ sig
   val has_subterm: term list -> term -> bool
   val is_head: term -> term -> bool
   val lambda_abstract: term -> term -> term
-  val dest_abs_t: term -> term * term
   val is_pattern_list: term list -> bool
   val is_pattern: term -> bool
 
@@ -432,17 +431,6 @@ fun is_head s t =
 
 (* If stmt is P(t), return %t. P(t). *)
 fun lambda_abstract t stmt = Term.lambda t (Term.abstract_over (t, stmt))
-
-(* If t is %t. P(t), return the pair (t, P(t)). *)
-fun dest_abs_t t =
-    case t of
-        Abs (abs as (_, T, _)) =>
-        let
-          val (x, body) = Term.dest_abs abs
-        in
-          (Free (x, T), body)
-        end
-      | _ => raise Fail "dest_abs_t"
 
 (* A more general criterion for patterns. In combinations, any
    argument that is a pattern (in the more general sense) frees up

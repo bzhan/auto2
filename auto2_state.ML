@@ -4,16 +4,26 @@
 type auto2_frame = {
   (* List of subgoals in the current frame. Each element is of the
      form (pat, th), where pat is the pattern used to select the
-     subgoal, and th is the subgoal itself. *)
+     subgoal, and th is the subgoal itself.
+   *)
   goals: (term * thm) list,
+
   (* Index of the currently selected subgoal. *)
   selected: int option,
+
   (* Possible induction statement. *)
   induct_stmt: term option,
+
   (* List of forall statements that should only be matched to premises
-     of theorems (not in disj_match_update). *)
+     of theorems (not in disj_match_update).
+   *)
   prem_only: term list,
-  (* Function to be called after all subgoals are resolved. *)
+
+  (* Callback after all subgoals are resolved. This is a pair (vars,
+     f), where vars is a list of new variables, and f is the function
+     that, given the list of solved subgoals as theorems, performs a
+     modification on the current subgoal.
+   *)
   after_qed: (term list * (thm list -> thm -> thm)) option
 }
 

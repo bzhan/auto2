@@ -4,11 +4,11 @@ signature AUTO2_OUTER =
 sig
   val auto2_solve: Proof.context -> cterm -> thm
   val init_state: Proof.state -> Proof.state
+  val refine_subgoal_th: thm -> thm -> thm
 
   val have_resolve: Proof.context -> term list -> thm -> term -> thm
-  val refine_subgoal_th: thm -> thm -> thm
   val have_after_qed: Proof.context -> thm -> thm -> thm
-  val have_cmd: string * 'a option * string option -> Proof.state -> Proof.state
+  val have_cmd: bool * string * bool -> Proof.state -> Proof.state
 
   val subgoal_cmd: string -> Proof.state -> Proof.state
   val endgoal_cmd: Proof.state -> Proof.state
@@ -16,22 +16,19 @@ sig
   val end_cmd: Proof.state -> Proof.state
   val qed_cmd: Proof.state -> Proof.context
 
-  val strip_ex: term -> term list * term
   val obtain_resolve: Proof.context -> term list -> thm -> term -> thm
   val obtain_after_qed: Proof.context -> thm list -> thm -> thm
-  val obtain_cmd:
-      string list * string list * string option -> Proof.state -> Proof.state
+  val obtain_cmd: string list * string list * bool -> Proof.state -> Proof.state
 
   val case_resolve: Proof.context -> term list -> thm -> thm
   val case_after_qed: Proof.context -> thm list -> thm -> thm
-  val case_cmd: string * string option -> Proof.state -> Proof.state
+  val case_cmd: string * bool -> Proof.state -> Proof.state
 
   val contra_resolve: Proof.context -> term list -> term list -> term -> thm
   val contra_after_qed: Proof.context -> thm -> thm
   val contra_cmd: Proof.state -> Proof.state
 
   val let_resolve: Proof.context -> term list -> term -> term list -> term -> thm
-  val let_after_qed_one: Proof.context -> term -> thm -> thm
   val let_after_qed: Proof.context -> term list -> thm -> thm
   val let_cmd: string list -> Proof.state -> Proof.state
 end;
@@ -61,12 +58,24 @@ fun init_state state =
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@proof"} "begin auto2 proof"
+    Outer_Syntax.command @{command_keyword "@proof"} "begin auto2 proof"
     (Scan.succeed (Toplevel.proof init_state))
 
-(* Given theorem A_1 ==> ... ==> A_n ==> B, a term C, and a list of
-   variables x, obtain the theorem (!!x. A_1 ==> ... ==> A_n ==> B ==>
-   C) ==> (!!x. A_1 ==> ... ==> A_n ==> C).
+(* Given th of the form A ==> B, and prop of the form B ==> C, return
+   the theorem A ==> C. In effect, we modified (refined) the subgoal
+   in prop from B to A using th.
+ *)
+fun refine_subgoal_th th prop =
+    let
+      val assum = hd (Drule.cprems_of th)  (* A *)
+    in
+      th |> Util.send_first_to_hyps  (* [A] ==> B *)
+         |> Thm.implies_elim prop    (* [A] ==> C *)
+         |> Thm.implies_intr assum   (* A ==> C *)
+    end
+
+(* Given theorem As ==> B, a term C, and a list of variables x, obtain
+   the theorem (!!x. As ==> B ==> C) ==> (!!x. As ==> C).
  *)
 fun have_resolve ctxt vars th concl =
     let
@@ -79,7 +88,7 @@ fun have_resolve ctxt vars th concl =
 
       val thAs = map Thm.assume cAs
       val th_bc =
-          stmt |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> B ==> C *)
+          stmt |> Thm.assume  (* !!x. As ==> B ==> C *)
                |> fold Thm.forall_elim c_vars
                |> fold Thm.elim_implies thAs  (* B ==> C *)
 
@@ -92,18 +101,11 @@ fun have_resolve ctxt vars th concl =
            |> Thm.implies_intr stmt
     end
 
-fun refine_subgoal_th th prop =
-    let
-      val assum = hd (Drule.cprems_of th)
-    in
-      th |> Util.send_first_to_hyps
-         |> Thm.implies_elim prop
-         |> Thm.implies_intr assum
-    end
+(* Given prop in the form (!!x. As ==> C) ==> D, and th in the form As
+   ==> B, return the theorem (!!x. As ==> B ==> C) ==> D.
 
-(* Given prop in the form (!!x. A_1 ==> ... ==> A_n ==> C) ==> D, and
-   th in the form A_1 ==> ... ==> A_n ==> B, return the theorem
-   (!!x. A_1 ==> ... ==> A_n ==> B ==> C) ==> D.
+   In effect, this adds B as an extra assumption in the current
+   subgoal.
  *)
 fun have_after_qed ctxt th prop =
     let
@@ -114,71 +116,91 @@ fun have_after_qed ctxt th prop =
       refine_subgoal_th have_res prop
     end
 
-fun have_cmd (s, r, t) state =
+(* Implementation of @have command. *)
+fun have_cmd (is_rule, t, is_with) state =
     let
       val {context = ctxt, ...} = Proof.goal state
 
-      val (vars, (assums, concl)) = s |> Syntax.read_term ctxt
+      (* Goal to be proved: !!x. As' ==> C *)
+      val (vars, (assums, concl)) = t |> Syntax.read_term ctxt
                                       |> UtilLogic.strip_obj_horn
 
+      (* Current subgoal *)
       val (_, (As, _)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
 
+      (* Actual goal: strip vars, and add As as additional assumptions. *)
       val stmt = Logic.list_implies (As @ map mk_Trueprop assums,
                                      mk_Trueprop concl)
 
+      (* Post-processing. We begin with th: As ==> As' ==> C, and want
+         to create the theorem As ==> (!!x. As' ==> C), then use it to
+         insert !!x. As' ==> C as an additional assumption.
+       *)
+      fun post_process th =
+          th |> funpow (length As) Util.send_first_to_hyps
+             (* [As] ==> As' ==> C *)
+             |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
+             (* [As] ==> !!x. As' ==> C *)
+             |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
+             (* [As] ==> !x. As' --> C *)
+             |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
+
       fun after_qed ths prop =
-          let
-            val th' =
-                ths |> the_single
-                    |> funpow (length As) Util.send_first_to_hyps
-                    |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
-                    |> apply_to_thm (UtilLogic.to_obj_conv ctxt)
-                    |> fold Thm.implies_intr (rev (map (Thm.cterm_of ctxt) As))
-          in
-            have_after_qed ctxt th' prop
-          end
+          have_after_qed ctxt (post_process (the_single ths)) prop
 
-      val stmt' = UtilLogic.list_obj_horn (vars, (assums, concl))
+      val add_prem_only =
+          if is_rule then I
+          else Auto2_State.add_prem_only
+                   (UtilLogic.list_obj_horn (vars, (assums, concl)))
 
-      val is_rule = is_some r
-      val new_vars = filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) vars
+      val new_vars =
+          filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) vars
     in
-      if is_none t then
+      if not is_with then
         let
-          (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B. *)
-          val ctxt' = ctxt |> fold Util.declare_free_term new_vars
+          (* Run auto2 to obtain As ==> As' ==> C. *)
+          val ctxt' = fold Util.declare_free_term new_vars ctxt
           val th = auto2_solve ctxt' (Thm.cterm_of ctxt' stmt)
         in
           state |> Proof.map_contexts (Auto2_State.map_head_th (after_qed [th]))
-                |> (if is_rule then I else
-                    Proof.map_contexts (Auto2_State.add_prem_only stmt'))
+                |> Proof.map_contexts add_prem_only
         end
       else
         let
-          (* Create new block with stmt *)
-          val new_block = Auto2_State.simple_frame (
-              Thm.cterm_of ctxt stmt, SOME ([], after_qed))
+          val new_frame = Auto2_State.simple_frame (
+                Thm.cterm_of ctxt stmt, SOME ([], after_qed))
         in
-          state |> (if is_rule then I else
-                    Proof.map_contexts (Auto2_State.add_prem_only stmt'))
+          (* The order here does not matter much. All three actions
+             will be completed before proof begins.
+           *)
+          state |> Proof.map_contexts add_prem_only
                 |> Proof.map_contexts (fold Util.declare_free_term new_vars)
-                |> Proof.map_contexts (Auto2_State.push_head new_block)
+                |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
     end
 
-val rule =
+val read_rule =
     Scan.option (Parse.$$$ "(" --| @{keyword "@rule"} |-- Parse.$$$ ")")
 
+val read_with =
+    Scan.option @{keyword "@with"}
+
 val _ =
-  Outer_Syntax.command @{command_keyword "@have"} "intermediate goal"
-    (((rule -- Parse.term) --
-      Scan.option @{keyword "@with"}) >>
-        (fn ((s, r), t) =>
-           Toplevel.proof (fn state => have_cmd (r, s, t) state)))
+    Outer_Syntax.command @{command_keyword "@have"} "intermediate goal"
+    (read_rule -- Parse.term -- read_with >>
+        (fn ((rule_opt, t), with_opt) =>
+            Toplevel.proof
+                (fn state =>
+                    have_cmd (is_some rule_opt, t, is_some with_opt) state)))
 
-fun is_goal_resolved th = not (Util.is_head (Logic.protectC) (Thm.concl_of th))
+(* Whether the goal is already resolved. *)
+fun is_goal_resolved th =
+    not (Util.is_head (Logic.protectC) (Thm.concl_of th))
 
+(* Match pattern pat with t. Here pat is the pattern for selecting the
+   i'th subgoal.
+ *)
 fun match_subgoal_pat thy t (i, pat) =
     let
       val inst = Pattern.first_order_match thy (pat, t) fo_init
@@ -189,6 +211,7 @@ fun match_subgoal_pat thy t (i, pat) =
     end
     handle Pattern.MATCH => NONE
 
+(* Implementation of the @subgoal command. *)
 fun subgoal_cmd s state =
     let
       val {context = ctxt, ...} = Proof.goal state
@@ -207,10 +230,13 @@ fun subgoal_cmd s state =
             val prop = snd (nth goals i)
             val _ = assert (not (is_goal_resolved prop))
                            "@subgoal: goal already resolved."
+
+            (* Use the matched variables ts to name the forall variables. *)
             val t' = case Thm.prop_of prop of
-                        imp $ A $ B => imp $ Util.rename_abs_term ts A $ B
-                      | _ => raise Fail "subgoal_cmd"
-            val prop = prop |> Thm.renamed_prop t'
+                         imp $ A $ B => imp $ Util.rename_abs_term ts A $ B
+                       | _ => raise Fail "subgoal_cmd"
+            val prop = Thm.renamed_prop t' prop
+
             val new_ts =
                 filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) ts
           in
@@ -220,10 +246,15 @@ fun subgoal_cmd s state =
           end
     end
 
+val _ =
+    Outer_Syntax.command @{command_keyword "@subgoal"} "select subgoal"
+    (Parse.term >>
+       (fn s => Toplevel.proof (fn state => subgoal_cmd s state)))
+
 (* Use auto2 to resolve one of the goals. *)
 fun auto2_solve_goal ctxt prop =
-    if is_goal_resolved prop then prop
-    else let
+    if is_goal_resolved prop then prop else
+    let
       val (vars, (As, C)) =
           prop |> Thm.prems_of |> the_single |> Util.strip_meta_horn
       val body = Util.list_meta_horn ([], (As, C))
@@ -234,13 +265,10 @@ fun auto2_solve_goal ctxt prop =
          |> Goal.conclude
     end
 
-val _ =
-  Outer_Syntax.command @{command_keyword "@subgoal"} "endgoal of with block"
-    (Parse.term >>
-       (fn s => Toplevel.proof (fn state => subgoal_cmd s state)))
+(* Implementation of the @endgoal command.
 
-(* @endgoal command: there should be more than one goal in the current frame,
-   and one of the goals is selected. Use auto2 to finish the selected goal.
+   There should be more than one goal in the current frame, and one of
+   the goals is selected. Use auto2 to finish the selected goal.
  *)
 fun endgoal_cmd state =
     let
@@ -256,14 +284,16 @@ fun endgoal_cmd state =
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@endgoal"} "endgoal of with block"
+    Outer_Syntax.command @{command_keyword "@endgoal"} "endgoal of with block"
     (Scan.succeed (
-       Toplevel.proof (fn state => endgoal_cmd state)))
+        Toplevel.proof (fn state => endgoal_cmd state)))
 
-(* @end command: if there is exactly one goal in the current frame, that goal
-   should be selected and unresolved. Use auto2 to resolve that goal. If there
-   are multiple goals in the current frame, use auto2 to finish all unresolved
-   goals.
+(* Implementation of the @end command.
+
+   If there is exactly one goal in the current frame, that goal should
+   be selected and unresolved. Use auto2 to resolve that goal. If
+   there are multiple goals in the current frame, use auto2 to finish
+   all unresolved goals.
  *)
 fun end_cmd state =
     let
@@ -271,11 +301,13 @@ fun end_cmd state =
       val {goals, selected, after_qed, ...} = Auto2_State.get_top_frame ctxt
       val _ = assert ((length goals = 1 andalso selected = SOME 0) orelse
                       (length goals > 1 andalso selected = NONE))
-                "@end: cannot call within an selection."
+                     "@end: cannot call within an selection."
       val solved_props = map (auto2_solve_goal ctxt o snd) goals
       val _ = assert (forall is_goal_resolved solved_props)
-                "@end: failed to resolve all goals"
-      val (new_vars, f) = (the after_qed)
+                     "@end: failed to resolve all goals"
+
+      (* List of new variables, and callback function. *)
+      val (new_vars, f) = the after_qed
     in
       state |> Proof.map_contexts Auto2_State.pop_head
             |> Proof.map_contexts (Auto2_State.map_head_th (f solved_props))
@@ -283,10 +315,11 @@ fun end_cmd state =
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@end"} "end of with block"
+    Outer_Syntax.command @{command_keyword "@end"} "end of with block"
     (Scan.succeed (
-       Toplevel.proof (fn state => end_cmd state)))
+        Toplevel.proof (fn state => end_cmd state)))
 
+(* Implementation of the @qed command. *)
 fun qed_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
@@ -310,35 +343,24 @@ fun qed_cmd state =
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@qed"} "end of proof"
+    Outer_Syntax.command @{command_keyword "@qed"} "end of proof"
     (Scan.succeed (
-       Toplevel.end_proof (K qed_cmd)))
+        Toplevel.end_proof (K qed_cmd)))
 
-fun strip_ex t =
-    if is_ex t then
-      let
-        val (var, body) = Util.dest_abs_t (dest_arg t)
-        val (vars, body') = strip_ex body
-      in
-        (var :: vars, body')
-      end
-    else
-      ([], t)
-
-(* Given theorem A_1 ==> ... ==> A_n ==> EX y. P(y), a term C, and a
-   list of variables x, obtain the theorem (!!x y. A_1 ==> ... ==> A_n
-   ==> P(y) ==> C) ==> (!!x. A_1 ==> ... ==> A_n ==> C)
+(* Given theorem As ==> EX y. P(y), a term C, and a list of variables
+   x, obtain the theorem (!!x y. As ==> P(y) ==> C) ==> (!!x. As ==>
+   C).
  *)
 fun obtain_resolve ctxt vars th concl =
     let
       val prop = Thm.prop_of th
 
-      (* B is EX x. P(x) *)
+      (* B is EX y. P(y) *)
       val (As, B) = Logic.strip_horn prop
       val cAs = map (Thm.cterm_of ctxt) As
       val c_vars = map (Thm.cterm_of ctxt) vars
 
-      val (new_vars, body) = strip_ex (dest_Trueprop B)
+      val (new_vars, body) = UtilLogic.strip_exists (dest_Trueprop B)
 
       val As' = As @ [mk_Trueprop body]
       val stmt = (Util.list_meta_horn (vars @ new_vars, (As', concl)))
@@ -347,7 +369,7 @@ fun obtain_resolve ctxt vars th concl =
       val thAs = map Thm.assume cAs
       val th_b = th |> fold Thm.elim_implies thAs
 
-      (* P(x) ==> C *)
+      (* P(y) ==> C *)
       val th_bc = stmt |> Thm.assume
                        |> fold Thm.forall_elim c_vars
                        |> fold Thm.forall_elim (map (Thm.cterm_of ctxt) new_vars)
@@ -360,9 +382,12 @@ fun obtain_resolve ctxt vars th concl =
            |> Thm.implies_intr stmt
     end
 
-(* Give prop in the form (A_1 ==> ... ==> A_n ==> C) ==> D, and th in
-   the form A_1 ==> ... ==> A_n ==> EX x. P(x), return the theorem
-   (!!x. A_1 ==> ... ==> A_n ==> P(x) ==> C) ==> D
+(* Give prop in the form (!!x. As ==> C) ==> D, and th in the form As
+   ==> EX y. P(y), return the theorem (!!x y. As ==> P(y) ==> C) ==>
+   D.
+
+   In effect, this creates new variables y with property P(y) in the
+   current subgoal.
  *)
 fun obtain_after_qed ctxt ths prop =
     let
@@ -377,60 +402,69 @@ fun obtain_after_qed ctxt ths prop =
       refine_subgoal_th obtain_res prop
     end
 
-fun obtain_cmd (s, t, u) state =
+(* Implementation of @obtain command. *)
+fun obtain_cmd (vars, conds, is_with) state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val (vars, conds) = (Syntax.read_terms ctxt (s @ t))
-                              |> chop (length s)
-      (* Elements of vars can be in the form x : A, process into var x
-         and cond x : A.
-       *)
-      val conds = filter is_mem vars @ conds
-      val vars = map (fn t => if is_mem t then dest_arg1 t else t) vars
 
+      (* First read list of variables and conditions *)
+      val (vars, conds) = (Syntax.read_terms ctxt (vars @ conds))
+                              |> chop (length vars)
+
+      (* Elements of vars can be in the form x : A, process it into a
+         variable x and a condition x : A.
+       *)
+      val (vars, conds) =
+          (map (fn t => if is_mem t then dest_arg1 t else t) vars,
+           filter is_mem vars @ conds)
+
+      (* Goal: EX vars. conds *)
       val C = conds |> list_conj |> fold mk_exists (rev vars) |> mk_Trueprop
 
+      (* Current subgoal *)
       val (_, (As, _)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
 
+      (* Actual goal: As ==> EX vars. conds *)
       val stmt = Logic.list_implies (As, C)
+
       val new_vars =
-          filter_out (
-            fn v => Variable.is_fixed ctxt (fst (Term.dest_Free v))) vars
+          filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) vars
+
+      val after_qed = obtain_after_qed ctxt
     in
-      if is_none u then
+      if not is_with then
         let
-          (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B. *)
+          (* Run auto2 to obtain As ==> EX vars. conds. *)
           val th = auto2_solve ctxt (Thm.cterm_of ctxt stmt)
         in
           state |> Proof.map_contexts (fold Util.declare_free_term new_vars)
-                |> Proof.map_contexts (
-            Auto2_State.map_head_th (obtain_after_qed ctxt [th]))
+                |> Proof.map_contexts (Auto2_State.map_head_th (after_qed [th]))
         end
       else
         let
-          (* Create new block with stmt *)
           val new_frame = Auto2_State.simple_frame (
-              Thm.cterm_of ctxt stmt, SOME (new_vars, obtain_after_qed ctxt))
+                Thm.cterm_of ctxt stmt, SOME (new_vars, after_qed))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
     end
 
 val obtain_param =
-  ((Scan.repeat Parse.term --
-    Scan.option (@{keyword "where"} |-- (Scan.repeat Parse.term)))
-     -- Scan.option @{keyword "@with"})
+    Scan.repeat Parse.term --
+    Scan.option (@{keyword "where"} |-- Scan.repeat Parse.term) --
+    read_with
 
 val _ =
   Outer_Syntax.command @{command_keyword "@obtain"} "obtain variables"
     (obtain_param >>
-       (fn ((s, t), u) =>
-           Toplevel.proof (fn state => obtain_cmd (s, these t, u) state)))
+       (fn ((vars, conds), with_opt) =>
+           Toplevel.proof (
+             fn state =>
+                obtain_cmd (vars, these conds, is_some with_opt) state)))
 
-(* Given theorem A_1 ==> ... ==> A_n ==> B ==> C, and a list of
-   variables x, obtain the theorem (!!x. A_1 ==> ... ==> A_n ==> ~B
-   ==> C) ==> (!!x. A_1 ==> ... ==> A_n ==> C).
+(* Given theorem As ==> B ==> C, and a list of variables x, obtain the
+   theorem (!!x. As ==> ~B ==> C) ==> (!!x. As ==> C).
  *)
 fun case_resolve ctxt vars th =
     let
@@ -445,7 +479,7 @@ fun case_resolve ctxt vars th =
 
       val thAs = map Thm.assume cAs
       val th_nbc =
-          stmt |> Thm.assume  (* !!x. A_1 ==> ... ==> A_n ==> ~B ==> C *)
+          stmt |> Thm.assume  (* !!x. As ==> ~B ==> C *)
                |> fold Thm.forall_elim c_vars
                |> fold Thm.elim_implies thAs  (* ~B ==> C *)
 
@@ -461,9 +495,10 @@ fun case_resolve ctxt vars th =
            |> Thm.implies_intr stmt
     end
 
-(* Given prop in the form (!!x. A_1 ==> ... ==> A_n ==> C) ==> D, and
-   th in the form A_1 ==> ... ==> A_n ==> B ==> C, return the theorem
-   (!!x. A_1 ==> ... ==> A_n ==> ~B ==> C) ==> D.
+(* Given prop in the form (!!x. As ==> C) ==> D, and th in the form As
+   ==> B ==> C, return the theorem (!!x. As ==> ~B ==> C) ==> D.
+
+   In effect, this adds ~B as extra assumption in the current subgoal.
  *)
 fun case_after_qed ctxt ths prop =
     let
@@ -475,43 +510,42 @@ fun case_after_qed ctxt ths prop =
       refine_subgoal_th case_res prop
     end
 
-fun case_cmd (s, t) state =
+(* Implementation of @case command. *)
+fun case_cmd (t, is_with) state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val B = s |> Syntax.read_term ctxt |> mk_Trueprop
+
+      val B = t |> Syntax.read_term ctxt |> mk_Trueprop
 
       val (_, (As, C)) = ctxt |> Auto2_State.get_subgoal
                               |> Util.strip_meta_horn
 
       val stmt = Logic.list_implies (As @ [B], C) |> Thm.cterm_of ctxt
+      val after_qed = case_after_qed ctxt
     in
-      if is_none t then
+      if not is_with then
         let
           (* Run auto2 to obtain A_1 ==> ... ==> A_n ==> B ==> C *)
           val th = auto2_solve ctxt stmt
         in
-          state |> Proof.map_contexts (
-            Auto2_State.map_head_th (case_after_qed ctxt [th]))
+          state |> Proof.map_contexts (Auto2_State.map_head_th (after_qed [th]))
         end
       else
         let
-          (* Create new block with stmt *)
-          val new_frame =
-              Auto2_State.simple_frame (stmt, SOME ([], case_after_qed ctxt))
+          val new_frame = Auto2_State.simple_frame (stmt, SOME ([], after_qed))
         in
           state |> Proof.map_contexts (Auto2_State.push_head new_frame)
         end
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@case"} "intermediate case"
-    ((Parse.term -- Scan.option @{keyword "@with"}) >>
-        (fn (s, t) =>
-            Toplevel.proof (fn state => case_cmd (s, t) state)))
+    Outer_Syntax.command @{command_keyword "@case"} "intermediate case"
+    (Parse.term -- read_with >>
+        (fn (t, with_opt) =>
+            Toplevel.proof (fn state => case_cmd (t, is_some with_opt) state)))
 
-(* Given a list of variables x, assumptions A_i, and term C, return
-   the theorem (!!x. A_1 ==> ... ==> A_n ==> ~C ==> False) ==>
-   (!!x. A_1 ==> ... ==> A_n ==> C).
+(* Given a list of variables x, assumptions As, and term C, return the
+   theorem (!!x. As ==> ~C ==> False) ==> (!!x. As ==> C).
  *)
 fun contra_resolve ctxt vars As C =
     let
@@ -532,9 +566,8 @@ fun contra_resolve ctxt vars As C =
            |> Thm.implies_intr stmt
     end
 
-(* Given prop in the form (!!x. A_1 ==> ... ==> A_n ==> C) ==> D,
-   return the theorem (!!x. A_1 ==> ... ==> A_n ==> ~C ==> False) ==>
-   D.
+(* Given prop in the form (!!x. As ==> C) ==> D, return the theorem
+   (!!x. As ==> ~C ==> False) ==> D.
  *)
 fun contra_after_qed ctxt prop =
     let
@@ -545,26 +578,24 @@ fun contra_after_qed ctxt prop =
       refine_subgoal_th contra_res prop
     end
 
-(* Change the subgoal from !!x. A_1 ==> ... ==> A_n ==> C to !!x. A_1
-   ==> ... ==> A_n ==> ~C ==> False.
- *)
+(* Implementation of @contradiction command. *)
 fun contra_cmd state =
     let
       val {context = ctxt, ...} = Proof.goal state
+      val after_qed = contra_after_qed ctxt
     in
-      state |> Proof.map_contexts (
-        Auto2_State.map_head_th (contra_after_qed ctxt))
+      state |> Proof.map_contexts (Auto2_State.map_head_th after_qed)
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@contradiction"}
+    Outer_Syntax.command @{command_keyword "@contradiction"}
     "apply proof by contradiction"
     (Scan.succeed (
         Toplevel.proof (fn state => contra_cmd state)))
 
-(* Given a list of variables x, an equation y = t, assumptions A_i,
-   and a term C, return the theorem (!!x y. A_1 ==> ... ==> A_n ==> y
-   = t ==> C) ==> (!!x. A_1 ==> ... ==> A_n ==> C).
+(* Given a list of variables x, an equation y = t, assumptions As, and
+   a term C, return the theorem (!!x y. As ==> y = t ==> C) ==>
+   (!!x. As ==> C).
  *)
 fun let_resolve ctxt vars eq As C =
     let
@@ -588,41 +619,44 @@ fun let_resolve ctxt vars eq As C =
       obtain_resolve ctxt vars ex_th C
     end
 
-(* Given prop in the form (!!x. A_1 ==> ... ==> A_n ==> C) ==> D, and
-   an equation y = t, return the theorem (!!x. A_1 ==> ... ==> A_n ==>
-   y = t ==> C) ==> D.
+(* Given prop in the form (!!x. As ==> C) ==> D, and an equation y =
+   t, return the theorem (!!x y. As ==> y = t ==> C) ==> D.
+
+   In effect, this creates a new variable y with property y = t in the
+   current subgoal.
  *)
-fun let_after_qed_one ctxt eq prop =
+fun let_after_qed ctxt eqs prop =
     let
-      val (vars, (As, C)) = prop |> Thm.prems_of |> the_single
-                                 |> Util.strip_meta_horn
-      val let_res = let_resolve ctxt vars eq As C
+      fun fold_one eq prop =
+          let
+            val (vars, (As, C)) = prop |> Thm.prems_of |> the_single
+                                       |> Util.strip_meta_horn
+            val let_res = let_resolve ctxt vars eq As C
+          in
+            refine_subgoal_th let_res prop
+          end
     in
-      refine_subgoal_th let_res prop
+      fold fold_one eqs prop
     end
 
-fun let_after_qed ctxt eqs prop =
-    prop |> fold (let_after_qed_one ctxt) eqs
-
-(* Add y = t as an assumption *)
-fun let_cmd s state =
+(* Implementation of the @let command. *)
+fun let_cmd eqs state =
     let
       val {context = ctxt, ...} = Proof.goal state
-      val eqs = Syntax.read_terms ctxt s
+      val eqs = Syntax.read_terms ctxt eqs
       val vars = map (fst o dest_eq) eqs
       val new_vars =
-          filter_out (
-            fn v => Variable.is_fixed ctxt (fst (Term.dest_Free v))) vars
+          filter_out (Variable.is_fixed ctxt o fst o Term.dest_Free) vars
+
+      val after_qed = let_after_qed ctxt
     in
       state |> Proof.map_context (fold Util.declare_free_term new_vars)
-            |> Proof.map_contexts (
-        Auto2_State.map_head_th (let_after_qed ctxt eqs))
+            |> Proof.map_contexts (Auto2_State.map_head_th (after_qed eqs))
     end
 
 val _ =
-  Outer_Syntax.command @{command_keyword "@let"} "define a variable"
+    Outer_Syntax.command @{command_keyword "@let"} "define a variable"
     (Scan.repeat Parse.term >>
-        (fn s =>
-            Toplevel.proof (fn state => let_cmd s state)))
+        (fn eqs => Toplevel.proof (fn state => let_cmd eqs state)))
 
 end  (* structure Auto2_Outer *)
