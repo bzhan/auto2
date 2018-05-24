@@ -825,7 +825,7 @@ fun entail_terms ts =
       else let
         val (P, Q) = t |> dest_not |> dest_entail
       in
-        SepUtilExtra.assn_rewr_terms P @ [Q]
+        maps SepUtilExtra.assn_rewr_terms [P, Q]
       end
     end
 
