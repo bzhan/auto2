@@ -429,7 +429,8 @@ fun update_simp (id, th) ctxt =
    table. Return as a list of (id, th) pairs.
  *)
 fun get_rewrite_info ctxt ct =
-    let
+    if Util.is_abs (Thm.term_of ct) then [([], Thm.reflexive ct)]
+    else let
       val {simp, ...} = Data.get ctxt
     in
       case Termtab.lookup simp (Thm.term_of ct) of
@@ -468,12 +469,12 @@ fun merge_simp_infos ctxt lsts =
  *)
 fun get_subterm_rewrite_info ctxt ct =
     let
-      val (ct', subs) = Subterms.dest_subterms ct
+      val (cf, subs) = Drule.strip_comb ct
     in
       if null subs then [([], Thm.reflexive ct)] else
       (map (get_rewrite_info ctxt) subs)
           |> merge_simp_infos ctxt
-          |> map (fn (id, equivs) => (id, Subterms.build_equiv equivs ct'))
+          |> map (fn (id, equivs) => (id, Util.comb_equiv (cf, equivs)))
           |> Util.max_partial (simp_eq_better ctxt)
     end
 
@@ -569,7 +570,8 @@ fun head_simplify id ctxt ct =
 
 (* First simplify subterms, then simplify head. *)
 fun simplify id ctxt ct =
-    if in_table_raw ctxt (Thm.term_of ct) then
+    if Util.is_abs (Thm.term_of ct) then Thm.reflexive ct
+    else if in_table_raw ctxt (Thm.term_of ct) then
       get_rewrite id ctxt ct else
     let
       val th = subterm_simplify id ctxt ct
@@ -582,10 +584,10 @@ and subterm_simplify id ctxt ct =
     if in_table_raw ctxt (Thm.term_of ct) then
       get_cached_subterm_rewrite id ctxt ct else
     let
-      val (ct', subs) = Subterms.dest_subterms ct
+      val (cf, subs) = Drule.strip_comb ct
       val equivs = map (simplify id ctxt) subs
     in
-      Subterms.build_equiv equivs ct'
+      Util.comb_equiv (cf, equivs)
     end
 
 (* Convenient function for getting simplified value. *)
@@ -596,16 +598,18 @@ fun simp_val_t id ctxt t =
 
 (* Get all simplifications and subterm-simplifications. *)
 fun simplify_info ctxt ct =
-    if in_table_raw ctxt (Thm.term_of ct) then
+    if Util.is_abs (Thm.term_of ct) then [([], Thm.reflexive ct)]
+    else if in_table_raw ctxt (Thm.term_of ct) then
       get_rewrite_info ctxt ct else
     let
       val subterm_info = subterm_simplify_info ctxt ct
       fun get_rewrite_with_id_th (id', th') =
           (get_rewrite_info ctxt (Thm.rhs_of th'))
               |> map (BoxID.merge_eq_infos ctxt (id', th'))
-      val head_info = subterm_info |> maps (get_head_rep_with_id_th ctxt)
-                                   |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
-                                   |> maps get_rewrite_with_id_th
+      val head_info =
+          subterm_info |> maps (get_head_rep_with_id_th ctxt)
+                       |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+                       |> maps get_rewrite_with_id_th
     in
       subterm_info @ head_info |> Util.max_partial (simp_eq_better ctxt)
     end
@@ -615,12 +619,12 @@ and subterm_simplify_info ctxt ct =
     if in_table_raw ctxt (Thm.term_of ct) then
       get_cached_subterm_rewrite_info ctxt (Thm.term_of ct) else
     let
-      val (ct', subs) = Subterms.dest_subterms ct
+      val (cf, subs) = Drule.strip_comb ct
     in
       if null subs then [([], Thm.reflexive ct)] else
       (map (simplify_info ctxt) subs)
           |> merge_simp_infos ctxt
-          |> map (fn (id, equivs) => (id, Subterms.build_equiv equivs ct'))
+          |> map (fn (id, equivs) => (id, Util.comb_equiv (cf, equivs)))
           |> Util.max_partial (simp_eq_better ctxt)
     end
 
@@ -874,10 +878,10 @@ fun add_term' (id, ct) ctxt =
     if in_table_raw_for_id ctxt (id, Thm.term_of ct) then ctxt
     else let
       (* First add subterms. *)
-      val imm_subterms = Subterms.list_subterms ct
-      val id_subs = map (pair id) imm_subterms
-      val ctxt' = ctxt |> fold add_term' id_subs |> add_term_raw (id, ct)
       val t = Thm.term_of ct
+      val imm_subterms = UtilLogic.list_subterms t
+      val id_subs = map (fn t => (id, Thm.cterm_of ctxt t)) imm_subterms
+      val ctxt' = ctxt |> fold add_term' id_subs |> add_term_raw (id, ct)
     in
       (* If t is already in table (just not at id), then we are
          done. Otherwise compute all indexed info for t.
@@ -890,7 +894,7 @@ fun add_term' (id, ct) ctxt =
          *)
         val simps = get_subterm_rewrite_info ctxt' ct
       in
-        ctxt' |> fold (add_contain ct) (map Thm.term_of imm_subterms)
+        ctxt' |> fold (add_contain ct) imm_subterms
               |> fold update_simp simps
               |> fold update_subsimp simps
               |> add_all_equiv_raw ([], Thm.reflexive ct)

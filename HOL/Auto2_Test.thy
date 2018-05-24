@@ -5,7 +5,6 @@ imports Auto2_Main
 begin
 
 ML_file "util_test.ML"
-ML_file "subterms_test.ML"
 ML_file "rewrite_test.ML"
 ML_file "matcher_test.ML"
 ML_file "normalize_test.ML"

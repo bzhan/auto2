@@ -295,9 +295,7 @@ fun process_add_terms item (st as {ctxt, ...}) =
           case t of Abs _ => false | _ => not (Util.has_vars t)
 
       val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
-      val terms = rewr_terms |> map (Thm.cterm_of ctxt)
-                             |> maps Subterms.get_all_subterms
-                             |> map Thm.term_of
+      val terms = rewr_terms |> maps UtilLogic.get_all_subterms
                              |> distinct (op aconv)
                              |> filter qualify_term
       val headt = if ty_str = TY_PROP then
@@ -319,9 +317,7 @@ fun process_add_terms item (st as {ctxt, ...}) =
       fun exists_item t =
           Status.find_ritem_exact st id (Fact (TY_TERM, [t], true_th))
 
-      val terms2 = rewr_terms |> map (Thm.cterm_of ctxt)
-                              |> maps Subterms.get_all_subterms_skip_if
-                              |> map Thm.term_of
+      val terms2 = rewr_terms |> maps UtilLogic.get_all_subterms_skip_if
                               |> distinct (op aconv)
                               |> filter qualify_term
                               |> filter_out exists_item

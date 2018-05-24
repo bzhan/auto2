@@ -173,7 +173,10 @@ lemma feval_in_range [typing]:
 (* Equality between functions *)
 lemma function_eq [backward]:
   "func_form(f) \<Longrightarrow> func_form(g) \<Longrightarrow> source(f) = source(g) \<Longrightarrow> target(f) = target(g) \<Longrightarrow>
-   \<forall>x\<in>source(f). f`x = g`x \<Longrightarrow> f = g" by auto2
+   \<forall>x\<in>source(f). f`x = g`x \<Longrightarrow> f = g"
+@proof
+  @have "\<forall>p. p \<in> graph(f) \<longleftrightarrow> p \<in> graph(g)" @with @case "p \<in> graph(f)" @end
+@qed
 setup {* fold del_prfstep_thm [
   @{thm func_form_def}, @{thm function_space_def}, @{thm Fun_def}, @{thm feval_def}] *}
 

@@ -78,6 +78,7 @@ sig
   val declare_free_term: term -> Proof.context -> Proof.context
 
   (* Terms. *)
+  val is_abs: term -> bool
   val is_implies: term -> bool
   val dest_binop: term -> term * (term * term)
   val dest_binop_head: term -> term
@@ -358,6 +359,9 @@ fun declare_free_term t ctxt =
     if not (is_Free t) then raise Fail "declare_free_term: t not free."
     else ctxt |> Variable.add_fixes_direct [t |> Term.dest_Free |> fst]
               |> Variable.declare_term t
+
+fun is_abs t =
+    case t of Abs _ => true | _ => false
 
 (* Whether a given term is of the form A ==> B. *)
 fun is_implies t =

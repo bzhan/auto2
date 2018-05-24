@@ -71,6 +71,11 @@ sig
   val term_of_bool: bool -> term
   val bool_of_term: term -> bool
 
+  (* Finding subterms *)
+  val list_subterms: term -> term list
+  val get_all_subterms: term -> term list
+  val get_all_subterms_skip_if: term -> term list
+
   (* cterms *)
   val mk_cTrueprop: cterm -> cterm
   val dest_cTrueprop: cterm -> cterm
@@ -264,6 +269,41 @@ fun mk_mem (x, A) =
     in
       Const (UtilBase.Mem_name, T --> UtilBase.mk_setT T --> boolT) $ x $ A
     end
+
+(* Finding subterms *)
+
+(* Get all subterms of t. *)
+fun list_subterms t =
+    let
+      fun dest_at_head t =
+          case t of
+              Abs (_, _, body) => dest_at_head body
+            | _ => if Term.is_open t then dest t else [t]
+
+      and dest t =
+          case t of
+              Abs _ => dest_at_head t
+            | _ $ _ => t |> Term.strip_comb |> snd
+                         |> maps dest_at_head
+            | _ => []
+    in
+      dest t
+    end
+
+(* List all (closed) subterms. Larger ones will be listed first. *)
+fun get_all_subterms t =
+    t |> list_subterms |> maps get_all_subterms |> distinct (op aconv)
+      |> cons t
+
+(* List all (closed) subterms. For terms of form if cond then yes or
+   no, list only subterms of cond.
+ *)
+fun get_all_subterms_skip_if t =
+    if UtilBase.is_if t then
+      t |> Util.dest_args |> hd |> get_all_subterms_skip_if |> cons t
+    else
+      t |> list_subterms |> maps get_all_subterms_skip_if
+        |> distinct (op aconv) |> cons t
 
 (* cterms *)
 
