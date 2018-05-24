@@ -291,8 +291,7 @@ fun process_add_terms item (st as {ctxt, ...}) =
       val {id, sc, ty_str, tname, ...} = item
       val ts = map Thm.term_of tname
 
-      fun qualify_term t =
-          case t of Abs _ => false | _ => not (Util.has_vars t)
+      fun qualify_term t = not (Util.has_vars t)
 
       val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
       val terms = rewr_terms |> maps UtilLogic.get_all_subterms

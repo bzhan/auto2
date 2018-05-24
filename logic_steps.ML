@@ -103,6 +103,41 @@ val shadow_term_item =
      priority = PRIORITY_URGENT,
      func = TwoStep shadow_item_fn}
 
+fun eq_abs_fn ictxt item1 item2 =
+    let
+      val ctxt = IncrContext.context_of ictxt
+      val {id = id1, tname = tname1, ...} = item1
+      val {id = id2, tname = tname2, ...} = item2
+      val id = BoxID.merge_boxes ctxt (id1, id2)
+      val (ct1, ct2) = apply2 the_single (tname1, tname2)
+      val (t1, t2) = apply2 Thm.term_of (ct1, ct2)
+    in
+      if not (Util.is_abs t1) orelse not (Util.is_abs t2) then []
+      else if RewriteTable.is_equiv id ctxt (ct1, ct2) then []
+      else if Term_Ord.termless (t2, t1) then []
+      else let
+        fun process_equiv (id', eq_th) =
+            let
+              val (lhs, rhs) = (Util.lhs_of eq_th, Util.rhs_of eq_th)
+            in
+              AddItems {id = id', sc = SOME 1,
+                        raw_items = [Fact (TY_EQ, [lhs, rhs], eq_th)]}
+            end
+      in
+        (Matcher.rewrite_match ctxt (t1, ct2) (id, fo_init))
+            |> IncrContext.replace_id_for_type ictxt
+            |> map (fn ((id, _), eq_th) => (id, eq_th))
+            |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+            |> map process_equiv
+      end
+    end
+
+val eq_abs_prfstep =
+    {name = "eq_abs",
+     args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
+     priority = PRIORITY_ADD,
+     func = TwoStep eq_abs_fn}
+
 (* Given an assumption of the form EX x. A, we produce an assumption A
    with x in A replaced by a free variable. To avoid name collisions,
    when the update is produced x is replaced by an "internal" free
@@ -139,7 +174,7 @@ val exists_elim_prfstep =
 
 val add_logic_proofsteps =
     fold add_prfstep [
-      shadow_prop_item, shadow_term_item, exists_elim_prfstep
+      shadow_prop_item, shadow_term_item, exists_elim_prfstep, eq_abs_prfstep
     ]
 
 (* Given (x_1 ... x_n, A_1 ... A_n), create the corresponding

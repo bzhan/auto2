@@ -276,13 +276,14 @@ fun list_subterms t =
       fun dest_at_head t =
           case t of
               Abs (_, _, body) => dest_at_head body
-            | _ => if Term.is_open t then dest t else [t]
+            | _ => if Term.is_open t then
+                     t |> Term.strip_comb |> snd |> maps dest_at_head
+                   else [t]
 
       and dest t =
           case t of
               Abs _ => dest_at_head t
             | _ $ _ => t |> Term.strip_comb |> snd
-                         |> maps dest_at_head
             | _ => []
     in
       dest t

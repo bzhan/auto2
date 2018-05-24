@@ -429,8 +429,7 @@ fun update_simp (id, th) ctxt =
    table. Return as a list of (id, th) pairs.
  *)
 fun get_rewrite_info ctxt ct =
-    if Util.is_abs (Thm.term_of ct) then [([], Thm.reflexive ct)]
-    else let
+    let
       val {simp, ...} = Data.get ctxt
     in
       case Termtab.lookup simp (Thm.term_of ct) of
@@ -570,8 +569,7 @@ fun head_simplify id ctxt ct =
 
 (* First simplify subterms, then simplify head. *)
 fun simplify id ctxt ct =
-    if Util.is_abs (Thm.term_of ct) then Thm.reflexive ct
-    else if in_table_raw ctxt (Thm.term_of ct) then
+    if in_table_raw ctxt (Thm.term_of ct) then
       get_rewrite id ctxt ct else
     let
       val th = subterm_simplify id ctxt ct
@@ -598,8 +596,7 @@ fun simp_val_t id ctxt t =
 
 (* Get all simplifications and subterm-simplifications. *)
 fun simplify_info ctxt ct =
-    if Util.is_abs (Thm.term_of ct) then [([], Thm.reflexive ct)]
-    else if in_table_raw ctxt (Thm.term_of ct) then
+    if in_table_raw ctxt (Thm.term_of ct) then
       get_rewrite_info ctxt ct else
     let
       val subterm_info = subterm_simplify_info ctxt ct
@@ -922,7 +919,9 @@ fun add_term_list term_infos ctxt =
  *)
 fun add_rewrite (id, eq_th) ctxt =
     let
-      val meta_eq = to_meta_eq eq_th
+      (* eq_th is meta-equality when between lambda terms. *)
+      val meta_eq = if Util.is_meta_eq (Thm.prop_of eq_th) then eq_th
+                    else to_meta_eq eq_th
       val (ct1, ct2) = meta_eq |> Thm.cprop_of |> Thm.dest_equals
     in
       if is_equiv id ctxt (ct1, ct2) then ([], ctxt)

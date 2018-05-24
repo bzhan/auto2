@@ -60,7 +60,10 @@ fun rewr_normalizer eq_th ctxt ritem =
           if ty_str = TY_PROP then
             [Update.thm_to_ritem (apply_to_thm cv th)]
           else if ty_str = TY_EQ then
-            let
+            if Util.is_meta_eq (Thm.prop_of th) then
+              (* Equality between lambda terms *)
+              [ritem]
+            else let
               (* Apply to right side *)
               val th' = apply_to_thm' (Conv.arg_conv cv) th
               val (lhs, rhs) = dest_eq (prop_of' th')
