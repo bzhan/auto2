@@ -71,17 +71,17 @@ fun shadow_item_fn ictxt item1 item2 =
           handle List.Empty => raise Fail "shadow_item_fn"
       val (t1, t2) = (Thm.term_of tname1, Thm.term_of tname2)
 
-      val equiv_ids =
+      val (lhs, rhs) =
           if fastype_of t1 = boolT andalso is_neg t1 andalso
              fastype_of t2 = boolT andalso is_neg t2 then
-            (RewriteTable.subequiv_info
-                 ctxt id (UtilLogic.get_cneg tname1, UtilLogic.get_cneg tname2))
-                |> IncrContext.replace_id_for_type' ictxt |> map fst
-                |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
+            (UtilLogic.get_cneg tname1, UtilLogic.get_cneg tname2)
           else
-            (RewriteTable.subequiv_info ctxt id (tname1, tname2))
-                |> IncrContext.replace_id_for_type' ictxt |> map fst
-                |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
+            (tname1, tname2)
+
+      val equiv_ids =
+          (Matcher.rewrite_match_head ctxt (Thm.term_of lhs, rhs) (id, fo_init))
+              |> IncrContext.replace_id_for_type ictxt |> map fst |> map fst
+              |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
 
       val item_to_shadow =
           if #uid item1 > #uid item2 then item1 else item2
