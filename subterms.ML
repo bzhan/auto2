@@ -26,33 +26,38 @@ fun is_open bd_vars u =
         length (inter (op aconv) bd_vars (map Free (Term.add_frees u []))) > 0
 
 (* Destruct ct into head and subterm structure. *)
-fun dest_subterms ct =
+fun dest_subterms_gen trav_abs ct =
     let
       (* See description for dest below, except here ct itself is
          eligible as a subterm. Break down only if it is in Abs form.
        *)
       fun dest_at_head bd_vars (prevs, ct) =
-          let
-            val t = Thm.term_of ct
-          in
-            case t of
-                _ $ _ =>
-                if is_open bd_vars t then
-                  dest bd_vars (prevs, ct)
-                else
-                  (ct :: prevs, get_subvar (length prevs) ct)
-              | Abs _ =>
-                let
-                  val (cvar, ct') = Thm.dest_abs NONE ct
-                  val (prevs', ct'') =
-                      dest_at_head (Thm.term_of cvar :: bd_vars) (prevs, ct')
-                in
-                  (prevs', Thm.lambda cvar ct'')
-                end
-              | _ =>
-                if is_open bd_vars t then (prevs, ct)
-                else (ct :: prevs, get_subvar (length prevs) ct)
-          end
+          if not trav_abs then
+            case Thm.term_of ct of
+                Abs _ => (prevs, ct)
+              | _ => (ct :: prevs, get_subvar (length prevs) ct)
+          else
+            let
+              val t = Thm.term_of ct
+            in
+              case t of
+                  _ $ _ =>
+                  if is_open bd_vars t then
+                    dest bd_vars (prevs, ct)
+                  else
+                    (ct :: prevs, get_subvar (length prevs) ct)
+                | Abs _ =>
+                  let
+                    val (cvar, ct') = Thm.dest_abs NONE ct
+                    val (prevs', ct'') =
+                        dest_at_head (Thm.term_of cvar :: bd_vars) (prevs, ct')
+                  in
+                    (prevs', Thm.lambda cvar ct'')
+                  end
+                | _ =>
+                  if is_open bd_vars t then (prevs, ct)
+                  else (ct :: prevs, get_subvar (length prevs) ct)
+            end
 
       (* See description of dest below, except here, we have a list of
          input terms.
@@ -96,7 +101,11 @@ fun dest_subterms ct =
       (t', rev rev_subs)
     end
 
-fun list_subterms ct = snd (dest_subterms ct)
+fun dest_subterms ct = dest_subterms_gen true ct
+
+(* Get all subterms of ct. *)
+fun list_subterms ct =
+    snd (dest_subterms_gen true ct)
 
 (* List all (closed) subterms. Larger ones will be listed first. *)
 fun get_all_subterms ct =
