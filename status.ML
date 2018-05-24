@@ -72,9 +72,8 @@ fun thm_update (id, th) =
 fun apply_exists_ritems ctxt ex_th =
     let
       val (vars, body) = (UtilLogic.strip_exists (prop_of' ex_th))
-                            |> Util.replace_vars ctxt
-                            |> Util.replace_internal_vars
-                            |> apsnd mk_Trueprop
+                             |> Util.to_internal_vars ctxt
+                             |> apsnd mk_Trueprop
     in
       if null vars then ([], ex_th)
       else (map (BoxItem.var_to_fact) vars @ [Handler (vars, body, ex_th)],

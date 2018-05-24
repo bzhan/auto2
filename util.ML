@@ -102,12 +102,7 @@ sig
   val normalize_meta_horn: Proof.context -> conv
   val strip_meta_horn: term -> term list * (term list * term)
   val list_meta_horn: term list * (term list * term) -> term
-  val replace_horn_vars: Proof.context -> term list * (term list * term) ->
-                         term list * (term list * term)
-  val replace_horn_internal_vars: term list * (term list * term) ->
-                                  term list * (term list * term)
-  val replace_vars: Proof.context -> term list * term -> term list * term
-  val replace_internal_vars: term list * term -> term list * term
+  val to_internal_vars: Proof.context -> term list * term -> term list * term
   val rename_abs_term: term list -> term -> term
   val print_term_detail: Proof.context -> term -> string
 
@@ -544,38 +539,11 @@ fun strip_meta_horn t =
 fun list_meta_horn (vars, (As, B)) =
     (Logic.list_implies (As, B)) |> fold Logic.all (rev vars)
 
-fun replace_horn_vars ctxt (vars, (As, B)) =
+fun to_internal_vars ctxt (vars, body) =
     let
       val vars' = vars |> map Term.dest_Free
                        |> Variable.variant_frees ctxt []
-                       |> map Free
-      val subst = vars ~~ vars'
-    in
-      (vars', (map (subst_atomic subst) As, subst_atomic subst B))
-    end
-
-fun replace_horn_internal_vars (vars, (As, B)) =
-    let
-      val vars' = vars |> map Term.dest_Free |> map (apfst Name.internal)
-                       |> map Free
-      val subst = vars ~~ vars'
-    in
-      (vars', (map (subst_atomic subst) As, subst_atomic subst B))
-    end
-
-fun replace_vars ctxt (vars, body) =
-    let
-      val vars' = vars |> map Term.dest_Free
-                       |> Variable.variant_frees ctxt []
-                       |> map Free
-      val subst = vars ~~ vars'
-    in
-      (vars', subst_atomic subst body)
-    end
-
-fun replace_internal_vars (vars, body) =
-    let
-      val vars' = vars |> map Term.dest_Free |> map (apfst Name.internal)
+                       |> map (apfst Name.internal)
                        |> map Free
       val subst = vars ~~ vars'
     in

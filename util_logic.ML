@@ -77,8 +77,6 @@ sig
   val get_all_subterms_skip_if: term -> term list
 
   (* cterms *)
-  val mk_cTrueprop: cterm -> cterm
-  val dest_cTrueprop: cterm -> cterm
   val get_cneg: cterm -> cterm
 
   (* Theorems *)
@@ -307,16 +305,6 @@ fun get_all_subterms_skip_if t =
 
 (* cterms *)
 
-fun mk_cTrueprop ct =
-    Thm.apply UtilBase.cTrueprop ct
-
-fun dest_cTrueprop ct =
-    case Thm.term_of ct of
-        Const (c, _) $ _ =>
-        if c = UtilBase.Trueprop_name then Thm.dest_arg ct else
-        raise Fail "dest_Trueprop"
-      | _ => raise Fail "dest_Trueprop"
-
 fun get_cneg ct =
     let
       val t = Thm.term_of ct
@@ -329,7 +317,7 @@ fun get_cneg ct =
 
 fun is_true_th th = Thm.eq_thm_prop (th, true_th)
 fun prop_of' th = dest_Trueprop (Thm.prop_of th)
-fun cprop_of' th = dest_cTrueprop (Thm.cprop_of th)
+fun cprop_of' th = Thm.dest_arg (Thm.cprop_of th)
 fun concl_of' th = dest_Trueprop (Thm.concl_of th)
 
 (* Given an equality between bools, make it an equality between props,
