@@ -13,13 +13,13 @@ setup {* del_prfstep_thm_eqforward @{thm is_graph_def} *}
 definition gr_source :: "i \<Rightarrow> i" where [rewrite]:
   "gr_source(G) = {fst(p). p \<in> G}"
 lemma gr_sourceI [typing2]: "\<langle>a,b\<rangle> \<in> G \<Longrightarrow> a \<in> gr_source(G)" by auto2
-lemma gr_sourceE [forward]: "is_graph(G) \<Longrightarrow> a \<in> gr_source(G) \<Longrightarrow> \<exists>b. \<langle>a,b\<rangle>\<in>G" by auto2
+lemma gr_sourceE [backward]: "is_graph(G) \<Longrightarrow> a \<in> gr_source(G) \<Longrightarrow> \<exists>b. \<langle>a,b\<rangle>\<in>G" by auto2
 setup {* del_prfstep_thm @{thm gr_source_def} *}
 
 definition gr_target :: "i \<Rightarrow> i" where [rewrite]:
   "gr_target(G) = {snd(p). p \<in> G}"
 lemma gr_targetI [typing2]: "\<langle>a,b\<rangle> \<in> G \<Longrightarrow> b \<in> gr_target(G)" by auto2
-lemma gr_targetE [forward]: "is_graph(G) \<Longrightarrow> b \<in> gr_target(G) \<Longrightarrow> \<exists>a. \<langle>a,b\<rangle>\<in>G" by auto2
+lemma gr_targetE [backward]: "is_graph(G) \<Longrightarrow> b \<in> gr_target(G) \<Longrightarrow> \<exists>a. \<langle>a,b\<rangle>\<in>G" by auto2
 setup {* del_prfstep_thm @{thm gr_target_def} *}
 
 definition gr_field :: "i \<Rightarrow> i" where [rewrite]:
@@ -47,7 +47,7 @@ setup {* del_prfstep_thm @{thm gr_comp_def} *}
 section \<open>Evaluation on a graph\<close>
 
 definition is_func_graph :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "is_func_graph(G,X) \<longleftrightarrow> is_graph(G) \<and> gr_source(G) \<subseteq> X \<and> (\<forall>a\<in>X. \<exists>!y. \<langle>a,y\<rangle> \<in> G)"
+  "is_func_graph(G,X) \<longleftrightarrow> is_graph(G) \<and> gr_source(G) = X \<and> (\<forall>a\<in>X. \<exists>!y. \<langle>a,y\<rangle> \<in> G)"
   
 definition func_graphs :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "func_graphs(X,Y) = {G\<in>Pow(X\<times>Y). is_func_graph(G,X)}"
@@ -56,7 +56,7 @@ definition graph_eval :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "graph_eval(G,x) = (THE y. \<langle>x,y\<rangle> \<in> G)"
 
 lemma is_func_graphD [forward]:
-  "is_func_graph(G,X) \<Longrightarrow> is_graph(G) \<and> gr_source(G) \<subseteq> X" by auto2
+  "is_func_graph(G,X) \<Longrightarrow> is_graph(G) \<and> gr_source(G) = X" by auto2
 
 lemma is_func_graphD2 [forward]:
   "is_func_graph(G,X) \<Longrightarrow> x \<in> X \<Longrightarrow> \<langle>x, graph_eval(G,x)\<rangle> \<in> G" by auto2
@@ -67,6 +67,28 @@ lemma is_func_graphD3 [forward,backward2]:
 lemma graph_eq [backward1]:
   "is_func_graph(G,X) \<Longrightarrow> is_func_graph(H,X) \<Longrightarrow>
    \<forall>x\<in>X. graph_eval(G,x) = graph_eval(H,x) \<Longrightarrow> G = H" by auto2
+
+lemma is_func_graph_cons [backward]:
+  "is_func_graph(G,X) \<Longrightarrow> a \<notin> X \<Longrightarrow> is_func_graph(cons(\<langle>a,b\<rangle>,G),cons(a,X))"
+@proof
+  @let "H = cons(\<langle>a,b\<rangle>,G)"
+  @have "is_graph(H)"
+  @have "\<forall>x\<in>gr_source(H). x \<in> cons(a,X)" @with
+    @obtain y where "\<langle>x,y\<rangle> \<in> H"
+  @end
+  @have "\<forall>c\<in>cons(a,X). \<exists>!y. \<langle>c,y\<rangle> \<in> H" @with
+    @case "c = a"
+  @end
+@qed
+
+lemma is_func_graph_empty [resolve]: "is_func_graph(\<emptyset>,\<emptyset>)"
+@proof
+  @have "is_graph(\<emptyset>)"
+  @have "\<forall>x\<in>gr_source(\<emptyset>). x \<in> \<emptyset>" @with
+    @obtain y where "\<langle>x,y\<rangle> \<in> \<emptyset>"
+  @end
+@qed
+
 setup {* del_prfstep_thm_eqforward @{thm is_func_graph_def} *}
 setup {* del_prfstep_thm @{thm graph_eval_def} *}
 

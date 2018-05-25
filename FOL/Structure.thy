@@ -2,19 +2,30 @@ theory Structure
 imports Graph
 begin
 
-section {* Components of a structure *}
+definition Struct :: "i \<Rightarrow> i" where [rewrite]:
+  "Struct(S) = S"
 
-(* Domain set of a relation. *)
-definition source :: "i \<Rightarrow> i" where [rewrite]:
-  "source(\<Gamma>) = fst(\<Gamma>)"
+lemma not_mem_cons: "x \<noteq> a \<Longrightarrow> x \<notin> S \<Longrightarrow> x \<notin> cons(a,S)" by auto2
+lemma mem_cons_head: "x \<in> cons(x,S)" by auto2
+lemma mem_cons_tail: "x \<in> S \<Longrightarrow> x \<in> cons(y,S)" by auto2
+lemma forall_single: "(\<forall>x\<in>{a}. P(x)) \<longleftrightarrow> P(a)" by auto2
+lemma forall_cons: "(\<forall>x\<in>cons(a,X). P(x)) \<longleftrightarrow> (P(a) \<and> (\<forall>x\<in>X. P(x)))" by auto2
 
-(* Codomain set of a relation. *)
-definition target :: "i \<Rightarrow> i" where [rewrite]:
-  "target(\<Gamma>) = fst(snd(\<Gamma>))"
+ML_file "structure.ML"
 
-(* Set of pairs specifying a relation between source and target *)
-definition graph :: "i \<Rightarrow> i" where [rewrite]:
-  "graph(\<Gamma>)  = fst(snd(snd(\<Gamma>)))"
+section \<open>Components of a structure\<close>
+
+definition "source_name = \<emptyset>"
+definition "target_name = succ(\<emptyset>)"
+definition "graph_name = succ(succ(\<emptyset>))"
+
+definition "source(S) = graph_eval(S, source_name)"
+definition "target(S) = graph_eval(S, target_name)"
+definition "graph(S) = graph_eval(S, graph_name)"
+
+setup {* add_field_data (@{term source_name}, @{term source}) *}
+setup {* add_field_data (@{term target_name}, @{term target}) *}
+setup {* add_field_data (@{term graph_name}, @{term graph}) *}
 
 section {* Evaluation function: shared by families and functions *}
 
@@ -27,15 +38,23 @@ section {* Families *}
 
 (* Predicate for families. *)
 definition is_family :: "i \<Rightarrow> o" where [rewrite]:
-  "is_family(F) \<longleftrightarrow> (let G = graph(F) in let S = source(F) in
-     is_func_graph(G,S) \<and> F = \<langle>S,\<emptyset>,G,\<emptyset>\<rangle>)"
+  "is_family(F) \<longleftrightarrow> is_func_graph(F,{source_name,graph_name}) \<and> is_func_graph(graph(F),source(F))"
 
 (* Constructor for families. *)
 definition Tup :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> i" where [rewrite]:
-  "Tup(I,f) = \<langle>I, \<emptyset>, {\<langle>a, f(a)\<rangle>. a \<in> I}, \<emptyset>\<rangle>"
+  "Tup(I,f) = Struct({\<langle>source_name, I\<rangle>, \<langle>graph_name, {\<langle>a, f(a)\<rangle>. a \<in> I}\<rangle>})"
 
-lemma TupD: "is_family(Tup(I,f)) \<and> source(Tup(I,f)) = I"
-@proof @have (@rule) "\<forall>a\<in>I. \<langle>a, f(a)\<rangle>\<in>graph(Tup(I,f))" @qed
+lemma is_func_graph_Tup [resolve]: "is_func_graph({\<langle>a, f(a)\<rangle>. a \<in> I}, I)"
+@proof
+  @let "G = {\<langle>a, f(a)\<rangle>. a \<in> I}"
+  @have "is_graph(G)"
+  @have "\<forall>x. x \<in> gr_source(G) \<longleftrightarrow> x \<in> I" @with
+    @case "x \<in> gr_source(G)" @with @obtain y where "\<langle>x,y\<rangle> \<in> G" @end
+    @case "x \<in> I" @with @have "\<langle>x, f(x)\<rangle> \<in> G" @end
+  @end
+@qed
+
+lemma TupD: "is_family(Tup(I,f)) \<and> source(Tup(I,f)) = I" by auto2
 setup {* add_forward_prfstep_cond @{thm TupD} [with_term "Tup(?I,?f)"] *}
 
 (* Evaluation for families. *)
@@ -45,14 +64,20 @@ lemma Tup_eval [rewrite]: "a \<in> source(Tup(I,f)) \<Longrightarrow> Tup(I,f) `
 lemma family_eq [backward]:
   "is_family(f) \<Longrightarrow> is_family(g) \<Longrightarrow> source(f) = source(g) \<Longrightarrow> \<forall>a\<in>source(f). f`a = g`a \<Longrightarrow> f = g"
 @proof @have "\<forall>a\<in>source(f). graph_eval(graph(f),a) = graph_eval(graph(g),a)" @qed
+setup {* del_prfstep_thm @{thm Tup_def} *}
 
 (* Pi space is the space of families with values in specified sets.
    Need to use Sigma(I,B) to construct the set. *)
 definition Pi :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "Pi(I,B) = {\<langle>I,\<emptyset>,P,\<emptyset>\<rangle>. P \<in> {f \<in> Pow(Sigma(I,B)). is_family(\<langle>I,\<emptyset>,f,\<emptyset>\<rangle>)}}"
+  "Pi(I,B) = {Struct({\<langle>source_name, I\<rangle>, \<langle>graph_name, P\<rangle>}). P \<in> {f \<in> Pow(Sigma(I,B)). is_func_graph(f,I)}}"
+
+lemma Pi_iff [rewrite]:
+  "f \<in> Pi(I,B) \<longleftrightarrow> (\<exists>P. P \<in> Pow(Sigma(I,B)) \<and> is_func_graph(P,I) \<and> f = Struct({\<langle>source_name, I\<rangle>, \<langle>graph_name, P\<rangle>}))" by auto2
+setup {* del_prfstep_thm @{thm Pi_def} *}
 
 lemma Pi_memI [backward]:
-  "is_family(f) \<Longrightarrow> source(f) = I \<Longrightarrow> \<forall>a\<in>I. f`a\<in>B(a) \<Longrightarrow> f \<in> Pi(I,B)" by auto2
+  "is_family(f) \<Longrightarrow> source(f) = I \<Longrightarrow> \<forall>a\<in>I. f`a\<in>B(a) \<Longrightarrow> f \<in> Pi(I,B)"
+@proof @have "graph(f) \<in> Pow(Sigma(I,B))" @qed
 
 lemma Pi_is_family [forward]: "f \<in> Pi(I,B) \<Longrightarrow> is_family(f) \<and> source(f) = I" by auto2
 lemma Pi_memD [typing]: "a \<in> source(f) \<Longrightarrow> f \<in> Pi(I,B) \<Longrightarrow> f`a \<in> B(a)" by auto2
@@ -70,8 +95,7 @@ setup {* add_forward_prfstep_cond @{thm proj_set_is_family} [with_term "proj_set
 lemma proj_set_eval [rewrite]:
   "a \<in> source(proj_set(f,J)) \<Longrightarrow> proj_set(f,J) ` a = f`a" by auto2
 
-setup {* fold del_prfstep_thm [
-  @{thm is_family_def}, @{thm Tup_def}, @{thm Pi_def}, @{thm proj_set_def}] *}
+setup {* fold del_prfstep_thm [@{thm is_family_def}, @{thm Pi_iff}, @{thm proj_set_def}] *}
 
 section {* Functions *}
 
@@ -79,22 +103,15 @@ section {* Functions *}
    to exactly one value in the target. *)
 definition is_function :: "i \<Rightarrow> o" where [rewrite]:
   "is_function(f) \<longleftrightarrow> graph(f) \<in> func_graphs(source(f),target(f))"
-
-lemma is_functionD [typing]:
-  "is_function(F) \<Longrightarrow> graph(F) \<in> func_graphs(source(F),target(F))" by auto2
-
-lemma is_functionI [backward]:
-  "G \<in> func_graphs(S,T) \<Longrightarrow> is_function(\<langle>S,T,G,x1\<rangle>)" by auto2
-setup {* del_prfstep_thm @{thm is_function_def} *}
   
 definition func_form :: "i \<Rightarrow> o" where [rewrite]:
-  "func_form(f) \<longleftrightarrow> is_function(f) \<and> f = \<langle>source(f),target(f),graph(f),\<emptyset>\<rangle>"
+  "func_form(f) \<longleftrightarrow> is_function(f) \<and> is_func_graph(f,{source_name, target_name, graph_name})"
 
 lemma is_function_from_form [forward]: "func_form(f) \<Longrightarrow> is_function(f)" by auto2
 
 (* The set of functions *)
 definition function_space :: "i \<Rightarrow> i \<Rightarrow> i" (infixr "\<rightarrow>" 60)  where [rewrite]:
-  "A \<rightarrow> B = {\<langle>A,B,G,\<emptyset>\<rangle>. G\<in>func_graphs(A,B)}"
+  "A \<rightarrow> B = {Struct({\<langle>source_name,A\<rangle>, \<langle>target_name,B\<rangle>, \<langle>graph_name,G\<rangle>}). G\<in>func_graphs(A,B)}"
 
 lemma function_spaceD [forward]:
   "f \<in> A \<rightarrow> B \<Longrightarrow> func_form(f) \<and> source(f) = A \<and> target(f) = B" by auto2
@@ -104,7 +121,7 @@ lemma function_spaceI [typing]:
 
 (* Constructor for functions *)
 definition Fun :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "Fun(A,B,b) = \<langle>A,B,{p\<in>A\<times>B. snd(p) = b(fst(p))},\<emptyset>\<rangle>"
+  "Fun(A,B,b) = Struct({\<langle>source_name,A\<rangle>, \<langle>target_name,B\<rangle>, \<langle>graph_name, {p\<in>A\<times>B. snd(p) = b(fst(p))}\<rangle>})"
 setup {* add_prfstep_check_req ("Fun(A,B,b)", "Fun(A,B,b) \<in> A \<rightarrow> B") *}
 
 syntax
@@ -112,9 +129,19 @@ syntax
 translations
   "\<lambda>x\<in>A. f\<in>B" == "CONST Fun(A,B,\<lambda>x. f)"
 
+lemma func_graphs_mem [resolve]:
+  "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> {p\<in>A\<times>B. snd(p) = f(fst(p))} \<in> func_graphs(A,B)"
+@proof
+  @let "G = {p\<in>A\<times>B. snd(p) = f(fst(p))}"
+  @have "is_graph(G)"
+  @have "\<forall>x. x \<in> gr_source(G) \<longleftrightarrow> x \<in> A" @with
+    @case "x \<in> gr_source(G)" @with @obtain y where "\<langle>x,y\<rangle> \<in> G" @end
+    @case "x \<in> A" @with @have "\<langle>x, f(x)\<rangle> \<in> G" @end
+  @end
+@qed
+
 lemma lambda_is_function [backward]:
-  "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> Fun(A,B,f) \<in> A \<rightarrow> B"
-@proof @have (@rule) "\<forall>x\<in>A. \<langle>x,f(x)\<rangle>\<in>graph(Fun(A,B,f))" @qed
+  "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> Fun(A,B,f) \<in> A \<rightarrow> B" by auto2
 
 (* Function evaluation *)
 lemma beta [rewrite]:
@@ -126,11 +153,11 @@ lemma feval_in_range [typing]:
 (* Equality between functions *)
 lemma function_eq [backward]:
   "func_form(f) \<Longrightarrow> func_form(g) \<Longrightarrow> source(f) = source(g) \<Longrightarrow> target(f) = target(g) \<Longrightarrow>
-   \<forall>x\<in>source(f). f`x = g`x \<Longrightarrow> f = g" by auto2
+   \<forall>x\<in>source(f). f`x = g`x \<Longrightarrow> f = g"
+@proof @have "\<forall>a\<in>source(f). graph_eval(graph(f),a) = graph_eval(graph(g),a)" @qed
 setup {* fold del_prfstep_thm [
-  @{thm func_form_def}, @{thm function_space_def}, @{thm Fun_def}, @{thm feval_def}] *}
-
-setup {* fold del_prfstep_thm [@{thm source_def}, @{thm target_def}, @{thm graph_def}] *}
+  @{thm is_function_def}, @{thm Fun_def}, @{thm func_form_def}, @{thm function_space_def}, @{thm feval_def}] *}
+setup {* add_rewrite_rule_back @{thm feval_def} *}
 
 (* A small exercise *)
 lemma lam_eq_self: "f \<in> A \<rightarrow> B \<Longrightarrow> f = Fun(A,B, \<lambda>x. f`x)" by auto2

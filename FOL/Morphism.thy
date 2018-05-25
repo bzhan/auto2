@@ -2,29 +2,33 @@ theory Morphism
 imports Functions
 begin
 
-setup {* fold add_rewrite_rule [
-  @{thm source_def}, @{thm target_def}, @{thm graph_def}, @{thm carrier_def}] *}
-
 section {* Components of morphisms *}
 
 (* A morphism is a function with two additional components, giving the source
    and target structure of the morphism. *)
-definition source_str :: "i \<Rightarrow> i" where [rewrite]:
-  "source_str(F) = fst(snd(snd(snd(F))))"
- 
-definition target_str :: "i \<Rightarrow> i" where [rewrite]:
-  "target_str(F) = fst(snd(snd(snd(snd(F)))))"
+definition "source_str_name = succ(succ(succ(\<emptyset>)))"
+definition "target_str_name = succ(succ(succ(succ(\<emptyset>))))"
 
+definition "source_str(S) = graph_eval(S, source_str_name)"
+definition "target_str(S) = graph_eval(S, target_str_name)"
+
+setup {* add_field_data (@{term source_str_name}, @{term source_str}) *}
+setup {* add_field_data (@{term target_str_name}, @{term target_str}) *}
 setup {* fold add_property_field_const [@{term source_str}, @{term target_str}] *}
 
 definition is_morphism :: "i \<Rightarrow> o" where [rewrite]:
-  "is_morphism(f) \<longleftrightarrow> is_function(f) \<and> carrier(source_str(f)) = source(f) \<and> carrier(target_str(f)) = target(f)"
+  "is_morphism(f) \<longleftrightarrow>
+     graph(f) \<in> func_graphs(source(f),target(f)) \<and>
+     carrier(source_str(f)) = source(f) \<and> carrier(target_str(f)) = target(f)"
 
 definition mor_form :: "i \<Rightarrow> o" where [rewrite]:
   "mor_form(f) \<longleftrightarrow> is_morphism(f) \<and>
-      f = \<langle>source(f),target(f),graph(f),source_str(f),target_str(f),\<emptyset>\<rangle>"
+    is_func_graph(f,{source_name,target_name,graph_name,source_str_name,target_str_name})"
 
+setup {* add_rewrite_rule @{thm is_function_def} *}
 lemma is_morphism_gen_to_fun [forward]: "is_morphism(F) \<Longrightarrow> is_function(F)" by auto2
+setup {* del_prfstep_thm @{thm is_function_def} *}
+
 lemma is_morphism_to_gen [forward]: "mor_form(F) \<Longrightarrow> is_morphism(F)" by auto2
 
 lemma is_morphism_src [forward]:
@@ -32,24 +36,29 @@ lemma is_morphism_src [forward]:
 
 (* Space of all morphisms between structures S and T. *)
 definition mor_space :: "i \<Rightarrow> i \<Rightarrow> i" (infix "\<rightharpoonup>" 60) where [rewrite]:
-  "mor_space(S,T) = (let A = carrier(S) in let B = carrier(T) in {\<langle>A,B,G,S,T,\<emptyset>\<rangle>. G\<in>func_graphs(A,B)})"
+  "mor_space(S,T) = (let A = carrier(S) in let B = carrier(T) in
+    {Struct({\<langle>source_name,A\<rangle>,\<langle>target_name,B\<rangle>,\<langle>graph_name,G\<rangle>,\<langle>source_str_name,S\<rangle>,\<langle>target_str_name,T\<rangle>}). G\<in>func_graphs(A,B)})"
+
+lemma mor_space_iff [rewrite]:
+  "A = carrier(S) \<Longrightarrow> B = carrier(T) \<Longrightarrow> F \<in> S \<rightharpoonup> T \<longleftrightarrow>
+  (\<exists>G\<in>func_graphs(A,B). F = Struct({\<langle>source_name,A\<rangle>,\<langle>target_name,B\<rangle>,\<langle>graph_name,G\<rangle>,\<langle>source_str_name,S\<rangle>,\<langle>target_str_name,T\<rangle>}))" by auto2
+setup {* del_prfstep_thm @{thm mor_space_def} *}
 
 lemma mor_spaceD [forward]:
   "F \<in> S \<rightharpoonup> T \<Longrightarrow> mor_form(F) \<and> source_str(F) = S \<and> target_str(F) = T" by auto2
 
 lemma mor_spaceI [forward]:
   "mor_form(F) \<Longrightarrow> F \<in> source_str(F) \<rightharpoonup> target_str(F)" by auto2
-    
+
 (* Constructor for morphisms *)
 definition Mor :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "Mor(S,T,b) = (let A = carrier(S) in let B = carrier(T) in \<langle>A,B,{p\<in>A\<times>B. snd(p) = b(fst(p))},S,T,\<emptyset>\<rangle>)"
+  "Mor(S,T,b) = (let A = carrier(S) in let B = carrier(T) in
+    Struct({\<langle>source_name,A\<rangle>,\<langle>target_name,B\<rangle>,\<langle>graph_name,{p\<in>A\<times>B. snd(p) = b(fst(p))}\<rangle>,\<langle>source_str_name,S\<rangle>,\<langle>target_str_name,T\<rangle>}))"
 setup {* add_prfstep_check_req ("Mor(S,T,b)", "Mor(S,T,b) \<in> S \<rightharpoonup> T") *}
 
 lemma Mor_is_morphism [backward]:
-  "\<forall>x\<in>.S. f(x)\<in>.T \<Longrightarrow> Mor(S,T,f) \<in> S \<rightharpoonup> T"
-@proof @have (@rule) "\<forall>x\<in>.S. \<langle>x,f(x)\<rangle>\<in>graph(Mor(S,T,f))" @qed
+  "\<forall>x\<in>.S. f(x)\<in>.T \<Longrightarrow> Mor(S,T,f) \<in> S \<rightharpoonup> T" by auto2
 
-setup {* add_rewrite_rule @{thm feval_def} *}
 lemma Mor_eval [rewrite]:
   "F = Mor(S,T,f) \<Longrightarrow> x \<in> source(F) \<Longrightarrow> is_morphism(F) \<Longrightarrow> F`x = f(x)" by auto2
 
@@ -58,13 +67,8 @@ lemma morphism_eq [backward]:
   "mor_form(f) \<Longrightarrow> mor_form(g) \<Longrightarrow> source_str(f) = source_str(g) \<Longrightarrow> target_str(f) = target_str(g) \<Longrightarrow>
    \<forall>x\<in>source(f). f`x = g`x \<Longrightarrow> f = g"
 @proof @have "\<forall>x\<in>source(f). graph_eval(graph(f),x) = graph_eval(graph(g),x)" @qed
-setup {* del_prfstep_thm @{thm feval_def} *}
 
-setup {* fold del_prfstep_thm [
-  @{thm mor_form_def}, @{thm is_morphism_def}, @{thm mor_space_def}, @{thm Mor_def}] *}
-  
-setup {* fold del_prfstep_thm [@{thm source_def}, @{thm target_def}, @{thm graph_def},
-  @{thm carrier_def}, @{thm source_str_def}, @{thm target_str_def}] *}
+setup {* fold del_prfstep_thm [@{thm mor_form_def}, @{thm is_morphism_def}, @{thm mor_space_iff}, @{thm Mor_def}] *}
 
 (* A small exercise *)
 lemma Mor_eq_self:
