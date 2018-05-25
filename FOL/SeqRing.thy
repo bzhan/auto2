@@ -22,35 +22,25 @@ lemma seq_ring_eval [rewrite]:
   by auto2+
 setup {* del_prfstep_thm @{thm seq_ring_def} *}
 
-lemma seq_ring_zero_neq_one [resolve]:
-  "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> \<zero>\<^sub>S \<noteq> \<one>\<^sub>S"
-@proof @have "(\<zero>\<^sub>S)`0 \<noteq> (\<one>\<^sub>S)`0" @qed
-
-lemma seq_ring_plus_assoc [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> Z \<in>. S \<Longrightarrow> (X +\<^sub>S Y) +\<^sub>S Z = X +\<^sub>S (Y +\<^sub>S Z)"
-@proof @have (@rule) "\<forall>n\<in>.\<nat>. (X`n +\<^sub>R Y`n) +\<^sub>R Z`n = X`n +\<^sub>R (Y`n +\<^sub>R Z`n)" @qed
-
-lemma seq_ring_times_assoc [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> Z \<in>. S \<Longrightarrow> (X *\<^sub>S Y) *\<^sub>S Z = X *\<^sub>S (Y *\<^sub>S Z)"
-@proof @have (@rule) "\<forall>n\<in>.\<nat>. (X`n *\<^sub>R Y`n) *\<^sub>R Z`n = X`n *\<^sub>R (Y`n *\<^sub>R Z`n)" @qed
-
-lemma seq_ring_has_add_inverse [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> X +\<^sub>S seq_neg(X) = \<zero>\<^sub>S" by auto2
-
-lemma seq_ring_left_distrib [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> Z \<in>. S \<Longrightarrow>
-   X *\<^sub>S (Y +\<^sub>S Z) = X *\<^sub>S Y +\<^sub>S X *\<^sub>S Z"
-@proof @have (@rule) "\<forall>n\<in>.\<nat>. X`n *\<^sub>R (Y`n +\<^sub>R Z`n) = X`n *\<^sub>R Y`n +\<^sub>R X`n *\<^sub>R Z`n" @qed
-
-lemma seq_ring_add_id [forward]: "is_comm_ring(R) \<Longrightarrow> is_add_id(seq_ring(R))" by auto2
-lemma seq_ring_mult_id [forward]: "is_comm_ring(R) \<Longrightarrow> is_mult_id(seq_ring(R))" by auto2
-
 lemma seq_ring_is_comm_ring [forward]:
   "is_comm_ring(R) \<Longrightarrow> is_comm_ring(seq_ring(R))"
 @proof
   @let "S = seq_ring(R)"
+  @have "\<zero>\<^sub>S \<noteq> \<one>\<^sub>S" @with @have "(\<zero>\<^sub>S)`0 \<noteq> (\<one>\<^sub>S)`0" @end
+  @have "is_add_id(S)"
+  @have "is_mult_id(S)"
   @have "has_add_inverse(S)" @with
-    @have "\<forall>X\<in>.S. X +\<^sub>S seq_neg(X) = \<zero>\<^sub>S" @end
+    @have "\<forall>X\<in>.S. X +\<^sub>S seq_neg(X) = \<zero>\<^sub>S"
+  @end
+  @have "\<forall>X\<in>.S. \<forall>Y\<in>.S. \<forall>Z\<in>.S. (X +\<^sub>S Y) +\<^sub>S Z = X +\<^sub>S (Y +\<^sub>S Z)" @with
+    @have (@rule) "\<forall>n\<in>.\<nat>. (X`n +\<^sub>R Y`n) +\<^sub>R Z`n = X`n +\<^sub>R (Y`n +\<^sub>R Z`n)"
+  @end
+  @have "\<forall>X\<in>.S. \<forall>Y\<in>.S. \<forall>Z\<in>.S. (X *\<^sub>S Y) *\<^sub>S Z = X *\<^sub>S (Y *\<^sub>S Z)" @with
+    @have (@rule) "\<forall>n\<in>.\<nat>. (X`n *\<^sub>R Y`n) *\<^sub>R Z`n = X`n *\<^sub>R (Y`n *\<^sub>R Z`n)"
+  @end
+  @have "\<forall>X\<in>.S. \<forall>Y\<in>.S. \<forall>Z\<in>.S. X *\<^sub>S (Y +\<^sub>S Z) = X *\<^sub>S Y +\<^sub>S X *\<^sub>S Z" @with
+    @have (@rule) "\<forall>n\<in>.\<nat>. X`n *\<^sub>R (Y`n +\<^sub>R Z`n) = X`n *\<^sub>R Y`n +\<^sub>R X`n *\<^sub>R Z`n"
+  @end
   @have "is_times_comm(S)"
 @qed
 
@@ -59,23 +49,14 @@ lemma seq_ring_uminus [rewrite]:
 @proof @have "-\<^sub>S X = seq_neg(X)" @with @have "X +\<^sub>S seq_neg(X) = \<zero>\<^sub>S" @end @qed
 
 lemma seq_ring_eval_minus [rewrite]:
-  "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> n \<in> source(X -\<^sub>S Y) \<Longrightarrow> (X -\<^sub>S Y)`n = X`n -\<^sub>R Y`n"
+  "is_comm_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow> n \<in> source(X -\<^sub>S Y) \<Longrightarrow>
+   (X -\<^sub>S Y)`n = X`n -\<^sub>R Y`n"
 @proof @have "X -\<^sub>S Y = X +\<^sub>S (-\<^sub>S Y)" @have "X`n -\<^sub>R Y`n = X`n +\<^sub>R -\<^sub>R Y`n" @qed
-
-setup {* fold del_prfstep_thm [@{thm seq_ring_zero_neq_one}, @{thm seq_ring_plus_assoc},
-  @{thm seq_ring_times_assoc}, @{thm seq_ring_has_add_inverse}, @{thm seq_ring_left_distrib}] *}
 
 (* Inverse of a sequence: invert all entries, except keeping 0 unchanged. *)
 
-definition inv_gen :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "inv_gen(R,x) = (if x \<in> units(R) then inv(R,x) else \<zero>\<^sub>R)"
-
-lemma inv_gen_type [typing]: "is_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> inv_gen(R,x) \<in>. R" by auto2
-lemma inv_gen_eval [rewrite]: "is_ring(R) \<Longrightarrow> x \<in> units(R) \<Longrightarrow> inv_gen(R,x) = inv(R,x)" by auto2
-setup {* del_prfstep_thm @{thm inv_gen_def} *}
-
 definition seq_inverse :: "i \<Rightarrow> i" where [rewrite]:
-  "seq_inverse(X) = (let R = target_str(X) in Seq(R,\<lambda>n. inv_gen(R,X`n)))"
+  "seq_inverse(X) = (let R = target_str(X) in Seq(R,\<lambda>n. if X`n \<in> units(R) then inv(R,X`n) else \<zero>\<^sub>R))"
 
 lemma seq_inverse_type [typing]:
   "ord_field_seq(X) \<Longrightarrow> seq_inverse(X) \<in> seqs(target_str(X))" by auto2

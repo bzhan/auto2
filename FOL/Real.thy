@@ -96,13 +96,10 @@ lemma real_choose_rep: "x \<in>. \<real> \<Longrightarrow> x = Real(rep(\<R>,x))
 setup {* add_rewrite_rule_cond @{thm real_choose_rep} [with_filt (size1_filter "x")] *}
 
 section {* Addition on real numbers *}
-
-lemma real_add_compat [resolve]: "compat_meta_bin(\<R>, \<lambda>X Y. X +\<^sub>S Y)" by auto2
   
 lemma real_add_eval [rewrite]:
-  "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Real(x) +\<^sub>\<real> Real(y) = equiv_class(\<R>,x +\<^sub>S y)"
+  "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Real(x) +\<^sub>\<real> Real(y) = Real(x +\<^sub>S y)"
 @proof @have "compat_meta_bin(\<R>, \<lambda>X Y. X +\<^sub>S Y)" @qed
-setup {* del_prfstep_thm @{thm real_add_compat} *}
 setup {* del_prfstep_thm @{thm real_evals(3)} *}
 
 lemma real_add_comm [forward]: "is_plus_comm(\<real>)" by auto2
@@ -110,20 +107,17 @@ lemma real_add_assoc [forward]: "is_plus_assoc(\<real>)" by auto2
 
 section {* Multiplication on real numbers *}
 
-lemma real_mult_compat1 [backward]:
-  "X \<in>. \<R> \<Longrightarrow> Y \<sim>\<^sub>\<R> Z \<Longrightarrow> X *\<^sub>S Y \<sim>\<^sub>\<R> X *\<^sub>S Z"
-@proof @have "X *\<^sub>S Y -\<^sub>S X *\<^sub>S Z = X *\<^sub>S (Y -\<^sub>S Z)" @qed
-    
-lemma real_mult_compat2 [backward]:
-  "X \<in>. \<R> \<Longrightarrow> Y \<sim>\<^sub>\<R> Z \<Longrightarrow> Y *\<^sub>S X \<sim>\<^sub>\<R> Z *\<^sub>S X"
-@proof @have "X *\<^sub>S Y \<sim>\<^sub>\<R> X *\<^sub>S Z" @qed
-
-lemma real_mult_raw_compat [resolve]: "compat_meta_bin(\<R>, \<lambda>X Y. X *\<^sub>S Y)" by auto2
-
 lemma real_mult_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Real(x) *\<^sub>\<real> Real(y) = Real(x *\<^sub>S y)"
-@proof @have "compat_meta_bin(\<R>, \<lambda>X Y. X *\<^sub>S Y)" @qed
-setup {* del_prfstep_thm @{thm real_mult_raw_compat} *}
+@proof
+  @have "\<forall>X Y Z. X \<in>. \<R> \<longrightarrow> Y \<sim>\<^sub>\<R> Z \<longrightarrow> X *\<^sub>S Y \<sim>\<^sub>\<R> X *\<^sub>S Z" @with
+    @have "X *\<^sub>S Y -\<^sub>S X *\<^sub>S Z = X *\<^sub>S (Y -\<^sub>S Z)"
+  @end
+  @have "\<forall>X Y Z. X \<in>. \<R> \<longrightarrow> Y \<sim>\<^sub>\<R> Z \<longrightarrow> Y *\<^sub>S X \<sim>\<^sub>\<R> Z *\<^sub>S X" @with
+    @have "Y *\<^sub>S X -\<^sub>S Z *\<^sub>S X = (Y -\<^sub>S Z) *\<^sub>S X"
+  @end
+  @have "compat_meta_bin(\<R>, \<lambda>X Y. X *\<^sub>S Y)"
+@qed
 setup {* del_prfstep_thm @{thm real_evals(4)} *}
   
 lemma real_mult_comm [forward]: "is_times_comm(\<real>)" by auto2
@@ -137,48 +131,31 @@ lemma real_is_mult_id [forward]: "is_mult_id(\<real>)" by auto2
 lemma real_zero_neq_one [resolve]: "\<zero>\<^sub>\<real> \<noteq> \<one>\<^sub>\<real>" by auto2
 
 section {* Negation on real numbers *}
-  
-definition real_neg :: "i \<Rightarrow> i" where [rewrite]:
-  "real_neg(x) = Real(-\<^sub>S rep(\<R>,x))"
 
-lemma real_neg_typing [typing]: "x \<in>. \<real> \<Longrightarrow> real_neg(x) \<in>. \<real>" by auto2
-lemma real_has_add_inverse [forward]: "has_add_inverse(\<real>)"
-@proof @have "\<forall>x\<in>.\<real>. x +\<^sub>\<real> real_neg(x) = \<zero>\<^sub>\<real>" @qed
-
-lemma real_is_comm_ring [forward]: "is_comm_ring(\<real>)" by auto2
-setup {* fold del_prfstep_thm [@{thm real_neg_def}, @{thm real_neg_typing}] *}
+lemma real_is_comm_ring [forward]: "is_comm_ring(\<real>)"
+@proof @have "\<forall>x\<in>.\<real>. x +\<^sub>\<real> Real(-\<^sub>S rep(\<R>,x)) = \<zero>\<^sub>\<real>" @qed
 
 section {* Inverse in real numbers *}
-  
-definition real_inverse :: "i \<Rightarrow> i" where [rewrite]:
-  "real_inverse(x) = Real(seq_inverse(rep(\<R>,x)))"
-
-lemma real_equiv_zero [rewrite]:
-  "x \<in>. \<R> \<Longrightarrow> Real(x) = \<zero>\<^sub>\<real> \<longleftrightarrow> vanishes(x)" by auto2
-
-lemma real_inverse_typing [typing]:
-  "x \<in>. \<real> \<Longrightarrow> x \<noteq> \<zero>\<^sub>\<real> \<Longrightarrow> real_inverse(x) \<in>. \<real>" by auto2
-
-lemma real_inverse_raw_mult_inv [rewrite]:
-  "x \<in>. \<R> \<Longrightarrow> \<not>vanishes(x) \<Longrightarrow> Real(x *\<^sub>S seq_inverse(x)) = 1\<^sub>\<real>" by auto2
 
 lemma real_is_field [forward]: "is_field(\<real>)"
-@proof @have "\<forall>x\<in>.\<real>. x \<noteq> \<zero>\<^sub>\<real> \<longrightarrow> x *\<^sub>\<real> real_inverse(x) = \<one>\<^sub>\<real>" @qed
-setup {* fold del_prfstep_thm [@{thm real_inverse_def}, @{thm real_inverse_typing}] *}
+@proof @have "\<forall>x\<in>.\<real>. x \<noteq> \<zero>\<^sub>\<real> \<longrightarrow> x *\<^sub>\<real> Real(seq_inverse(rep(\<R>,x))) = \<one>\<^sub>\<real>" @qed
 
 section {* Nonnegative real numbers *}
 
 lemma real_neg_eval [rewrite]: "x \<in>. \<R> \<Longrightarrow> -\<^sub>\<real> Real(x) = Real(-\<^sub>S x)"
 @proof @have "Real(x) +\<^sub>\<real> Real(-\<^sub>S x) = \<zero>\<^sub>\<real>" @qed
-    
+
 lemma nonneg_real_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> nonneg_real(Real(x)) \<longleftrightarrow> nonneg_seq(x)" by auto2
 setup {* del_prfstep_thm @{thm nonneg_real_def} *}
 
-lemma real_nonneg_compat [resolve]: "nonneg_compat(\<real>, nonneg_reals)" by auto2
-  
 lemma real_is_ord_field [forward]: "is_ord_field(\<real>)"
-@proof @have "nonneg_compat(\<real>, nonneg_reals)" @qed
+@proof
+  @have "nonneg_compat(\<real>, nonneg_reals)" @with
+    @have "subset_add_closed(\<real>, nonneg_reals)"
+    @have "subset_mult_closed(\<real>, nonneg_reals)"
+  @end
+@qed
 setup {* del_prfstep_thm @{thm real_is_ord_field_prep} *}
 
 section {* of_nat, of_int, of_rat in terms of sequences *}
@@ -258,7 +235,8 @@ lemma archimedeal_Real [forward]: "is_archimedean(\<real>)"
     @let "X = rep(\<R>,x)"
     @obtain b where "b >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> b"
     @have "of_rat(\<real>,b) = Real({b}\<^sub>\<rat>)"
-    @have "\<forall>n\<in>.\<nat>. X`n \<le>\<^sub>\<rat> {b}\<^sub>\<rat>`n" @end
+    @have "\<forall>n\<in>.\<nat>. X`n \<le>\<^sub>\<rat> {b}\<^sub>\<rat>`n"
+  @end
 @qed
       
 lemma le_rat_real [backward1]:
@@ -268,10 +246,6 @@ lemma le_rat_real [backward1]:
   @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S {c}\<^sub>\<rat>)`n \<le>\<^sub>\<rat> r"
   @have "\<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @with @have "X`n -\<^sub>\<rat> c \<le>\<^sub>\<rat> r" @end
 @qed
-
-lemma diff_le_rat_real [backward1]:
-  "X \<in>. \<R> \<Longrightarrow> Y \<in>. \<R> \<Longrightarrow> c \<in>. \<rat> \<Longrightarrow> r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<Longrightarrow> Real(X) -\<^sub>\<real> Real(Y) \<le>\<^sub>\<real> of_rat(\<real>,c) \<Longrightarrow>
-   \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. (X -\<^sub>S Y)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" by auto2
 
 lemma diff_le_rat_real2 [backward1]:
   "X \<in>. \<R> \<Longrightarrow> Y \<in>. \<R> \<Longrightarrow> c \<in>. \<rat> \<Longrightarrow> r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<Longrightarrow> Real(X) -\<^sub>\<real> Real(Y) \<le>\<^sub>\<real> of_rat(\<real>,c) \<Longrightarrow>
@@ -284,7 +258,6 @@ lemma diff_le_rat_real2 [backward1]:
     @have "X`m -\<^sub>\<rat> Y`n = (X`m -\<^sub>\<rat> X`n) +\<^sub>\<rat> (X`n -\<^sub>\<rat> Y`n)"
     @have "t +\<^sub>\<rat> (c +\<^sub>\<rat> s) = c +\<^sub>\<rat> (s +\<^sub>\<rat> t)" @end
 @qed
-setup {* del_prfstep_thm @{thm diff_le_rat_real} *}
  
 lemma abs_diff_le_rat_real2D [backward1]:
   "X \<in>. \<R> \<Longrightarrow> Y \<in>. \<R> \<Longrightarrow> c \<in>. \<rat> \<Longrightarrow> r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<Longrightarrow> \<bar>Real(X) -\<^sub>\<real> Real(Y)\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,c) \<Longrightarrow>
@@ -392,17 +365,13 @@ lemma Diag_prop_ge_nat [backward]:
 @qed
 setup {* del_prfstep_thm @{thm Diag_def} *}
 
-lemma ord_field_exists_sum4 [backward]:
-  "is_ord_field(R) \<Longrightarrow> r \<in>. R \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow>
-   \<exists>r1 r2 r3. r1 >\<^sub>R \<zero>\<^sub>R \<and> r2 >\<^sub>R \<zero>\<^sub>R \<and> r3 >\<^sub>R \<zero>\<^sub>R \<and> r = r1 +\<^sub>R (r2 +\<^sub>R r3) +\<^sub>R r1"
-@proof @have "r = r /\<^sub>R 4\<^sub>R +\<^sub>R (r /\<^sub>R 4\<^sub>R +\<^sub>R r /\<^sub>R 4\<^sub>R) +\<^sub>R r /\<^sub>R 4\<^sub>R" @qed
-
 lemma Diag_is_cauchy [forward]:
   "cauchy(X) \<Longrightarrow> X \<in> seqs(\<real>) \<Longrightarrow> cauchy(Diag(X))"
 @proof @contradiction
   @let "W = Diag(X)"
   @obtain r where "r >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "\<not>(\<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>W`m -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> r)"
-  @obtain r1 r2 r3 where "r1 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r2 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r3 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = r1 +\<^sub>\<rat> (r2 +\<^sub>\<rat> r3) +\<^sub>\<rat> r1"
+  @obtain r1 r2 r3 where "r1 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r2 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r3 >\<^sub>\<rat> \<zero>\<^sub>\<rat>" "r = r1 +\<^sub>\<rat> (r2 +\<^sub>\<rat> r3) +\<^sub>\<rat> r1" @with
+    @have "r = r /\<^sub>\<rat> 4\<^sub>\<rat> +\<^sub>\<rat> (r /\<^sub>\<rat> 4\<^sub>\<rat> +\<^sub>\<rat> r /\<^sub>\<rat> 4\<^sub>\<rat>) +\<^sub>\<rat> r /\<^sub>\<rat> 4\<^sub>\<rat>" @end
   @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. err`n <\<^sub>\<rat> r1"
   @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>\<real> X`n\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,r2)"
   @have "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>W`m -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> r" @with
@@ -431,8 +400,7 @@ lemma Diag_converges [forward]:
 @qed
 
 lemma real_cauchy_complete [forward]: "cauchy_complete_field(\<real>)"
-@proof 
-    @have "\<forall>X\<in>seqs(\<real>). cauchy(X) \<longrightarrow> converges(X)" @qed
+@proof @have "\<forall>X\<in>seqs(\<real>). cauchy(X) \<longrightarrow> converges(X)" @qed
 setup {* fold del_prfstep_thm [@{thm Diag_is_cauchy}, @{thm Diag_converges}] *}
 setup {* fold del_prfstep_thm [@{thm abs_diff_le_rat_real2D}, @{thm abs_diff_le_rat_realI},
   @{thm abs_diff_le_rat_realI'}, @{thm converges_to_in_rat}] *}

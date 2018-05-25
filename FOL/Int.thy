@@ -89,24 +89,25 @@ setup {* add_rewrite_rule_cond @{thm int_choose_rep} [with_filt (size1_filter "x
 
 section {* Addition on integers *}
 
-lemma int_add_raw_compat1 [backward]:
-  "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> int_add_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a' +\<^sub>\<nat> c) +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a' +\<^sub>\<nat> b) +\<^sub>\<nat> (c +\<^sub>\<nat> d)"
-  @have "(b' +\<^sub>\<nat> d) +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (b' +\<^sub>\<nat> a) +\<^sub>\<nat> (c +\<^sub>\<nat> d)"
-@qed
-
-lemma int_add_raw_compat2 [backward]:
-  "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> int_add_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a +\<^sub>\<nat> c') +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (c' +\<^sub>\<nat> d)"
-  @have "(b +\<^sub>\<nat> d') +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (d' +\<^sub>\<nat> c)"
-@qed
-
 lemma int_add_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Int(x) +\<^sub>\<int> Int(y) = Int(int_add_raw(x,y))"
-@proof @have "compat_meta_bin(\<R>, int_add_raw)" @qed
-setup {* fold del_prfstep_thm [@{thm int_add_raw_compat1}, @{thm int_add_raw_compat2}] *}
+@proof
+  @have "compat_meta_bin1(\<R>, int_add_raw)" @with
+    @have (@rule) "\<forall>a b c d a' b'. \<langle>c,d\<rangle> \<in>. \<R> \<longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<longrightarrow>
+                   int_add_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a' +\<^sub>\<nat> c) +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a' +\<^sub>\<nat> b) +\<^sub>\<nat> (c +\<^sub>\<nat> d)"
+      @have "(b' +\<^sub>\<nat> d) +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (b' +\<^sub>\<nat> a) +\<^sub>\<nat> (c +\<^sub>\<nat> d)"
+    @end
+  @end
+  @have "compat_meta_bin2(\<R>, int_add_raw)" @with
+    @have (@rule) "\<forall>a b c d c' d'. \<langle>a,b\<rangle> \<in>. \<R> \<longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<longrightarrow>
+                   int_add_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a +\<^sub>\<nat> c') +\<^sub>\<nat> (b +\<^sub>\<nat> d) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (c' +\<^sub>\<nat> d)"
+      @have "(b +\<^sub>\<nat> d') +\<^sub>\<nat> (a +\<^sub>\<nat> c) = (a +\<^sub>\<nat> b) +\<^sub>\<nat> (d' +\<^sub>\<nat> c)"
+    @end
+  @end
+  @have "compat_meta_bin(\<R>, int_add_raw)"
+@qed
 setup {* del_prfstep_thm @{thm int_evals(3)} *}
 
 lemma int_add_comm [forward]: "is_plus_comm(\<int>)" by auto2
@@ -114,27 +115,25 @@ lemma int_add_assoc [forward]: "is_plus_assoc(\<int>)" by auto2
 
 section {* Multiplication on integers *}
 
-lemma int_mult_raw_compat1 [backward]:
-  "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> int_mult_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a'*\<^sub>\<nat>c +\<^sub>\<nat> b'*\<^sub>\<nat>d) +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (a'+\<^sub>\<nat>b) *\<^sub>\<nat> c +\<^sub>\<nat> (b'+\<^sub>\<nat>a) *\<^sub>\<nat> d"
-  @have "(a'*\<^sub>\<nat>d +\<^sub>\<nat> b'*\<^sub>\<nat>c) +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (b'+\<^sub>\<nat>a) *\<^sub>\<nat> c +\<^sub>\<nat> (a'+\<^sub>\<nat>b) *\<^sub>\<nat> d"
-@qed
-
-lemma int_mult_raw_compat2 [backward]:
-  "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a*\<^sub>\<nat>c' +\<^sub>\<nat> b*\<^sub>\<nat>d') +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (c'+\<^sub>\<nat>d) *\<^sub>\<nat> a +\<^sub>\<nat> (d'+\<^sub>\<nat>c) *\<^sub>\<nat> b"
-  @have "(a*\<^sub>\<nat>d' +\<^sub>\<nat> b*\<^sub>\<nat>c') +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (d'+\<^sub>\<nat>c) *\<^sub>\<nat> a +\<^sub>\<nat> (c'+\<^sub>\<nat>d) *\<^sub>\<nat> b"
-@qed
-
-lemma int_mult_raw_compat [resolve]: "compat_meta_bin(\<R>, int_mult_raw)" by auto2
-setup {* fold del_prfstep_thm [@{thm int_mult_raw_compat1}, @{thm int_mult_raw_compat2}] *}
-
 lemma int_mult_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Int(x) *\<^sub>\<int> Int(y) = Int(int_mult_raw(x,y))"
-@proof @have "compat_meta_bin(\<R>, int_mult_raw)" @qed
-setup {* del_prfstep_thm @{thm int_mult_raw_compat} *}
+@proof
+  @have "compat_meta_bin1(\<R>, int_mult_raw)" @with
+    @have (@rule) "\<forall>a b c d a' b'. \<langle>c,d\<rangle> \<in>. \<R> \<longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<longrightarrow>
+                   int_mult_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a'*\<^sub>\<nat>c +\<^sub>\<nat> b'*\<^sub>\<nat>d) +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (a'+\<^sub>\<nat>b) *\<^sub>\<nat> c +\<^sub>\<nat> (b'+\<^sub>\<nat>a) *\<^sub>\<nat> d"
+      @have "(a'*\<^sub>\<nat>d +\<^sub>\<nat> b'*\<^sub>\<nat>c) +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (b'+\<^sub>\<nat>a) *\<^sub>\<nat> c +\<^sub>\<nat> (a'+\<^sub>\<nat>b) *\<^sub>\<nat> d"
+    @end
+  @end
+  @have "compat_meta_bin2(\<R>, int_mult_raw)" @with
+    @have (@rule) "\<forall>a b c d c' d'. \<langle>a,b\<rangle> \<in>. \<R> \<longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<longrightarrow>
+                   int_mult_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> int_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a*\<^sub>\<nat>c' +\<^sub>\<nat> b*\<^sub>\<nat>d') +\<^sub>\<nat> (a*\<^sub>\<nat>d +\<^sub>\<nat> b*\<^sub>\<nat>c) = (c'+\<^sub>\<nat>d) *\<^sub>\<nat> a +\<^sub>\<nat> (d'+\<^sub>\<nat>c) *\<^sub>\<nat> b"
+      @have "(a*\<^sub>\<nat>d' +\<^sub>\<nat> b*\<^sub>\<nat>c') +\<^sub>\<nat> (a*\<^sub>\<nat>c +\<^sub>\<nat> b*\<^sub>\<nat>d) = (d'+\<^sub>\<nat>c) *\<^sub>\<nat> a +\<^sub>\<nat> (c'+\<^sub>\<nat>d) *\<^sub>\<nat> b"
+    @end
+  @end  
+  @have "compat_meta_bin(\<R>, int_mult_raw)"
+@qed
 setup {* del_prfstep_thm @{thm int_evals(4)} *}
 
 lemma int_mult_comm [forward]: "is_times_comm(\<int>)" by auto2
@@ -163,13 +162,13 @@ lemma int_is_comm_ring [forward]: "is_comm_ring(\<int>)" by auto2
 
 section {* Nonnegative integers *}
 
-lemma nonneg_int_compat [forward]:
-  "\<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> a \<ge>\<^sub>\<nat> b \<Longrightarrow> c \<ge>\<^sub>\<nat> d"
-@proof @contradiction @have "a +\<^sub>\<nat> d >\<^sub>\<nat> b +\<^sub>\<nat> c" @qed
-  
 lemma nonneg_int_eval [rewrite]:
-  "x \<in>. \<R> \<Longrightarrow> nonneg_int(Int(x)) \<longleftrightarrow> nonneg_int_raw(x)" by auto2
-setup {* del_prfstep_thm @{thm nonneg_int_compat} *}
+  "x \<in>. \<R> \<Longrightarrow> nonneg_int(Int(x)) \<longleftrightarrow> nonneg_int_raw(x)"
+@proof
+  @have (@rule) "\<forall>a b c d. \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<longrightarrow> a \<ge>\<^sub>\<nat> b \<longrightarrow> c \<ge>\<^sub>\<nat> d" @with
+    @contradiction @have "a +\<^sub>\<nat> d >\<^sub>\<nat> b +\<^sub>\<nat> c"
+  @end
+@qed
 setup {* del_prfstep_thm @{thm nonneg_int_def} *}
 
 lemma int_neg_eval [rewrite]: "x \<in>. \<R> \<Longrightarrow> -\<^sub>\<int> Int(x) = Int(int_neg_raw(x))"
@@ -240,16 +239,17 @@ lemma comm_ring_switch_sides4 [resolve]:
    a +\<^sub>R d = b +\<^sub>R c \<Longrightarrow> a -\<^sub>R b = c -\<^sub>R d"
 @proof @have "a -\<^sub>R b +\<^sub>R (b +\<^sub>R d) = c -\<^sub>R d +\<^sub>R (b +\<^sub>R d)" @qed
 
-lemma int_act_raw_compat [rewrite]:
-  "is_abgroup(R) \<Longrightarrow> \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> x \<in>. R \<Longrightarrow> int_act_raw(R,\<langle>a,b\<rangle>,x) = int_act_raw(R,\<langle>c,d\<rangle>,x)"
-@proof @have "nat_act(R,a,x) +\<^sub>R nat_act(R,d,x) = nat_act(R,b,x) +\<^sub>R nat_act(R,c,x)" @qed
-
 definition int_act :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "int_act(R,z,x) = int_act_raw(R,rep(\<R>,z),x)"
 setup {* register_wellform_data ("int_act(R,z,x)", ["z \<in>. \<int>"]) *}
   
 lemma int_act_eval [rewrite]:
-  "is_abgroup(R) \<Longrightarrow> p \<in>. \<R> \<Longrightarrow> x \<in>. R \<Longrightarrow> int_act(R,Int(p),x) = int_act_raw(R,p,x)" by auto2
+  "is_abgroup(R) \<Longrightarrow> p \<in>. \<R> \<Longrightarrow> x \<in>. R \<Longrightarrow> int_act(R,Int(p),x) = int_act_raw(R,p,x)"
+@proof
+  @have (@rule) "\<forall>a b c d. \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<longrightarrow> int_act_raw(R,\<langle>a,b\<rangle>,x) = int_act_raw(R,\<langle>c,d\<rangle>,x)" @with
+    @have "nat_act(R,a,x) +\<^sub>R nat_act(R,d,x) = nat_act(R,b,x) +\<^sub>R nat_act(R,c,x)"
+  @end
+@qed
 setup {* del_prfstep_thm @{thm int_act_def} *}
 
 lemma int_act_type [typing]:
@@ -272,6 +272,7 @@ lemma int_act_zero_right [rewrite]:
   "is_abgroup(R) \<Longrightarrow> n \<in>. \<int> \<Longrightarrow> int_act(R,n,\<zero>\<^sub>R) = \<zero>\<^sub>R" by auto2
 
 setup {* del_prfstep_thm @{thm int_of_nat} *}
+setup {* fold del_prfstep_thm [@{thm int_act_raw_eval}, @{thm int_act_eval}] *}
 setup {* fold del_prfstep_thm [@{thm int_def}, @{thm int_rel_spaceI}, @{thm int_rel_spaceD}] *}
 setup {* fold del_prfstep_thm @{thms int_evals(1-2)} *}
 setup {* fold del_prfstep_thm [@{thm int_choose_rep}, @{thm int_neg_eval}, @{thm int_add_eval},

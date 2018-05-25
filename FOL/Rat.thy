@@ -96,56 +96,54 @@ section {* Multiplication on rationals *}
 lemma rat_mult_raw_type [typing]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>) \<in>. \<R>" by auto2
 
-lemma rat_mult_raw_compat1 [backward]:
-  "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> rat_mult_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a' *\<^sub>\<int> c) *\<^sub>\<int> (b *\<^sub>\<int> d) = (a' *\<^sub>\<int> b) *\<^sub>\<int> (c *\<^sub>\<int> d)"
-  @have "(b' *\<^sub>\<int> d) *\<^sub>\<int> (a *\<^sub>\<int> c) = (b' *\<^sub>\<int> a) *\<^sub>\<int> (c *\<^sub>\<int> d)"
-@qed
-
-lemma rat_mult_raw_compat2 [backward]:
-  "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a *\<^sub>\<int> c') *\<^sub>\<int> (b *\<^sub>\<int> d) = (a *\<^sub>\<int> b) *\<^sub>\<int> (c' *\<^sub>\<int> d)"
-  @have "(b *\<^sub>\<int> d') *\<^sub>\<int> (a *\<^sub>\<int> c) = (a *\<^sub>\<int> b) *\<^sub>\<int> (d' *\<^sub>\<int> c)"
-@qed
-
-lemma rat_mult_raw_compat [resolve]: "compat_meta_bin(\<R>, rat_mult_raw)" by auto2
-
 lemma rat_mult_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Rat(x) *\<^sub>\<rat> Rat(y) = Rat(rat_mult_raw(x,y))"
-@proof @have "compat_meta_bin(\<R>, rat_mult_raw)" @qed
-setup {* del_prfstep_thm @{thm rat_mult_raw_compat} *}
+@proof
+  @have "compat_meta_bin1(\<R>, rat_mult_raw)" @with
+    @have (@rule) "\<forall>a b c d a' b'. \<langle>c,d\<rangle> \<in>. \<R> \<longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<longrightarrow>
+                   rat_mult_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a' *\<^sub>\<int> c) *\<^sub>\<int> (b *\<^sub>\<int> d) = (a' *\<^sub>\<int> b) *\<^sub>\<int> (c *\<^sub>\<int> d)"
+      @have "(b' *\<^sub>\<int> d) *\<^sub>\<int> (a *\<^sub>\<int> c) = (b' *\<^sub>\<int> a) *\<^sub>\<int> (c *\<^sub>\<int> d)"
+    @end
+  @end
+  @have "compat_meta_bin2(\<R>, rat_mult_raw)" @with
+    @have (@rule) "\<forall>a b c d c' d'. \<langle>a,b\<rangle> \<in>. \<R> \<longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<longrightarrow>
+                   rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a *\<^sub>\<int> c') *\<^sub>\<int> (b *\<^sub>\<int> d) = (a *\<^sub>\<int> b) *\<^sub>\<int> (c' *\<^sub>\<int> d)"
+      @have "(b *\<^sub>\<int> d') *\<^sub>\<int> (a *\<^sub>\<int> c) = (a *\<^sub>\<int> b) *\<^sub>\<int> (d' *\<^sub>\<int> c)"
+    @end
+  @end
+  @have "compat_meta_bin(\<R>, rat_mult_raw)"
+@qed
 setup {* del_prfstep_thm @{thm rat_evals(4)} *}
 
 lemma rat_mult_comm [forward]: "is_times_comm(\<rat>)" by auto2
 lemma rat_mult_assoc [forward]: "is_times_assoc(\<rat>)" by auto2
-    
+
 section {* Addition on rationals *}
 
 lemma rat_add_raw_type [typing]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>) \<in>. \<R>" by auto2
 
-lemma rat_add_raw_compat1 [backward]:
-  "\<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<Longrightarrow> rat_add_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a'*\<^sub>\<int>d +\<^sub>\<int> b'*\<^sub>\<int>c) *\<^sub>\<int> (b*\<^sub>\<int>d) = (a'*\<^sub>\<int>b)*\<^sub>\<int>d*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>b'*\<^sub>\<int>c*\<^sub>\<int>d"
-  @have "(b'*\<^sub>\<int>d) *\<^sub>\<int> (a*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>c) = (b'*\<^sub>\<int>a)*\<^sub>\<int>d*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>b'*\<^sub>\<int>c*\<^sub>\<int>d"
-@qed
-
-lemma rat_add_raw_compat2 [backward]:
-  "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)"
-@proof
-  @have "(a*\<^sub>\<int>d' +\<^sub>\<int> b*\<^sub>\<int>c') *\<^sub>\<int> (b*\<^sub>\<int>d) = (c'*\<^sub>\<int>d)*\<^sub>\<int>b*\<^sub>\<int>b +\<^sub>\<int> a*\<^sub>\<int>b*\<^sub>\<int>d*\<^sub>\<int>d'"
-  @have "(b*\<^sub>\<int>d') *\<^sub>\<int> (a*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>c)  = (d'*\<^sub>\<int>c)*\<^sub>\<int>b*\<^sub>\<int>b +\<^sub>\<int> a*\<^sub>\<int>b*\<^sub>\<int>d*\<^sub>\<int>d'"
-@qed
-
-lemma rat_add_raw_compat [resolve]: "compat_meta_bin(\<R>, rat_add_raw)" by auto2
-
 lemma rat_add_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Rat(x) +\<^sub>\<rat> Rat(y) = Rat(rat_add_raw(x,y))"
-@proof @have "compat_meta_bin(\<R>, rat_add_raw)" @qed
-setup {* del_prfstep_thm @{thm rat_add_raw_compat} *}
+@proof
+  @have "compat_meta_bin1(\<R>, rat_add_raw)" @with
+    @have (@rule) "\<forall>a b c d a' b'. \<langle>c,d\<rangle> \<in>. \<R> \<longrightarrow> \<langle>a',b'\<rangle> \<sim>\<^sub>\<R> \<langle>a,b\<rangle> \<longrightarrow>
+                   rat_add_raw(\<langle>a',b'\<rangle>,\<langle>c,d\<rangle>) \<sim>\<^sub>\<R> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a'*\<^sub>\<int>d +\<^sub>\<int> b'*\<^sub>\<int>c) *\<^sub>\<int> (b*\<^sub>\<int>d) = (a'*\<^sub>\<int>b)*\<^sub>\<int>d*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>b'*\<^sub>\<int>c*\<^sub>\<int>d"
+      @have "(b'*\<^sub>\<int>d) *\<^sub>\<int> (a*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>c) = (b'*\<^sub>\<int>a)*\<^sub>\<int>d*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>b'*\<^sub>\<int>c*\<^sub>\<int>d"
+    @end
+  @end
+  @have "compat_meta_bin2(\<R>, rat_add_raw)" @with
+    @have (@rule) "\<forall>a b c d c' d'. \<langle>a,b\<rangle> \<in>. \<R> \<longrightarrow> \<langle>c',d'\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<longrightarrow>
+                   rat_add_raw(\<langle>a,b\<rangle>,\<langle>c',d'\<rangle>) \<sim>\<^sub>\<R> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>)" @with
+      @have "(a*\<^sub>\<int>d' +\<^sub>\<int> b*\<^sub>\<int>c') *\<^sub>\<int> (b*\<^sub>\<int>d) = (c'*\<^sub>\<int>d)*\<^sub>\<int>b*\<^sub>\<int>b +\<^sub>\<int> a*\<^sub>\<int>b*\<^sub>\<int>d*\<^sub>\<int>d'"
+      @have "(b*\<^sub>\<int>d') *\<^sub>\<int> (a*\<^sub>\<int>d +\<^sub>\<int> b*\<^sub>\<int>c)  = (d'*\<^sub>\<int>c)*\<^sub>\<int>b*\<^sub>\<int>b +\<^sub>\<int> a*\<^sub>\<int>b*\<^sub>\<int>d*\<^sub>\<int>d'"
+    @end
+  @end
+  @have "compat_meta_bin(\<R>, rat_add_raw)"
+@qed
 setup {* del_prfstep_thm @{thm rat_evals(3)} *}
 
 lemma rat_add_comm [forward]: "is_plus_comm(\<rat>)" by auto2
@@ -246,7 +244,7 @@ lemma rat_is_ord_field [forward]: "is_ord_field(\<rat>)"
 setup {* del_prfstep_thm @{thm rat_is_ord_field_prep} *}
 
 section {* Rational as a quotient of two integers *}
-          
+
 lemma rat_of_nat [rewrite]:
   "n \<in> nat \<Longrightarrow> of_nat(\<rat>,n) = Rat(\<langle>of_nat(\<int>,n),1\<^sub>\<int>\<rangle>)"
 @proof @var_induct "n \<in> nat" @qed
@@ -276,6 +274,8 @@ lemma rat_is_quotient [backward]:
   @have "r = of_int(\<rat>,fst(p)) /\<^sub>\<rat> of_int(\<rat>,snd(p))"
 @qed
 
+setup {* fold del_prfstep_thm [@{thm rat_neg_eval}, @{thm rat_neg_raw_def}] *}
+
 section {* Definition of of_rat *}
   
 definition of_rat_raw :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
@@ -291,35 +291,29 @@ lemma field_switch_sides4 [resolve]:
   @have "(a /\<^sub>R b) *\<^sub>R (b *\<^sub>R d) = (c /\<^sub>R d) *\<^sub>R (b *\<^sub>R d)" @have "b *\<^sub>R d \<in> units(R)"
 @qed
 
-lemma of_rat_raw_compat [rewrite]:
-  "is_ord_field(R) \<Longrightarrow> \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<Longrightarrow> of_rat_raw(R,\<langle>a,b\<rangle>) = of_rat_raw(R,\<langle>c,d\<rangle>)"
-@proof
-  @have "of_int(R,d) \<noteq> of_int(R,0\<^sub>\<int>)"
-  @have "of_int(R,a) *\<^sub>R of_int(R,d) = of_int(R,b) *\<^sub>R of_int(R,c)"
-@qed
-
 definition of_rat :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "of_rat(R,r) = of_rat_raw(R,rep(\<R>,r))"
 setup {* register_wellform_data ("of_rat(R,r)", ["r \<in>. \<rat>"]) *}
 
 lemma of_rat_eval [rewrite]:
-  "is_ord_field(R) \<Longrightarrow> x \<in>. \<R> \<Longrightarrow> of_rat(R,Rat(x)) = of_rat_raw(R,x)" by auto2
+  "is_ord_field(R) \<Longrightarrow> x \<in>. \<R> \<Longrightarrow> of_rat(R,Rat(x)) = of_rat_raw(R,x)"
+@proof
+  @have (@rule) "\<forall>a b c d. \<langle>a,b\<rangle> \<sim>\<^sub>\<R> \<langle>c,d\<rangle> \<longrightarrow> of_rat_raw(R,\<langle>a,b\<rangle>) = of_rat_raw(R,\<langle>c,d\<rangle>)" @with
+    @have "of_int(R,d) \<noteq> of_int(R,0\<^sub>\<int>)"
+    @have "of_int(R,a) *\<^sub>R of_int(R,d) = of_int(R,b) *\<^sub>R of_int(R,c)"
+  @end
+@qed
 setup {* del_prfstep_thm @{thm of_rat_def} *}
 
 lemma of_int_is_unit [typing]:
-  "is_ord_field(R) \<Longrightarrow> x >\<^sub>\<int> \<zero>\<^sub>\<int> \<Longrightarrow> of_int(R,x) \<in> units(R)"
-@proof @have "of_int(R,x) >\<^sub>R of_int(R,0\<^sub>\<int>)" @qed
+  "is_ord_field(R) \<Longrightarrow> x >\<^sub>\<int> \<zero>\<^sub>\<int> \<Longrightarrow> of_int(R,x) \<in> units(R)" by auto2
 
 lemma of_rat_type [typing]:
   "is_ord_field(R) \<Longrightarrow> r \<in>. \<rat> \<Longrightarrow> of_rat(R,r) \<in>. R" by auto2
 
 lemma of_rat_eval_quotient [rewrite]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y >\<^sub>\<int> 0\<^sub>\<int> \<Longrightarrow>
-   of_rat(R,of_int(\<rat>,x) /\<^sub>\<rat> of_int(\<rat>,y)) = of_int(R,x) /\<^sub>R of_int(R,y)"
-@proof
-  @let "r = of_int(\<rat>,x) /\<^sub>\<rat> of_int(\<rat>,y)"
-  @let "p = rep(\<R>,r)" @have "p \<sim>\<^sub>\<R> \<langle>x,y\<rangle>"
-@qed
+   of_rat(R,of_int(\<rat>,x) /\<^sub>\<rat> of_int(\<rat>,y)) = of_int(R,x) /\<^sub>R of_int(R,y)" by auto2
 
 lemma of_rat_is_zero [forward]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. \<rat> \<Longrightarrow> of_rat(R,x) = 0\<^sub>R \<Longrightarrow> x = 0\<^sub>\<rat>"
@@ -337,7 +331,7 @@ lemma of_rat_of_nat [rewrite]:
 setup {* fold del_prfstep_thm [@{thm of_rat_eval}, @{thm rat_of_nat}, @{thm rat_of_int}] *}
 setup {* fold del_prfstep_thm [@{thm rat_def}, @{thm rat_rel_spaceI}, @{thm rat_rel_spaceD}] *}
 setup {* fold del_prfstep_thm @{thms rat_evals(1-2)} *}
-setup {* fold del_prfstep_thm [@{thm rat_choose_rep}, @{thm rat_neg_eval}, @{thm rat_inverse_eval},
+setup {* fold del_prfstep_thm [@{thm rat_choose_rep}, @{thm rat_inverse_eval},
   @{thm rat_div_eval}, @{thm rat_mult_eval}, @{thm rat_add_eval}] *}
 no_notation rat_rel ("\<R>")
 hide_const Rat
