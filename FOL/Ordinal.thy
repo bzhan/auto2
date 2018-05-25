@@ -2,21 +2,6 @@ theory Ordinal
 imports Wfrec
 begin
 
-section {* Axiom of foundation *}
-
-axiomatization where
-  foundation [backward]: "x \<noteq> \<emptyset> \<Longrightarrow> \<exists>y\<in>x. y \<inter> x = \<emptyset>"
-
-lemma no_mem_cycle1 [resolve]: "a \<notin> a"
-@proof
-  @obtain "x\<in>{a}" where "x \<inter> {a} = \<emptyset>"
-@qed
-
-lemma no_mem_cycle2 [resolve]: "x \<in> y \<Longrightarrow> y \<notin> x"
-@proof
-  @obtain "a \<in> {x,y}" where "a \<inter> {x,y} = \<emptyset>"
-@qed
-
 section {* Membership relation is well-founded *}
 
 definition mem_rel :: "i \<Rightarrow> i" where [rewrite]:
@@ -56,10 +41,8 @@ setup {* del_prfstep_thm @{thm ord_def} *}
 
 lemma trans_mem_rel [forward]: "ord(i) \<Longrightarrow> trans(mem_rel(i))" by auto2
 
-(* Properties of succ *)
+(* succ is an ordinal *)
 lemma ord_succ_is_ord [forward]: "ord(i) \<Longrightarrow> ord(succ(i))" by auto2
-lemma succ_nonzero [resolve]: "succ(x) \<noteq> \<emptyset>" by auto2
-lemma succ_inj [forward]: "succ(x) = succ(y) \<Longrightarrow> x = y" by auto2
 
 (* Union is an ordinal. *)
 lemma union_ord: "\<forall>x\<in>S. ord(x) \<Longrightarrow> ord(\<Union>S)" by auto2

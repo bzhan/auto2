@@ -387,4 +387,22 @@ lemma prod_union2 [rewrite_bidir]: "A \<times> X \<union> B \<times> X = (A \<un
 lemma prod_diff1 [rewrite]: "X \<times> A \<midarrow> X \<times> B = X \<times> (A \<midarrow> B)" by auto2
 lemma prod_diff2 [rewrite]: "A \<times> X \<midarrow> B \<times> X = (A \<midarrow> B) \<times> X" by auto2
 
+section \<open>Axiom of Foundation\<close>
+
+axiomatization where
+  foundation [backward]: "x \<noteq> \<emptyset> \<Longrightarrow> \<exists>y\<in>x. y \<inter> x = \<emptyset>"
+
+lemma no_mem_cycle1 [resolve]: "a \<notin> a"
+@proof
+  @obtain "x\<in>{a}" where "x \<inter> {a} = \<emptyset>"
+@qed
+
+lemma no_mem_cycle2 [resolve]: "x \<in> y \<Longrightarrow> y \<notin> x"
+@proof
+  @obtain "a \<in> {x,y}" where "a \<inter> {x,y} = \<emptyset>"
+@qed
+
+lemma succ_nonzero [resolve]: "succ(x) \<noteq> \<emptyset>" by auto2
+lemma succ_inj [forward]: "succ(x) = succ(y) \<Longrightarrow> x = y" by auto2
+
 end
