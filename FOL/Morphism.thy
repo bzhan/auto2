@@ -56,7 +56,8 @@ lemma Mor_eval [rewrite]:
 (* Equality between morphisms *)
 lemma morphism_eq [backward]:
   "mor_form(f) \<Longrightarrow> mor_form(g) \<Longrightarrow> source_str(f) = source_str(g) \<Longrightarrow> target_str(f) = target_str(g) \<Longrightarrow>
-   \<forall>x\<in>source(f). f`x = g`x \<Longrightarrow> f = g" by auto2
+   \<forall>x\<in>source(f). f`x = g`x \<Longrightarrow> f = g"
+@proof @have "\<forall>x\<in>source(f). graph_eval(graph(f),x) = graph_eval(graph(g),x)" @qed
 setup {* del_prfstep_thm @{thm feval_def} *}
 
 setup {* fold del_prfstep_thm [
