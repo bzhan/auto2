@@ -57,7 +57,17 @@ definition Mor :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
 setup {* add_prfstep_check_req ("Mor(S,T,b)", "Mor(S,T,b) \<in> S \<rightharpoonup> T") *}
 
 lemma Mor_is_morphism [backward]:
-  "\<forall>x\<in>.S. f(x)\<in>.T \<Longrightarrow> Mor(S,T,f) \<in> S \<rightharpoonup> T" by auto2
+  "\<forall>x\<in>.S. f(x)\<in>.T \<Longrightarrow> Mor(S,T,f) \<in> S \<rightharpoonup> T"
+@proof
+  @let "A = carrier(S)" "B = carrier(T)"
+  @let "G = {p\<in>A\<times>B. snd(p) = f(fst(p))}"
+  @have "is_graph(G)"
+  @have "\<forall>x. x \<in> gr_source(G) \<longleftrightarrow> x \<in> A" @with
+    @case "x \<in> gr_source(G)" @with @obtain y where "\<langle>x,y\<rangle> \<in> G" @end
+    @case "x \<in> A" @with @have "\<langle>x, f(x)\<rangle> \<in> G" @end
+  @end
+  @have "G \<in> func_graphs(A,B)"
+@qed
 
 lemma Mor_eval [rewrite]:
   "F = Mor(S,T,f) \<Longrightarrow> x \<in> source(F) \<Longrightarrow> is_morphism(F) \<Longrightarrow> F`x = f(x)" by auto2

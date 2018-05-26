@@ -44,7 +44,7 @@ definition is_family :: "i \<Rightarrow> o" where [rewrite]:
 definition Tup :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> i" where [rewrite]:
   "Tup(I,f) = Struct({\<langle>source_name, I\<rangle>, \<langle>graph_name, {\<langle>a, f(a)\<rangle>. a \<in> I}\<rangle>})"
 
-lemma is_func_graph_Tup [resolve]: "is_func_graph({\<langle>a, f(a)\<rangle>. a \<in> I}, I)"
+lemma TupD: "is_family(Tup(I,f)) \<and> source(Tup(I,f)) = I"
 @proof
   @let "G = {\<langle>a, f(a)\<rangle>. a \<in> I}"
   @have "is_graph(G)"
@@ -52,9 +52,8 @@ lemma is_func_graph_Tup [resolve]: "is_func_graph({\<langle>a, f(a)\<rangle>. a 
     @case "x \<in> gr_source(G)" @with @obtain y where "\<langle>x,y\<rangle> \<in> G" @end
     @case "x \<in> I" @with @have "\<langle>x, f(x)\<rangle> \<in> G" @end
   @end
+  @have "is_func_graph(G,I)"
 @qed
-
-lemma TupD: "is_family(Tup(I,f)) \<and> source(Tup(I,f)) = I" by auto2
 setup {* add_forward_prfstep_cond @{thm TupD} [with_term "Tup(?I,?f)"] *}
 
 (* Evaluation for families. *)
@@ -129,8 +128,8 @@ syntax
 translations
   "\<lambda>x\<in>A. f\<in>B" == "CONST Fun(A,B,\<lambda>x. f)"
 
-lemma func_graphs_mem [resolve]:
-  "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> {p\<in>A\<times>B. snd(p) = f(fst(p))} \<in> func_graphs(A,B)"
+lemma lambda_is_function [backward]:
+  "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> Fun(A,B,f) \<in> A \<rightarrow> B"
 @proof
   @let "G = {p\<in>A\<times>B. snd(p) = f(fst(p))}"
   @have "is_graph(G)"
@@ -138,10 +137,8 @@ lemma func_graphs_mem [resolve]:
     @case "x \<in> gr_source(G)" @with @obtain y where "\<langle>x,y\<rangle> \<in> G" @end
     @case "x \<in> A" @with @have "\<langle>x, f(x)\<rangle> \<in> G" @end
   @end
+  @have "G \<in> func_graphs(A,B)"
 @qed
-
-lemma lambda_is_function [backward]:
-  "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> Fun(A,B,f) \<in> A \<rightarrow> B" by auto2
 
 (* Function evaluation *)
 lemma beta [rewrite]:

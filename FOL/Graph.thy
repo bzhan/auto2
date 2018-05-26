@@ -38,7 +38,7 @@ definition gr_comp :: "i \<Rightarrow> i \<Rightarrow> i"  (infixr "\<circ>\<^su
   "s \<circ>\<^sub>g r = {p\<in>gr_source(r)\<times>gr_target(s). \<exists>z. \<langle>fst(p),z\<rangle>\<in>r \<and> \<langle>z,snd(p)\<rangle>\<in>s}"
 
 lemma gr_comp_is_graph [forward]: "is_graph(s \<circ>\<^sub>g r)" by auto2
-lemma gr_compI [backward1, backward2]:
+lemma gr_compI [backward2]:
   "\<langle>x,y\<rangle> \<in> r \<Longrightarrow> \<langle>y,z\<rangle> \<in> s \<Longrightarrow> \<langle>x,z\<rangle> \<in> s \<circ>\<^sub>g r" by auto2
 lemma gr_compE [forward]:
   "p \<in> s \<circ>\<^sub>g r \<Longrightarrow> \<exists>y. \<langle>fst(p),y\<rangle> \<in> r \<and> \<langle>y,snd(p)\<rangle> \<in> s" by auto2
@@ -61,14 +61,14 @@ lemma is_func_graphD [forward]:
 lemma is_func_graphD2 [forward]:
   "is_func_graph(G,X) \<Longrightarrow> x \<in> X \<Longrightarrow> \<langle>x, graph_eval(G,x)\<rangle> \<in> G" by auto2
 
-lemma is_func_graphD3 [forward,backward2]:
+lemma is_func_graphD3 [forward]:
   "is_func_graph(G,X) \<Longrightarrow> \<langle>x,y\<rangle> \<in> G \<Longrightarrow> x \<in> X \<Longrightarrow> graph_eval(G,x) = y" by auto2
 
 lemma graph_eq [backward1]:
   "is_func_graph(G,X) \<Longrightarrow> is_func_graph(H,X) \<Longrightarrow>
    \<forall>x\<in>X. graph_eval(G,x) = graph_eval(H,x) \<Longrightarrow> G = H" by auto2
 
-lemma is_func_graph_cons [backward]:
+lemma is_func_graph_cons:
   "is_func_graph(G,X) \<Longrightarrow> a \<notin> X \<Longrightarrow> is_func_graph(cons(\<langle>a,b\<rangle>,G),cons(a,X))"
 @proof
   @let "H = cons(\<langle>a,b\<rangle>,G)"
@@ -81,7 +81,7 @@ lemma is_func_graph_cons [backward]:
   @end
 @qed
 
-lemma is_func_graph_empty [resolve]: "is_func_graph(\<emptyset>,\<emptyset>)"
+lemma is_func_graph_empty: "is_func_graph(\<emptyset>,\<emptyset>)"
 @proof
   @have "is_graph(\<emptyset>)"
   @have "\<forall>x\<in>gr_source(\<emptyset>). x \<in> \<emptyset>" @with
