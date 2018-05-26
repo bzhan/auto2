@@ -1,5 +1,5 @@
 theory Int
-imports Nat Ring
+  imports Nat Ring EquivRel
 begin
 
 section {* Integers as a quotient set *}

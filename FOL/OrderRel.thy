@@ -1,5 +1,5 @@
 theory OrderRel
-imports EquivRel Morphism
+  imports Morphism
 begin
 
 section {* Transitive relations *}
@@ -46,24 +46,6 @@ setup {* del_prfstep_thm_eqforward @{thm order_def} *}
 definition opp_order :: "i \<Rightarrow> i" where [rewrite]:
   "opp_order(R) = Order(carrier(R), \<lambda>x y. y \<le>\<^sub>R x)"
 lemma inv_is_order: "order(R) \<Longrightarrow> order(opp_order(R))" by auto2
-
-(* Symmetrization of a relation *)
-definition sym_of_rel :: "i \<Rightarrow> i" where [rewrite]:
-  "sym_of_rel(R) = Equiv(carrier(R), \<lambda>x y. x \<le>\<^sub>R y \<and> y \<le>\<^sub>R x)"
-
-(* Symmetrization of a preorder is an equivalence relation. Moreover,
-   the preorder induces an order relation on the quotient. *)
-lemma preorder_sym_is_equiv_rel [typing]:
-  "preorder(R) \<Longrightarrow> sym_of_rel(R) \<in> equiv_space(carrier(R))" by auto2
-
-lemma sym_of_rel_eval [rewrite]:
-  "preorder(R) \<Longrightarrow> S = sym_of_rel(R) \<Longrightarrow> x \<sim>\<^sub>S y \<longleftrightarrow> (x \<le>\<^sub>R y \<and> y \<le>\<^sub>R x)" by auto2
-
-definition preorder_quot :: "i \<Rightarrow> i" where [rewrite]:
-  "preorder_quot(R) = Order(carrier(R)//sym_of_rel(R), \<lambda>x y. rep(sym_of_rel(R),x) \<le>\<^sub>R rep(sym_of_rel(R),y))"
-
-lemma preorder_quotient_is_order [forward]:
-  "preorder(R) \<Longrightarrow> order(preorder_quot(R))" by auto2
 
 (* Subset ordering. *)
 definition subset_order :: "i \<Rightarrow> i" where [rewrite]:
