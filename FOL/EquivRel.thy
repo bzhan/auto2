@@ -27,7 +27,7 @@ lemma rawequiv_spaceI [resolve]:
 
 (* Constructor for equivalence *)
 definition Equiv :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:
-  "Equiv(S,R) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>equiv_graph_name,{p\<in>S\<times>S. R(fst(p),snd(p))}\<rangle>})"
+  "Equiv(S,R) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>equiv_graph_name, rel_graph(S,R)\<rangle>})"
 
 lemma Equiv_is_rawequiv [typing]: "Equiv(S,R) \<in> rawequiv_space(S)" by auto2
 

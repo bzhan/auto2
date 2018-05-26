@@ -92,4 +92,14 @@ lemma is_func_graph_empty: "is_func_graph(\<emptyset>,\<emptyset>)"
 setup {* del_prfstep_thm_eqforward @{thm is_func_graph_def} *}
 setup {* del_prfstep_thm @{thm graph_eval_def} *}
 
+section \<open>Graphs from a relation\<close>
+
+definition rel_graph :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:
+  "rel_graph(S,R) = {p\<in>S\<times>S. R(fst(p),snd(p))}"
+
+lemma rel_graph_mem [typing]: "rel_graph(S,R) \<in> Pow(S\<times>S)" by auto2
+lemma rel_graph_iff [rewrite]: "\<langle>x,y\<rangle> \<in> rel_graph(S,R) \<longleftrightarrow> (x \<in> S \<and> y \<in> S \<and> R(x,y))" by auto2
+
+setup {* del_prfstep_thm @{thm rel_graph_def} *}
+
 end

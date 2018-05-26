@@ -2,6 +2,29 @@ theory AlgStructure
 imports Functions
 begin
 
+section \<open>Conversion from meta-function to set-theoretic functions\<close>
+
+definition unary_fun :: "i \<Rightarrow> [i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
+  "unary_fun(S,f) \<longleftrightarrow> (\<forall>x\<in>S. f(x) \<in> S)"
+
+lemma unary_funD [typing]: "unary_fun(S,f) \<Longrightarrow> x \<in> S \<Longrightarrow> f(x) \<in> S" by auto2
+setup {* del_prfstep_thm_eqforward @{thm unary_fun_def} *}
+
+definition binary_fun :: "i \<Rightarrow> [i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
+  "binary_fun(S,f) \<longleftrightarrow> (\<forall>x\<in>S. \<forall>y\<in>S. f(x,y) \<in> S)"
+
+lemma binary_funD [typing]: "binary_fun(S,f) \<Longrightarrow> x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> f(x,y) \<in> S" by auto2
+setup {* del_prfstep_thm_eqforward @{thm binary_fun_def} *}
+
+definition binary_fun_of :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> i) \<Rightarrow> i" where [rewrite]:
+  "binary_fun_of(S,f) = (\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S)"
+setup {* register_wellform_data ("binary_fun_of(S,f)", ["binary_fun(S,f)"]) *}
+
+lemma binary_fun_of_mem [typing]: "binary_fun(S,f) \<Longrightarrow> binary_fun_of(S,f) \<in> S \<times> S \<rightarrow> S" by auto2
+lemma binary_fun_eval [rewrite]:
+  "F = binary_fun_of(S,f) \<Longrightarrow> F \<in> S \<times> S \<rightarrow> S \<Longrightarrow> \<langle>x,y\<rangle> \<in> source(F) \<Longrightarrow> F`\<langle>x,y\<rangle> = f(x,y)" by auto2
+setup {* del_prfstep_thm @{thm binary_fun_of_def} *}
+
 section {* Components of an algebraic structure *}
 
 (* 0 and +, for additive structures. *)
@@ -33,7 +56,7 @@ definition times :: "[i, i, i] \<Rightarrow> i" where [rewrite_bidir]:
   "times(G,x,y) = times_fun(G)`\<langle>x,y\<rangle>"
 abbreviation times_notation ("(_/ *\<^sub>_ _)" [70,70,71] 70) where "x *\<^sub>G y \<equiv> times(G,x,y)"
 setup {* register_wellform_data ("x *\<^sub>G y", ["x \<in>. G", "y \<in>. G"]) *}
-  
+
 section {* Abelian group structure *}
 
 definition is_abgroup_raw :: "i \<Rightarrow> o" where [rewrite]:
@@ -43,15 +66,20 @@ lemma is_abgroup_rawD [typing]:
   "is_abgroup_raw(G) \<Longrightarrow> \<zero>\<^sub>G \<in>. G"
   "is_abgroup_raw(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x +\<^sub>G y \<in>. G"
   "is_abgroup_raw(G) \<Longrightarrow> plus_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)" by auto2+
-setup {* del_prfstep_thm_eqforward @{thm is_abgroup_raw_def} *}
-  
+setup {* del_prfstep_thm_eqforward @{thm is_abgroup_raw_def} *}  
+
+(* General result on evaluation of plus. *)
+lemma plus_eval_gen [rewrite]:
+  "is_abgroup_raw(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow>
+   plus_fun(R) = binary_fun_of(carrier(R),f) \<Longrightarrow> x +\<^sub>R y = f(x,y)" by auto2
+
 definition abgroup_form :: "i \<Rightarrow> o" where [rewrite]:
   "abgroup_form(G) \<longleftrightarrow> is_abgroup_raw(G) \<and> is_func_graph(G,{carrier_name,zero_name,plus_fun_name})"
 
 lemma abgroup_form_to_raw [forward]: "abgroup_form(G) \<Longrightarrow> is_abgroup_raw(G)" by auto2
 
 definition AbGroup :: "[i, i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "AbGroup(S,z,f) = Struct({\<langle>carrier_name,S\<rangle>,\<langle>zero_name,z\<rangle>,\<langle>plus_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>})"
+  "AbGroup(S,z,f) = Struct({\<langle>carrier_name,S\<rangle>,\<langle>zero_name,z\<rangle>,\<langle>plus_fun_name, binary_fun_of(S,f)\<rangle>})"
 
 lemma AbGroup_is_abgroup_raw [backward]:
   "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> abgroup_form(AbGroup(S,z,f))" by auto2
@@ -81,6 +109,7 @@ setup {* del_prfstep_thm @{thm eq_str_abgroup_def} *}
 lemma abgroup_eq [backward]:
   "abgroup_form(G) \<Longrightarrow> abgroup_form(H) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> G = H" by auto2
 setup {* del_prfstep_thm @{thm abgroup_form_def} *}
+setup {* del_prfstep_thm @{thm plus_def} *}
 
 section {* Group structure *}
 
@@ -93,13 +122,18 @@ lemma is_group_rawD [typing]:
   "is_group_raw(G) \<Longrightarrow> times_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)" by auto2+
 setup {* del_prfstep_thm_eqforward @{thm is_group_raw_def} *}
 
+(* General result on evaluation of times. *)
+lemma times_eval_gen [rewrite]:
+  "is_group_raw(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow>
+   times_fun(R) = binary_fun_of(carrier(R),f) \<Longrightarrow> x *\<^sub>R y = f(x,y)" by auto2
+
 definition group_form :: "i \<Rightarrow> o" where [rewrite]:
   "group_form(G) \<longleftrightarrow> is_group_raw(G) \<and> is_func_graph(G,{carrier_name,one_name,times_fun_name})"
   
 lemma group_form_to_raw [forward]: "group_form(G) \<Longrightarrow> is_group_raw(G)" by auto2
 
 definition Group :: "[i, i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "Group(S,u,f) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>one_name,u\<rangle>, \<langle>times_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>})"
+  "Group(S,u,f) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>one_name,u\<rangle>, \<langle>times_fun_name, binary_fun_of(S,f)\<rangle>})"
 
 lemma Group_is_group_raw [backward]:
   "u \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> group_form(Group(S,u,f))" by auto2
@@ -129,9 +163,10 @@ setup {* del_prfstep_thm @{thm eq_str_group_def} *}
 lemma group_eq [backward]:
   "group_form(G) \<Longrightarrow> group_form(H) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> G = H" by auto2
 setup {* del_prfstep_thm @{thm group_form_def} *}
+setup {* del_prfstep_thm @{thm times_def} *}
 
 section {* Ring structure *}
-  
+
 definition is_ring_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ring_raw(R) \<longleftrightarrow> is_abgroup_raw(R) \<and> is_group_raw(R)"
 
@@ -149,8 +184,8 @@ lemma ring_form_to_raw [forward]: "ring_form(R) \<Longrightarrow> is_ring_raw(R)
 
 definition Ring :: "[i, i, i \<Rightarrow> i \<Rightarrow> i, i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "Ring(S,z,f,u,g) =
-    Struct({\<langle>carrier_name,S\<rangle>, \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,
-            \<langle>one_name,u\<rangle>, \<langle>times_fun_name,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>})"
+    Struct({\<langle>carrier_name,S\<rangle>, \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name, binary_fun_of(S,f)\<rangle>,
+            \<langle>one_name,u\<rangle>, \<langle>times_fun_name, binary_fun_of(S,g)\<rangle>})"
 
 lemma Ring_is_ring_raw [backward]:
   "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow> ring_form(Ring(S,z,f,u,g))"
@@ -192,9 +227,9 @@ lemma ord_ring_form_to_raw [forward]: "ord_ring_form(R) \<Longrightarrow> is_ord
 
 definition OrdRing :: "[i, i, i \<Rightarrow> i \<Rightarrow> i, i, i \<Rightarrow> i \<Rightarrow> i, i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> i" where [rewrite]:
   "OrdRing(S,z,f,u,g,r) = Struct({
-      \<langle>carrier_name,S\<rangle>, \<langle>order_graph_name,{p\<in>S\<times>S. r(fst(p),snd(p))}\<rangle>,
-      \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,
-      \<langle>one_name,u\<rangle>, \<langle>times_fun_name,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>})"
+      \<langle>carrier_name,S\<rangle>, \<langle>order_graph_name, rel_graph(S,r)\<rangle>,
+      \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name, binary_fun_of(S,f)\<rangle>,
+      \<langle>one_name,u\<rangle>, \<langle>times_fun_name, binary_fun_of(S,g)\<rangle>})"
 
 lemma OrdRing_is_ord_ring_raw [backward]:
   "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow> R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> ord_ring_form(R)"
@@ -202,7 +237,6 @@ lemma OrdRing_is_ord_ring_raw [backward]:
   @have "is_abgroup_raw(R)"
   @have "is_group_raw(R)"
   @have "is_ring_raw(R)"
-  @have "order_graph(R) \<subseteq> S \<times> S" @with @have "\<forall>p\<in>order_graph(R). p \<in> S\<times>S" @end
   @have "raworder(R)"
 @qed
 
@@ -211,13 +245,8 @@ lemma ord_ring_eval [rewrite]:
   "zero(OrdRing(S,z,f,u,g,r)) = z"
   "one(OrdRing(S,z,f,u,g,r)) = u"
   "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_ord_ring_raw(R) \<Longrightarrow> x +\<^sub>R y = f(x,y)"
-  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_ord_ring_raw(R) \<Longrightarrow> x *\<^sub>R y = g(x,y)" by auto2+
-
-lemma ord_ring_eval' [rewrite]:
-  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> r(x,y)"
-@proof @have "x \<le>\<^sub>R y \<longleftrightarrow> \<langle>x,y\<rangle> \<in> order_graph(R)" @qed
-
-setup {* fold del_prfstep_thm [@{thm plus_def}, @{thm times_def}] *}
+  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_ord_ring_raw(R) \<Longrightarrow> x *\<^sub>R y = g(x,y)"
+  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> r(x,y)" by auto2+
 setup {* del_prfstep_thm @{thm OrdRing_def} *}
 
 definition eq_str_ord_ring :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:

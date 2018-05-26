@@ -46,18 +46,4 @@ section \<open>Let\<close>
 
 setup {* Normalizer.add_rewr_normalizer ("rewr_let", @{thm Let_def}) *}
 
-section \<open>Signature of meta-functions\<close>
-
-definition unary_fun :: "i \<Rightarrow> [i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
-  "unary_fun(S,f) \<longleftrightarrow> (\<forall>x\<in>S. f(x) \<in> S)"
-
-lemma unary_funD [typing]: "unary_fun(S,f) \<Longrightarrow> x \<in> S \<Longrightarrow> f(x) \<in> S" by auto2
-setup {* del_prfstep_thm_eqforward @{thm unary_fun_def} *}
-
-definition binary_fun :: "i \<Rightarrow> [i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
-  "binary_fun(S,f) \<longleftrightarrow> (\<forall>x\<in>S. \<forall>y\<in>S. f(x,y) \<in> S)"
-
-lemma binary_funD [typing]: "binary_fun(S,f) \<Longrightarrow> x \<in> S \<Longrightarrow> y \<in> S \<Longrightarrow> f(x,y) \<in> S" by auto2
-setup {* del_prfstep_thm_eqforward @{thm binary_fun_def} *}
-
 end

@@ -209,6 +209,10 @@ setup {* register_wellform_data ("x \<le>\<^sub>R y", ["x \<in>. R", "y \<in>. R
 abbreviation (input) ge :: "[i, i, i] \<Rightarrow> o" ("(_/ \<ge>\<^sub>_ _)" [51,51,51] 50) where
   "x \<ge>\<^sub>R y \<equiv> y \<le>\<^sub>R x"
 
+(* General result on evaluation of le. *)
+lemma le_eval_gen [rewrite]:
+  "order_graph(R) = rel_graph(carrier(R),r) \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> (x \<in>. R \<and> y \<in>. R \<and> r(x,y))" by auto2
+
 (* General predicate on order. *)
 definition raworder :: "i \<Rightarrow> o" where [rewrite]:
   "raworder(R) \<longleftrightarrow> order_graph(R) \<in> Pow(carrier(R)\<times>carrier(R))"
@@ -237,7 +241,7 @@ lemma raworder_spaceI [resolve]:
 
 (* Constructor for ordering *)
 definition Order :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:
-  "Order(S,R) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>order_graph_name,{p\<in>S\<times>S. R(fst(p),snd(p))}\<rangle>})"
+  "Order(S,R) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>order_graph_name,rel_graph(S,R)\<rangle>})"
 
 lemma Order_is_raworder [typing]: "Order(S,R) \<in> raworder_space(S)" by auto2
 

@@ -1,5 +1,5 @@
 theory Module
-imports Int
+  imports Int
 begin
 
 
@@ -37,8 +37,8 @@ lemma mod_form_to_raw [forward]: "mod_form(M) \<Longrightarrow> is_mod_raw(M)" b
 
 definition LMod :: "[i, i, i, i \<Rightarrow> i \<Rightarrow> i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "LMod(S,R,z,p,f) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>mod_ring_name,R\<rangle>,
-    \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name,\<lambda>x\<in>S\<times>S. p(fst(x),snd(x))\<in>S\<rangle>,
-    \<langle>mtimes_fun_name,\<lambda>x\<in>carrier(R)\<times>S. f(fst(x),snd(x))\<in>S\<rangle>})"
+    \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name, binary_fun_of(S,p)\<rangle>,
+    \<langle>mtimes_fun_name, \<lambda>x\<in>carrier(R)\<times>S. f(fst(x),snd(x))\<in>S\<rangle>})"
 
 definition mod_fun :: "i \<Rightarrow> i \<Rightarrow> [i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
   "mod_fun(S,R,f) \<longleftrightarrow> (\<forall>x\<in>.R. \<forall>y\<in>S. f(x,y) \<in> S)"
@@ -54,14 +54,12 @@ lemma LMod_is_mod_form [backward]:
   @have "mtimes_fun(M) \<in> carrier(mod_ring(M)) \<times> carrier(M) \<rightarrow> carrier(M)"
 @qed
 
-setup {* add_rewrite_rule @{thm plus_def} *}
 lemma mod_eval [rewrite]:
   "carrier(LMod(S,R,z,p,f)) = S"
   "mod_ring(LMod(S,R,z,p,f)) = R"
   "M = LMod(S,R,z,p,f) \<Longrightarrow> \<zero>\<^sub>M = z"
   "M = LMod(S,R,z,p,f) \<Longrightarrow> x \<in>. M \<Longrightarrow> y \<in>. M \<Longrightarrow> is_mod_raw(M) \<Longrightarrow> x +\<^sub>M y = p(x,y)"
   "M = LMod(S,R,z,p,f) \<Longrightarrow> a \<in>. R \<Longrightarrow> x \<in>. M \<Longrightarrow> is_mod_raw(M) \<Longrightarrow> a \<bullet>\<^sub>M x = f(a,x)" by auto2+
-setup {* del_prfstep_thm @{thm plus_def} *}
 setup {* del_prfstep_thm @{thm LMod_def} *}
 
 (* Equality between left modules *)
