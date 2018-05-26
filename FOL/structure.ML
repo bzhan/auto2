@@ -1,11 +1,66 @@
 (* Automation for structures *)
 
-val empty_set = @{term Empty_set}
-
 type field_info = {
   name_th: thm,
   accessor_th: thm
 }
+
+signature STRUCTURE =
+sig
+  (* Some basic results on sets *)
+  val empty_set: term
+  val is_cons: term -> bool
+  val is_finite_set: term -> bool
+  val strip_set: term -> term list
+
+  (* Table of field data *)
+  val get_unfold_thms_by_name: theory -> string -> thm list
+  val get_unfold_thms: theory -> term -> thm list
+  val add_field_data: term * term -> theory -> theory
+  val get_field_data: theory -> term -> field_info
+  val field_name_rewrite: theory -> term -> thm
+  val rewr_accessor: theory -> conv
+
+  val succ_neq_resolve: thm -> thm
+  val succ_neq: Proof.context -> term * term -> thm
+  val succ_neq_names: Proof.context -> term * term -> thm
+  val not_mem_field_names: Proof.context -> term * term -> thm
+  val mem_th: Proof.context -> term * term -> thm
+  val is_func_graph: Proof.context -> term -> thm
+  val accessor_eqs: Proof.context -> term -> thm list
+  val forall_cons_dest: conv
+  val rewr_conj_fields: theory -> conv
+  val struct_eq_th: Proof.context -> thm -> thm -> thm
+
+  val dest_struct_cv: conv
+  val add_struct_cv: conv
+  val add_structure_prfsteps: theory -> theory
+end;
+
+structure Structure : STRUCTURE =
+struct
+
+val empty_set = @{term Empty_set}
+
+fun is_cons t =
+    case t of
+        Const (@{const_name cons}, _) $ _ $ _ => true
+      | _ => false
+
+fun is_finite_set t =
+    if t aconv empty_set then true
+    else case t of Const (@{const_name cons}, _) $ _ $ S => is_finite_set S
+                 | _ => false
+
+(* Given a set of elements S, return the elements as a list. *)
+fun strip_set S =
+    if is_cons S then
+      let
+        val (a, T) = Util.dest_binop_args S
+      in
+        a :: strip_set T
+      end
+    else []
 
 (* Register of field names and accessors. *)
 structure Data = Theory_Data (
@@ -47,6 +102,20 @@ fun get_field_data thy t =
       the (Symtab.lookup (Data.get thy) nm)
     end
 
+(* Given the name of a field, get equation rewriting it to succ(...) form. *)
+fun field_name_rewrite thy t =
+    t |> get_unfold_thms thy |> the_single
+
+(* Given ct of the form graph_eval(S, field_name), rewrite to field(S). *)
+fun rewr_accessor thy ct =
+    let
+      val t = Thm.term_of ct
+      val (_, field_name) = t |> Util.dest_binop_args
+      val {accessor_th, ...} = get_field_data thy field_name
+    in
+      rewr_obj_eq (obj_sym accessor_th) ct
+    end
+
 (* Show a contradiction from an equality between two terms of the form
    succ(succ(...)), that are actually not equal. *)
 fun succ_neq_resolve th =
@@ -71,10 +140,6 @@ fun succ_neq ctxt (s, t) =
              |> Thm.implies_intr s_eq_t
              |> apply_to_thm UtilLogic.rewrite_from_contra_form
     end
-
-(* Given the name of a field, get equation rewriting it to succ(...) form. *)
-fun field_name_rewrite thy t =
-    t |> get_unfold_thms thy |> the_single
 
 (* Given two names s and t, obtain theorem showing they are not equal. *)
 fun succ_neq_names ctxt (s, t) =
@@ -150,36 +215,6 @@ fun is_func_graph ctxt F =
       in
         [rec_th, not_mem_th] MRS subst_th
       end
-
-fun is_cons t =
-    case t of
-        Const (@{const_name cons}, _) $ _ $ _ => true
-      | _ => false
-
-fun is_finite_set t =
-    if t aconv empty_set then true
-    else case t of Const (@{const_name cons}, _) $ _ $ S => is_finite_set S
-                 | _ => false
-
-(* Given a set of elements S, return the elements as a list. *)
-fun strip_set S =
-    if is_cons S then
-      let
-        val (a, T) = Util.dest_binop_args S
-      in
-        a :: strip_set T
-      end
-    else []
-
-(* Given ct of the form graph_eval(S, field_name), rewrite to field(S). *)
-fun rewr_accessor thy ct =
-    let
-      val t = Thm.term_of ct
-      val (_, field_name) = t |> Util.dest_binop_args
-      val {accessor_th, ...} = get_field_data thy field_name
-    in
-      rewr_obj_eq (obj_sym accessor_th) ct
-    end
 
 (* Given F in the graph from as above, produce the rewrites of
    accessors of F.
@@ -289,4 +324,7 @@ val add_structure_prfsteps =
           end)
     ]
 
-val _ = Theory.setup add_structure_prfsteps
+end  (* structure Structure. *)
+
+val _ = Theory.setup Structure.add_structure_prfsteps
+val add_field_data = Structure.add_field_data
