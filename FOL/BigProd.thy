@@ -5,7 +5,7 @@ begin
 section {* Product of a family of sets *}  (* Bourbaki II.5.3 *)
 
 definition projf :: "[i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
-  "projf(I,B,a) = (\<lambda>f\<in>Pi(I,B). f`a\<in>B(a))"
+  "projf(I,B,a) = Fun(Pi(I,B), B(a), \<lambda>f. f`a)"
 setup {* register_wellform_data ("projf(I,B,a)", ["a \<in> I"]) *}
 
 lemma projf_is_function [typing]: "a \<in> I \<Longrightarrow> projf(I,B,a) \<in> Pi(I,B) \<rightarrow> B(a)" by auto2
@@ -18,17 +18,17 @@ lemma Pi_empty_index [rewrite]: "Pi(\<emptyset>, B) = {Tup(\<emptyset>, \<lambda
 
 (* Canonical bijection between Pi(A, \<lambda>_B) with function space *)
 definition Pi_to_fun_space :: "[i, i] \<Rightarrow> i" where [rewrite]:
-  "Pi_to_fun_space(I,B) = (\<lambda>f\<in>Pi(I,\<lambda>_. B). (\<lambda>a\<in>I. f`a\<in>B)\<in>(I\<rightarrow>B))"
+  "Pi_to_fun_space(I,B) = Fun(Pi(I,\<lambda>_. B), I\<rightarrow>B, \<lambda>f. Fun(I,B, \<lambda>a. f`a))"
 
 lemma Pi_to_fun_space_is_function [typing]:
   "Pi_to_fun_space(I,B) \<in> Pi(I,\<lambda>_. B) \<rightarrow> (I \<rightarrow> B)" by auto2
 
 lemma Pi_to_fun_space_eval [rewrite]:
-  "f \<in> source(Pi_to_fun_space(I,B)) \<Longrightarrow> Pi_to_fun_space(I,B) ` f = (\<lambda>a\<in>I. f`a\<in>B)" by auto2
+  "f \<in> source(Pi_to_fun_space(I,B)) \<Longrightarrow> Pi_to_fun_space(I,B) ` f = Fun(I,B, \<lambda>a. f`a)" by auto2
 setup {* del_prfstep_thm @{thm Pi_to_fun_space_def} *}
 
 definition fun_space_to_Pi :: "[i, i] \<Rightarrow> i" where [rewrite]:
-  "fun_space_to_Pi(I,B) = (\<lambda>f\<in>I\<rightarrow>B. Tup(I, \<lambda>a. f`a)\<in>Pi(I,\<lambda>_. B))"
+  "fun_space_to_Pi(I,B) = Fun(I\<rightarrow>B, Pi(I,\<lambda>_. B), \<lambda>f. Tup(I, \<lambda>a. f`a))"
 
 lemma fun_space_to_Pi_is_function [typing]:
   "fun_space_to_Pi(I,B) \<in> (I \<rightarrow> B) \<rightarrow> Pi(I,\<lambda>_. B)" by auto2
@@ -42,23 +42,22 @@ lemma fun_space_Pi_bij: "fun_space_to_Pi(I,B) \<in> (I \<rightarrow> B) \<cong> 
 
 (* Cases when the index contains one or two elements. *)
 definition singleton_prod_map :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "singleton_prod_map(a,B) = (\<lambda>f\<in>Pi({a},B). f`a\<in>B(a))"
+  "singleton_prod_map(a,B) = Fun(Pi({a},B), B(a), \<lambda>f. f`a)"
 
 lemma singleton_prod_map_is_bijective [typing]:
   "singleton_prod_map(a,B) \<in> Pi({a},B) \<cong> B(a)"
 @proof
-  @let "inv = (\<lambda>x\<in>B(a). Tup({a}, \<lambda>_. x)\<in>Pi({a},B))"
-  @have "inverse_pair(singleton_prod_map(a,B), inv)"
+  @have "inverse_pair(singleton_prod_map(a,B), Fun(B(a), Pi({a},B), \<lambda>x. Tup({a}, \<lambda>_. x)))"
 @qed
 
 definition doubleton_prod_map :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "doubleton_prod_map(a,b,B) = (\<lambda>f\<in>Pi({a,b},B). \<langle>f`a, f`b\<rangle> \<in> B(a)\<times>B(b))"
+  "doubleton_prod_map(a,b,B) = Fun(Pi({a,b},B), B(a)\<times>B(b), \<lambda>f. \<langle>f`a, f`b\<rangle>)"
 
 lemma doubleton_prod_map_is_bijective:
   "a \<noteq> b \<Longrightarrow> doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<cong> B(a)\<times>B(b)"
 @proof
   @have "doubleton_prod_map(a,b,B) \<in> Pi({a,b},B) \<rightarrow> B(a)\<times>B(b)"
-  @let "inv = (\<lambda>p\<in>B(a)\<times>B(b). Tup({a,b}, \<lambda>c. if c = a then fst(p) else snd(p)) \<in> Pi({a,b},B))"
+  @let "inv = Fun(B(a)\<times>B(b), Pi({a,b},B), \<lambda>p. Tup({a,b}, \<lambda>c. if c = a then fst(p) else snd(p)))"
   @have "inv \<in> B(a)\<times>B(b) \<rightarrow> Pi({a,b},B)"
   @have "inverse_pair(doubleton_prod_map(a,b,B), inv)"
 @qed
@@ -76,10 +75,10 @@ lemma prod_diagonal_is_subset:
 setup {* add_forward_prfstep_cond @{thm prod_diagonal_is_subset} [with_term "prod_diagonal(?I,?E)"] *}
 
 definition diagonal_to_set :: "[i, i] \<Rightarrow> i" where [rewrite]:
-  "diagonal_to_set(I,E) = (\<lambda>f\<in>prod_diagonal(I,E). f`Choice(I)\<in>E)"
+  "diagonal_to_set(I,E) = Fun(prod_diagonal(I,E), E, \<lambda>f. f`Choice(I))"
 
 definition set_to_diagonal :: "[i, i] \<Rightarrow> i" where [rewrite]:
-  "set_to_diagonal(I,E) = (\<lambda>e\<in>E. Tup(I, \<lambda>_. e)\<in>prod_diagonal(I,E))"
+  "set_to_diagonal(I,E) = Fun(E, prod_diagonal(I,E), \<lambda>e. Tup(I, \<lambda>_. e))"
 
 lemma set_to_diagonal_bijective:
   "I \<noteq> \<emptyset> \<Longrightarrow> set_to_diagonal(I,E) \<in> E \<cong> prod_diagonal(I,E)"
@@ -87,7 +86,7 @@ lemma set_to_diagonal_bijective:
 
 (* Bijection on index sets. Here B maps from target(u). *)
 definition reindex_prod :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "reindex_prod(u,B) = (\<lambda>f\<in>Pi(target(u),B). Tup(source(u), \<lambda>a. f`(u`a))\<in>Pi(source(u), \<lambda>a. B(u`a)))"
+  "reindex_prod(u,B) = Fun(Pi(target(u),B), Pi(source(u), \<lambda>a. B(u`a)), \<lambda>f. Tup(source(u), \<lambda>a. f`(u`a)))"
 
 lemma reindex_prod_is_fun [typing]:
   "is_function(u) \<Longrightarrow> reindex_prod(u,B) \<in> Pi(target(u),B) \<rightarrow> Pi(source(u), \<lambda>a. B(u`a))" by auto2
@@ -113,7 +112,7 @@ lemma reindex_prod_is_bij:
 section {* Partial products *}  (* Bourbaki II.5.4 *)
 
 definition projf_set :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "projf_set(I,J,B) = (\<lambda>f\<in>Pi(I,B). proj_set(f,J)\<in>Pi(J,B))"
+  "projf_set(I,J,B) = Fun(Pi(I,B), Pi(J,B), \<lambda>f. proj_set(f,J))"
 setup {* register_wellform_data ("projf_set(I,J,B)", ["J \<subseteq> I"]) *}
 setup {* add_prfstep_check_req ("projf_set(I,J,B)", "J \<subseteq> I") *}
 
@@ -171,7 +170,8 @@ lemma prod_subset2:
 section {* Associativity of products *}  (* Bourbaki II.5.5 *)
 
 definition prod_assoc_fun :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "prod_assoc_fun(I,J,X) = (\<lambda>f\<in>Pi(I,X). Tup(source(J), \<lambda>a. projf_set(I,J`a,X)`f) \<in> Pi(source(J), \<lambda>a. Pi(J`a, X)))"
+  "prod_assoc_fun(I,J,X) =
+    Fun(Pi(I,X), Pi(source(J), \<lambda>a. Pi(J`a, X)), \<lambda>f. Tup(source(J), \<lambda>a. projf_set(I,J`a,X)`f))"
 setup {* register_wellform_data ("prod_assoc_fun(I,J,X)", ["target(J) = Pow(I)"]) *}
 
 lemma prod_assoc_fun_is_function [typing]:
@@ -188,8 +188,8 @@ setup {* del_prfstep_thm @{thm prod_assoc_fun_def} *}
    define a function from I to \<Union>a\<in>I. X(a), by pasting together the functions J`a (a\<in>L) to
    \<Union>a\<in>I. X(a). *)
 definition prod_assoc_fun_inv1 :: "[i, i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
-  "prod_assoc_fun_inv1(I,J,X,f) = glue_partition_fun(I,J,\<Union>{X(c). c\<in>I},
-    (\<lambda>a. (\<lambda>b\<in>J`a. f`a`b\<in>\<Union>{X(c). c\<in>I})))"
+  "prod_assoc_fun_inv1(I,J,X,f) =
+    glue_partition_fun(I,J,\<Union>{X(c). c\<in>I}, \<lambda>a. Fun(J`a, \<Union>{X(c). c\<in>I}, \<lambda>b. f`a`b))"
 setup {* register_wellform_data ("prod_assoc_fun_inv1(I,J,X,f)",
   ["target(J) = Pow(I)", "is_partition(I,J)", "f \<in> Pi(source(J), \<lambda>a. Pi(J`a,X))"]) *}
 
@@ -205,8 +205,8 @@ setup {* del_prfstep_thm @{thm prod_assoc_fun_inv1_def} *}
 
 (* Second stage, define a function from Pi(source(J), \<lambda>b. Pi(J`b, X)) to Pi(I,X). *)
 definition prod_assoc_fun_inv :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "prod_assoc_fun_inv(I,J,X) = (\<lambda>f\<in>Pi(source(J), \<lambda>a. Pi(J`a, X)).
-    Tup(I, \<lambda>a. prod_assoc_fun_inv1(I,J,X,f)`a)\<in>Pi(I,X))"
+  "prod_assoc_fun_inv(I,J,X) = Fun(Pi(source(J), \<lambda>a. Pi(J`a, X)), Pi(I,X),
+    \<lambda>f. Tup(I, \<lambda>a. prod_assoc_fun_inv1(I,J,X,f)`a))"
 setup {* register_wellform_data ("prod_assoc_fun_inv(I,J,X)",
   ["target(J) = Pow(I)", "is_partition(I,J)"]) *}
 
@@ -308,17 +308,17 @@ lemma prod_set_disjoint [backward1]:
 
 lemma prod_mutually_disjoint:
   "\<forall>b\<in>L. mutually_disjoint(X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(F(b)) \<Longrightarrow>
-   mutually_disjoint(\<lambda>f\<in>Pi(L,J). (Pi(L, \<lambda>b. X(b)`(f`b)))\<in>Pow(Pi(L,F)))"
+   mutually_disjoint(Fun(Pi(L,J), Pow(Pi(L,F)), \<lambda>f. Pi(L, \<lambda>b. X(b)`(f`b))))"
 @proof
   @have (@rule) "\<forall>b\<in>L. \<forall>x\<in>J(b). \<forall>y\<in>J(b). x \<noteq> y \<longrightarrow> X(b)`x \<inter> X(b)`y = \<emptyset>"
 @qed
 
 lemma prod_is_partition:
   "\<forall>b\<in>L. is_partition(S(b),X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(S(b)) \<Longrightarrow>
-   is_partition(Pi(L,S), \<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))"  
+   is_partition(Pi(L,S), Fun(Pi(L,J), Pow(Pi(L,S)), \<lambda>f. Pi(L, \<lambda>b. X(b)`(f`b))))"
 @proof
   @have "Pi(L,S) = Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a))"
-  @let "F = (\<lambda>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b))\<in>Pow(Pi(L,S)))"
+  @let "F = Fun(Pi(L,J), Pow(Pi(L,S)), \<lambda>f. Pi(L, \<lambda>b. X(b)`(f`b)))"
   @have "(\<Union>f\<in>Pi(L,J). F`f) = (\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
   @have (@rule) "\<forall>b\<in>L. \<forall>x\<in>J(b). \<forall>y\<in>J(b). x \<noteq> y \<longrightarrow> X(b)`x \<inter> X(b)`y = \<emptyset>"
 @qed
@@ -326,7 +326,7 @@ lemma prod_is_partition:
 section {* Extension of mappings to products *}  (* Bourbaki II.5.7 *)
 
 definition ext_prod_fun :: "[i, i \<Rightarrow> i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
-  "ext_prod_fun(I,X,Y,F) = (\<lambda>u\<in>Pi(I,X). Tup(I, \<lambda>a. (F`a)`(u`a))\<in>Pi(I,Y))"
+  "ext_prod_fun(I,X,Y,F) = Fun(Pi(I,X), Pi(I,Y), \<lambda>u. Tup(I, \<lambda>a. (F`a)`(u`a)))"
 setup {* register_wellform_data ("ext_prod_fun(I,X,Y,F)", ["F \<in> Pi(I,\<lambda>a. X(a)\<rightarrow>Y(a))"]) *}
 setup {* add_prfstep_check_req ("ext_prod_fun(I,X,Y,F)", "F \<in> Pi(I,\<lambda>a. X(a)\<rightarrow>Y(a))") *}
 
@@ -365,7 +365,8 @@ lemma ext_prod_fun_surj:
 
 (* Given a mapping f \<in> E \<rightarrow> Pi(I,X), get family of mappings f_i \<in> Pi(I, \<lambda>a\<in>I. E\<rightarrow>X(i)). *)
 definition map_to_prod_to_map_family :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "map_to_prod_to_map_family(E,I,X) = (\<lambda>f\<in>E\<rightarrow>Pi(I,X). Tup(I, \<lambda>a. projf(I,X,a) \<circ> f)\<in>Pi(I, \<lambda>a. E\<rightarrow>X(a)))"
+  "map_to_prod_to_map_family(E,I,X) =
+    Fun(E\<rightarrow>Pi(I,X), Pi(I, \<lambda>a. E\<rightarrow>X(a)), \<lambda>f. Tup(I, \<lambda>a. projf(I,X,a) \<circ> f))"
 
 lemma map_to_prod_to_map_family_is_fun [typing]:
   "map_to_prod_to_map_family(E,I,X) \<in> (E\<rightarrow>Pi(I,X)) \<rightarrow> Pi(I, \<lambda>a. E\<rightarrow>X(a))" by auto2
@@ -376,10 +377,11 @@ lemma map_to_prod_to_map_family_eval [rewrite]:
 setup {* del_prfstep_thm @{thm map_to_prod_to_map_family_def} *}
 
 definition map_family_to_map_to_prod :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "map_family_to_map_to_prod(E,I,X) = (\<lambda>f\<in>Pi(I, \<lambda>a. E\<rightarrow>X(a)). (\<lambda>x\<in>E. Tup(I, \<lambda>a. f`a`x)\<in>Pi(I,X))\<in>E\<rightarrow>Pi(I,X))"
+  "map_family_to_map_to_prod(E,I,X) =
+    Fun(Pi(I, \<lambda>a. E\<rightarrow>X(a)), E\<rightarrow>Pi(I,X), \<lambda>f. Fun(E, Pi(I,X), \<lambda>x. Tup(I, \<lambda>a. f`a`x)))"
 
 lemma map_family_to_map_to_prod_is_fun [typing]:
-  "map_family_to_map_to_prod(E,I,X) \<in> Pi(I, \<lambda>a. E\<rightarrow>X(a)) \<rightarrow> (E\<rightarrow>Pi(I,X))" by auto2
+  "map_family_to_map_to_prod(E,I,X) \<in> Pi(I, \<lambda>a. E\<rightarrow>X(a)) \<rightarrow> E \<rightarrow> Pi(I,X)" by auto2
 
 lemma map_family_to_map_to_prod_eval [rewrite]:
   "a \<in> I \<Longrightarrow> x \<in> E \<Longrightarrow> f \<in> Pi(I, \<lambda>a. E\<rightarrow>X(a)) \<Longrightarrow>

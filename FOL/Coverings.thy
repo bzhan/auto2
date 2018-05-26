@@ -22,7 +22,7 @@ lemma subset_is_finer:
   "is_function(X) \<Longrightarrow> J \<subseteq> source(X) \<Longrightarrow> finer_covering(func_restrict(X,J),X)" by auto2
 
 definition join_covering :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "join_covering(X,Y) = (\<lambda>p\<in>source(X)\<times>source(Y). X`fst(p) \<inter> Y`snd(p)\<in>target(X))"
+  "join_covering(X,Y) = Fun(source(X)\<times>source(Y), target(X), \<lambda>p. X`fst(p) \<inter> Y`snd(p))"
 setup {* register_wellform_data ("join_covering(X,Y)", ["target(X) = target(Y)"]) *}
 
 lemma join_covering_is_fun [typing]:
@@ -48,9 +48,8 @@ lemma join_is_finer_maximal:
 
 lemma image_covering:
   "surjective(f) \<Longrightarrow> f \<in> A \<rightarrow> B \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
-   is_covering(B, \<lambda>a\<in>I. (f``(X`a))\<in>Pow(B))"
+   Y = Fun(I, Pow(B), \<lambda>a. f``(X`a)) \<Longrightarrow> is_covering(B,Y)"
 @proof
-  @let "Y = (\<lambda>a\<in>I. (f``(X`a))\<in>Pow(B))"
   @have "\<forall>x\<in>B. \<exists>p\<in>I. x \<in> Y ` p" @with
     @obtain "a\<in>A" where "f`a = x"
   @end
@@ -58,9 +57,8 @@ lemma image_covering:
 
 lemma vImage_covering:
   "g \<in> C \<rightarrow> A \<Longrightarrow> X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> is_covering(A,X) \<Longrightarrow>
-   is_covering(C, \<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
+   Y = Fun(I, Pow(C), \<lambda>a. g -`` (X`a)) \<Longrightarrow> is_covering(C,Y)"
 @proof
-  @let "Y = (\<lambda>a\<in>I. (g -`` (X`a))\<in>Pow(C))"
   @have "\<forall>x\<in>C. \<exists>p\<in>I. x \<in> Y ` p" @with
     @contradiction
     @obtain "a\<in>I" where "g`x \<in> a"
@@ -69,15 +67,14 @@ lemma vImage_covering:
 
 lemma product_covering: "X \<in> I \<rightarrow> Pow(A) \<Longrightarrow> Y \<in> K \<rightarrow> Pow(B) \<Longrightarrow>
   is_covering(A,X) \<Longrightarrow> is_covering(B,Y) \<Longrightarrow>
-  is_covering(A\<times>B, \<lambda>p\<in>I\<times>K. (X`fst(p) \<times> Y`snd(p))\<in>Pow(A\<times>B))"
-@proof @let "Z = (\<lambda>p\<in>I\<times>K. (X`fst(p) \<times> Y`snd(p))\<in>Pow(A\<times>B))" @qed
+  is_covering(A\<times>B, Fun(I\<times>K, Pow(A\<times>B), \<lambda>p. X`fst(p) \<times> Y`snd(p)))" by auto2
 
 lemma glue_fun_on_covering [backward1]: "is_function(X) \<Longrightarrow> I = source(X) \<Longrightarrow> \<forall>a\<in>I. F(a) \<in> X`a \<rightarrow> D \<Longrightarrow>
   \<forall>a\<in>I. \<forall>b\<in>I. func_coincide(F(a), F(b), X`a \<inter> X`b) \<Longrightarrow>
   \<exists>!f. f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D \<and> (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)"
 @proof
   @have "\<exists>f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D. (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)" @with
-    @let "f = (\<lambda>x\<in>(\<Union>a\<in>I. X`a). (F(SOME a\<in>I. x\<in>X`a) ` x) \<in> D)" @end
+    @let "f = Fun(\<Union>a\<in>I. X`a, D, \<lambda>x. F(SOME a\<in>I. x\<in>X`a) ` x)" @end
 @qed
 
 section {* Partitions *}  (* Bourbaki II.4.7 *)
@@ -101,7 +98,7 @@ lemma vImage_set_disjoint [backward2]:
 
 lemma vImage_mutually_disjoint [backward2]:
   "is_function(f) \<Longrightarrow> Y \<in> I \<rightarrow> Pow(target(f)) \<Longrightarrow> mutually_disjoint(Y) \<Longrightarrow>
-   mutually_disjoint(\<lambda>a\<in>I. (f -`` (Y`a))\<in>Pow(source(f)))" by auto2
+   mutually_disjoint(Fun(I,Pow(source(f)),\<lambda>a. f -`` (Y`a)))" by auto2
 
 lemma glue_fun_on_mut_disj [backward1]:
   "is_function(X) \<Longrightarrow> I = source(X) \<Longrightarrow> \<forall>a\<in>I. F(a) \<in> X`a \<rightarrow> D \<Longrightarrow>
@@ -158,7 +155,7 @@ setup {* add_forward_prfstep_cond @{thm Sigma'_split} [with_cond "?p \<noteq> \<
 setup {* del_prfstep_thm @{thm Sigma'_def} *}
 
 definition union_to_sum_fun :: "i \<Rightarrow> i" where [rewrite]:
-  "union_to_sum_fun(X) = (\<lambda>p\<in>Sigma'(X). snd(p)\<in>(\<Union>a\<in>source(X). X`a))"
+  "union_to_sum_fun(X) = Fun(Sigma'(X), \<Union>a\<in>source(X). X`a, \<lambda>p. snd(p))"
 
 lemma union_to_sum_is_function [typing]:
   "is_function(X) \<Longrightarrow> union_to_sum_fun(X) \<in> Sigma'(X) \<rightarrow> (\<Union>a\<in>source(X). X`a)" by auto2

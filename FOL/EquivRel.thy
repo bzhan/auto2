@@ -145,7 +145,7 @@ setup {* fold del_prfstep_thm [@{thm rep_def}, @{thm quotient_set_def}] *}
 
 (* Definition of canonical surjection *)
 definition qsurj :: "i \<Rightarrow> i" where [rewrite]:
-  "qsurj(R) = (\<lambda>x\<in>carrier(R). equiv_class(R,x)\<in>carrier(R)//R)"
+  "qsurj(R) = Fun(carrier(R), carrier(R)//R, \<lambda>x. equiv_class(R,x))"
 
 lemma qsurj_is_fun [typing]: "qsurj(R) \<in> carrier(R) \<rightarrow> carrier(R)//R" by auto2
 
@@ -184,15 +184,6 @@ lemma eq_fst_rel_is_equiv [typing]: "eq_fst_rel(E,F) \<in> equiv_space(E\<times>
 lemma eq_fst_rel_eval [rewrite]:
   "R = eq_fst_rel(E,F) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<sim>\<^sub>R y \<longleftrightarrow> fst(x) = fst(y)" by auto2
 setup {* del_prfstep_thm @{thm eq_fst_rel_def} *}
-
-lemma qsurj_proj_is_inj:
-  "F \<noteq> \<emptyset> \<Longrightarrow> R = eq_fst_rel(E,F) \<Longrightarrow> f = (\<lambda>x\<in>E. ({x}\<times>F)\<in>((E\<times>F)//R)) \<Longrightarrow> bijective(f)"
-@proof
-  @have "f \<in> E \<rightarrow> (E\<times>F) // R" @with
-    @obtain "a \<in> F" @have (@rule) "\<forall>x\<in>E. {x}\<times>F = equiv_class(R,\<langle>x,a\<rangle>)" @end
-  @have "\<forall>S\<in>(E\<times>F)//R. \<exists>x\<in>E. f ` x = S" @with
-    @contradiction @have "f`rep(R,S) = S" @end
-@qed
 
 (* Elements of quotient form a partition. Conversely, every partition is a quotient set. *)
 lemma equiv_class_disjoint [backward]:

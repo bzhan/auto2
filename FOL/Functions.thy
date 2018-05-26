@@ -66,7 +66,7 @@ section {* Important examples of functions *}
 
 (* Identity function *)
 definition id_fun :: "i \<Rightarrow> i" where [rewrite]:
-  "id_fun(A) = (\<lambda>x\<in>A. x\<in>A)"
+  "id_fun(A) = Fun(A,A, \<lambda>x. x)"
 
 lemma id_fun_is_function [typing]: "id_fun(A) \<in> A \<rightarrow> A" by auto2
 lemma id_fun_eval [rewrite]: "x \<in> source(id_fun(A)) \<Longrightarrow> id_fun(A) ` x = x" by auto2
@@ -77,7 +77,7 @@ lemma id_fun_image [rewrite]: "S \<subseteq> A \<Longrightarrow> id_fun(A) `` S 
 
 (* Constant function *)
 definition const_fun :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "const_fun(A,B,y) = (\<lambda>x\<in>A. y\<in>B)"
+  "const_fun(A,B,y) = Fun(A,B, \<lambda>x. y)"
 setup {* register_wellform_data ("const_fun(A,B,y)", ["y \<in> B"]) *}
 
 lemma const_fun_is_function [typing]: "y \<in> B \<Longrightarrow> const_fun(A,B,y) \<in> A \<rightarrow> B" by auto2
@@ -86,7 +86,7 @@ setup {* del_prfstep_thm @{thm const_fun_def} *}
 
 (* Restriction of function to a set A *)
 definition func_restrict :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "func_restrict(f,A) = (\<lambda>x\<in>A. f`x\<in>target(f))"
+  "func_restrict(f,A) = Fun(A, target(f), \<lambda>x. f`x)"
 setup {* register_wellform_data ("func_restrict(f,A)", ["A \<subseteq> source(f)"]) *}
 setup {* add_prfstep_check_req ("func_restrict(f,A)", "A \<subseteq> source(f)") *}
 
@@ -130,7 +130,7 @@ lemma extension_of_restrict [backward]:
 
 (* Any function can be restricted to its image. *)
 definition func_restrict_image :: "i \<Rightarrow> i" where [rewrite]:
-  "func_restrict_image(f) = (\<lambda>x\<in>source(f). f`x\<in>image(f))"
+  "func_restrict_image(f) = Fun(source(f),image(f), \<lambda>x. f`x)"
 
 lemma func_restrict_image_is_fun [typing]:
   "is_function(f) \<Longrightarrow> func_restrict_image(f) \<in> source(f) \<rightarrow> image(f)" by auto2
@@ -144,14 +144,14 @@ setup {* del_prfstep_thm @{thm func_restrict_image_def} *}
 
 (* Projection functions *)
 definition proj1_fun :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "proj1_fun(A,B) = (\<lambda>p\<in>A\<times>B. fst(p)\<in>A)"
+  "proj1_fun(A,B) = Fun(A\<times>B, A, \<lambda>p. fst(p))"
 
 lemma proj1_fun_is_function [typing]: "proj1_fun(A,B) \<in> A\<times>B \<rightarrow> A" by auto2
 lemma proj1_eval [rewrite]: "p \<in> source(proj1_fun(A,B)) \<Longrightarrow> proj1_fun(A,B)`p = fst(p)" by auto2
 setup {* del_prfstep_thm @{thm proj1_fun_def} *}
 
 definition proj2_fun :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "proj2_fun(A,B) = (\<lambda>p\<in>A\<times>B. snd(p)\<in>B)"
+  "proj2_fun(A,B) = Fun(A\<times>B, B, \<lambda>p. snd(p))"
 
 lemma proj2_fun_is_function [typing]: "proj2_fun(A,B) \<in> A\<times>B \<rightarrow> B" by auto2
 lemma proj2_fun_eval [rewrite]: "p \<in> source(proj2_fun(A,B)) \<Longrightarrow> proj2_fun(A,B)`p = snd(p)" by auto2
@@ -161,7 +161,7 @@ section {* Composition of functions *}  (* Bourbaki II.3.7 *)
 
 (* Composition of two functions. *)
 definition fun_comp :: "i \<Rightarrow> i \<Rightarrow> i"  (infixr "\<circ>" 60) where [rewrite]:
-  "f' \<circ> f = (\<lambda>x\<in>source(f). (f' ` (f ` x))\<in>target(f'))"
+  "f' \<circ> f = Fun(source(f), target(f'), \<lambda>x. f' ` (f ` x))"
 setup {* register_wellform_data ("f' \<circ> f", ["func_form(f')", "func_form(f)", "target(f) = source(f')"]) *}
 setup {* add_prfstep_check_req ("f' \<circ> f", "target(f) = source(f')") *}
 
@@ -274,7 +274,7 @@ lemma func_restrict_image_bij [forward]:
 
 (* Example: canonical injection. *)
 definition inj_fun :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "inj_fun(A,B) = (\<lambda>x\<in>A. x\<in>B)"
+  "inj_fun(A,B) = Fun(A,B, \<lambda>x. x)"
 setup {* register_wellform_data ("inj_fun(A,B)", ["A \<subseteq> B"]) *}
 
 lemma inj_fun_is_function [typing]: "A \<subseteq> B \<Longrightarrow> inj_fun(A,B) \<in> A \<rightarrow> B" by auto2
@@ -296,14 +296,14 @@ lemma inj_restrict_image_bij' [backward]:
 lemma id_bij: "id_fun(A) \<in> A \<cong> A" by auto2
 lemma proj1_surj: "B \<noteq> \<emptyset> \<Longrightarrow> surjective(proj1_fun(A,B))" by auto2
 lemma proj2_surj: "A \<noteq> \<emptyset> \<Longrightarrow> surjective(proj2_fun(A,B))" by auto2
-lemma swap_bij: "(\<lambda>p\<in>A\<times>B. \<langle>snd(p),fst(p)\<rangle>\<in>B\<times>A) \<in> A\<times>B \<cong> B\<times>A" by auto2
-lemma pair_bij: "(\<lambda>x\<in>A. \<langle>x,b\<rangle>\<in>A\<times>{b}) \<in> A \<cong> A\<times>{b}" by auto2
-lemma rpair_bij: "(\<lambda>x\<in>A. \<langle>b,x\<rangle>\<in>{b}\<times>A) \<in> A \<cong> {b}\<times>A" by auto2
+lemma swap_bij: "Fun(A\<times>B, B\<times>A, \<lambda>p. \<langle>snd(p),fst(p)\<rangle>) \<in> A\<times>B \<cong> B\<times>A" by auto2
+lemma pair_bij: "Fun(A, A\<times>{b}, \<lambda>x. \<langle>x,b\<rangle>) \<in> A \<cong> A\<times>{b}" by auto2
+lemma rpair_bij: "Fun(A, {b}\<times>A, \<lambda>x. \<langle>b,x\<rangle>) \<in> A \<cong> {b}\<times>A" by auto2
 
 section {* Inverse function *}
 
 definition inverse :: "i \<Rightarrow> i" where [rewrite]:
-  "inverse(f) = (\<lambda>y\<in>target(f). (THE x. x\<in>source(f) \<and> f`x=y)\<in>source(f))"
+  "inverse(f) = Fun(target(f),source(f), \<lambda>y. THE x. x\<in>source(f) \<and> f`x=y)"
 setup {* add_prfstep_check_req ("inverse(f)", "bijective(f)") *}
 
 lemma has_inverse [typing]:
@@ -318,7 +318,7 @@ setup {* del_prfstep_thm @{thm inverse_def} *}
 
 lemma inv_bijective [typing]:
   "bijective(f) \<Longrightarrow> inverse(f) \<in> target(f) \<cong> source(f)"
-  @proof @have (@rule) "\<forall>x\<in>source(f). inverse(f)`(f`x) = x" @qed
+@proof @have (@rule) "\<forall>x\<in>source(f). inverse(f)`(f`x) = x" @qed
 
 lemma inverse_of_inj [rewrite]:
   "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f -`` (f `` X) = X" by auto2
@@ -429,7 +429,7 @@ lemma inverse_unique' [rewrite]:
 (* Now we construct the left and right inverses explicitly. *)
 lemma exists_right_inverse [resolve]:
   "surjective(f) \<Longrightarrow> A = source(f) \<Longrightarrow> B = target(f) \<Longrightarrow> \<exists>s\<in>B\<rightarrow>A. f \<circ> s = id_fun(B)"
-@proof @let "s = (\<lambda>y\<in>B. (SOME x\<in>A. f`x=y)\<in>A)" @qed
+@proof @let "s = Fun(B,A, \<lambda>y. SOME x\<in>A. f`x=y)" @qed
 
 definition right_inverse :: "i \<Rightarrow> i" where [rewrite]:
   "right_inverse(f) = (SOME s\<in>target(f)\<rightarrow>source(f). f \<circ> s = id_fun(target(f)))"
@@ -444,7 +444,7 @@ lemma exists_left_inverse [backward]:
   "injective(f) \<Longrightarrow> A = source(f) \<Longrightarrow> B = target(f) \<Longrightarrow> A \<noteq> \<emptyset> \<Longrightarrow> \<exists>r\<in>B\<rightarrow>A. r \<circ> f = id_fun(A)"
 @proof
   @obtain "a \<in> A"
-  @let "r = (\<lambda>y\<in>B. (if (\<exists>x\<in>A. f`x=y) then (SOME x\<in>A. f`x=y) else a)\<in>A)"
+  @let "r = Fun(B, A, \<lambda>y. if \<exists>x\<in>A. f`x=y then SOME x\<in>A. f`x=y else a)"
   @have (@rule) "\<forall>x\<in>A. r`(f`x) = x" @with @have "\<exists>x'\<in>A. f`x' = f`x" @end
 @qed
 
@@ -521,7 +521,7 @@ section {* Function of two arguments *}  (* Bourbaki II.3.9 *)
 
 (* Currying: given a function (A \<times> B) \<rightarrow> D, return a function A \<rightarrow> (B \<rightarrow> D). *)
 definition curry :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
-  "curry(A,B,D) = (\<lambda>f\<in>(A\<times>B)\<rightarrow>D. (\<lambda>x\<in>A. (\<lambda>y\<in>B. f`\<langle>x,y\<rangle>\<in>D)\<in>B\<rightarrow>D)\<in>(A\<rightarrow>(B\<rightarrow>D)))"
+  "curry(A,B,D) = Fun(A\<times>B\<rightarrow>D, A\<rightarrow>B\<rightarrow>D, \<lambda>f. Fun(A, B\<rightarrow>D, \<lambda>x. Fun(B, D, \<lambda>y. f`\<langle>x,y\<rangle>)))"
 
 lemma curry_is_function [typing]:
   "curry(A,B,D) \<in> ((A \<times> B) \<rightarrow> D) \<rightarrow> (A \<rightarrow> (B \<rightarrow> D))" by auto2
@@ -544,12 +544,12 @@ lemma exists_proj_fun:
   "B \<noteq> \<emptyset> \<Longrightarrow> f \<in> (A \<times> B) \<rightarrow> D \<Longrightarrow> \<forall>x\<in>A. is_const_fun(curry(A,B,D)`f`x) \<Longrightarrow>
    \<exists>g\<in>A\<rightarrow>D. \<forall>x\<in>A. \<forall>y\<in>B. f`\<langle>x,y\<rangle> = g`x"
 @proof
-  @obtain "y \<in> B" @let "g = (\<lambda>x\<in>A. f`\<langle>x,y\<rangle>\<in>D)"
+  @obtain "y \<in> B" @let "g = Fun(A,D, \<lambda>x. f`\<langle>x,y\<rangle>)"
 @qed
 
 (* Product map *)
 definition prod_map :: "i \<Rightarrow> i \<Rightarrow> i" (infixr "\<times>\<^sub>f" 80) where [rewrite]:
-  "u \<times>\<^sub>f v = (\<lambda>p\<in>source(u)\<times>source(v). \<langle>u`fst(p), v`snd(p)\<rangle> \<in> target(u)\<times>target(v))"
+  "u \<times>\<^sub>f v = Fun(source(u)\<times>source(v), target(u)\<times>target(v), \<lambda>p. \<langle>u`fst(p), v`snd(p)\<rangle>)"
 
 lemma prod_map_is_function [typing]:
   "is_function(u) \<Longrightarrow> is_function(v) \<Longrightarrow> u \<times>\<^sub>f v \<in> source(u)\<times>source(v) \<rightarrow> target(u)\<times>target(v)" by auto2
@@ -591,7 +591,7 @@ lemma prod_inverse [resolve]:
 section {* Extension of a function to Pow *}  (* Bourbaki II.5.1 *)
 
 definition pow_ext :: "i \<Rightarrow> i" where [rewrite]:
-  "pow_ext(f) = (\<lambda>X\<in>Pow(source(f)). (f `` X)\<in>Pow(target(f)))"
+  "pow_ext(f) = Fun(Pow(source(f)), Pow(target(f)), \<lambda>X. f `` X)"
 
 lemma pow_ext_is_function [typing]:
   "is_function(f) \<Longrightarrow> pow_ext(f) \<in> Pow(source(f)) \<rightarrow> Pow(target(f))" by auto2
@@ -632,7 +632,7 @@ section {* Map on function spaces *}  (* Bourbaki II.5.2 *)
 (* Define left and right composition separately. *)
 
 definition left_comp :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "left_comp(u,E) = (\<lambda>f\<in>E\<rightarrow>source(u). (u \<circ> f)\<in>E\<rightarrow>target(u))"
+  "left_comp(u,E) = Fun(E\<rightarrow>source(u), E\<rightarrow>target(u), \<lambda>f. u \<circ> f)"
 
 lemma left_comp_is_function [typing]:
   "is_function(u) \<Longrightarrow> left_comp(u,E) \<in> (E\<rightarrow>source(u)) \<rightarrow> (E\<rightarrow>target(u))" by auto2
@@ -660,7 +660,7 @@ lemma bijective_left_comp [forward]:
   "bijective(u) \<Longrightarrow> bijective(left_comp(u,E))" by auto2
 
 definition right_comp :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "right_comp(E,u) = (\<lambda>f\<in>target(u)\<rightarrow>E. (f \<circ> u)\<in>source(u)\<rightarrow>E)"
+  "right_comp(E,u) = Fun(target(u)\<rightarrow>E, source(u)\<rightarrow>E, \<lambda>f. f \<circ> u)"
 
 lemma right_comp_is_function [typing]:
   "is_function(u) \<Longrightarrow> right_comp(E,u) \<in> (target(u)\<rightarrow>E) \<rightarrow> (source(u)\<rightarrow>E)" by auto2
@@ -685,7 +685,7 @@ lemma surjective_right_comp [backward]:
 
 (* The requirement that source(u) \<noteq> \<emptyset> is necessary here, as the following example shows. *)
 lemma injective_two_side_comp_counterexample:
-  "u = (\<lambda>a\<in>\<emptyset>. \<emptyset>\<in>{\<emptyset>}) \<Longrightarrow> injective(u) \<and> \<not>surjective(right_comp(\<emptyset>,u))"
+  "u = const_fun(\<emptyset>,{\<emptyset>},\<emptyset>) \<Longrightarrow> injective(u) \<and> \<not>surjective(right_comp(\<emptyset>,u))"
 @proof @have "target(u) \<rightarrow> \<emptyset> = \<emptyset>" @qed
 
 (* Nevertheless, no condition is required when u is bijective. *)
@@ -694,7 +694,7 @@ lemma bijective_right_comp [forward]:
 
 (* Given a function A \<rightarrow> (B \<rightarrow> D), return a function (A \<times> B) \<rightarrow> D. *)
 definition uncurry :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
-  "uncurry(A,B,D) = (\<lambda>f\<in>A\<rightarrow>B\<rightarrow>D. (\<lambda>x\<in>A\<times>B. (f`fst(x)`snd(x))\<in>D)\<in>(A\<times>B\<rightarrow>D))"
+  "uncurry(A,B,D) = Fun(A\<rightarrow>B\<rightarrow>D, A\<times>B\<rightarrow>D, \<lambda>f. Fun(A\<times>B, D, \<lambda>x. f`fst(x)`snd(x)))"
 
 lemma uncurry_is_function [typing]:
   "uncurry(A,B,D) \<in> (A \<rightarrow> B \<rightarrow> D) \<rightarrow> (A \<times> B \<rightarrow> D)" by auto2

@@ -123,11 +123,6 @@ definition Fun :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "Fun(A,B,b) = Struct({\<langle>source_name,A\<rangle>, \<langle>target_name,B\<rangle>, \<langle>graph_name, {p\<in>A\<times>B. snd(p) = b(fst(p))}\<rangle>})"
 setup {* add_prfstep_check_req ("Fun(A,B,b)", "Fun(A,B,b) \<in> A \<rightarrow> B") *}
 
-syntax
-  "_lam" :: "[pttrn, i, i, i] \<Rightarrow> i"  ("(3\<lambda>_\<in>_./ _\<in>_)" 10)
-translations
-  "\<lambda>x\<in>A. f\<in>B" == "CONST Fun(A,B,\<lambda>x. f)"
-
 lemma lambda_is_function [backward]:
   "\<forall>x\<in>A. f(x)\<in>B \<Longrightarrow> Fun(A,B,f) \<in> A \<rightarrow> B"
 @proof

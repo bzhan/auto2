@@ -38,7 +38,7 @@ lemma mod_form_to_raw [forward]: "mod_form(M) \<Longrightarrow> is_mod_raw(M)" b
 definition LMod :: "[i, i, i, i \<Rightarrow> i \<Rightarrow> i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "LMod(S,R,z,p,f) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>mod_ring_name,R\<rangle>,
     \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name, binary_fun_of(S,p)\<rangle>,
-    \<langle>mtimes_fun_name, \<lambda>x\<in>carrier(R)\<times>S. f(fst(x),snd(x))\<in>S\<rangle>})"
+    \<langle>mtimes_fun_name, Fun(carrier(R)\<times>S, S, \<lambda>x. f(fst(x),snd(x)))\<rangle>})"
 
 definition mod_fun :: "i \<Rightarrow> i \<Rightarrow> [i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
   "mod_fun(S,R,f) \<longleftrightarrow> (\<forall>x\<in>.R. \<forall>y\<in>S. f(x,y) \<in> S)"

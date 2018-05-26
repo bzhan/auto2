@@ -135,7 +135,7 @@ lemma bounded_on_tail [forward]:
   @have "r \<in>. R" @with @have "\<bar>X`k\<bar>\<^sub>R \<le>\<^sub>R r" @end
   @case "k = 0" @with @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @end
   @obtain S where "S \<noteq> \<emptyset>" "S = nat_less_range(k)"
-  @obtain "f \<in> nat \<rightarrow> carrier(R)" where "f = (\<lambda>i\<in>nat. \<bar>X`i\<bar>\<^sub>R \<in> carrier(R))"
+  @obtain "f \<in> nat \<rightarrow> carrier(R)" where "f = Fun(nat,carrier(R),\<lambda>i. \<bar>X`i\<bar>\<^sub>R)"
   @let "m = max(R,r,greatest(R,f `` S))"
   @have "has_greatest(R,f``S)"
   @have "\<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R m" @with

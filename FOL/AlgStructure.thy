@@ -17,7 +17,7 @@ lemma binary_funD [typing]: "binary_fun(S,f) \<Longrightarrow> x \<in> S \<Longr
 setup {* del_prfstep_thm_eqforward @{thm binary_fun_def} *}
 
 definition binary_fun_of :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> i) \<Rightarrow> i" where [rewrite]:
-  "binary_fun_of(S,f) = (\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S)"
+  "binary_fun_of(S,f) = Fun(S\<times>S, S, \<lambda>p. f(fst(p),snd(p)))"
 setup {* register_wellform_data ("binary_fun_of(S,f)", ["binary_fun(S,f)"]) *}
 
 lemma binary_fun_of_mem [typing]: "binary_fun(S,f) \<Longrightarrow> binary_fun_of(S,f) \<in> S \<times> S \<rightarrow> S" by auto2

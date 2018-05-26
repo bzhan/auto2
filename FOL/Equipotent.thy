@@ -64,7 +64,7 @@ lemma equipotent_empty [forward]: "X \<approx>\<^sub>S \<emptyset> \<Longrightar
 @proof @obtain "f \<in> X \<cong> \<emptyset>" @have "X \<rightarrow> \<emptyset> \<noteq> \<emptyset>" @qed
 
 lemma equipotent_singleton [resolve]: "{a} \<approx>\<^sub>S {b}"
-@proof @have "(\<lambda>x\<in>{a}. b\<in>{b}) \<in> {a} \<cong> {b}" @qed
+@proof @have "Fun({a}, {b}, \<lambda>x. b) \<in> {a} \<cong> {b}" @qed
 
 lemma equipotent_union [backward1]:
   "A \<inter> C = \<emptyset> \<Longrightarrow> B \<inter> D = \<emptyset> \<Longrightarrow> A \<approx>\<^sub>S B \<Longrightarrow> C \<approx>\<^sub>S D \<Longrightarrow> A \<union> C \<approx>\<^sub>S B \<union> D"

@@ -345,7 +345,7 @@ lemma wellorder_theorem [resolve]:
   "\<exists>R\<in>raworder_space(E). well_order(R)"
 @proof
   @let "S = Pow(E)\<midarrow>{E}"
-  @let "p = (\<lambda>X\<in>S. (SOME x\<in>E. x \<notin> X)\<in>E)"
+  @let "p = Fun(S,E, \<lambda>X. SOME x\<in>E. x \<notin> X)"
   @have "compat_wellorder_cond(E,S,p)"
   @obtain \<Gamma> where "ord_form(\<Gamma>)" "well_order(\<Gamma>)" "carrier(\<Gamma>) \<subseteq> E" "carrier(\<Gamma>) \<notin> S"
   @have "\<Gamma> \<in> raworder_space(E)"
@@ -370,7 +370,7 @@ lemma zorn_aux [resolve]:
 @proof
   @let "E = carrier(R)"
   @let "S = {X\<in>Pow(carrier(R)). upper_bound(R,X) \<midarrow> X \<noteq> \<emptyset>}"
-  @let "p = (\<lambda>X\<in>S. (SOME x\<in>upper_bound(R,X). x \<notin> X)\<in>E)"
+  @let "p = Fun(S, E, \<lambda>X. SOME x\<in>upper_bound(R,X). x \<notin> X)"
   @have "p \<in> S \<rightarrow> E"
   @have (@rule) "\<forall>X\<in>S. p`X \<in> upper_bound(R,X)"
   @have "compat_wellorder_cond(carrier(R),S,p)"
