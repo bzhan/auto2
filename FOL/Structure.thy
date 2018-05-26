@@ -162,8 +162,9 @@ lemma lam_eq_self: "f \<in> A \<rightarrow> B \<Longrightarrow> f = Fun(A,B, \<l
 section {* Carrier of a structure *}
 
 (* Underlying set of a structure. *)
-definition carrier :: "i \<Rightarrow> i" where [rewrite]:
-  "carrier(R) = fst(R)"
+definition "carrier_name = \<emptyset>"
+definition "carrier(S) = graph_eval(S, carrier_name)"
+setup {* add_field_data (@{term carrier_name}, @{term carrier}) *}
 
 setup {* add_property_field_const @{term carrier} *}
 
@@ -192,10 +193,12 @@ translations
   "\<Union>a\<in>.I. X" == "CONST UnionS_carrier(I, \<lambda>a. X)"
   "\<Inter>a\<in>.I. X" == "CONST InterS_carrier(I, \<lambda>a. X)"
 
-section {* Order structures *}
+section \<open>Order structures\<close>
 
-definition order_graph :: "i \<Rightarrow> i" where [rewrite]:
-  "order_graph(R) = fst(snd(snd(R)))"
+definition "order_graph_name = succ(succ(\<emptyset>))"
+definition "order_graph(S) = graph_eval(S, order_graph_name)"
+
+setup {* add_field_data (@{term order_graph_name}, @{term order_graph}) *}
 
 (* Evaluation of order *)
 definition le :: "[i, i, i] \<Rightarrow> o" where [rewrite_bidir]:
@@ -210,33 +213,31 @@ abbreviation (input) ge :: "[i, i, i] \<Rightarrow> o" ("(_/ \<ge>\<^sub>_ _)" [
 definition raworder :: "i \<Rightarrow> o" where [rewrite]:
   "raworder(R) \<longleftrightarrow> order_graph(R) \<in> Pow(carrier(R)\<times>carrier(R))"
 
-lemma raworderI [backward]:
-  "G \<in> Pow(S\<times>S) \<Longrightarrow> raworder(\<langle>S,x1,G,x2\<rangle>)" by auto2
-
 lemma raworderD [forward]:
   "raworder(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> x \<in>. R \<and> y \<in>. R"
   "raworder(R) \<Longrightarrow> is_graph(order_graph(R))" by auto2+
-setup {* del_prfstep_thm @{thm raworder_def} *}
+setup {* del_prfstep_thm_eqforward @{thm raworder_def} *}
 
 (* Strict predicate on order. *)
 definition ord_form :: "i \<Rightarrow> o" where [rewrite]:
-  "ord_form(R) \<longleftrightarrow> raworder(R) \<and> R = \<langle>carrier(R),\<emptyset>,order_graph(R),\<emptyset>\<rangle>"
+  "ord_form(R) \<longleftrightarrow> raworder(R) \<and> is_func_graph(R,{carrier_name,order_graph_name})"
   
 lemma ord_form_to_raw [forward]: "ord_form(R) \<Longrightarrow> raworder(R)" by auto2
 
 (* Space of all order structures on S *)
 definition raworder_space :: "i \<Rightarrow> i" where [rewrite]:
-  "raworder_space(S) = {\<langle>S,\<emptyset>,G,\<emptyset>\<rangle>. G\<in>Pow(S\<times>S)}"
+  "raworder_space(S) = {Struct({\<langle>carrier_name,S\<rangle>, \<langle>order_graph_name,G\<rangle>}). G\<in>Pow(S\<times>S)}"
   
 lemma raworder_spaceD [forward]:
   "R \<in> raworder_space(S) \<Longrightarrow> ord_form(R) \<and> carrier(R) = S" by auto2
     
 lemma raworder_spaceI [resolve]:
-  "ord_form(R) \<Longrightarrow> R \<in> raworder_space(carrier(R))" by auto2
+  "ord_form(R) \<Longrightarrow> R \<in> raworder_space(carrier(R))"
+@proof @have "R = Struct({\<langle>carrier_name,carrier(R)\<rangle>, \<langle>order_graph_name,order_graph(R)\<rangle>})" @qed
 
 (* Constructor for ordering *)
 definition Order :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:
-  "Order(S,R) = \<langle>S, \<emptyset>, {p\<in>S\<times>S. R(fst(p),snd(p))}, \<emptyset>\<rangle>"
+  "Order(S,R) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>order_graph_name,{p\<in>S\<times>S. R(fst(p),snd(p))}\<rangle>})"
 
 lemma Order_is_raworder [typing]: "Order(S,R) \<in> raworder_space(S)" by auto2
 
@@ -256,10 +257,7 @@ setup {* del_prfstep_thm_eqforward @{thm eq_str_order_def} *}
 lemma order_eq [backward]:
   "ord_form(R) \<Longrightarrow> ord_form(S) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> R = S" by auto2
 
-setup {* fold del_prfstep_thm [
-  @{thm ord_form_def}, @{thm raworder_space_def}, @{thm Order_def}, @{thm le_def}] *}
+setup {* fold del_prfstep_thm [@{thm ord_form_def}, @{thm raworder_space_def}, @{thm Order_def}, @{thm le_def}] *}
 setup {* add_rewrite_rule_back @{thm le_def} *}
-
-setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm order_graph_def}] *}
 
 end

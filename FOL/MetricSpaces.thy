@@ -3,9 +3,10 @@ imports RealTopology
 begin
 
 section {* Metric spaces *}
-  
-definition metric_fun :: "i \<Rightarrow> i" where [rewrite]:
-  "metric_fun(X) = fst(snd(snd(X)))"
+
+definition "metric_fun_name = succ(succ(\<emptyset>))"
+definition "metric_fun(X) = graph_eval(X, metric_fun_name)"
+setup {* add_field_data (@{term metric_fun_name}, @{term metric_fun}) *}
   
 definition dist :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "dist(X,x,y) = metric_fun(X)`\<langle>x,y\<rangle>"
@@ -114,17 +115,15 @@ lemma metric_basis_is_basis [forward]:
 @qed
 
 definition metric_top_space :: "i \<Rightarrow> i" where [rewrite]:
-  "metric_top_space(X) = \<langle>carrier(X),top_from_basis(metric_basis(X)),metric_fun(X),\<emptyset>\<rangle>"
-
-setup {* fold add_rewrite_rule [@{thm carrier_def}, @{thm open_sets_def}] *}
+  "metric_top_space(X) = Struct({\<langle>carrier_name,carrier(X)\<rangle>,
+    \<langle>open_sets_name,top_from_basis(metric_basis(X))\<rangle>, \<langle>metric_fun_name,metric_fun(X)\<rangle>})"
 
 lemma metric_top_spaceD [rewrite]:
   "carrier(metric_top_space(X)) = carrier(X)"
   "open_sets(metric_top_space(X)) = top_from_basis(metric_basis(X))"
   "metric_fun(metric_top_space(X)) = metric_fun(X)"
   "A = metric_top_space(X) \<Longrightarrow> x \<in>. A \<Longrightarrow> y \<in>. A \<Longrightarrow> dist(A,x,y) = dist(X,x,y)" by auto2+
-
-setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm open_sets_def}] *}
+setup {* del_prfstep_thm @{thm metric_top_space_def} *}
 
 lemma metric_top_space_is_metric [forward]:
   "is_metric_space(A) \<Longrightarrow> is_metric_space(metric_top_space(A))" by auto2

@@ -2,22 +2,22 @@ theory EquivRel
 imports Coverings
 begin
 
-section {* Equivalence structures *}
+section \<open>Equivalence structures\<close>
 
-setup {* add_rewrite_rule @{thm carrier_def} *}
-
-definition equiv_graph :: "i \<Rightarrow> i" where [rewrite]:
-  "equiv_graph(R) = fst(snd(snd(R)))"
+definition "equiv_graph_name = succ(succ(\<emptyset>))"
+definition "equiv_graph(S) = graph_eval(S, equiv_graph_name)"
+setup {* add_field_data (@{term equiv_graph_name}, @{term equiv_graph}) *}
 
 definition rawequiv :: "i \<Rightarrow> o" where [rewrite]:
-  "rawequiv(R) \<longleftrightarrow> (\<exists>S G. R = \<langle>S,\<emptyset>,G,\<emptyset>\<rangle> \<and> G\<in>Pow(S\<times>S))"
+  "rawequiv(R) \<longleftrightarrow>
+    is_func_graph(R,{carrier_name,equiv_graph_name}) \<and> equiv_graph(R) \<in> Pow(carrier(R)\<times>carrier(R))"
 
 lemma rawequiv_graph_is_graph [forward]:
   "rawequiv(R) \<Longrightarrow> is_graph(equiv_graph(R))" by auto2
 
 (* Space of all rawequiv on S *)
 definition rawequiv_space :: "i \<Rightarrow> i" where [rewrite]:
-  "rawequiv_space(S) = {\<langle>S,\<emptyset>,G,\<emptyset>\<rangle>. G\<in>Pow(S\<times>S)}"
+  "rawequiv_space(S) = {Struct({\<langle>carrier_name,S\<rangle>, \<langle>equiv_graph_name,G\<rangle>}). G\<in>Pow(S\<times>S)}"
   
 lemma rawequiv_spaceD [forward]:
   "R \<in> rawequiv_space(S) \<Longrightarrow> rawequiv(R) \<and> carrier(R) = S" by auto2
@@ -27,7 +27,7 @@ lemma rawequiv_spaceI [resolve]:
 
 (* Constructor for equivalence *)
 definition Equiv :: "i \<Rightarrow> (i \<Rightarrow> i \<Rightarrow> o) \<Rightarrow> i" where [rewrite]:
-  "Equiv(S,R) = \<langle>S, \<emptyset>, {p\<in>S\<times>S. R(fst(p),snd(p))}, \<emptyset>\<rangle>"
+  "Equiv(S,R) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>equiv_graph_name,{p\<in>S\<times>S. R(fst(p),snd(p))}\<rangle>})"
 
 lemma Equiv_is_rawequiv [typing]: "Equiv(S,R) \<in> rawequiv_space(S)" by auto2
 
@@ -45,13 +45,10 @@ lemma rawequivD [forward]:
 (* Equality on equivalences *)
 lemma equiv_eq [backward]:
   "rawequiv(R) \<Longrightarrow> rawequiv(S) \<Longrightarrow> carrier(R) = carrier(S) \<Longrightarrow>
-   \<forall>x y. x \<sim>\<^sub>R y \<longleftrightarrow> x \<sim>\<^sub>S y \<Longrightarrow> R = S"
-@proof @have "equiv_graph(R) = equiv_graph(S)" @qed
+   \<forall>x y. x \<sim>\<^sub>R y \<longleftrightarrow> x \<sim>\<^sub>S y \<Longrightarrow> R = S" by auto2
 
 setup {* fold del_prfstep_thm [
   @{thm rawequiv_def}, @{thm rawequiv_space_def}, @{thm Equiv_def}, @{thm eq_sim_def}] *}
-
-setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm equiv_graph_def}] *}
 
 section {* Equivalence relation *}  (* Bourbaki II.6.1 *)
 

@@ -2,42 +2,39 @@ theory Topology
 imports Morphism BigSet
 begin
   
-section {* Topological structure *}
-  
-setup {* add_rewrite_rule @{thm carrier_def} *}
-  
-definition open_sets :: "i \<Rightarrow> i" where [rewrite]:
-  "open_sets(X) = fst(snd(X))"
+section \<open>Topological structure\<close>
+
+definition "open_sets_name = succ(\<emptyset>)"
+definition "open_sets(X) = graph_eval(X, open_sets_name)"
+setup {* add_field_data (@{term open_sets_name}, @{term open_sets}) *}
   
 definition is_open :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite_bidir]:
   "is_open(X,A) \<longleftrightarrow> A \<in> open_sets(X)"
 
 definition is_top_space_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_top_space_raw(X) \<longleftrightarrow> open_sets(X) \<subseteq> Pow(carrier(X))"
-
-lemma is_top_space_rawI [backward]:
-  "T \<subseteq> Pow(S) \<Longrightarrow> is_top_space_raw(\<langle>S,T,x1\<rangle>)" by auto2
     
 lemma is_top_space_rawD [forward]: "is_top_space_raw(X) \<Longrightarrow> is_open(X,A) \<Longrightarrow> A \<subseteq> carrier(X)" by auto2
-setup {* del_prfstep_thm @{thm is_top_space_raw_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_top_space_raw_def} *}
 
 definition top_space_form :: "i \<Rightarrow> o" where [rewrite]:
-  "top_space_form(X) \<longleftrightarrow> (is_top_space_raw(X) \<and> X = \<langle>carrier(X),open_sets(X),\<emptyset>\<rangle>)"
+  "top_space_form(X) \<longleftrightarrow> is_top_space_raw(X) \<and> is_func_graph(X,{carrier_name,open_sets_name})"
 
 lemma top_space_form_to_raw [forward]: "top_space_form(X) \<Longrightarrow> is_top_space_raw(X)" by auto2
 
 (* Space of all topological structures on S *)
 definition raw_top_spaces :: "i \<Rightarrow> i" where [rewrite]:
-  "raw_top_spaces(S) = {\<langle>S,T,\<emptyset>\<rangle>. T\<in>Pow(Pow(S))}"
+  "raw_top_spaces(S) = {Struct({\<langle>carrier_name,S\<rangle>, \<langle>open_sets_name,T\<rangle>}). T\<in>Pow(Pow(S))}"
   
 lemma raw_top_spacesD [forward]:
   "X \<in> raw_top_spaces(S) \<Longrightarrow> top_space_form(X) \<and> carrier(X) = S" by auto2
     
 lemma raw_top_spacesI [resolve]:
-  "top_space_form(X) \<Longrightarrow> X \<in> raw_top_spaces(carrier(X))" by auto2
+  "top_space_form(X) \<Longrightarrow> X \<in> raw_top_spaces(carrier(X))"
+@proof @have "X = Struct({\<langle>carrier_name,carrier(X)\<rangle>, \<langle>open_sets_name,open_sets(X)\<rangle>})" @qed
 
 definition Top :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
-  "Top(S,T) = \<langle>S,T,\<emptyset>\<rangle>"
+  "Top(S,T) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>open_sets_name,T\<rangle>})"
 setup {* add_prfstep_check_req ("Top(S,T)", "T \<subseteq> Pow(S)") *}
 
 lemma Top_is_top_space_raw [typing]: "T \<subseteq> Pow(S) \<Longrightarrow> Top(S,T) \<in> raw_top_spaces(S)" by auto2
@@ -48,14 +45,12 @@ setup {* add_forward_prfstep_cond @{thm open_sets_Top} [with_term "Top(?S,?T)"] 
     
 lemma top_space_form_eq [backward]:
   "top_space_form(X) \<Longrightarrow> top_space_form(Y) \<Longrightarrow> carrier(X) = carrier(Y) \<Longrightarrow>
-   \<forall>U. is_open(X,U) \<longleftrightarrow> is_open(Y,U) \<Longrightarrow> X = Y"
-@proof @have "open_sets(X) = open_sets(Y)" @qed
+   \<forall>U. is_open(X,U) \<longleftrightarrow> is_open(Y,U) \<Longrightarrow> X = Y" by auto2
 
 setup {* fold del_prfstep_thm [
   @{thm top_space_form_def}, @{thm raw_top_spaces_def}, @{thm Top_def}, @{thm is_open_def}] *}
 setup {* add_rewrite_rule_back @{thm is_open_def} *}
 setup {* add_rewrite_rule_cond @{thm is_open_def} [with_term "open_sets(?X)"] *}
-setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm open_sets_def}] *}
 
 section {* Definition of a topological space *}
 

@@ -4,21 +4,23 @@ begin
 
 section {* Components of an algebraic structure *}
 
-setup {* add_rewrite_rule @{thm carrier_def} *}
+(* 0 and +, for additive structures. *)
+definition "zero_name = succ(succ(succ(\<emptyset>)))"
+definition "zero(S) = graph_eval(S, zero_name)"
+definition "plus_fun_name = succ(succ(succ(succ(\<emptyset>))))"
+definition "plus_fun(S) = graph_eval(S, plus_fun_name)"
+notation zero ("\<zero>\<^sub>_" [96] 95)
+setup {* add_field_data (@{term zero_name}, @{term zero}) *}
+setup {* add_field_data (@{term plus_fun_name}, @{term plus_fun}) *}
 
-(* 0 and +, for additive structures, are located as a pair at fourth position. *)
-definition zero :: "i \<Rightarrow> i" ("\<zero>\<^sub>_" [96] 95) where [rewrite]:
-  "zero(\<Gamma>)  = fst(fst(snd(snd(snd(\<Gamma>)))))"
-
-definition plus_fun :: "i \<Rightarrow> i" where [rewrite]:
-  "plus_fun(\<Gamma>)  = snd(fst(snd(snd(snd(\<Gamma>)))))"
-
-(* 1 and *, for multiplicative structures, are located as a pair at fifth position. *)
-definition one :: "i \<Rightarrow> i" ("\<one>\<^sub>_" [96] 95) where [rewrite]:
-  "one(\<Gamma>)   = fst(fst(snd(snd(snd(snd(\<Gamma>))))))"
-
-definition times_fun :: "i \<Rightarrow> i" where [rewrite]:
-  "times_fun(\<Gamma>) = snd(fst(snd(snd(snd(snd(\<Gamma>))))))"
+(* 1 and *, for multiplicative structures. *)
+definition "one_name = succ(succ(succ(succ(succ(\<emptyset>)))))"
+definition "one(S) = graph_eval(S, one_name)"
+definition "times_fun_name = succ(succ(succ(succ(succ(succ(\<emptyset>))))))"
+definition "times_fun(S) = graph_eval(S, times_fun_name)"
+notation one ("\<one>\<^sub>_" [96] 95)
+setup {* add_field_data (@{term one_name}, @{term one}) *}
+setup {* add_field_data (@{term times_fun_name}, @{term times_fun}) *}
 
 section {* Notation for plus and times. *}
   
@@ -37,22 +39,19 @@ section {* Abelian group structure *}
 definition is_abgroup_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_abgroup_raw(G) \<longleftrightarrow> \<zero>\<^sub>G \<in>. G \<and> plus_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)"
 
-lemma is_abgroup_rawI [backward]:
-  "z \<in> S \<Longrightarrow> p \<in> S \<times> S \<rightarrow> S \<Longrightarrow> is_abgroup_raw(\<langle>S,x1,x2,\<langle>z,p\<rangle>,x3\<rangle>)" by auto2
-
 lemma is_abgroup_rawD [typing]:
   "is_abgroup_raw(G) \<Longrightarrow> \<zero>\<^sub>G \<in>. G"
   "is_abgroup_raw(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x +\<^sub>G y \<in>. G"
   "is_abgroup_raw(G) \<Longrightarrow> plus_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)" by auto2+
-setup {* del_prfstep_thm @{thm is_abgroup_raw_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_abgroup_raw_def} *}
   
 definition abgroup_form :: "i \<Rightarrow> o" where [rewrite]:
-  "abgroup_form(G) \<longleftrightarrow> is_abgroup_raw(G) \<and> G = \<langle>carrier(G),\<emptyset>,\<emptyset>,\<langle>\<zero>\<^sub>G,plus_fun(G)\<rangle>,\<emptyset>\<rangle>"
+  "abgroup_form(G) \<longleftrightarrow> is_abgroup_raw(G) \<and> is_func_graph(G,{carrier_name,zero_name,plus_fun_name})"
 
 lemma abgroup_form_to_raw [forward]: "abgroup_form(G) \<Longrightarrow> is_abgroup_raw(G)" by auto2
 
 definition AbGroup :: "[i, i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "AbGroup(S,z,f) = \<langle>S,\<emptyset>,\<emptyset>,\<langle>z,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,\<emptyset>\<rangle>"
+  "AbGroup(S,z,f) = Struct({\<langle>carrier_name,S\<rangle>,\<langle>zero_name,z\<rangle>,\<langle>plus_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>})"
 
 lemma AbGroup_is_abgroup_raw [backward]:
   "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> abgroup_form(AbGroup(S,z,f))" by auto2
@@ -65,14 +64,19 @@ setup {* del_prfstep_thm @{thm AbGroup_def} *}
   
 (* Equality between abelian groups *)
 definition eq_str_abgroup :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "eq_str_abgroup(G,H) \<longleftrightarrow> carrier(G) = carrier(H) \<and> \<zero>\<^sub>G = \<zero>\<^sub>H \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. x +\<^sub>G y = x +\<^sub>H y)"
+  "eq_str_abgroup(G,H) \<longleftrightarrow> carrier(G) = carrier(H) \<and> \<zero>\<^sub>G = \<zero>\<^sub>H \<and> plus_fun(G) = plus_fun(H)"
 
 lemma eq_str_abgroupD [rewrite]:
   "eq_str_abgroup(G,H) \<Longrightarrow> carrier(G) = carrier(H)"
   "eq_str_abgroup(G,H) \<Longrightarrow> \<zero>\<^sub>G = \<zero>\<^sub>H"
-  "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> x +\<^sub>G y = x +\<^sub>H y" by auto2+
+  "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> x +\<^sub>G y = x +\<^sub>H y"
+  "eq_str_abgroup(G,H) \<Longrightarrow> plus_fun(G) = plus_fun(H)" by auto2+
 lemma eq_str_abgroup_sym [forward]: "eq_str_abgroup(G,H) \<Longrightarrow> eq_str_abgroup(H,G)" by auto2
-setup {* del_prfstep_thm_eqforward @{thm eq_str_abgroup_def} *}
+
+lemma eq_str_abgroupI [backward]:
+  "is_abgroup_raw(G) \<Longrightarrow> is_abgroup_raw(H) \<Longrightarrow>
+   carrier(G) = carrier(H) \<Longrightarrow> \<zero>\<^sub>G = \<zero>\<^sub>H \<Longrightarrow> \<forall>x\<in>.G. \<forall>y\<in>.G. x +\<^sub>G y = x +\<^sub>H y \<Longrightarrow> eq_str_abgroup(G,H)" by auto2
+setup {* del_prfstep_thm @{thm eq_str_abgroup_def} *}
 
 lemma abgroup_eq [backward]:
   "abgroup_form(G) \<Longrightarrow> abgroup_form(H) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> G = H" by auto2
@@ -83,22 +87,19 @@ section {* Group structure *}
 definition is_group_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_group_raw(G) \<longleftrightarrow> \<one>\<^sub>G \<in>. G \<and> times_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)"
 
-lemma is_group_rawI [backward]:
-  "u \<in> S \<Longrightarrow> t \<in> S \<times> S \<rightarrow> S \<Longrightarrow> is_group_raw(\<langle>S,x1,x2,x3,\<langle>u,t\<rangle>,x4\<rangle>)" by auto2
-
 lemma is_group_rawD [typing]:
   "is_group_raw(G) \<Longrightarrow> \<one>\<^sub>G \<in>. G"
   "is_group_raw(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x *\<^sub>G y \<in>. G"
   "is_group_raw(G) \<Longrightarrow> times_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)" by auto2+
-setup {* del_prfstep_thm @{thm is_group_raw_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_group_raw_def} *}
 
 definition group_form :: "i \<Rightarrow> o" where [rewrite]:
-  "group_form(G) \<longleftrightarrow> is_group_raw(G) \<and> G = \<langle>carrier(G),\<emptyset>,\<emptyset>,\<emptyset>,\<langle>\<one>\<^sub>G,times_fun(G)\<rangle>,\<emptyset>\<rangle>"
+  "group_form(G) \<longleftrightarrow> is_group_raw(G) \<and> is_func_graph(G,{carrier_name,one_name,times_fun_name})"
   
 lemma group_form_to_raw [forward]: "group_form(G) \<Longrightarrow> is_group_raw(G)" by auto2
 
 definition Group :: "[i, i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "Group(S,u,f) = \<langle>S,\<emptyset>,\<emptyset>,\<emptyset>,\<langle>u,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,\<emptyset>\<rangle>"
+  "Group(S,u,f) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>one_name,u\<rangle>, \<langle>times_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>})"
 
 lemma Group_is_group_raw [backward]:
   "u \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> group_form(Group(S,u,f))" by auto2
@@ -111,14 +112,19 @@ setup {* del_prfstep_thm @{thm Group_def} *}
 
 (* Equality between groups *)
 definition eq_str_group :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
-  "eq_str_group(G,H) \<longleftrightarrow> carrier(G) = carrier(H) \<and> \<one>\<^sub>G = \<one>\<^sub>H \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. x *\<^sub>G y = x *\<^sub>H y)"
+  "eq_str_group(G,H) \<longleftrightarrow> carrier(G) = carrier(H) \<and> \<one>\<^sub>G = \<one>\<^sub>H \<and> times_fun(G) = times_fun(H)"
   
 lemma eq_str_groupD [rewrite]:
   "eq_str_group(G,H) \<Longrightarrow> carrier(G) = carrier(H)"
   "eq_str_group(G,H) \<Longrightarrow> \<one>\<^sub>G = \<one>\<^sub>H"
-  "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> x *\<^sub>G y = x *\<^sub>H y" by auto2+
+  "x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> x *\<^sub>G y = x *\<^sub>H y"
+  "eq_str_group(G,H) \<Longrightarrow> times_fun(G) = times_fun(H)" by auto2+
 lemma eq_str_group_sym [forward]: "eq_str_group(G,H) \<Longrightarrow> eq_str_group(H,G)" by auto2
-setup {* del_prfstep_thm_eqforward @{thm eq_str_group_def} *}
+
+lemma eq_str_groupI [backward]:
+  "is_group_raw(G) \<Longrightarrow> is_group_raw(H) \<Longrightarrow> carrier(G) = carrier(H) \<Longrightarrow> \<one>\<^sub>G = \<one>\<^sub>H \<Longrightarrow>
+   \<forall>x\<in>.G. \<forall>y\<in>.G. x *\<^sub>G y = x *\<^sub>H y \<Longrightarrow> eq_str_group(G,H)" by auto2
+setup {* del_prfstep_thm @{thm eq_str_group_def} *}
 
 lemma group_eq [backward]:
   "group_form(G) \<Longrightarrow> group_form(H) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> G = H" by auto2
@@ -129,24 +135,26 @@ section {* Ring structure *}
 definition is_ring_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ring_raw(R) \<longleftrightarrow> is_abgroup_raw(R) \<and> is_group_raw(R)"
 
-lemma is_ring_rawI [backward]:
-  "z \<in> S \<Longrightarrow> p \<in> S \<times> S \<rightarrow> S \<Longrightarrow> u \<in> S \<Longrightarrow> t \<in> S \<times> S \<rightarrow> S \<Longrightarrow> is_ring_raw(\<langle>S,x1,x2,\<langle>z,p\<rangle>,\<langle>u,t\<rangle>,x3\<rangle>)" by auto2
-
-lemma is_ring_rawD [forward]:
+lemma is_ring_raw_iff [forward]:
   "is_ring_raw(R) \<Longrightarrow> is_abgroup_raw(R)"
-  "is_ring_raw(R) \<Longrightarrow> is_group_raw(R)" by auto2+
+  "is_ring_raw(R) \<Longrightarrow> is_group_raw(R)"
+  "is_abgroup_raw(R) \<Longrightarrow> is_group_raw(R) \<Longrightarrow> is_ring_raw(R)" by auto2+
 setup {* del_prfstep_thm @{thm is_ring_raw_def} *}
 
 definition ring_form :: "i \<Rightarrow> o" where [rewrite]:
-  "ring_form(R) \<longleftrightarrow> is_ring_raw(R) \<and> R = \<langle>carrier(R),\<emptyset>,\<emptyset>,\<langle>\<zero>\<^sub>R,plus_fun(R)\<rangle>,\<langle>\<one>\<^sub>R,times_fun(R)\<rangle>,\<emptyset>\<rangle>"
+  "ring_form(R) \<longleftrightarrow>
+    is_ring_raw(R) \<and> is_func_graph(R,{carrier_name,zero_name,plus_fun_name,one_name,times_fun_name})"
   
 lemma ring_form_to_raw [forward]: "ring_form(R) \<Longrightarrow> is_ring_raw(R)" by auto2
 
 definition Ring :: "[i, i, i \<Rightarrow> i \<Rightarrow> i, i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
-  "Ring(S,z,f,u,g) = \<langle>S,\<emptyset>,\<emptyset>,\<langle>z,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,\<langle>u,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>,\<emptyset>\<rangle>"
+  "Ring(S,z,f,u,g) =
+    Struct({\<langle>carrier_name,S\<rangle>, \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,
+            \<langle>one_name,u\<rangle>, \<langle>times_fun_name,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>})"
 
 lemma Ring_is_ring_raw [backward]:
-  "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow> ring_form(Ring(S,z,f,u,g))" by auto2
+  "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow> ring_form(Ring(S,z,f,u,g))"
+@proof @have "is_abgroup_raw(Ring(S,z,f,u,g))" @have "is_group_raw(Ring(S,z,f,u,g))" @qed
 
 lemma ring_eval [rewrite]:
   "carrier(Ring(S,z,f,u,g)) = S"
@@ -170,39 +178,46 @@ section {* Ordered ring structure *}
 definition is_ord_ring_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_ring_raw(R) \<longleftrightarrow> is_ring_raw(R) \<and> raworder(R)"
 
-lemma is_ord_ring_rawI [backward]:
-  "z \<in> S \<Longrightarrow> p \<in> S \<times> S \<rightarrow> S \<Longrightarrow> u \<in> S \<Longrightarrow> t \<in> S \<times> S \<rightarrow> S \<Longrightarrow> G \<in> Pow(S\<times>S) \<Longrightarrow>
-   is_ord_ring_raw(\<langle>S,x1,G,\<langle>z,p\<rangle>,\<langle>u,t\<rangle>,x2\<rangle>)" by auto2
-
-lemma is_ord_ring_rawD [forward]:
+lemma is_ord_ring_raw_iff [forward]:
   "is_ord_ring_raw(R) \<Longrightarrow> is_ring_raw(R)"
-  "is_ord_ring_raw(R) \<Longrightarrow> raworder(R)" by auto2+
+  "is_ord_ring_raw(R) \<Longrightarrow> raworder(R)"
+  "is_ring_raw(R) \<Longrightarrow> raworder(R) \<Longrightarrow> is_ord_ring_raw(R)" by auto2+
 setup {* del_prfstep_thm @{thm is_ord_ring_raw_def} *}
 
 definition ord_ring_form :: "i \<Rightarrow> o" where [rewrite]:
   "ord_ring_form(R) \<longleftrightarrow> is_ord_ring_raw(R) \<and>
-      R = \<langle>carrier(R),\<emptyset>,order_graph(R),\<langle>\<zero>\<^sub>R,plus_fun(R)\<rangle>,\<langle>\<one>\<^sub>R,times_fun(R)\<rangle>,\<emptyset>\<rangle>"
+      is_func_graph(R,{carrier_name,order_graph_name,zero_name,plus_fun_name,one_name,times_fun_name})"
 
 lemma ord_ring_form_to_raw [forward]: "ord_ring_form(R) \<Longrightarrow> is_ord_ring_raw(R)" by auto2
 
 definition OrdRing :: "[i, i, i \<Rightarrow> i \<Rightarrow> i, i, i \<Rightarrow> i \<Rightarrow> i, i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> i" where [rewrite]:
-  "OrdRing(S,z,f,u,g,r) = \<langle>S,\<emptyset>,{p\<in>S\<times>S. r(fst(p),snd(p))},
-      \<langle>z,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,\<langle>u,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>,\<emptyset>\<rangle>"
-
-(* Recall definition of order_graph and le for this section *)
-setup {* fold add_rewrite_rule [@{thm order_graph_def}, @{thm le_def}] *}
+  "OrdRing(S,z,f,u,g,r) = Struct({
+      \<langle>carrier_name,S\<rangle>, \<langle>order_graph_name,{p\<in>S\<times>S. r(fst(p),snd(p))}\<rangle>,
+      \<langle>zero_name,z\<rangle>, \<langle>plus_fun_name,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,
+      \<langle>one_name,u\<rangle>, \<langle>times_fun_name,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>})"
 
 lemma OrdRing_is_ord_ring_raw [backward]:
-  "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow>
-   ord_ring_form(OrdRing(S,z,f,u,g,r))" by auto2
-  
+  "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow> R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> ord_ring_form(R)"
+@proof
+  @have "is_abgroup_raw(R)"
+  @have "is_group_raw(R)"
+  @have "is_ring_raw(R)"
+  @have "order_graph(R) \<subseteq> S \<times> S" @with @have "\<forall>p\<in>order_graph(R). p \<in> S\<times>S" @end
+  @have "raworder(R)"
+@qed
+
 lemma ord_ring_eval [rewrite]:
   "carrier(OrdRing(S,z,f,u,g,r)) = S"
   "zero(OrdRing(S,z,f,u,g,r)) = z"
   "one(OrdRing(S,z,f,u,g,r)) = u"
   "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_ord_ring_raw(R) \<Longrightarrow> x +\<^sub>R y = f(x,y)"
-  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_ord_ring_raw(R) \<Longrightarrow> x *\<^sub>R y = g(x,y)"
-  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> r(x,y)" by auto2+
+  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_ord_ring_raw(R) \<Longrightarrow> x *\<^sub>R y = g(x,y)" by auto2+
+
+lemma ord_ring_eval' [rewrite]:
+  "R = OrdRing(S,z,f,u,g,r) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> r(x,y)"
+@proof @have "x \<le>\<^sub>R y \<longleftrightarrow> \<langle>x,y\<rangle> \<in> order_graph(R)" @qed
+
+setup {* fold del_prfstep_thm [@{thm plus_def}, @{thm times_def}] *}
 setup {* del_prfstep_thm @{thm OrdRing_def} *}
 
 definition eq_str_ord_ring :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
@@ -213,13 +228,6 @@ lemma eq_str_ord_ring_sym [forward]: "eq_str_ord_ring(G,H) \<Longrightarrow> eq_
 lemma ord_ring_eq [backward]:
   "ord_ring_form(R) \<Longrightarrow> ord_ring_form(S) \<Longrightarrow> eq_str_ord_ring(R,S) \<Longrightarrow> R = S" by auto2
 setup {* del_prfstep_thm @{thm ord_ring_form_def} *}
-
-setup {* fold del_prfstep_thm [@{thm order_graph_def}, @{thm le_def}] *}
-
-section {* Clear definitions *}
-
-setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm zero_def}, @{thm plus_fun_def},
-  @{thm one_def}, @{thm times_fun_def}, @{thm plus_def}, @{thm times_def}] *}
 
 section {* Predicates on additive structure *}
 

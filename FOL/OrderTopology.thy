@@ -116,42 +116,42 @@ section {* Data structure for order topology *}
   
 definition is_ord_top_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_top_raw(R) \<longleftrightarrow> is_top_space_raw(R) \<and> raworder(R)"
-  
-lemma is_ord_top_rawI [backward]:
-  "T \<subseteq> Pow(S) \<Longrightarrow> G \<in> Pow(S\<times>S) \<Longrightarrow> is_ord_top_raw(\<langle>S,T,G,x\<rangle>)" by auto2
 
 lemma is_ord_top_rawD [forward]:
   "is_ord_top_raw(R) \<Longrightarrow> is_top_space_raw(R)"
   "is_ord_top_raw(R) \<Longrightarrow> raworder(R)" by auto2+
-setup {* del_prfstep_thm @{thm is_ord_top_raw_def} *}
+setup {* del_prfstep_thm_eqforward @{thm is_ord_top_raw_def} *}
   
 definition ord_top_form :: "i \<Rightarrow> o" where [rewrite]:
-  "ord_top_form(R) \<longleftrightarrow> (is_ord_top_raw(R) \<and> R = \<langle>carrier(R),open_sets(R),order_graph(R),\<emptyset>\<rangle>)"
+  "ord_top_form(R) \<longleftrightarrow> is_ord_top_raw(R) \<and> is_func_graph(R,{carrier_name,open_sets_name,order_graph_name})"
   
 lemma ord_top_form_to_raw [forward]: "ord_top_form(R) \<Longrightarrow> is_ord_top_raw(R)" by auto2
 
 definition OrderTop :: "[i, i, i \<Rightarrow> i \<Rightarrow> o] \<Rightarrow> i" where [rewrite]:
-  "OrderTop(S,T,r) = \<langle>S,T,{p\<in>S\<times>S. r(fst(p),snd(p))},\<emptyset>\<rangle>"
+  "OrderTop(S,T,r) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>open_sets_name,T\<rangle>, \<langle>order_graph_name,{p\<in>S\<times>S. r(fst(p),snd(p))}\<rangle>})"
 setup {* add_prfstep_check_req("OrderTop(S,T,r)", "ord_top_form(OrderTop(S,T,r))") *}
 
-setup {* fold add_rewrite_rule [
-  @{thm carrier_def}, @{thm open_sets_def}, @{thm order_graph_def}, @{thm le_def}] *}
-
 lemma OrderTop_is_ord_top_raw [backward]:
-  "T \<subseteq> Pow(S) \<Longrightarrow> ord_top_form(OrderTop(S,T,r))" by auto2
+  "T \<subseteq> Pow(S) \<Longrightarrow> ord_top_form(OrderTop(S,T,r))"
+@proof
+  @let "R = OrderTop(S,T,r)"
+  @let "G = {p\<in>S\<times>S. r(fst(p),snd(p))}"
+  @have "G \<in> Pow(S\<times>S)" @with @have "\<forall>x\<in>G. x \<in> S\<times>S" @end
+  @have "raworder(R)"
+@qed
 
 lemma OrderTop_eval [rewrite]:
   "carrier(OrderTop(S,T,r)) = S"
-  "open_sets(OrderTop(S,T,r)) = T"
-  "X = OrderTop(S,T,r) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> x \<le>\<^sub>X y \<longleftrightarrow> r(x,y)" by auto2+
+  "open_sets(OrderTop(S,T,r)) = T" by auto2+
+
+lemma OrderTop_eval' [rewrite]:
+  "X = OrderTop(S,T,r) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> x \<le>\<^sub>X y \<longleftrightarrow> r(x,y)"
+@proof @have "x \<le>\<^sub>X y \<longleftrightarrow> \<langle>x,y\<rangle> \<in> order_graph(X)" @qed
 
 lemma ord_top_eq [backward]:
   "ord_top_form(X) \<Longrightarrow> ord_top_form(Y) \<Longrightarrow> eq_str_order(X,Y) \<Longrightarrow> eq_str_top(X,Y) \<Longrightarrow> X = Y" by auto2
 
 setup {* fold del_prfstep_thm [@{thm ord_top_form_def}, @{thm OrderTop_def}] *}
-  
-setup {* fold del_prfstep_thm [
-  @{thm carrier_def}, @{thm open_sets_def}, @{thm order_graph_def}, @{thm le_def}] *}
 
 definition order_top_from_order :: "i \<Rightarrow> i" where [rewrite]:
   "order_top_from_order(X) = OrderTop(carrier(X),top_from_basis(ord_basis(X)),\<lambda>x y. x \<le>\<^sub>X y)"
@@ -169,20 +169,23 @@ setup {* add_prfstep_check_req ("order_top_from_order(X)", "order_topology(order
 
 section {* Defining topology on an ordered ring *}
 
-setup {* fold add_rewrite_rule [@{thm carrier_def}, @{thm open_sets_def}, @{thm order_graph_def},
-  @{thm zero_def}, @{thm plus_fun_def}, @{thm one_def}, @{thm times_fun_def}] *}
-setup {* fold add_rewrite_rule [@{thm plus_def}, @{thm times_def}, @{thm le_def}] *}
+setup {* fold add_rewrite_rule [@{thm plus_def}, @{thm times_def}] *}
 
 definition OrdRingTop :: "[i, i, i \<Rightarrow> i \<Rightarrow> i, i, i \<Rightarrow> i \<Rightarrow> i, i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> i" where [rewrite]:
-  "OrdRingTop(S,z,f,u,g,r,T) = \<langle>S,T,{p\<in>S\<times>S. r(fst(p),snd(p))},
-      \<langle>z,\<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,\<langle>u,\<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>,\<emptyset>\<rangle>"
+  "OrdRingTop(S,z,f,u,g,r,T) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>open_sets_name,T\<rangle>,
+      \<langle>order_graph_name, {p\<in>S\<times>S. r(fst(p),snd(p))}\<rangle>,
+      \<langle>zero_name, z\<rangle>, \<langle>plus_fun_name, \<lambda>p\<in>S\<times>S. f(fst(p),snd(p))\<in>S\<rangle>,
+      \<langle>one_name, u\<rangle>, \<langle>times_fun_name, \<lambda>p\<in>S\<times>S. g(fst(p),snd(p))\<in>S\<rangle>})"
 
 lemma OrdRingTop_is_ord_ring_raw [backward]:
   "z \<in> S \<Longrightarrow> binary_fun(S,f) \<Longrightarrow> u \<in> S \<Longrightarrow> binary_fun(S,g) \<Longrightarrow>
-   is_ord_ring_raw(OrdRingTop(S,z,f,u,g,r,T))" by auto2
-  
-lemma OrdRingTop_is_ord_top_raw [backward]:
-  "T \<subseteq> Pow(S) \<Longrightarrow> is_ord_top_raw(OrdRingTop(S,z,f,u,g,r,T))" by auto2
+   R = OrdRingTop(S,z,f,u,g,r,T) \<Longrightarrow> is_ord_ring_raw(R)"
+@proof
+  @have "is_abgroup_raw(R)" @have "is_group_raw(R)" @have "is_ring_raw(R)"
+  @let "G = {p\<in>S\<times>S. r(fst(p),snd(p))}"
+  @have "G \<in> Pow(S\<times>S)" @with @have "\<forall>x\<in>G. x \<in> S\<times>S" @end
+  @have "raworder(R)"
+@qed
     
 lemma ord_top_ring_eval [rewrite]:
   "carrier(OrdRingTop(S,z,f,u,g,r,T)) = S"
@@ -190,13 +193,14 @@ lemma ord_top_ring_eval [rewrite]:
   "one(OrdRingTop(S,z,f,u,g,r,T)) = u"
   "open_sets(OrdRingTop(S,z,f,u,g,r,T)) = T"
   "R = OrdRingTop(S,z,f,u,g,r,T) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_abgroup_raw(R) \<Longrightarrow> x +\<^sub>R y = f(x,y)"
-  "R = OrdRingTop(S,z,f,u,g,r,T) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_group_raw(R) \<Longrightarrow> x *\<^sub>R y = g(x,y)"
-  "R = OrdRingTop(S,z,f,u,g,r,T) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> r(x,y)" by auto2+
+  "R = OrdRingTop(S,z,f,u,g,r,T) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> is_group_raw(R) \<Longrightarrow> x *\<^sub>R y = g(x,y)" by auto2+
+
+lemma ord_top_ring_eval' [rewrite]:
+  "R = OrdRingTop(S,z,f,u,g,r,T) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> r(x,y)"
+@proof @have "x \<le>\<^sub>R y \<longleftrightarrow> \<langle>x,y\<rangle> \<in> order_graph(R)" @qed
 
 setup {* del_prfstep_thm @{thm OrdRingTop_def} *}
-setup {* fold del_prfstep_thm [@{thm carrier_def}, @{thm open_sets_def}, @{thm order_graph_def},
-  @{thm zero_def}, @{thm plus_fun_def}, @{thm one_def}, @{thm times_fun_def}] *}
-setup {* fold del_prfstep_thm [@{thm plus_def}, @{thm times_def}, @{thm le_def}] *}
+setup {* fold del_prfstep_thm [@{thm plus_def}, @{thm times_def}] *}
 
 section {* Order topology from an ordered ring *}
   
@@ -207,13 +211,13 @@ definition ord_ring_top_from_ord_ring :: "i \<Rightarrow> i" where [rewrite]:
 lemma ord_ring_top_from_ord_ring_is_ord_ring [forward]:
   "is_ord_ring_raw(R) \<Longrightarrow> is_ord_ring_raw(ord_ring_top_from_ord_ring(R))" by auto2
 
-lemma ord_ring_top_from_ord_ring_is_top_space_raw [forward]:
-  "linorder(R) \<Longrightarrow> is_ord_top_raw(ord_ring_top_from_ord_ring(R))" by auto2
-
 lemma ord_ring_top_from_ord_ring_eq_str:
   "is_ord_ring_raw(R) \<Longrightarrow> A = ord_ring_top_from_ord_ring(R) \<Longrightarrow> eq_str_ord_ring(R,A)" by auto2
 setup {* add_forward_prfstep_cond @{thm ord_ring_top_from_ord_ring_eq_str} [with_term "?A"] *}
-  
+
+lemma ord_ring_top_from_ord_ring_is_top_space_raw [forward]:
+  "is_ord_ring_raw(R) \<Longrightarrow> linorder(R) \<Longrightarrow> is_ord_top_raw(ord_ring_top_from_ord_ring(R))" by auto2
+
 lemma ord_ring_top_from_ord_ring_is_ord_top [backward]:
   "is_ord_ring_raw(R) \<Longrightarrow> linorder(R) \<Longrightarrow> card_ge2(carrier(R)) \<Longrightarrow>
    order_topology(ord_ring_top_from_ord_ring(R))" by auto2
