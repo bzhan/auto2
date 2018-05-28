@@ -20,8 +20,6 @@ sig
       Proof.context -> (box_id * 'a) list list -> (box_id * 'a list) list
   val is_eq_ancestor: Proof.context -> box_id -> box_id -> bool
   val is_eq_descendent: Proof.context -> box_id -> box_id -> bool
-  val is_ancestor: Proof.context -> box_id -> box_id -> bool
-  val is_descendent: Proof.context -> box_id -> box_id -> bool
   val is_box_resolved: Proof.context -> box_id -> bool
   val is_box_unresolved: Proof.context -> box_id -> bool
   val id_is_eq_ancestor: Proof.context -> box_id * 'a -> box_id * 'a -> bool
@@ -176,8 +174,6 @@ fun get_all_merges_info ctxt lsts =
 (* Returns whether id is an ancestor / descendent of id'. *)
 fun is_eq_ancestor ctxt id id' = (id' = merge_boxes ctxt (id, id'))
 fun is_eq_descendent ctxt id id' = (id = merge_boxes ctxt (id, id'))
-fun is_ancestor ctxt id id' = id <> id' andalso is_eq_ancestor ctxt id id'
-fun is_descendent ctxt id id' = id <> id' andalso is_eq_descendent ctxt id id'
 
 fun is_box_resolved ctxt id =
     let
