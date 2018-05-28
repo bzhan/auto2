@@ -214,8 +214,7 @@ fun add_resolved id {assums, handlers, items, queue, ctxt, resolve_th} =
       {assums = assums, handlers = handlers, items = items, queue = queue,
        ctxt = ctxt' |> RewriteTable.clean_resolved id
                     |> PropertyData.clean_resolved id
-                    |> WellformData.clean_resolved id
-                    |> Auto2Data.invoke_clean_resolved id,
+                    |> WellformData.clean_resolved id,
        resolve_th = resolve_th}
     end
 
