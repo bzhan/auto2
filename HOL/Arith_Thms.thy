@@ -53,7 +53,6 @@ theorem ineq_to_eqs1: "(x::nat) \<le> y + 0 \<Longrightarrow> y \<le> x + 0 \<Lo
 
 ML_file "arith.ML"
 ML_file "nat_order.ML"
-ML_file "nat_order_test.ML"
 ML_file "order.ML"
 ML_file "order_test.ML"
 
