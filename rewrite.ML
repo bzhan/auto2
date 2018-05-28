@@ -53,23 +53,18 @@ fun is_single_ictxt ictxt =
 fun filter_id_for_type ictxt insts =
     case ictxt of
         SINGLE _ => insts
-      | LAST (ctxt, _) =>
-        let
-          val prim = (BoxID.num_prim_id ctxt) - 1
-        in
-          filter (fn ((id, _), _) => member (op =) id prim) insts
-        end
+      | LAST _ =>
+        filter (fn ((id, _), _) => BoxID.has_incr_id id) insts
 
 (* Keep only the last prim id and replace it with repl_id in ictxt. *)
 fun replace_id_for_type ictxt insts =
     case ictxt of
         SINGLE _ => insts
-      | LAST (ctxt, _) =>
+      | LAST _ =>
         let
-          val prim = (BoxID.num_prim_id ctxt) - 1
           fun process_info ((id, inst), th) =
-              if member (op =) id prim then
-                [((remove (op =) prim id, inst), th)]
+              if BoxID.has_incr_id id then
+                [((BoxID.replace_incr_id id, inst), th)]
               else []
         in
           maps process_info insts
@@ -102,7 +97,7 @@ signature REWRITE_TABLE =
 sig
   (* Construction and modification. *)
   val clean_resolved: box_id -> Proof.context -> Proof.context
-  val clear_prim_id: int -> Proof.context -> Proof.context
+  val clear_incr: Proof.context -> Proof.context
 
   (* contain table. *)
   val add_contain: cterm -> term -> Proof.context -> Proof.context
@@ -225,14 +220,14 @@ fun simp_eq_better ctxt (id, th) (id', th') =
       in t aconv t' orelse Term_Ord.termless (t, t') end
     else false
 
-fun clear_prim_id prim_id ctxt =
+fun clear_incr ctxt =
     let
       val {terms, equiv, all_equiv, contain, simp, subsimp, reps} =
           Data.get ctxt
 
       fun clear_one cmp infos =
-          if exists (fn (id, _) => member (op =) id prim_id) infos then
-            infos |> map (fn (id, th) => ((remove (op =) prim_id id), th))
+          if exists (BoxID.has_incr_id o fst) infos then
+            infos |> map (apfst BoxID.replace_incr_id)
                   |> Util.max_partial cmp
           else
             infos
@@ -241,8 +236,8 @@ fun clear_prim_id prim_id ctxt =
           tb |> Termtab.map (fn _ => clear_one cmp)
 
       fun clear_term_one (ids, ct) =
-          if exists (fn id => member (op =) id prim_id) ids then
-            (ids |> map (remove (op =) prim_id)
+          if exists BoxID.has_incr_id ids then
+            (ids |> map BoxID.replace_incr_id
                  |> Util.max_partial (BoxID.is_eq_ancestor ctxt), ct)
           else
             (ids, ct)

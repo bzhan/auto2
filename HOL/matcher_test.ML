@@ -120,31 +120,31 @@ in
 
 (* Basic rewriting. *)
 val test_rewrite =
-    init |> add_prim_id (0, []) |> add_prim_id (1, [])
+    init |> add_prim_id (1, []) |> add_prim_id (2, [])
          |> declare_term "[a::nat, b, c]"
          |> declare_term "f::(nat => nat => nat)"
          |> declare_pat "[?m::nat, ?n]"
          |> declare_pat "?A::('a::{plus})"
-         |> add_rewrite [0] ("a", "b")
-         |> add_rewrite [1] ("a", "c")
+         |> add_rewrite [1] ("a", "b")
+         |> add_rewrite [2] ("a", "c")
          |> fold assert_match
-         [(("a", "b"), [([0], "a")]),
-          (("c", "a"), [([1], "c")]),
-          (("?n + ?n", "a + b"), [([0], "a + a")]),
-          (("?A + ?A", "c + a"), [([1], "c + c")]),
-          (("?A + ?A + ?A", "a + b + c"), [([0, 1], "a + a + a")]),
+         [(("a", "b"), [([1], "a")]),
+          (("c", "a"), [([2], "c")]),
+          (("?n + ?n", "a + b"), [([1], "a + a")]),
+          (("?A + ?A", "c + a"), [([2], "c + c")]),
+          (("?A + ?A + ?A", "a + b + c"), [([1, 2], "a + a + a")]),
           (("f ?m ?n", "f a b"), [([], "f a b")]),
-          (("f ?m ?m", "f c a"), [([1], "f c c")])]
+          (("f ?m ?m", "f c a"), [([2], "f c c")])]
          |> done "test_rewrite"
 
 (* Rewriting from atomic to function application. *)
 val test_rewrite2 =
-    init |> add_prim_id (0, []) |> add_prim_id (1, [])
+    init |> add_prim_id (1, []) |> add_prim_id (2, [])
          |> declare_term "[a::nat, b, c]"
          |> declare_pat "[?n::nat]"
-         |> add_rewrite [0] ("a", "b + c")
-         |> add_rewrite [1] ("b", "c")
-         |> assert_match (("?n + ?n", "a"), [([0, 1], "b + b")])
+         |> add_rewrite [1] ("a", "b + c")
+         |> add_rewrite [2] ("b", "c")
+         |> assert_match (("?n + ?n", "a"), [([1, 2], "b + b")])
          |> done "test_rewrite2"
 
 (* Abstractions. *)

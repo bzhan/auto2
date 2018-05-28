@@ -6,7 +6,10 @@ sig
   val string_of_box_id: box_id -> string
 
   type box_lattice
-  val num_prim_id: Proof.context -> int
+  val home_id: int
+  val has_incr_id: box_id -> bool
+  val add_incr_id: box_id -> box_id
+  val replace_incr_id: box_id -> box_id
   val get_parent_prim: Proof.context -> int -> box_id
   val get_ancestors_prim: Proof.context -> box_id -> int list
   val reduce_box_id: Proof.context -> int list -> box_id
@@ -27,7 +30,6 @@ sig
       Proof.context -> box_id -> (box_id * 'a) list -> (box_id * 'a) list
   val merge_eq_infos: Proof.context -> box_id * thm -> box_id * thm -> box_id * thm
   val add_prim_id: box_id -> Proof.context -> int * Proof.context
-  val remove_last: Proof.context -> Proof.context
   val add_resolved: box_id -> Proof.context -> Proof.context
 end;
 
@@ -47,18 +49,26 @@ type box_lattice = {
   resolved: box_id list
 }
 
+(* Initialize with primitive ID zero (used to designate incremental
+   matching).
+ *)
 structure Data = Proof_Data
 (
   type T = box_lattice
-  fun init _ = {parents = Vector.fromList [], resolved = []}
+  fun init _ = {parents = Vector.fromList [[]], resolved = []}
 )
 
-fun num_prim_id ctxt =
-    let
-      val {parents, ...} = Data.get ctxt
-    in
-      Vector.length parents
-    end
+val home_id = 1
+
+fun has_incr_id id =
+    case id of [] => false | x :: _ => x = 0
+
+fun add_incr_id id =
+    if has_incr_id id then raise Fail "add_incr_id"
+    else 0 :: id
+
+fun replace_incr_id id =
+    if has_incr_id id then tl id else id
 
 fun get_parent_prim ctxt prim_id =
     let
@@ -196,15 +206,6 @@ fun add_prim_id parent_id ctxt =
       val parents' = Vector.concat [parents, Vector.fromList [parent_id]]
     in
       (prim_id, ctxt |> Data.map (K {parents = parents', resolved = resolved}))
-    end
-
-fun remove_last ctxt =
-    let
-      val {parents, resolved} = Data.get ctxt
-      val parents' = Vector.fromList (map (fn i => Vector.sub (parents, i))
-                                          (0 upto (Vector.length parents - 2)))
-    in
-      Data.map (K {parents = parents', resolved = resolved}) ctxt
     end
 
 fun add_resolved id ctxt =

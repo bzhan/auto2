@@ -147,7 +147,7 @@ structure Status : STATUS =
 struct
 
 fun empty_status ctxt =
-    {assums = [],
+    {assums = [UtilLogic.term_of_bool true],
      handlers = [],
      items = Inttab.empty,
      queue = Updates_Heap.empty,
@@ -324,7 +324,7 @@ fun get_on_resolve (st as {ctxt, ...}) id i th =
       val th' = th |> fold (invoke_handler ctxt) handlers
                    |> Thm.implies_intr (Thm.cterm_of ctxt init_assum)
                    |> apply_to_thm UtilLogic.rewrite_from_contra_form
-      val _ = assert (prim_id <> 0 orelse null (Thm.hyps_of th'))
+      val _ = assert (prim_id <> BoxID.home_id orelse null (Thm.hyps_of th'))
                      "get_on_resolve: did not remove all hypothesis at box 0."
     in
       th'

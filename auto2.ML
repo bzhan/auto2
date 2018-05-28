@@ -174,7 +174,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
               end
         in
           if BoxID.is_box_resolved ctxt id then st
-          else if id = [0] then
+          else if id = [BoxID.home_id] then
             st |> Status.set_resolve_th (Status.get_on_resolve st id 0 th)
                |> Status.add_resolved id
           else
@@ -541,7 +541,8 @@ fun step_until cond (steps, (st as {queue, ...})) =
       step_until cond (steps - 1, st')
     end
 
-val solve_root = step_until (fn st => BoxID.is_box_resolved (#ctxt st) [0])
+val solve_root =
+    step_until (fn st => BoxID.is_box_resolved (#ctxt st) [BoxID.home_id])
 
 end  (* structure ProofStatus. *)
 

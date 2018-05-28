@@ -46,9 +46,6 @@ fun relevant_terms_single item =
  *)
 fun get_incr_type old_items items ctxt =
     let
-      (* New primitive ID. *)
-      val (prim_id, ctxt') = BoxID.add_prim_id [] ctxt
-
       (* List of relevant terms. *)
       val relevant_terms =
           items |> maps relevant_terms_single
@@ -58,7 +55,7 @@ fun get_incr_type old_items items ctxt =
       fun add_one_info item ctxt =
           let
             val {id, ty_str, prop, ...} = item
-            val id' = BoxID.merge_boxes ctxt (id, [prim_id])
+            val id' = BoxID.add_incr_id id
           in
             if ty_str = "EQ" then
               let
@@ -72,15 +69,15 @@ fun get_incr_type old_items items ctxt =
           end
 
       fun merge_prim (item as {id, ...}) =
-          BoxItem.item_with_id (BoxID.merge_boxes ctxt' (id, [prim_id])) item
+          BoxItem.item_with_id (BoxID.add_incr_id id) item
 
       val match_items =
           map merge_prim items @
           filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
                                             (map Thm.term_of tname)) old_items
 
-      val ctxt'' = ctxt' |> fold add_one_info items
-                         |> WellformData.complete_wellform_data match_items
+      val ctxt' = ctxt |> fold add_one_info items
+                       |> WellformData.complete_wellform_data match_items
 
       (* Return the list of terms that may be affected. This include
          terms with new equivalences, properties, or wellformedness
@@ -88,22 +85,17 @@ fun get_incr_type old_items items ctxt =
        *)
       val new_ts = (maps relevant_terms_single items @
                     maps (Property.get_property_arg_th_gen o snd o snd)
-                         (PropertyData.get_new_property prim_id ctxt'') @
+                         (PropertyData.get_new_property ctxt') @
                     map (Thm.cterm_of ctxt o fst)
-                        (WellformData.get_new_wellform_data prim_id ctxt''))
+                        (WellformData.get_new_wellform_data ctxt'))
                        |> distinct (op aconvc)
     in
-      LAST (ctxt'', RewriteTable.get_reachable_terms true ctxt new_ts)
+      LAST (ctxt', RewriteTable.get_reachable_terms true ctxt new_ts)
     end
 
 fun get_single_type ctxt =
-    let
-      val prim_id = BoxID.num_prim_id ctxt - 1
-    in
-      ctxt |> RewriteTable.clear_prim_id prim_id
-           |> PropertyData.clear_prim_id prim_id
-           |> WellformData.clear_prim_id prim_id
-           |> BoxID.remove_last
-    end
+    ctxt |> RewriteTable.clear_incr
+         |> PropertyData.clear_incr
+         |> WellformData.clear_incr
 
 end  (* Auto2Data *)

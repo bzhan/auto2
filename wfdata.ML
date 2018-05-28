@@ -3,7 +3,7 @@
 signature WELLFORM_DATA =
 sig
   val clean_resolved: box_id -> Proof.context -> Proof.context
-  val clear_prim_id: int -> Proof.context -> Proof.context
+  val clear_incr: Proof.context -> Proof.context
   val initialize_wellform_data: term -> Proof.context -> Proof.context
 
   (* wellform table. *)
@@ -30,8 +30,7 @@ sig
   val complete_wellform_data: box_item list -> Proof.context -> Proof.context
 
   (* Get changes to wellform table. *)
-  val get_new_wellform_data:
-      int -> Proof.context -> (term * (box_id * thm)) list
+  val get_new_wellform_data: Proof.context -> (term * (box_id * thm)) list
 
   (* More queries on the wellform table.*)
   val simplify_info:
@@ -62,11 +61,11 @@ fun clean_resolved id ctxt =
       ctxt |> Data.map clean_wellform
     end
 
-fun clear_prim_id prim_id ctxt =
+fun clear_incr ctxt =
     let
       fun clear_one (ct, infos) =
-          if exists (fn (id, _) => member (op =) id prim_id) infos then
-            (ct, infos |> map (fn (id, th) => ((remove (op =) prim_id id), th))
+          if exists (BoxID.has_incr_id o fst) infos then
+            (ct, infos |> map (apfst BoxID.replace_incr_id)
                        |> Util.max_partial (BoxID.info_eq_better ctxt))
           else
             (ct, infos)
@@ -322,13 +321,13 @@ fun complete_wellform_data items ctxt =
 (* Return the list of new wellform data (added under id prim or
    lower). Return as a list of (t, (id, th)).
  *)
-fun get_new_wellform_data prim_id ctxt =
+fun get_new_wellform_data ctxt =
     let
       val wellform = Data.get ctxt
     in
       wellform |> Termtab.dest
                |> maps (fn (t, vals) => map (pair t) (maps snd vals))
-               |> filter (fn (_, (id, _)) => BoxID.is_eq_ancestor ctxt [prim_id] id)
+               |> filter (fn (_, (id, _)) => BoxID.has_incr_id id)
     end
 
 (* Find simplifications of ct that are well-formed. *)
