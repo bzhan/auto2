@@ -155,6 +155,8 @@ sig
       Proof.context -> box_id -> cterm * cterm -> (box_id * thm) list
   val equiv_info_t:
       Proof.context -> box_id -> term * term -> (box_id * thm) list
+  val subequiv_info:
+      Proof.context -> box_id -> cterm * cterm -> (box_id * thm) list
   val add_rewrite_raw: box_id -> thm -> Proof.context -> Proof.context
   val get_reachable_terms: bool -> Proof.context -> cterm list -> cterm list
   val complete_table: Proof.context -> (box_id * thm) list * Proof.context
@@ -752,6 +754,26 @@ fun equiv_info ctxt id (ct1, ct2) =
 
 fun equiv_info_t ctxt id (t1, t2) =
     equiv_info ctxt id (Thm.cterm_of ctxt t1, Thm.cterm_of ctxt t2)
+
+(* Return list of ids that are descendents of id at which t1 and t2
+   are subterm equiv.
+ *)
+fun subequiv_info ctxt id (ct1, ct2) =
+    if not ((Term.head_of (Thm.term_of ct1))
+                aconv Term.head_of (Thm.term_of ct2)) then []
+    else let
+      val simp1 = subterm_simplify_info ctxt ct1
+      val simp2 = subterm_simplify_info ctxt ct2
+      fun compare (id1, th1) (id2, th2) =
+          if Util.rhs_of th1 aconv Util.rhs_of th2 then
+            [(BoxID.merge_boxes ctxt (id1, id2),
+              Util.transitive_list [th1, meta_sym th2])]
+          else []
+    in
+      (maps (fn s1 => maps (compare s1) simp2) simp1)
+          |> BoxID.merge_box_with_info ctxt id
+          |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
+    end
 
 (* Get list of terms reachable from the terms ts. If trav_contains =
    false, only travel along equiv edges. Otherwise also travel from t

@@ -79,8 +79,8 @@ fun shadow_item_fn ictxt item1 item2 =
             (tname1, tname2)
 
       val equiv_ids =
-          (Matcher.rewrite_match_head ctxt (Thm.term_of lhs, rhs) (id, fo_init))
-              |> IncrContext.replace_id_for_type ictxt |> map fst |> map fst
+          (RewriteTable.subequiv_info ctxt id (lhs, rhs))
+              |> IncrContext.replace_id_for_type' ictxt |> map fst
               |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
 
       val item_to_shadow =
