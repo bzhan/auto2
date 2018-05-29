@@ -46,11 +46,12 @@ sig
                               id_inst_th list
   val nat_order_single_matcher: item_matcher
 
-  val shadow_nat_order: proofstep
+  val shadow_nat_order_prfstep: proofstep
   val shadow_nat_order_single: proofstep
 
   val string_of_nat_order: Proof.context -> term * term * int * thm -> string
   val output_nat_order: Proof.context -> term list * thm -> string
+  val shadow_nat_order: Proof.context -> box_id -> term list * cterm list -> bool
   val add_nat_order_proofsteps: theory -> theory
 end;
 
@@ -876,7 +877,7 @@ val nat_order_single_matcher =
 (* Shadow the second item if it is looser than the first (same x and
    y, but larger diff.
  *)
-val shadow_nat_order =
+val shadow_nat_order_prfstep =
     ProofStep.gen_prfstep
         "shadow_nat_order"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?y, ?m)"}),
@@ -925,9 +926,20 @@ fun output_nat_order ctxt (ts, th) =
       "ORDER " ^ string_of_nat_order ctxt (x, y, diff, th)
     end
 
+fun shadow_nat_order ctxt id (ts1, cts2) =
+    let
+      val (x1, y1, m) = the_triple ts1
+      val (cx2, cy2, n) = the_triple cts2
+      val m = dest_numc m
+      val n = dest_numc (Thm.term_of n)
+    in
+      if m < n then false else
+      x1 aconv Thm.term_of cx2 andalso y1 aconv Thm.term_of cy2
+    end
+
 val add_nat_order_proofsteps =
     ItemIO.add_item_type (
-      TY_NAT_ORDER, SOME (take 2), SOME output_nat_order, NONE
+      TY_NAT_ORDER, SOME (take 2), SOME output_nat_order, SOME shadow_nat_order
 
     ) #> ItemIO.add_typed_matcher (
       TY_NAT_ORDER, nat_order_typed_matcher
@@ -943,7 +955,8 @@ val add_nat_order_proofsteps =
     ) #> fold add_prfstep [
       nat_eq_diff_prfstep,
       transitive, transitive_resolve, single_resolve, single_resolve_zero,
-      shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero
+      shadow_nat_order_prfstep, shadow_nat_order_single,
+      shadow_nat_order_single_zero
     ]
 
 end
