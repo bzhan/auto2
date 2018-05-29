@@ -18,12 +18,6 @@ sig
   val nat_neq_th: int -> int -> thm
   val nat_fold_reduce: term -> term
   val nat_fold_conv: conv
-  val plus_eq_th: int -> int -> thm
-
-  val nat_fold_conv0_right: conv
-  val nat_fold_conv0_left: conv
-  val nat_fold_rec_conv: Proof.context -> conv
-  val nat_fold_rec_thm: Proof.context -> thm -> thm
 
   val plus_ac_on_typ: theory -> typ -> ac_info
   val times_ac_on_typ: theory -> typ -> ac_info
@@ -90,26 +84,7 @@ fun nat_fold_conv ct =
       else to_meta_eq (UtilArith.prove_by_arith ctxt [] (mk_eq (t, t')))
     end
 
-(* Given natural numbers m and n, return the theorem m + n = p. *)
-fun plus_eq_th m n =
-    let
-      val expr = Const (@{const_name plus}, natT --> natT --> natT)
-                       $ mk_nat m $ mk_nat n
-    in
-      expr |> Thm.cterm_of ctxt |> nat_fold_conv
-    end
-
 end  (* local ctxt = @{context}. *)
-
-val nat_fold_conv0_right =
-    Conv.try_conv (rewr_obj_eq @{thm Nat.add_0_right})
-val nat_fold_conv0_left =
-    Conv.try_conv (rewr_obj_eq @{thm Nat.plus_nat.add_0})
-
-val nat_fold_rec_conv =
-    Conv.bottom_conv (fn _ => nat_fold_conv then_conv nat_fold_conv0_right
-                                            then_conv nat_fold_conv0_left)
-fun nat_fold_rec_thm ctxt = apply_to_thm (nat_fold_rec_conv ctxt)
 
 val plus_ac =
     {cfhead = @{cterm plus}, unit = SOME @{cterm 0},

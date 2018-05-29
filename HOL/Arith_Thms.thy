@@ -52,7 +52,6 @@ theorem eq_to_ineqs: "(x::nat) \<equiv> y \<Longrightarrow> x \<le> y \<and> y \
 theorem ineq_to_eqs1: "(x::nat) \<le> y + 0 \<Longrightarrow> y \<le> x + 0 \<Longrightarrow> x = y" by simp
 
 ML_file "arith.ML"
-ML_file "nat_order.ML"
 ML_file "order.ML"
 ML_file "order_test.ML"
 
