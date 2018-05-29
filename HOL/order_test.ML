@@ -16,7 +16,6 @@ local
   val py = Var (("y", 0), natT)
   val ctxt' = ctxt |> fold Variable.declare_term [x, x', y, y', z, w, px, py]
                    |> RewriteTable.add_rewrite ([], assume_eq thy (x, x')) |> snd
-  val ictxt = SINGLE ctxt'
 in
 
 (* Convert proposition to nat_order item, by applying one of the
@@ -25,19 +24,8 @@ in
 fun convert_prop_to_nat_order prop =
     let
       val th = prop |> mk_Trueprop |> Util.assume_thm ctxt'
-      val mk_box_item = BoxItem.mk_box_item ctxt'
-      val item = mk_box_item (0, [], 0, Fact (TY_PROP, [prop], th))
-
-      fun apply_prfsteps item =
-          maps (ProofStep.apply_prfstep ictxt [item]) Nat_Order.to_nat_order_prfsteps
-
-      fun process_raw_update updt =
-          case updt of
-              AddItems {raw_items, ...} =>
-              map (fn ritem => mk_box_item (0, [], 0, ritem)) raw_items
-            | _ => []
     in
-      maps process_raw_update (apply_prfsteps item)
+      Nat_Order.th_to_normed_ritems th
     end
 
 val test_parse_prop =
@@ -45,12 +33,15 @@ val test_parse_prop =
       fun string_of_spec (x, y, diff) =
           "(" ^ (Util.string_of_terms ctxt [x, y, mk_nat diff]) ^ ")"
 
-      fun item_to_spec item =
-          let
-            val (cx, cy, n, _) = Nat_Order.get_nat_order_info item
-          in
-            (Thm.term_of cx, Thm.term_of cy, n)
-          end
+      fun ritem_to_spec ritem =
+          case ritem of
+              Fact ("NAT_ORDER", tname, _) =>
+              let
+                val (x, y, diff_t) = the_triple tname
+              in
+                (x, y, UtilArith.dest_numc diff_t)
+              end
+            | _ => raise Fail "ritem_to_spec"
 
       fun eq_specs ((x1, y1, diff1), (x2, y2, diff2)) =
           x1 aconv x2 andalso y1 aconv y2 andalso diff1 = diff2
@@ -62,7 +53,7 @@ val test_parse_prop =
                 (Syntax.read_term ctxt' x_str,
                  Syntax.read_term ctxt' y_str, diff)
             val specs = map read_spec specs_str
-            val specs' = convert_prop_to_nat_order prop |> map item_to_spec
+            val specs' = convert_prop_to_nat_order prop |> map ritem_to_spec
           in
             if eq_set eq_specs (specs, specs') then ()
             else let
@@ -108,9 +99,10 @@ val test_nat_order_match =
           let
             val pat = Proof_Context.read_term_pattern ctxt' pat_str
             val prop = Syntax.read_term ctxt' prop_str
-            val items = convert_prop_to_nat_order prop
-            val item = the_single items
-                       handle List.Empty => raise Fail "ambiguous input"
+            val ritems = convert_prop_to_nat_order prop
+            val ritem = the_single ritems
+                        handle List.Empty => raise Fail "ambiguous input"
+            val item = BoxItem.mk_box_item ctxt (0, [], 0, ritem)
             val res = map (mk_Trueprop o Syntax.read_term ctxt') res_strs
             val res' = match_fn pat item ctxt' ([], fo_init)
             fun check_inst ((_, inst), th) =

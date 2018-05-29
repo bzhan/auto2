@@ -123,15 +123,6 @@ lemma quicksort_permutes [resolve]:
   @have "drop (r + 1) xs = drop (r + 1) xs'"
 @qed
 
-lemma sorted_pivoted_list [forward]:
-  "l \<le> p \<Longrightarrow> p + 1 \<le> r \<Longrightarrow> r \<le> length xs \<Longrightarrow>
-   sorted (sublist (p + 1) r xs) \<Longrightarrow> sorted (sublist l p xs) \<Longrightarrow>
-   \<forall>x\<in>set (sublist l p xs). x \<le> xs ! p \<Longrightarrow> \<forall>y\<in>set (sublist (p + 1) r xs). xs ! p \<le> y \<Longrightarrow>
-   sorted (sublist l r xs)"
-@proof
-  @have "sublist l r xs = sublist l p xs @ (xs ! p) # sublist (p + 1) r xs"
-@qed
-
 lemma quicksort_sorts [forward_arg]:
   "r < length xs \<Longrightarrow> sorted (sublist l (r + 1) (quicksort xs l r))"
 @proof @fun_induct "quicksort xs l r"
@@ -151,6 +142,7 @@ lemma quicksort_sorts [forward_arg]:
     @have "\<forall>x\<in>set (sublist (p + 1) (r + 1) xs3). x \<ge> xs3 ! p"
     @have "sorted (sublist l p xs3)"
     @have "sorted (sublist (p + 1) (r + 1) xs3)"
+    @have "sublist l (r + 1) xs3 = sublist l p xs3 @ (xs3 ! p) # sublist (p + 1) (r + 1) xs3"
   @end
   @unfold "quicksort xs l r"
 @qed

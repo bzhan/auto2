@@ -28,8 +28,7 @@ sig
   val to_normal_th: order_type -> thm -> thm
   val th_to_ritem: thm -> raw_item
   val th_to_normed_ritems: thm -> raw_item list
-  val to_nat_order_prfstep_templ: string * term -> proofstep
-  val to_nat_order_prfsteps: proofstep list
+  val nat_order_normalizer: normalizer
   val nat_eq_diff_prfstep: proofstep
 
   val get_nat_order_info: box_item -> order_info
@@ -403,27 +402,15 @@ fun th_to_normed_ritems th =
       map th_to_ritem (th' :: minus_th)
     end
 
-(* Template for proofsteps converting a PROP item to a NAT_ORDER
-   item. The proofstep simplifies the instantiations of x and y, and
-   verifies that the simplified terms are not in plus form. If the
-   result is a comparison with a constant, it is converted to a
-   comparison with zero.
- *)
-fun to_nat_order_prfstep_templ (prfstep_name, pat) =
-    ProofStep.prfstep_custom
-        prfstep_name
-        [WithProp pat]
-        PRIORITY_SHADOW
-        (fn ((id, _), ths) => fn items => fn _ =>
-            [AddItems {id = id, sc = NONE,
-                       raw_items = maps th_to_normed_ritems ths},
-             ShadowItem {id = id, item = hd items}])
-
-val to_nat_order_prfsteps =
-    map to_nat_order_prfstep_templ [
-      ("cv_nat_order", @{term_pat "(?x::nat) < ?y"}),
-      ("cv_nat_order2", @{term_pat "(?x::nat) <= ?y"})
-    ]
+fun nat_order_normalizer _ ritem =
+    case ritem of
+        Handler _ => [ritem]
+      | Fact (ty_str, _, th) =>
+        if ty_str <> TY_PROP then [ritem]
+        else if is_order (prop_of' th) andalso
+                fastype_of (dest_arg (prop_of' th)) = natT then
+          th_to_normed_ritems th
+        else [ritem]
 
 val nat_eq_diff_prfstep =
     ProofStep.prfstep_custom
@@ -950,11 +937,14 @@ val add_nat_order_proofsteps =
       (TY_NAT_ORDER, nat_order_noteq_matcher),
       (TY_NULL, nat_order_single_matcher)
 
-    ] #> fold add_prfstep (
-      to_nat_order_prfsteps @
-      [nat_eq_diff_prfstep,
-       transitive, transitive_resolve, single_resolve, single_resolve_zero,
-       shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero])
+    ] #> Normalizer.add_normalizer (
+      ("nat_order", nat_order_normalizer)
+
+    ) #> fold add_prfstep [
+      nat_eq_diff_prfstep,
+      transitive, transitive_resolve, single_resolve, single_resolve_zero,
+      shadow_nat_order, shadow_nat_order_single, shadow_nat_order_single_zero
+    ]
 
 end
 
