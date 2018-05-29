@@ -95,8 +95,8 @@ lemma sublist_nil [rewrite]:
 lemma sublist_0 [rewrite]:
   "sublist 0 l xs = take l xs" by auto2
 
-lemma sublist_drop [rewrite]: "sublist l r (drop n xs) = sublist (l + n) (r + n) xs"
-@proof @have "take r (drop n xs) = drop n (take (r + n) xs)" @qed
+lemma sublist_drop [rewrite]:
+  "sublist l r (drop n xs) = sublist (l + n) (r + n) xs" by auto2
 
 setup {* del_prfstep_thm @{thm sublist_def} *}
 
@@ -123,20 +123,14 @@ lemma sublist_Cons [rewrite]:
 
 lemma sublist_equalityI:
   "i \<le> j \<Longrightarrow> j \<le> length xs \<Longrightarrow> length xs = length ys \<Longrightarrow>
-   \<forall>k. i \<le> k \<longrightarrow> k < j \<longrightarrow> xs ! k = ys ! k \<Longrightarrow> sublist i j xs = sublist i j ys"
-@proof
-  @let "xs1 = sublist i j xs" "xs2 = sublist i j ys"
-  @have "\<forall>k<j-i. xs1 ! k = xs2 ! k" @with @have "i \<le> i + k" @end
-@qed
+   \<forall>k. i \<le> k \<longrightarrow> k < j \<longrightarrow> xs ! k = ys ! k \<Longrightarrow> sublist i j xs = sublist i j ys" by auto2
 setup {* add_backward2_prfstep_cond @{thm sublist_equalityI} [with_filt (order_filter "xs" "ys")] *}
 
 lemma set_sublist [resolve]:
   "j \<le> length xs \<Longrightarrow> x \<in> set (sublist i j xs) \<Longrightarrow> \<exists>k. k \<ge> i \<and> k < j \<and> x = xs ! k"
 @proof
-  @let "xs' = sublist i j xs" @have "length xs' = j - i"
+  @let "xs' = sublist i j xs"
   @obtain l where "l < length xs'" "xs' ! l = x"
-  @have "x = xs ! (l + i)"
-  @have "i + l \<ge> i"
 @qed
 
 lemma list_take_sublist_drop_eq [rewrite]:
