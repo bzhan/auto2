@@ -466,8 +466,15 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
              assumptions and conclusions.
            *)
           if is_some prev_prim_box then st
-          else if is_some neg_form_opt then st
-
+          else if is_some neg_form_opt then
+            let
+              val th = the neg_form_opt
+              val updt = {sc = sc, prfstep_name = "$RESOLVE", source = [],
+                          raw_updt = Logic_ProofSteps.logic_thm_update
+                                         ctxt (id, th)}
+            in
+              st |> apply_update_instant updt
+            end
           (* Otherwise, proceed to create the box. *)
           else let
             val _ = if Config.get ctxt print_trace then
