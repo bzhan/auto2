@@ -927,7 +927,7 @@ fun output_nat_order ctxt (ts, th) =
 
 val add_nat_order_proofsteps =
     ItemIO.add_item_type (
-      TY_NAT_ORDER, SOME (take 2), SOME output_nat_order
+      TY_NAT_ORDER, SOME (take 2), SOME output_nat_order, NONE
 
     ) #> ItemIO.add_typed_matcher (
       TY_NAT_ORDER, nat_order_typed_matcher

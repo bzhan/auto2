@@ -975,7 +975,7 @@ val disj_shadow_prfstep =
 
 val add_disj_proofsteps =
     fold ItemIO.add_item_type [
-      (TY_DISJ, SOME disj_rewr_terms, SOME output_disj_fn)
+      (TY_DISJ, SOME disj_rewr_terms, SOME output_disj_fn, NONE)
 
     ] #> fold ItemIO.add_prop_matcher [
       (TY_DISJ, disj_prop_matcher)

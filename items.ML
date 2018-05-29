@@ -173,8 +173,12 @@ type item_output = Proof.context -> term list * thm -> string
      proposition.
  *)
 type item_io_info = {
-  prop_matchers: item_matcher list, typed_matchers: item_matcher list,
-  term_fn: (term list -> term list) option, output_fn: item_output option}
+  prop_matchers: item_matcher list,
+  typed_matchers: item_matcher list,
+  term_fn: (term list -> term list) option,
+  output_fn: item_output option,
+  shadow_fn: (Proof.context -> box_id -> term list * cterm list -> bool) option
+}
 
 datatype match_arg = PropMatch of term
                    | TypedMatch of string * term
@@ -193,8 +197,11 @@ sig
   val is_ordinary_match: match_arg -> bool
   val is_side_match: match_arg -> bool
 
-  val add_item_type: string * (term list -> term list) option *
-                     item_output option -> theory -> theory
+  val add_item_type:
+      string * (term list -> term list) option *
+      item_output option *
+      (Proof.context -> box_id -> term list * cterm list -> bool) option ->
+      theory -> theory
   val add_prop_matcher: string * item_matcher -> theory -> theory
   val add_typed_matcher: string * item_matcher -> theory -> theory
   val get_io_info: theory -> string -> item_io_info
@@ -232,24 +239,28 @@ structure ItemIO : ITEM_IO =
 struct
 
 fun add_prop_matcher_to_info
-        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn, shadow_fn} =
     {prop_matchers = mtch :: prop_matchers, typed_matchers = typed_matchers,
-     term_fn = term_fn, output_fn = output_fn}
+     term_fn = term_fn, output_fn = output_fn, shadow_fn = shadow_fn}
 
 fun add_typed_matcher_to_info
-        mtch {prop_matchers, typed_matchers, term_fn, output_fn} =
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn, shadow_fn} =
     {prop_matchers = prop_matchers, typed_matchers = mtch :: typed_matchers,
-     term_fn = term_fn, output_fn = output_fn}
+     term_fn = term_fn, output_fn = output_fn, shadow_fn = shadow_fn}
 
 fun join_infos (
-  {prop_matchers = pm1, typed_matchers = tm1, term_fn = tf1, output_fn = of1},
-  {prop_matchers = pm2, typed_matchers = tm2, term_fn = tf2, output_fn = of2}) =
+  {prop_matchers = pm1, typed_matchers = tm1, term_fn = tf1, output_fn = of1,
+   shadow_fn = sf1},
+  {prop_matchers = pm2, typed_matchers = tm2, term_fn = tf2, output_fn = of2,
+   shadow_fn = sf2}) =
     {prop_matchers = merge pointer_eq (pm1, pm2),
      typed_matchers = merge pointer_eq (tm1, tm2),
      term_fn = (if pointer_eq (tf1, tf2) then tf1
                 else raise Fail "join_infos: term_fn non-equal"),
      output_fn = (if pointer_eq (of1, of2) then of1
-                  else raise Fail "join_infos: output_fn non-equal")}
+                  else raise Fail "join_infos: output_fn non-equal"),
+     shadow_fn = (if pointer_eq (sf1, sf2) then sf1
+                  else raise Fail "join_infos: shadow_fn non-equal")}
 
 structure Data = Theory_Data (
   type T = item_io_info Symtab.table
@@ -307,9 +318,14 @@ fun is_side_match arg =
               | WellFormMatch _ => true
               | _ => false
 
-fun add_item_type (ty_str, term_fn, output_fn) = Data.map (
-      Symtab.update_new (ty_str, {prop_matchers = [], typed_matchers = [],
-                                  term_fn = term_fn, output_fn = output_fn}))
+fun add_item_type (ty_str, term_fn, output_fn, shadow_fn) =
+    let
+      val item_info = {prop_matchers = [], typed_matchers = [],
+                       term_fn = term_fn, output_fn = output_fn,
+                       shadow_fn = shadow_fn}
+    in
+      Data.map (Symtab.update_new (ty_str, item_info))
+    end
 
 fun add_prop_matcher (ty_str, it_match) = Data.map (
       Symtab.map_entry ty_str (add_prop_matcher_to_info it_match))
@@ -645,12 +661,39 @@ fun trace_item ctxt s item =
 fun trace_items ctxt s items =
     tracing (s ^ "\n" ^ (cat_lines (map (string_of_item ctxt) items)))
 
+(* We assume ts1 is the new item at the given id, while cts2 is for an
+   existing item, at some previous id.
+ *)
+fun shadow_prop_fn ctxt id (ts1, cts2) =
+    let
+      val (t1, ct2) = (the_single ts1, the_single cts2)
+      val (lhs, crhs) = if is_neg t1 andalso is_neg (Thm.term_of ct2) then
+                          (get_neg t1, UtilLogic.get_cneg ct2)
+                        else
+                          (t1, ct2)
+    in
+      (Matcher.rewrite_match_head ctxt (lhs, crhs) (id, fo_init))
+          |> filter (fn ((id', _), _) => id' = id)
+          |> not o null
+    end
+
+fun shadow_term_fn ctxt id (ts1, cts2) =
+    let
+      val (lhs, crhs) = (the_single ts1, the_single cts2)
+    in
+      (Matcher.rewrite_match_head ctxt (lhs, crhs) (id, fo_init))
+          |> filter (fn ((id', _), _) => id' = id)
+          |> not o null
+    end
+
 val add_basic_item_io =
     fold add_item_type [
-      (TY_NULL, NONE, NONE),
-      (TY_PROP, SOME prop_rewr_terms, SOME output_prop_fn),
-      (TY_TERM, SOME no_rewr_terms, NONE), (TY_EQ, NONE, SOME output_prop_fn),
-      (TY_VAR, NONE, NONE), (TY_PROPERTY, SOME arg_rewr_terms, NONE)
+      (TY_NULL, NONE, NONE, NONE),
+      (TY_PROP, SOME prop_rewr_terms, SOME output_prop_fn, SOME shadow_prop_fn),
+      (TY_TERM, SOME no_rewr_terms, NONE, SOME shadow_term_fn),
+      (TY_EQ, NONE, SOME output_prop_fn, NONE),
+      (TY_VAR, NONE, NONE, NONE),
+      (TY_PROPERTY, SOME arg_rewr_terms, NONE, NONE)
 
     ] #> fold add_prop_matcher [
       (TY_PROP, prop_matcher), (TY_TERM, term_prop_matcher),

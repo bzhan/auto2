@@ -831,8 +831,8 @@ fun entail_terms ts =
 
 val add_sep_logic_proofsteps =
     fold ItemIO.add_item_type [
-      (TY_CODE_POS, SOME code_pos_terms, NONE),
-      (TY_ENTAIL, SOME entail_terms, NONE)
+      (TY_CODE_POS, SOME code_pos_terms, NONE, NONE),
+      (TY_ENTAIL, SOME entail_terms, NONE, NONE)
 
     ] #> fold add_prfstep [
       init_entail, entails_resolve,

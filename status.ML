@@ -292,9 +292,14 @@ fun find_ritem_exact (st as {ctxt, ...}) id ritem =
           end
         else
           let
-            fun eq_item {ty_str = ty2, tname = ts2, ...} =
-                ty_str = ty2 andalso
-                eq_list (op aconv) (tname, map Thm.term_of ts2)
+            val thy = Proof_Context.theory_of ctxt
+            val {shadow_fn, ...} = ItemIO.get_io_info thy ty_str
+
+            fun eq_item {ty_str = ty_str2, tname = tname2, ...} =
+                if ty_str <> ty_str2 then false else
+                case shadow_fn of
+                    NONE => eq_list (op aconv) (tname, map Thm.term_of tname2)
+                  | SOME f => f ctxt id (tname, tname2)
           in
             exists eq_item (get_all_items_at_id st id)
           end
