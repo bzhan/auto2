@@ -926,7 +926,7 @@ fun output_nat_order ctxt (ts, th) =
       "ORDER " ^ string_of_nat_order ctxt (x, y, diff, th)
     end
 
-fun shadow_nat_order ctxt id (ts1, cts2) =
+fun shadow_nat_order _ _ (ts1, cts2) =
     let
       val (x1, y1, m) = the_triple ts1
       val (cx2, cy2, n) = the_triple cts2

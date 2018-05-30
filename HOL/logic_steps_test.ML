@@ -241,10 +241,10 @@ val test_match_update =
 
       val data1 = [("B x | B y | ~A", "A", ["B x | B y"]),
                    ("B x | B y | ~A", "~B x", ["B y | ~A"]),
-                   ("B x | B y | ~A", "~B y", ["B x | ~A"])]
+                   ("B x | B y | ~A", "~B y", [])]
       val _ = map (test_updt ictxt) data1
 
-      val data2 = [("B x | B y | ~A", "~B x", ["~A"]),
+      val data2 = [("B x | B y | ~A", "~B x", ["B y | ~A"]),
                    ("B x | B y | ~A", "D", []),
                    ("B x | B y", "~B x", ["False"])]
       val _ = map (test_updt ictxt2) data2

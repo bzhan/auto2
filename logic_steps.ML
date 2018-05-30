@@ -826,10 +826,13 @@ fun match_update_fn ictxt item1 item2 =
                 in
                   map (get_matches_at_id all_insts) ids
                 end
+
+            val _ = assert (length subs >= 2)
+            val ts = [hd subs, List.last subs]
           in
-            subs |> map get_neg |> map (match_prop ictxt (id, item2))
-                 |> merge_matches
-                 |> maps process_inst
+            ts |> map get_neg |> map (match_prop ictxt (id, item2))
+               |> merge_matches
+               |> maps process_inst
           end
     in
       if max_nvar = 0 then
