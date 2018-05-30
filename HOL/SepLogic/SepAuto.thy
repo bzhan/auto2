@@ -19,6 +19,14 @@ definition relH :: "addr set \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow>
   "relH as h h' = (in_range (h, as) \<and> in_range (h', as) \<and>
      (\<forall>t. \<forall>a\<in>as. refs h t a = refs h' t a \<and> arrays h t a = arrays h' t a))"
 
+lemma relH_D [forward]:
+  "relH as h h' \<Longrightarrow> in_range (h, as) \<and> in_range (h', as)" by auto2
+
+lemma relH_D2 [rewrite]:
+  "relH as h h' \<Longrightarrow> a \<in> as \<Longrightarrow> refs h t a = refs h' t a"
+  "relH as h h' \<Longrightarrow> a \<in> as \<Longrightarrow> arrays h t a = arrays h' t a" by auto2+
+setup {* del_prfstep_thm_eqforward @{thm relH_def} *}
+
 lemma relH_dist_union [forward]:
   "relH (as \<union> as') h h' \<Longrightarrow> relH as h h' \<and> relH as' h h'" by auto2
 
@@ -282,6 +290,13 @@ definition hoare_triple :: "assn \<Rightarrow> 'a Heap \<Rightarrow> ('a \<Right
   "<P> c <Q> \<longleftrightarrow> (\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>
     (\<sigma> \<noteq> None \<and> pHeap (the \<sigma>) (new_addrs h as (the \<sigma>)) \<Turnstile> Q r \<and> relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and>
      lim h \<le> lim (the \<sigma>)))"
+
+lemma hoare_tripleD [forward]:
+  "<P> c <Q> \<Longrightarrow> run c (Some h) \<sigma> r \<Longrightarrow> \<forall>as. pHeap h as \<Turnstile> P \<longrightarrow>
+     (\<sigma> \<noteq> None \<and> pHeap (the \<sigma>) (new_addrs h as (the \<sigma>)) \<Turnstile> Q r \<and> relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and>
+     lim h \<le> lim (the \<sigma>))"
+  by auto2
+setup {* del_prfstep_thm_eqforward @{thm hoare_triple_def} *}
 
 abbreviation hoare_triple' :: "assn \<Rightarrow> 'r Heap \<Rightarrow> ('r \<Rightarrow> assn) \<Rightarrow> bool" ("<_> _ <_>\<^sub>t") where
   "<P> c <Q>\<^sub>t \<equiv> <P> c <\<lambda>r. Q r * true>"

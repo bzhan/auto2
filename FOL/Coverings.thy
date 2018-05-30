@@ -74,7 +74,12 @@ lemma glue_fun_on_covering [backward1]: "is_function(X) \<Longrightarrow> I = so
   \<exists>!f. f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D \<and> (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)"
 @proof
   @have "\<exists>f\<in>(\<Union>a\<in>I. X`a)\<rightarrow>D. (\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b)" @with
-    @let "f = Fun(\<Union>a\<in>I. X`a, D, \<lambda>x. F(SOME a\<in>I. x\<in>X`a) ` x)" @end
+    @let "f = Fun(\<Union>a\<in>I. X`a, D, \<lambda>x. F(SOME a\<in>I. x\<in>X`a) ` x)"
+    @have "f \<in> (\<Union>a\<in>I. X`a)\<rightarrow>D"
+    @have "\<forall>a\<in>I. \<forall>b\<in>X`a. f`b = F(a)`b" @with
+      @have (@rule) "\<forall>b'\<in>I. func_coincide(F(a),F(b'), X`a \<inter> X`b')"
+    @end
+  @end
 @qed
 
 section {* Partitions *}  (* Bourbaki II.4.7 *)

@@ -114,7 +114,7 @@ definition is_ord_mor :: "i \<Rightarrow> o" where [rewrite]:
 
 definition ord_isomorphism :: "i \<Rightarrow> o" where [rewrite]:
   "ord_isomorphism(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
-                       is_ord_mor(f) \<and> bijective(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longleftrightarrow> f`x \<le>\<^sub>S f`y))"
+                       is_ord_mor(f) \<and> bijective(f) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. f`x \<le>\<^sub>S f`y \<longleftrightarrow> x \<le>\<^sub>R y))"
 
 lemma ord_isomorphismD1 [forward]:
   "ord_isomorphism(f) \<Longrightarrow> is_ord_mor(f)"

@@ -135,19 +135,11 @@ fun dijkstra_loop :: "graph \<Rightarrow> nat \<Rightarrow> dijkstra_state \<Rig
     p'' \<leftarrow> dijkstra_loop G k p';
     return p'' }"
 
-(* Should not need this *)
-setup {* add_rewrite_rule @{thm Nat.diff_Suc_eq_diff_pred} *}
-
 lemma dijkstra_loop_correct [hoare_triple]:
-  "n \<le> card (unknown_set S) \<Longrightarrow> inv G S \<Longrightarrow>
-   <dstate S p>
+  "<dstate S p * \<up>(inv G S) * \<up>(n \<le> card (unknown_set S))>
    dijkstra_loop G n p
    <\<lambda>r. \<exists>\<^sub>AS'. dstate S' r * \<up>(inv G S') * \<up>(card (unknown_set S') = card (unknown_set S) - n)>\<^sub>t"
-@proof @induct n arbitrary S p @with
-  @subgoal "n = Suc m"
-    @have "m \<le> card (unknown_set S) - 1"
-  @endgoal @end
-@qed
+@proof @induct n arbitrary S p @qed
 
 definition dijkstra :: "graph \<Rightarrow> dijkstra_state Heap" where
   "dijkstra G = do {

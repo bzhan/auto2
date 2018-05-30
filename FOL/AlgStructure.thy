@@ -279,16 +279,16 @@ setup {* del_prfstep_thm_eqforward @{thm is_plus_comm_def} *}
 definition is_plus_assoc :: "i \<Rightarrow> o" where [rewrite]:
   "is_plus_assoc(G) \<longleftrightarrow> is_abgroup_raw(G) \<and> (\<forall>x\<in>.G. \<forall>y\<in>.G. \<forall>z\<in>.G. (x +\<^sub>G y) +\<^sub>G z = x +\<^sub>G (y +\<^sub>G z))"
 
-lemma plus_assoc_left [rewrite]:
-  "is_plus_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x +\<^sub>G (y +\<^sub>G z) = (x +\<^sub>G y) +\<^sub>G z \<and> x +\<^sub>G y \<in>. G" by auto2
-
-lemma plus_assoc_right:
+lemma plus_assoc_right [rewrite]:
   "is_plus_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> (x +\<^sub>G y) +\<^sub>G z = x +\<^sub>G (y +\<^sub>G z) \<and> y +\<^sub>G z \<in>. G" by auto2
+
+lemma plus_assoc_left:
+  "is_plus_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x +\<^sub>G (y +\<^sub>G z) = (x +\<^sub>G y) +\<^sub>G z \<and> x +\<^sub>G y \<in>. G" by auto2
 setup {* del_prfstep_thm_eqforward @{thm is_plus_assoc_def} *}
   
 lemma is_plus_assoc_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_plus_assoc(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_plus_assoc(H)" by auto2
-setup {* del_prfstep_thm @{thm plus_assoc_left} *}
+setup {* del_prfstep_thm @{thm plus_assoc_right} *}
 
 section {* Predicates on multiplicative structure *}
   
@@ -315,16 +315,16 @@ definition is_times_assoc :: "i \<Rightarrow> o" where [rewrite]:
 lemma is_times_assocD [forward]:
   "is_times_assoc(G) \<Longrightarrow> is_group_raw(G)" by auto2
 
-lemma times_assoc_left [rewrite]:
-  "is_times_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x *\<^sub>G (y *\<^sub>G z) = (x *\<^sub>G y) *\<^sub>G z \<and> x *\<^sub>G y \<in>. G" by auto2
-
-lemma times_assoc_right:
+lemma times_assoc_right [rewrite]:
   "is_times_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> (x *\<^sub>G y) *\<^sub>G z = x *\<^sub>G (y *\<^sub>G z) \<and> y *\<^sub>G z \<in>. G" by auto2
+
+lemma times_assoc_left:
+  "is_times_assoc(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> x *\<^sub>G (y *\<^sub>G z) = (x *\<^sub>G y) *\<^sub>G z \<and> x *\<^sub>G y \<in>. G" by auto2
 setup {* del_prfstep_thm_eqforward @{thm is_times_assoc_def} *}
 
 lemma is_times_assoc_group_prop [forward]:
   "is_group_raw(H) \<Longrightarrow> is_times_assoc(G) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> is_times_assoc(H)" by auto2
-setup {* del_prfstep_thm @{thm times_assoc_left} *}
+setup {* del_prfstep_thm @{thm times_assoc_right} *}
 
 section {* Predicates on ring structure *}
 

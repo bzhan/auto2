@@ -24,24 +24,36 @@ setup {* del_prfstep_thm @{thm is_metric_space_raw_def} *}
 
 definition is_metric_space :: "i \<Rightarrow> o" where [rewrite]:
   "is_metric_space(X) \<longleftrightarrow>
-    ((\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) = 0\<^sub>\<real> \<longleftrightarrow> x = y) \<and>
-     (\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) = dist(X,y,x)) \<and>
-     (\<forall>x\<in>.X. \<forall>y\<in>.X. \<forall>z\<in>.X. dist(X,x,y) +\<^sub>\<real> dist(X,y,z) \<ge>\<^sub>\<real> dist(X,x,z)))"
-  
+    is_metric_space_raw(X) \<and>
+    (\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) = 0\<^sub>\<real> \<longleftrightarrow> x = y) \<and>
+    (\<forall>x\<in>.X. \<forall>y\<in>.X. dist(X,x,y) = dist(X,y,x)) \<and>
+    (\<forall>x\<in>.X. \<forall>y\<in>.X. \<forall>z\<in>.X. dist(X,x,y) +\<^sub>\<real> dist(X,y,z) \<ge>\<^sub>\<real> dist(X,x,z))"
+
+lemma is_metric_spaceD [forward]:
+  "is_metric_space(X) \<Longrightarrow> is_metric_space_raw(X)" by auto2
+
 lemma is_metric_spaceD1 [forward]:
-  "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> dist(X,x,y) = 0\<^sub>\<real> \<Longrightarrow> x = y" by auto2
+  "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> dist(X,x,y) = 0\<^sub>\<real> \<Longrightarrow> x = y"
+@proof @have "dist(X,x,y) = 0\<^sub>\<real> \<longleftrightarrow> x = y" @qed
     
 lemma is_metric_spaceD2 [rewrite]:
   "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> dist(X,x,x) = 0\<^sub>\<real>"
-  "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> dist(X,x,y) = dist(X,y,x)" by auto2+
+@proof @have "dist(X,x,x) = 0\<^sub>\<real> \<longleftrightarrow> x = x" @qed
+
+lemma is_metric_spaceD3 [rewrite]:
+  "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> dist(X,x,y) = dist(X,y,x)" by auto2
     
-lemma is_metric_spaceD3 [backward]:
+lemma is_metric_spaceD4 [backward]:
   "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> z \<in>. X \<Longrightarrow>
    dist(X,x,y) +\<^sub>\<real> dist(X,y,z) \<ge>\<^sub>\<real> dist(X,x,z)" by auto2
 
-lemma is_metric_spaceD4:
-  "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> dist(X,x,y) \<ge>\<^sub>\<real> 0\<^sub>\<real>" by auto2
-setup {* add_forward_prfstep_cond @{thm is_metric_spaceD4} [with_term "dist(?X,?x,?y)"] *}
+lemma is_metric_spaceD5:
+  "is_metric_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> y \<in>. X \<Longrightarrow> dist(X,x,y) \<ge>\<^sub>\<real> 0\<^sub>\<real>"
+@proof 
+  @have "dist(X,x,y) +\<^sub>\<real> dist(X,y,x) \<ge>\<^sub>\<real> 0\<^sub>\<real>" @with @have "dist(X,x,x) = 0\<^sub>\<real>" @end
+  @case "dist(X,x,y) <\<^sub>\<real> 0\<^sub>\<real>" @with @have "dist(X,y,x) <\<^sub>\<real> 0\<^sub>\<real>" @end
+@qed
+setup {* add_forward_prfstep_cond @{thm is_metric_spaceD5} [with_term "dist(?X,?x,?y)"] *}
 setup {* del_prfstep_thm_str "@eqforward" @{thm is_metric_space_def} *}
 
 lemma metric_space_dist_bound [backward1, backward2]:

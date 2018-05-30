@@ -113,15 +113,6 @@ lemma equiv_class_eq [rewrite]:
 definition quotient_set :: "[i, i] \<Rightarrow> i"  (infixl "'/'/" 90) where [rewrite]:
   "E // R = {equiv_class(R,x). x\<in>E}"
 
-(* Characterization of elements of quotient sets. Not used later. *)
-lemma quotient_setI':
-  "equiv(R) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> S \<subseteq> carrier(R) \<Longrightarrow>
-   \<forall>x\<in>S. \<forall>y\<in>.R. y \<in> S \<longleftrightarrow> x \<sim>\<^sub>R y \<Longrightarrow> S \<in> carrier(R) // R" by auto2
-
-lemma quotient_setD:
-  "equiv(R) \<Longrightarrow> S \<in> carrier(R) // R \<Longrightarrow>
-   (S \<subseteq> carrier(R) \<and> S \<noteq> \<emptyset>) \<and> (\<forall>x\<in>S. \<forall>y\<in>.R. y \<in> S \<longleftrightarrow> x \<sim>\<^sub>R y)" by auto2
-
 lemma quotient_setI [typing, backward]:
   "y \<in>. R \<Longrightarrow> equiv_class(R,y) \<in> carrier(R)//R" by auto2
 

@@ -217,7 +217,8 @@ lemma order_convexD2a [backward2]:
   "order_convex(X,A) \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> A \<Longrightarrow> closed_interval(X,a,b) \<subseteq> A" by auto2
     
 lemma order_convexD2b [backward2]:
-  "linorder(X) \<Longrightarrow> order_convex(X,A) \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> A \<Longrightarrow> open_interval(X,a,b) \<subseteq> A" by auto2
+  "linorder(X) \<Longrightarrow> order_convex(X,A) \<Longrightarrow> a \<in> A \<Longrightarrow> b \<in> A \<Longrightarrow> open_interval(X,a,b) \<subseteq> A"
+@proof @have "closed_interval(X,a,b) \<subseteq> A" @qed
 setup {* del_prfstep_thm_eqforward @{thm order_convex_def} *}
   
 lemma closed_interval_convex [resolve]:

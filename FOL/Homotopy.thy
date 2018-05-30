@@ -295,7 +295,11 @@ lemma homotopy_equivalentD2 [backward]:
   "homotopy_equivalent(X,Y) \<Longrightarrow> \<exists>f. f \<in> homotopy_equiv_space(X,Y)" by auto2
     
 lemma homotopy_equivalentD2' [backward]:
-  "homotopy_equivalent(X,Y) \<Longrightarrow> \<exists>f\<in>X\<rightharpoonup>\<^sub>TY. \<exists>g\<in>Y\<rightharpoonup>\<^sub>TX. homotopy_equiv_pair(f,g)" by auto2
+  "homotopy_equivalent(X,Y) \<Longrightarrow> \<exists>f\<in>X\<rightharpoonup>\<^sub>TY. \<exists>g\<in>Y\<rightharpoonup>\<^sub>TX. homotopy_equiv_pair(f,g)"
+@proof
+  @obtain f where "f \<in> homotopy_equiv_space(X,Y)"
+  @obtain "g\<in>Y \<rightharpoonup>\<^sub>T X" where "homotopy_equiv_pair(f,g)"
+@qed
 setup {* del_prfstep_thm @{thm homotopy_equivalent_def} *}
   
 lemma homotopy_equivalent_refl [resolve]:

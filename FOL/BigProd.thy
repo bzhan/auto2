@@ -306,23 +306,6 @@ lemma prod_set_disjoint [backward1]:
   @obtain x where "x \<in> Pi(I,X) \<inter> Pi(I,Y)" @have "x`a \<in> X(a) \<inter> Y(a)"
 @qed
 
-lemma prod_mutually_disjoint:
-  "\<forall>b\<in>L. mutually_disjoint(X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(F(b)) \<Longrightarrow>
-   mutually_disjoint(Fun(Pi(L,J), Pow(Pi(L,F)), \<lambda>f. Pi(L, \<lambda>b. X(b)`(f`b))))"
-@proof
-  @have (@rule) "\<forall>b\<in>L. \<forall>x\<in>J(b). \<forall>y\<in>J(b). x \<noteq> y \<longrightarrow> X(b)`x \<inter> X(b)`y = \<emptyset>"
-@qed
-
-lemma prod_is_partition:
-  "\<forall>b\<in>L. is_partition(S(b),X(b)) \<Longrightarrow> \<forall>b\<in>L. X(b) \<in> J(b) \<rightarrow> Pow(S(b)) \<Longrightarrow>
-   is_partition(Pi(L,S), Fun(Pi(L,J), Pow(Pi(L,S)), \<lambda>f. Pi(L, \<lambda>b. X(b)`(f`b))))"
-@proof
-  @have "Pi(L,S) = Pi(L, \<lambda>b. (\<Union>a\<in>J(b). X(b)`a))"
-  @let "F = Fun(Pi(L,J), Pow(Pi(L,S)), \<lambda>f. Pi(L, \<lambda>b. X(b)`(f`b)))"
-  @have "(\<Union>f\<in>Pi(L,J). F`f) = (\<Union>f\<in>Pi(L,J). Pi(L, \<lambda>b. X(b)`(f`b)))"
-  @have (@rule) "\<forall>b\<in>L. \<forall>x\<in>J(b). \<forall>y\<in>J(b). x \<noteq> y \<longrightarrow> X(b)`x \<inter> X(b)`y = \<emptyset>"
-@qed
-
 section {* Extension of mappings to products *}  (* Bourbaki II.5.7 *)
 
 definition ext_prod_fun :: "[i, i \<Rightarrow> i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:

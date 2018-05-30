@@ -255,6 +255,7 @@ lemma diff_le_rat_real2 [backward1]:
   @obtain "i\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>i. (X -\<^sub>S Y)`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> s"
   @obtain j where "j\<ge>\<^sub>\<nat>i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>\<rat> X`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> t"
   @have "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. X`m -\<^sub>\<rat> Y`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @with
+    @have "\<bar>X`m -\<^sub>\<rat> X`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> t"
     @have "X`m -\<^sub>\<rat> Y`n = (X`m -\<^sub>\<rat> X`n) +\<^sub>\<rat> (X`n -\<^sub>\<rat> Y`n)"
     @have "t +\<^sub>\<rat> (c +\<^sub>\<rat> s) = c +\<^sub>\<rat> (s +\<^sub>\<rat> t)" @end
 @qed
@@ -268,7 +269,10 @@ lemma abs_diff_le_rat_real2D [backward1]:
   @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. Y`m -\<^sub>\<rat> X`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @with
     @have "Real(Y) -\<^sub>\<real> Real(X) \<le>\<^sub>\<real> of_rat(\<real>,c)" @end
   @let "k = max(\<nat>,i,j)"
-  @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
+  @have "\<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>\<rat> Y`n\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> c +\<^sub>\<rat> r" @with
+    @have "X`m -\<^sub>\<rat> Y`n \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
+    @have "Y`n -\<^sub>\<rat> X`m \<le>\<^sub>\<rat> c +\<^sub>\<rat> r"
+  @end
 @qed
 setup {* del_prfstep_thm @{thm diff_le_rat_real2} *}
 
@@ -378,9 +382,13 @@ lemma Diag_is_cauchy [forward]:
     @let "Sm = rep(\<R>,X`m)" "Sn = rep(\<R>,X`n)"
     @obtain "k1\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k1. \<bar>Sm`k' -\<^sub>\<rat> W`m\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`m"
     @obtain "k2\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k2. \<bar>Sn`k' -\<^sub>\<rat> W`n\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`n"
-    @obtain "k3\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k3. \<forall>k''\<ge>\<^sub>\<nat>k3. \<bar>Sm`k' -\<^sub>\<rat> Sn`k''\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> r2 +\<^sub>\<rat> r3"
+    @obtain "k3\<in>.\<nat>" where "\<forall>k'\<ge>\<^sub>\<nat>k3. \<forall>k''\<ge>\<^sub>\<nat>k3. \<bar>Sm`k' -\<^sub>\<rat> Sn`k''\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> r2 +\<^sub>\<rat> r3" @with
+      @have "\<bar>X`m -\<^sub>\<real> X`n\<bar>\<^sub>\<real> \<le>\<^sub>\<real> of_rat(\<real>,r2)"
+    @end
     @obtain k where "k \<ge>\<^sub>\<nat> k1" "k \<ge>\<^sub>\<nat> k2" "k \<ge>\<^sub>\<nat> k3"
-    @have "\<bar>W`m -\<^sub>\<rat> Sn`k\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`m +\<^sub>\<rat> (r2 +\<^sub>\<rat> r3)"
+    @have "\<bar>W`m -\<^sub>\<rat> Sn`k\<bar>\<^sub>\<rat> <\<^sub>\<rat> err`m +\<^sub>\<rat> (r2 +\<^sub>\<rat> r3)" @with
+      @have "\<bar>Sm`k -\<^sub>\<rat> Sn`k\<bar>\<^sub>\<rat> \<le>\<^sub>\<rat> r2 +\<^sub>\<rat> r3"
+    @end
   @end
 @qed
 

@@ -759,21 +759,22 @@ fun match_update_fn ictxt item1 item2 =
 
       val has_priority_term = exists is_priority_term (map get_neg subs)
 
-      val (NO_MATCH, FREE_ONLY, SLOW_MATCH, YES_MATCH) = (0, 1, 2, 3)
+      val (NO_MATCH, SLOW_MATCH, YES_MATCH) = (0, 1, 2)
       (* Test whether to perform matching on pattern. *)
-      fun test_do_match (i, sub, nvar) =
+      fun test_do_match t =
           let
-            val nsub = get_neg sub
+            val nvar = count_var t
+            val neg_t = get_neg t
           in
-            if not (Util.is_pattern sub) then NO_MATCH
+            if not (Util.is_pattern t) then NO_MATCH
             else if length subs > 1 andalso
-                    Property.is_property_prem thy nsub then NO_MATCH
+                    Property.is_property_prem thy neg_t then NO_MATCH
             else if has_priority_term andalso
-                    not (is_priority_term nsub) then SLOW_MATCH
-            else if is_mem nsub andalso Term.is_Var (dest_arg1 nsub) andalso
-                    null (Term.add_frees (dest_arg nsub) []) then SLOW_MATCH
+                    not (is_priority_term neg_t) then SLOW_MATCH
+            else if is_mem neg_t andalso Term.is_Var (dest_arg1 neg_t) andalso
+                    null (Term.add_frees (dest_arg neg_t) []) then SLOW_MATCH
             else if nvar = 0 orelse nvar = max_nvar then YES_MATCH
-            else if i > 0 then NO_MATCH else FREE_ONLY
+            else NO_MATCH
           end
 
       (* Match the negation of subs[i] with th2. For each match,
@@ -784,8 +785,7 @@ fun match_update_fn ictxt item1 item2 =
       fun get_matches i =
           let
             val t = nth subs i
-            val nvar = count_var t
-            val do_match = test_do_match (i, t, nvar)
+            val do_match = test_do_match t
             fun process_inst ((id', inst), th) =
                 let
                   val prop' = prop |> Util.subst_thm_thy thy inst
@@ -793,20 +793,13 @@ fun match_update_fn ictxt item1 item2 =
                   val sc = if do_match = SLOW_MATCH then 200 else 10
                 in
                   disj_to_update false disj_head (id', SOME sc, prop') ::
-                  (if nvar > 0 then [] else
+                  (if count_var t > 0 then [] else
                    [ShadowItem {id = id', item = item1}])
                 end
           in
             if do_match = NO_MATCH then []
-            else if do_match = FREE_ONLY then
-              t |> get_neg |> match_prop ictxt (id, item2)
-                |> filter (fn ((_, inst), _) =>
-                              forall (fn (_, (_, t)) => Term.is_Free t)
-                                     (Vartab.dest (snd inst)))
-                |> maps process_inst
-            else
-              t |> get_neg |> match_prop ictxt (id, item2)
-                |> maps process_inst
+            else t |> get_neg |> match_prop ictxt (id, item2)
+                   |> maps process_inst
           end
 
       fun get_matches_no_var () =

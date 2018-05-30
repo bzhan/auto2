@@ -259,8 +259,8 @@ lemma cauchy_not_vanishes_cases [backward]:
   @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s"
   @obtain k where "k\<ge>\<^sub>\<nat>i" "r \<le>\<^sub>R \<bar>X`k\<bar>\<^sub>R"
   @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s"
-  @case "X`k \<le>\<^sub>R -\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R -\<^sub>R X`n" @end
-  @case "X`k \<ge>\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R X`n" @end
+  @case "X`k \<le>\<^sub>R -\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R -\<^sub>R X`n" @with @have "\<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" @end @end
+  @case "X`k \<ge>\<^sub>R r" @with @have "\<forall>n\<ge>\<^sub>\<nat>k. s <\<^sub>R X`n" @with @have "\<bar>X`n -\<^sub>R X`k\<bar>\<^sub>R <\<^sub>R s" @end @end
 @qed
   
 lemma cauchy_not_vanishes [backward]:

@@ -150,7 +150,10 @@ lemma cauchy_add:
     @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s"
     @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t"
     @have "\<forall>m \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>(X +\<^sub>S Y)`m -\<^sub>R (X +\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r" @with
-      @have "(X`m +\<^sub>R Y`m) -\<^sub>R (X`n +\<^sub>R Y`n) = (X`m -\<^sub>R X`n) +\<^sub>R (Y`m -\<^sub>R Y`n)" @end
+      @have "\<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s"
+      @have "\<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t"
+      @have "(X`m +\<^sub>R Y`m) -\<^sub>R (X`n +\<^sub>R Y`n) = (X`m -\<^sub>R X`n) +\<^sub>R (Y`m -\<^sub>R Y`n)"
+    @end
   @end
 @qed
 setup {* add_forward_prfstep_cond @{thm cauchy_add} [with_term "?X +\<^sub>?S ?Y"] *}
@@ -187,6 +190,8 @@ lemma cauchy_mult:
     @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s /\<^sub>R b"
     @obtain "j\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t /\<^sub>R a"
     @have "\<forall>m \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<forall>n \<ge>\<^sub>\<nat> max(\<nat>,i,j). \<bar>(X *\<^sub>S Y)`m -\<^sub>R (X *\<^sub>S Y)`n\<bar>\<^sub>R <\<^sub>R r" @with
+      @have "\<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s /\<^sub>R b"
+      @have "\<bar>Y`m -\<^sub>R Y`n\<bar>\<^sub>R <\<^sub>R t /\<^sub>R a"
       @have "(X`m *\<^sub>R Y`m) -\<^sub>R (X`n *\<^sub>R Y`n) = (X`m -\<^sub>R X`n) *\<^sub>R Y`n +\<^sub>R X`m *\<^sub>R (Y`m -\<^sub>R Y`n)"
       @have "\<bar>X`m *\<^sub>R (Y`m -\<^sub>R Y`n)\<bar>\<^sub>R <\<^sub>R t" @end
   @end
@@ -201,6 +206,7 @@ lemma cauchy_inverse:
     @obtain b "i\<in>.\<nat>" where "b >\<^sub>R \<zero>\<^sub>R" "\<forall>n\<ge>\<^sub>\<nat>i. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
     @obtain j where "j \<ge>\<^sub>\<nat> i" "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r *\<^sub>R (b *\<^sub>R b)"
     @have "\<forall>m\<ge>\<^sub>\<nat>j. \<forall>n\<ge>\<^sub>\<nat>j. \<bar>seq_inverse(X)`m -\<^sub>R seq_inverse(X)`n\<bar>\<^sub>R <\<^sub>R r" @with
+      @have "\<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r *\<^sub>R (b *\<^sub>R b)"
       @have "b *\<^sub>R b <\<^sub>R \<bar>X`m *\<^sub>R X`n\<bar>\<^sub>R"
       @have "inv(R,X`m) -\<^sub>R inv(R,X`n) = (X`n -\<^sub>R X`m) /\<^sub>R (X`m *\<^sub>R X`n)" @end
   @end
@@ -339,7 +345,7 @@ lemma not_positive' [rewrite_back]:
       @obtain s where "s >\<^sub>R \<zero>\<^sub>R" "r = s +\<^sub>R s"
       @obtain "i\<in>.\<nat>" where "\<forall>m\<ge>\<^sub>\<nat>i. \<forall>n\<ge>\<^sub>\<nat>i. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s"
       @obtain k where "k \<ge>\<^sub>\<nat> i" "s \<ge>\<^sub>R X`k"
-      @have "\<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>R r"
+      @have "\<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>R r" @with @have "\<bar>X`k -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R s" @end
     @end
   @end
   @case "\<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>R r" @with
