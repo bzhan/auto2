@@ -16,11 +16,10 @@ struct
 fun add_typing_rule_cond th conds thy =
     let
       val concl = th |> concl_of' |> strip_conj |> hd
-      val th_name = Util.name_of_thm th
+      val conds = [with_score 1, K (WithTerm (dest_arg1 concl))] @ conds
     in
       if is_mem concl then
-        thy |> add_forward_prfstep_cond th ([K (WithTerm (dest_arg1 concl))] @ conds)
-            |> add_fixed_sc (th_name, 1)
+        thy |> add_forward_prfstep_cond th conds
       else
         error "Add typing rule: concl is not a membership."
     end

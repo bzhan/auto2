@@ -168,7 +168,7 @@ fun ac_expand_equiv_fn ictxt item1 item2 =
             (maps get_equiv (Util.all_pairs (expand1, expand2)))
                 |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
                 |> IncrContext.replace_id_for_type' ictxt
-                |> map (fn (id, th) => Update.thm_update (id, th))
+                |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
           end
     end
 
@@ -208,7 +208,7 @@ fun ac_expand_unit_fn ictxt item =
           in
             (maps process_expand expand)
                 |> IncrContext.replace_id_for_type' ictxt
-                |> map (fn (id, th) => Update.thm_update (id, th))
+                |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
           end
     end
 
@@ -220,10 +220,7 @@ val ac_expand_unit =
 val add_ac_proofsteps =
     fold add_prfstep [
       ac_expand_equiv, ac_expand_unit
-
-    ] #> fold add_fixed_sc [
-      ("ac_expand_equiv", 1), ("ac_expand_unit", 1)
-    ]
+   ]
 
 end  (* structure AC_ProofSteps. *)
 

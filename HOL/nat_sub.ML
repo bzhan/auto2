@@ -600,7 +600,7 @@ fun nat_sub_expand_equiv_fn ictxt item1 item2 =
         (maps get_equiv (Util.all_pairs (expand1, expand2)))
             |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
             |> IncrContext.replace_id_for_type' ictxt
-            |> map (fn (id, th) => Update.thm_update (id, th))
+            |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
       end
     end
 
@@ -639,7 +639,7 @@ fun nat_sub_expand_unit_fn ictxt item =
       in
         (maps process_expand expand)
             |> IncrContext.replace_id_for_type' ictxt
-            |> map (fn (id, th) => Update.thm_update (id, th))
+            |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
       end
     end
 
@@ -651,9 +651,6 @@ val nat_sub_expand_unit =
 val add_nat_sub_proofsteps =
     fold add_prfstep [
       nat_sub_expand_equiv, nat_sub_expand_unit
-
-    ] #> fold add_fixed_sc [
-      ("nat_sub_expand_equiv", 1), ("nat_sub_expand_unit", 1)
     ]
 
 end  (* NatSub *)

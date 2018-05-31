@@ -112,16 +112,8 @@ fun scoring {name, ...} sc items (st as {ctxt, ...}) func =
                 if BoxID.is_box_resolved ctxt id then []
                 else if exists (Status.query_shadowed st id) items then []
                 else
-                  let
-                    val thy = Proof_Context.theory_of ctxt
-                    val add_sc =
-                        case ProofStepData.get_fixed_sc thy name of
-                            NONE => Scores.get_score raw_updt
-                          | SOME v => v
-                  in
-                    [{sc = add_sc + max_sc, prfstep_name = name,
-                      source = items, raw_updt = raw_updt}]
-                  end
+                  [{sc = Scores.get_score raw_updt + max_sc, prfstep_name = name,
+                    source = items, raw_updt = raw_updt}]
               end
         in
           maps process_raw_updt raw_updts

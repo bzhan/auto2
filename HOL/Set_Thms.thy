@@ -38,23 +38,24 @@ setup {* add_resolve_prfstep @{thm Set.UNIV_I} *}
 
 subsection {* Insert *}
 
-setup {* add_rewrite_rule_cond @{thm Set.insert_iff} [with_cond "?A \<noteq> {}"] *}
-setup {* add_fixed_sc ("Set.insert_iff@eqforward", 500) *}
-setup {* add_rewrite_rule_cond @{thm Set.insert_subset} [with_cond "?A \<noteq> {}"] *}
-setup {* add_fixed_sc ("Set.insert_subset@invbackward", 500) *}
+setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.insert_iff}) [with_cond "?A \<noteq> {}"] *}
+setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Set.insert_iff})
+  [with_score 500, with_cond "?A \<noteq> {}"] *}
+setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Set.insert_subset}) [with_cond "?A \<noteq> {}"] *}
+setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.insert_subset})
+  [with_score 500, with_cond "?A \<noteq> {}"] *}
 
 subsection {* Extensionality *}
 
 lemma set_ext [forward]: "\<forall>a. a \<in> S \<longleftrightarrow> a \<in> T \<Longrightarrow> S = T" by auto
-setup {* add_backward_prfstep_cond @{thm set_ext} [with_filt (order_filter "S" "T")] *}
-setup {* add_fixed_sc ("Set_Thms.set_ext@back", 500) *}
+setup {* add_backward_prfstep_cond @{thm set_ext} [with_score 500, with_filt (order_filter "S" "T")] *}
 
 lemma set_pair_ext [forward]: "\<forall>a b. (a, b) \<in> S \<longleftrightarrow> (a, b) \<in> T \<Longrightarrow> S = T" by auto
 
 subsection {* Union *}
 
-setup {* add_rewrite_rule @{thm Set.Un_iff} *}
-setup {* add_fixed_sc ("Set.Un_iff@eqforward", 500) *}
+setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Set.Un_iff}) [with_score 500] *}
+setup {* add_backward_prfstep (equiv_backward_th @{thm Set.Un_iff}) *}
 
 lemma UnD1 [forward]: "c \<in> A \<union> B \<Longrightarrow> c \<notin> A \<Longrightarrow> c \<in> B" by auto
 lemma UnD2 [forward]: "c \<in> A \<union> B \<Longrightarrow> c \<notin> B \<Longrightarrow> c \<in> A" by auto
@@ -71,8 +72,8 @@ lemma union_single_eq [rewrite, backward]: "x \<in> p \<Longrightarrow> {x} \<un
 
 subsection {* Intersection *}
 
-setup {* add_rewrite_rule @{thm Set.Int_iff} *}
-setup {* add_fixed_sc ("Set.Int_iff@invbackward", 500) *}
+setup {* add_forward_prfstep (equiv_forward_th @{thm Set.Int_iff}) *}
+setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.Int_iff}) [with_score 500] *}
 
 setup {* add_rewrite_rule @{thm Set.Int_empty_left} *}
 setup {* add_rewrite_rule @{thm Set.Int_empty_right} *}
@@ -83,8 +84,7 @@ lemma set_disjoint_single [rewrite]: "{x} \<inter> B = {} \<longleftrightarrow> 
 subsection {* subset *}
 
 setup {* add_forward_prfstep @{thm subsetI} *}
-setup {* add_backward_prfstep @{thm subsetI} *}
-setup {* add_fixed_sc ("Set.subsetI@back", 500) *}
+setup {* add_backward_prfstep_cond @{thm subsetI} [with_score 500] *}
 
 setup {* add_resolve_prfstep @{thm empty_subsetI} *}
 setup {* add_forward_prfstep @{thm set_mp} *}
@@ -100,8 +100,8 @@ lemma subset_union_same2 [backward]: "A \<subseteq> B \<Longrightarrow> A \<unio
 
 subsection {* Diff *}
 
-setup {* add_rewrite_rule @{thm Set.Diff_iff} *}
-setup {* add_fixed_sc ("Set.Diff_iff@invbackward", 500) *}
+setup {* add_forward_prfstep (equiv_forward_th @{thm Set.Diff_iff}) *}
+setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.Diff_iff}) [with_score 500] *}
 
 setup {* add_rewrite_rule @{thm Set.empty_Diff} *}
 lemma mem_diff [rewrite]: "x \<in> A - B \<longleftrightarrow> x \<in> A \<and> x \<notin> B" by simp

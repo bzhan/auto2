@@ -5,8 +5,8 @@ begin
 section \<open>Axiom of extension\<close>
 
 axiomatization where
-  extension [backward]: "\<forall>z. z \<in> x \<longleftrightarrow> z \<in> y \<Longrightarrow> x = y"
-setup {* add_fixed_sc ("Set.extension@back", 500) *}
+  extension: "\<forall>z. z \<in> x \<longleftrightarrow> z \<in> y \<Longrightarrow> x = y"
+setup {* add_backward_prfstep_cond @{thm extension} [with_score 500] *}
 
 section \<open>Axiom of empty set\<close>
 
@@ -45,8 +45,8 @@ definition subset :: "i \<Rightarrow> i \<Rightarrow> o"  (infixl "\<subseteq>" 
 
 lemma subset_refl [resolve]: "A \<subseteq> A" by auto2
 lemma subsetD [forward]: "A \<subseteq> B \<Longrightarrow> c \<in> A \<Longrightarrow> c \<in> B" by auto2
-lemma subsetI [backward, forward]: "\<forall>x\<in>A. x \<in> B \<Longrightarrow> A \<subseteq> B" by auto2
-setup {* add_fixed_sc ("Set.subsetI@back", 500) *}
+lemma subsetI [forward]: "\<forall>x\<in>A. x \<in> B \<Longrightarrow> A \<subseteq> B" by auto2
+setup {* add_backward_prfstep_cond @{thm subsetI} [with_score 500] *}
 setup {* del_prfstep_thm @{thm subset_def} *}
 
 lemma subset_trans [forward,backward1,backward2]:
@@ -87,8 +87,9 @@ section \<open>Binary union and intersection, subtraction on sets\<close>
 definition Un :: "i \<Rightarrow> i \<Rightarrow> i"  (infixl "\<union>" 65) where [rewrite]:
   "A \<union> B = \<Union>(Upair(A,B))"
 
-lemma Un_iff [rewrite]: "c \<in> A \<union> B \<longleftrightarrow> (c \<in> A \<or> c \<in> B)" by auto2
-setup {* add_fixed_sc ("Set.Un_iff@eqforward", 500) *}
+lemma Un_iff: "c \<in> A \<union> B \<longleftrightarrow> (c \<in> A \<or> c \<in> B)" by auto2
+setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Un_iff}) [with_score 500] *}
+setup {* add_backward_prfstep (equiv_backward_th @{thm Un_iff}) *}
 setup {* del_prfstep_thm @{thm Un_def} *}
 
 lemma UnD1 [forward]: "c \<in> A \<union> B \<Longrightarrow> c \<notin> A \<Longrightarrow> c \<in> B" by auto2
@@ -265,10 +266,11 @@ section \<open>If expressions\<close>
 definition If :: "[o, i, i] \<Rightarrow> i"  ("(if (_)/ then (_)/ else (_))" [10] 10)  where [rewrite]:
   "(if P then a else b) = (THE z. P \<and> z=a \<or> \<not>P \<and> z=b)"
 
-lemma if_P [rewrite]: "P \<Longrightarrow> (if P then a else b) = a" by auto2
-lemma if_not_P [rewrite]: "\<not>P \<Longrightarrow> (if P then a else b) = b" by auto2
-lemma if_not_P' [rewrite]: "P \<Longrightarrow> (if \<not>P then a else b) = b" by auto2
-setup {* fold add_fixed_sc (map (rpair 1) ["Set.if_P", "Set.if_not_P", "Set.if_not_P'"]) *}
+lemma If_eval:
+  "P \<Longrightarrow> (if P then a else b) = a"
+  "\<not>P \<Longrightarrow> (if P then a else b) = b"
+  "P \<Longrightarrow> (if \<not>P then a else b) = b" by auto2+
+setup {* fold (fn th => add_rewrite_rule_cond th [with_score 1]) @{thms If_eval} *}
 setup {* del_prfstep_thm @{thm If_def} *}
 
 setup {* add_gen_prfstep ("case_intro",
@@ -278,12 +280,11 @@ setup {* add_gen_prfstep ("case_intro",
 definition Ifb :: "[o, o, o] \<Rightarrow> o"  ("(ifb (_)/ then (_)/ else (_))" [10] 10)  where [rewrite]:
   "(ifb P then a else b) \<longleftrightarrow> (P \<and> a) \<or> (\<not>P \<and> b)"
  
-lemma ifb_P [rewrite]: "P \<Longrightarrow> (ifb P then a else b) \<longleftrightarrow> a" by auto2
-lemma ifb_not_P [rewrite]: "\<not>P \<Longrightarrow> (ifb P then a else b) \<longleftrightarrow> b" by auto2
-lemma ifb_not_P' [rewrite]: "P \<Longrightarrow> (ifb \<not>P then a else b) \<longleftrightarrow> b" by auto2
-setup {* fold add_fixed_sc (map (rpair 1) [
-  "Set.ifb_P@eqforward", "Set.ifb_P@invbackward", "Set.ifb_not_P@eqforward",
-  "Set.ifb_not_P@invbackward", "Set.ifb_not_P'@eqforward", "Set.ifb_not_P'@invbackward"]) *}
+lemma Ifb_eval:
+  "P \<Longrightarrow> (ifb P then a else b) \<longleftrightarrow> a"
+  "\<not>P \<Longrightarrow> (ifb P then a else b) \<longleftrightarrow> b"
+  "P \<Longrightarrow> (ifb \<not>P then a else b) \<longleftrightarrow> b" by auto2+
+setup {* fold (fn th => add_rewrite_rule_cond th [with_score 1]) @{thms Ifb_eval} *}
 setup {* del_prfstep_thm @{thm Ifb_def} *}
 
 setup {* add_gen_prfstep ("case_intro_bool1",
@@ -355,8 +356,7 @@ lemma prod_memD [forward]:
   "p \<in> A \<times> B \<Longrightarrow> p = \<langle>fst(p),snd(p)\<rangle> \<and> fst(p) \<in> A \<and> snd(p) \<in> B" by auto2
 
 lemma prod_memI: "a \<in> A \<Longrightarrow> \<forall>b\<in>B. \<langle>a,b\<rangle> \<in> A\<times>B" by auto2
-setup {* add_forward_prfstep_cond @{thm prod_memI} [with_term "?A\<times>?B"] *}
-setup {* add_fixed_sc ("Set.prod_memI", 500) *}
+setup {* add_forward_prfstep_cond @{thm prod_memI} [with_term "?A\<times>?B", with_score 500] *}
 setup {* del_prfstep_thm @{thm cart_prod_def} *}
 
 lemma prod_memI' [backward,backward1,backward2]:

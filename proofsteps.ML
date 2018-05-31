@@ -15,6 +15,7 @@ datatype prfstep_descriptor = WithFact of term
                             | WithItem of string * term
                             | WithProperty of term
                             | WithWellForm of term * term
+                            | WithScore of int
                             | GetFact of term * thm
                             | ShadowFirst | ShadowSecond
                             | CreateCase of term | CreateConcl of term
@@ -44,7 +45,6 @@ sig
   val retrieve_filts: prfstep_descriptor list -> prfstep_filter
   val retrieve_cases: prfstep_descriptor list -> term list
   val retrieve_shadows: prfstep_descriptor list -> int list
-  val has_shadows_desc: prfstep_descriptor list -> bool
   val get_side_ths:
       Proof.context -> id_inst -> match_arg list -> (box_id * thm list) list
   val prfstep_custom:
@@ -95,6 +95,7 @@ fun string_of_desc thy desc =
           else "WithItem " ^ ty_str ^ " " ^ (print t)
         | WithProperty t => "WithProperty " ^ (print t)
         | WithWellForm (_, req) => "WithWellForm " ^ (print req)
+        | WithScore n => "WithScore " ^ (string_of_int n)
         | GetFact (t, th) =>
           if t aconv @{term False} then
             "GetResolve " ^ (Util.name_of_thm th)
@@ -220,7 +221,13 @@ fun retrieve_shadows descs =
       maps retrieve_shadow descs
     end
 
-fun has_shadows_desc descs = length (retrieve_shadows descs) > 0
+fun retrieve_score descs =
+    let
+      fun retrieve_score desc =
+          case desc of WithScore n => SOME n | _ => NONE
+    in
+      get_first retrieve_score descs
+    end
 
 (* Given list of PropertyMatch and WellFormMatch arguments, attempt to
    find the corresponding theorems in the rewrite table. Return the
@@ -334,6 +341,7 @@ fun gen_prfstep name descs =
       val args = retrieve_args descs
       val pats_r = retrieve_pats_r descs
       val cases = retrieve_cases descs
+      val sc = retrieve_score descs
       val input_descs =
           filter (fn desc => case desc of GetFact _ => false
                                         | CreateCase _ => false
@@ -357,13 +365,16 @@ fun gen_prfstep name descs =
           let
             val ths = map (apply_pat_r ctxt inst_ths) pats_r
           in
-            if length ths = 1 then [Update.thm_update (id, the_single ths)]
-            else [AddItems {id = id, sc = NONE,
-                            raw_items = map Update.thm_to_ritem ths}]
+            if length ths = 1 andalso
+               Thm.prop_of (the_single ths) aconv pFalse then
+              [ResolveBox {id = id, th = the_single ths}]
+            else
+              [AddItems {id = id, sc = sc,
+                         raw_items = map Update.thm_to_ritem ths}]
           end
 
       fun case_to_update ((id, inst), _) assum =
-          AddBoxes {id = id, sc = NONE,
+          AddBoxes {id = id, sc = sc,
                     init_assum = Util.subst_term_norm inst assum}
       fun cases_to_update inst_ths = map (case_to_update inst_ths) cases
 
@@ -423,11 +434,6 @@ val order_filter = ProofStep.order_filter
 val size1_filter = ProofStep.size1_filter
 val not_type_filter = ProofStep.not_type_filter
 
-(* Table of proofsteps, categorized by type. *)
-type proofstep_table =
-     {prfsteps: proofstep Symtab.table, sorted_prfsteps: proofstep list,
-      fixed_sc: int Symtab.table}
-
 signature PROOFSTEP_DATA =
 sig
   val add_prfstep: proofstep -> theory -> theory
@@ -436,10 +442,7 @@ sig
   val del_prfstep_thm: thm -> theory -> theory
   val del_prfstep_thm_str: string -> thm -> theory -> theory
   val del_prfstep_thm_eqforward: thm -> theory -> theory
-  val add_fixed_sc: string * int -> theory -> theory
-  val get_prfstep_by_name: theory -> string -> proofstep
   val get_prfsteps: theory -> proofstep list
-  val get_fixed_sc: theory -> string -> int option
 
   val add_prfstep_custom:
       (string * prfstep_descriptor list *
@@ -459,6 +462,7 @@ sig
   val with_conds: string list -> pre_prfstep_descriptor list
   val with_filt: prfstep_filter -> pre_prfstep_descriptor
   val with_filts: prfstep_filter list -> pre_prfstep_descriptor list
+  val with_score: int -> pre_prfstep_descriptor
 
   (* Second level proofstep writing functions. *)
   datatype prfstep_mode = MODE_FORWARD | MODE_FORWARD' | MODE_BACKWARD
@@ -501,56 +505,43 @@ structure ProofStepData : PROOFSTEP_DATA =
 struct
 
 structure Data = Theory_Data (
-  type T = proofstep_table;
-  val empty = {prfsteps = Symtab.empty, sorted_prfsteps = [],
-               fixed_sc = Symtab.empty};
+  type T = proofstep list;
+  val empty = [];
   val extend = I;
-  fun merge ({prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
-             {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
-      {prfsteps = Symtab.merge ProofStep.eq_prfstep (p1, p2),
-       sorted_prfsteps = Library.merge ProofStep.eq_prfstep (sp1, sp2),
-       fixed_sc = Symtab.merge (op =) (sc1, sc2)}
+  fun merge (ps1, ps2) = Library.merge ProofStep.eq_prfstep (ps1, ps2)
 )
 
 (* Add the given proof step. *)
 fun add_prfstep (prfstep as {args, ...}) =
-    Data.map (
-      fn {prfsteps, sorted_prfsteps, fixed_sc} =>
-         if Util.is_prefix_str "$" (#name prfstep) then
-           error "Add prfstep: names beginning with $ is reserved."
-         else let
-           val num_args = length (filter_out ItemIO.is_side_match args)
-         in
-           if num_args >= 1 andalso num_args <= 2 then
-             {prfsteps = Symtab.update_new (#name prfstep, prfstep) prfsteps,
-              sorted_prfsteps = sorted_prfsteps @ [prfstep],
-              fixed_sc = fixed_sc}
-           else
-             error "add_proofstep: need 1 or 2 patterns."
-         end)
+    Data.map (fn prfsteps =>
+       if Util.is_prefix_str "$" (#name prfstep) then
+         error "Add prfstep: names beginning with $ is reserved."
+       else let
+         val num_args = length (filter_out ItemIO.is_side_match args)
+       in
+         if num_args >= 1 andalso num_args <= 2 then prfsteps @ [prfstep]
+         else error "add_proofstep: need 1 or 2 patterns."
+       end)
 
 (* Deleting a proofstep. For string inputs, try adding theory
    name. For theorem inputs, try all @-suffixes.
  *)
 fun del_prfstep_pred pred =
-    Data.map (
-      fn {prfsteps, sorted_prfsteps, fixed_sc} =>
-         let
-           val keys = Symtab.keys prfsteps
-           val to_delete = filter pred keys
-           fun eq_name (key, {name, ...}) = (key = name)
+    Data.map (fn prfsteps =>
+       let
+         val names = map #name prfsteps
+         val to_delete = filter pred names
+         fun eq_name (key, {name, ...}) = (key = name)
+       in
+         if null to_delete then
+           error "Delete prfstep: not found"
+         else let
+           val _ = writeln (cat_lines (map (fn name => "Delete " ^ name)
+                                           to_delete))
          in
-           if null to_delete then
-             error "Delete prfstep: not found"
-           else let
-             val _ = writeln (cat_lines (map (fn name => "Delete " ^ name)
-                                             to_delete))
-           in
-             {prfsteps = prfsteps |> fold Symtab.delete to_delete,
-              sorted_prfsteps = sorted_prfsteps |> subtract eq_name to_delete,
-              fixed_sc = fixed_sc |> fold Symtab.delete_safe to_delete}
-           end
-         end)
+           subtract eq_name to_delete prfsteps
+         end
+       end)
 
 fun del_prfstep prfstep_name thy =
     del_prfstep_pred (equal prfstep_name) thy
@@ -569,28 +560,7 @@ fun del_prfstep_thm_str str th =
 
 val del_prfstep_thm_eqforward = del_prfstep_thm_str "@eqforward"
 
-fun add_fixed_sc (prfstep_name, sc) =
-    Data.map (
-      fn {prfsteps, sorted_prfsteps, fixed_sc} =>
-         case find_first (equal prfstep_name) (Symtab.keys prfsteps) of
-             NONE => error ("Add fixed sc: not found " ^ prfstep_name)
-           | _ => {prfsteps = prfsteps, sorted_prfsteps = sorted_prfsteps,
-                   fixed_sc = fixed_sc |> Symtab.update_new (prfstep_name, sc)})
-
-fun get_prfstep_by_name thy name =
-    let
-      val {prfsteps, ...} = Data.get thy
-    in
-      case Symtab.lookup prfsteps name of
-          NONE => raise Fail ("get_prfstep_by_name: not found " ^ name)
-        | SOME prfstep => prfstep
-    end
-
-fun get_prfsteps thy =
-    #sorted_prfsteps (Data.get thy)
-
-fun get_fixed_sc thy prfstep_name =
-    Symtab.lookup (#fixed_sc (Data.get thy)) prfstep_name
+fun get_prfsteps thy = Data.get thy
 
 fun add_prfstep_custom (name, descs, updt_fn) =
     add_prfstep (ProofStep.prfstep_custom name descs updt_fn)
@@ -624,6 +594,7 @@ fun with_conds strs = map with_cond strs
 
 fun with_filt filt = K (Filter filt)
 fun with_filts filts = map with_filt filts
+fun with_score n = K (WithScore n)
 
 (* Second level proofstep writing functions. *)
 

@@ -22,12 +22,13 @@ section {* Rewriting of negation, in linorder *}
 setup {* fold add_gen_prfstep [
   ("not_less",
    [WithProp @{term_pat "\<not> (?x::(?'a::linorder)) < ?y"},
-    GetFact (@{term_pat "?y \<le> (?x::(?'a::linorder))"}, (equiv_forward_th @{thm linorder_not_less}))]),
+    GetFact (@{term_pat "?y \<le> (?x::(?'a::linorder))"}, equiv_forward_th @{thm linorder_not_less}),
+    WithScore 1]),
   ("not_le",
    [WithProp @{term_pat "\<not> (?x::(?'a::linorder)) \<le> ?y"},
-    GetFact (@{term_pat "?y < (?x::(?'a::linorder))"}, (equiv_forward_th @{thm linorder_not_le}))])]
+    GetFact (@{term_pat "?y < (?x::(?'a::linorder))"}, equiv_forward_th @{thm linorder_not_le}),
+    WithScore 1])]
 *}
-setup {* fold add_fixed_sc [("not_less", 1), ("not_le", 1)] *}
 
 section {* Properties of max and min (in linorder) *}
 

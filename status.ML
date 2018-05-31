@@ -14,6 +14,7 @@ sig
   val string_of_raw_update: Proof.context -> raw_update -> string
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
+  val thm_update_sc: int -> box_id * thm -> raw_update
 
   val apply_exists_ritems: Proof.context -> thm -> raw_item list * thm
   val update_info: Proof.context -> box_id -> raw_item list -> string
@@ -63,6 +64,12 @@ fun thm_update (id, th) =
       ResolveBox {id = id, th = th}
     else
       AddItems {id = id, sc = NONE, raw_items = [thm_to_ritem th]}
+
+fun thm_update_sc sc (id, th) =
+    if Thm.prop_of th aconv pFalse then
+      ResolveBox {id = id, th = th}
+    else
+      AddItems {id = id, sc = SOME sc, raw_items = [thm_to_ritem th]}
 
 (* Apply the given existence theorem. Return a pair (ritems, th),
    ritems contain the new variables and the new handler, and th is the

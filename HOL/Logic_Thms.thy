@@ -16,16 +16,14 @@ setup {* add_forward_prfstep_cond @{thm HOL.not_sym} [with_filt (not_type_filter
 
 (* Iff. *)
 setup {* add_gen_prfstep ("iff_intro1",
-  [WithGoal @{term_pat "(?A::bool) = ?B"}, CreateCase @{term_pat "?A::bool"}]) *}
-setup {* add_fixed_sc ("iff_intro1", 25) *}  (* includes the cost of creating a case. *)
-theorem iff_goal [forward]:
+  [WithGoal @{term_pat "(?A::bool) = ?B"},
+   CreateCase @{term_pat "?A::bool"},
+   WithScore 25]) *}
+theorem iff_goal:
   "A \<noteq> B \<Longrightarrow> A \<Longrightarrow> \<not>B" "A \<noteq> B \<Longrightarrow> B \<Longrightarrow> \<not>A"
   "A \<noteq> B \<Longrightarrow> \<not>A \<Longrightarrow> B" "A \<noteq> B \<Longrightarrow> \<not>B \<Longrightarrow> A"
   "(\<not>A) \<noteq> B \<Longrightarrow> A \<Longrightarrow> B" "A \<noteq> (\<not>B) \<Longrightarrow> B \<Longrightarrow> A" by auto
-setup {* fold add_fixed_sc (map (rpair 1) [
-  "Logic_Thms.iff_goal_1", "Logic_Thms.iff_goal_3",
-  "Logic_Thms.iff_goal_2", "Logic_Thms.iff_goal_4",
-  "Logic_Thms.iff_goal_5", "Logic_Thms.iff_goal_6"]) *}
+setup {* fold (fn th => add_forward_prfstep_cond th [with_score 1]) @{thms iff_goal} *}
 
 (* Quantifiers: normalization *)
 theorem exists_split: "(\<exists>x y. P x \<and> Q y) = ((\<exists>x. P x) \<and> (\<exists>y. Q y))" by simp
@@ -41,13 +39,14 @@ setup {* add_gen_prfstep ("case_intro_fact",
 setup {* add_gen_prfstep ("case_intro_goal",
   [WithGoal @{term_pat "if ?cond then (?yes::bool) else ?no"},
    CreateCase @{term_pat "?cond::bool"}]) *}
-theorem if_P_bool: "P \<Longrightarrow> (if P then (x::bool) else y) = x" by simp
-theorem if_not_P_bool: "\<not>P \<Longrightarrow> (if P then (x::bool) else y) = y" by simp
-theorem if_not_P': "P \<Longrightarrow> (if \<not>P then x else y) = y" by simp
-theorem if_not_P'_bool: "P \<Longrightarrow> (if \<not>P then (x::bool) else y) = y" by simp
-setup {* fold add_rewrite_rule [@{thm HOL.if_P}, @{thm HOL.if_not_P}, @{thm if_not_P'}] *}
-setup {* fold add_rewrite_rule [@{thm if_P_bool}, @{thm if_not_P_bool}, @{thm if_not_P'_bool}] *}
-setup {* fold add_fixed_sc [("HOL.if_P", 1), ("HOL.if_not_P", 1), ("Logic_Thms.if_not_P'", 1)] *}
+lemma if_eval':
+  "P \<Longrightarrow> (if \<not>P then x else y) = y" by auto
+lemma ifb_eval:
+  "P \<Longrightarrow> (if P then (x::bool) else y) = x"
+  "\<not>P \<Longrightarrow> (if P then (x::bool) else y) = y"
+  "P \<Longrightarrow> (if \<not>P then (x::bool) else y) = y" by auto
+setup {* fold (fn th => add_rewrite_rule_cond th [with_score 1])
+  ([@{thm HOL.if_P}, @{thm HOL.if_not_P}, @{thm if_eval'}] @ @{thms ifb_eval}) *}
 
 (* THE and \<exists>! *)
 setup {* add_forward_prfstep_cond @{thm theI'} [with_term "THE x. ?P x"] *}
@@ -104,7 +103,6 @@ setup {* add_resolve_prfstep @{thm option.distinct(1)} *}
 setup {* add_rewrite_rule @{thm Option.option.sel} *}
 setup {* add_forward_prfstep @{thm option.collapse} *}
 setup {* add_forward_prfstep (equiv_forward_th @{thm option.simps(1)}) *}
-setup {* fold add_rewrite_rule @{thms Option.option.case} *}
-setup {* fold add_fixed_sc [("Option.option.case_1", 1), ("Option.option.case_2", 1)] *}
+setup {* fold (fn th => add_rewrite_rule_cond th [with_score 1]) @{thms Option.option.case} *}
 
 end
