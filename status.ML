@@ -11,6 +11,7 @@ type update = {sc: int, prfstep_name: string, source: box_item list,
 signature UPDATE =
 sig
   val target_of_update: raw_update -> box_id
+  val replace_id_of_update: raw_update -> raw_update
   val string_of_raw_update: Proof.context -> raw_update -> string
   val thm_to_ritem: thm -> raw_item
   val thm_update: box_id * thm -> raw_update
@@ -30,6 +31,21 @@ fun target_of_update raw_updt =
       | AddBoxes {id, ...} => id
       | ResolveBox {id, ...} => id
       | ShadowItem {id, ...} => id
+
+fun replace_id_of_update raw_updt =
+    let
+      val id = target_of_update raw_updt
+      val _ = assert (BoxID.has_incr_id id) "replace_id_of_update"
+      val id' = BoxID.replace_incr_id id
+    in
+      case raw_updt of
+          AddItems {sc, raw_items, ...} =>
+          AddItems {id = id', sc = sc, raw_items = raw_items}
+        | AddBoxes {sc, init_assum, ...} =>
+          AddBoxes {id = id', sc = sc, init_assum = init_assum}
+        | ResolveBox {th, ...} => ResolveBox {id = id', th = th}
+        | ShadowItem {item, ...} => ShadowItem {id = id', item = item}
+    end
 
 (* Debugging output for raw update. *)
 fun string_of_raw_update ctxt raw_updt =

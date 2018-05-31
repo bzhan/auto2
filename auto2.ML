@@ -101,7 +101,8 @@ fun scoring {name, ...} sc items (st as {ctxt, ...}) func =
         let
           val scs = map #sc items
           val max_sc = fold (curry Int.max) scs sc
-          val raw_updts = func (List.last items)
+          val raw_updts = (func (List.last items))
+                              |> map Update.replace_id_of_update
           fun process_raw_updt raw_updt =
               let
                 val id = Update.target_of_update raw_updt

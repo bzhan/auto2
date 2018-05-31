@@ -57,7 +57,7 @@ fun alg_assoc_prfstep_fn (fhead, assoc_l) ctxt item1 item2 =
         (Util.all_pairs (wfts1, wfts2))
             |> map (fn ((id1, wft1), (id2, wft2)) =>
                        (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-            |> BoxID.replace_id_for_type'
+            |> filter (BoxID.has_incr_id o fst)
             |> map process_wft
       end
     end

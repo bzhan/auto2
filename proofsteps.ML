@@ -270,10 +270,9 @@ fun prfstep_custom name descs updt_fn =
        *)
       fun process_inst ctxt ((id, inst), ths) =
           (get_side_ths ctxt (id, inst) side_args)
+              |> filter (BoxID.has_incr_id o fst)
               |> map (fn (id', p_ths) => ((id', inst), p_ths @ ths))
-              |> BoxID.filter_id_for_type
               |> filter (filt ctxt o fst)
-              |> BoxID.replace_id_for_type
 
       fun shadow_to_update items ((id, _), _) n =
           ShadowItem {id = id, item = nth items n}
@@ -391,9 +390,8 @@ fun prfstep_pre_conv name descs pre_cv =
           let
             val inst_ths =
                 (ItemIO.match_arg ctxt (the_single args) item ([], fo_init))
-                    |> BoxID.filter_id_for_type
+                    |> filter (BoxID.has_incr_id o fst o fst)
                     |> filter (filt ctxt o fst)
-                    |> BoxID.replace_id_for_type
 
             fun inst_to_updt ((id, _), eq1) =
                 (* Here eq1 is meta_eq from pat(inst) to item. *)

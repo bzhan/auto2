@@ -110,7 +110,7 @@ fun ord_normalize_fn ctxt item1 item2 =
               (Util.all_pairs (wfts1, wfts2))
                   |> map (fn ((id1, wft1), (id2, wft2)) =>
                              (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-                  |> BoxID.replace_id_for_type'
+                  |> filter (BoxID.has_incr_id o fst)
                   |> maps (process_wft property_th)
             end
       in

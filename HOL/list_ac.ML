@@ -223,8 +223,8 @@ fun list_expand_equiv_fn ctxt item1 item2 =
             end
       in
         (maps get_equiv (Util.all_pairs (expand1, expand2)))
+            |> filter (BoxID.has_incr_id o fst)
             |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
-            |> BoxID.replace_id_for_type'
             |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
       end
     end
@@ -262,7 +262,7 @@ fun list_expand_unit_fn ctxt item =
             end
       in
         (maps process_expand expand)
-            |> BoxID.replace_id_for_type'
+            |> filter (BoxID.has_incr_id o fst)
             |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
       end
     end

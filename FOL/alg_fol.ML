@@ -61,7 +61,7 @@ fun alg_norm1_prfstep_fn norm_info ctxt {id, tname, ...} =
 
           fun process_property_info (id', property_th) =
               (WellformData.cterm_to_wfterm ctxt fheads (id', ct))
-                  |> BoxID.replace_id_for_type'
+                  |> filter (BoxID.has_incr_id o fst)
                   |> map (process_wft property_th)
         in
           maps process_property_info property_infos
@@ -135,7 +135,7 @@ fun alg_norm2_prfstep_fn norm_info ctxt item1 item2 =
                 (Util.all_pairs (wfts1, wfts2))
                     |> map (fn ((id1, wft1), (id2, wft2)) =>
                                (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-                    |> BoxID.replace_id_for_type'
+                    |> filter (BoxID.has_incr_id o fst)
                     |> map (process_wft property_th)
               end
         in

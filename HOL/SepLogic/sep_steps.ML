@@ -246,7 +246,7 @@ fun init_entail_fn ctxt item =
     let
       val {id, prop, ...} = item
     in
-      [entail_goal_update ctxt (BoxID.replace_incr_id id, prop)]
+      [entail_goal_update ctxt (id, prop)]
     end
 
 val init_entail =
@@ -264,7 +264,7 @@ fun forward_ent_prfstep_fn ent_th ctxt item =
       val cP = Thm.cterm_of ctxt P
 
       val insts = (AssnMatcher.assn_match_single ctxt (A, cP) (id, fo_init))
-                      |> BoxID.replace_id_for_type
+                      |> filter (BoxID.has_incr_id o fst o fst)
 
       fun process_inst ((id', _), eq_th) =
           (* eq_th is P == pat(inst) * P' *)
@@ -294,7 +294,7 @@ fun backward_ent_prfstep_fn ent_th ctxt item =
       val cQ = Thm.cterm_of ctxt Q
 
       val insts = (AssnMatcher.assn_match_single ctxt (B, cQ) (id, fo_init))
-                      |> BoxID.replace_id_for_type
+                      |> filter (BoxID.has_incr_id o fst o fst)
 
       fun process_inst ((id', _), eq_th) =
           (* eq_th is P == pat(inst) * P' *)
@@ -366,7 +366,7 @@ fun entails_resolve_fn ctxt item =
       val cP = Thm.cterm_of ctxt P
       val Q' = strip_pure_assn Q
       val insts = (AssnMatcher.assn_match_strict ctxt (Q', cP) (id, fo_init))
-                      |> BoxID.replace_id_for_type
+                      |> filter (BoxID.has_incr_id o fst o fst)
 
       fun process_inst ((id', _), mod_th) =
           if has_pure_assn Q then
@@ -403,7 +403,7 @@ fun init_pos_fn ctxt item =
             val (lhs, _) = proc_def |> prop_of' |> dest_eq
             val cc = Thm.cterm_of ctxt c
             val insts = (Matcher.rewrite_match ctxt (lhs, cc) (id, fo_init))
-                            |> BoxID.replace_id_for_type
+                            |> filter (BoxID.has_incr_id o fst o fst)
 
             fun process_inst ((id', _), eq_th) =
                 let
@@ -418,8 +418,7 @@ fun init_pos_fn ctxt item =
           end
     in
       if null proc_defs then
-        if BoxID.has_incr_id id then
-          [hoare_goal_update ctxt (BoxID.replace_incr_id id, prop)]
+        if BoxID.has_incr_id id then [hoare_goal_update ctxt (id, prop)]
         else []
       else
         maps process_proc_def proc_defs
@@ -439,7 +438,7 @@ fun forward_hoare_prfstep_fn ent_th ctxt item =
       val cP = Thm.cterm_of ctxt P
 
       val insts = (AssnMatcher.assn_match_single ctxt (A, cP) (id, fo_init))
-                      |> BoxID.replace_id_for_type
+                      |> filter (BoxID.has_incr_id o fst o fst)
 
       fun process_inst ((id', _), eq_th) =
           let
@@ -519,7 +518,6 @@ fun rewrite_pos_fn ctxt item1 item2 =
       if c1 aconv c' then
         let
           val th' = th |> apply_to_thm' (Conv.arg_conv (rewr_first_cmd eq_th))
-          val id = BoxID.replace_incr_id id
         in
           [hoare_goal_update ctxt (id, th'),
            ShadowItem {id = id, item = item1}]
@@ -564,7 +562,7 @@ fun match_hoare_th id ctxt hoare_th goal item =
             val cP = Thm.cterm_of ctxt P
             val insts' =
                 (AssnMatcher.assn_match_all ctxt (P'', cP) (id', inst))
-                    |> BoxID.replace_id_for_type
+                    |> filter (BoxID.has_incr_id o fst o fst)
 
             fun process_inst' ((id'', inst'), ent_th) =
                 let
@@ -655,7 +653,7 @@ fun match_assn_pure_fn ctxt item1 item2 =
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
           val pat = PropMatch (dest_Trueprop A)
           val insts = (ItemIO.match_arg ctxt pat item2 (id, fo_init))
-                          |> BoxID.replace_id_for_type
+                          |> filter (BoxID.has_incr_id o fst o fst)
 
           fun process_inst ((id', _), th) =
               [hoare_goal_update ctxt (id', th RS prop),
@@ -681,8 +679,7 @@ fun hoare_create_case_fn _ item =
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
         in
-          [AddBoxes {id = BoxID.replace_incr_id id,
-                     sc = SOME 1, init_assum = get_neg' A}]
+          [AddBoxes {id = id, sc = SOME 1, init_assum = get_neg' A}]
         end
       else []
     end
@@ -701,7 +698,7 @@ fun entail_pure_fn ctxt item1 item2 =
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
           val pat = PropMatch (dest_Trueprop A)
           val insts = (ItemIO.match_arg ctxt pat item2 (id, fo_init))
-                          |> BoxID.replace_id_for_type
+                          |> filter (BoxID.has_incr_id o fst o fst)
 
           fun process_inst ((id', _), th) =
               [entail_goal_update ctxt (id', th RS prop),
@@ -727,8 +724,7 @@ fun entail_create_case_fn _ item =
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
         in
-          [AddBoxes {id = BoxID.replace_incr_id id, sc = SOME 1,
-                     init_assum = get_neg' A}]
+          [AddBoxes {id = id, sc = SOME 1, init_assum = get_neg' A}]
         end
       else []
     end

@@ -79,7 +79,7 @@ fun shadow_item_fn ctxt item1 item2 =
 
       val equiv_ids =
           (RewriteTable.subequiv_info ctxt id (lhs, rhs))
-              |> BoxID.replace_id_for_type' |> map fst
+              |> map fst |> filter BoxID.has_incr_id
               |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
 
       val item_to_shadow =
@@ -121,8 +121,8 @@ fun eq_abs_fn ctxt item1 item2 =
             end
       in
         (Matcher.rewrite_match ctxt (t1, ct2) (id, fo_init))
-            |> BoxID.replace_id_for_type
             |> map (fn ((id, _), eq_th) => (id, eq_th))
+            |> filter (BoxID.has_incr_id o fst)
             |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
             |> map process_equiv
       end
@@ -154,7 +154,7 @@ fun exists_elim_fn ctxt {id, prop, ...} =
               prop |> apply_to_thm' (UtilLogic.normalize_exists ctxt)
                    |> Update.apply_exists_ritems ctxt
         in
-          [AddItems {id = BoxID.replace_incr_id id, sc = NONE,
+          [AddItems {id = id, sc = NONE,
                      raw_items = ritems @ [Update.thm_to_ritem th']}]
         end
       else []
@@ -697,7 +697,7 @@ fun match_prop ctxt (id, item2) pat =
 
       val insts1 =
           (ItemIO.match_arg ctxt (PropMatch pat) item2 (id, fo_init))
-              |> BoxID.replace_id_for_type
+              |> filter (BoxID.has_incr_id o fst o fst)
 
       val insts2 =
           if length disj_pats > 1 then
@@ -866,7 +866,7 @@ fun match_one_sch_fn ctxt item1 item2 =
               val arg = nth args i
               val targ = TypedMatch (TY_TERM, arg)
               val insts = (ItemIO.match_arg ctxt targ item2 (id, fo_init))
-                              |> BoxID.replace_id_for_type
+                              |> filter (BoxID.has_incr_id o fst o fst)
               fun inst_to_updt ((id', inst), _) =
                   let
                     val th1' = Util.subst_thm_thy thy inst th1
@@ -902,7 +902,6 @@ fun disj_match_iff_fn ctxt {id, tname, prop, ...} =
         val cv = (UtilLogic.to_obj_conv ctxt) then_conv (Trueprop_conv norm_disj)
         val forward = prop |> UtilLogic.equiv_forward_th |> apply_to_thm cv
         val backward = prop |> UtilLogic.equiv_backward_th |> apply_to_thm cv
-        val id = BoxID.replace_incr_id id
       in
         [disj_to_update false imp (id, NONE, forward),
          disj_to_update false imp (id, NONE, backward)]
@@ -926,7 +925,7 @@ fun disj_create_case_fn _ {id, tname, ...} =
       else let
         val subs = map Thm.term_of csubs
       in
-        [AddBoxes {id = BoxID.replace_incr_id id,
+        [AddBoxes {id = id,
                    sc = NONE, init_assum = mk_Trueprop (hd subs)}]
       end
     end
@@ -952,7 +951,7 @@ fun disj_shadow_fn ctxt (item1 as {tname = tname1, ...})
       else if is_match_prem_only item1 andalso
               not (is_match_prem_only item2) then []
       else if subset (op aconvc) (subs1, subs2) then
-        [ShadowItem {id = BoxID.replace_incr_id id, item = item2}]
+        [ShadowItem {id = id, item = item2}]
       else []
     end
 
