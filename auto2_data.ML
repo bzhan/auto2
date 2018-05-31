@@ -2,7 +2,7 @@
 
 signature AUTO2_DATA =
 sig
-  val relevant_terms_single: box_item -> cterm list
+  val relevant_terms_single: box_item -> term list
   val add_terms:
       box_item list -> (box_id * cterm) list -> Proof.context -> Proof.context
   val get_incr_type:
@@ -36,7 +36,7 @@ fun relevant_terms_single item =
     let
       val {ty_str, tname, ...} = item
     in
-      if ty_str = "EQ" then tname else []
+      if ty_str = "EQ" then map Thm.term_of tname else []
     end
 
 (* Use the given items to update the current context data, producing
@@ -50,7 +50,6 @@ fun get_incr_type old_items items ctxt =
       val relevant_terms =
           items |> maps relevant_terms_single
                 |> RewriteTable.get_reachable_terms true ctxt
-                |> map Thm.term_of
 
       fun add_one_info item ctxt =
           let
@@ -83,14 +82,8 @@ fun get_incr_type old_items items ctxt =
          terms with new equivalences, properties, or wellformedness
          data.
        *)
-      val new_ts = (maps relevant_terms_single items @
-                    maps (Property.get_property_arg_th_gen o snd o snd)
-                         (PropertyData.get_new_property ctxt') @
-                    map (Thm.cterm_of ctxt o fst)
-                        (WellformData.get_new_wellform_data ctxt'))
-                       |> distinct (op aconvc)
     in
-      LAST (ctxt', RewriteTable.get_reachable_terms true ctxt new_ts)
+      LAST ctxt'
     end
 
 fun get_single_type ctxt =

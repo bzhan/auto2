@@ -332,6 +332,7 @@ fun process_add_terms item (st as {ctxt, ...}) =
 fun process_fact_all items (st as {ctxt, ...}) =
     if null items then st else
     let
+      val thy = Proof_Context.theory_of ctxt
       val sc = #sc (hd items)
 
       (* Obtain initial and incremental ictxt, and the list of
@@ -344,11 +345,16 @@ fun process_fact_all items (st as {ctxt, ...}) =
       val old_items = subtract BoxItem.eq_item items items'
 
       val incr_ctxt = Auto2Data.get_incr_type old_items items ctxt
-      val (ctxt', ts) =
-          case incr_ctxt of
-              LAST (ctxt', ts) => (Auto2Data.get_single_type ctxt',
-                                   map Thm.term_of ts)
-            | _ => raise Fail "process_fact_all"
+      val ctxt' = IncrContext.context_of incr_ctxt
+      val ts =
+          (maps Auto2Data.relevant_terms_single items @
+           maps (Property.strip_property_field thy o dest_arg o prop_of' o snd)
+                (PropertyData.get_new_property ctxt') @
+           map fst (WellformData.get_new_wellform_data ctxt'))
+              |> distinct (op aconv)
+              |> RewriteTable.get_reachable_terms true ctxt
+
+      val ctxt' = Auto2Data.get_single_type ctxt'
       val init_ctxt = SINGLE ctxt'
 
       (* List of items to consider for init and incr rounds. *)

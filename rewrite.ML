@@ -26,7 +26,7 @@ fun print_infos' ctxt lst = cat_lines (map (print_info' ctxt) lst)
    stored as well.
  *)
 datatype incr_context = SINGLE of Proof.context
-                      | LAST of Proof.context * cterm list
+                      | LAST of Proof.context
 
 signature INCR_CONTEXT =
 sig
@@ -45,7 +45,7 @@ structure IncrContext : INCR_CONTEXT =
 struct
 
 fun context_of ictxt =
-    case ictxt of SINGLE ctxt => ctxt | LAST (ctxt, _) => ctxt
+    case ictxt of SINGLE ctxt => ctxt | LAST ctxt => ctxt
 
 fun is_single_ictxt ictxt =
     case ictxt of SINGLE _ => true | _ => false
@@ -158,7 +158,7 @@ sig
   val subequiv_info:
       Proof.context -> box_id -> cterm * cterm -> (box_id * thm) list
   val add_rewrite_raw: box_id -> thm -> Proof.context -> Proof.context
-  val get_reachable_terms: bool -> Proof.context -> cterm list -> cterm list
+  val get_reachable_terms: bool -> Proof.context -> term list -> term list
   val complete_table: Proof.context -> (box_id * thm) list * Proof.context
   val add_term:
       box_id * cterm -> Proof.context -> (box_id * thm) list * Proof.context
@@ -779,27 +779,28 @@ fun subequiv_info ctxt id (ct1, ct2) =
    false, only travel along equiv edges. Otherwise also travel from t
    to any term containing t.
  *)
-fun get_reachable_terms trav_contains ctxt cts =
+fun get_reachable_terms trav_contains ctxt ts =
     let
       fun helper (new, all) =
           case new of
               [] => ([], all)
-            | ct :: rest =>
+            | t :: rest =>
               let
-                val t = Thm.term_of ct
                 val contains =
-                    if trav_contains then immediate_contains ctxt t else []
+                    if trav_contains then
+                      map Thm.term_of (immediate_contains ctxt t)
+                    else []
                 val neighs = (equiv_neighs ctxt t)
-                                 |> map (fn (_, th) => Thm.rhs_of th)
+                                 |> map (fn (_, th) => Util.rhs_of th)
                 val new' = (contains @ neighs)
-                               |> distinct (op aconvc)
-                               |> subtract (op aconvc) all
+                               |> distinct (op aconv)
+                               |> subtract (op aconv) all
                 val all' = new' @ all
               in
                 helper (rest @ new', all')
               end
     in
-      snd (helper (cts, cts))
+      snd (helper (ts, ts))
     end
 
 fun add_all_equiv_raw (cur_info as (_, th)) ctxt =

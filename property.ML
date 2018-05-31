@@ -16,8 +16,6 @@ sig
   val get_property_names: term list -> string list
   val get_property_arg: term -> term
   val get_property_arg_th: thm -> cterm
-  val cstrip_property_field: theory -> cterm -> cterm list
-  val get_property_arg_th_gen: thm -> cterm list
 
   (* About the PropertyUpdateData table.*)
   val can_add_property_update: thm -> theory -> bool
@@ -135,25 +133,6 @@ fun get_property_arg_th th =
     Thm.dest_arg (cprop_of' th)
     handle CTERM _ => raise Fail "get_property_carg"
          | Fail "dest_Trueprop" => raise Fail "get_property_carg"
-
-(* As in strip_property_field, except working with cterms. *)
-fun cstrip_property_field thy ct =
-    case Thm.term_of ct of
-        Const (c, _) $ _ =>
-        if Symtab.defined (FieldData.get thy) c then
-          ct :: cstrip_property_field thy (Thm.dest_arg ct)
-        else [ct]
-      | _ => [ct]
-
-(* Return the complete list of arguments, considering property fields. *)
-fun get_property_arg_th_gen th =
-    let
-      val thy = Thm.theory_of_thm th
-    in
-      cstrip_property_field thy (Thm.dest_arg (cprop_of' th))
-    end
-    handle CTERM _ => raise Fail "get_property_carg_gen"
-         | Fail _ => raise Fail "get_property_carg_gen"
 
 (* Add the given rule as a property update. The requirements on th is
    as follows:

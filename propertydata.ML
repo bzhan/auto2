@@ -25,7 +25,7 @@ sig
       (box_id * thm) list -> Proof.context -> Proof.context
   val process_rewrite_property: box_id * thm -> Proof.context -> Proof.context
   val add_property: box_id * thm -> Proof.context -> Proof.context
-  val get_new_property: Proof.context -> (term * (box_id * thm)) list
+  val get_new_property: Proof.context -> (box_id * thm) list
 end;
 
 structure PropertyData : PROPERTY_DATA =
@@ -268,7 +268,7 @@ fun add_property (id, th) ctxt =
  *)
 fun get_new_property ctxt =
     (Data.get ctxt)
-        |> Termtab.dest_list
-        |> filter (fn (_, (id, _)) => BoxID.has_incr_id id)
+        |> Termtab.dest_list |> map snd
+        |> filter (fn (id, _) => BoxID.has_incr_id id)
 
 end  (* structure PropertyData *)
