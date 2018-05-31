@@ -820,7 +820,6 @@ val add_sep_logic_proofsteps =
 
 end  (* structure SepLogic *)
 
-val _ = Theory.setup SepLogic.add_sep_logic_proofsteps
 val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
 val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
 val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep
