@@ -694,11 +694,17 @@ fun match_prop ctxt (id, item2) pat =
           in
             ((id, inst), patT)
           end
+
+      val insts1 =
+          (ItemIO.match_arg ctxt (PropMatch pat) item2 (id, fo_init))
+              |> BoxID.replace_id_for_type
+
+      val insts2 =
+          if length disj_pats > 1 then
+            map process_inst (maps (match_prop ctxt (id, item2)) disj_pats)
+          else []
     in
-      ItemIO.get_insts (PropMatch pat) item2 ctxt (id, fo_init) @
-      (if length disj_pats > 1 then
-         map process_inst (maps (match_prop ctxt (id, item2)) disj_pats)
-       else [])
+      insts1 @ insts2
     end
 
 (* Given theorem ~P, cancel any disjunct that is aconv to P. It is
@@ -858,8 +864,9 @@ fun match_one_sch_fn ctxt item1 item2 =
             if count_var (nth args i) < nvar then [] else
             let
               val arg = nth args i
-              val insts = ItemIO.get_insts (TypedMatch (TY_TERM, arg)) item2 ctxt
-                                           (id, fo_init)
+              val targ = TypedMatch (TY_TERM, arg)
+              val insts = (ItemIO.match_arg ctxt targ item2 (id, fo_init))
+                              |> BoxID.replace_id_for_type
               fun inst_to_updt ((id', inst), _) =
                   let
                     val th1' = Util.subst_thm_thy thy inst th1

@@ -654,7 +654,8 @@ fun match_assn_pure_fn ctxt item1 item2 =
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
           val pat = PropMatch (dest_Trueprop A)
-          val insts = ItemIO.get_insts pat item2 ctxt (id, fo_init)
+          val insts = (ItemIO.match_arg ctxt pat item2 (id, fo_init))
+                          |> BoxID.replace_id_for_type
 
           fun process_inst ((id', _), th) =
               [hoare_goal_update ctxt (id', th RS prop),
@@ -699,7 +700,8 @@ fun entail_pure_fn ctxt item1 item2 =
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
           val pat = PropMatch (dest_Trueprop A)
-          val insts = ItemIO.get_insts pat item2 ctxt (id, fo_init)
+          val insts = (ItemIO.match_arg ctxt pat item2 (id, fo_init))
+                          |> BoxID.replace_id_for_type
 
           fun process_inst ((id', _), th) =
               [entail_goal_update ctxt (id', th RS prop),

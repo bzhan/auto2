@@ -390,7 +390,11 @@ fun prfstep_pre_conv name descs pre_cv =
       fun prfstep ctxt item =
           let
             val inst_ths =
-                ItemIO.get_insts_filt (the_single args) item ctxt ([], fo_init) filt
+                (ItemIO.match_arg ctxt (the_single args) item ([], fo_init))
+                    |> BoxID.filter_id_for_type
+                    |> filter (filt ctxt o fst)
+                    |> BoxID.replace_id_for_type
+
             fun inst_to_updt ((id, _), eq1) =
                 (* Here eq1 is meta_eq from pat(inst) to item. *)
                 let

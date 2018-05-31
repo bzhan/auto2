@@ -223,10 +223,6 @@ sig
   val pre_match_arg: Proof.context -> match_arg -> box_item -> bool
   val match_arg: Proof.context -> match_arg -> box_item -> id_inst ->
                  id_inst_th list
-  val get_insts_filt: match_arg -> box_item -> Proof.context -> id_inst ->
-                      prfstep_filter -> id_inst_th list
-  val get_insts: match_arg -> box_item -> Proof.context -> id_inst ->
-                 id_inst_th list
 
   val no_rewr_terms: term list -> term list
   val rewr_terms_of_item: Proof.context -> string * term list -> term list
@@ -595,18 +591,6 @@ fun match_arg ctxt arg (item as {id, ty_str, ...}) (id', inst) =
         | WellFormMatch _ =>
           raise Fail "match_arg: should not be called on WellFormMatch."
     end
-
-(* Obtain list of incremental matches between item and pattern
-   specified by arg. Apply list of filters filt.
- *)
-fun get_insts_filt arg item ctxt (id, inst) filt =
-    (match_arg ctxt arg item (id, inst))
-        |> BoxID.filter_id_for_type
-        |> filter (filt ctxt o fst)
-        |> BoxID.replace_id_for_type
-
-fun get_insts arg item ctxt (id, inst) =
-    get_insts_filt arg item ctxt (id, inst) (K (K true))
 
 val no_rewr_terms = K []
 
