@@ -63,7 +63,6 @@ sig
   val process_add_boxes: update -> status -> status
   val apply_update: update -> status -> status
   val init_status: Proof.context -> term -> status
-  val step_until: (status -> bool) -> int * status -> int * status
   val solve_root: int * status -> int * status
 end;
 
@@ -143,7 +142,7 @@ fun process_shadow (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
    boxes. 2. Add the appropriate fact to each of the immediate parent
    boxes.
  *)
-and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
+fun process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
     case raw_updt of
         ResolveBox {id, th} =>
         let
@@ -179,7 +178,7 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
 (* Directly apply Shadow and Resolve updates. Put the remaining
    updates in queue.
 *)
-and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...})=
+and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
     let
       val id = Update.target_of_update raw_updt
       val _ = assert (not (BoxID.has_incr_id id))
@@ -191,8 +190,9 @@ and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...})=
         | _ => Status.add_to_queue updt st
     end
 
-fun process_step_single sc ctxt items (prfstep as {args, func, ...}) st =
+fun process_step_single sc items prfstep (st as {ctxt, ...}) =
     let
+      val {args, func, ...} = prfstep
       val arg = the_single (filter_out ItemIO.is_side_match args)
       val items' = filter (ItemIO.pre_match_arg ctxt arg) items
       val f = case func of
@@ -210,8 +210,9 @@ fun process_step_single sc ctxt items (prfstep as {args, func, ...}) st =
       st |> fold process_one_item items'
     end
 
-fun process_step_pair sc ctxt items items' (prfstep as {args, func, ...}) st =
+fun process_step_pair sc items items' prfstep (st as {ctxt, ...}) =
     let
+      val {args, func, ...} = prfstep
       val (arg1, arg2) = the_pair (filter_out ItemIO.is_side_match args)
       val f = case func of
                   TwoStep f => f
@@ -268,17 +269,18 @@ fun process_step_pair sc ctxt items items' (prfstep as {args, func, ...}) st =
          |> process_pairs (subtract BoxItem.eq_item items items', items)
     end
 
-fun process_prfstep sc ictxt items items' (prfstep as {args, ...}) (st as {ctxt, ...}) =
+fun process_prfstep sc items items' prfstep (st as {ctxt, ...}) =
     let
+      val {args, ...} = prfstep
       val items = filter_out (
           fn item => BoxID.is_box_resolved ctxt (#id item) orelse
                      Status.query_removed st item) items
     in
       if null items then st
       else if length (filter_out ItemIO.is_side_match args) = 1 then
-        st |> process_step_single sc ictxt items prfstep
+        st |> process_step_single sc items prfstep
       else
-        st |> process_step_pair sc ictxt items items' prfstep
+        st |> process_step_pair sc items items' prfstep
     end
 
 fun process_add_terms item (st as {ctxt, ...}) =
@@ -287,12 +289,10 @@ fun process_add_terms item (st as {ctxt, ...}) =
       val {id, sc, ty_str, tname, ...} = item
       val ts = map Thm.term_of tname
 
-      fun qualify_term t = not (Util.has_vars t)
-
       val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
       val terms = rewr_terms |> maps UtilLogic.get_all_subterms
                              |> distinct (op aconv)
-                             |> filter qualify_term
+                             |> filter_out Util.has_vars
       val headt = if ty_str = TY_PROP then
                     if is_neg (the_single ts) then
                       [dest_not (the_single ts)]
@@ -314,7 +314,7 @@ fun process_add_terms item (st as {ctxt, ...}) =
 
       val terms2 = rewr_terms |> maps UtilLogic.get_all_subterms_skip_if
                               |> distinct (op aconv)
-                              |> filter qualify_term
+                              |> filter_out Util.has_vars
                               |> filter_out exists_item
                               |> filter_out (fn t => fastype_of t = boolT)
 
@@ -370,8 +370,9 @@ fun process_fact_all items (st as {ctxt, ...}) =
       val prfsteps = ProofStepData.get_prfsteps thy
       val all_items = init_items @ incr_items
     in
-      st |> Status.map_context (K (Auto2Data.get_single_type ctxt'))
-         |> fold (process_prfstep sc ctxt' all_items items') prfsteps
+      st |> Status.map_context (K ctxt')
+         |> fold (process_prfstep sc all_items items') prfsteps
+         |> Status.map_context Auto2Data.get_single_type
          |> Status.clear_incr
     end
 
@@ -428,9 +429,7 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
                                ctxt' (uid_next + i, id, sc, nth ritems' i))
                   (0 upto (length ritems' - 1))
 
-          val handlers_info =
-              map (fn handler => (id, BoxItem.dest_handler_raw handler))
-                  handlers
+          val handlers_info = map (pair id o BoxItem.dest_handler_raw) handlers
         in
           st |> Status.map_context (K ctxt')
              |> fold Status.add_handler handlers_info
@@ -530,8 +529,8 @@ fun init_status ctxt subgoal =
 (* Given a condition status -> bool, step until the condition is
    satisfied. Return steps remaining as well as updated status.
  *)
-fun step_until cond (steps, (st as {queue, ...})) =
-    if cond st then
+fun solve_root (steps, (st as {queue, ctxt, ...})) =
+    if BoxID.is_box_resolved ctxt [BoxID.home_id] then
       (steps, st)
     else if steps = 0 then
       error "Maximum number of steps reached"
@@ -540,11 +539,8 @@ fun step_until cond (steps, (st as {queue, ...})) =
                  handle List.Empty => error "No more moves"
       val st' = st |> Status.delmin_from_queue |> apply_update updt
     in
-      step_until cond (steps - 1, st')
+      solve_root (steps - 1, st')
     end
-
-val solve_root =
-    step_until (fn st => BoxID.is_box_resolved (#ctxt st) [BoxID.home_id])
 
 end  (* structure ProofStatus. *)
 
