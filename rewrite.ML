@@ -20,54 +20,6 @@ fun print_info' ctxt (id, ths) =
     (ths |> map Util.rhs_of |> Util.string_of_terms ctxt) ^ ")"
 fun print_infos' ctxt lst = cat_lines (map (print_info' ctxt) lst)
 
-(* Initial and incremental contexts. In the incremental case,
-   new data is added under a fresh primitive ID. The original id of
-   the new data, as well as the list of terms that are affected, are
-   stored as well.
- *)
-datatype incr_context = LAST of Proof.context
-
-signature INCR_CONTEXT =
-sig
-  val context_of: incr_context -> Proof.context
-
-  val filter_id_for_type:
-      incr_context -> ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
-  val replace_id_for_type:
-      incr_context -> ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
-  val replace_id_for_type':
-      incr_context -> (box_id * 'a) list -> (box_id * 'a) list
-end;
-
-structure IncrContext : INCR_CONTEXT =
-struct
-
-fun context_of ictxt =
-    case ictxt of LAST ctxt => ctxt
-
-fun filter_id_for_type ictxt insts =
-    case ictxt of
-        LAST _ =>
-        filter (fn ((id, _), _) => BoxID.has_incr_id id) insts
-
-(* Keep only the last prim id and replace it with repl_id in ictxt. *)
-fun replace_id_for_type ictxt insts =
-    case ictxt of
-        LAST _ =>
-        let
-          fun process_info ((id, inst), th) =
-              if BoxID.has_incr_id id then
-                [((BoxID.replace_incr_id id, inst), th)]
-              else []
-        in
-          maps process_info insts
-        end
-
-fun replace_id_for_type' ictxt insts =
-    insts |> map (rpair ()) |> replace_id_for_type ictxt |> map fst
-
-end  (* IncrContext *)
-
 (* Data structure for rewrite table. *)
 type rewrite_table = {
   (* terms[t] is the list of ids at which t is present. *)

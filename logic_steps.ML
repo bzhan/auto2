@@ -58,10 +58,9 @@ fun boolVar s = Var ((s, 0), boolT)
    shadowing is based on subterm equivalence, skipping any Not (~) at
    head.
  *)
-fun shadow_item_fn ictxt item1 item2 =
+fun shadow_item_fn ctxt item1 item2 =
     if #sc item1 = 0 andalso #sc item2 = 0 then []
     else let
-      val ctxt = IncrContext.context_of ictxt
       val id = BoxItem.merged_id ctxt [item1, item2]
       val _ = assert (forall (BoxItem.match_ty_strs [TY_TERM, TY_PROP])
                              [item1, item2])
@@ -80,7 +79,7 @@ fun shadow_item_fn ictxt item1 item2 =
 
       val equiv_ids =
           (RewriteTable.subequiv_info ctxt id (lhs, rhs))
-              |> IncrContext.replace_id_for_type' ictxt |> map fst
+              |> BoxID.replace_id_for_type' |> map fst
               |> Util.max_partial (BoxID.is_eq_ancestor ctxt)
 
       val item_to_shadow =
@@ -101,9 +100,8 @@ val shadow_term_item =
      args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
      func = TwoStep shadow_item_fn}
 
-fun eq_abs_fn ictxt item1 item2 =
+fun eq_abs_fn ctxt item1 item2 =
     let
-      val ctxt = IncrContext.context_of ictxt
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
       val id = BoxID.merge_boxes ctxt (id1, id2)
@@ -123,7 +121,7 @@ fun eq_abs_fn ictxt item1 item2 =
             end
       in
         (Matcher.rewrite_match ctxt (t1, ct2) (id, fo_init))
-            |> IncrContext.replace_id_for_type ictxt
+            |> BoxID.replace_id_for_type
             |> map (fn ((id, _), eq_th) => (id, eq_th))
             |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
             |> map process_equiv
@@ -143,11 +141,10 @@ val eq_abs_prfstep =
    determined by the context. We produce at most two variables at a
    time.
  *)
-fun exists_elim_fn ictxt {id, prop, ...} =
+fun exists_elim_fn ctxt {id, prop, ...} =
     if not (BoxID.has_incr_id id) then [] else
     let
       val t = prop_of' prop
-      val ctxt = IncrContext.context_of ictxt
     in
       if is_ex t orelse is_bex t orelse
          (is_neg t andalso is_obj_all (dest_not t)) orelse
@@ -674,7 +671,7 @@ fun reduce_disj_True ct =
       Conv.all_conv ct
 
 (* Handles also the case where pat is in not-conj or imp form. *)
-fun match_prop ictxt (id, item2) pat =
+fun match_prop ctxt (id, item2) pat =
     let
       val disj_pats = strip_disj pat
 
@@ -683,7 +680,6 @@ fun match_prop ictxt (id, item2) pat =
        *)
       fun process_inst ((id, inst), th) =
           let
-            val ctxt = IncrContext.context_of ictxt
             (* Construct the theorem pat'(inst) == True. *)
             val to_eqT_cv = (th RS UtilBase.eq_True_th) |> rewr_obj_eq |> Conv.try_conv
 
@@ -699,9 +695,9 @@ fun match_prop ictxt (id, item2) pat =
             ((id, inst), patT)
           end
     in
-      ItemIO.get_insts (PropMatch pat) item2 ictxt (id, fo_init) @
+      ItemIO.get_insts (PropMatch pat) item2 ctxt (id, fo_init) @
       (if length disj_pats > 1 then
-         map process_inst (maps (match_prop ictxt (id, item2)) disj_pats)
+         map process_inst (maps (match_prop ctxt (id, item2)) disj_pats)
        else [])
     end
 
@@ -736,10 +732,9 @@ fun disj_cancel_prop ctxt th prop =
    the second item. If the disjunction contains schematic variables, t
    must have either zero or the largest number of schematic variables.
  *)
-fun match_update_fn ictxt item1 item2 =
+fun match_update_fn ctxt item1 item2 =
     if is_match_prem_only item1 then [] else
     let
-      val ctxt = IncrContext.context_of ictxt
       val {id, prop, tname, ...} = item1
       val thy = Proof_Context.theory_of ctxt
       val (disj_head, csubs) = dest_tname_of_disj tname
@@ -794,7 +789,7 @@ fun match_update_fn ictxt item1 item2 =
                 end
           in
             if do_match = NO_MATCH then []
-            else t |> get_neg |> match_prop ictxt (id, item2)
+            else t |> get_neg |> match_prop ctxt (id, item2)
                    |> maps process_inst
           end
 
@@ -826,7 +821,7 @@ fun match_update_fn ictxt item1 item2 =
             val _ = assert (length subs >= 2)
             val ts = [hd subs, List.last subs]
           in
-            ts |> map get_neg |> map (match_prop ictxt (id, item2))
+            ts |> map get_neg |> map (match_prop ctxt (id, item2))
                |> merge_matches
                |> maps process_inst
           end
@@ -845,11 +840,10 @@ val match_update_prfstep =
 (* For DISJ items with a single term, of form f p1 ... pn, match t
    against each of p_i.
  *)
-fun match_one_sch_fn ictxt item1 item2 =
+fun match_one_sch_fn ctxt item1 item2 =
     if is_match_prem_only item1 then [] else
     let
       val {id, tname, prop = th1, ...} = item1
-      val ctxt = IncrContext.context_of ictxt
       val thy = Proof_Context.theory_of ctxt
       val subs = (dest_tname_of_disj tname) |> snd |> map Thm.term_of
     in
@@ -864,7 +858,7 @@ fun match_one_sch_fn ictxt item1 item2 =
             if count_var (nth args i) < nvar then [] else
             let
               val arg = nth args i
-              val insts = ItemIO.get_insts (TypedMatch (TY_TERM, arg)) item2 ictxt
+              val insts = ItemIO.get_insts (TypedMatch (TY_TERM, arg)) item2 ctxt
                                            (id, fo_init)
               fun inst_to_updt ((id', inst), _) =
                   let
@@ -888,10 +882,9 @@ val match_one_sch_prfstep =
      args = [TypedUniv TY_DISJ, TypedUniv TY_TERM],
      func = TwoStep match_one_sch_fn}
 
-fun disj_match_iff_fn ictxt {id, tname, prop, ...} =
+fun disj_match_iff_fn ctxt {id, tname, prop, ...} =
     if not (BoxID.has_incr_id id) then [] else
     let
-      val ctxt = IncrContext.context_of ictxt
       val (_, csubs) = dest_tname_of_disj tname
       val subs = map Thm.term_of csubs
     in
@@ -939,10 +932,9 @@ val disj_create_case_prfstep =
 (* item1 dominates item2 if the disjunctive terms in item1 is a subset
    of that for item2.
  *)
-fun disj_shadow_fn ictxt (item1 as {tname = tname1, ...})
+fun disj_shadow_fn ctxt (item1 as {tname = tname1, ...})
                    (item2 as {tname = tname2, ...}) =
     let
-      val ctxt = IncrContext.context_of ictxt
       val id = BoxItem.merged_id ctxt [item1, item2]
       val (disj_head1, subs1) = dest_tname_of_disj tname1
       val (disj_head2, subs2) = dest_tname_of_disj tname2

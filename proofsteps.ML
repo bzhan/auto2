@@ -2,8 +2,8 @@
    steps.
  *)
 datatype proofstep_fn
-  = OneStep of incr_context -> box_item -> raw_update list
-  | TwoStep of incr_context -> box_item -> box_item -> raw_update list
+  = OneStep of Proof.context -> box_item -> raw_update list
+  | TwoStep of Proof.context -> box_item -> box_item -> raw_update list
 
 type proofstep = {
   name: string,
@@ -24,7 +24,7 @@ datatype prfstep_descriptor = WithFact of term
 signature PROOFSTEP =
 sig
   val eq_prfstep: proofstep * proofstep -> bool
-  val apply_prfstep: incr_context -> box_item list -> proofstep -> raw_update list
+  val apply_prfstep: Proof.context -> box_item list -> proofstep -> raw_update list
   val WithGoal: term -> prfstep_descriptor
   val WithTerm: term -> prfstep_descriptor
   val WithProp: term -> prfstep_descriptor
@@ -61,10 +61,10 @@ struct
 
 fun eq_prfstep (prfstep1, prfstep2) = (#name prfstep1 = #name prfstep2)
 
-fun apply_prfstep ictxt items {func, ...} =
+fun apply_prfstep ctxt items {func, ...} =
     case func of
-        OneStep f => f ictxt (the_single items)
-      | TwoStep f => f ictxt (hd items) (nth items 1)
+        OneStep f => f ctxt (the_single items)
+      | TwoStep f => f ctxt (hd items) (nth items 1)
 
 fun WithGoal t =
     let
@@ -266,18 +266,14 @@ fun prfstep_custom name descs updt_fn =
 
       (* Processing an instantiation after matching the one or two
          main matchers: apply filters, remove trivial True from
-         matchings, find properties, and replace ids based on ictxt.
+         matchings, find properties, and replace incremental ids.
        *)
-      fun process_inst ictxt ((id, inst), ths) =
-          let
-            val ctxt = IncrContext.context_of ictxt
-          in
-            (get_side_ths ctxt (id, inst) side_args)
-                |> map (fn (id', p_ths) => ((id', inst), p_ths @ ths))
-                |> IncrContext.filter_id_for_type ictxt
-                |> filter (filt ctxt o fst)
-                |> IncrContext.replace_id_for_type ictxt
-          end
+      fun process_inst ctxt ((id, inst), ths) =
+          (get_side_ths ctxt (id, inst) side_args)
+              |> map (fn (id', p_ths) => ((id', inst), p_ths @ ths))
+              |> BoxID.filter_id_for_type
+              |> filter (filt ctxt o fst)
+              |> BoxID.replace_id_for_type
 
       fun shadow_to_update items ((id, _), _) n =
           ShadowItem {id = id, item = nth items n}
@@ -285,12 +281,11 @@ fun prfstep_custom name descs updt_fn =
       if length item_args = 1 then
         let
           val arg = the_single item_args
-          fun prfstep ictxt item =
+          fun prfstep ctxt item =
               let
-                val ctxt = IncrContext.context_of ictxt
                 val inst_ths = (ItemIO.match_arg ctxt arg item ([], fo_init))
                                 |> map (fn (inst, th) => (inst, [th]))
-                                |> maps (process_inst ictxt)
+                                |> maps (process_inst ctxt)
 
                 fun process_inst inst_th =
                     updt_fn inst_th [item] ctxt @
@@ -304,9 +299,8 @@ fun prfstep_custom name descs updt_fn =
       else if length item_args = 2 then
         let
           val (arg1, arg2) = the_pair item_args
-          fun prfstep1 ictxt item1 =
+          fun prfstep1 ctxt item1 =
               let
-                val ctxt = IncrContext.context_of ictxt
                 val inst_ths = ItemIO.match_arg ctxt arg1 item1 ([], fo_init)
 
                 fun process_inst1 item2 ((id, inst), th) =
@@ -315,7 +309,7 @@ fun prfstep_custom name descs updt_fn =
                       val inst_ths' =
                           (ItemIO.match_arg ctxt arg2' item2 (id, inst))
                               |> map (fn (inst', th') => (inst', [th, th']))
-                              |> maps (process_inst ictxt)
+                              |> maps (process_inst ctxt)
 
                       fun process_inst inst_th' =
                           updt_fn inst_th' [item1, item2] ctxt @
@@ -393,11 +387,10 @@ fun prfstep_pre_conv name descs pre_cv =
                                    "term pattern.")
       val filt = retrieve_filts descs
 
-      fun prfstep ictxt item =
+      fun prfstep ctxt item =
           let
-            val ctxt = IncrContext.context_of ictxt
             val inst_ths =
-                ItemIO.get_insts_filt (the_single args) item ictxt ([], fo_init) filt
+                ItemIO.get_insts_filt (the_single args) item ctxt ([], fo_init) filt
             fun inst_to_updt ((id, _), eq1) =
                 (* Here eq1 is meta_eq from pat(inst) to item. *)
                 let

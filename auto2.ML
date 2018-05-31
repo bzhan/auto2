@@ -190,10 +190,9 @@ and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...})=
         | _ => Status.add_to_queue updt st
     end
 
-fun process_step_single sc ictxt items (prfstep as {args, func, ...}) st =
+fun process_step_single sc ctxt items (prfstep as {args, func, ...}) st =
     let
       val arg = the_single (filter_out ItemIO.is_side_match args)
-      val ctxt = IncrContext.context_of ictxt
       val items' = filter (ItemIO.pre_match_arg ctxt arg) items
       val f = case func of
                   OneStep f => f
@@ -202,7 +201,7 @@ fun process_step_single sc ictxt items (prfstep as {args, func, ...}) st =
 
       fun process_one_item item st =
           let
-            val updts = scoring prfstep sc [item] st (f ictxt)
+            val updts = scoring prfstep sc [item] st (f ctxt)
           in
             st |> fold apply_update_instant updts
           end
@@ -210,9 +209,8 @@ fun process_step_single sc ictxt items (prfstep as {args, func, ...}) st =
       st |> fold process_one_item items'
     end
 
-fun process_step_pair sc ictxt items items' (prfstep as {args, func, ...}) st =
+fun process_step_pair sc ctxt items items' (prfstep as {args, func, ...}) st =
     let
-      val ctxt = IncrContext.context_of ictxt
       val (arg1, arg2) = the_pair (filter_out ItemIO.is_side_match args)
       val f = case func of
                   TwoStep f => f
@@ -254,7 +252,7 @@ fun process_step_pair sc ictxt items items' (prfstep as {args, func, ...}) st =
             (* Iterate over the right items, fixing left item. *)
             fun loop_right left_item st =
                 let
-                  val func = f ictxt left_item
+                  val func = f ctxt left_item
                 in
                   st |> fold (process_pair left_item func) right'
                 end
@@ -329,28 +327,22 @@ fun process_add_terms item (st as {ctxt, ...}) =
          |> Status.map_context (K ctxt')
     end
 
-(* Process the given item. This has two parts: first, if the item is
-   added to a box, process that fact with initial ictxt. Second, if
-   the rewrite table is changed (due to either EQ, PROPERTY, or
-   WELLFORM), process relevant items with incremental ictxt.
- *)
+(* Process the given items. *)
 fun process_fact_all items (st as {ctxt, ...}) =
     if null items then st else
     let
       val thy = Proof_Context.theory_of ctxt
       val sc = #sc (hd items)
 
-      (* Obtain initial and incremental ictxt, and the list of
-         relevant terms for that increment.
-       *)
       val items' =
           (Status.get_items st)
               |> filter_out (fn {id, ...} => BoxID.is_box_resolved ctxt id)
 
       val old_items = subtract BoxItem.eq_item items items'
 
-      val incr_ctxt = Auto2Data.get_incr_type old_items items ctxt
-      val ctxt' = IncrContext.context_of incr_ctxt
+      (* Incremental context and the list of relevant terms for the
+         increment. *)
+      val ctxt' = Auto2Data.get_incr_type old_items items ctxt
       val ts =
           (maps Auto2Data.relevant_terms_single items @
            maps (Property.strip_property_field thy o dest_arg o prop_of' o snd)
@@ -378,7 +370,7 @@ fun process_fact_all items (st as {ctxt, ...}) =
       val all_items = init_items @ incr_items
     in
       st |> Status.map_context (K (Auto2Data.get_single_type ctxt'))
-         |> fold (process_prfstep sc incr_ctxt all_items items') prfsteps
+         |> fold (process_prfstep sc ctxt' all_items items') prfsteps
          |> Status.clear_incr
     end
 

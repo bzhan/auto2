@@ -6,7 +6,7 @@ sig
   val add_terms:
       box_item list -> (box_id * cterm) list -> Proof.context -> Proof.context
   val get_incr_type:
-      box_item list -> box_item list -> Proof.context -> incr_context
+      box_item list -> box_item list -> Proof.context -> Proof.context
   val get_single_type: Proof.context -> Proof.context
 end;
 
@@ -70,16 +70,9 @@ fun get_incr_type old_items items ctxt =
           items @
           filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
                                             (map Thm.term_of tname)) old_items
-
-      val ctxt' = ctxt |> fold add_one_info items
-                       |> WellformData.complete_wellform_data match_items
-
-      (* Return the list of terms that may be affected. This include
-         terms with new equivalences, properties, or wellformedness
-         data.
-       *)
     in
-      LAST ctxt'
+      ctxt |> fold add_one_info items
+           |> WellformData.complete_wellform_data match_items
     end
 
 fun get_single_type ctxt =

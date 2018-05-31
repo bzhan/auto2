@@ -24,9 +24,8 @@ fun get_struct_t op_heads t =
       SOME (hd (Util.dest_args t))
     else NONE
 
-fun alg_norm1_prfstep_fn norm_info ictxt {id, tname, ...} =
+fun alg_norm1_prfstep_fn norm_info ctxt {id, tname, ...} =
     let
-      val ctxt = IncrContext.context_of ictxt
       val {op_heads, pred_t, norm_t, excl_norm_t, norm_wfcv} = norm_info
       val ct = the_single tname
       val t = Thm.term_of ct
@@ -62,7 +61,7 @@ fun alg_norm1_prfstep_fn norm_info ictxt {id, tname, ...} =
 
           fun process_property_info (id', property_th) =
               (WellformData.cterm_to_wfterm ctxt fheads (id', ct))
-                  |> IncrContext.replace_id_for_type' ictxt
+                  |> BoxID.replace_id_for_type'
                   |> map (process_wft property_th)
         in
           maps process_property_info property_infos
@@ -81,9 +80,8 @@ fun alg_norm1_prfstep norm_info =
        func = OneStep (alg_norm1_prfstep_fn norm_info)}
     end
 
-fun alg_norm2_prfstep_fn norm_info ictxt item1 item2 =
+fun alg_norm2_prfstep_fn norm_info ctxt item1 item2 =
     let
-      val ctxt = IncrContext.context_of ictxt
       val {op_heads, pred_t, norm_t, excl_norm_t, norm_wfcv} = norm_info
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
@@ -137,7 +135,7 @@ fun alg_norm2_prfstep_fn norm_info ictxt item1 item2 =
                 (Util.all_pairs (wfts1, wfts2))
                     |> map (fn ((id1, wft1), (id2, wft2)) =>
                                (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-                    |> IncrContext.replace_id_for_type' ictxt
+                    |> BoxID.replace_id_for_type'
                     |> map (process_wft property_th)
               end
         in

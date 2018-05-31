@@ -125,9 +125,8 @@ fun ac_expand ctxt ac_info (id, ct) =
       helper ([], start)
     end
 
-fun ac_expand_equiv_fn ictxt item1 item2 =
+fun ac_expand_equiv_fn ctxt item1 item2 =
     let
-      val ctxt = IncrContext.context_of ictxt
       val thy = Proof_Context.theory_of ctxt
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
@@ -167,7 +166,7 @@ fun ac_expand_equiv_fn ictxt item1 item2 =
           in
             (maps get_equiv (Util.all_pairs (expand1, expand2)))
                 |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
-                |> IncrContext.replace_id_for_type' ictxt
+                |> BoxID.replace_id_for_type'
                 |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
           end
     end
@@ -177,9 +176,8 @@ val ac_expand_equiv =
      args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
      func = TwoStep ac_expand_equiv_fn}
 
-fun ac_expand_unit_fn ictxt item =
+fun ac_expand_unit_fn ctxt item =
     let
-      val ctxt = IncrContext.context_of ictxt
       val thy = Proof_Context.theory_of ctxt
       val {id, tname, ...} = item
       val ct = the_single tname
@@ -207,7 +205,7 @@ fun ac_expand_unit_fn ictxt item =
                 end
           in
             (maps process_expand expand)
-                |> IncrContext.replace_id_for_type' ictxt
+                |> BoxID.replace_id_for_type'
                 |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
           end
     end

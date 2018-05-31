@@ -28,9 +28,8 @@ fun normalize_assoc (fhead, assoc_l) wft =
       normalize wft
     end
 
-fun alg_assoc_prfstep_fn (fhead, assoc_l) ictxt item1 item2 =
+fun alg_assoc_prfstep_fn (fhead, assoc_l) ctxt item1 item2 =
     let
-      val ctxt = IncrContext.context_of ictxt
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
       val id = BoxID.merge_boxes ctxt (id1, id2)
@@ -58,7 +57,7 @@ fun alg_assoc_prfstep_fn (fhead, assoc_l) ictxt item1 item2 =
         (Util.all_pairs (wfts1, wfts2))
             |> map (fn ((id1, wft1), (id2, wft2)) =>
                        (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-            |> IncrContext.replace_id_for_type' ictxt
+            |> BoxID.replace_id_for_type'
             |> map process_wft
       end
     end

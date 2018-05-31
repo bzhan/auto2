@@ -10,6 +10,10 @@ sig
   val has_incr_id: box_id -> bool
   val add_incr_id: box_id -> box_id
   val replace_incr_id: box_id -> box_id
+  val filter_id_for_type: ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
+  val replace_id_for_type: ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
+  val replace_id_for_type': (box_id * 'a) list -> (box_id * 'a) list
+
   val get_parent_prim: Proof.context -> int -> box_id
   val get_ancestors_prim: Proof.context -> box_id -> int list
   val reduce_box_id: Proof.context -> int list -> box_id
@@ -67,6 +71,21 @@ fun add_incr_id id =
 
 fun replace_incr_id id =
     if has_incr_id id then tl id else id
+
+fun filter_id_for_type insts =
+    filter (fn ((id, _), _) => has_incr_id id) insts
+
+fun replace_id_for_type insts =
+    let
+      fun process_info ((id, inst), th) =
+          if has_incr_id id then [((replace_incr_id id, inst), th)]
+          else []
+    in
+      maps process_info insts
+    end
+
+fun replace_id_for_type' insts =
+    insts |> map (rpair ()) |> replace_id_for_type |> map fst
 
 fun get_parent_prim ctxt prim_id =
     let

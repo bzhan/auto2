@@ -61,9 +61,8 @@ fun ord_ring_alg_data ord_ring_th =
       }
     end
 
-fun ord_normalize_fn ictxt item1 item2 =
+fun ord_normalize_fn ctxt item1 item2 =
     let
-      val ctxt = IncrContext.context_of ictxt
       val {id = id1, prop = prop1, ...} = item1
       val {id = id2, prop = prop2, ...} = item2
       val id = BoxID.merge_boxes ctxt (id1, id2)
@@ -111,7 +110,7 @@ fun ord_normalize_fn ictxt item1 item2 =
               (Util.all_pairs (wfts1, wfts2))
                   |> map (fn ((id1, wft1), (id2, wft2)) =>
                              (BoxID.merge_boxes ctxt (id1, id2), (wft1, wft2)))
-                  |> IncrContext.replace_id_for_type' ictxt
+                  |> BoxID.replace_id_for_type'
                   |> maps (process_wft property_th)
             end
       in

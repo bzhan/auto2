@@ -559,9 +559,8 @@ fun is_nat_sub_form t =
       fastype_of (dest_arg t) = natT
     else false
 
-fun nat_sub_expand_equiv_fn ictxt item1 item2 =
+fun nat_sub_expand_equiv_fn ctxt item1 item2 =
     let
-      val ctxt = IncrContext.context_of ictxt
       val {id = id1, tname = tname1, ...} = item1
       val {id = id2, tname = tname2, ...} = item2
       val (ct1, ct2) = (the_single tname1, the_single tname2)
@@ -599,7 +598,7 @@ fun nat_sub_expand_equiv_fn ictxt item1 item2 =
       in
         (maps get_equiv (Util.all_pairs (expand1, expand2)))
             |> Util.max_partial (BoxID.id_is_eq_ancestor ctxt)
-            |> IncrContext.replace_id_for_type' ictxt
+            |> BoxID.replace_id_for_type'
             |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
       end
     end
@@ -610,9 +609,8 @@ val nat_sub_expand_equiv =
              TypedMatch (TY_TERM, @{term_pat "?B::nat"})],
      func = TwoStep nat_sub_expand_equiv_fn}
 
-fun nat_sub_expand_unit_fn ictxt item =
+fun nat_sub_expand_unit_fn ctxt item =
     let
-      val ctxt = IncrContext.context_of ictxt
       val {id, tname, ...} = item
       val ct = the_single tname
       val t = Thm.term_of ct
@@ -638,7 +636,7 @@ fun nat_sub_expand_unit_fn ictxt item =
             end
       in
         (maps process_expand expand)
-            |> IncrContext.replace_id_for_type' ictxt
+            |> BoxID.replace_id_for_type'
             |> map (fn (id, th) => Update.thm_update_sc 1 (id, th))
       end
     end

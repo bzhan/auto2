@@ -196,10 +196,7 @@ val test_match_update =
       val B = Free ("B", natT --> boolT)
       val D = Free ("D", boolT)
       val ctxt' = ctxt |> fold Variable.declare_term [x, y, A, B, D]
-
-      val ictxt = LAST ctxt'
       val ctxt'' = ctxt' |> RewriteTable.add_rewrite ([], assume_eq thy (x, y)) |> snd
-      val ictxt2 = LAST ctxt''
 
       fun disj_to_ritem th =
           let
@@ -217,7 +214,7 @@ val test_match_update =
             | ResolveBox {th, ...} => [th]
             | _ => []
 
-      fun test_updt ictxt (disj_str, t_str, res_strs) =
+      fun test_updt ctxt (disj_str, t_str, res_strs) =
           let
             val disj_th = Util.assume_thm ctxt' (read_prop disj_str)
             val th = Util.assume_thm ctxt' (read_prop t_str)
@@ -225,7 +222,7 @@ val test_match_update =
             val mk_box_item = BoxItem.mk_box_item ctxt'
             val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),
                          mk_box_item (0, [0], 0, Update.thm_to_ritem th)]
-            val updts = ProofStep.apply_prfstep ictxt items Logic_ProofSteps.match_update_prfstep
+            val updts = ProofStep.apply_prfstep ctxt items Logic_ProofSteps.match_update_prfstep
             val res_ts' = maps updt_to_thm updts |> map Thm.prop_of
           in
             if eq_set (op aconv) (res_ts, res_ts') then ()
@@ -242,12 +239,12 @@ val test_match_update =
       val data1 = [("B x | B y | ~A", "A", ["B x | B y"]),
                    ("B x | B y | ~A", "~B x", ["B y | ~A"]),
                    ("B x | B y | ~A", "~B y", [])]
-      val _ = map (test_updt ictxt) data1
+      val _ = map (test_updt ctxt') data1
 
       val data2 = [("B x | B y | ~A", "~B x", ["B y | ~A"]),
                    ("B x | B y | ~A", "D", []),
                    ("B x | B y", "~B x", ["False"])]
-      val _ = map (test_updt ictxt2) data2
+      val _ = map (test_updt ctxt'') data2
     in
       ()
     end
