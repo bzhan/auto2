@@ -78,7 +78,6 @@ fun alg_norm1_prfstep norm_info =
     in
       {name = c ^ "@norm1",
        args = [TypedUniv TY_TERM],
-       priority = PRIORITY_ADD,
        func = OneStep (alg_norm1_prfstep_fn norm_info)}
     end
 
@@ -154,7 +153,6 @@ fun alg_norm2_prfstep norm_info =
     in
       {name = c ^ "@norm2",
        args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
-       priority = PRIORITY_ADD,
        func = TwoStep (alg_norm2_prfstep_fn norm_info)}
     end
 

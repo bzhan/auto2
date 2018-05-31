@@ -1,10 +1,6 @@
 (* Definition of type proofstep, and facility for adding basic proof
    steps.
  *)
-
-val (PRIORITY_NORM, PRIORITY_URGENT,
-     PRIORITY_SHADOW, PRIORITY_RESOLVE, PRIORITY_ADD) = (1, 2, 3, 4, 5)
-
 datatype proofstep_fn
   = OneStep of incr_context -> box_item -> raw_update list
   | TwoStep of incr_context -> box_item -> box_item -> raw_update list
@@ -12,7 +8,6 @@ datatype proofstep_fn
 type proofstep = {
   name: string,
   args: match_arg list,
-  priority: int,
   func: proofstep_fn
 }
 
@@ -53,7 +48,7 @@ sig
   val get_side_ths:
       Proof.context -> id_inst -> match_arg list -> (box_id * thm list) list
   val prfstep_custom:
-      string -> prfstep_descriptor list -> int ->
+      string -> prfstep_descriptor list ->
       (id_inst_ths -> box_item list -> Proof.context -> raw_update list) -> proofstep
   val gen_prfstep: string -> prfstep_descriptor list -> proofstep
   val prfstep_pre_conv: string -> prfstep_descriptor list ->
@@ -255,7 +250,7 @@ fun get_side_ths ctxt (id, inst) side_args =
 (* Creates a proofstep with specified patterns and filters (in descs),
    and a custom function converting any instantiations into updates.
  *)
-fun prfstep_custom name descs priority updt_fn =
+fun prfstep_custom name descs updt_fn =
     let
       val args = retrieve_args descs
       val (item_args, side_args) = filter_split ItemIO.is_ordinary_match args
@@ -297,8 +292,7 @@ fun prfstep_custom name descs priority updt_fn =
                 maps process_inst inst_ths
               end
         in
-          {name = name, args = args, priority = priority,
-           func = OneStep prfstep}
+          {name = name, args = args, func = OneStep prfstep}
         end
       else if length item_args = 2 then
         let
@@ -326,8 +320,7 @@ fun prfstep_custom name descs priority updt_fn =
                 fn item2 => maps (process_inst1 item2) inst_ths
               end
         in
-          {name = name, args = args, priority = priority,
-           func = TwoStep prfstep1}
+          {name = name, args = args, func = TwoStep prfstep1}
         end
       else
         raise Fail "prfstep_custom: must have 1 or 2 patterns."
@@ -374,15 +367,10 @@ fun gen_prfstep name descs =
                     init_assum = Util.subst_term_norm inst assum}
       fun cases_to_update inst_ths = map (case_to_update inst_ths) cases
 
-      val priority =
-          if has_shadows_desc descs then PRIORITY_SHADOW else
-          if exists (fn (t, _) => t aconv bFalse) pats_r then PRIORITY_RESOLVE
-          else PRIORITY_ADD
-
       fun updt_fn inst_th _ ctxt =
           pats_r_to_update ctxt inst_th @ cases_to_update inst_th
     in
-      prfstep_custom name input_descs priority updt_fn
+      prfstep_custom name input_descs updt_fn
     end
 
 fun prfstep_pre_conv name descs pre_cv =
@@ -420,8 +408,7 @@ fun prfstep_pre_conv name descs pre_cv =
             maps inst_to_updt inst_ths
           end
     in
-      {name = name, args = args, priority = PRIORITY_ADD,
-       func = OneStep prfstep}
+      {name = name, args = args, func = OneStep prfstep}
     end
 
 fun prfstep_conv name descs cv = prfstep_pre_conv name descs (K cv)
@@ -455,7 +442,7 @@ sig
   val get_fixed_sc: theory -> string -> int option
 
   val add_prfstep_custom:
-      (string * prfstep_descriptor list * int *
+      (string * prfstep_descriptor list *
        (id_inst_ths -> box_item list -> Proof.context -> raw_update list)) ->
       theory -> theory
 
@@ -513,9 +500,6 @@ end;
 structure ProofStepData : PROOFSTEP_DATA =
 struct
 
-fun prfstep_ord ({priority, ...}, {priority = priority', ...}) =
-    int_ord (priority, priority')
-
 structure Data = Theory_Data (
   type T = proofstep_table;
   val empty = {prfsteps = Symtab.empty, sorted_prfsteps = [],
@@ -524,8 +508,7 @@ structure Data = Theory_Data (
   fun merge ({prfsteps = p1, sorted_prfsteps = sp1, fixed_sc = sc1},
              {prfsteps = p2, sorted_prfsteps = sp2, fixed_sc = sc2}) =
       {prfsteps = Symtab.merge ProofStep.eq_prfstep (p1, p2),
-       sorted_prfsteps =
-       sort prfstep_ord (Library.merge ProofStep.eq_prfstep (sp1, sp2)),
+       sorted_prfsteps = Library.merge ProofStep.eq_prfstep (sp1, sp2),
        fixed_sc = Symtab.merge (op =) (sc1, sc2)}
 )
 
@@ -540,7 +523,7 @@ fun add_prfstep (prfstep as {args, ...}) =
          in
            if num_args >= 1 andalso num_args <= 2 then
              {prfsteps = Symtab.update_new (#name prfstep, prfstep) prfsteps,
-              sorted_prfsteps = sort prfstep_ord (sorted_prfsteps @ [prfstep]),
+              sorted_prfsteps = sorted_prfsteps @ [prfstep],
               fixed_sc = fixed_sc}
            else
              error "add_proofstep: need 1 or 2 patterns."
@@ -609,8 +592,8 @@ fun get_prfsteps thy =
 fun get_fixed_sc thy prfstep_name =
     Symtab.lookup (#fixed_sc (Data.get thy)) prfstep_name
 
-fun add_prfstep_custom (name, descs, priority, updt_fn) =
-    add_prfstep (ProofStep.prfstep_custom name descs priority updt_fn)
+fun add_prfstep_custom (name, descs, updt_fn) =
+    add_prfstep (ProofStep.prfstep_custom name descs updt_fn)
 
 fun add_gen_prfstep (name, descs) =
     add_prfstep (ProofStep.gen_prfstep name descs)

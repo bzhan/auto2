@@ -234,7 +234,6 @@ val list_expand_equiv =
     {name = "list_expand_equiv",
      args = [TypedMatch (TY_TERM, @{term_pat "?A::?'a list"}),
              TypedMatch (TY_TERM, @{term_pat "?B::?'a list"})],
-     priority = PRIORITY_ADD,
      func = TwoStep list_expand_equiv_fn}
 
 fun list_expand_unit_fn ictxt item =
@@ -273,7 +272,6 @@ fun list_expand_unit_fn ictxt item =
 val list_expand_unit =
     {name = "list_expand_unit",
      args = [TypedMatch (TY_TERM, @{term_pat "?A::?'a list"})],
-     priority = PRIORITY_ADD,
      func = OneStep list_expand_unit_fn}
 
 val add_list_proofsteps =

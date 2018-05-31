@@ -29,7 +29,6 @@ val add_interval_proofsteps =
       ("mem_closed_interval",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithGoal @{term_pat "mem(?NUMC,closed_interval(?G,?NUMC1,?NUMC2))"}],
-       PRIORITY_RESOLVE,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val (ord_field_th, th) = the_pair ths
@@ -61,7 +60,6 @@ val add_interval_proofsteps =
       ("not_mem_closed_interval",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithFact @{term_pat "mem(?NUMC,closed_interval(?G,?NUMC1,?NUMC2))"}],
-       PRIORITY_RESOLVE,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val (ord_field_th, th) = the_pair ths
@@ -104,7 +102,6 @@ val add_interval_proofsteps =
                       @{term_pat "mem(?x, carrier(?G))"}),
         WithGoal (mk_mem (@{term_pat "plus(?G,?x,?NUMC)"},
                           @{term_pat "closed_interval(?G,?NUMC1,?NUMC2)"}))],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val (ord_field_th, mem_x, th) = the_triple ths
@@ -138,7 +135,6 @@ val add_interval_proofsteps =
                       @{term_pat "mem(?x, carrier(?G))"}),
         WithGoal (mk_mem (@{term_pat "minus(?G,?x,?NUMC)"},
                           @{term_pat "closed_interval(?G,?NUMC1,?NUMC2)"}))],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val (ord_field_th, mem_x, th) = the_triple ths
@@ -172,7 +168,6 @@ val add_interval_proofsteps =
                       @{term_pat "mem(?x, carrier(?G))"}),
         WithGoal (mk_mem (@{term_pat "times(?G,?NUMC,?x)"},
                           @{term_pat "closed_interval(?G,?NUMC1,?NUMC2)"}))],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val (ord_field_th, mem_x, th) = the_triple ths

@@ -123,14 +123,12 @@ val ord_normalize_le =
     {name = "ord_normalize_le",
      args = [TypedMatch (TY_PROP, @{term_pat "le(?G,?A,?B)"}),
              TypedMatch (TY_PROP, @{term_pat "~le(?G,?C,?D)"})],
-     priority = PRIORITY_RESOLVE,
      func = TwoStep ord_normalize_fn}
 
 val ord_normalize_less =
     {name = "ord_normalize_less",
      args = [TypedMatch (TY_PROP, @{term_pat "less(?G,?A,?B)"}),
              TypedMatch (TY_PROP, @{term_pat "~less(?G,?C,?D)"})],
-     priority = PRIORITY_RESOLVE,
      func = TwoStep ord_normalize_fn}
 
 val add_ord_ring_proofsteps =

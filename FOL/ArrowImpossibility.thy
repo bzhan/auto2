@@ -169,7 +169,6 @@ lemma ex_fun: "\<forall>a\<in>X. \<exists>y\<in>Y. P(a,y) \<Longrightarrow> \<ex
 
 setup {* add_prfstep_custom ("ex_fun",
   [WithGoal @{term_pat "\<exists>f\<in>?X\<rightarrow>?Y. \<forall>a\<in>?X. ?P(a,f)"}],
-  PRIORITY_SHADOW,
   (fn ((id, _), ths) => fn items => fn _ =>
     let
       val ex_fun' = @{thm ex_fun} |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)

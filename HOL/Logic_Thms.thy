@@ -66,7 +66,6 @@ setup {* add_forward_prfstep_cond @{thm someI_ex} [with_term "SOME x. ?P x"] *}
 (* Axiom of choice *)
 setup {* add_prfstep_custom ("ex_choice",
   [WithGoal @{term_pat "EX f. !x. ?Q f x"}],
-  PRIORITY_ADD,
   (fn ((id, _), ths) => fn _ => fn _ =>
     let
       val choice = @{thm choice} |> apply_to_thm (Conv.rewr_conv UtilBase.backward_conv_th)

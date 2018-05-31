@@ -608,7 +608,6 @@ val nat_sub_expand_equiv =
     {name = "nat_sub_expand_equiv",
      args = [TypedMatch (TY_TERM, @{term_pat "?A::nat"}),
              TypedMatch (TY_TERM, @{term_pat "?B::nat"})],
-     priority = PRIORITY_ADD,
      func = TwoStep nat_sub_expand_equiv_fn}
 
 fun nat_sub_expand_unit_fn ictxt item =
@@ -647,7 +646,6 @@ fun nat_sub_expand_unit_fn ictxt item =
 val nat_sub_expand_unit =
     {name = "nat_sub_expand_unit",
      args = [TypedMatch (TY_TERM, @{term_pat "?A::nat"})],
-     priority = PRIORITY_ADD,
      func = OneStep nat_sub_expand_unit_fn}
 
 val add_nat_sub_proofsteps =

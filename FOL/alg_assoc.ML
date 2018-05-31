@@ -69,7 +69,6 @@ fun alg_assoc_prfstep (fhead, assoc_l) =
     in
       {name = c ^ "@assoc",
        args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
-       priority = PRIORITY_ADD,
        func = TwoStep (alg_assoc_prfstep_fn (fhead, assoc_l))}
     end
 

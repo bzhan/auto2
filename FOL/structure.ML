@@ -291,7 +291,6 @@ val add_structure_prfsteps =
     fold add_prfstep_custom [
       ("is_func_graph",
        [WithTerm @{term_pat "Struct(?F)"}],
-       PRIORITY_ADD,
        fn ((id, inst), _) => fn _ => fn ctxt =>
           let
             val F = Util.lookup_inst inst "F"
@@ -312,7 +311,6 @@ val add_structure_prfsteps =
         WithFact @{term_pat "is_func_graph(?G,?X)"},
         Filter (neq_filter @{term_pat "(?F::i) ~= ?G"}),
         Filter (order_filter "F" "G")],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn ctxt =>
           if not (is_finite_set (Util.lookup_inst inst "X")) then []
           else let

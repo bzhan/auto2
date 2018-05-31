@@ -417,7 +417,6 @@ val nat_eq_diff_prfstep =
     ProofStep.prfstep_custom
       "nat_eq_diff"
       [WithItem (TY_EQ, @{term_pat "(?x::nat) = ?y"})]
-      PRIORITY_ADD
       (fn ((id, _), _) => fn items => fn _ =>
           let
             val {prop, ...} = the_single items
@@ -486,7 +485,6 @@ val transitive =
          Filter (neq_filter @{term_pat "?x ~= ?y"}),
          Filter (neq_filter @{term_pat "?y ~= ?z"}),
          Filter (neq_filter @{term_pat "?x ~= ?z"})]
-        PRIORITY_ADD
         (fn ((id, _), ths) => fn _ => fn _ =>
             let
               val (th1, th2) = the_pair ths
@@ -515,7 +513,6 @@ val transitive_resolve =
         "nat_order_transitive_resolve"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?y, ?m)"}),
          WithItem (TY_NAT_ORDER, @{term_pat "(?y, ?x, ?n)"})]
-        PRIORITY_RESOLVE
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val m = dest_numc (lookup_inst inst "m")
@@ -546,7 +543,6 @@ val single_resolve =
     ProofStep.prfstep_custom
         "nat_order_single_resolve"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, ?x, ?n)"})]
-        PRIORITY_RESOLVE
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val n = dest_numc (lookup_inst inst "n")
@@ -562,7 +558,6 @@ val single_resolve_zero =
     ProofStep.prfstep_custom
         "nat_order_single_resolve_zero"
         [WithItem (TY_NAT_ORDER, @{term_pat "(?x, 0, ?n)"})]
-        PRIORITY_RESOLVE
         (fn ((id, inst), ths) => fn _ => fn _ =>
             let
               val n = dest_numc (lookup_inst inst "n")

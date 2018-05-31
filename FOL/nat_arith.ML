@@ -221,7 +221,6 @@ val add_nat_arith_proofsteps =
     ] #> fold add_prfstep_custom [
       ("nat_eq_consts",
        [WithFact @{term_pat "?NUMC1 = ?NUMC2"}],
-       PRIORITY_RESOLVE,
        fn ((id, _), ths) => fn _ => fn _ =>
           let
             val th = the_single ths
@@ -234,7 +233,6 @@ val add_nat_arith_proofsteps =
 
       ("nat_le_consts",
        [WithGoal @{term_pat "le(nat_ring,?NUMC1,?NUMC2)"}],
-       PRIORITY_RESOLVE,
        fn ((id, _), ths) => fn _ => fn _ =>
           let
             val th = the_single ths
@@ -251,7 +249,6 @@ val add_nat_arith_proofsteps =
 
       ("nat_less_consts",
        [WithGoal @{term_pat "less(nat_ring,?NUMC1,?NUMC2)"}],
-       PRIORITY_RESOLVE,
        fn ((id, _), ths) => fn _ => fn _ =>
           let
             val th = the_single ths

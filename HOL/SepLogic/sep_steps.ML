@@ -253,7 +253,6 @@ fun init_entail_fn ictxt item =
 val init_entail =
     {name = "sep.init_entail",
      args = [TypedMatch (TY_PROP, @{term_pat "~entails ?A ?B"})],
-     priority = PRIORITY_ADD,
      func = OneStep init_entail_fn}
 
 (* Apply entailment to the pre-condition P of P ==>_A Q. *)
@@ -286,7 +285,6 @@ fun forward_ent_prfstep_fn ent_th ictxt item =
 fun forward_ent_prfstep ent_th =
     {name = Util.name_of_thm ent_th ^ "@ent",
      args = [TypedUniv TY_ENTAIL],
-     priority = PRIORITY_SHADOW,
      func = OneStep (forward_ent_prfstep_fn ent_th)}
 
 fun backward_ent_prfstep_fn ent_th ictxt item =
@@ -318,7 +316,6 @@ fun backward_ent_prfstep_fn ent_th ictxt item =
 fun backward_ent_prfstep ent_th =
     {name = Util.name_of_thm ent_th ^ "@entback",
      args = [TypedUniv TY_ENTAIL],
-     priority = PRIORITY_SHADOW,
      func = OneStep (backward_ent_prfstep_fn ent_th)}
 
 fun group_pure_assn ct =
@@ -393,7 +390,6 @@ fun entails_resolve_fn ictxt item =
 val entails_resolve =
     {name = "sep.entails_resolve",
      args = [TypedUniv TY_ENTAIL],
-     priority = PRIORITY_RESOLVE,
      func = OneStep entails_resolve_fn}
 
 (* Initialize CODE_POS item from a Hoare triple goal. *)
@@ -435,7 +431,6 @@ fun init_pos_fn ictxt item =
 val init_pos =
     {name = "sep.init_pos",
      args = [TypedMatch (TY_PROP, @{term_pat "~<?P> ?c <?Q>"})],
-     priority = PRIORITY_ADD,
      func = OneStep init_pos_fn}
 
 fun forward_hoare_prfstep_fn ent_th ictxt item =
@@ -466,7 +461,6 @@ fun forward_hoare_prfstep_fn ent_th ictxt item =
 fun forward_hoare_prfstep ent_th =
     {name = Util.name_of_thm ent_th ^ "@hoare_ent",
      args = [TypedUniv TY_CODE_POS],
-     priority = PRIORITY_SHADOW,
      func = OneStep (forward_hoare_prfstep_fn ent_th)}
 
 fun add_forward_ent_prfstep ent_th thy =
@@ -541,7 +535,6 @@ val rewrite_pos =
     {name = "sep.rewrite_pos",
      args = [TypedUniv TY_CODE_POS,
              TypedMatch (TY_EQ, @{term_pat "(?c1::?'a Heap) = ?c2"})],
-     priority = PRIORITY_SHADOW,
      func = TwoStep rewrite_pos_fn}
 
 (* Extract the pure pre-conditions from a Hoare triple fact. *)
@@ -634,7 +627,6 @@ val match_hoare_prop =
     {name = "sep.match_hoare_prop",
      args = [TypedMatch (TY_PROP, @{term_pat "<?P> ?c <?Q>"}),
              TypedUniv TY_CODE_POS],
-     priority = PRIORITY_SHADOW,
      func = TwoStep match_hoare_prop_fn}
 
 (* For DISJ items, check that it is a Hoare triple. *)
@@ -653,7 +645,6 @@ fun match_hoare_disj_fn ictxt item1 item2 =
 val match_hoare_disj =
     {name = "sep.match_hoare_disj",
      args = [TypedUniv TY_DISJ, TypedUniv TY_CODE_POS],
-     priority = PRIORITY_SHADOW,
      func = TwoStep match_hoare_disj_fn}
 
 (* Match a MATCH_POS item with hoare triple <P * \<up>(b)> c <Q> with
@@ -685,7 +676,6 @@ val match_assn_pure =
     {name = "sep.match_assn_pure",
      args = [TypedUniv TY_CODE_POS,
              PropMatch (@{term_pat "?b::bool"})],
-     priority = PRIORITY_SHADOW,
      func = TwoStep match_assn_pure_fn}
 
 fun hoare_create_case_fn ictxt item =
@@ -705,7 +695,6 @@ fun hoare_create_case_fn ictxt item =
 val hoare_create_case =
     {name = "sep.hoare_create_case",
      args = [TypedUniv TY_CODE_POS],
-     priority = PRIORITY_ADD,
      func = OneStep hoare_create_case_fn}
 
 fun entail_pure_fn ictxt item1 item2 =
@@ -732,7 +721,6 @@ val entail_pure =
     {name = "sep.entail_pure",
      args = [TypedUniv TY_ENTAIL,
              PropMatch (@{term_pat "?b::bool"})],
-     priority = PRIORITY_SHADOW,
      func = TwoStep entail_pure_fn}
 
 fun entail_create_case_fn ictxt item =
@@ -752,7 +740,6 @@ fun entail_create_case_fn ictxt item =
 val entail_create_case =
     {name = "sep.entail_create_case",
      args = [TypedUniv TY_ENTAIL],
-     priority = PRIORITY_ADD,
      func = OneStep entail_create_case_fn}
 
 (* Matching CODE_POS with an existing Hoare triple. *)
@@ -773,7 +760,6 @@ fun hoare_triple_fn ictxt item =
 val hoare_triple =
     {name = "sep.hoare_triple",
      args = [TypedUniv TY_CODE_POS],
-     priority = PRIORITY_SHADOW,
      func = OneStep hoare_triple_fn}
 
 (* Contract a Hoare triple to <P> c <Q> form. *)

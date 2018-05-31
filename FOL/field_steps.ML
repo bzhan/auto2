@@ -321,7 +321,6 @@ val add_field_proofsteps =
       ("eval_add_consts",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithTerm @{term_pat "plus(?G,?NUMC1,?NUMC2)"}],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val G = lookup_inst inst "G"
@@ -341,7 +340,6 @@ val add_field_proofsteps =
       ("eval_mult_consts",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithTerm @{term_pat "times(?G,?NUMC1,?NUMC2)"}],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val G = lookup_inst inst "G"
@@ -361,7 +359,6 @@ val add_field_proofsteps =
       ("eval_minus_consts",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithTerm @{term_pat "minus(?G,?NUMC1,?NUMC2)"}],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val G = lookup_inst inst "G"
@@ -381,7 +378,6 @@ val add_field_proofsteps =
       ("le_consts",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithGoal @{term_pat "le(?G,?NUMC1,?NUMC2)"}],
-       PRIORITY_SHADOW,
        fn ((id, inst), ths) => fn items => fn _ =>
           let
             val (ord_field_th, th) = the_pair ths
@@ -404,7 +400,6 @@ val add_field_proofsteps =
       ("less_consts",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithGoal @{term_pat "less(?G,?NUMC1,?NUMC2)"}],
-       PRIORITY_SHADOW,
        fn ((id, inst), ths) => fn items => fn _ =>
           let
             val (ord_field_th, th) = the_pair ths
@@ -427,7 +422,6 @@ val add_field_proofsteps =
       ("le_consts_shadow",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithFact @{term_pat "le(?G,?NUMC1,?NUMC2)"}],
-       PRIORITY_SHADOW,
        fn ((id, inst), _) => fn items => fn _ =>
           let
             val G = lookup_inst inst "G"
@@ -443,7 +437,6 @@ val add_field_proofsteps =
       ("less_consts_shadow",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithFact @{term_pat "less(?G,?NUMC1,?NUMC2)"}],
-       PRIORITY_SHADOW,
        fn ((id, inst), _) => fn items => fn _ =>
           let
             val G = lookup_inst inst "G"
@@ -459,7 +452,6 @@ val add_field_proofsteps =
       ("inv_of_nat_case",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithTerm @{term_pat "inv(?G,of_nat(?G,?NUMC))"}],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val n = lookup_inst inst "NUMC"
@@ -477,7 +469,6 @@ val add_field_proofsteps =
       ("divide_of_nat_case",
        [WithProperty @{term_pat "is_ord_field(?G)"},
         WithTerm @{term_pat "divide(?G,?x,of_nat(?G,?NUMC))"}],
-       PRIORITY_ADD,
        fn ((id, inst), ths) => fn _ => fn _ =>
           let
             val n = lookup_inst inst "NUMC"

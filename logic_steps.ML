@@ -94,13 +94,11 @@ fun shadow_item_fn ictxt item1 item2 =
 val shadow_prop_item =
     {name = "shadow_prop",
      args = [TypedUniv TY_PROP, TypedUniv TY_PROP],
-     priority = PRIORITY_URGENT,
      func = TwoStep shadow_item_fn}
 
 val shadow_term_item =
     {name = "shadow_term",
      args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
-     priority = PRIORITY_URGENT,
      func = TwoStep shadow_item_fn}
 
 fun eq_abs_fn ictxt item1 item2 =
@@ -135,7 +133,6 @@ fun eq_abs_fn ictxt item1 item2 =
 val eq_abs_prfstep =
     {name = "eq_abs",
      args = [TypedUniv TY_TERM, TypedUniv TY_TERM],
-     priority = PRIORITY_ADD,
      func = TwoStep eq_abs_fn}
 
 (* Given an assumption of the form EX x. A, we produce an assumption A
@@ -169,7 +166,6 @@ fun exists_elim_fn ictxt {id, prop, ...} =
 val exists_elim_prfstep =
     {name = "exists_elim",
      args = [TypedUniv TY_PROP],
-     priority = PRIORITY_ADD,
      func = OneStep exists_elim_fn}
 
 val add_logic_proofsteps =
@@ -844,7 +840,6 @@ fun match_update_fn ictxt item1 item2 =
 val match_update_prfstep =
     {name = "disj_match_update",
      args = [TypedUniv TY_DISJ, PropMatch (boolVar "A")],
-     priority = PRIORITY_SHADOW,
      func = TwoStep match_update_fn}
 
 (* For DISJ items with a single term, of form f p1 ... pn, match t
@@ -891,7 +886,6 @@ fun match_one_sch_fn ictxt item1 item2 =
 val match_one_sch_prfstep =
     {name = "disj_match_one_sch",
      args = [TypedUniv TY_DISJ, TypedUniv TY_TERM],
-     priority = PRIORITY_ADD,
      func = TwoStep match_one_sch_fn}
 
 fun disj_match_iff_fn ictxt {id, tname, prop, ...} =
@@ -917,7 +911,6 @@ fun disj_match_iff_fn ictxt {id, tname, prop, ...} =
 val disj_match_iff_prfstep =
     {name = "disj_match_iff",
      args = [TypedUniv TY_DISJ],
-     priority = PRIORITY_ADD,
      func = OneStep disj_match_iff_fn}
 
 (* For active case, create box checking the next case. *)
@@ -939,7 +932,6 @@ fun disj_create_case_fn ictxt {id, tname, ...} =
 val disj_create_case_prfstep =
     {name = "disj_create_case",
      args = [TypedUniv TY_DISJ],
-     priority = PRIORITY_ADD,
      func = OneStep disj_create_case_fn}
 
 (* item1 dominates item2 if the disjunctive terms in item1 is a subset
@@ -966,7 +958,6 @@ fun disj_shadow_fn ictxt (item1 as {tname = tname1, ...})
 val disj_shadow_prfstep =
     {name = "disj_shadow",
      args = [TypedUniv TY_DISJ, TypedUniv TY_DISJ],
-     priority = PRIORITY_SHADOW,
      func = TwoStep disj_shadow_fn}
 
 val add_disj_proofsteps =
