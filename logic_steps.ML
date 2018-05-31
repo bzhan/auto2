@@ -144,8 +144,8 @@ val eq_abs_prfstep =
    time.
  *)
 fun exists_elim_fn ictxt {id, prop, ...} =
-    if not (IncrContext.is_single_ictxt ictxt) then []
-    else let
+    if not (BoxID.has_incr_id id) then [] else
+    let
       val t = prop_of' prop
       val ctxt = IncrContext.context_of ictxt
     in
@@ -157,7 +157,7 @@ fun exists_elim_fn ictxt {id, prop, ...} =
               prop |> apply_to_thm' (UtilLogic.normalize_exists ctxt)
                    |> Update.apply_exists_ritems ctxt
         in
-          [AddItems {id = id, sc = NONE,
+          [AddItems {id = BoxID.replace_incr_id id, sc = NONE,
                      raw_items = ritems @ [Update.thm_to_ritem th']}]
         end
       else []
@@ -889,7 +889,7 @@ val match_one_sch_prfstep =
      func = TwoStep match_one_sch_fn}
 
 fun disj_match_iff_fn ictxt {id, tname, prop, ...} =
-    if not (IncrContext.is_single_ictxt ictxt) then [] else
+    if not (BoxID.has_incr_id id) then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val (_, csubs) = dest_tname_of_disj tname
@@ -902,6 +902,7 @@ fun disj_match_iff_fn ictxt {id, tname, prop, ...} =
         val cv = (UtilLogic.to_obj_conv ctxt) then_conv (Trueprop_conv norm_disj)
         val forward = prop |> UtilLogic.equiv_forward_th |> apply_to_thm cv
         val backward = prop |> UtilLogic.equiv_backward_th |> apply_to_thm cv
+        val id = BoxID.replace_incr_id id
       in
         [disj_to_update false imp (id, NONE, forward),
          disj_to_update false imp (id, NONE, backward)]
@@ -914,8 +915,8 @@ val disj_match_iff_prfstep =
      func = OneStep disj_match_iff_fn}
 
 (* For active case, create box checking the next case. *)
-fun disj_create_case_fn ictxt {id, tname, ...} =
-    if not (IncrContext.is_single_ictxt ictxt) then [] else
+fun disj_create_case_fn _ {id, tname, ...} =
+    if not (BoxID.has_incr_id id) then [] else
     if exists Util.has_vars (map Thm.term_of tname) then [] else
     let
       val (disj_head, csubs) = dest_tname_of_disj tname
@@ -925,7 +926,8 @@ fun disj_create_case_fn ictxt {id, tname, ...} =
       else let
         val subs = map Thm.term_of csubs
       in
-        [AddBoxes {id = id, sc = NONE, init_assum = mk_Trueprop (hd subs)}]
+        [AddBoxes {id = BoxID.replace_incr_id id,
+                   sc = NONE, init_assum = mk_Trueprop (hd subs)}]
       end
     end
 
@@ -939,19 +941,19 @@ val disj_create_case_prfstep =
  *)
 fun disj_shadow_fn ictxt (item1 as {tname = tname1, ...})
                    (item2 as {tname = tname2, ...}) =
-    if not (IncrContext.is_single_ictxt ictxt) then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val id = BoxItem.merged_id ctxt [item1, item2]
       val (disj_head1, subs1) = dest_tname_of_disj tname1
       val (disj_head2, subs2) = dest_tname_of_disj tname2
     in
+      if not (BoxID.has_incr_id id) then [] else
       if not (is_active_head disj_head1) andalso
          is_active_head disj_head2 then []
       else if is_match_prem_only item1 andalso
               not (is_match_prem_only item2) then []
       else if subset (op aconvc) (subs1, subs2) then
-        [ShadowItem {id = id, item = item2}]
+        [ShadowItem {id = BoxID.replace_incr_id id, item = item2}]
       else []
     end
 

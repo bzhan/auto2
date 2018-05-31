@@ -135,6 +135,7 @@ sig
   val get_init_assum: status -> int -> term
 
   val lookup_item: status -> int -> (box_item * box_id list) option
+  val clear_incr: status -> status
   val add_shadowed: box_id * box_item -> status -> status
   val query_shadowed: status -> box_id -> box_item -> bool
   val query_removed: status -> box_item -> bool
@@ -237,6 +238,10 @@ fun get_init_assum {assums, ...} prim_id =
 
 fun lookup_item {items, ...} uid =
     Inttab.lookup items uid
+
+fun clear_incr st =
+    st |> map_items (
+      Inttab.map (fn _ => fn (item, ids) => (BoxItem.item_replace_incr item, ids)))
 
 fun add_shadowed (shadow_id, {uid, ...}) (st as {ctxt, ...}) =
     case lookup_item st uid of

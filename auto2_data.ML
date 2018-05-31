@@ -54,24 +54,20 @@ fun get_incr_type old_items items ctxt =
       fun add_one_info item ctxt =
           let
             val {id, ty_str, prop, ...} = item
-            val id' = BoxID.add_incr_id id
           in
             if ty_str = "EQ" then
               let
-                val (edges, ctxt') = RewriteTable.add_rewrite (id', prop) ctxt
+                val (edges, ctxt') = RewriteTable.add_rewrite (id, prop) ctxt
               in
                 ctxt' |> fold PropertyData.process_rewrite_property edges
               end
             else if ty_str = "PROPERTY" then
-              PropertyData.add_property (id', prop) ctxt
+              PropertyData.add_property (id, prop) ctxt
             else ctxt
           end
 
-      fun merge_prim (item as {id, ...}) =
-          BoxItem.item_with_id (BoxID.add_incr_id id) item
-
       val match_items =
-          map merge_prim items @
+          items @
           filter (fn {tname, ...} => exists (Util.has_subterm relevant_terms)
                                             (map Thm.term_of tname)) old_items
 

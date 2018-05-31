@@ -25,13 +25,11 @@ fun print_infos' ctxt lst = cat_lines (map (print_info' ctxt) lst)
    the new data, as well as the list of terms that are affected, are
    stored as well.
  *)
-datatype incr_context = SINGLE of Proof.context
-                      | LAST of Proof.context
+datatype incr_context = LAST of Proof.context
 
 signature INCR_CONTEXT =
 sig
   val context_of: incr_context -> Proof.context
-  val is_single_ictxt: incr_context -> bool
 
   val filter_id_for_type:
       incr_context -> ((box_id * 'a) * 'b) list -> ((box_id * 'a) * 'b) list
@@ -45,22 +43,17 @@ structure IncrContext : INCR_CONTEXT =
 struct
 
 fun context_of ictxt =
-    case ictxt of SINGLE ctxt => ctxt | LAST ctxt => ctxt
-
-fun is_single_ictxt ictxt =
-    case ictxt of SINGLE _ => true | _ => false
+    case ictxt of LAST ctxt => ctxt
 
 fun filter_id_for_type ictxt insts =
     case ictxt of
-        SINGLE _ => insts
-      | LAST _ =>
+        LAST _ =>
         filter (fn ((id, _), _) => BoxID.has_incr_id id) insts
 
 (* Keep only the last prim id and replace it with repl_id in ictxt. *)
 fun replace_id_for_type ictxt insts =
     case ictxt of
-        SINGLE _ => insts
-      | LAST _ =>
+        LAST _ =>
         let
           fun process_info ((id, inst), th) =
               if BoxID.has_incr_id id then

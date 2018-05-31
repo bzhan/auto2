@@ -179,11 +179,16 @@ and process_resolve (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
    updates in queue.
 *)
 and apply_update_instant (updt as {raw_updt, ...}) (st as {ctxt, ...})=
-    if BoxID.is_box_resolved ctxt (Update.target_of_update raw_updt) then st
-    else case raw_updt of
-             ResolveBox _ => st |> process_resolve updt
-           | ShadowItem _ => st |> process_shadow updt
-           | _ => st |> Status.add_to_queue updt
+    let
+      val id = Update.target_of_update raw_updt
+      val _ = assert (not (BoxID.has_incr_id id))
+    in
+      if BoxID.is_box_resolved ctxt id then st else
+      case raw_updt of
+          ResolveBox _ => process_resolve updt st
+        | ShadowItem _ => process_shadow updt st
+        | _ => Status.add_to_queue updt st
+    end
 
 fun process_step_single sc ictxt items (prfstep as {args, func, ...}) st =
     let
@@ -354,9 +359,6 @@ fun process_fact_all items (st as {ctxt, ...}) =
               |> distinct (op aconv)
               |> RewriteTable.get_reachable_terms true ctxt
 
-      val ctxt' = Auto2Data.get_single_type ctxt'
-      val init_ctxt = SINGLE ctxt'
-
       (* List of items to consider for init and incr rounds. *)
       val init_items = filter_out (BoxItem.match_ty_str TY_PROPERTY) items
 
@@ -373,10 +375,11 @@ fun process_fact_all items (st as {ctxt, ...}) =
       (* List of proofsteps to consider for init and incr rounds. *)
       val thy = Proof_Context.theory_of ctxt
       val prfsteps = ProofStepData.get_prfsteps thy
+      val all_items = init_items @ incr_items
     in
-      st |> Status.map_context (K ctxt')
-         |> fold (process_prfstep sc init_ctxt init_items items') prfsteps
-         |> fold (process_prfstep sc incr_ctxt incr_items items') prfsteps
+      st |> Status.map_context (K (Auto2Data.get_single_type ctxt'))
+         |> fold (process_prfstep sc incr_ctxt all_items items') prfsteps
+         |> Status.clear_incr
     end
 
 fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
@@ -439,8 +442,8 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
           st |> Status.map_context (K ctxt')
              |> fold Status.add_handler handlers_info
              |> fold process_add_terms items
-             |> fold Status.add_item items
-             |> process_fact_all items
+             |> fold Status.add_item (map BoxItem.item_with_incr items)
+             |> process_fact_all (map BoxItem.item_with_incr items)
         end
       | _ => raise Fail "process_add_items: wrong type of update"
 
@@ -508,13 +511,14 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
 fun apply_update (updt as {raw_updt, ...}) (st as {ctxt, ...}) =
     let
       val id = Update.target_of_update raw_updt
+      val _ = assert (not (BoxID.has_incr_id id))
     in
       if BoxID.is_box_resolved ctxt id then st else
-      st |> (case raw_updt of
-                 AddItems _ => process_add_items updt
-               | AddBoxes _ => process_add_boxes updt
-               | ResolveBox _ => process_resolve updt
-               | ShadowItem _ => process_shadow updt)
+      case raw_updt of
+          AddItems _ => process_add_items updt st
+        | AddBoxes _ => process_add_boxes updt st
+        | ResolveBox _ => process_resolve updt st
+        | ShadowItem _ => process_shadow updt st
     end
 
 (* Initialize status, given the subgoal in pure logic form. *)

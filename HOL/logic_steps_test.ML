@@ -197,9 +197,9 @@ val test_match_update =
       val D = Free ("D", boolT)
       val ctxt' = ctxt |> fold Variable.declare_term [x, y, A, B, D]
 
-      val ictxt = SINGLE ctxt'
+      val ictxt = LAST ctxt'
       val ctxt'' = ctxt' |> RewriteTable.add_rewrite ([], assume_eq thy (x, y)) |> snd
-      val ictxt2 = SINGLE ctxt''
+      val ictxt2 = LAST ctxt''
 
       fun disj_to_ritem th =
           let
@@ -224,7 +224,7 @@ val test_match_update =
             val res_ts = map read_prop res_strs
             val mk_box_item = BoxItem.mk_box_item ctxt'
             val items = [mk_box_item (0, [], 0, disj_to_ritem disj_th),
-                         mk_box_item (0, [], 0, Update.thm_to_ritem th)]
+                         mk_box_item (0, [0], 0, Update.thm_to_ritem th)]
             val updts = ProofStep.apply_prfstep ictxt items Logic_ProofSteps.match_update_prfstep
             val res_ts' = maps updt_to_thm updts |> map Thm.prop_of
           in

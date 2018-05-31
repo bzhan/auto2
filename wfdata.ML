@@ -255,15 +255,10 @@ fun add_wellform_data_raw (t, (id, th)) ctxt =
 fun find_fact ctxt items (id, ct) =
     let
       val t = Thm.term_of ct
-      val ictxt = SINGLE ctxt
 
       fun match_item item =
-          let
-            fun process_inst ((id', _), th) = (id', th)
-            val insts = ItemIO.get_insts (PropMatch t) item ictxt (id, fo_init)
-          in
-            map process_inst insts
-          end
+          (ItemIO.match_arg ctxt (PropMatch t) item (id, fo_init))
+              |> map (fn ((id', _), th) => (id', th))
     in
       if is_eq_term t then  (* Equality case *)
         map (apsnd to_obj_eq)

@@ -242,12 +242,12 @@ fun entail_goal_update ctxt (id, th) =
     end
 
 fun init_entail_fn ictxt item =
-    if not (IncrContext.is_single_ictxt ictxt) then [] else
+    if not (BoxID.has_incr_id (#id item)) then [] else
     let
       val ctxt = IncrContext.context_of ictxt
       val {id, prop, ...} = item
     in
-      [entail_goal_update ctxt (id, prop)]
+      [entail_goal_update ctxt (BoxID.replace_incr_id id, prop)]
     end
 
 val init_entail =
@@ -423,7 +423,9 @@ fun init_pos_fn ictxt item =
           end
     in
       if null proc_defs then
-        [hoare_goal_update ctxt (id, prop)]
+        if BoxID.has_incr_id id then
+          [hoare_goal_update ctxt (BoxID.replace_incr_id id, prop)]
+        else []
       else
         maps process_proc_def proc_defs
     end
@@ -510,7 +512,6 @@ fun rewr_first_cmd eq_th ct =
 
 (* Apply rewrite to the first command in CODE_POS. *)
 fun rewrite_pos_fn ictxt item1 item2 =
-    if not (IncrContext.is_single_ictxt ictxt) then [] else
     if is_implies_item item1 then [] else
     let
       val ctxt = IncrContext.context_of ictxt
@@ -521,9 +522,11 @@ fun rewrite_pos_fn ictxt item1 item2 =
       val (c1, _) = eq_th |> prop_of' |> dest_eq
       val id = BoxID.merge_boxes ctxt (id1, id2)
     in
+      if not (BoxID.has_incr_id id) then [] else
       if c1 aconv c' then
         let
           val th' = th |> apply_to_thm' (Conv.arg_conv (rewr_first_cmd eq_th))
+          val id = BoxID.replace_incr_id id
         in
           [hoare_goal_update ctxt (id, th'),
            ShadowItem {id = id, item = item1}]
@@ -678,16 +681,17 @@ val match_assn_pure =
              PropMatch (@{term_pat "?b::bool"})],
      func = TwoStep match_assn_pure_fn}
 
-fun hoare_create_case_fn ictxt item =
-    if not (IncrContext.is_single_ictxt ictxt) then [] else
+fun hoare_create_case_fn _ item =
     let
       val {id, prop, ...} = item
     in
+      if not (BoxID.has_incr_id id) then [] else
       if Util.is_implies (Thm.prop_of prop) then
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
         in
-          [AddBoxes {id = id, sc = SOME 1, init_assum = get_neg' A}]
+          [AddBoxes {id = BoxID.replace_incr_id id,
+                     sc = SOME 1, init_assum = get_neg' A}]
         end
       else []
     end
@@ -723,16 +727,17 @@ val entail_pure =
              PropMatch (@{term_pat "?b::bool"})],
      func = TwoStep entail_pure_fn}
 
-fun entail_create_case_fn ictxt item =
-    if not (IncrContext.is_single_ictxt ictxt) then [] else
+fun entail_create_case_fn _ item =
     let
       val {id, prop, ...} = item
     in
+      if not (BoxID.has_incr_id id) then [] else
       if Util.is_implies (Thm.prop_of prop) then
         let
           val (A, _) = Logic.dest_implies (Thm.prop_of prop)
         in
-          [AddBoxes {id = id, sc = SOME 1, init_assum = get_neg' A}]
+          [AddBoxes {id = BoxID.replace_incr_id id, sc = SOME 1,
+                     init_assum = get_neg' A}]
         end
       else []
     end
