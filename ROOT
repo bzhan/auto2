@@ -81,16 +81,9 @@ session Auto2_FOL = FOL +
     "FOL/Rat"
     "FOL/Lattice"
 
-session FOL_Real = Auto2_FOL +
+session FOL_Topology = Auto2_FOL +
   description {*
-    Real numbers in first order logic.
-  *}
-  theories
-    "FOL/Real"
-
-session FOL_Topology = FOL_Real +
-  description {*
-    Topology in first order logic.
+    Real numbers and topology in first order logic.
   *}
   theories
     "FOL/Closure"
