@@ -58,7 +58,7 @@ sig
   val process_shadow: update -> status -> status
   val process_resolve: update -> status -> status
   val apply_update_instant: update -> status -> status
-  val process_fact_all: box_item list -> status -> status
+  val process_fact_all: box_id -> int -> box_item list -> status -> status
   val process_add_items: update -> status -> status
   val process_add_boxes: update -> status -> status
   val apply_update: update -> status -> status
@@ -283,12 +283,11 @@ fun process_prfstep sc items items' prfstep (st as {ctxt, ...}) =
         st |> process_step_pair sc items items' prfstep
     end
 
-fun process_add_terms item (st as {ctxt, ...}) =
+(* List of terms to be added to the rewrite table. *)
+fun get_rewr_terms ctxt item =
     let
-      (* Add terms to the rewrite table. *)
-      val {id, sc, ty_str, tname, ...} = item
+      val {ty_str, tname, ...} = item
       val ts = map Thm.term_of tname
-
       val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
       val terms = rewr_terms |> maps UtilLogic.get_all_subterms
                              |> distinct (op aconv)
@@ -298,13 +297,34 @@ fun process_add_terms item (st as {ctxt, ...}) =
                       [dest_not (the_single ts)]
                     else ts
                   else []
+    in
+      headt @ terms
+    end
 
-      val term_infos = map (pair id o Thm.cterm_of ctxt) (headt @ terms)
+(* List of terms to be added as TERM items. *)
+fun get_rewr_terms2 ctxt item =
+    let
+      val {ty_str, tname, ...} = item
+      val ts = map Thm.term_of tname
+      val rewr_terms = ItemIO.rewr_terms_of_item ctxt (ty_str, ts)
+    in
+      rewr_terms |> maps UtilLogic.get_all_subterms_skip_if
+                 |> distinct (op aconv)
+                 |> filter_out Util.has_vars
+                 |> filter_out (fn t => fastype_of t = boolT)
+    end
+
+fun process_add_terms id sc items (st as {ctxt, ...}) =
+    let
+      (* Add terms to the rewrite table. *)
+      val term_infos = items |> maps (get_rewr_terms ctxt)
+                             |> distinct (op aconv)
+                             |> map (pair id o Thm.cterm_of ctxt)
 
       val old_items =
           (Status.get_items st)
               |> filter_out (fn {id, ...} => BoxID.is_box_resolved ctxt id)
-              |> remove BoxItem.eq_item item
+              |> subtract BoxItem.eq_item items
 
       val ctxt' = ctxt |> Auto2Data.add_terms old_items term_infos
 
@@ -312,15 +332,14 @@ fun process_add_terms item (st as {ctxt, ...}) =
       fun exists_item t =
           Status.find_ritem_exact st id (Fact (TY_TERM, [t], true_th))
 
-      val terms2 = rewr_terms |> maps UtilLogic.get_all_subterms_skip_if
-                              |> distinct (op aconv)
-                              |> filter_out Util.has_vars
-                              |> filter_out exists_item
-                              |> filter_out (fn t => fastype_of t = boolT)
+      val terms2 = items |> maps (get_rewr_terms2 ctxt)
+                         |> distinct (op aconv)
+                         |> filter_out exists_item
+                         |> filter_out (fn t => fastype_of t = boolT)
 
       (* New terms have score of the source item plus 1. *)
       val updt =
-          {sc = sc + 1, prfstep_name = "$TERM", source = [item],
+          {sc = sc, prfstep_name = "$TERM", source = [],
            raw_updt = AddItems {id = id, sc = NONE,
                                 raw_items = map BoxItem.term_to_fact terms2}}
     in
@@ -329,11 +348,10 @@ fun process_add_terms item (st as {ctxt, ...}) =
     end
 
 (* Process the given items. *)
-fun process_fact_all items (st as {ctxt, ...}) =
+fun process_fact_all id sc items (st as {ctxt, ...}) =
     if null items then st else
     let
       val thy = Proof_Context.theory_of ctxt
-      val sc = #sc (hd items)
 
       val items' =
           (Status.get_items st)
@@ -355,10 +373,9 @@ fun process_fact_all items (st as {ctxt, ...}) =
       (* List of items to consider for init and incr rounds. *)
       val init_items = filter_out (BoxItem.match_ty_str TY_PROPERTY) items
 
-      val incr_id = #id (hd items)
-      fun incr_filt {id, tname, ...} =
+      fun incr_filt {id = id', tname, ...} =
           exists (Util.has_subterm ts) (map Thm.term_of tname) andalso
-          BoxID.is_box_unresolved ctxt (BoxID.merge_boxes ctxt (id, incr_id))
+          BoxID.is_box_unresolved ctxt (BoxID.merge_boxes ctxt (id, id'))
 
       val incr_items =
           if null ts then []
@@ -433,9 +450,9 @@ fun process_add_items (updt as {sc, prfstep_name, raw_updt, ...})
         in
           st |> Status.map_context (K ctxt')
              |> fold Status.add_handler handlers_info
-             |> fold process_add_terms items
+             |> process_add_terms id sc items
              |> fold Status.add_item (map BoxItem.item_with_incr items)
-             |> process_fact_all (map BoxItem.item_with_incr items)
+             |> process_fact_all id sc (map BoxItem.item_with_incr items)
         end
       | _ => raise Fail "process_add_items: wrong type of update"
 
