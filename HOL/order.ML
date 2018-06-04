@@ -10,9 +10,6 @@ sig
   val is_standard_ineq: term -> bool
   val dest_ineq: term -> term * term * int
   val dest_ineq_th: thm -> term * term * int
-  val is_refl_ineq: thm -> bool
-  val ineq_to_contradiction: thm -> thm
-  val combine_ineqs: thm -> thm -> thm
 
   val norm_ineq_th': thm -> thm
   val convert_const_x: thm -> thm
@@ -92,10 +89,8 @@ fun is_plus_const t =
 fun is_minus_const t =
     UtilArith.is_minus t andalso UtilArith.is_numc (dest_arg t)
 
-(* Check whether t is an inequality in the standard form. In this
-   form, t is in the form a <= b, where a and b are natural numbers,
-   and at least one of them is in the form x + n, where n is a
-   constant.
+(* Check whether t is an inequality in the standard form. This means t
+   is either a + n <= b with n > 0, or a <= b + n with n >= 0.
  *)
 fun is_standard_ineq t =
     if is_less_eq t then
@@ -134,27 +129,6 @@ fun dest_ineq_th th =
       raise Fail "dest_ineq_th"
     end
 
-(* Whether the given theorem is x + n <= x or x <= x + n (either a
-   contradiction or is trivial).
- *)
-fun is_refl_ineq th =
-    let
-      val (x, y, _) = dest_ineq_th th
-    in
-      x aconv y
-    end
-
-(* Given an inequality of the form x + n <= x, where n > 0, return the
-   theorem False.
- *)
-fun ineq_to_contradiction th =
-    let
-      val (_, _, d) = dest_ineq_th th
-      val _ = assert (d < 0) "ineq_to_contradiction"
-    in
-      [Nat_Util.nat_less_th 0 (~d), th] MRS @{thm single_resolve}
-    end
-
 (* In expression x + n < y, fold n. *)
 val fold_const_left =
     apply_to_thm' (Conv.arg1_conv (Conv.arg_conv Nat_Util.nat_fold_conv))
@@ -162,31 +136,6 @@ val fold_const_left =
 (* In expression x < y + n, fold n. *)
 val fold_const_right =
     apply_to_thm' (Conv.arg_conv (Conv.arg_conv Nat_Util.nat_fold_conv))
-
-(* Combine two inequalities. *)
-fun combine_ineqs th1 th2 =
-    let
-      val (_, y1, d1) = dest_ineq_th th1
-      val (x2, _, d2) = dest_ineq_th th2
-      val _ = assert (y1 aconv x2) "combine_ineqs"
-    in
-      if d1 < 0 andalso d2 < 0 then
-        ([th1, th2] MRS @{thm trans1}) |> fold_const_left
-      else if d1 >= 0 andalso d2 >= 0 then
-        ([th1, th2] MRS @{thm trans2}) |> fold_const_right
-      else if d1 < 0 andalso d2 >= 0 then
-        if d2 >= (~d1) then
-          ([th1, th2] MRS @{thm trans3}) |> fold_const_right
-        else  (* d2 < (~d1) *)
-          ([Nat_Util.nat_less_th d2 (~d1), th1, th2] MRS @{thm trans4})
-              |> fold_const_left
-      else  (* d1 >= 0 andalso d2 < 0 *)
-        if d1 >= (~d2) then
-          ([th1, th2] MRS @{thm trans5}) |> fold_const_right
-        else
-          ([Nat_Util.nat_less_th d1 (~d2), th1, th2] MRS @{thm trans6})
-              |> fold_const_left
-    end
 
 (* Normalize inequality to standard form. This function is able to
    process any theorem of the form a </<= b.
@@ -248,6 +197,9 @@ fun norm_ineq_th' th =
           th RS @{thm norm_less}
     end
 
+(* Handle the case of x </<= y where x is itself a constant. Reduce to
+   the case where x = 0.
+ *)
 fun convert_const_x th =
     let
       val (x, _, d) = dest_ineq_th th
@@ -267,6 +219,9 @@ fun convert_const_x th =
       else th
     end
 
+(* Handle the case of x </<= y where y is itself a constant. Reduce to
+   the case where y = 0.
+ *)
 fun convert_const_y th =
     let
       val (_, y, d) = dest_ineq_th th
@@ -287,6 +242,7 @@ fun convert_const_y th =
       else th
     end
 
+(* Overall normalization function. *)
 fun norm_ineq_th th =
     let
       val th' =
@@ -300,6 +256,7 @@ fun norm_ineq_th th =
       end
     end
 
+(* Normalization function that does not consider the minus case. *)
 fun norm_ineq_minus_th' th =
     let
       val t = prop_of' th
@@ -388,6 +345,7 @@ fun rewrite_info_y eq_y (cx, cy, diff, th) =
       (cx, Thm.rhs_of eq_y, diff, th')
     end
 
+(* Conversion from a normalized order theorem to an raw item. *)
 fun th_to_ritem th =
     let
       val (x, y, n) = dest_ineq_th th
@@ -395,6 +353,9 @@ fun th_to_ritem th =
       Fact (TY_NAT_ORDER, [x, y, mk_int n], th)
     end
 
+(* Overall normalization function. Include both strategies (with and
+   without considering the minus case).
+ *)
 fun th_to_normed_ritems th =
     let
       val th' = norm_ineq_th th
@@ -413,6 +374,10 @@ fun nat_order_normalizer _ ritem =
           th_to_normed_ritems th
         else [ritem]
 
+(* Given an equality such as x + n = y, produce inequalities x + n <=
+   y and x + n >= y. Applies also when one side of the inequality is a
+   constant.
+ *)
 val nat_eq_diff_prfstep =
     ProofStep.prfstep_custom
       "nat_eq_diff"
@@ -426,7 +391,8 @@ val nat_eq_diff_prfstep =
                is_numc lhs orelse is_numc rhs then
               let
                 val prop' = to_meta_eq prop
-                val ths = (prop' RS @{thm eq_to_ineqs}) |> UtilLogic.split_conj_th
+                val ths = (prop' RS @{thm eq_to_ineqs})
+                              |> UtilLogic.split_conj_th
               in
                 [AddItems {id = id, sc = NONE,
                            raw_items = maps th_to_normed_ritems ths}]
@@ -442,6 +408,9 @@ fun get_nat_order_info {tname, prop, ...} =
       (cx, cy, dest_numc (Thm.term_of cdiff_t), prop)
     end
 
+(* Matching function for retrieving a NAT_ORDER item. The pattern
+   should be a triple (?x, ?y, ?m).
+ *)
 val nat_order_typed_matcher =
     let
       fun pre_match pat {tname, ...} ctxt =
@@ -476,6 +445,31 @@ val nat_order_typed_matcher =
       {pre_match = pre_match, match = match}
     end
 
+(* Helper function for transitivity of two inequalities. *)
+fun order_trans th1 th2 =
+    let
+      val (_, y1, d1) = dest_ineq_th th1
+      val (x2, _, d2) = dest_ineq_th th2
+      val _ = assert (y1 aconv x2) "order_trans"
+    in
+      if d1 < 0 andalso d2 < 0 then
+        ([th1, th2] MRS @{thm trans1}) |> fold_const_left
+      else if d1 >= 0 andalso d2 >= 0 then
+        ([th1, th2] MRS @{thm trans2}) |> fold_const_right
+      else if d1 < 0 andalso d2 >= 0 then
+        if d2 >= (~d1) then
+          ([th1, th2] MRS @{thm trans3}) |> fold_const_right
+        else  (* d2 < (~d1) *)
+          ([Nat_Util.nat_less_th d2 (~d1), th1, th2] MRS @{thm trans4})
+              |> fold_const_left
+      else  (* d1 >= 0 andalso d2 < 0 *)
+        if d1 >= (~d2) then
+          ([th1, th2] MRS @{thm trans5}) |> fold_const_right
+        else
+          ([Nat_Util.nat_less_th d1 (~d2), th1, th2] MRS @{thm trans6})
+              |> fold_const_left
+    end
+
 (* Apply transitivity to two NAT_ORDER infos. *)
 val transitive =
     ProofStep.prfstep_custom
@@ -488,13 +482,13 @@ val transitive =
         (fn ((id, _), ths) => fn _ => fn _ =>
             let
               val (th1, th2) = the_pair ths
-              val item' = th_to_ritem (combine_ineqs th1 th2)
+              val item' = th_to_ritem (order_trans th1 th2)
             in
               [AddItems {id = id, sc = NONE, raw_items = [item']}]
             end)
 
-(* Helper function for transitive resolve. *)
-fun trans_resolve th1 th2 =
+(* Helper function for obtaining a contradiction from two inequalities. *)
+fun order_trans_resolve th1 th2 =
     let
       val (_, _, d1) = dest_ineq_th th1
       val (_, _, d2) = dest_ineq_th th2
@@ -522,7 +516,7 @@ val transitive_resolve =
               val fold0 = apply_to_thm' (Conv.arg_conv nat_fold_conv0_right)
               val try_fold0l = Conv.try_conv nat_fold_conv0_left
               val res_ths =
-                  if m + n < 0 then [trans_resolve th1 th2]
+                  if m + n < 0 then [order_trans_resolve th1 th2]
                   else if m = 0 andalso n = 0 then
                     [(map fold0 [th1, th2]) MRS @{thm Orderings.order_antisym}]
                   else if m + n = 0 then
@@ -582,7 +576,8 @@ fun valid_type ctxt ty =
    is appropriate for nat_order_match: that is, either natT or a
    schematic type of sort linorder.
  *)
-fun valid_arg_type ctxt t = valid_type ctxt (fastype_of (dest_arg t))
+fun valid_arg_type ctxt t =
+    valid_type ctxt (fastype_of (dest_arg t))
 
 fun is_order_pat ctxt pat =
     (is_order pat andalso valid_arg_type ctxt pat) orelse
@@ -675,7 +670,7 @@ fun find_contradiction_item pat item ctxt (id, inst) =
           in
             if d1 + d2 < 0 then
               [((id', inst'),
-                (trans_resolve th1 th2)
+                (order_trans_resolve th1 th2)
                     |> Thm.implies_intr assum
                     |> apply_to_thm UtilLogic.rewrite_from_contra_form)]
             else []
