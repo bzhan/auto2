@@ -194,6 +194,17 @@ fun norm_entail_conds ctxt ct =
 fun is_implies_item item =
     Util.is_implies (Thm.prop_of (#prop item))
 
+fun normalize_let ctxt th =
+    let
+      val rewr_one = Conv.first_conv [Conv.rewr_conv @{thm Let_def},
+                                      rewr_obj_eq @{thm case_prod_beta'}]
+      val cv = Conv.every_conv [
+            Conv.top_conv (K (Conv.try_conv rewr_one)) ctxt,
+            Thm.beta_conversion true]
+    in
+      apply_to_thm' cv th
+    end
+
 fun hoare_goal_update ctxt (id, th) =
     if Util.is_implies (Thm.prop_of th) then
       AddItems {id = id, sc = SOME 1,
@@ -210,6 +221,7 @@ fun hoare_goal_update ctxt (id, th) =
 
       val res_th' = res_th' |> the_single
                             |> apply_to_thm' (Conv.arg_conv (norm_precond ctxt))
+                            |> normalize_let ctxt
 
       val ritems = ex_ritems @ map Update.thm_to_ritem rest @
                    [Fact (TY_CODE_POS, [prop_of' res_th'], res_th')]
@@ -234,6 +246,7 @@ fun entail_goal_update ctxt (id, th) =
       val res_th' =
           res_th' |> the_single
                   |> apply_to_thm' (Conv.arg_conv (norm_entail_conds ctxt))
+                  |> normalize_let ctxt
 
       val ritems = ex_ritems @ map Update.thm_to_ritem rest @
                    [Fact (TY_ENTAIL, [prop_of' res_th'], res_th')]
