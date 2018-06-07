@@ -248,8 +248,6 @@ translations
   "\<lambda>\<langle>x,y\<rangle>.b"    == "CONST split(\<lambda>x y. b)"
 
 lemma pair_eqD [forward]: "\<langle>a, b\<rangle> = \<langle>c, d\<rangle> \<Longrightarrow> a = c \<and> b = d" by auto2
-lemma pair_eqI: "a = c \<Longrightarrow> b = d \<Longrightarrow> \<langle>a,b\<rangle> = \<langle>c,d\<rangle>" by auto2
-setup {* add_backward_prfstep_cond @{thm pair_eqI} [with_cond "?a \<noteq> ?c", with_cond "?b \<noteq> ?d"] *}
 lemma pair_eqI_fst [backward]: "a = c \<Longrightarrow> \<langle>a,b\<rangle> = \<langle>c,b\<rangle>" by auto2
 lemma pair_eqI_snd [backward]: "b = d \<Longrightarrow> \<langle>a,b\<rangle> = \<langle>a,d\<rangle>" by auto2
 
