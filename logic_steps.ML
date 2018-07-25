@@ -110,7 +110,7 @@ fun eq_abs_fn ctxt item1 item2 =
     in
       if not (Util.is_abs t1) orelse not (Util.is_abs t2) then []
       else if RewriteTable.is_equiv id ctxt (ct1, ct2) then []
-      else if Term_Ord.termless (t2, t1) then []
+      else if Term_Ord.term_ord (t2, t1) = LESS then []
       else let
         fun process_equiv (id', eq_th) =
             let
@@ -367,7 +367,7 @@ fun sort_disj_clause_aux ct =
       val (arg1, arg2) = Util.dest_binop_args (Thm.term_of ct)
     in
       if is_disj arg2 then
-        if Term_Ord.termless (dest_arg1 arg2, arg1) then
+        if Term_Ord.term_ord (dest_arg1 arg2, arg1) = LESS then
           Conv.every_conv [rewr_obj_eq (obj_sym UtilBase.disj_assoc_th),
                            Conv.arg1_conv (rewr_obj_eq UtilBase.disj_commute_th),
                            rewr_obj_eq UtilBase.disj_assoc_th,
@@ -375,7 +375,7 @@ fun sort_disj_clause_aux ct =
         else
           Conv.all_conv ct
       else
-        if Term_Ord.termless (arg2, arg1) then
+        if Term_Ord.term_ord (arg2, arg1) = LESS then
           rewr_obj_eq (obj_sym UtilBase.disj_commute_th) ct
         else
           Conv.all_conv ct

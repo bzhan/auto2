@@ -1,5 +1,5 @@
 theory Module
-  imports Int
+  imports Auto2_FOL.Int
 begin
 
 

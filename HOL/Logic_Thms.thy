@@ -1,7 +1,7 @@
 (* Setup for proof steps related to logic. *)
 
 theory Logic_Thms
-imports Auto2_HOL Rat
+imports Auto2_HOL
 begin
 
 (* Trivial contradictions. *)

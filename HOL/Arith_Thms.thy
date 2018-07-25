@@ -1,7 +1,7 @@
 (* Setup for proof steps related to arithmetic, mostly on natural numbers. *)
 
 theory Arith_Thms
-imports Order_Thms Binomial
+imports Order_Thms HOL.Binomial
 begin
 
 (* Reducing inequality on natural numbers. *)
@@ -187,14 +187,18 @@ setup {* add_forward_prfstep_cond @{thm gcd_dvd1} [with_term "gcd ?a ?b"] *}
 setup {* add_forward_prfstep_cond @{thm gcd_dvd2} [with_term "gcd ?a ?b"] *}
 
 (* Coprimality. *)
+setup {* add_rewrite_rule_bidir @{thm coprime_iff_gcd_eq_1} *}
+lemma coprime_exp [backward]: "coprime d a \<Longrightarrow> coprime (d::nat) (a ^ n)" by simp
 setup {* add_backward_prfstep @{thm coprime_exp} *}
 setup {* add_rewrite_rule @{thm gcd.commute} *}
-setup {* add_backward1_prfstep @{thm coprime_dvd_mult} *}
-theorem coprime_dvd_mult' [backward1]: "coprime (a::nat) b \<Longrightarrow> a dvd b * c \<Longrightarrow> a dvd c"
-  by (metis coprime_dvd_mult mult.commute)
+lemma coprime_dvd_mult [backward1]: "coprime (a::nat) b \<Longrightarrow> a dvd c * b \<Longrightarrow> a dvd c"
+  by (metis coprime_dvd_mult_left_iff)
+lemma coprime_dvd_mult' [backward1]: "coprime (a::nat) b \<Longrightarrow> a dvd b * c \<Longrightarrow> a dvd c"
+  by (metis coprime_dvd_mult_right_iff)
 
 theorem coprime_dvd [forward]:
-  "coprime (a::nat) b \<Longrightarrow> p dvd a \<Longrightarrow> p > 1 \<Longrightarrow> \<not> p dvd b" by (metis coprime_nat neq_iff)
+  "coprime (a::nat) b \<Longrightarrow> p dvd a \<Longrightarrow> p > 1 \<Longrightarrow> \<not> p dvd b"
+  using coprime_common_divisor_nat by blast
 
 (* Powers. *)
 setup {* add_rewrite_rule @{thm power_0} *}
@@ -230,8 +234,7 @@ setup {* fold add_rewrite_rule @{thms Nat.nat.case} *}
 lemma nat_cases: "P 0 \<Longrightarrow> (\<And>n. P (Suc n)) \<Longrightarrow> P n" using nat_induct by auto
 
 (* div *)
-lemma prod_div_le [backward]: "a > 0 \<Longrightarrow> a * (b div a) \<le> (b::nat)"
-  using split_div_lemma by blast
+declare times_div_less_eq_dividend [resolve]
 
 setup {*
   add_var_induct_rule @{thm nat_induct} #>

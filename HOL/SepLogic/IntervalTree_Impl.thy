@@ -143,7 +143,7 @@ subsection {* Deletion *}
 
 partial_function (heap) int_tree_del_min :: "int_tree \<Rightarrow> (nat idx_interval \<times> int_tree) Heap" where
   "int_tree_del_min b = (case b of
-     None \<Rightarrow> raise ''del_min: empty tree''
+     None \<Rightarrow> raise STR ''del_min: empty tree''
    | Some p \<Rightarrow> do {
       t \<leftarrow> !p;
       (if lsub t = None then
@@ -162,7 +162,7 @@ lemma int_tree_del_min_to_fun [hoare_triple]:
 
 definition int_tree_del_elt :: "int_tree \<Rightarrow> int_tree Heap" where
   "int_tree_del_elt b = (case b of
-     None \<Rightarrow> raise ''del_elt: empty tree''
+     None \<Rightarrow> raise STR ''del_elt: empty tree''
    | Some p \<Rightarrow> do {
        t \<leftarrow> !p;
        (if lsub t = None then return (rsub t)

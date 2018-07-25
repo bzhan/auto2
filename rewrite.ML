@@ -5,7 +5,6 @@
 
 (* Order on equality theorems, by comparing the right side. *)
 val simp_ord = Term_Ord.term_ord o (apply2 Util.rhs_of)
-val simp_less = Term_Ord.termless o (apply2 Util.rhs_of)
 
 (* Equality on box_id * thm, comparing the right side. *)
 fun eq_info ((id, th), (id', th')) =
@@ -164,7 +163,7 @@ fun equiv_eq_better ctxt (id, th) (id', th') =
 fun simp_eq_better ctxt (id, th) (id', th') =
     if BoxID.is_eq_ancestor ctxt id id' then
       let val (t, t') = (Util.rhs_of th, Util.rhs_of th')
-      in t aconv t' orelse Term_Ord.termless (t, t') end
+      in t aconv t' orelse Term_Ord.term_ord (t, t') = LESS end
     else false
 
 fun clear_incr ctxt =
@@ -641,7 +640,7 @@ fun process_update_simp inits ctxt =
          of simps whose consequences need to be processed.
        *)
       fun process_simp (id, th) (to_process, ctxt) =
-          if simp_less (th, get_rewrite id ctxt (Thm.lhs_of th)) then
+          if simp_ord (th, get_rewrite id ctxt (Thm.lhs_of th)) = LESS then
             (insert eq_update (id, th) to_process, update_simp (id, th) ctxt)
           else
             (to_process, ctxt)

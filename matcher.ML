@@ -303,7 +303,7 @@ fun rewrite_match_subset ctxt bd_vars (ts, cus) instsp =
               |> maps match_i |> maps process_match_i
         end
         handle Fail "invalid pattern" =>
-               if length ts' > 0 andalso Term_Ord.termless (t, hd ts') then
+               if length ts' > 0 andalso Term_Ord.term_ord (t, hd ts') = LESS then
                  rewrite_match_subset ctxt bd_vars (ts' @ [t], cus) instsp
                else raise Fail "rewrite_match_subset: invalid pattern"
 

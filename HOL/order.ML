@@ -583,8 +583,8 @@ fun is_order_pat ctxt pat =
     (is_order pat andalso valid_arg_type ctxt pat) orelse
     (is_order (get_neg pat) andalso valid_arg_type ctxt (get_neg pat))
 
-val less_nat = @{term "op <::nat => nat => bool"}
-val le_nat = @{term "op <=::nat => nat => bool"}
+val less_nat = @{term "(<)::nat => nat => bool"}
+val le_nat = @{term "(<=)::nat => nat => bool"}
 
 (* Assuming t is an order. Return the simplified form of the negation of t. *)
 fun get_neg_order t =

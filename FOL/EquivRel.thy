@@ -54,10 +54,10 @@ section {* Equivalence relation *}  (* Bourbaki II.6.1 *)
 
 (* Self-contained condition for equiv. *)
 definition equiv :: "i \<Rightarrow> o" where [rewrite]:
-  "equiv(R) \<longleftrightarrow> (
+  "equiv(R) \<longleftrightarrow>
     rawequiv(R) \<and>
     (\<forall>x\<in>.R. x \<sim>\<^sub>R x) \<and>
-    (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x)) \<and>
+    (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R x) \<and>
     (\<forall>x y z. x \<sim>\<^sub>R y \<longrightarrow> y \<sim>\<^sub>R z \<longrightarrow> x \<sim>\<^sub>R z)"
 
 lemma equivD:

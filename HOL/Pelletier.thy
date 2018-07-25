@@ -152,15 +152,7 @@ theorem p47:
    \<forall>x y. P3(x) \<and> P4(y) \<longrightarrow> R(x,y) \<Longrightarrow>
    \<forall>x y. P3(x) \<and> P5(y) \<longrightarrow> \<not>R(x,y) \<Longrightarrow>
    \<forall>x. P4(x) \<or> P5(x) \<longrightarrow> (\<exists>y. Q0(y) \<and> R(x,y)) \<Longrightarrow>
-   \<exists>x y. P0(x) \<and> P0(y) \<and> (\<exists>z. Q1(z) \<and> R(y,z) \<and> R(x,y))"
-@proof
-  @obtain x1 where "P1(x1)"
-  @obtain x2 where "P2(x2)"
-  @obtain x3 where "P3(x3)" 
-  @obtain x4 where "P4(x4)" 
-  @obtain x5 where "P5(x5)" 
-  @have "S(x3,x2)" @have "S(x2,x1)" @have "R(x3,x4)" @have "\<not>R(x3,x5)"
-@qed
+   \<exists>x y. P0(x) \<and> P0(y) \<and> (\<exists>z. Q1(z) \<and> R(y,z) \<and> R(x,y))" by meson
 
 theorem p48: "a = b \<or> c = d \<Longrightarrow> a = c \<or> b = d \<Longrightarrow> a = d \<or> b = c" by auto2
 

@@ -92,7 +92,7 @@ fun alg_norm2_prfstep_fn norm_info ctxt item1 item2 =
     in
       if is_none G1_opt orelse is_none G2_opt orelse
          not (the G1_opt aconv the G2_opt) orelse
-         Term_Ord.termless (t2, t1) then []
+         Term_Ord.term_ord (t2, t1) = LESS then []
       else let
         val G = the G1_opt
         val t1' = norm_t G t1

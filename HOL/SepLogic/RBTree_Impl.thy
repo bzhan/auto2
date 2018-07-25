@@ -78,7 +78,7 @@ lemma btree_constr_rule [hoare_triple]:
 
 definition set_color :: "color \<Rightarrow> ('a::heap, 'b::heap) btree \<Rightarrow> unit Heap" where
   "set_color c p = (case p of
-    None \<Rightarrow> raise ''set_color''
+    None \<Rightarrow> raise STR ''set_color''
   | Some pp \<Rightarrow> do {
       t \<leftarrow> !pp;
       pp := Node (lsub t) c (key t) (val t) (rsub t)
@@ -119,11 +119,11 @@ subsection {* Rotation *}
 
 definition btree_rotate_l :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_rotate_l p = (case p of
-    None \<Rightarrow> raise ''Empty btree''
+    None \<Rightarrow> raise STR ''Empty btree''
   | Some pp \<Rightarrow> do {
      t \<leftarrow> !pp;
      (case rsub t of
-        None \<Rightarrow> raise ''Empty rsub''
+        None \<Rightarrow> raise STR ''Empty rsub''
       | Some rp \<Rightarrow> do {
           rt \<leftarrow> !rp;
           pp := Node (lsub t) (cl t) (key t) (val t) (lsub rt);
@@ -137,11 +137,11 @@ lemma btree_rotate_l_rule [hoare_triple]:
 
 definition btree_rotate_r :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_rotate_r p = (case p of
-    None \<Rightarrow> raise ''Empty btree''
+    None \<Rightarrow> raise STR ''Empty btree''
   | Some pp \<Rightarrow> do {
      t \<leftarrow> !pp;
      (case lsub t of
-        None \<Rightarrow> raise ''Empty lsub''
+        None \<Rightarrow> raise STR ''Empty lsub''
       | Some lp \<Rightarrow> do {
           lt \<leftarrow> !lp;
           pp := Node (rsub lt) (cl t) (key t) (val t) (rsub t);

@@ -68,7 +68,7 @@ lemma os_prepend_rule [hoare_triple]:
 
 definition os_pop :: "'a::heap os_list \<Rightarrow> ('a \<times> 'a os_list) Heap" where
   "os_pop r = (case r of
-    None \<Rightarrow> raise ''Empty Os_list'' |
+    None \<Rightarrow> raise STR ''Empty Os_list'' |
     Some p \<Rightarrow> do {m \<leftarrow> !p; return (val m, nxt m)})"
 
 lemma os_pop_rule [hoare_triple]:

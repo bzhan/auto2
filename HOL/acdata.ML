@@ -282,7 +282,7 @@ fun normalize_comm_gen (ac_info as {comm_th, ...}) termless ct =
       normalize ct
     end
 
-fun normalize_comm ac_info = normalize_comm_gen ac_info Term_Ord.termless
+fun normalize_comm ac_info = normalize_comm_gen ac_info (fn (s, t) => Term_Ord.term_ord (s, t) = LESS)
 
 (* Normalize all except comm. *)
 fun normalize_au ac_info =

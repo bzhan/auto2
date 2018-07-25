@@ -147,7 +147,7 @@ fun neq_filter cond ctxt (id, inst) =
     end
 
 fun order_filter s1 s2 _ (_, inst) =
-    not (Term_Ord.termless (lookup_inst inst s2, lookup_inst inst s1))
+    not (Term_Ord.term_ord (lookup_inst inst s2, lookup_inst inst s1) = LESS)
 
 fun size1_filter s1 ctxt (id, inst) =
     size_of_term (RewriteTable.simp_val_t id ctxt (lookup_inst inst s1)) = 1

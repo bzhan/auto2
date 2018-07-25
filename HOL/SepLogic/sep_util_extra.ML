@@ -18,7 +18,7 @@ fun sort_by t =
 
 fun pure_ord (t, s) =
     if sort_by t = 0 andalso sort_by s = 0 then
-      Term_Ord.termless (t, s)
+      Term_Ord.term_ord (t, s) = LESS
     else
       sort_by t < sort_by s
 

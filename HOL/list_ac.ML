@@ -195,7 +195,7 @@ fun list_expand_equiv_fn ctxt item1 item2 =
       val id = BoxID.merge_boxes ctxt (id1, id2)
       val T = the (get_list_ty t1)
     in
-      if Term_Ord.termless (t2, t1) then []
+      if Term_Ord.term_ord (t2, t1) = LESS then []
       else if RewriteTable.is_equiv id ctxt (ct1, ct2) then []
       else if not (is_list_head T t1) orelse not (is_list_head T t2) then []
       else let

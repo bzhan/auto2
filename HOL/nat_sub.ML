@@ -31,9 +31,9 @@ end;
 structure NatSub : NAT_SUB =
 struct
 
-val fheads = [@{term "(op +) :: (nat => nat => nat)"},
-              @{term "(op -) :: (nat => nat => nat)"},
-              @{term "(op *) :: (nat => nat => nat)"}]
+val fheads = [@{term "(+) :: (nat => nat => nat)"},
+              @{term "(-) :: (nat => nat => nat)"},
+              @{term "( * ) :: (nat => nat => nat)"}]
 
 val plus_info = Nat_Util.plus_ac_on_typ @{theory} natT
 val is_numc = UtilArith.is_numc
@@ -568,7 +568,7 @@ fun nat_sub_expand_equiv_fn ctxt item1 item2 =
       val id = BoxID.merge_boxes ctxt (id1, id2)
     in
       if not (is_nat_sub_form t1) orelse not (is_nat_sub_form t2) then []
-      else if Term_Ord.termless (t2, t1) then []
+      else if Term_Ord.term_ord (t2, t1) = LESS then []
       else if RewriteTable.is_equiv id ctxt (ct1, ct2) then []
       else let
         val expand1 = nat_sub_expand ctxt (id, ct1)

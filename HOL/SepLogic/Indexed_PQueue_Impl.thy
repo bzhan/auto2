@@ -188,7 +188,7 @@ section {* Main operations *}
 definition delete_min_idx_pqueue :: "'a::{heap,linorder} indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where
   "delete_min_idx_pqueue p = do {
      len \<leftarrow> idx_pqueue_length p;
-     if len = 0 then raise ''delete_min''
+     if len = 0 then raise STR ''delete_min''
      else do {
        idx_pqueue_swap p 0 (len - 1);
        (x', r) \<leftarrow> idx_pqueue_pop p;

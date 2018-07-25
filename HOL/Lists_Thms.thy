@@ -72,12 +72,14 @@ setup {* add_forward_prfstep_cond @{thm nth_mem} [with_term "?xs ! ?n"] *}
 
 section {* sorted *}
 
-setup {* fold add_resolve_prfstep [@{thm sorted.Nil}, @{thm sorted_single}] *}
-setup {* add_backward_prfstep (equiv_backward_th @{thm sorted_Cons}) *}
+lemma sorted_Nil [resolve]: "sorted []" by simp
+lemma sorted_single [resolve]: "sorted [x]" by simp
+setup {* add_backward_prfstep (equiv_backward_th @{thm sorted.simps(2)}) *}
 
-lemma sorted_ConsD1 [forward]: "sorted (x # xs) \<Longrightarrow> sorted xs" using sorted_Cons by blast
+lemma sorted_ConsD1 [forward]: "sorted (x # xs) \<Longrightarrow> sorted xs"
+  using sorted.simps(2) by blast
 lemma sorted_ConsD2 [forward, backward2]: "sorted (x # xs) \<Longrightarrow> y \<in> set xs \<Longrightarrow> x \<le> y"
-  using sorted_Cons by blast  
+  using sorted.simps(2) by blast
 
 lemma sorted_appendI [backward]:
   "sorted xs \<and> sorted ys \<and> (\<forall>x\<in>set xs. \<forall>y\<in>set ys. x \<le> y) \<Longrightarrow> sorted (xs @ ys)"

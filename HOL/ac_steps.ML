@@ -138,7 +138,7 @@ fun ac_expand_equiv_fn ctxt item1 item2 =
           NONE => []
         | SOME ac_info =>
           if not (ACUtil.head_agrees ac_info t2) then []
-          else if Term_Ord.termless (t2, t1) then []
+          else if Term_Ord.term_ord (t2, t1) = LESS then []
           else if RewriteTable.is_equiv id ctxt (ct1, ct2) then []
           else let
             val expand1 = ac_expand ctxt ac_info (id, ct1)

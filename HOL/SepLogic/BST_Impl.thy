@@ -94,7 +94,7 @@ subsection {* Deletion *}
 
 partial_function (heap) btree_del_min :: "('a::heap, 'b::heap) btree \<Rightarrow> (('a \<times> 'b) \<times> ('a, 'b) btree) Heap" where
   "btree_del_min b = (case b of
-     None \<Rightarrow> raise ''del_min: empty tree''
+     None \<Rightarrow> raise STR ''del_min: empty tree''
    | Some p \<Rightarrow> do {
       t \<leftarrow> !p;
       (if lsub t = None then
@@ -112,7 +112,7 @@ lemma btree_del_min_to_fun [hoare_triple]:
 
 definition btree_del_elt :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_del_elt b = (case b of
-     None \<Rightarrow> raise ''del_elt: empty tree''
+     None \<Rightarrow> raise STR ''del_elt: empty tree''
    | Some p \<Rightarrow> do {
        t \<leftarrow> !p;
        (if lsub t = None then return (rsub t)
