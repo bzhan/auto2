@@ -1,5 +1,5 @@
 theory Partial_Equiv_Rel
-imports "../Auto2_Main"
+imports Auto2_HOL.Auto2_Main
 begin
 
 section {* Partial equivalence relation *}

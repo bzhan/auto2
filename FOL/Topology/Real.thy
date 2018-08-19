@@ -1,5 +1,5 @@
 theory Real
-imports CompleteOrder Rat OrderTopology
+imports CompleteOrder Auto2_FOL.Rat OrderTopology
 begin
 
 section {* Real numbers as a quotient set *}

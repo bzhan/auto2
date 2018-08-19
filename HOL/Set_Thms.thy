@@ -1,7 +1,7 @@
 (* Setup of proof steps related to sets. *)
 
 theory Set_Thms
-imports Logic_Thms "~~/src/HOL/Library/Multiset"
+imports Logic_Thms "HOL-Library.Multiset"
 begin
 
 section {* Functions *}

@@ -1,5 +1,5 @@
 theory Interval
-imports "../Auto2_Main"
+imports Auto2_HOL.Auto2_Main
 begin
 
 section {* Definition of interval *}

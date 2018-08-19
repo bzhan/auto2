@@ -1,5 +1,5 @@
 theory Sequence
-imports Abs Finite
+imports Auto2_FOL.Abs Auto2_FOL.Finite
 begin
 
 section {* Definition of sequences as morphisms from Nat *}

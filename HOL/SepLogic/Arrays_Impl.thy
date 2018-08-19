@@ -5,7 +5,7 @@
 *)
 
 theory Arrays_Impl
-  imports SepAuto "../DataStrs/Arrays_Ex"
+  imports SepAuto DataStrs.Arrays_Ex
 begin
 
 section {* Array copy *}

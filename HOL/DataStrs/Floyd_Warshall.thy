@@ -1,7 +1,7 @@
 (* Ported from AFP/Floyd_Warshall or Timed_Automata. *)
 
 theory Floyd_Warshall
-imports "../Auto2_Main"
+imports Auto2_HOL.Auto2_Main
 begin
 
 section {* Cycles in Lists *}

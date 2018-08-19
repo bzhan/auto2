@@ -5,7 +5,7 @@
 *)
 
 theory Dijkstra_Impl
-imports Indexed_PQueue_Impl "../DataStrs/Dijkstra"
+imports Indexed_PQueue_Impl DataStrs.Dijkstra
 begin
 
 datatype dijkstra_state = Dijkstra_State (est_a: "nat array") (heap_pq: "nat indexed_pqueue")

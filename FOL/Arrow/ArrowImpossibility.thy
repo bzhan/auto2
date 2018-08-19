@@ -1,5 +1,5 @@
 theory ArrowImpossibility
-imports WellOrder Finite
+imports Auto2_FOL.WellOrder Auto2_FOL.Finite
 begin
 
 section {* Sets with at least three elements *}

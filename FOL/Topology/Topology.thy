@@ -1,5 +1,5 @@
 theory Topology
-imports Morphism BigSet
+imports Auto2_FOL.Morphism Auto2_FOL.BigSet
 begin
   
 section \<open>Topological structure\<close>

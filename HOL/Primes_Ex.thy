@@ -3,7 +3,7 @@
    Primes and UniqueFactorization in HOL/Number_Theory. *)
 
 theory Primes_Ex
-imports Auto2_Main
+  imports Auto2_Main
 begin
 
 section {* Definition and basic properties of primes *}

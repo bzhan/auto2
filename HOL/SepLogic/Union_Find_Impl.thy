@@ -3,7 +3,7 @@
 *)
 
 theory Union_Find_Impl
-imports "../DataStrs/Union_Find" SepAuto
+imports DataStrs.Union_Find SepAuto
 begin
 
 type_synonym uf = "nat array \<times> nat array"

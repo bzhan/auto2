@@ -1,5 +1,5 @@
 theory OrderTopology
-imports Topology Interval AlgStructure
+imports Topology Auto2_FOL.Interval Auto2_FOL.AlgStructure
 begin
 
 section {* Set with at least two element *}

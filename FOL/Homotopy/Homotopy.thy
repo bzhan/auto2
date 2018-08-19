@@ -1,5 +1,5 @@
 theory Homotopy
-imports RealTopology
+imports FOL_Topology.RealTopology
 begin
 
 section {* Automation for intervals *}

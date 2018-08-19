@@ -2,7 +2,7 @@ chapter AUTO2
 
 session HOL_Base = HOL +
   description {*
-    Theories in HOL needed by AUTO2.
+    Theories in HOL needed by Auto2_HOL.
   *}
   sessions
     "HOL-Library"
@@ -11,47 +11,26 @@ session HOL_Base = HOL +
     "HOL-Library.Multiset"
     "HOL-Imperative_HOL.Imperative_HOL"
 
-session AUTO2 = HOL_Base +
+session Auto2_HOL = HOL_Base +
   description {*
-    AUTO2 definitions.
+    Instantiation of Auto2 for Isabelle/HOL.
   *}
   sessions
     "HOL_Base"
   theories
     "HOL/Auto2_Test"
     "HOL/Pelletier"
-
-session Primes = AUTO2 +
-  description {*
-    Examples in number theory.
-  *}
-  sessions
-    "AUTO2"
-  theories
     "HOL/Primes_Ex"
 
-session DataStrs_Basic = AUTO2 +
+session DataStrs = Auto2_HOL +
   description {*
     Functional data structures.
   *}
   sessions
-    "AUTO2"
+    "Auto2_HOL"
   theories
-    "HOL/DataStrs/Arrays_Ex"
     "HOL/DataStrs/BST"
-    "HOL/DataStrs/Interval"
     "HOL/DataStrs/Lists_Ex"
-    "HOL/DataStrs/Mapping_Str"
-    "HOL/DataStrs/Partial_Equiv_Rel"
-    "HOL/DataStrs/Union_Find"
-
-session DataStrs_Advanced = DataStrs_Basic +
-  description {*
-    Functional data structures, advanced.
-  *}
-  sessions
-    "DataStrs_Basic"
-  theories
     "HOL/DataStrs/Connectivity"
     "HOL/DataStrs/Dijkstra"
     "HOL/DataStrs/Interval_Tree"
@@ -60,21 +39,21 @@ session DataStrs_Advanced = DataStrs_Basic +
     "HOL/DataStrs/RBTree"
     "HOL/DataStrs/Rect_Intersect"
 
-session DataStrs_FW = AUTO2 +
+session DataStrs_FW = Auto2_HOL +
   description {*
     Floyd-Warshall algorithm.
   *}
   sessions
-    "AUTO2"
+    "Auto2_HOL"
   theories
     "HOL/DataStrs/Floyd_Warshall"
 
-session SepLogic = DataStrs_Advanced +
+session SepLogic = DataStrs +
   description {*
     Separation logic.
   *}
   sessions
-    "DataStrs_Advanced"
+    "DataStrs"
   theories
     "HOL/SepLogic/Sep_Examples"
 
@@ -92,6 +71,7 @@ session Auto2_FOL = FOL +
     "FOL/Divides"
     "FOL/Rat"
     "FOL/Lattice"
+    "FOL/BigSet"
 
 session FOL_Topology = Auto2_FOL +
   description {*
@@ -100,8 +80,8 @@ session FOL_Topology = Auto2_FOL +
   sessions
     "Auto2_FOL"
   theories
-    "FOL/Closure"
-    "FOL/MetricSpaces"
+    "FOL/Topology/Closure"
+    "FOL/Topology/MetricSpaces"
 
 session FOL_Homotopy = FOL_Topology +
   description {*
@@ -110,7 +90,7 @@ session FOL_Homotopy = FOL_Topology +
   sessions
     "FOL_Topology"
   theories
-    "FOL/FundamentalGroup"
+    "FOL/Homotopy/FundamentalGroup"
 
 session FOL_Algebra = Auto2_FOL +
   description {*
@@ -119,7 +99,7 @@ session FOL_Algebra = Auto2_FOL +
   sessions
     "Auto2_FOL"
   theories
-    "FOL/Module"
+    "FOL/Algebra/Module"
 
 session FOL_Arrow = Auto2_FOL +
   description {*
@@ -128,4 +108,4 @@ session FOL_Arrow = Auto2_FOL +
   sessions
     "Auto2_FOL"
   theories
-    "FOL/ArrowImpossibility"
+    "FOL/Arrow/ArrowImpossibility"
