@@ -39,15 +39,6 @@ session DataStrs = Auto2_HOL +
     "HOL/DataStrs/RBTree"
     "HOL/DataStrs/Rect_Intersect"
 
-session DataStrs_FW = Auto2_HOL +
-  description {*
-    Floyd-Warshall algorithm.
-  *}
-  sessions
-    "Auto2_HOL"
-  theories
-    "HOL/DataStrs/Floyd_Warshall"
-
 session SepLogic = DataStrs +
   description {*
     Separation logic.
