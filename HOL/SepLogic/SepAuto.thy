@@ -2,7 +2,7 @@
    (by Lammich and Meis) in the AFP *)
 
 theory SepAuto
-  imports Auto2_HOL.Auto2_Main "HOL-Imperative_HOL.Imperative_HOL"
+  imports SepLogic_Base "HOL-Imperative_HOL.Imperative_HOL"
 begin
 
 section {* Partial Heaps *}
@@ -238,10 +238,10 @@ lemma entails_true: "A \<Longrightarrow>\<^sub>A true" by auto2
 lemma entails_frame [backward]: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> P * R \<Longrightarrow>\<^sub>A Q * R" by auto2
 lemma entails_frame': "\<not> (A * F \<Longrightarrow>\<^sub>A Q) \<Longrightarrow> A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not> (B * F \<Longrightarrow>\<^sub>A Q)" by auto2
 lemma entails_frame'': "\<not> (P \<Longrightarrow>\<^sub>A B * F) \<Longrightarrow> A \<Longrightarrow>\<^sub>A B \<Longrightarrow> \<not> (P \<Longrightarrow>\<^sub>A A * F)" by auto2
-lemma entail_equiv_forward: "P = Q \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q" by auto2
-lemma entail_equiv_backward: "P = Q \<Longrightarrow> Q \<Longrightarrow>\<^sub>A P" by auto2
+lemma entails_equiv_forward: "P = Q \<Longrightarrow> P \<Longrightarrow>\<^sub>A Q" by auto2
+lemma entails_equiv_backward: "P = Q \<Longrightarrow> Q \<Longrightarrow>\<^sub>A P" by auto2
 lemma entailsD [forward]: "P \<Longrightarrow>\<^sub>A Q \<Longrightarrow> h \<Turnstile> P \<Longrightarrow> h \<Turnstile> Q" by auto2
-lemma entail_trans2: "A \<Longrightarrow>\<^sub>A D * B \<Longrightarrow> B \<Longrightarrow>\<^sub>A C \<Longrightarrow> A \<Longrightarrow>\<^sub>A D * C" by auto2
+lemma entails_trans2: "A \<Longrightarrow>\<^sub>A D * B \<Longrightarrow> B \<Longrightarrow>\<^sub>A C \<Longrightarrow> A \<Longrightarrow>\<^sub>A D * C" by auto2
 
 lemma entails_pure': "\<not>(\<up>b \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<not>(emp \<Longrightarrow>\<^sub>A Q) \<and> b)" by auto2
 lemma entails_pure: "\<not>(P * \<up>b \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<not>(P \<Longrightarrow>\<^sub>A Q) \<and> b)" by auto2
@@ -469,12 +469,20 @@ abbreviation (input) models_ascii :: "pheap \<Rightarrow> assn \<Rightarrow> boo
   where "h |= P \<equiv> h \<Turnstile> P"
 
 ML_file "sep_util.ML"
-ML_file "sep_util_extra.ML"
-ML_file "assn_matcher.ML"
-ML_file "sep_steps.ML"
-ML_file "sep_steps_test.ML"
 
+ML {*
+structure AssnMatcher = AssnMatcher(SepUtil)
+structure SepLogic = SepLogic(SepUtil)
+val add_assn_matcher = AssnMatcher.add_assn_matcher
+val add_entail_matcher = AssnMatcher.add_entail_matcher
+val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
+val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
+val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep
+*}
+setup {* AssnMatcher.add_assn_matcher_proofsteps *}
 setup {* SepLogic.add_sep_logic_proofsteps *}
+
+ML_file "sep_steps_test.ML"
 
 attribute_setup forward_ent = {* setup_attrib add_forward_ent_prfstep *}
 attribute_setup rewrite_ent = {* setup_attrib add_rewrite_ent_rule *}

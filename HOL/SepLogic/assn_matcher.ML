@@ -27,17 +27,20 @@ sig
   val add_assn_matcher_proofsteps: theory -> theory
 end
 
-structure AssnMatcher : ASSN_MATCHER =
-struct
-
-open SepUtil
-
+(* Due to strange interaction between functors and Theory_Data, this
+   must be put outside.
+ *)
 structure MatchData = Theory_Data (
   type T = assn_matcher list
   val empty = []
   val extend = I;
   val merge = merge (op pointer_eq)
 )
+
+functor AssnMatcher(SepUtil: SEP_UTIL): ASSN_MATCHER =
+struct
+
+open SepUtil
 
 (* Matching in the forward direction *)
 
@@ -98,7 +101,7 @@ fun assn_match_all ctxt (pat, ct) (id, inst) =
               (* th' is t' ==> B(s) * t''. *)
               fun process_inst' ((id'', inst''), th') =
                   let
-                    val res = ([th, th'] MRS @{thm entail_trans2})
+                    val res = ([th, th'] MRS entails_trans2_th)
                                   |> apply_to_entail_r (
                                 ACUtil.assoc_sym_cv assn_ac_info)
                   in
@@ -211,7 +214,7 @@ fun entail_matcher' entail_th ctxt r ct id =
                                  |> ACUtil.ac_last_conv assn_ac_info
                   val th' = th |> apply_to_entail_r (ACUtil.comm_cv assn_ac_info)
                 in
-                  (id'', ([th', entail_th'] MRS @{thm entail_trans2})
+                  (id'', ([th', entail_th'] MRS entails_trans2_th)
                              |> apply_to_entail_r cv)
                 end
           in
@@ -314,7 +317,3 @@ val add_assn_matcher_proofsteps =
     ]
 
 end  (* structure AssnMatcher. *)
-
-val add_assn_matcher = AssnMatcher.add_assn_matcher
-val add_entail_matcher = AssnMatcher.add_entail_matcher
-val _ = Theory.setup (AssnMatcher.add_assn_matcher_proofsteps)

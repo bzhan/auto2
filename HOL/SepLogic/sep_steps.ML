@@ -11,7 +11,7 @@ sig
   val normalize_entail_goal_cv: Proof.context -> conv
 
   val empty_proc_info: proc_info
-  val get_proc_def: theory -> string -> thm list
+  val get_proc_def: theory -> term -> thm list
   val update_hoare_triple: thm -> theory -> theory
   val get_hoare_triples: theory -> string -> thm list
 
@@ -55,10 +55,11 @@ sig
   val add_sep_logic_proofsteps: theory -> theory
 end;
 
-structure SepLogic : SEP_LOGIC =
+functor SepLogic(SepUtil: SEP_UTIL) : SEP_LOGIC =
 struct
 
 open SepUtil
+structure AssnMatcher = AssnMatcher(SepUtil)
 
 (* Normalize a Hoare triple goal. *)
 fun normalize_hoare_goal_cv' ctxt ct =
@@ -67,13 +68,13 @@ fun normalize_hoare_goal_cv' ctxt ct =
       val (P, _, _) = t |> dest_not |> dest_hoare_triple
     in
       if is_pure_assn P then
-        rewr_obj_eq @{thm pre_pure_rule'} ct
+        rewr_obj_eq pre_pure_rule_th' ct
       else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
-        Conv.every_conv [rewr_obj_eq @{thm pre_pure_rule},
+        Conv.every_conv [rewr_obj_eq pre_pure_rule_th,
                          Conv.arg1_conv (normalize_hoare_goal_cv' ctxt)] ct
       else if is_ex_assn P then
         Conv.every_conv [
-          rewr_obj_eq @{thm pre_ex_rule},
+          rewr_obj_eq pre_ex_rule_th,
           Conv.binder_conv (normalize_hoare_goal_cv' o snd) ctxt] ct
       else
         Conv.all_conv ct
@@ -84,7 +85,7 @@ fun normalize_hoare_goal_cv ctxt ct =
       Conv.binder_conv (normalize_hoare_goal_cv o snd) ctxt ct
     else
       Conv.every_conv [
-        Conv.arg_conv (Util.argn_conv 0 (SepUtilExtra.normalize_assn_cv ctxt)),
+        Conv.arg_conv (Util.argn_conv 0 (SepUtil.normalize_assn_cv ctxt)),
         normalize_hoare_goal_cv' ctxt] ct
 
 fun normalize_entail_goal_cv' ctxt ct =
@@ -93,13 +94,13 @@ fun normalize_entail_goal_cv' ctxt ct =
       val (P, _) = t |> dest_not |> dest_entail
     in
       if is_pure_assn P then
-        rewr_obj_eq @{thm entails_pure'} ct
+        rewr_obj_eq entails_pure_th' ct
       else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
-        Conv.every_conv [rewr_obj_eq @{thm entails_pure},
+        Conv.every_conv [rewr_obj_eq entails_pure_th,
                          Conv.arg1_conv (normalize_entail_goal_cv' ctxt)] ct
       else if is_ex_assn P then
         Conv.every_conv [
-          rewr_obj_eq @{thm entails_ex},
+          rewr_obj_eq entails_ex_th,
           Conv.binder_conv (normalize_entail_goal_cv' o snd) ctxt] ct
       else
         Conv.all_conv ct
@@ -110,7 +111,7 @@ fun normalize_entail_goal_cv ctxt ct =
       Conv.binder_conv (normalize_entail_goal_cv o snd) ctxt ct
     else
       Conv.every_conv [
-        Conv.arg_conv (Conv.binop_conv (SepUtilExtra.normalize_assn_cv ctxt)),
+        Conv.arg_conv (Conv.binop_conv (SepUtil.normalize_assn_cv ctxt)),
         normalize_entail_goal_cv' ctxt] ct
 
 (* Data maintained for each imperative command. *)
@@ -144,30 +145,29 @@ fun get_hoare_triples thy nm =
       hoare_triples
     end
 
-fun get_proc_def thy nm =
-    if nm = @{const_name bind} then []
-    else if null (get_hoare_triples thy nm) then
-      Unfolding.get_unfold_thms_by_name thy nm
-    else []
-
-fun is_bind_cmd c =
-    case c of
-        Const (@{const_name bind}, _) $ _ $ _ => true
-      | _ => false
+fun get_proc_def thy t =
+    if is_bind_cmd t then []
+    else let
+      val nm = Util.get_head_name t
+    in
+      if null (get_hoare_triples thy nm) then
+        Unfolding.get_unfold_thms_by_name thy nm
+      else []
+    end
 
 fun get_first_cmd c =
-    case c of
-        Const (@{const_name bind}, _) $ c1 $ _ => c1
-      | _ => c
+    if is_bind_cmd c then dest_arg1 c else c
 
 fun extract_return_var t =
-    case t of
-        Const (@{const_name bind}, _) $ _ $ Abs (x, T, _) =>
-        if x = "uu_" then Free ("u",T)  (* no assigned name *)
-        else Free (x,T)  (* regular assigned name *)
-      | Const (@{const_name bind}, _) $ _ $ c =>
-        Free ("r", Term.domain_type (fastype_of c))
-      | _ => raise Fail "extract_return_var"
+    if is_bind_cmd t then
+      case dest_arg t of
+          Abs (x, T, _) =>
+          if x = "uu_" then Free ("u",T)  (* no assigned name *)
+          else Free (x,T)  (* regular assigned name *)
+        | c =>
+          Free ("r", Term.domain_type (fastype_of c))
+    else
+      raise Fail "extract_return_var"
 
 (* CODE_POS item stores a Hoare triple goal, indicating the current
    position in the program.
@@ -186,10 +186,10 @@ fun is_neg_entail t =
     is_neg t andalso is_entail (dest_not t)
 
 fun norm_precond ctxt ct =
-    Util.argn_conv 0 (SepUtilExtra.normalize_assn_cv ctxt) ct
+    Util.argn_conv 0 (SepUtil.normalize_assn_cv ctxt) ct
 
 fun norm_entail_conds ctxt ct =
-    Conv.binop_conv (SepUtilExtra.normalize_assn_cv ctxt) ct
+    Conv.binop_conv (SepUtil.normalize_assn_cv ctxt) ct
 
 fun is_implies_item item =
     Util.is_implies (Thm.prop_of (#prop item))
@@ -264,7 +264,8 @@ fun init_entail_fn ctxt item =
 
 val init_entail =
     {name = "sep.init_entail",
-     args = [TypedMatch (TY_PROP, @{term_pat "~entails ?A ?B"})],
+     args = [TypedMatch (TY_PROP, get_neg (entail_t $ Var (("A",0), assnT)
+                                                    $ Var (("B",0), assnT)))],
      func = OneStep init_entail_fn}
 
 (* Apply entailment to the pre-condition P of P ==>_A Q. *)
@@ -284,7 +285,7 @@ fun forward_ent_prfstep_fn ent_th ctxt item =
           let
             val prop' = prop |> apply_to_thm' (
                   Conv.arg_conv (Conv.arg1_conv (Conv.rewr_conv eq_th)))
-            val prop'' = [prop', ent_th] MRS @{thm entails_frame'}
+            val prop'' = [prop', ent_th] MRS entails_frame_th'
           in
             [entail_goal_update ctxt (id', prop''),
              ShadowItem {id = id', item = item}]
@@ -314,7 +315,7 @@ fun backward_ent_prfstep_fn ent_th ctxt item =
           let
             val prop' = prop |> apply_to_thm' (
                   Conv.arg_conv (Conv.arg_conv (Conv.rewr_conv eq_th)))
-            val prop'' = [prop', ent_th] MRS @{thm entails_frame''}
+            val prop'' = [prop', ent_th] MRS entails_frame_th''
           in
             [entail_goal_update ctxt (id', prop''),
              ShadowItem {id = id', item = item}]
@@ -339,7 +340,7 @@ fun group_pure_assn ct =
           Conv.every_conv [
             Conv.arg1_conv group_pure_assn,
             ACUtil.assoc_cv assn_ac_info,
-            Conv.arg_conv (rewr_obj_eq (obj_sym @{thm pure_conj}))] ct
+            Conv.arg_conv (rewr_obj_eq (obj_sym pure_conj_th))] ct
         else
           Conv.all_conv ct
       else
@@ -362,7 +363,7 @@ fun entails_norm_ex ctxt th =
       val (_, Q) = t |> dest_not |> dest_entail
     in
       if is_ex_assn Q then
-        (th RS @{thm entails_ex_post})
+        (th RS entails_ex_post_th)
             |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
             |> make_sch_th ctxt
             |> entails_norm_ex ctxt
@@ -386,7 +387,7 @@ fun entails_resolve_fn ctxt item =
             let
               val prop' = prop |> apply_to_thm' (
                     Conv.arg_conv (Conv.arg_conv group_pure_assn))
-              val res = [prop', mod_th] MRS @{thm entails_pure_post}
+              val res = [prop', mod_th] MRS entails_pure_post_th
             in
               Update.thm_update (id', res)
             end
@@ -408,8 +409,7 @@ fun init_pos_fn ctxt item =
       val thy = Proof_Context.theory_of ctxt
 
       val (_, c, _) = dest_hoare_triple (get_neg (prop_of' prop))
-      val nm = Util.get_head_name c
-      val proc_defs = get_proc_def thy nm
+      val proc_defs = get_proc_def thy c
 
       fun process_proc_def proc_def =
           let
@@ -439,7 +439,7 @@ fun init_pos_fn ctxt item =
 
 val init_pos =
     {name = "sep.init_pos",
-     args = [TypedMatch (TY_PROP, @{term_pat "~<?P> ?c <?Q>"})],
+     args = [TypedMatch (TY_PROP, get_neg hoare_triple_pat)],
      func = OneStep init_pos_fn}
 
 fun forward_hoare_prfstep_fn ent_th ctxt item =
@@ -457,7 +457,7 @@ fun forward_hoare_prfstep_fn ent_th ctxt item =
           let
             val prop' = prop |> apply_to_thm' (
                   Conv.arg_conv (Util.argn_conv 0 (Conv.rewr_conv eq_th)))
-            val prop'' = [prop', ent_th] MRS @{thm pre_rule'}
+            val prop'' = [prop', ent_th] MRS pre_rule_th'
           in
             [hoare_goal_update ctxt (id', prop''),
              ShadowItem {id = id', item = item}]
@@ -494,10 +494,10 @@ fun add_backward_ent_prfstep ent_th thy =
 
 fun add_rewrite_ent_rule th thy =
     let
-      val forward_th = (th RS @{thm entail_equiv_forward})
+      val forward_th = (th RS entails_equiv_forward_th)
                            |> Drule.zero_var_indexes
                            |> Util.update_name_of_thm th "@forward"
-      val backward_th = (th RS @{thm entail_equiv_backward})
+      val backward_th = (th RS entails_equiv_backward_th)
                             |> Drule.zero_var_indexes
                             |> Util.update_name_of_thm th "@backward"
     in
@@ -541,7 +541,7 @@ fun rewrite_pos_fn ctxt item1 item2 =
 val rewrite_pos =
     {name = "sep.rewrite_pos",
      args = [TypedUniv TY_CODE_POS,
-             TypedMatch (TY_EQ, @{term_pat "(?c1::?'a Heap) = ?c2"})],
+             TypedMatch (TY_EQ, heap_eq_pat)],
      func = TwoStep rewrite_pos_fn}
 
 (* Extract the pure pre-conditions from a Hoare triple fact. *)
@@ -550,9 +550,9 @@ fun extract_pure_hoare_cv ct =
       val (P, _, _) = ct |> Thm.term_of |> dest_hoare_triple
     in
       if is_pure_assn P then
-        rewr_obj_eq @{thm norm_pre_pure_iff2} ct
+        rewr_obj_eq norm_pre_pure_iff2_th ct
       else if UtilArith.is_times P andalso is_pure_assn (dest_arg P) then
-        Conv.every_conv [rewr_obj_eq @{thm norm_pre_pure_iff},
+        Conv.every_conv [rewr_obj_eq norm_pre_pure_iff_th,
                          Conv.arg_conv extract_pure_hoare_cv] ct
       else
         Conv.all_conv ct
@@ -585,12 +585,12 @@ fun match_hoare_th id ctxt hoare_th goal item =
                           |> apply_to_thm' extract_pure_hoare_cv
                           |> apply_to_thm (UtilLogic.to_meta_conv ctxt)
                   val hoare_th' =
-                      [hoare_th, ent_th] MRS @{thm pre_rule''}
+                      [hoare_th, ent_th] MRS pre_rule_th''
                 in
                   if is_bind_cmd c then
                     let
                       val return_var = extract_return_var c
-                      val th' = [hoare_th', goal] MRS @{thm bind_rule'}
+                      val th' = [hoare_th', goal] MRS bind_rule_th'
                       val (_, (assms, concl)) = th' |> Thm.prop_of
                                                     |> Util.strip_meta_horn
                       val concl' = concl |> dest_Trueprop
@@ -604,7 +604,7 @@ fun match_hoare_th id ctxt hoare_th goal item =
                     end
                   else
                     [entail_goal_update
-                         ctxt (id'', [hoare_th', goal] MRS @{thm post_rule'}),
+                         ctxt (id'', [hoare_th', goal] MRS post_rule_th'),
                      ShadowItem {id = id'', item = item}]
                 end
           in
@@ -630,7 +630,7 @@ fun match_hoare_prop_fn ctxt item1 item2 =
 
 val match_hoare_prop =
     {name = "sep.match_hoare_prop",
-     args = [TypedMatch (TY_PROP, @{term_pat "<?P> ?c <?Q>"}),
+     args = [TypedMatch (TY_PROP, hoare_triple_pat),
              TypedUniv TY_CODE_POS],
      func = TwoStep match_hoare_prop_fn}
 
@@ -770,7 +770,7 @@ val hoare_triple =
 fun contract_hoare_cv' ct =
     if is_imp (Thm.term_of ct) then
       Conv.every_conv [Conv.arg_conv contract_hoare_cv',
-                       rewr_obj_eq (obj_sym @{thm norm_pre_pure_iff})] ct
+                       rewr_obj_eq (obj_sym norm_pre_pure_iff_th)] ct
     else
       Conv.all_conv ct
 
@@ -803,7 +803,7 @@ fun code_pos_terms ts =
       else let
         val (P, c, _) = t |> dest_not |> dest_hoare_triple
       in
-        SepUtilExtra.assn_rewr_terms P @ [get_first_cmd c]
+        SepUtil.assn_rewr_terms P @ [get_first_cmd c]
       end
     end
 
@@ -815,7 +815,7 @@ fun entail_terms ts =
       else let
         val (P, Q) = t |> dest_not |> dest_entail
       in
-        maps SepUtilExtra.assn_rewr_terms [P, Q]
+        maps SepUtil.assn_rewr_terms [P, Q]
       end
     end
 
@@ -832,7 +832,3 @@ val add_sep_logic_proofsteps =
     ]
 
 end  (* structure SepLogic *)
-
-val add_forward_ent_prfstep = SepLogic.add_forward_ent_prfstep
-val add_rewrite_ent_rule = SepLogic.add_rewrite_ent_rule
-val add_hoare_triple_prfstep = SepLogic.add_hoare_triple_prfstep
