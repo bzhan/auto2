@@ -1,8 +1,13 @@
-(* Verification of functional red-black trees. See also theory
-   HOL/Library/RBT_Impl in the Isabelle distribution. *)
+(*
+  File: RBTree.thy
+  Author: Bohua Zhan
+
+  Verification of functional red-black trees. For general technique,
+  see Lists_Ex.thy.
+*)
 
 theory RBTree
-imports Lists_Ex
+  imports Lists_Ex
 begin
 
 section {* Definition of RBT *}

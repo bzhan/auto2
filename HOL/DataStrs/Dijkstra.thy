@@ -1,7 +1,11 @@
-(* Verification of Dijkstra's algorithm: function part.
+(*
+  File: Dijkstra.thy
+  Author: Bohua Zhan
 
-   The algorithm is also verified in the AFP entry Dijkstra_Shortest_Path
-   by Benedikt Nordhoff and Peter Lammich.
+  Verification of Dijkstra's algorithm: function part.
+
+  The algorithm is also verified in the AFP entry Dijkstra_Shortest_Path
+  by Benedikt Nordhoff and Peter Lammich.
 *)
 
 theory Dijkstra

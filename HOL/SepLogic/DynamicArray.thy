@@ -1,5 +1,12 @@
+(*
+  File: DynamicArray.thy
+  Author: Bohua Zhan
+
+  Dynamically allocated arrays.
+*)
+
 theory DynamicArray
-imports Arrays_Impl
+  imports Arrays_Impl
 begin
 
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (aref: "'a array")

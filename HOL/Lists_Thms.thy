@@ -1,7 +1,12 @@
-(* Setup for proof steps related to lists. *)
+(*
+  File: Lists_Thms.thy
+  Author: Bohua Zhan
+
+  Setup for proof steps related to lists.
+*)
 
 theory Lists_Thms
-imports Set_Thms
+  imports Set_Thms
 begin
 
 section {* Definition of lists *}

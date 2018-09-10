@@ -1,4 +1,9 @@
-(* Verification of imperative red-black trees. *)
+(*
+  File: RBTree_Impl.thy
+  Author: Bohua Zhan
+
+  Verification of imperative red-black trees.
+*)
 
 theory RBTree_Impl
   imports DataStrs.RBTree SepAuto

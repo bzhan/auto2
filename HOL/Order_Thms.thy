@@ -1,7 +1,12 @@
-(* Setup for proof steps related to ordering. *)
+(*
+  File: Order_Thms.thy
+  Author: Bohua Zhan
+
+  Setup for proof steps related to ordering.
+*)
 
 theory Order_Thms
-imports Logic_Thms HOL.Rat
+  imports Logic_Thms HOL.Rat
 begin
 
 ML_file "util_arith.ML"

@@ -1,5 +1,12 @@
+(*
+  File: Connectivity.thy
+  Author: Bohua Zhan
+
+  A simple application of union-find for graph connectivity.
+*)
+
 theory Connectivity
-imports Union_Find
+  imports Union_Find
 begin
 
 section {* Connectedness for a set of undirected edges. *}

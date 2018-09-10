@@ -1,5 +1,13 @@
+(*
+  File: Partial_Equiv_Rel.thy
+  Author: Bohua Zhan
+
+  Partial equivalence relations, following
+  Collections/Lib/Partial_Equivalence_Relation in the AFP.
+*)
+
 theory Partial_Equiv_Rel
-imports Auto2_HOL.Auto2_Main
+  imports Auto2_HOL.Auto2_Main
 begin
 
 section {* Partial equivalence relation *}

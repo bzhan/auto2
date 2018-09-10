@@ -1,6 +1,12 @@
-(* Elementary number theory of primes, up to the proof of infinitude
-   of primes and the unique factorization theorem. Follows theories
-   Primes and UniqueFactorization in HOL/Number_Theory. *)
+(*
+  File: Primes_Ex.thy
+  Author: Bohua Zhan
+
+  Elementary number theory of primes, up to the proof of infinitude
+  of primes and the unique factorization theorem.
+
+  Follows the development in HOL/Computational_Algebra/Primes.thy.
+*)
 
 theory Primes_Ex
   imports Auto2_Main

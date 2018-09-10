@@ -1,3 +1,10 @@
+(*
+  File: Sep_Examples.thy
+  Author: Bohua Zhan
+
+  Overall directory of examples in SepLogic.
+*)
+
 theory Sep_Examples
 
 imports

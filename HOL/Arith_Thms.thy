@@ -1,7 +1,12 @@
-(* Setup for proof steps related to arithmetic, mostly on natural numbers. *)
+(*
+  File: Arith_Thms.thy
+  Author: Bohua Zhan
+
+  Setup for proof steps related to arithmetic, mostly on natural numbers.
+*)
 
 theory Arith_Thms
-imports Order_Thms HOL.Binomial
+  imports Order_Thms HOL.Binomial
 begin
 
 (* Reducing inequality on natural numbers. *)

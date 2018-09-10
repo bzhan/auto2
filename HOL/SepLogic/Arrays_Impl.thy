@@ -1,7 +1,11 @@
-(* Imperative implementations of common array operations.
+(*
+  File: Arrays_Impl.thy
+  Author: Bohua Zhan
 
-   Imperative reverse on arrays is also verified in
-   Imperative_HOL/ex/Imperative_Reverse in the Isabelle library.
+  Imperative implementations of common array operations.
+
+  Imperative reverse on arrays is also verified in
+  Imperative_HOL/ex/Imperative_Reverse in the Isabelle library.
 *)
 
 theory Arrays_Impl

@@ -1,5 +1,12 @@
+(*
+  File: Arrays_Ex.thy
+  Author: Bohua Zhan
+
+  Basic examples for arrays.
+*)
+
 theory Arrays_Ex
-imports Auto2_HOL.Auto2_Main
+  imports Auto2_HOL.Auto2_Main
 begin
 
 section {* List swap *}

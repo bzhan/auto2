@@ -1,7 +1,11 @@
-(* Imperative implementation of indexed priority queue.
+(*
+  File: Indexed_PQueue_Impl.thy
+  Author: Bohua Zhan
 
-   The data structure is also verified in the AFP entry
-   Refine_Imperative_HOL by Peter Lammich.
+  Imperative implementation of indexed priority queue.
+
+  The data structure is also verified in the AFP entry Refine_Imperative_HOL
+  by Peter Lammich.
 *)
 
 theory Indexed_PQueue_Impl

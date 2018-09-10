@@ -1,5 +1,12 @@
+(*
+  File: Rect_Intersect_Impl.thy
+  Author: Bohua Zhan
+
+  Imperative version of rectangle-intersection algorithm.
+*)
+
 theory Rect_Intersect_Impl
-imports DataStrs.Rect_Intersect IntervalTree_Impl Quicksort_Impl
+  imports DataStrs.Rect_Intersect IntervalTree_Impl Quicksort_Impl
 begin
 
 section {* Operations *}

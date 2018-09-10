@@ -1,7 +1,12 @@
-(* Theorems in logic used in the auto2 tactic. *)
+(*
+  File: HOL_Base.thy
+  Author: Bohua Zhan
+
+  Extra theorems in logic used by auto2.
+*)
 
 theory HOL_Base
-imports Main
+  imports Main
 begin
 
 theorem to_contra_form: "Trueprop A \<equiv> (\<not>A \<Longrightarrow> False)" by (rule equal_intr_rule) auto

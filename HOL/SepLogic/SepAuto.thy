@@ -1,5 +1,12 @@
-(* The development here follows Separation_Logic_Imperative_HOL
-   (by Lammich and Meis) in the AFP *)
+(*
+  File: SepAuto.thy
+  Author: Bohua Zhan
+
+  Separation logic for Imperative_HOL, and setup of auto2.
+
+  The development of separation logic here follows
+  Separation_Logic_Imperative_HOL (by Lammich and Meis) in the AFP.
+*)
 
 theory SepAuto
   imports SepLogic_Base "HOL-Imperative_HOL.Imperative_HOL"

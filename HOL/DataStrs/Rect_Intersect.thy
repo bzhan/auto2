@@ -1,5 +1,14 @@
+(*
+  File: Rect_Intersect.thy
+  Author: Bohua Zhan
+
+  Functional version of algorithm for detecting rectangle intersection.
+  See Exercise 14.3-7 in "Introduction to Algorithms" by Cormen,
+  Leiserson, Rivest, and Stein for a reference.
+*)
+
 theory Rect_Intersect
-imports Interval_Tree
+  imports Interval_Tree
 begin
 
 section {* Definition of rectangles *}

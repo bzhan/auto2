@@ -1,5 +1,12 @@
+(*
+  File: IntervalTree_Impl.thy
+  Author: Bohua Zhan
+
+  Imperative version of interval tree.
+*)
+
 theory IntervalTree_Impl
-imports SepAuto DataStrs.Interval_Tree
+  imports SepAuto DataStrs.Interval_Tree
 begin
 
 section {* Interval and IdxInterval *}

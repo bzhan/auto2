@@ -1,7 +1,12 @@
-(* Imperative version of binary search trees. *)
+(*
+  File: BST_Impl.thy
+  Author: Bohua Zhan
+
+  Imperative version of binary search trees.
+*)
 
 theory BST_Impl
-imports SepAuto DataStrs.BST
+  imports SepAuto DataStrs.BST
 begin
 
 section {* Tree nodes *}

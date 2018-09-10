@@ -1,5 +1,12 @@
+(*
+  File: Connectivity_Impl.thy
+  Author: Bohua Zhan
+
+  Imperative version of graph-connectivity example.
+*)
+
 theory Connectivity_Impl
-imports Union_Find_Impl DataStrs.Connectivity
+  imports Union_Find_Impl DataStrs.Connectivity
 begin
 
 section {* Constructing the connected relation *}

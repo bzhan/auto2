@@ -1,5 +1,12 @@
+(*
+  File: Interval.thy
+  Author: Bohua Zhan
+
+  Basic definition of intervals.
+*)
+
 theory Interval
-imports Auto2_HOL.Auto2_Main
+  imports Auto2_HOL.Auto2_Main
 begin
 
 section {* Definition of interval *}

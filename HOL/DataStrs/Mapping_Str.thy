@@ -1,5 +1,13 @@
+(*
+  File: Mapping_Str.thy
+  Author: Bohua Zhan
+
+  Basic definitions of a mapping. Here, we enclose the mapping inside
+  a structure, to make evaluation a first-order concept.
+*)
+
 theory Mapping_Str
-imports Auto2_HOL.Auto2_Main
+  imports Auto2_HOL.Auto2_Main
 begin
 
 datatype ('a, 'b) map = Map "'a \<Rightarrow> 'b option"

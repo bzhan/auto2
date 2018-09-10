@@ -1,7 +1,11 @@
-(* Verification of indexed priority queue: functional part.
+(*
+  File: Indexed_PQueue.thy
+  Author: Bohua Zhan
 
-   The data structure is also verified in the AFP entry
-   Refine_Imperative_HOL by Peter Lammich.
+  Verification of indexed priority queue: functional part.
+
+  The data structure is also verified in the AFP entry
+  Refine_Imperative_HOL by Peter Lammich.
 *)
 
 theory Indexed_PQueue

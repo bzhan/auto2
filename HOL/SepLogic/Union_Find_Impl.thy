@@ -1,9 +1,13 @@
-(* Development follows theory Union_Find of AFP entry
-   Separation_Logic_Imperative_HOL by Lammich and Meis.
+(*
+  File: Union_Find_Impl.thy
+  Author: Bohua Zhan
+
+  Development follows theory Union_Find of AFP entry
+  Separation_Logic_Imperative_HOL by Lammich and Meis.
 *)
 
 theory Union_Find_Impl
-imports DataStrs.Union_Find SepAuto
+  imports DataStrs.Union_Find SepAuto
 begin
 
 type_synonym uf = "nat array \<times> nat array"

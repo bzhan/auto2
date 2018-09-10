@@ -1,3 +1,10 @@
+(*
+  File: GCD_Impl.thy
+  Author: Bohua Zhan
+
+  A tutorial example for computation of GCD.
+*)
+
 theory GCD_Impl
   imports SepAuto
 begin

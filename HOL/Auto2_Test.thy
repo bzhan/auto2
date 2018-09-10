@@ -1,7 +1,12 @@
-(* Unit tests for auto2. *)
+(*
+  File: Auto2_Test.thy
+  Author: Bohua Zhan
+
+  Unit tests for auto2.
+*)
 
 theory Auto2_Test
-imports Auto2_Main
+  imports Auto2_Main
 begin
 
 ML_file "util_test.ML"

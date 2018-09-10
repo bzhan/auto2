@@ -1,9 +1,13 @@
-(* Development follows theory Union_Find of AFP entry
-   Separation_Logic_Imperative_HOL by Lammich and Meis.
+(*
+  File: Union_Find.thy
+  Author: Bohua Zhan
+
+  Development follows theory Union_Find of AFP entry
+  Separation_Logic_Imperative_HOL by Lammich and Meis.
 *)
 
 theory Union_Find
-imports Partial_Equiv_Rel
+  imports Partial_Equiv_Rel
 begin
 
 section {* Representing a partial equivalence relation using rep_of array *}

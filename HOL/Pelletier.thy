@@ -1,7 +1,13 @@
-(* Pelletier's problems *)
+(*
+  File: Pelletier.thy
+  Author: Bohua Zhan
+
+  Pelletier's problems. From the paper "Seventy-five problems for testing
+  automatic theorem provers" by Francis Jeffry Pelletier.
+*)
 
 theory Pelletier
-imports Logic_Thms
+  imports Logic_Thms
 begin
 
 theorem p1: "(p \<longrightarrow> q) \<longleftrightarrow> (\<not>q \<longrightarrow> \<not>p)" by auto2
@@ -152,7 +158,11 @@ theorem p47:
    \<forall>x y. P3(x) \<and> P4(y) \<longrightarrow> R(x,y) \<Longrightarrow>
    \<forall>x y. P3(x) \<and> P5(y) \<longrightarrow> \<not>R(x,y) \<Longrightarrow>
    \<forall>x. P4(x) \<or> P5(x) \<longrightarrow> (\<exists>y. Q0(y) \<and> R(x,y)) \<Longrightarrow>
-   \<exists>x y. P0(x) \<and> P0(y) \<and> (\<exists>z. Q1(z) \<and> R(y,z) \<and> R(x,y))" by meson
+   \<exists>x y. P0(x) \<and> P0(y) \<and> (\<exists>z. Q1(z) \<and> R(y,z) \<and> R(x,y))"
+@proof
+  @obtain x1 x2 x3 x4 x5 where "P1(x1)" "P2(x2)" "P3(x3)" "P4(x4)" "P5(x5)"
+  @have "S(x3,x2)" @have "S(x2,x1)" @have "R(x3,x4)" @have "\<not>R(x3,x5)"
+@qed
 
 theorem p48: "a = b \<or> c = d \<Longrightarrow> a = c \<or> b = d \<Longrightarrow> a = d \<or> b = c" by auto2
 
@@ -197,7 +207,7 @@ theorem p55:
    \<forall>x. H(a,x) \<longrightarrow> \<not>H(c,x) \<Longrightarrow>
    \<forall>x. x \<noteq> b \<longrightarrow> H(a,x) \<Longrightarrow>
    \<forall>x. \<not>R(x,a) \<longrightarrow> H(b,x) \<Longrightarrow>
-   \<forall>x. H(a,x) \<longrightarrow> H(b,x) \<Longrightarrow>  (* typo in text *)
+   \<forall>x. H(a,x) \<longrightarrow> H(b,x) \<Longrightarrow>  \<comment>\<open>typo in text\<close>
    \<forall>x. \<exists>y. \<not>H(x,y) \<Longrightarrow>
    a \<noteq> b \<Longrightarrow>
    K(a,a)"

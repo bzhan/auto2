@@ -1,15 +1,20 @@
-(* Auto2 tactic. *)
+(*
+  File: Auto2_HOL.thy
+  Author: Bohua Zhan
+
+  Main file for auto2 setup in HOL.
+*)
 
 theory Auto2_HOL
-imports HOL_Base
-keywords "@proof" :: prf_block % "proof"
-  and "@have" "@case" "@obtain" "@let" "@contradiction" "@strong_induct" :: prf_decl % "proof"
-  and "@unfold" :: prf_decl % "proof"
-  and "@induct" "@fun_induct" "@case_induct" "@prop_induct" "@cases" :: prf_decl % "proof"
-  and "@apply_induct_hyp" :: prf_decl % "proof"
-  and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
-  and "@qed" :: prf_decl % "proof"
-  and "@with" "where" "arbitrary" "@rule" :: quasi_command
+  imports HOL_Base
+  keywords "@proof" :: prf_block % "proof"
+    and "@have" "@case" "@obtain" "@let" "@contradiction" "@strong_induct" :: prf_decl % "proof"
+    and "@unfold" :: prf_decl % "proof"
+    and "@induct" "@fun_induct" "@case_induct" "@prop_induct" "@cases" :: prf_decl % "proof"
+    and "@apply_induct_hyp" :: prf_decl % "proof"
+    and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
+    and "@qed" :: prf_decl % "proof"
+    and "@with" "where" "arbitrary" "@rule" :: quasi_command
 begin
 
 ML_file "../util.ML"

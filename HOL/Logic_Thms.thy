@@ -1,4 +1,9 @@
-(* Setup for proof steps related to logic. *)
+(*
+  File: Logic_Thms.thy
+  Author: Bohua Zhan
+
+  Setup for proof steps related to logic.
+*)
 
 theory Logic_Thms
 imports Auto2_HOL

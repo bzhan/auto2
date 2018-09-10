@@ -1,16 +1,22 @@
-(* Examples on lists. The itrev example comes from Section 2.4 in
-   "Programming and Proving in Isabelle/HOL".
+(*
+  File: Lists_Ex.thy
+  Author: Bohua Zhan
 
-   The development of insertion and deletion on lists is essential for
-   verifying functional binary search trees and RBTs. This idea follows
-   the paper "Automatic Functional Correctness Proofs for Functional
-   Search Trees" by Tobias Nipkow.
+  Examples on lists. The itrev example comes from Section 2.4 in
+  "Programming and Proving in Isabelle/HOL".
+
+  The development here of insertion and deletion on lists is
+  essential for verifying functional binary search trees and
+  red-black trees. The idea, following "Automatic Functional
+  Correctness Proofs for Functional Search Trees" by Tobias Nipkow,
+  is that showing sorted-ness and preservation of multisets for trees
+  should be done on the in-order traversal of the tree.
 *)
 
 theory Lists_Ex
-imports Auto2_HOL.Auto2_Main Mapping_Str
+  imports Mapping_Str
 begin
-  
+
 section {* Linear time version of rev *}
 
 fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
