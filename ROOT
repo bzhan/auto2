@@ -63,6 +63,8 @@ session Auto2_FOL = FOL +
     "FOL/Rat"
     "FOL/Lattice"
     "FOL/BigSet"
+    "FOL/Module"
+    "FOL/ArrowImpossibility"
 
 session FOL_Topology = Auto2_FOL +
   description {*
@@ -82,21 +84,3 @@ session FOL_Homotopy = FOL_Topology +
     "FOL_Topology"
   theories
     "FOL/Homotopy/FundamentalGroup"
-
-session FOL_Algebra = Auto2_FOL +
-  description {*
-    Abstract algebra.
-  *}
-  sessions
-    "Auto2_FOL"
-  theories
-    "FOL/Algebra/Module"
-
-session FOL_Arrow = Auto2_FOL +
-  description {*
-    Arrow's theorem.
-  *}
-  sessions
-    "Auto2_FOL"
-  theories
-    "FOL/Arrow/ArrowImpossibility"

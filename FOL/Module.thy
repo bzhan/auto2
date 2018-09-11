@@ -6,7 +6,7 @@
 *)
 
 theory Module
-  imports Auto2_FOL.Int
+  imports Int
 begin
 
 definition "mod_ring_name = succ(\<emptyset>)"
