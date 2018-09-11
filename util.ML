@@ -1,4 +1,9 @@
-(* Utility functions. *)
+(*
+  File: util.ML
+  Author: Bohua Zhan
+
+  Utility functions.
+*)
 
 signature BASIC_UTIL =
 sig

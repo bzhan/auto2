@@ -1,4 +1,9 @@
-(* Algebraic manipulations in FOL. *)
+(*
+  File: alg_fol.ML
+  Author: Bohua Zhan
+
+  Normalization on algebraic structures in FOL.
+*)
 
 signature FOL_ALG_UTIL =
 sig

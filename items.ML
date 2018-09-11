@@ -1,4 +1,9 @@
-(* Items and matching on items. *)
+(*
+  File: items.ML
+  Author: Bohua Zhan
+
+  Items and matching on items.
+*)
 
 val TY_NULL = "NULL"
 val TY_EQ = "EQ"

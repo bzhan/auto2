@@ -1,4 +1,9 @@
-(* Data structure containing auto2's state for the proof language. *)
+(*
+  File: auto2_state.ML
+  Author: Bohua Zhan
+
+  Data structure containing auto2's state for the proof language.
+*)
 
 (* The state consists of a stack of frames. *)
 type auto2_frame = {

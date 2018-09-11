@@ -1,4 +1,9 @@
-(* Proof steps for separation logic. *)
+(*
+  File: sep_steps.ML
+  Author: Bohua Zhan
+
+  Proof steps for separation logic.
+*)
 
 (* Data stored for each imperative command *)
 type proc_info = {

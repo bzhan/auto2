@@ -1,4 +1,9 @@
-(* Arithmetic on natural numbers *)
+(*
+  File: nat_arith.ML
+  Author: Bohua Zhan
+
+  Arithmetic on natural numbers.
+*)
 
 signature NAT_ARITH =
 sig

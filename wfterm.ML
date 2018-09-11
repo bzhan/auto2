@@ -1,4 +1,9 @@
-(* Wellformed terms. *)
+(*
+  File: wfterm.ML
+  Author: Bohua Zhan
+
+  Definition and basic functions on Wellformed terms.
+*)
 
 (* A wellformed term is a cterm combined with wellform data (usually
    only for a particular function head.

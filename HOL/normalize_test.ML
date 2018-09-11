@@ -1,4 +1,9 @@
-(* Unit test for normalizer.ML. *)
+(*
+  File: normalize_test.ML
+  Author: Bohua Zhan
+
+  Unit test for normalizer.ML.
+*)
 
 local
 

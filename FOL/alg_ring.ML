@@ -1,4 +1,9 @@
-(* Normalization for rings *)
+(*
+  File: alg_ring.ML
+  Author: Bohua Zhan
+
+  Normalization for rings.
+*)
 
 signature ALG_COMM_RING =
 sig

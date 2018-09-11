@@ -1,4 +1,9 @@
-(* Dealing with associative-commutative operations. *)
+(*
+  File: acdata.ML
+  Author: Bohua Zhan
+
+  Dealing with associative-commutative operations.
+*)
 
 (* Data for an AC function. *)
 type ac_info = {

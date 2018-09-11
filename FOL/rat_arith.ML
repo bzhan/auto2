@@ -1,4 +1,9 @@
-(* Arithmetic on rational numbers *)
+(*
+  File: rat_arith.ML
+  Author: Bohua Zhan
+
+  Arithmetic on rational numbers.
+*)
 
 val rat_zero = Rat.make (0, 1)
 val rat_one = Rat.make (1, 1)

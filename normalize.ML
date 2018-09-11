@@ -1,4 +1,9 @@
-(* Normalizing a given theorem. *)
+(*
+  File: normalize.ML
+  Author: Bohua Zhan
+
+  Normalization procedure for facts obtained during a proof.
+*)
 
 type normalizer = Proof.context -> raw_item -> raw_item list
 

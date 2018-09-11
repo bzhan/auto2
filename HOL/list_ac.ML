@@ -1,8 +1,12 @@
-(* Special normalization procedure for list append.
+(*
+  File: list_ac.ML
+  Author: Bohua Zhan
 
-   In addition to normalizing the AC function append, also normalize a
-   # xs to [a] @ xs.
- *)
+  Special normalization procedure for list append.
+
+  In addition to normalizing the AC function append, also normalize a # xs to
+  [a] @ xs.
+*)
 
 signature LIST_AC =
 sig

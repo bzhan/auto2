@@ -1,4 +1,9 @@
-(* Normalization for monoids. *)
+(*
+  File: alg_monoid.ML
+  Author: Bohua Zhan
+
+  Normalization for monoids.
+*)
 
 val one_t = @{term one}
 val times_t = @{term times}

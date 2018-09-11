@@ -1,4 +1,9 @@
-(* Unfolding of functional definitions *)
+(*
+  File: unfolding.ML
+  Author: Bohua Zhan
+
+  Unfolding of functional definitions.
+*)
 
 signature UNFOLDING =
 sig

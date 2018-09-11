@@ -1,4 +1,9 @@
-(* Main file defining inference algorithm and tactic. *)
+(*
+  Title: auto2.ML
+  Author: Bohua Zhan
+
+  Main file defining inference algorithm and tactic.
+*)
 
 signature SCORES =
 sig

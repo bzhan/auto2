@@ -1,4 +1,12 @@
-(* Definition and functions on box_id. *)
+(*
+  File: box_id.ML
+  Author: Bohua Zhan
+
+  Definition and functions on box_id. Box ID is used for keeping track of case
+  analysis. Each primitive ID, encoded by integers starting at 1, represents a
+  new case. A box ID in general consists of a list of primitive IDs. The
+  primitive ID 0 is reserved as a flag for incremental matching.
+*)
 
 signature BOXID =
 sig

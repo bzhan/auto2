@@ -1,4 +1,9 @@
-(* Associativity (outside structures) *)
+(*
+  File: alg_assoc.ML
+  Author: Bohua Zhan
+
+  Normalization for Associativity (outside structures).
+*)
 
 signature FOL_ASSOC =
 sig

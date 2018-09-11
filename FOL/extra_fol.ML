@@ -1,4 +1,9 @@
-(* Extra setup for FOL. *)
+(*
+  File: extra_fol.ML
+  Author: Bohua Zhan
+
+  Extra setup for FOL.
+*)
 
 signature EXTRA_FOL =
 sig

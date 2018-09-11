@@ -1,4 +1,9 @@
-(* Table storing wellform data during the proof. *)
+(*
+  File: wfdata.ML
+  Author: Bohua Zhan
+
+  Table storing wellformed-ness data during the proof.
+*)
 
 signature WELLFORM_DATA =
 sig

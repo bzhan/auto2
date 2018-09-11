@@ -1,9 +1,13 @@
-(* Theory data for properties. This data consists of the following parts:
+(*
+  File: property.ML
+  Author: Bohua Zhan
 
-   - Two tables containing property update rules.
+  Theory data for properties. This data consists of the following parts:
 
-   - A table containing list of fields that can have properties.
- *)
+  - Two tables containing property update rules.
+
+  - A table containing list of fields that can have properties.
+*)
 
 signature PROPERTY =
 sig

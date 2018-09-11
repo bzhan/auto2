@@ -1,4 +1,9 @@
-(* Proof steps on fields. *)
+(*
+  File: field_steps.ML
+  Author: Bohua Zhan
+
+  Proof steps on fields.
+*)
 
 signature FIELD_STEPS =
 sig

@@ -1,3 +1,10 @@
+(*
+  File: sep_util_base.ML
+  Author: Bohua Zhan
+
+  Declares the interface for setting up auto2 for separation logic.
+*)
+
 signature SEP_UTIL =
 sig
   val assnT: typ

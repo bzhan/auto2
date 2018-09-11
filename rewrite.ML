@@ -1,7 +1,10 @@
-(* Rewrite table: keep track of list of equalities, automatically
-   using transitivity on equality and the congruence property of
-   functions.
- *)
+(*
+  File: rewrite.ML
+  Author: Bohua Zhan
+
+  Maintains the congruence closure of the currently known equalities.
+  Automatically apply transitivity and the congruence property.
+*)
 
 (* Order on equality theorems, by comparing the right side. *)
 val simp_ord = Term_Ord.term_ord o (apply2 Util.rhs_of)

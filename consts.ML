@@ -1,4 +1,9 @@
-(* Dealing with constants. *)
+(*
+  File: consts.ML
+  Author: Bohua Zhan
+
+  Dealing with constants.
+*)
 
 signature CONSTS =
 sig

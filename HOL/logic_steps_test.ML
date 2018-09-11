@@ -1,4 +1,9 @@
-(* Unit test for logic_steps.ML. *)
+(*
+  File: logic_steps_test.ML
+  Author: Bohua Zhan
+
+  Unit test for logic_steps.ML.
+*)
 
 local
   val ctxt = @{context}

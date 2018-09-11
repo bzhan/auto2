@@ -1,4 +1,9 @@
-(* Normalization for abelian groups *)
+(*
+  File: alg_abgroup.ML
+  Author: Bohua Zhan
+
+  Normalization for abelian groups.
+*)
 
 val zero_t = @{term zero}
 val plus_t = @{term plus}

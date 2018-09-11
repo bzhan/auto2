@@ -1,4 +1,9 @@
-(* Wellformed-ness of terms. *)
+(*
+  File: wellform.ML
+  Author: Bohua Zhan
+
+  Wellformed-ness of terms.
+*)
 
 signature WELLFORM =
 sig

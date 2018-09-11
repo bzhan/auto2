@@ -1,4 +1,9 @@
-(* Matching of assertions. *)
+(*
+  File: assn_matcher.ML
+  Author: Bohua Zhan
+
+  Matching of assertions.
+*)
 
 (* Given arguments ctxt (pat, t) (id, inst), match pat with t. Assume
    pat is not a product. Produce t ==> pat(s) or t ==> pat(s) * t' for

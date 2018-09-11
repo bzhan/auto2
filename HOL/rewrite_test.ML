@@ -1,4 +1,9 @@
-(* Unit test for rewrite.ML. *)
+(*
+  File: rewrite_test.ML
+  Author: Bohua Zhan
+
+  Unit test for rewrite.ML.
+*)
 
 local
 

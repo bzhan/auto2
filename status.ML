@@ -1,4 +1,9 @@
-(* Definition of updates and proof status. *)
+(*
+  File: status.ML
+  Author: Bohua Zhan
+
+  Definition of updates and proof status.
+*)
 
 datatype raw_update
   = AddItems of {id: box_id, sc: int option, raw_items: raw_item list}

@@ -1,4 +1,9 @@
-(* Updating of all data maintained at proof time. *)
+(*
+  File: auto2_data.ML
+  Author: Bohua Zhan
+
+  Updating of all data maintained at proof time.
+*)
 
 signature AUTO2_DATA =
 sig

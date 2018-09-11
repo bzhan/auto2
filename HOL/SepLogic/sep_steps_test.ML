@@ -1,4 +1,9 @@
-(* Unit test for sep_steps.ML. *)
+(*
+  File: sep_steps_test.ML
+  Author: Bohua Zhan
+
+  Unit test for sep_steps.ML.
+*)
 
 local
   open SepUtil

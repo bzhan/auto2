@@ -1,4 +1,9 @@
-(* Subtraction on natural numbers. *)
+(*
+  File: nat_sub.ML
+  Author: Bohua Zhan
+
+  Normalization of expressions involving subtraction on natural numbers.
+*)
 
 signature NAT_SUB =
 sig

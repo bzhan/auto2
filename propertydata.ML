@@ -1,9 +1,13 @@
-(* Table maintaining list of properties satisfied by terms currently
-   appearing in the proof.
+(*
+  File: propertydata.ML
+  Author: Bohua Zhan
 
-   Under each key t, maintain a list of (id, th), where th is of the
-   form P(t), with P a registered property constant.
- *)
+  Table maintaining list of properties satisfied by terms currently
+  appearing in the proof.
+
+  Under each key t, maintain a list of (id, th), where th is of the
+  form P(t), with P a registered property constant.
+*)
 
 signature PROPERTY_DATA =
 sig

@@ -1,4 +1,9 @@
-(* Unit test for util.ML. *)
+(*
+  File: util_test.ML
+  Author: Bohua Zhan
+
+  Unit test for util.ML.
+*)
 
 local
 

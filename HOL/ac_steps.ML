@@ -1,4 +1,9 @@
-(* Proof steps related to AC relations. *)
+(*
+  File: ac_steps.ML
+  Author: Bohua Zhan
+
+  Proof steps related to associative-commutative operations.
+*)
 
 signature AC_PROOFSTEPS =
 sig

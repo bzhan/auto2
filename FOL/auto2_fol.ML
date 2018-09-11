@@ -1,4 +1,9 @@
-(* Setup for FOL *)
+(*
+  File: auto2_fol.ML
+  Author: Bohua Zhan
+
+  Setup of auto2 for FOL.
+*)
 
 structure UtilBase : UTIL_BASE =
 struct

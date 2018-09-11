@@ -1,4 +1,9 @@
-(* Core (logic) proofsteps. *)
+(*
+  File: logic_steps.ML
+  Author: Bohua Zhan
+
+  Core (logic) proofsteps.
+*)
 
 signature LOGIC_PROOFSTEPS =
 sig

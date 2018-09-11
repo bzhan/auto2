@@ -1,4 +1,9 @@
-(* Unit test for alg_ring.ML. *)
+(*
+  File: alg_ring_test.ML
+  Author: Bohua Zhan
+
+  Unit test for alg_ring.ML.
+*)
 
 local
 

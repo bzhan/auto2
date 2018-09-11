@@ -1,4 +1,9 @@
-(* Unit test for acdata.ML. *)
+(*
+  File: acdata_test.ML
+  Author: Bohua Zhan
+
+  Unit test for acdata.ML.
+*)
 
 local
   val thy = @{theory}

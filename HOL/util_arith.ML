@@ -1,3 +1,10 @@
+(*
+  File: util_arith.ML
+  Author: Bohua Zhan
+
+  Utility functions related to arithmetic.
+*)
+
 signature UTIL_ARITH =
 sig
   (* Types. *)

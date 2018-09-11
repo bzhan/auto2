@@ -1,4 +1,9 @@
-(* Automation for structures *)
+(*
+  File: structure.ML
+  Author: Bohua Zhan
+
+  Automation for structures.
+*)
 
 type field_info = {
   name_th: thm,

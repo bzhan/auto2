@@ -1,4 +1,9 @@
-(* Induction on variables *)
+(*
+  File: fol_var_induct.ML
+  Author: Bohua Zhan
+
+  Proof language for induction on variables.
+*)
 
 (* Syntax after @var_induct: either "P(n)" or "n in P(n, ...)". In the
    first case, n is the unique free variable in P(n), and is taken to

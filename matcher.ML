@@ -1,4 +1,9 @@
-(* Matching up to equivalence (E-matching) using a rewrite table. *)
+(*
+  File: matcher.ML
+  Author: Bohua Zhan
+
+  Matching up to equivalence (E-matching) using a rewrite table.
+*)
 
 signature MATCHER =
 sig

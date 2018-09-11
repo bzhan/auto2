@@ -1,4 +1,9 @@
-(* Setup for HOL *)
+(*
+  File: auto2_hol.ML
+  Author: Bohua Zhan
+
+  Setup of auto2 for HOL.
+*)
 
 structure UtilBase : UTIL_BASE =
 struct

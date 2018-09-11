@@ -1,4 +1,9 @@
-(* Arithmetic proof steps. *)
+(*
+  File: arith.ML
+  Author: Bohua Zhan
+
+  Arithmetic proof steps.
+*)
 
 signature NAT_UTIL =
 sig

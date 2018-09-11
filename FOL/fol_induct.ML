@@ -1,4 +1,9 @@
-(* Specifying induction using scripts. *)
+(*
+  File: fol_induct.ML
+  Author: Bohua Zhan
+
+  Proof language for induction.
+*)
 
 signature SCRIPT_INDUCT_DATA =
 sig

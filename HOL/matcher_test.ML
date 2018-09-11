@@ -1,4 +1,9 @@
-(* Test of matcher. *)
+(*
+  File: matcher_test.ML
+  Author: Bohua Zhan
+
+  Unit test of matcher.ML.
+*)
 
 local
 

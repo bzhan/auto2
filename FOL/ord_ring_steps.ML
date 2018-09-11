@@ -1,4 +1,9 @@
-(* Proof steps for ordered rings. *)
+(*
+  File: ord_ring_steps.ML
+  Author: Bohua Zhan
+
+  Normalization for inequalities on ordered rings.
+*)
 
 val le_t = @{term le}
 val less_t = @{term less}

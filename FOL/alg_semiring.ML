@@ -1,4 +1,9 @@
-(* Normalization for semirings *)
+(*
+  File: alg_semiring.ML
+  Author: Bohua Zhan
+
+  Normalization for semirings.
+*)
 
 signature ALG_SEMIRING =
 sig

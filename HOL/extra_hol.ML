@@ -1,4 +1,9 @@
-(* Extra setup for HOL. *)
+(*
+  File: extra_hol.ML
+  Author: Bohua Zhan
+
+  Extra setup for HOL.
+*)
 
 signature EXTRA_HOL =
 sig

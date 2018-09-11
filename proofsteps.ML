@@ -1,6 +1,10 @@
-(* Definition of type proofstep, and facility for adding basic proof
-   steps.
- *)
+(*
+  File: proofsteps.ML
+  Author: Bohua Zhan
+
+  Definition of type proofstep, and facility for adding basic proof steps.
+*)
+
 datatype proofstep_fn
   = OneStep of Proof.context -> box_item -> raw_update list
   | TwoStep of Proof.context -> box_item -> box_item -> raw_update list

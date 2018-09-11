@@ -1,4 +1,9 @@
-(* Utility functions, after fixing object logic. *)
+(*
+  File: util_logic.ML
+  Author: Bohua Zhan
+
+  Utility functions, after fixing object logic.
+*)
 
 signature BASIC_UTIL_LOGIC =
 sig

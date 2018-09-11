@@ -1,4 +1,9 @@
-(* Outer syntax for induction *)
+(*
+  File: induct_outer.ML
+  Author: Bohua Zhan
+
+  Proof language for induction.
+*)
 
 signature INDUCT_PROOFSTEPS =
 sig

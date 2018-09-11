@@ -1,4 +1,9 @@
-(* Outer syntax for auto2 *)
+(*
+  File: auto2_outer.ML
+  Author: Bohua Zhan
+
+  Proof language for auto2.
+*)
 
 signature AUTO2_OUTER =
 sig

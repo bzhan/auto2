@@ -1,4 +1,9 @@
-(* Proof steps for intervals. *)
+(*
+  File: interval_steps.ML
+  Author: Bohua Zhan
+
+  Proof steps for intervals.
+*)
 
 signature INTERVAL_STEPS =
 sig

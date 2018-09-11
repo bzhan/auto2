@@ -1,4 +1,10 @@
-(* Ordering on natural numbers. *)
+(*
+  File: order.ML
+  Author: Bohua Zhan
+
+  Ordering on natural numbers. We implement something like a decision
+  procedure for difference logic using proof steps.
+*)
 
 val TY_NAT_ORDER = "NAT_ORDER"
 

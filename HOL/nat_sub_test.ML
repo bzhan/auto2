@@ -1,4 +1,9 @@
-(* Unit test for nat_sub *)
+(*
+  File: nat_sub_test.ML
+  Author: Bohua Zhan
+
+  Unit test for nat_sub.ML.
+*)
 
 local
 

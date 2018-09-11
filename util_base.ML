@@ -1,3 +1,10 @@
+(*
+  File: util_base.ML
+  Author: Bohua Zhan
+
+  Defines the interface that an object logic has to meet to setup auto2.
+*)
+
 signature BASIC_UTIL_BASE =
 sig
   val boolT: typ

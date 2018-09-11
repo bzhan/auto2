@@ -1,4 +1,9 @@
-(* Normalization for groups *)
+(*
+  File: alg_group.ML
+  Author: Bohua Zhan
+
+  Normalization for groups.
+*)
 
 val inv_t = @{term inv}
 

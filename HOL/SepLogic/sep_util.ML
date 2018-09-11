@@ -1,4 +1,10 @@
-(* Utility functions for separation logic. *)
+(*
+  File: sep_util.ML
+  Author: Bohua Zhan
+
+  Utility functions for separation logic. Implements the interface
+  defined in sep_util_base.ML.
+*)
 
 structure SepUtil : SEP_UTIL =
 struct
