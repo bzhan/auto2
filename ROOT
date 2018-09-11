@@ -1,22 +1,12 @@
 chapter AUTO2
 
-session HOL_Base = HOL +
-  description {*
-    Theories in HOL needed by Auto2_HOL.
-  *}
-  sessions
-    "HOL-Library"
-    "HOL-Imperative_HOL"
-  theories
-    "HOL-Library.Multiset"
-    "HOL-Imperative_HOL.Imperative_HOL"
-
-session Auto2_HOL = HOL_Base +
+session Auto2_HOL = HOL +
   description {*
     Instantiation of Auto2 for Isabelle/HOL.
   *}
   sessions
-    "HOL_Base"
+    "HOL-Library"
+    "HOL-Imperative_HOL"
   theories
     "HOL/Auto2_Test"
     "HOL/Pelletier"
