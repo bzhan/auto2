@@ -47,7 +47,7 @@ lemma real_topology_is_openI [forward]:
     @have "\<forall>y\<in>open_interval(\<real>,x -\<^sub>\<real> c, x +\<^sub>\<real> c). y \<in> U" @end
 @qed
 
-section {* Topology on \<real> \<times> \<real> *}
+section {* Topology on real2 *}
 
 definition real2 :: i where [rewrite_bidir]:
   "real2 = real \<times> real"
@@ -128,7 +128,7 @@ lemma real_fun_continuousD' [backward]:
    \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c"
 @proof @have "real_continuous_at(f,x)" @qed
 
-section {* Continuous maps from \<real> \<times> \<real> to \<real> *}
+section {* Continuous maps from real2 to real *}
 
 definition real2_continuous_at :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "real2_continuous_at(f,x) \<longleftrightarrow> (\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c)"

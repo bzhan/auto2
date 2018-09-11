@@ -284,7 +284,7 @@ lemma rat_is_quotient [backward]:
 
 setup {* fold del_prfstep_thm [@{thm rat_neg_eval}, @{thm rat_neg_raw_def}] *}
 
-section {* Definition of of_rat *}
+section {* Definition of of\_rat *}
   
 definition of_rat_raw :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "of_rat_raw(R,p) = of_int(R,fst(p)) /\<^sub>R of_int(R,snd(p))"

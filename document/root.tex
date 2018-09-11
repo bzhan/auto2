@@ -1,0 +1,55 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{isabelle,isabellesym}
+\usepackage{amsfonts, amsmath, amssymb}
+
+% this should be the last package used
+\usepackage{pdfsetup}
+
+% urls in roman style, theory text in math-similar italics
+\urlstyle{rm}
+\isabellestyle{it}
+
+
+\begin{document}
+
+\title{Auto2 prover}
+\author{Bohua Zhan}
+\maketitle
+
+\begin{abstract}
+  Auto2 is a saturation-based heuristic prover for higher-order
+  logic. It can be instantiated to both Isabelle/HOL and Isabelle/FOL.
+
+  This AFP entry includes the auto2 prover and some basic
+  applications. They include:
+
+  HOL/DataStrs: verification of functional programs. Include material
+  on lists, trees, priority queue, Dijkstra's algorithm, and rectangle
+  intersection.
+
+  HOL/SepLogic: verification of imperative programs using separation
+  logic. Foundation of separation logic, and several of the examples,
+  follow "A Separation Logic Framework for Imperative HOL" in Isabelle
+  AFP.
+
+  FOL: axiomatic set theory based on Isabelle/FOL. This formalization
+  goes up to the definition of the fundamental group for an arbitrary
+  topological space.
+\end{abstract}
+
+\newpage
+\tableofcontents
+\newpage
+\parindent 0pt\parskip 0.5ex
+
+\input{session}
+
+\bibliographystyle{abbrv}
+\bibliography{root}
+
+\end{document}
+
+%%% Local Variables:
+%%% mode: latex
+%%% TeX-master: t
+%%% End:

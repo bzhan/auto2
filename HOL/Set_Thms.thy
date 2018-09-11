@@ -140,7 +140,7 @@ lemma card_minus1 [rewrite]: "x \<in> S \<Longrightarrow> card (S - {x}) = card 
 setup {* add_forward_prfstep @{thm finite_Diff} *}
 setup {* add_resolve_prfstep @{thm card_mono} *}
 
-subsection {* image_set *}
+subsection {* Image set *}
 
 setup {* add_rewrite_rule @{thm Set.image_Un} *}
 setup {* add_rewrite_rule @{thm image_set_diff} *}
@@ -173,19 +173,15 @@ lemma multi_member_split' [backward]: "x \<in># M \<Longrightarrow> \<exists>M'.
 
 setup {* add_strong_induct_rule @{thm full_multiset_induct} *}
 
-subsection {* set_mset *}
+subsection {* Results on mset *}
 
 setup {* add_rewrite_rule @{thm set_mset_empty} *}
 setup {* add_rewrite_rule @{thm set_mset_single} *}
 setup {* add_rewrite_rule @{thm set_mset_union} *}
 
-subsection {* image_mset *}
-
 setup {* add_rewrite_rule @{thm image_mset_empty} *}
 setup {* add_rewrite_rule @{thm image_mset_single} *}
 setup {* add_rewrite_rule @{thm image_mset_union} *}
-
-subsection {* mset_prod *}
 
 setup {* add_rewrite_rule @{thm prod_mset_empty} *}
 setup {* add_rewrite_rule @{thm prod_mset_singleton} *}

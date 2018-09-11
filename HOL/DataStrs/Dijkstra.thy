@@ -179,7 +179,7 @@ lemma path_split2 [backward]: "is_path G p \<Longrightarrow> hd p \<noteq> last 
   @have "p = path_join G (butlast p) [n, last p]"
 @qed
 
-section {* Deriving has_dist and has_dist_on *}
+section {* Deriving has\_dist and has\_dist\_on *}
 
 definition known_dists :: "graph \<Rightarrow> nat set \<Rightarrow> bool" where [rewrite]:
   "known_dists G V \<longleftrightarrow> (V \<subseteq> verts G \<and> 0 \<in> V \<and>

@@ -233,7 +233,7 @@ lemma int_is_diff [backward]:
   @have "n = of_nat(\<int>,fst(p)) -\<^sub>\<int> of_nat(\<int>,snd(p))"
 @qed
 
-section {* Definition of int_act *}
+section {* Definition of int\_act *}
 
 definition int_act_raw :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "int_act_raw(R,p,x) = nat_act(R,fst(p),x) -\<^sub>R nat_act(R,snd(p),x)"
@@ -288,7 +288,7 @@ setup {* fold del_prfstep_thm [@{thm int_choose_rep}, @{thm int_neg_eval}, @{thm
 no_notation int_rel ("\<R>")
 hide_const Int
 
-section {* Further properties of int_act *}
+section {* Further properties of int\_act *}
 
 lemma int_act_add [rewrite_bidir]:
   "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x +\<^sub>\<int> y,r) = int_act(R,x,r) +\<^sub>R int_act(R,y,r)"
@@ -334,7 +334,7 @@ lemma int_act_mult [rewrite_bidir]:
   @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)"
 @qed
 
-section {* Definition of of_int *}
+section {* Definition of of\_int *}
 
 definition of_int :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite_bidir]:
   "of_int(R,z) = int_act(R,z,\<one>\<^sub>R)"

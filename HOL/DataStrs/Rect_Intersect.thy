@@ -242,8 +242,8 @@ definition has_overlap_lst :: "('a::linorder) rectangle list \<Rightarrow> bool"
 
 lemma has_overlap_equiv [rewrite]:
   "is_rect_list rects \<Longrightarrow> has_overlap_lst rects \<longleftrightarrow> has_rect_overlap rects" by auto2
-    
-section {* Implementation of apply_ops_k *}
+
+section {* Implementation of apply\_ops\_k *}
 
 lemma apply_ops_k_next1 [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> is_INS (ops ! n) \<Longrightarrow>

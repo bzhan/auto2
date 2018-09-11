@@ -91,7 +91,7 @@ lemma comm_ring_prod_is_unit [backward1, backward2]:
   "is_comm_ring(R) \<Longrightarrow> x \<in> units(R) \<Longrightarrow> y \<in> units(R) \<Longrightarrow> x *\<^sub>R y \<in> units(R)"
 @proof @have "inv(R,y) *\<^sub>R inv(R,x) *\<^sub>R (x *\<^sub>R y) = inv(R,y) *\<^sub>R (inv(R,x) *\<^sub>R x) *\<^sub>R y" @qed
 
-section {* of_nat on rings *}
+section {* of\_nat on rings *}
 
 (* Recursion on x:
     of_nat(0) = 0

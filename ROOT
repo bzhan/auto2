@@ -11,6 +11,8 @@ session Auto2_HOL = HOL +
     "HOL/Auto2_Test"
     "HOL/Pelletier"
     "HOL/Primes_Ex"
+  document_files
+    "root.tex"
 
 session DataStrs = Auto2_HOL +
   description {*
@@ -28,6 +30,8 @@ session DataStrs = Auto2_HOL +
     "HOL/DataStrs/Indexed_PQueue"
     "HOL/DataStrs/RBTree"
     "HOL/DataStrs/Rect_Intersect"
+  document_files
+    "root.tex"
 
 session SepLogic = DataStrs +
   description {*
@@ -37,6 +41,8 @@ session SepLogic = DataStrs +
     "DataStrs"
   theories
     "HOL/SepLogic/Sep_Examples"
+  document_files
+    "root.tex"
 
 session Auto2_FOL = FOL +
   description {*
@@ -55,6 +61,8 @@ session Auto2_FOL = FOL +
     "FOL/BigSet"
     "FOL/Module"
     "FOL/ArrowImpossibility"
+  document_files
+    "root.tex"
 
 session FOL_Topology = Auto2_FOL +
   description {*
@@ -65,6 +73,8 @@ session FOL_Topology = Auto2_FOL +
   theories
     "FOL/Topology/Closure"
     "FOL/Topology/MetricSpaces"
+  document_files
+    "root.tex"
 
 session FOL_Homotopy = FOL_Topology +
   description {*
@@ -74,3 +84,5 @@ session FOL_Homotopy = FOL_Topology +
     "FOL_Topology"
   theories
     "FOL/Homotopy/FundamentalGroup"
+  document_files
+    "root.tex"

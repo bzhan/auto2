@@ -172,7 +172,7 @@ lemma has_index_distinct [forward]:
   @have "\<forall>i<length xs. \<forall>j<length xs. i \<noteq> j \<longrightarrow> xs ! i \<noteq> xs ! j"
 @qed
 
-section {* Basic operations on indexed_queue *}
+section {* Basic operations on indexed\_queue *}
 
 fun idx_pqueue_swap_fun :: "(nat \<times> 'a) list \<times> nat option list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) list \<times> nat option list" where
   "idx_pqueue_swap_fun (xs, m) i j = (

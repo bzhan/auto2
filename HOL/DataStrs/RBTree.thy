@@ -87,7 +87,7 @@ theorem rbt_balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_dept
   @have "max_depth t \<le> 2 * black_depth t + 1"
 @qed
 
-section {* Definition and basic properties of cl_inv' *}
+section {* Definition and basic properties of cl\_inv' *}
 
 fun cl_inv' :: "('a, 'b) rbt \<Rightarrow> bool" where
   "cl_inv' Leaf = True"

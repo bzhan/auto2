@@ -167,7 +167,7 @@ lemma real_is_ord_field [forward]: "is_ord_field(\<real>)"
 @qed
 setup {* del_prfstep_thm @{thm real_is_ord_field_prep} *}
 
-section {* of_nat, of_int, of_rat in terms of sequences *}
+section {* of\_nat, of\_int, of\_rat in terms of sequences *}
 
 lemma real_of_nat [rewrite]:
   "n \<in> nat \<Longrightarrow> of_nat(\<real>,n) = Real({of_nat(\<rat>,n)}\<^sub>\<rat>)"
