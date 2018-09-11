@@ -1,5 +1,12 @@
+(*
+  File: ProductTopology.thy
+  Author: Bohua Zhan
+
+  Basic results about product topology.
+*)
+
 theory ProductTopology
-imports Topology
+  imports Topology
 begin
 
 section {* Product topology *}

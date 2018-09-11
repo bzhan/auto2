@@ -1,13 +1,18 @@
-(* Setup of Auto2 for FOL *)
+(*
+  File: Auto2_FOL.thy
+  Author: Bohua Zhan
+
+  Setup of Auto2 for FOL.
+*)
 
 theory Auto2_FOL
-imports FOL_Base
-keywords "@proof" :: prf_block % "proof"
-  and "@have" "@case" "@obtain" "@let" "@contradiction" :: prf_decl % "proof"
-  and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
-  and "@qed" :: prf_decl % "proof"
-  and "@induct" "@strong_induct" "@var_induct" :: prf_decl % "proof"
-  and "@with" "where" "arbitrary" "@rule" :: quasi_command
+  imports FOL_Base
+  keywords "@proof" :: prf_block % "proof"
+    and "@have" "@case" "@obtain" "@let" "@contradiction" :: prf_decl % "proof"
+    and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
+    and "@qed" :: prf_decl % "proof"
+    and "@induct" "@strong_induct" "@var_induct" :: prf_decl % "proof"
+    and "@with" "where" "arbitrary" "@rule" :: quasi_command
 begin
 
 ML_file "../util.ML"

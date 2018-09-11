@@ -1,7 +1,14 @@
+(*
+  File: FundamentalGroup.thy
+  Author: Bohua Zhan
+
+  Construction of the fundamental group.
+*)
+
 theory FundamentalGroup
-imports PathHomotopy
+  imports PathHomotopy
 begin
-  
+
 section {* Definition of fundamental group *}
 
 definition is_loop :: "i \<Rightarrow> o" where [rewrite]:

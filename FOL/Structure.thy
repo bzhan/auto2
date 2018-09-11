@@ -1,5 +1,14 @@
+(*
+  File: Structure.thy
+  Author: Bohua Zhan
+
+  Definition of mathematical structures. Structures are represented as
+  partial functions from natural numbers, with each field given an unique
+  natural number index.
+*)
+
 theory Structure
-imports Graph
+  imports Graph
 begin
 
 definition Struct :: "i \<Rightarrow> i" where [rewrite]:

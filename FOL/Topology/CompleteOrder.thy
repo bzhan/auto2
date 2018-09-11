@@ -1,5 +1,12 @@
+(*
+  File: CompleteOrder.thy
+  Author: Bohua Zhan
+
+  Results about Cauchy completeness and completeness of ordered fields.
+*)
+
 theory CompleteOrder
-imports SeqRing
+  imports SeqRing
 begin
 
 section {* Cauchy completeness *}

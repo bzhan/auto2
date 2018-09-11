@@ -1,7 +1,13 @@
-(* Pelletier's problems *)
+(*
+  File: Pelletier.thy
+  Author: Bohua Zhan
+
+  Pelletier's problems. From the paper "Seventy-five problems for testing
+  automatic theorem provers" by Francis Jeffry Pelletier.
+*)
 
 theory Pelletier
-imports Logic_FOL
+  imports Logic_FOL
 begin
 
 theorem p1: "(p \<longrightarrow> q) \<longleftrightarrow> (\<not>q \<longrightarrow> \<not>p)" by auto2
@@ -154,11 +160,7 @@ theorem p47:
    \<forall>x. P4(x) \<or> P5(x) \<longrightarrow> (\<exists>y. Q0(y) \<and> R(x,y)) \<Longrightarrow>
    \<exists>x y. P0(x) \<and> P0(y) \<and> (\<exists>z. Q1(z) \<and> R(y,z) \<and> R(x,y))"
 @proof
-  @obtain x1 where "P1(x1)"
-  @obtain x2 where "P2(x2)"
-  @obtain x3 where "P3(x3)" 
-  @obtain x4 where "P4(x4)" 
-  @obtain x5 where "P5(x5)" 
+  @obtain x1 x2 x3 x4 x5 where "P1(x1)" "P2(x2)" "P3(x3)" "P4(x4)" "P5(x5)"
   @have "S(x3,x2)" @have "S(x2,x1)" @have "R(x3,x4)" @have "\<not>R(x3,x5)"
 @qed
 

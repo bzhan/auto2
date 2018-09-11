@@ -1,7 +1,14 @@
+(*
+  File: Interval.thy
+  Author: Bohua Zhan
+
+  Intervals.
+*)
+
 theory Interval
-imports OrderRel
+  imports OrderRel
 begin
-  
+
 section {* Intervals *}  (* Bourbaki III.1.13 *)
 
 definition closed_interval :: "[i, i, i] \<Rightarrow> i" where [rewrite]:

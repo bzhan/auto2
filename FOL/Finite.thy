@@ -1,3 +1,10 @@
+(*
+  File: Finite.thy
+  Author: Bohua Zhan
+
+  Finite sets.
+*)
+
 theory Finite
   imports Nat
 begin

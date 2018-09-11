@@ -1,3 +1,11 @@
+(*
+  File: Int.thy
+  Author: Bohua Zhan
+
+  Construction of integers (as pairs of natural numbers, under the equivalence
+  relation (a,b) ~ (c,d) iff a + d = b + c.
+*)
+
 theory Int
   imports Nat Ring EquivRel
 begin

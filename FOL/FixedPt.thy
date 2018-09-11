@@ -1,7 +1,12 @@
-(* Fixed point theorems *)
+(*
+  File: FixedPt.thy
+  Author: Bohua Zhan
+
+  Fixed point theorems, roughly following FixedPt in Isabelle/ZF.
+*)
 
 theory FixedPt
-imports OrderRel
+  imports OrderRel
 begin
 
 (* h is a function from Pow(D) to itself, and is monotone in the sense that

@@ -1,5 +1,13 @@
+(*
+  File: EquivRel.thy
+  Author: Bohua Zhan
+
+  Basics of equivalence relations and quotient sets, including the three
+  isomorphism theorems on sets.
+*)
+
 theory EquivRel
-imports Coverings
+  imports Coverings
 begin
 
 section \<open>Equivalence structures\<close>

@@ -1,5 +1,12 @@
+(*
+  File: Closure.thy
+  Author: Bohua Zhan
+
+  Closure in topological spaces.
+*)
+
 theory Closure
-imports ProductTopology
+  imports ProductTopology
 begin
 
 definition interior :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:

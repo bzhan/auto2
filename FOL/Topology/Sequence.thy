@@ -1,5 +1,12 @@
+(*
+  File: Sequence.thy
+  Author: Bohua Zhan
+
+  Basic results about sequences.
+*)
+
 theory Sequence
-imports Auto2_FOL.Abs Auto2_FOL.Finite
+  imports Auto2_FOL.Abs Auto2_FOL.Finite
 begin
 
 section {* Definition of sequences as morphisms from Nat *}

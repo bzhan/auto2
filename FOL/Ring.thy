@@ -1,5 +1,12 @@
+(*
+  File: Ring.thy
+  Author: Bohua Zhan
+
+  Rings.
+*)
+
 theory Ring
-imports Nat
+  imports Nat
 begin
 
 section {* Rings *}

@@ -1,7 +1,12 @@
-(* Sum of two sets *)
+(*
+  File: SetSum.thy
+  Author: Bohua Zhan
+
+  Sum of two sets. Corresponds to Sum.thy in Isabelle/ZF.
+*)
 
 theory SetSum
-imports Nat
+  imports Nat
 begin
 
 section {* Booleans *}

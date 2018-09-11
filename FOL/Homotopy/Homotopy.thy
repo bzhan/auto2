@@ -1,5 +1,12 @@
+(*
+  File: Homotopy.thy
+  Author: Bohua Zhan
+
+  Definition of homotopy between two paths.
+*)
+
 theory Homotopy
-imports FOL_Topology.RealTopology
+  imports FOL_Topology.RealTopology
 begin
 
 section {* Automation for intervals *}

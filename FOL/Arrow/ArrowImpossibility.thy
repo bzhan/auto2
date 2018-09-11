@@ -1,5 +1,13 @@
+(*
+  File: ArrowImpossibility.thy
+  Author: Bohua Zhan
+
+  Arrow impossibility theorem. Based on ArrowImpossibility/GS/Arrow_Order
+  in the AFP.
+*)
+
 theory ArrowImpossibility
-imports Auto2_FOL.WellOrder Auto2_FOL.Finite
+  imports Auto2_FOL.WellOrder Auto2_FOL.Finite
 begin
 
 section {* Sets with at least three elements *}

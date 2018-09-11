@@ -1,5 +1,12 @@
+(*
+  File: Functions.thy
+  Author: Bohua Zhan
+
+  Basic results on (set-theoretic) functions.
+*)
+
 theory Functions
-imports Choice
+  imports Choice
 begin
 
 section {* Functions *}  (* Bourbaki II.3.4 -- II.3.6 *)

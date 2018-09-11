@@ -1,5 +1,12 @@
+(*
+  File: Field.thy
+  Author: Bohua Zhan
+
+  Fields and the archimedean condition.
+*)
+
 theory Field
-imports Ring
+  imports Ring
 begin
 
 section {* Fields *}

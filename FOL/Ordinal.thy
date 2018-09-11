@@ -1,5 +1,12 @@
+(*
+  File: Ordinal.thy
+  Author: Bohua Zhan
+
+  Basics of ordinal theory.
+*)
+
 theory Ordinal
-imports Wfrec
+  imports Wfrec
 begin
 
 section {* Membership relation is well-founded *}

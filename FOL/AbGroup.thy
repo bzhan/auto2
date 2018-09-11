@@ -1,5 +1,12 @@
+(*
+  File: AbGroup.thy
+  Author: Bohua Zhan
+
+  Abelian groups.
+*)
+
 theory AbGroup
-imports AlgStructure
+  imports AlgStructure
 begin
 
 section {* Monoids *}

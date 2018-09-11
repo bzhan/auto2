@@ -1,5 +1,12 @@
+(*
+  File: Morphism.thy
+  Author: Bohua Zhan
+
+  Morphisms (functions between two structures).
+*)
+
 theory Morphism
-imports Functions
+  imports Functions
 begin
 
 section {* Components of morphisms *}

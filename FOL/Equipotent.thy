@@ -1,3 +1,10 @@
+(*
+  File: Equipotent.thy
+  Author: Bohua Zhan
+
+  Equipotence (existence of bijective function) between two sets.
+*)
+
 theory Equipotent
   imports Functions Wfrec
 begin

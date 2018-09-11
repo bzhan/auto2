@@ -1,5 +1,12 @@
+(*
+  File: Coverings.thy
+  Author: Bohua Zhan
+
+  Covering by sets and partitions.
+*)
+
 theory Coverings
-imports Functions
+  imports Functions
 begin
 
 section {* Coverings *}  (* Bourbaki II.4.6 *)

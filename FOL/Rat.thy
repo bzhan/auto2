@@ -1,5 +1,13 @@
+(*
+  File: Rat.thy
+  Author: Bohua Zhan
+
+  Construction of the rational numbers (as pairs of integers (a,b) where b is
+  nonzero, under the equivalence relation (a,b) ~ (c,d) when a * d = b * c.
+*)
+
 theory Rat
-imports Int Field
+  imports Int Field
 begin
 
 section {* Definition of rational numbers *}

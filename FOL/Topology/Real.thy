@@ -1,5 +1,14 @@
+(*
+  File: Real.thy
+  Author: Bohua Zhan
+
+  Construction of the real numbers. This construction (starting from
+  Sequence.thy and SeqRing.thy) roughly follows that in the Isabelle/HOL
+  library.
+*)
+
 theory Real
-imports CompleteOrder Auto2_FOL.Rat OrderTopology
+  imports CompleteOrder Auto2_FOL.Rat OrderTopology
 begin
 
 section {* Real numbers as a quotient set *}

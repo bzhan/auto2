@@ -1,7 +1,12 @@
-(* Setup for proof steps related to logic. *)
+(*
+  File: Logic_FOL.thy
+  Author: Bohua Zhan
+
+  Setup for proof steps related to logic.
+*)
 
 theory Logic_FOL
-imports Auto2_FOL
+  imports Auto2_FOL
 begin
 
 section \<open>Trivial contradictions\<close>

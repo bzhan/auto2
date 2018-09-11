@@ -1,5 +1,12 @@
+(*
+  File: Lattice.thy
+  Author: Bohua Zhan
+
+  Basics of lattice theory.
+*)
+
 theory Lattice
-imports OrderRel
+  imports OrderRel
 begin
 
 (* First, we define join-semilattice. Note this is declared as a property. *)

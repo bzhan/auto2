@@ -1,5 +1,12 @@
+(*
+  File: Divides.thy
+  Author: Bohua Zhan
+
+  Basics of divisibility and prime numbers.
+*)
+
 theory Divides
-imports Nat
+  imports Nat
 begin
 
 section {* Divisibility *}

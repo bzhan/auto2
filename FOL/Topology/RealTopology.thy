@@ -1,5 +1,12 @@
+(*
+  File: RealTopology.thy
+  Author: Bohua Zhan
+
+  Topology on real numbers.
+*)
+
 theory RealTopology
-imports Real Connected
+  imports Real Connected
 begin
 
 section {* Open intervals *}

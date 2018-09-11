@@ -1,3 +1,10 @@
+(*
+  File: OrderRel.thy
+  Author: Bohua Zhan
+
+  Basics of order relation.
+*)
+
 theory OrderRel
   imports Morphism
 begin

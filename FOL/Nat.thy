@@ -1,3 +1,11 @@
+(*
+  File: Nat.thy
+  Author: Bohua Zhan
+
+  Axiom of infinity, construction of natural numbers. Roughly following the
+  construction of natural numbers in Isabelle/ZF.
+*)
+
 theory Nat
   imports Ordinal Semiring Equipotent
 begin

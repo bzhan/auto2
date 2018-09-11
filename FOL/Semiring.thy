@@ -1,7 +1,14 @@
+(*
+  File: Semiring.thy
+  Author: Bohua Zhan
+
+  Semirings.
+*)
+
 theory Semiring
-imports Group AbGroup OrderRel
+  imports Group AbGroup OrderRel
 begin
-  
+
 (* We define semirings to be commutative (it is only used for Nat). *)
   
 section {* Semirings *}

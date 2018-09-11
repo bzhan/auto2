@@ -1,5 +1,12 @@
+(*
+  File: Group.thy
+  Author: Bohua Zhan
+
+  Basics of group theory.
+*)
+
 theory Group
-imports AlgStructure Morphism
+  imports AlgStructure Morphism
 begin
 
 section {* Monoids *}

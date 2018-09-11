@@ -1,5 +1,13 @@
+(*
+  File: Set.thy
+  Author: Bohua Zhan
+
+  Basic axioms and constructions in set theory. The initial choices made in
+  set theory largely follow that in Isabelle/ZF.
+*)
+
 theory Set
-imports Logic_FOL
+  imports Logic_FOL
 begin
 
 section \<open>Axiom of extension\<close>

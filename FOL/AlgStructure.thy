@@ -1,5 +1,12 @@
+(*
+  File: AlgStructure.thy
+  Author: Bohua Zhan
+
+  Algebraic structures.
+*)
+
 theory AlgStructure
-imports Functions
+  imports Functions
 begin
 
 section \<open>Conversion from meta-function to set-theoretic functions\<close>

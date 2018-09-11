@@ -1,5 +1,12 @@
+(*
+  File: PathHomotopy.thy
+  Author: Bohua Zhan
+
+  Definition of path homotopy between two paths.
+*)
+
 theory PathHomotopy
-imports Homotopy
+  imports Homotopy
 begin
 
 section {* Paths and homotopy between paths *}

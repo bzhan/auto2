@@ -1,5 +1,10 @@
+(*
+  The well-ordering theorem. The proof mostly follows Section III.2 of
+  Bourbaki.
+*)
+
 theory WellOrder
-imports Interval Wfrec
+  imports Interval Wfrec
 begin
 
 section {* Operation of adjoining a greatest element to an order *}

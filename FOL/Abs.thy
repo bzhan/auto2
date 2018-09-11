@@ -1,5 +1,12 @@
+(*
+  File: Abs.thy
+  Author: Bohua Zhan
+
+  Basic results about absolute value.
+*)
+
 theory Abs
-imports Field
+  imports Field
 begin
 
 section {* Absolute value *}

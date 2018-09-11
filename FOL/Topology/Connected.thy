@@ -1,5 +1,12 @@
+(*
+  File: Connected.thy
+  Author: Bohua Zhan
+
+  Connected topological spaces.
+*)
+
 theory Connected
-imports ProductTopology OrderTopology
+  imports ProductTopology OrderTopology
 begin
 
 section {* Connected spaces *}

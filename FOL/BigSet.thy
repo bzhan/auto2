@@ -1,5 +1,12 @@
+(*
+  File: BigSet.thy
+  Author: Bohua Zhan
+
+  Some results about arbitrary union and intersection.
+*)
+
 theory BigSet
-imports Functions
+  imports Functions
 begin
 
 section {* Big union *}

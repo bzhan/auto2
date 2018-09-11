@@ -1,5 +1,12 @@
+(*
+  File: Choice.thy
+  Author: Bohua Zhan
+
+  Axiom of choice.
+*)
+
 theory Choice
-imports Structure
+  imports Structure
 begin
 
 (* Axiom of global choice. *)

@@ -1,5 +1,12 @@
+(*
+  File: SeqRing.thy
+  Author: Bohua Zhan
+
+  Set of sequences as a ring.
+*)
+
 theory SeqRing
-imports Sequence
+  imports Sequence
 begin
 
 section {* Construction of the ring of sequences *}

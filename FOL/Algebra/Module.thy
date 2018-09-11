@@ -1,7 +1,13 @@
+(*
+  File: Module.thy
+  Author: Bohua Zhan
+
+  Definition of modules.
+*)
+
 theory Module
   imports Auto2_FOL.Int
 begin
-
 
 definition "mod_ring_name = succ(\<emptyset>)"
 definition "mod_ring(M) = graph_eval(M, mod_ring_name)"

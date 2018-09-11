@@ -1,3 +1,10 @@
+(*
+  File: Graph.thy
+  Author: Bohua Zhan
+
+  Basics of graph of functions (as represented by a set of ordered pairs).
+*)
+
 theory Graph
   imports Set
 begin

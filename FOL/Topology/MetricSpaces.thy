@@ -1,5 +1,12 @@
+(*
+  File: MetricSpaces.thy
+  Author: Bohua Zhan
+
+  Metric spaces.
+*)
+
 theory MetricSpaces
-imports RealTopology
+  imports RealTopology
 begin
 
 section {* Metric spaces *}

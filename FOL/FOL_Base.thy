@@ -1,7 +1,12 @@
-(* Theorems in logic needed for FOL. *)
+(*
+  File: FOL_Base.thy
+  Author: Bohua Zhan
+
+  Theorems in logic needed to setup auto2 for FOL.
+*)
 
 theory FOL_Base
-imports FOL
+  imports FOL
 begin
 
 section \<open>Declare type of sets\<close>

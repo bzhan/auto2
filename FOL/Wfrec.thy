@@ -1,5 +1,12 @@
+(*
+  File: Wfrec.thy
+  Author: Bohua Zhan
+
+  Well-founded recursion.
+*)
+
 theory Wfrec
-imports FixedPt
+  imports FixedPt
 begin
 
 definition ord_minimal :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:

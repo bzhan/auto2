@@ -1,5 +1,12 @@
+(*
+  File: OrderTopology.thy
+  Author: Bohua Zhan
+
+  Basic results about order topology.
+*)
+
 theory OrderTopology
-imports Topology Auto2_FOL.Interval Auto2_FOL.AlgStructure
+  imports Topology Auto2_FOL.Interval Auto2_FOL.AlgStructure
 begin
 
 section {* Set with at least two element *}

@@ -1,7 +1,14 @@
+(*
+  File: Coset.thy
+  Author: Bohua Zhan
+
+  Cosets, normal subgroups, and quotient groups.
+*)
+
 theory Coset
-imports Group EquivRel
+  imports Group EquivRel
 begin
-  
+
 section {* Normal subgroups *}
 
 definition is_normal_subgroup_set :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:

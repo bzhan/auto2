@@ -1,7 +1,14 @@
+(*
+  File: Topology.thy
+  Author: Bohua Zhan
+
+  Basics of topological spaces.
+*)
+
 theory Topology
-imports Auto2_FOL.Morphism Auto2_FOL.BigSet
+  imports Auto2_FOL.Morphism Auto2_FOL.BigSet
 begin
-  
+
 section \<open>Topological structure\<close>
 
 definition "open_sets_name = succ(\<emptyset>)"

@@ -1,5 +1,12 @@
+(*
+  File: BigProd.thy
+  Author: Bohua Zhan
+
+  Results about arbitrary products, mainly following Section II.5 in Bourbaki.
+*)
+
 theory BigProd
-imports Coverings
+  imports Coverings
 begin
 
 section {* Product of a family of sets *}  (* Bourbaki II.5.3 *)

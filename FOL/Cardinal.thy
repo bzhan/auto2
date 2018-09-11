@@ -1,4 +1,9 @@
-(* Based on OrderType and Cardinal in Isabelle/ZF. *)
+(*
+  File: Cardinal.thy
+  Author: Bohua Zhan
+
+  Results about cardinals. Based on OrderType and Cardinal in Isabelle/ZF.
+*)
 
 theory Cardinal
   imports Finite WellOrder
