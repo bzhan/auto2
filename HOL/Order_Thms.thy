@@ -5,6 +5,8 @@
   Setup for proof steps related to ordering.
 *)
 
+section {* Setup for ordering *}
+
 theory Order_Thms
   imports Logic_Thms HOL.Rat
 begin
@@ -12,7 +14,7 @@ begin
 ML_file "util_arith.ML"
 setup {* Consts.add_const_data ("NUMC", UtilArith.is_numc) *}
 
-section {* Results in class order or preorder *}
+subsection {* Results in class order or preorder *}
 
 setup {* add_forward_prfstep_cond @{thm Orderings.order_class.order.trans} [with_filt (not_type_filter "a" natT)] *}
 setup {* add_forward_prfstep_cond @{thm Orderings.order_class.order.strict_trans} [with_filt (not_type_filter "a" natT)] *}
@@ -35,7 +37,7 @@ setup {* fold add_gen_prfstep [
     WithScore 1])]
 *}
 
-section {* Properties of max and min (in linorder) *}
+subsection {* Properties of max and min (in linorder) *}
 
 setup {* add_rewrite_rule @{thm min.commute} *}
 setup {* add_rewrite_rule @{thm min.idem} *}
@@ -55,13 +57,13 @@ setup {* add_backward2_prfstep @{thm max.mono} *}
 setup {* add_rewrite_rule @{thm max.absorb1} *}
 setup {* add_rewrite_rule @{thm max.absorb2} *}
 
-section {* Min *}
+subsection {* Min *}
 
 setup {* add_backward_prfstep @{thm Min_in} *}
 setup {* add_backward_prfstep @{thm Min_le} *}
 setup {* add_backward2_prfstep @{thm Min_eqI} *}
 
-section {* Existence of numbers satisfying inequalities *}
+subsection {* Existence of numbers satisfying inequalities *}
 
 theorem exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
 setup {* fold add_resolve_prfstep [@{thm lt_ex}, @{thm gt_ex}] *}

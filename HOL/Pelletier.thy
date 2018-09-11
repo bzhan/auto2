@@ -6,6 +6,8 @@
   automatic theorem provers" by Francis Jeffry Pelletier.
 *)
 
+section {* Pelletier's problems *}
+
 theory Pelletier
   imports Logic_Thms
 begin
