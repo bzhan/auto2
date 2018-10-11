@@ -5,17 +5,11 @@
   Proof steps for separation logic.
 *)
 
-(* Data stored for each imperative command *)
-type proc_info = {
-  hoare_triples: thm list
-}
-
 signature SEP_LOGIC =
 sig
   val normalize_hoare_goal_cv: Proof.context -> conv
   val normalize_entail_goal_cv: Proof.context -> conv
 
-  val empty_proc_info: proc_info
   val get_proc_def: theory -> term -> thm list
   val update_hoare_triple: thm -> theory -> theory
   val get_hoare_triples: theory -> string -> thm list
@@ -121,34 +115,26 @@ fun normalize_entail_goal_cv ctxt ct =
 
 (* Data maintained for each imperative command. *)
 structure Data = Theory_Data (
-  type T = proc_info Symtab.table;
+  type T = thm Symtab.table;
   val empty = Symtab.empty;
   val extend = I;
-  val merge = Symtab.merge (op pointer_eq)
+  val merge = Symtab.merge (op Thm.eq_thm_prop)
 )
 
-val empty_proc_info = {hoare_triples = []}
-
-(* Add the given theorem as a Hoare triple. Remove previous Hoare
-   triples for this theorem.
+(* Add the given theorem as a Hoare triple. Replace previous Hoare
+   triples for this theorem if any exist.
  *)
 fun update_hoare_triple hoare_th thy =
     let
       val (_, c, _) = dest_hoare_triple (prop_of' hoare_th)
       val nm = Util.get_head_name c
-      val new_info = {hoare_triples = [hoare_th]}
     in
-      thy |> Data.map (Symtab.update (nm, new_info))
+      thy |> Data.map (Symtab.update (nm, hoare_th))
     end
 
 (* Obtain list of Hoare triples for the given command *)
 fun get_hoare_triples thy nm =
-    let
-      val {hoare_triples} =
-          the_default empty_proc_info (Symtab.lookup (Data.get thy) nm)
-    in
-      hoare_triples
-    end
+    the_list (Symtab.lookup (Data.get thy) nm)
 
 fun get_proc_def thy t =
     if is_bind_cmd t then []
