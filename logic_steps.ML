@@ -744,7 +744,8 @@ fun disj_cancel_prop ctxt th prop =
    must have either zero or the largest number of schematic variables.
  *)
 fun match_update_fn ctxt item1 item2 =
-    if is_match_prem_only item1 then [] else
+    if is_match_prem_only item1 andalso
+       Util.has_vars (Thm.prop_of (#prop item1)) then [] else
     let
       val {id, prop, tname, ...} = item1
       val thy = Proof_Context.theory_of ctxt
@@ -795,8 +796,8 @@ fun match_update_fn ctxt item1 item2 =
                   val sc = if do_match = SLOW_MATCH then 200 else 10
                 in
                   disj_to_update false disj_head (id', SOME sc, prop') ::
-                  (if count_var t > 0 then [] else
-                   [ShadowItem {id = id', item = item1}])
+                  (if count_var t > 0 then []
+                   else [ShadowItem {id = id', item = item1}])
                 end
           in
             if do_match = NO_MATCH then []
@@ -811,7 +812,8 @@ fun match_update_fn ctxt item1 item2 =
                   val prop' = prop |> fold (disj_cancel_prop ctxt) ths
                 in
                   disj_to_update false disj_head (id', SOME 1, prop') ::
-                  [ShadowItem {id = id', item = item1}]
+                  (if is_match_prem_only item1 then []
+                   else [ShadowItem {id = id', item = item1}])
                 end
 
             fun get_match_at_id id' insts =

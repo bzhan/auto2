@@ -508,7 +508,7 @@ fun process_add_boxes (updt as {sc, raw_updt, ...}) (st as {ctxt, ...}) =
                 case ritem of
                     Handler _ => [ritem]
                   | Fact (ty_str, _, th) =>
-                    if ty_str = TY_PROP then
+                    if ty_str = TY_PROP andalso is_neg (prop_of' th) then
                       map Update.thm_to_ritem (
                         Logic_ProofSteps.split_not_imp_th th)
                     else [ritem]
