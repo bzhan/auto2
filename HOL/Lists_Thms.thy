@@ -72,6 +72,7 @@ lemma set_tl_subset [forward_arg1]: "set (tl xs) \<subseteq> set xs"
 subsection {* nth *}
 
 setup {* register_wellform_data ("xs ! i", ["i < length xs"]) *}
+setup {* add_prfstep_check_req ("xs ! i", "i < length xs") *}
 setup {* add_rewrite_rule_back @{thm hd_conv_nth} *}
 setup {* add_rewrite_rule @{thm List.nth_Cons'} *}
 setup {* add_rewrite_rule @{thm List.nth_append} *}
