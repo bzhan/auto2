@@ -17,6 +17,7 @@ sig
   val dest_ineq: term -> term * term * int
   val dest_ineq_th: thm -> term * term * int
 
+  val fold_double_plus: conv
   val norm_ineq_th': thm -> thm
   val convert_const_x: thm -> thm
   val convert_const_y: thm -> thm
@@ -143,6 +144,19 @@ val fold_const_left =
 val fold_const_right =
     apply_to_thm' (Conv.arg_conv (Conv.arg_conv Nat_Util.nat_fold_conv))
 
+(* In expression (x + c1) + c2, fold c1 + c2. *)
+fun fold_double_plus ct =
+    let
+      val t = Thm.term_of ct
+    in
+      if is_plus_const t andalso is_plus_const (dest_arg1 t) then
+        Conv.every_conv [rewr_obj_eq @{thm add_ac(1)},
+                         Conv.arg_conv Nat_Util.nat_fold_conv,
+                         fold_double_plus] ct
+      else
+        Conv.all_conv ct
+    end
+
 (* Normalize inequality to standard form. This function is able to
    process any theorem of the form a </<= b.
  *)
@@ -252,7 +266,9 @@ fun convert_const_y th =
 fun norm_ineq_th th =
     let
       val th' =
-          th |> norm_ineq_th' |> convert_const_x |> convert_const_y
+          th |> apply_to_thm' (Conv.arg1_conv fold_double_plus)
+             |> apply_to_thm' (Conv.arg_conv fold_double_plus)
+             |> norm_ineq_th' |> convert_const_x |> convert_const_y
     in
       if is_standard_ineq (prop_of' th') then th'
       else let

@@ -23,6 +23,20 @@ local
                    |> RewriteTable.add_rewrite ([], assume_eq thy (x, x')) |> snd
 in
 
+val test_fold_double_plus =
+    let
+      val err_str = "test_fold_double_plus"
+
+      val test_data = [
+        ("x", "x"),
+        ("x + 1", "x + 1"),
+        ("(x + 1) + 1", "x + 2"),
+        ("((x + 1) + 1) + 1", "x + 3")
+      ]
+    in
+      map (Util.test_conv ctxt' Nat_Order.fold_double_plus err_str) test_data
+    end
+
 (* Convert proposition to nat_order item, by applying one of the
    proofsteps in to_nat_order_prfsteps.
  *)
@@ -91,7 +105,10 @@ val test_parse_prop =
         ("x > 0", [("0::nat", "x", ~1)]),
         ("x + 0 <= y", [("x", "y", 0)]),
         ("x + 1 <= 3", [("x", "0::nat", 2)]),
-        ("x - 1 <= 3", [("x", "0::nat", 4), ("x-1", "0::nat", 3)])
+        ("x - 1 <= 3", [("x", "0::nat", 4), ("x-1", "0::nat", 3)]),
+        ("(x + 1) + 1 <= y + 1", [("x", "y", ~1)]),
+        ("x + 1 <= (y + 1) + 1", [("x", "y", 1)]),
+        ("(x + 1) + 1 <= (y + 1) + 1", [("x", "y", 0)])
       ]
       val _ = map test test_data
     in
