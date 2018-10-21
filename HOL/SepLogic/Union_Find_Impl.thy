@@ -6,6 +6,8 @@
   Separation_Logic_Imperative_HOL by Lammich and Meis.
 *)
 
+section \<open>Implementation of union find\<close>
+
 theory Union_Find_Impl
   imports DataStrs.Union_Find SepAuto
 begin

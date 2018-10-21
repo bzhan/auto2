@@ -5,11 +5,13 @@
   Imperative version of rectangle-intersection algorithm.
 *)
 
+section \<open>Implementation of rectangle intersection\<close>
+
 theory Rect_Intersect_Impl
   imports DataStrs.Rect_Intersect IntervalTree_Impl Quicksort_Impl
 begin
 
-section {* Operations *}
+subsection {* Operations *}
 
 fun operation_encode :: "('a::heap) operation \<Rightarrow> nat" where
   "operation_encode oper =
@@ -23,7 +25,7 @@ instance operation :: (heap) heap
   apply (simp add: operation.case_eq_if)
   ..
 
-section {* Initial state *}
+subsection {* Initial state *}
 
 definition rect_inter_init :: "nat rectangle list \<Rightarrow> nat operation array Heap" where
   "rect_inter_init rects = do {

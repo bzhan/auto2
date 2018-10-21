@@ -6,11 +6,13 @@
   see Lists_Ex.thy.
 *)
 
+section \<open>Red-black trees\<close>
+
 theory RBTree
   imports Lists_Ex
 begin
 
-section {* Definition of RBT *}
+subsection {* Definition of RBT *}
 
 datatype color = R | B
 datatype ('a, 'b) rbt =
@@ -29,7 +31,7 @@ lemma not_R [forward]: "c \<noteq> R \<Longrightarrow> c = B" using color.exhaus
 lemma not_B [forward]: "c \<noteq> B \<Longrightarrow> c = R" using color.exhaust by blast
 lemma red_not_leaf [forward]: "cl t = R \<Longrightarrow> t \<noteq> Leaf" by auto
 
-section {* RBT invariants *}
+subsection {* RBT invariants *}
 
 fun black_depth :: "('a, 'b) rbt \<Rightarrow> nat" where
   "black_depth Leaf = 0"
@@ -60,7 +62,7 @@ setup {* add_forward_prfstep_cond @{thm bd_invI} [with_term "Node ?l ?c ?k ?v ?r
 lemma is_rbt_rec [forward]: "is_rbt (Node l c k v r) \<Longrightarrow> is_rbt l \<and> is_rbt r"
 @proof @case "c = R" @qed
 
-section {* Balancedness of RBT *}
+subsection {* Balancedness of RBT *}
 
 (* Remove after having general normalization procedure for nats. *)
 lemma two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
@@ -87,7 +89,7 @@ theorem rbt_balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_dept
   @have "max_depth t \<le> 2 * black_depth t + 1"
 @qed
 
-section {* Definition and basic properties of cl\_inv' *}
+subsection {* Definition and basic properties of cl\_inv' *}
 
 fun cl_inv' :: "('a, 'b) rbt \<Rightarrow> bool" where
   "cl_inv' Leaf = True"
@@ -149,7 +151,7 @@ lemma rbt_inorder_sorted [rewrite]:
 
 setup {* fold del_prfstep_thm (@{thms rbt_set.simps} @ @{thms rbt_sorted.simps}) *}
 
-section {* Balance function *}
+subsection {* Balance function *}
 
 definition balanceR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balanceR l k v r =
@@ -196,7 +198,7 @@ lemma balance_inorder_pairs [rewrite]:
 
 setup {* fold del_prfstep_thm [@{thm balanceR_def}, @{thm balance_def}] *}
 
-section {* ins function *}
+subsection {* ins function *}
 
 fun ins :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "ins x v Leaf = Node Leaf R x v Leaf"
@@ -229,7 +231,7 @@ lemma ins_inorder_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
 @proof @induct t @qed
 
-section {* Paint function *}
+subsection {* Paint function *}
 
 fun paint :: "color \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "paint c Leaf = Leaf"
@@ -248,7 +250,7 @@ lemma paint_bd [rewrite]:
 lemma paint_in_traverse_pairs [rewrite]:
   "rbt_in_traverse_pairs (paint c t) = rbt_in_traverse_pairs t" by auto2
 
-section {* Insert function *}
+subsection {* Insert function *}
 
 definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "rbt_insert x v t = paint B (ins x v t)"
@@ -262,7 +264,7 @@ theorem insert_sorted [forward]:
 theorem insert_rbt_map [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_map (rbt_insert x v t) = (rbt_map t) {x \<rightarrow> v}" by auto2
 
-section {* Search on sorted trees and its correctness *}
+subsection {* Search on sorted trees and its correctness *}
 
 fun rbt_search :: "('a::ord, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b option" where
   "rbt_search Leaf x = None"
@@ -276,7 +278,7 @@ theorem rbt_search_correct [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
 @proof @induct t @qed
     
-section {* balL and balR *}
+subsection {* balL and balR *}
 
 definition balL :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balL l k v r = (let lr = lsub r in
@@ -334,7 +336,7 @@ lemma balR_in_traverse_pairs [rewrite]:
 
 setup {* fold del_prfstep_thm [@{thm balL_def}, @{thm balR_def}] *}
 
-section {* Combine *}
+subsection {* Combine *}
 
 fun combine :: "('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "combine Leaf t = t"
@@ -399,7 +401,7 @@ lemma combine_in_traverse_pairs [rewrite]:
   @endgoal @end
 @qed
 
-section {* Deletion *}
+subsection {* Deletion *}
 
 fun del :: "'a::linorder \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "del x Leaf = Leaf"

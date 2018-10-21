@@ -6,11 +6,13 @@
   basic technique, see comments in Lists_Ex.thy.
 *)
 
+section \<open>Binary search tree\<close>
+
 theory BST
   imports Lists_Ex
 begin
 
-section {* Definition and setup for trees *}
+subsection {* Definition and setup for trees *}
 
 datatype ('a, 'b) tree =
     Tip | Node (lsub: "('a, 'b) tree") (key: 'a) (nval: 'b) (rsub: "('a, 'b) tree")
@@ -20,7 +22,7 @@ setup {* fold add_rewrite_rule @{thms tree.sel} *}
 setup {* add_forward_prfstep @{thm tree.collapse} *}
 setup {* add_var_induct_rule @{thm tree.induct} *}
 
-section {* Inorder traversal, and set of elements of a tree *}
+subsection {* Inorder traversal, and set of elements of a tree *}
 
 fun in_traverse :: "('a, 'b) tree \<Rightarrow> 'a list" where
   "in_traverse Tip = []"
@@ -45,7 +47,7 @@ definition tree_map :: "('a, 'b) tree \<Rightarrow> ('a, 'b) map" where
   "tree_map t = map_of_alist (in_traverse_pairs t)"
 setup {* add_rewrite_rule @{thm tree_map_def} *}
 
-section {* Sortedness on trees *}
+subsection {* Sortedness on trees *}
 
 fun tree_sorted :: "('a::linorder, 'b) tree \<Rightarrow> bool" where
   "tree_sorted Tip = True"
@@ -67,7 +69,7 @@ lemma inorder_pairs_sorted [rewrite]:
 (* Use definition in terms of in_traverse from now on. *)
 setup {* fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps}) *}
 
-section {* Rotation on trees *}
+subsection {* Rotation on trees *}
 
 definition rotateL :: "('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where [rewrite]:
   "rotateL t = (if t = Tip then t else if rsub t = Tip then t else
@@ -85,7 +87,7 @@ lemma rotateR_in_trav [rewrite]: "in_traverse (rotateR t) = in_traverse t" by au
 lemma rotateL_sorted [forward]: "tree_sorted t \<Longrightarrow> tree_sorted (rotateL t)" by auto2
 lemma rotateR_sorted [forward]: "tree_sorted t \<Longrightarrow> tree_sorted (rotateR t)" by auto2
 
-section {* Insertion on trees *}
+subsection {* Insertion on trees *}
 
 fun tree_insert :: "'a::ord \<Rightarrow> 'b \<Rightarrow> ('a, 'b) tree \<Rightarrow> ('a, 'b) tree" where
   "tree_insert x v Tip = Node Tip x v Tip"
@@ -105,7 +107,7 @@ theorem insert_sorted [forward]:
 theorem insert_on_map:
   "tree_sorted t \<Longrightarrow> tree_map (tree_insert x v t) = (tree_map t) {x \<rightarrow> v}" by auto2
 
-section {* Deletion on trees *}
+subsection {* Deletion on trees *}
 
 fun del_min :: "('a, 'b) tree \<Rightarrow> ('a \<times> 'b) \<times> ('a, 'b) tree" where
   "del_min Tip = undefined"
@@ -146,7 +148,7 @@ theorem tree_delete_sorted [forward]:
 theorem tree_delete_map [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_map (tree_delete x t) = delete_map x (tree_map t)" by auto2
 
-section {* Search on sorted trees *}
+subsection {* Search on sorted trees *}
 
 fun tree_search :: "('a::ord, 'b) tree \<Rightarrow> 'a \<Rightarrow> 'b option" where
   "tree_search Tip x = None"

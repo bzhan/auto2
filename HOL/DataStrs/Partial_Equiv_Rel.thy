@@ -6,11 +6,11 @@
   Collections/Lib/Partial_Equivalence_Relation in the AFP.
 *)
 
+section {* Partial equivalence relation *}
+
 theory Partial_Equiv_Rel
   imports Auto2_HOL.Auto2_Main
 begin
-
-section {* Partial equivalence relation *}
   
 definition part_equiv :: "('a \<times> 'a) set \<Rightarrow> bool" where [rewrite]:
   "part_equiv R \<longleftrightarrow> sym R \<and> trans R"

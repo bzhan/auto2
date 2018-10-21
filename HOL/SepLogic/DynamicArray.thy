@@ -5,6 +5,8 @@
   Dynamically allocated arrays.
 *)
 
+section \<open>Implementation of dynamic arrays\<close>
+
 theory DynamicArray
   imports Arrays_Impl
 begin
@@ -12,7 +14,7 @@ begin
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (aref: "'a array")
 setup {* add_simple_datatype "dynamic_array" *}
 
-section {* Raw assertion *}
+subsection {* Raw assertion *}
 
 fun dyn_array_raw :: "'a::heap list \<times> nat \<Rightarrow> 'a dynamic_array \<Rightarrow> assn" where
   "dyn_array_raw (xs, n) (Dyn_Array m a) = (a \<mapsto>\<^sub>a xs * \<up>(m = n))"
@@ -136,7 +138,7 @@ lemma push_array_rule' [hoare_triple]:
    push_array x p
    <dyn_array_raw (push_array_fun x (xs, n))>\<^sub>t" by auto2
 
-section {* Abstract assertion *}
+subsection {* Abstract assertion *}
 
 fun abs_array :: "'a::heap list \<times> nat \<Rightarrow> 'a list" where
   "abs_array (xs, n) = take n xs"
@@ -189,7 +191,7 @@ lemma pop_array_rule [hoare_triple]:
 
 setup {* del_prfstep_thm @{thm dyn_array_def} *}
 
-section {* Derived operations *}
+subsection {* Derived operations *}
 
 definition array_swap :: "'a::heap dynamic_array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "array_swap d i j = do {

@@ -5,11 +5,13 @@
   Imperative version of graph-connectivity example.
 *)
 
+section \<open>Implementation of connectivity on graphs\<close>
+
 theory Connectivity_Impl
   imports Union_Find_Impl DataStrs.Connectivity
 begin
 
-section {* Constructing the connected relation *}
+subsection {* Constructing the connected relation *}
 
 fun connected_rel_imp :: "nat \<Rightarrow> (nat \<times> nat) list \<Rightarrow> nat \<Rightarrow> uf Heap" where
   "connected_rel_imp n es 0 = do { p \<leftarrow> uf_init n; return p }"
@@ -31,7 +33,7 @@ lemma connected_rel_imp_correct [hoare_triple]:
    connected_rel_imp n es (length es)
    <is_uf n (connected_rel n (set es))>" by auto2
 
-section {* Connectedness tests *}
+subsection {* Connectedness tests *}
 
 lemma uf_cmp_correct [hoare_triple]:
   "<is_uf n (connected_rel n S) p>

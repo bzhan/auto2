@@ -8,11 +8,13 @@
   Rivest and Stein for a reference.
 *)
 
+section \<open>Interval tree\<close>
+
 theory Interval_Tree
   imports Lists_Ex Interval
 begin
 
-section {* Definition of an interval tree *}
+subsection {* Definition of an interval tree *}
 
 datatype interval_tree =
    Tip
@@ -25,7 +27,7 @@ setup {* fold add_rewrite_rule @{thms interval_tree.sel} *}
 setup {* add_forward_prfstep @{thm interval_tree.collapse} *}
 setup {* add_var_induct_rule @{thm interval_tree.induct} *}
 
-section {* Inorder traversal, and set of elements of a tree *}
+subsection {* Inorder traversal, and set of elements of a tree *}
 
 fun in_traverse :: "interval_tree \<Rightarrow> nat idx_interval list" where
   "in_traverse Tip = []"
@@ -63,7 +65,7 @@ lemma inorder_sorted [rewrite]:
 (* Use definition in terms of in_traverse from now on. *)
 setup {* fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps}) *}
 
-section {* Invariant on the maximum *}
+subsection {* Invariant on the maximum *}
 
 definition max3 :: "nat idx_interval \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where [rewrite]:
   "max3 it b c = max (high (int it)) (max b c)"
@@ -91,7 +93,7 @@ lemma max3_insert [rewrite]: "max3 it 0 0 = high (int it)" by auto2
 
 setup {* del_prfstep_thm @{thm max3_def} *}
 
-section {* Condition on the values *}
+subsection {* Condition on the values *}
 
 definition tree_interval_inv :: "interval_tree \<Rightarrow> bool" where [rewrite]:
   "tree_interval_inv t \<longleftrightarrow> (\<forall>p\<in>tree_set t. is_interval (int p))"
@@ -102,7 +104,7 @@ definition is_interval_tree :: "interval_tree \<Rightarrow> bool" where [rewrite
 lemma is_interval_tree_lr [forward]:
   "is_interval_tree (Node l x m r) \<Longrightarrow> is_interval_tree l \<and> is_interval_tree r" by auto2
 
-section {* Insertion on trees *}
+subsection {* Insertion on trees *}
 
 fun insert :: "nat idx_interval \<Rightarrow> interval_tree \<Rightarrow> interval_tree" where
   "insert x Tip = Node Tip x (high (int x)) Tip"
@@ -130,7 +132,7 @@ lemma tree_insert_max_inv [forward]:
 lemma tree_insert_all_inv [forward]:
   "is_interval_tree t \<Longrightarrow> is_interval (int it) \<Longrightarrow> is_interval_tree (insert it t)" by auto2
 
-section {* Deletion on trees *}
+subsection {* Deletion on trees *}
 
 fun del_min :: "interval_tree \<Rightarrow> nat idx_interval \<times> interval_tree" where
   "del_min Tip = undefined"
@@ -212,7 +214,7 @@ lemma tree_delete_all_inv [forward]:
 lemma tree_delete_on_set [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_set (delete x t) = tree_set t - {x}" by auto2
 
-section {* Search on interval trees *}
+subsection {* Search on interval trees *}
 
 fun search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" where
   "search Tip x = False"

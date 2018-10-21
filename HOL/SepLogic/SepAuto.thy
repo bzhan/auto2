@@ -8,11 +8,13 @@
   Separation_Logic_Imperative_HOL (by Lammich and Meis) in the AFP.
 *)
 
+section \<open>Separation logic\<close>
+
 theory SepAuto
   imports SepLogic_Base "HOL-Imperative_HOL.Imperative_HOL"
 begin
 
-section {* Partial Heaps *}
+subsection {* Partial Heaps *}
 
 datatype pheap = pHeap (heapOf: heap) (addrOf: "addr set")
 setup {* add_simple_datatype "pheap" *}
@@ -53,7 +55,7 @@ lemma relH_set_array [resolve]:
   "relH {a. a < lim h \<and> a \<notin> {addr_of_array r}} h (Array.set r x h)"
   by (simp add: Array.set_def relH_def)
 
-section {* Assertions *}
+subsection {* Assertions *}
 
 datatype assn_raw = Assn (assn_fn: "pheap \<Rightarrow> bool")
 
@@ -161,7 +163,7 @@ instantiation assn :: comm_monoid_mult begin
   apply (rule assn_times_assoc) apply (rule assn_times_comm) by (rule assn_one_left)
 end
 
-subsection {* Existential Quantification *}
+subsubsection {* Existential Quantification *}
 
 definition ex_assn :: "('a \<Rightarrow> assn) \<Rightarrow> assn" (binder "\<exists>\<^sub>A" 11) where [rewrite]:
   "(\<exists>\<^sub>Ax. P x) = Abs_assn (Assn (\<lambda>h. \<exists>x. h \<Turnstile> P x))"
@@ -180,7 +182,7 @@ lemma ex_distrib_star: "(\<exists>\<^sub>Ax. P x * Q) = (\<exists>\<^sub>Ax. P x
   @end
 @qed
 
-subsection {* Pointers *}
+subsubsection {* Pointers *}
 
 definition sngr_assn :: "'a::heap ref \<Rightarrow> 'a \<Rightarrow> assn" (infix "\<mapsto>\<^sub>r" 82) where [rewrite]:
   "r \<mapsto>\<^sub>r x = Abs_assn (Assn (
@@ -198,7 +200,7 @@ lemma snga_assn_rule [rewrite]:
   "pHeap h as \<Turnstile> r \<mapsto>\<^sub>a x \<longleftrightarrow> (Array.get h r = x \<and> as = {addr_of_array r} \<and> addr_of_array r < lim h)" by auto2
 setup {* del_prfstep_thm @{thm snga_assn_def} *}
 
-subsection {* Pure Assertions *}
+subsubsection {* Pure Assertions *}
 
 definition pure_assn :: "bool \<Rightarrow> assn" ("\<up>") where [rewrite]:
   "\<up>b = Abs_assn (Assn (\<lambda>h. addrOf h = {} \<and> b))"
@@ -214,7 +216,7 @@ setup {* del_prfstep_thm @{thm top_assn_def} *}
 
 setup {* del_prfstep_thm @{thm models_def} *}
 
-subsection {* Properties of assertions *}
+subsubsection {* Properties of assertions *}
 
 abbreviation bot_assn :: assn ("false") where "bot_assn \<equiv> \<up>False"
 
@@ -235,7 +237,7 @@ lemma mod_pure_star_dist [rewrite]:
 
 lemma pure_conj: "\<up>(P \<and> Q) = \<up>P * \<up>Q" by auto2
 
-subsection {* Entailment and its properties *}
+subsubsection {* Entailment and its properties *}
 
 definition entails :: "assn \<Rightarrow> assn \<Rightarrow> bool" (infix "\<Longrightarrow>\<^sub>A" 10) where [rewrite]:
   "(P \<Longrightarrow>\<^sub>A Q) \<longleftrightarrow> (\<forall>h. h \<Turnstile> P \<longrightarrow> h \<Turnstile> Q)"
@@ -258,7 +260,7 @@ lemma entails_pure_post: "\<not>(P \<Longrightarrow>\<^sub>A Q * \<up>b) \<Longr
 
 setup {* del_prfstep_thm @{thm entails_def} *}
 
-section {* Definition of the run predicate *}
+subsection {* Definition of the run predicate *}
 
 inductive run :: "'a Heap \<Rightarrow> heap option \<Rightarrow> heap option \<Rightarrow> 'a \<Rightarrow> bool" where
   "run c None None r"
@@ -288,7 +290,7 @@ setup {* add_rewrite_rule @{thm Array.get_alloc} *}
 setup {* add_rewrite_rule @{thm Ref.get_alloc} *}
 setup {* add_rewrite_rule_bidir @{thm Array.length_def} *}
 
-section {* Definition of hoare triple, and the frame rule. *}
+subsection {* Definition of hoare triple, and the frame rule. *}
 
 definition new_addrs :: "heap \<Rightarrow> addr set \<Rightarrow> heap \<Rightarrow> addr set" where [rewrite]:
   "new_addrs h as h' = as \<union> {a. lim h \<le> a \<and> a < lim h'}"
@@ -377,7 +379,7 @@ lemma post_rule':
 lemma norm_pre_pure_iff: "<P * \<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <P> c <Q>)" by auto2
 lemma norm_pre_pure_iff2: "<\<up>b> c <Q> \<longleftrightarrow> (b \<longrightarrow> <emp> c <Q>)" by auto2
 
-section {* Hoare triples for atomic commands *}
+subsection {* Hoare triples for atomic commands *}
 
 (* First, those that do not modify the heap. *)
 setup {* add_rewrite_rule @{thm execute_assert(1)} *}

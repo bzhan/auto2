@@ -6,6 +6,8 @@
   a structure, to make evaluation a first-order concept.
 *)
 
+section \<open>Mapping\<close>
+
 theory Mapping_Str
   imports Auto2_HOL.Auto2_Main
 begin
@@ -32,7 +34,7 @@ definition delete_map :: "'a \<Rightarrow> ('a, 'b) map \<Rightarrow> ('a, 'b) m
   "delete_map k M = Map (\<lambda>x. if x = k then None else M\<langle>x\<rangle>)"
 setup {* add_rewrite_rule @{thm delete_map_def} *}
 
-section {* Map from an AList *}
+subsection {* Map from an AList *}
 
 fun map_of_alist :: "('a \<times> 'b) list \<Rightarrow> ('a, 'b) map" where
   "map_of_alist [] = empty_map"
@@ -56,7 +58,7 @@ lemma map_of_alist_nil':
 @proof @induct ys @qed
 setup {* add_rewrite_rule_cond @{thm map_of_alist_nil'} [with_term "(map_of_alist ?ys)\<langle>?x\<rangle>"] *}
     
-section {* Mapping defined by a set of key-value pairs *}
+subsection {* Mapping defined by a set of key-value pairs *}
 
 definition unique_keys_set :: "('a \<times> 'b) set \<Rightarrow> bool" where [rewrite]:
   "unique_keys_set S = (\<forall>i x y. (i, x) \<in> S \<longrightarrow> (i, y) \<in> S \<longrightarrow> x = y)"
@@ -125,7 +127,7 @@ lemma map_of_alist_update [rewrite]:
    map_of_alist xs' = (map_of_alist xs) {k \<rightarrow> v'}"
 @proof @have "map_of_alist xs' = map_of_aset (set xs')" @qed
 
-section {* Set of keys of a mapping *}
+subsection {* Set of keys of a mapping *}
 
 definition keys_of :: "('a, 'b) map \<Rightarrow> 'a set" where [rewrite]:
   "keys_of M = {x. M\<langle>x\<rangle> \<noteq> None}"
@@ -138,12 +140,12 @@ lemma keys_of_empty [rewrite]: "keys_of empty_map = {}" by auto2
 lemma keys_of_delete [rewrite]:
   "keys_of (delete_map x M) = keys_of M - {x}" by auto2
 
-section {* Minimum of a mapping, relevant for heaps (priority queues) *}
+subsection {* Minimum of a mapping, relevant for heaps (priority queues) *}
 
 definition is_heap_min :: "'a \<Rightarrow> ('a, 'b::linorder) map \<Rightarrow> bool" where [rewrite]:
   "is_heap_min x M \<longleftrightarrow> x \<in> keys_of M \<and> (\<forall>k\<in>keys_of M. the (M\<langle>x\<rangle>) \<le> the (M\<langle>k\<rangle>))"
 
-section {* General construction and update of maps *}
+subsection {* General construction and update of maps *}
 
 fun map_constr :: "(nat \<Rightarrow> bool) \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> (nat, 'a) map" where
   "map_constr S f 0 = empty_map"

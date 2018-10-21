@@ -6,6 +6,8 @@
   Imperative_HOL/ex/Imperative_Quicksort in the Isabelle library.
 *)
 
+section \<open>Implementation of quicksort\<close>
+
 theory Quicksort_Impl
   imports Arrays_Impl DataStrs.Quicksort
 begin

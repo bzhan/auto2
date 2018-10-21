@@ -13,11 +13,13 @@
   should be done on the in-order traversal of the tree.
 *)
 
+section \<open>Lists\<close>
+
 theory Lists_Ex
   imports Mapping_Str
 begin
 
-section {* Linear time version of rev *}
+subsection {* Linear time version of rev *}
 
 fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "itrev []       ys = ys"
@@ -29,7 +31,7 @@ lemma itrev_eq_rev: "itrev x [] = rev x"
   @induct x for "\<forall>y. itrev x y = rev x @ y" arbitrary y
 @qed
 
-section {* Strict sorted *}
+subsection {* Strict sorted *}
 
 fun strict_sorted :: "'a::linorder list \<Rightarrow> bool" where
   "strict_sorted [] = True"
@@ -51,7 +53,7 @@ lemma strict_sorted_appendE2 [forward]:
 lemma strict_sorted_distinct [forward]: "strict_sorted l \<Longrightarrow> distinct l"
 @proof @induct l @qed
 
-section {* Ordered insert *}
+subsection {* Ordered insert *}
 
 fun ordered_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "ordered_insert x [] = [x]"
@@ -76,7 +78,7 @@ lemma ordered_insert_binary [rewrite]:
      else xs @ a # ys)"
 @proof @induct xs @qed
 
-section {* Deleting an element *}
+subsection {* Deleting an element *}
 
 fun remove_elt_list :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "remove_elt_list x [] = []"
@@ -105,7 +107,7 @@ lemma remove_elt_list_binary [rewrite]:
   @endgoal @end
 @qed
 
-section {* Ordered insertion into list of pairs *}
+subsection {* Ordered insertion into list of pairs *}
 
 fun ordered_insert_pairs :: "'a::ord \<Rightarrow> 'b \<Rightarrow> ('a \<times> 'b) list \<Rightarrow> ('a \<times> 'b) list" where
   "ordered_insert_pairs x v [] = [(x, v)]"
@@ -134,7 +136,7 @@ lemma ordered_insert_pairs_binary [rewrite]:
      else xs @ (x, v) # ys)"
 @proof @induct xs @qed
 
-section {* Deleting from a list of pairs *}
+subsection {* Deleting from a list of pairs *}
 
 fun remove_elt_pairs :: "'a \<Rightarrow> ('a \<times> 'b) list \<Rightarrow> ('a \<times> 'b) list" where
   "remove_elt_pairs x [] = []"
@@ -171,7 +173,7 @@ lemma remove_elt_pairs_binary [rewrite]:
   @endgoal @end
 @qed
 
-section {* Search in a list of pairs *}
+subsection {* Search in a list of pairs *}
 
 lemma map_of_alist_binary [rewrite]:
   "strict_sorted (map fst (xs @ a # ys)) \<Longrightarrow> (map_of_alist (xs @ a # ys))\<langle>x\<rangle> =

@@ -5,6 +5,8 @@
   Setup for proof steps related to arithmetic, mostly on natural numbers.
 *)
 
+section \<open>Setup for arithmetic\<close>
+
 theory Arith_Thms
   imports Order_Thms HOL.Binomial
 begin

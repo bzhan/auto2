@@ -5,11 +5,13 @@
   Verification of imperative red-black trees.
 *)
 
+section \<open>Implementation of red-black tree\<close>
+
 theory RBTree_Impl
   imports DataStrs.RBTree SepAuto
 begin
 
-section {* Tree nodes *}
+subsection {* Tree nodes *}
 
 datatype ('a, 'b) rbt_node =
   Node (lsub: "('a, 'b) rbt_node ref option") (cl: color) (key: 'a) (val: 'b) (rsub: "('a, 'b) rbt_node ref option")
@@ -56,9 +58,9 @@ setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
 type_synonym ('a, 'b) btree = "('a, 'b) rbt_node ref option"
 
-section {* Operations *}
+subsection {* Operations *}
 
-subsection {* Basic operations *}
+subsubsection {* Basic operations *}
 
 definition tree_empty :: "('a, 'b) btree Heap" where
   "tree_empty = return None"
@@ -120,7 +122,7 @@ lemma paint_rule [hoare_triple]:
    <\<lambda>_. btree (RBTree.paint c t) p>"
 @proof @case "t = Leaf" @qed
 
-subsection {* Rotation *}
+subsubsection {* Rotation *}
 
 definition btree_rotate_l :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_rotate_l p = (case p of
@@ -158,7 +160,7 @@ lemma btree_rotate_r_rule [hoare_triple]:
    btree_rotate_r p
    <btree (rbt.Node a c1 x v (rbt.Node b c2 y w c))>" by auto2
 
-subsection {* Balance *}
+subsubsection {* Balance *}
 
 definition btree_balanceR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balanceR p = (case p of None \<Rightarrow> return None | Some pp \<Rightarrow> do {
@@ -220,7 +222,7 @@ lemma balance_to_fun [hoare_triple]:
    <btree (balance l k v r)>"
 @proof @unfold "balance l k v r" @qed
 
-subsection {* Insertion *}
+subsubsection {* Insertion *}
 
 partial_function (heap) rbt_ins ::
   "'a::{heap,ord} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -271,7 +273,7 @@ lemma rbt_insert_to_fun [hoare_triple]:
    rbt_insert k v p
    <btree (RBTree.rbt_insert k v t)>" by auto2
 
-subsection {* Search *}
+subsubsection {* Search *}
 
 partial_function (heap) rbt_search ::
   "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> 'b option Heap" where
@@ -289,7 +291,7 @@ lemma btree_search_correct [hoare_triple]:
    <\<lambda>r. btree t b * \<up>(r = RBTree.rbt_search t x)>"
 @proof @induct t arbitrary b @qed
   
-subsection {* Delete *}
+subsubsection {* Delete *}
   
 definition btree_balL :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balL p = (case p of
@@ -298,22 +300,22 @@ definition btree_balL :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btre
       t \<leftarrow> !pp;
       cl_l \<leftarrow> get_color (lsub t);
       if cl_l = R then do {
-        set_color B (lsub t);  (* case 1 *)
+        set_color B (lsub t);  \<comment> \<open>Case 1\<close>
         return p}
       else case rsub t of
-        None \<Rightarrow> return p  (* case 2 *)
+        None \<Rightarrow> return p  \<comment> \<open>Case 2\<close>
       | Some rp \<Rightarrow> do {  
          rt \<leftarrow> !rp;
          if cl rt = B then do {
-           set_color R (rsub t);  (* case 3 *)
+           set_color R (rsub t);  \<comment> \<open>Case 3\<close>
            set_color B p;
            btree_balance p}
          else case lsub rt of
-           None \<Rightarrow> return p  (* case 4 *)
+           None \<Rightarrow> return p  \<comment> \<open>Case 4\<close>
          | Some lrp \<Rightarrow> do {
             lrt \<leftarrow> !lrp;
             if cl lrt = B then do {
-              set_color R (lsub rt);  (* case 5 *)
+              set_color R (lsub rt);  \<comment> \<open>Case 5\<close>
               paint R (rsub rt);
               set_color B (rsub t); 
               rp' \<leftarrow> btree_rotate_r (rsub t);
@@ -339,22 +341,22 @@ definition btree_balR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btre
       t \<leftarrow> !pp;
       cl_r \<leftarrow> get_color (rsub t);
       if cl_r = R then do {
-        set_color B (rsub t);  (* case 1 *)
+        set_color B (rsub t);  \<comment> \<open>Case 1\<close>
         return p}
       else case lsub t of
-        None \<Rightarrow> return p  (* case 2 *)
+        None \<Rightarrow> return p  \<comment> \<open>Case 2\<close>
       | Some lp \<Rightarrow> do {  
          lt \<leftarrow> !lp;
          if cl lt = B then do {
-           set_color R (lsub t);  (* case 3 *)
+           set_color R (lsub t);  \<comment> \<open>Case 3\<close>
            set_color B p;
            btree_balance p}
          else case rsub lt of
-           None \<Rightarrow> return p  (* case 4 *)
+           None \<Rightarrow> return p  \<comment> \<open>Case 4\<close>
          | Some rlp \<Rightarrow> do {
             rlt \<leftarrow> !rlp;
             if cl rlt = B then do {
-              set_color R (rsub lt);  (* case 5 *)
+              set_color R (rsub lt);  \<comment> \<open>Case 5\<close>
               paint R (lsub lt);
               set_color B (lsub t); 
               lp' \<leftarrow> btree_rotate_l (lsub t);
@@ -485,7 +487,7 @@ lemma rbt_delete_to_fun [hoare_triple]:
    rbt_delete k p
    <btree (RBTree.delete k t)>\<^sub>t" by auto2
 
-section {* Outer interface *}
+subsection {* Outer interface *}
 
 definition rbt_map_assn :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) rbt_node ref option \<Rightarrow> assn" where
   "rbt_map_assn M p = (\<exists>\<^sub>At. btree t p * \<up>(is_rbt t) * \<up>(rbt_sorted t) * \<up>(M = rbt_map t))"

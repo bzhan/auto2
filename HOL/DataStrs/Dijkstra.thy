@@ -8,11 +8,13 @@
   by Benedikt Nordhoff and Peter Lammich.
 *)
 
+section \<open>Dijkstra's algorithm for shortest paths\<close>
+
 theory Dijkstra
   imports Mapping_Str Arrays_Ex
 begin
 
-section {* Graphs *}
+subsection {* Graphs *}
 
 datatype graph = Graph "nat list list"
 
@@ -26,7 +28,7 @@ fun valid_graph :: "graph \<Rightarrow> bool" where
   "valid_graph (Graph G) \<longleftrightarrow> (\<forall>i<length G. length (G ! i) = length G)"
 setup {* add_rewrite_rule @{thm valid_graph.simps} *}
 
-section {* Paths on graphs *}
+subsection {* Paths on graphs *}
 
 (* The set of vertices less than n. *)
 definition verts :: "graph \<Rightarrow> nat set" where
@@ -77,7 +79,7 @@ lemma path_join_set: "joinable G p q \<Longrightarrow> path_join G p q \<in> pat
 @proof @have "q = hd q # tl q" @case "tl q = []" @qed
 setup {* add_forward_prfstep_cond @{thm path_join_set} [with_term "path_join ?G ?p ?q"] *}
 
-section {* Shortest paths *}
+subsection {* Shortest paths *}
 
 definition is_shortest_path :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> bool" where [rewrite]:
   "is_shortest_path G m n p \<longleftrightarrow>
@@ -111,7 +113,7 @@ setup {* del_prfstep_thm @{thm dist_def} *}
 
 lemma shortest_init [resolve]: "n \<in> verts G \<Longrightarrow> is_shortest_path G n n [n]" by auto2
 
-section {* Interior points *}
+subsection {* Interior points *}
 
 (* List of interior points *)
 definition int_pts :: "nat list \<Rightarrow> nat set" where [rewrite]:
@@ -156,7 +158,7 @@ lemma dist_onD [forward]:
   "has_dist_on G m n V \<Longrightarrow> p \<in> path_set_on G m n V \<Longrightarrow> path_weight G p \<ge> dist_on G m n V" by auto2
 setup {* del_prfstep_thm @{thm dist_on_def} *}
 
-section {* Two splitting lemmas *}
+subsection {* Two splitting lemmas *}
 
 lemma path_split1 [backward]: "is_path G p \<Longrightarrow> hd p \<in> V \<Longrightarrow> last p \<notin> V \<Longrightarrow>
   \<exists>p1 p2. joinable G p1 p2 \<and> p = path_join G p1 p2 \<and> int_pts p1 \<subseteq> V \<and> hd p2 \<notin> V"
@@ -179,7 +181,7 @@ lemma path_split2 [backward]: "is_path G p \<Longrightarrow> hd p \<noteq> last 
   @have "p = path_join G (butlast p) [n, last p]"
 @qed
 
-section {* Deriving has\_dist and has\_dist\_on *}
+subsection {* Deriving has\_dist and has\_dist\_on *}
 
 definition known_dists :: "graph \<Rightarrow> nat set \<Rightarrow> bool" where [rewrite]:
   "known_dists G V \<longleftrightarrow> (V \<subseteq> verts G \<and> 0 \<in> V \<and>
@@ -266,7 +268,7 @@ lemma derive_dist_on [backward2]:
   @have "is_shortest_path_on G 0 n p V'"
 @qed
 
-section {* Invariant for the Dijkstra's algorithm *}
+subsection {* Invariant for the Dijkstra's algorithm *}
 
 (* The state consists of an array maintaining the best estimates,
    and a heap containing estimates for the unknown vertices.
@@ -302,7 +304,7 @@ lemma inv_unknown_set [rewrite]:
 lemma dijkstra_end_inv [forward]:
   "inv G S \<Longrightarrow> unknown_set S = {} \<Longrightarrow> \<forall>i\<in>verts G. has_dist G 0 i \<and> est S ! i = dist G 0 i" by auto2
 
-section {* Starting state *}
+subsection {* Starting state *}
 
 definition dijkstra_start_state :: "graph \<Rightarrow> state" where [rewrite]:
   "dijkstra_start_state G =
@@ -342,7 +344,7 @@ lemma dijkstra_start_inv [backward]:
   @end
 @qed
 
-section {* Step of Dijkstra's algorithm *}
+subsection {* Step of Dijkstra's algorithm *}
 
 fun dijkstra_step :: "graph \<Rightarrow> nat \<Rightarrow> state \<Rightarrow> state" where
   "dijkstra_step G m (State e M) =

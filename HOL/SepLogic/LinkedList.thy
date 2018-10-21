@@ -7,11 +7,13 @@
   Separation_Logic_Imperative_HOL by Lammich and Meis.
 *)
 
+section \<open>Implementation of linked list\<close>
+
 theory LinkedList
   imports SepAuto
 begin
 
-section \<open>List Assertion\<close>
+subsection \<open>List Assertion\<close>
 
 datatype 'a node = Node (val: "'a") (nxt: "'a node ref option")
 setup {* fold add_rewrite_rule @{thms node.sel} *}
@@ -50,7 +52,7 @@ ML_file "list_matcher_test.ML"
 
 type_synonym 'a os_list = "'a node ref option"
 
-section \<open>Basic operations\<close>
+subsection \<open>Basic operations\<close>
 
 definition os_empty :: "'a::heap os_list Heap" where
   "os_empty = return None"
@@ -82,7 +84,7 @@ lemma os_pop_rule [hoare_triple]:
    <\<lambda>(x,r'). os_list (tl xs) r' * p \<mapsto>\<^sub>r (Node x r') * \<up>(x = hd xs)>"
 @proof @case "xs = []" @have "xs = hd xs # tl xs" @qed
 
-section \<open>Reverse\<close>
+subsection \<open>Reverse\<close>
 
 partial_function (heap) os_reverse_aux :: "'a::heap os_list \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "os_reverse_aux q p = (case p of
@@ -104,7 +106,7 @@ definition os_reverse :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
 lemma os_reverse_rule:
   "<os_list xs p> os_reverse p <os_list (rev xs)>" by auto2
 
-section \<open>Remove\<close>
+subsection \<open>Remove\<close>
 
 setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
 
@@ -124,7 +126,7 @@ lemma os_rem_rule [hoare_triple]:
   "<os_list xs b> os_rem x b <\<lambda>r. os_list (removeAll x xs) r>\<^sub>t"
 @proof @induct xs arbitrary b @qed
 
-section \<open>Extract list\<close>
+subsection \<open>Extract list\<close>
 
 partial_function (heap) extract_list :: "'a::heap os_list \<Rightarrow> 'a list Heap" where
   "extract_list p = (case p of
@@ -139,7 +141,7 @@ lemma extract_list_rule [hoare_triple]:
   "<os_list l p> extract_list p <\<lambda>r. os_list l p * \<up>(r = l)>"
 @proof @induct l arbitrary p @qed
 
-section \<open>Ordered insert\<close>
+subsection \<open>Ordered insert\<close>
 
 fun list_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "list_insert x [] = [x]"
@@ -179,7 +181,7 @@ lemma os_insert_to_fun [hoare_triple]:
   "<os_list xs b> os_insert x b <os_list (list_insert x xs)>"
 @proof @induct xs arbitrary b @qed
 
-section \<open>Insertion sort\<close>
+subsection \<open>Insertion sort\<close>
 
 fun insert_sort :: "'a::ord list \<Rightarrow> 'a list" where
   "insert_sort [] = []"
@@ -219,7 +221,7 @@ definition os_insert_sort :: "'a::{ord,heap} list \<Rightarrow> 'a list Heap" wh
 lemma insertion_sort_rule [hoare_triple]:
   "<emp> os_insert_sort xs <\<lambda>ys. \<up>(ys = sort xs)>\<^sub>t" by auto2
 
-section \<open>Merging two lists\<close>
+subsection \<open>Merging two lists\<close>
 
 fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "merge_list xs [] = xs"
@@ -258,7 +260,7 @@ lemma merge_os_list_to_fun [hoare_triple]:
   <\<lambda>r. os_list (merge_list xs ys) r>"
 @proof @fun_induct "merge_list xs ys" arbitrary p q @qed
 
-section \<open>List copy\<close>
+subsection \<open>List copy\<close>
 
 partial_function (heap) copy_os_list :: "'a::heap os_list \<Rightarrow> 'a os_list Heap" where
   "copy_os_list b = (case b of
@@ -272,7 +274,7 @@ lemma copy_os_list_rule [hoare_triple]:
   "<os_list xs b> copy_os_list b <\<lambda>r. os_list xs b * os_list xs r>"
 @proof @induct xs arbitrary b @qed
 
-section \<open>Higher-order functions\<close>
+subsection \<open>Higher-order functions\<close>
 
 partial_function (heap) map_os_list :: "('a::heap \<Rightarrow> 'a) \<Rightarrow> 'a os_list \<Rightarrow> 'a os_list Heap" where
   "map_os_list f b = (case b of

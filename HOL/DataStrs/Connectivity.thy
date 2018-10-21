@@ -5,11 +5,11 @@
   A simple application of union-find for graph connectivity.
 *)
 
+section {* Connectedness for a set of undirected edges. *}
+
 theory Connectivity
   imports Union_Find
 begin
-
-section {* Connectedness for a set of undirected edges. *}
 
 fun is_path :: "nat \<Rightarrow> (nat \<times> nat) set \<Rightarrow> nat list \<Rightarrow> bool" where
   "is_path n S [] = False"

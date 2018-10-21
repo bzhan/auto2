@@ -7,11 +7,13 @@
   Code for quicksort is largely based on HOL/Imperative_HOL/ex/Imperative_Quicksort.thy.
 *)
 
+section \<open>Quicksort\<close>
+
 theory Quicksort
   imports Arrays_Ex
 begin
 
-section {* Outer remains *}
+subsection {* Outer remains *}
   
 definition outer_remains :: "'a list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "outer_remains xs xs' l r \<longleftrightarrow> (length xs = length xs' \<and> (\<forall>i. i < l \<or> r < i \<longrightarrow> xs ! i = xs' ! i))"
@@ -30,7 +32,7 @@ lemma outer_remains_sublist [backward2]:
   "i \<le> j \<Longrightarrow> j \<le> length xs \<Longrightarrow> outer_remains xs xs' l r \<Longrightarrow> i > r \<Longrightarrow> sublist i j xs = sublist i j xs'" by auto2+
 setup {* del_prfstep_thm_eqforward @{thm outer_remains_def} *}
 
-section {* part1 function *}  
+subsection {* part1 function *}  
 
 function part1 :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> (nat \<times> 'a list)" where
   "part1 xs l r a = (
@@ -56,7 +58,7 @@ lemma part1_partitions2 [backward]:
   "r < length xs \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow> rs < i \<Longrightarrow> i \<le> r \<Longrightarrow> xs' ! i \<ge> a"
 @proof @fun_induct "part1 xs l r a" @unfold "part1 xs l r a" @qed
 
-section {* Paritition function *}
+subsection {* Paritition function *}
 
 definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a list)" where [rewrite]:
   "partition xs l r = (
@@ -96,6 +98,8 @@ lemma quicksort_term1:
 lemma quicksort_term2:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> r - (fst (partition xs l r) + 1) < r - l"
 @proof @have "r - fst (partition xs l r) - 1 < r - l" @qed
+
+subsection \<open>Quicksort function\<close>
 
 function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "quicksort xs l r = (

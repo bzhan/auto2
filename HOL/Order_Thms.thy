@@ -24,7 +24,7 @@ setup {* add_resolve_prfstep @{thm Orderings.order_class.order.irrefl} *}
 setup {* add_forward_prfstep_cond @{thm Orderings.le_neq_trans} [with_cond "?a \<noteq> ?b"] *}
 setup {* add_forward_prfstep_cond @{thm Orderings.order_antisym} [with_filt (order_filter "x" "y"), with_cond "?x \<noteq> ?y"] *}
 
-section {* Rewriting of negation, in linorder *}
+subsection {* Rewriting of negation, in linorder *}
 
 setup {* fold add_gen_prfstep [
   ("not_less",

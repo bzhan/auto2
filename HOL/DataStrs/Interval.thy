@@ -5,11 +5,13 @@
   Basic definition of intervals.
 *)
 
+section \<open>Intervals\<close>
+
 theory Interval
   imports Auto2_HOL.Auto2_Main
 begin
 
-section {* Definition of interval *}
+subsection {* Definition of interval *}
 
 datatype 'a interval = Interval (low: 'a) (high: 'a)
 setup {* add_simple_datatype "interval" *}
@@ -36,7 +38,7 @@ qed end
 definition is_interval :: "('a::linorder) interval \<Rightarrow> bool" where [rewrite]:
   "is_interval it \<longleftrightarrow> (low it \<le> high it)"
 
-section {* Definition of interval with an index *}
+subsection {* Definition of interval with an index *}
 
 datatype 'a idx_interval = IdxInterval (int: "'a interval") (idx: nat)
 setup {* add_simple_datatype "idx_interval" *}
@@ -64,7 +66,7 @@ lemma interval_less_to_le_low [forward]:
   "(a::('a::linorder idx_interval)) < b \<Longrightarrow> low (int a) \<le> low (int b)"
   by (metis eq_iff iint_less int_less less_imp_le)
 
-section {* Overlapping intervals *}
+subsection {* Overlapping intervals *}
 
 definition is_overlap :: "('a::linorder) interval \<Rightarrow> 'a interval \<Rightarrow> bool" where [rewrite]:
   "is_overlap x y \<longleftrightarrow> (high x \<ge> low y \<and> high y \<ge> low x)"
