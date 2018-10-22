@@ -59,7 +59,7 @@ setup {* fold del_prfstep_thm [
 setup {* add_rewrite_rule_back @{thm is_open_def} *}
 setup {* add_rewrite_rule_cond @{thm is_open_def} [with_term "open_sets(?X)"] *}
 
-section {* Definition of a topological space *}
+section \<open>Definition of a topological space\<close>
 
 definition union_closed :: "i \<Rightarrow> o" where [rewrite]:
   "union_closed(X) \<longleftrightarrow> (\<forall>C. (\<forall>x\<in>source(C). is_open(X,C`x)) \<longrightarrow> is_open(X,\<Union>x\<in>source(C).C`x))"
@@ -99,7 +99,7 @@ lemma is_top_spaceD2 [resolve]:
   "is_top_space(X) \<Longrightarrow> is_open(X,carrier(X))" by auto2+
 setup {* del_prfstep_thm_eqforward @{thm is_top_space_def} *}
   
-section {* Finer topologies *}
+section \<open>Finer topologies\<close>
   
 definition top_space_finer :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "top_space_finer(X,Y) \<longleftrightarrow> is_top_space_raw(X) \<and> is_top_space_raw(Y) \<and>
@@ -123,7 +123,7 @@ lemma eq_str_top_is_top_space [forward]:
 lemma eq_str_top_sym [forward]:
   "eq_str_top(X,Y) \<Longrightarrow> eq_str_top(Y,X)" by auto2
 
-section {* Constructing a topological space from a basis *}
+section \<open>Constructing a topological space from a basis\<close>
   
 definition collection_is_basis :: "i \<Rightarrow> o" where [rewrite]:
   "collection_is_basis(\<B>) \<longleftrightarrow> (\<forall>U\<in>\<B>. \<forall>V\<in>\<B>. \<forall>x\<in>U\<inter>V. \<exists>W\<in>\<B>. x\<in>W \<and> W\<subseteq>U\<inter>V)"
@@ -228,7 +228,7 @@ setup {* add_gen_prfstep ("Top_from_basis_case",
   [WithTerm @{term_pat "Top(?S,top_from_basis(?B))"},
    CreateConcl @{term_pat "top_has_basis(Top(?S,top_from_basis(?B)),?B)"}]) *}
 
-section {* Open and closed sets *}
+section \<open>Open and closed sets\<close>
   
 lemma open_union_pair [backward1,backward2]:
   "is_top_space(X) \<Longrightarrow> is_open(X,U) \<Longrightarrow> is_open(X,V) \<Longrightarrow> is_open(X,U \<union> V)"
@@ -273,7 +273,7 @@ lemma closed_inter2 [backward]:
   @let "F = Tup(C, \<lambda>x. x)" @have "(\<Inter>C) = (\<Inter>x\<in>source(F). F`x)"
 @qed
 
-section {* Empty topological space *}
+section \<open>Empty topological space\<close>
 
 definition empty_top_space :: i where [rewrite]:
   "empty_top_space = Top(\<emptyset>,{\<emptyset>})"
@@ -284,7 +284,7 @@ lemma top_space_on_empty [forward]:
   "top_space_form(X) \<Longrightarrow> is_top_space(X) \<Longrightarrow> carrier(X) = \<emptyset> \<Longrightarrow> X = empty_top_space" by auto2
 setup {* del_prfstep_thm @{thm empty_top_space_def} *}
 
-section {* Subspace topology *}
+section \<open>Subspace topology\<close>
   
 definition subspace :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "subspace(X,Y) = Top(Y, {Y \<inter> U. U \<in> open_sets(X)})"
@@ -374,7 +374,7 @@ lemma subspace_trans [rewrite]:
     @have (@rule) "\<forall>U\<in>open_sets(X). B \<inter> U = B \<inter> (A \<inter> U)" @end
 @qed
 
-section {* Neighborhoods *}
+section \<open>Neighborhoods\<close>
   
 definition neighs :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "neighs(X,x) = {U \<in> open_sets(X). x \<in> U}"
@@ -391,7 +391,7 @@ lemma top_space_is_open_local [backward1]:
   @have "V = (\<Union>x\<in>V. C`x)"
 @qed
 
-section {* Continuous functions *}
+section \<open>Continuous functions\<close>
 
 definition is_morphism_top :: "i \<Rightarrow> o" where [rewrite]:
   "is_morphism_top(f) \<longleftrightarrow> (is_morphism(f) \<and> is_top_space(source_str(f)) \<and> is_top_space(target_str(f)))"
@@ -591,7 +591,7 @@ lemma continuous_paste_closed2 [backward]:
 @qed
 setup {* del_prfstep_thm @{thm continuous_paste_closed} *}
 
-section {* Homeomorphisms *}
+section \<open>Homeomorphisms\<close>
   
 definition homeomorphism :: "i \<Rightarrow> o" where [rewrite]:
   "homeomorphism(f) \<longleftrightarrow> (is_morphism_top(f) \<and> bijective(f) \<and> continuous(f) \<and> continuous(inverse_mor(f)))"

@@ -9,7 +9,7 @@ theory SetSum
   imports Nat
 begin
 
-section {* Booleans *}
+section \<open>Booleans\<close>
 
 definition bool :: "i" where
   "bool = {0,1}"
@@ -65,7 +65,7 @@ lemma bool_of_o_type [resolve]: "bool_of_o(P) \<in> bool" by auto2
 lemma bool_of_P_is_1 [rewrite]: "(bool_of_o(P) = 1) \<longleftrightarrow> P" by auto2
 lemma bool_of_P_is_0 [rewrite]: "(bool_of_o(P) = 0) \<longleftrightarrow> \<not>P" by auto2
 
-section {* Disjoint sum *}
+section \<open>Disjoint sum\<close>
 
 definition sum :: "i \<Rightarrow> i \<Rightarrow> i" (infixr "+" 65) where
   "A + B = {0} \<times> A \<union> {1} \<times> B"
@@ -79,7 +79,7 @@ definition Inr :: "i \<Rightarrow> i" where
 definition "case" :: "[i\<Rightarrow>i, i\<Rightarrow>i, i] \<Rightarrow> i" where
   "case(c,d,p) = cond(fst(p), d(snd(p)), c(snd(p)))"
 
-subsection {* Rules for disjoint sums *}
+subsection \<open>Rules for disjoint sums\<close>
 
 setup {* add_rewrite_rule @{thm sum_def} *}
 setup {* add_rewrite_rule @{thm Inl_def} *}
@@ -107,7 +107,7 @@ lemma sum_subset_iff [rewrite]: "A + B \<subseteq> C + D \<longleftrightarrow> A
 lemma sum_equal [forward]: "A + B = C + D \<Longrightarrow> A = C \<and> B = D"
 @proof @have "A + B \<subseteq> C + D" @have "C + D \<subseteq> A + B" @qed
 
-section {* Case *}
+section \<open>Case\<close>
 
 setup {* add_rewrite_rule @{thm case_def} *}
 

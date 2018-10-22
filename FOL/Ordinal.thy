@@ -9,7 +9,7 @@ theory Ordinal
   imports Wfrec
 begin
 
-section {* Membership relation is well-founded *}
+section \<open>Membership relation is well-founded\<close>
 
 definition mem_rel :: "i \<Rightarrow> i" where [rewrite]:
   "mem_rel(A) = Order(A, \<lambda>x y. x = y \<or> x \<in> y)"
@@ -32,7 +32,7 @@ lemma wf_mem_rel [forward]: "wf(mem_rel(A))"
 
 lemma refl_mem_rel [forward]: "refl_order(mem_rel(A))" by auto2
 
-section {* Definition of ordinals *}
+section \<open>Definition of ordinals\<close>
 
 definition trans_set :: "i \<Rightarrow> o" where [rewrite]:
   "trans_set(i) \<longleftrightarrow> (\<forall>x\<in>i. x \<subseteq> i)"
@@ -55,7 +55,7 @@ lemma ord_succ_is_ord [forward]: "ord(i) \<Longrightarrow> ord(succ(i))" by auto
 lemma union_ord: "\<forall>x\<in>S. ord(x) \<Longrightarrow> ord(\<Union>S)" by auto2
 lemma union_ordP: "\<forall>a\<in>I. ord(X(a)) \<Longrightarrow> ord(\<Union>a\<in>I. X(a))" by auto2
 
-section {* Induction on ordinals *}
+section \<open>Induction on ordinals\<close>
 
 lemma ord_induct' [strong_induct]:
   "ord(k) \<and> i \<in> k \<Longrightarrow> \<forall>x\<in>k. (\<forall>y\<in>x. P(y)) \<longrightarrow> P(x) \<Longrightarrow> P(i)"

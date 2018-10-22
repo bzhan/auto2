@@ -9,7 +9,7 @@ theory Ring
   imports Nat
 begin
 
-section {* Rings *}
+section \<open>Rings\<close>
   
 definition is_ring :: "i \<Rightarrow> o" where [rewrite]:
   "is_ring(R) \<longleftrightarrow> (is_ring_raw(R) \<and> is_abgroup(R) \<and> is_monoid(R) \<and>
@@ -55,7 +55,7 @@ lemma ring_mult_sign_r [rewrite]:
 lemma ring_mult_sign_both [rewrite]:
   "is_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> (-\<^sub>R x) *\<^sub>R (-\<^sub>R y) = x *\<^sub>R y" by auto2
 
-section {* Commutative rings *}
+section \<open>Commutative rings\<close>
 
 definition is_comm_ring :: "i \<Rightarrow> o" where [rewrite]:
   "is_comm_ring(R) \<longleftrightarrow> (is_ring(R) \<and> is_times_comm(R))"
@@ -91,7 +91,7 @@ lemma comm_ring_prod_is_unit [backward1, backward2]:
   "is_comm_ring(R) \<Longrightarrow> x \<in> units(R) \<Longrightarrow> y \<in> units(R) \<Longrightarrow> x *\<^sub>R y \<in> units(R)"
 @proof @have "inv(R,y) *\<^sub>R inv(R,x) *\<^sub>R (x *\<^sub>R y) = inv(R,y) *\<^sub>R (inv(R,x) *\<^sub>R x) *\<^sub>R y" @qed
 
-section {* of\_nat on rings *}
+section \<open>of\_nat on rings\<close>
 
 (* Recursion on x:
     of_nat(0) = 0
@@ -158,7 +158,7 @@ lemma neg_is_minus_1:
 
 setup {* fold del_prfstep_thm [@{thm of_nat_sub1}, @{thm add_monomial_l}] *}
 
-section {* Division in commutative rings *}
+section \<open>Division in commutative rings\<close>
   
 definition divide :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "divide(G,x,y) = (THE z. z \<in>. G \<and> z *\<^sub>G y = x)"
@@ -284,7 +284,7 @@ ML_file "rat_arith.ML"
 ML_file "alg_ring.ML"
 ML_file "alg_ring_test.ML"
 
-section {* Integral domain *}
+section \<open>Integral domain\<close>
   
 definition integral_domain :: "i \<Rightarrow> o" where [rewrite]:
   "integral_domain(R) \<longleftrightarrow> (is_comm_ring(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x *\<^sub>R y = \<zero>\<^sub>R \<longrightarrow> x = \<zero>\<^sub>R \<or> y = \<zero>\<^sub>R))"
@@ -303,7 +303,7 @@ lemma integral_domain_cancel_left [forward]:
   "integral_domain(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> z \<noteq> \<zero>\<^sub>R \<Longrightarrow> z *\<^sub>R x = z *\<^sub>R y \<Longrightarrow> x = y"
 @proof @have "z *\<^sub>R x -\<^sub>R z *\<^sub>R y = z *\<^sub>R (x -\<^sub>R y)" @qed
 
-section {* Ordered rings *}
+section \<open>Ordered rings\<close>
 
 definition is_ord_ring :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_ring(R) \<longleftrightarrow> (is_ord_ring_raw(R) \<and> is_comm_ring(R) \<and> linorder(R) \<and>
@@ -544,7 +544,7 @@ lemma power_gt_n [resolve]: "is_ord_ring(R) \<Longrightarrow> n \<in> nat \<Long
   @end
 @qed
 
-section {* Subsets of an ordered ring *}
+section \<open>Subsets of an ordered ring\<close>
   
 definition pos_elts :: "i \<Rightarrow> i" where [rewrite]:
   "pos_elts(R) = {x\<in>.R. x >\<^sub>R \<zero>\<^sub>R}"
@@ -557,7 +557,7 @@ lemma pos_elts_mult [typing]:
 lemma pos_elts_add [typing]:
   "is_ord_ring(R) \<Longrightarrow> x \<in> pos_elts(R) \<Longrightarrow> y \<in> pos_elts(R) \<Longrightarrow> x +\<^sub>R y \<in> pos_elts(R)" by auto2
     
-section {* Construction of ordered ring from non-negative elements *}
+section \<open>Construction of ordered ring from non-negative elements\<close>
 
 (* See Bourbaki, Algebra VI.2.1 *)
 

@@ -9,7 +9,7 @@ theory ProductTopology
   imports Topology
 begin
 
-section {* Product topology *}
+section \<open>Product topology\<close>
   
 definition prod_basis :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "prod_basis(X,Y) = (\<Union>U\<in>X. \<Union>V\<in>Y. {U \<times> V})"
@@ -123,7 +123,7 @@ lemma product_sub_spaces2 [rewrite]:
       @have "U = A\<times>carrier(Y) \<inter> V'\<times>W" @end @end
 @qed
 
-section {* Continuous functions on product spaces *}
+section \<open>Continuous functions on product spaces\<close>
 
 definition proj1_top :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "proj1_top(A,B) = Mor(A \<times>\<^sub>T B, A, \<lambda>p. fst(p))"

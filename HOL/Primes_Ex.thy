@@ -8,13 +8,13 @@
   Follows the development in HOL/Computational_Algebra/Primes.thy.
 *)
 
-section {* Primes *}
+section \<open>Primes\<close>
 
 theory Primes_Ex
   imports Auto2_Main
 begin
 
-subsection {* Basic definition *}
+subsection \<open>Basic definition\<close>
 
 definition prime :: "nat \<Rightarrow> bool" where [rewrite]:
   "prime p = (1 < p \<and> (\<forall>m. m dvd p \<longrightarrow> m = 1 \<or> m = p))"
@@ -87,7 +87,7 @@ lemma prime_power_mult: "prime p \<Longrightarrow> x * y = p ^ k \<Longrightarro
   @end
 @qed
 
-subsection {* Infinitude of primes *}
+subsection \<open>Infinitude of primes\<close>
 
 theorem bigger_prime [resolve]: "\<exists>p. prime p \<and> n < p"
 @proof
@@ -100,7 +100,7 @@ theorem primes_infinite: "\<not> finite {p. prime p}"
   @obtain b where "prime b" "Max {p. prime p} < b"
 @qed
 
-subsection {* Existence and uniqueness of prime factorization *}
+subsection \<open>Existence and uniqueness of prime factorization\<close>
 
 theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<in>#M. prime p) \<and> n = (\<Prod>i\<in>#M. i)"
 @proof

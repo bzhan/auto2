@@ -11,7 +11,7 @@ theory Arrays_Ex
   imports Auto2_HOL.Auto2_Main
 begin
 
-subsection {* List swap *}
+subsection \<open>List swap\<close>
 
 definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where [rewrite]:
   "list_swap xs i j = xs[i := xs ! j, j := xs ! i]"
@@ -38,7 +38,7 @@ lemma set_list_swap [rewrite]:
 setup {* del_prfstep_thm @{thm list_swap_def} *}
 setup {* add_rewrite_rule_back @{thm list_swap_def} *}
 
-subsection {* Reverse *}
+subsection \<open>Reverse\<close>
 
 lemma rev_nth [rewrite]:
   "n < length xs \<Longrightarrow> rev xs ! n = xs ! (length xs - 1 - n)"
@@ -65,7 +65,7 @@ lemma rev_swap_eval [rewrite]:
 lemma rev_swap_is_rev [rewrite]:
   "length xs \<ge> 1 \<Longrightarrow> rev_swap xs 0 (length xs - 1) = rev xs" by auto2
 
-subsection {* Copy one array to the beginning of another *}
+subsection \<open>Copy one array to the beginning of another\<close>
 
 fun array_copy :: "'a list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> 'a list" where
   "array_copy xs xs' 0 = xs'"
@@ -85,7 +85,7 @@ lemma array_copy_ind [rewrite]:
 lemma array_copy_correct [rewrite]:
   "n \<le> length xs \<Longrightarrow> n \<le> length xs' \<Longrightarrow> take n (array_copy xs xs' n) = take n xs" by auto2
 
-subsection {* Sublist *}
+subsection \<open>Sublist\<close>
 
 definition sublist :: "nat \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
   "sublist l r xs = drop l (take r xs)"
@@ -149,7 +149,7 @@ lemma list_take_sublist_drop_eq [rewrite]:
   @have "drop r xs = sublist r (length xs) xs"
 @qed
 
-subsection {* Updating a set of elements in an array *}
+subsection \<open>Updating a set of elements in an array\<close>
 
 definition list_update_set :: "(nat \<Rightarrow> bool) \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
   "list_update_set S f xs = list (\<lambda>i. if S i then f i else xs ! i) (length xs)"

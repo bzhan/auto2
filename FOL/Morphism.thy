@@ -9,7 +9,7 @@ theory Morphism
   imports Functions
 begin
 
-section {* Components of morphisms *}
+section \<open>Components of morphisms\<close>
 
 (* A morphism is a function with two additional components, giving the source
    and target structure of the morphism. *)
@@ -91,7 +91,7 @@ setup {* fold del_prfstep_thm [@{thm mor_form_def}, @{thm is_morphism_def}, @{th
 lemma Mor_eq_self:
   "f \<in> A \<rightharpoonup> B \<Longrightarrow> f = Mor(A,B, \<lambda>x. f`x)" by auto2
 
-section {* Important examples of morphisms *}
+section \<open>Important examples of morphisms\<close>
   
 (* Identity morphism *)
 definition id_mor :: "i \<Rightarrow> i" where [rewrite]:
@@ -116,7 +116,7 @@ lemma const_mor_vImage2 [rewrite]: "y \<in>. Y \<Longrightarrow> y \<in> A \<Lon
 setup {* del_prfstep_thm @{thm const_mor_def} *}
 setup {* add_rewrite_rule_back @{thm const_mor_def} *}
 
-section {* Composition and inverse of morphisms *}
+section \<open>Composition and inverse of morphisms\<close>
   
 (* Composition of two morphisms *)
 definition mor_comp :: "i \<Rightarrow> i \<Rightarrow> i"  (infixr "\<circ>\<^sub>m" 60) where [rewrite]:
@@ -156,7 +156,7 @@ lemma mor_vImage_comp [rewrite]:
    (g \<circ>\<^sub>m f) -`` V = f -`` (g -`` V)" by auto2
 setup {* add_rewrite_rule_back_cond @{thm mor_vImage_comp} [with_term "?g \<circ>\<^sub>m ?f"] *}
 
-section {* Injective, surjective, and bijective morphisms. *}
+section \<open>Injective, surjective, and bijective morphisms.\<close>
 
 (* Example: injective morphism. *)
 definition inj_mor :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
@@ -173,7 +173,7 @@ setup {* add_rewrite_rule_back @{thm inj_mor_def} *}
 lemma inj_mor_is_injective: "carrier(S) \<subseteq> carrier(T) \<Longrightarrow> injective(inj_mor(S,T))" by auto2
 lemma id_mor_is_bijective: "bijective(id_mor(S))" by auto2
 
-section {* Inverse morphism *}
+section \<open>Inverse morphism\<close>
 
 definition inverse_mor :: "i \<Rightarrow> i" where [rewrite]:
   "inverse_mor(f) = Mor(target_str(f), source_str(f), \<lambda>y. THE x. x\<in>source(f) \<and> f`x=y)"
@@ -216,7 +216,7 @@ lemma inverse_mor_unique' [rewrite]:
   @end
 @qed
 
-section {* Left and right inverses *}
+section \<open>Left and right inverses\<close>
 
 lemma has_left_inverse_mor_inj [forward]:
   "is_morphism(f) \<Longrightarrow> is_morphism(r) \<Longrightarrow> target_str(f) = source_str(r) \<Longrightarrow>

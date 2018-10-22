@@ -36,14 +36,14 @@ setup {* add_field_data (@{term source_name}, @{term source}) *}
 setup {* add_field_data (@{term target_name}, @{term target}) *}
 setup {* add_field_data (@{term graph_name}, @{term graph}) *}
 
-section {* Evaluation function: shared by families and functions *}
+section \<open>Evaluation function: shared by families and functions\<close>
 
 definition feval :: "i \<Rightarrow> i \<Rightarrow> i" (infixl "`" 90) where [rewrite]:
   "f ` x = graph_eval(graph(f),x)"
 setup {* register_wellform_data ("f ` x", ["x \<in> source(f)"]) *}
 setup {* add_prfstep_check_req ("f ` x", "x \<in> source(f)") *}
 
-section {* Families *}
+section \<open>Families\<close>
 
 (* Predicate for families. *)
 definition is_family :: "i \<Rightarrow> o" where [rewrite]:
@@ -105,7 +105,7 @@ lemma proj_set_eval [rewrite]:
 
 setup {* fold del_prfstep_thm [@{thm is_family_def}, @{thm Pi_iff}, @{thm proj_set_def}] *}
 
-section {* Functions *}
+section \<open>Functions\<close>
 
 (* A function is a relation where every element in the source corresponds
    to exactly one value in the target. *)
@@ -163,7 +163,7 @@ setup {* add_rewrite_rule_back @{thm feval_def} *}
 (* A small exercise *)
 lemma lam_eq_self: "f \<in> A \<rightarrow> B \<Longrightarrow> f = Fun(A,B, \<lambda>x. f`x)" by auto2
 
-section {* Carrier of a structure *}
+section \<open>Carrier of a structure\<close>
 
 (* Underlying set of a structure. *)
 definition "carrier_name = \<emptyset>"

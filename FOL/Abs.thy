@@ -9,7 +9,7 @@ theory Abs
   imports Field
 begin
 
-section {* Absolute value *}
+section \<open>Absolute value\<close>
 
 definition abs :: "i \<Rightarrow> i \<Rightarrow> i"  ("\<bar>_\<bar>\<^sub>_" [0,91] 90) where [rewrite]:
   "\<bar>x\<bar>\<^sub>R = (if x \<ge>\<^sub>R \<zero>\<^sub>R then x else -\<^sub>R x)"

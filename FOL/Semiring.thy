@@ -11,7 +11,7 @@ begin
 
 (* We define semirings to be commutative (it is only used for Nat). *)
   
-section {* Semirings *}
+section \<open>Semirings\<close>
 
 definition is_zero_mult :: "i \<Rightarrow> o" where [rewrite]:
   "is_zero_mult(R) \<longleftrightarrow> (\<forall>x\<in>.R. \<zero>\<^sub>R *\<^sub>R x = \<zero>\<^sub>R \<and> x *\<^sub>R \<zero>\<^sub>R = \<zero>\<^sub>R)"
@@ -38,7 +38,7 @@ setup {* del_prfstep_thm_eqforward @{thm is_semiring_def} *}
 
 ML_file "alg_semiring.ML"
 
-section {* Ordered semirings *}
+section \<open>Ordered semirings\<close>
 
 definition is_ord_semiring :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_semiring(R) \<longleftrightarrow> (is_ord_ring_raw(R) \<and> is_semiring(R) \<and> linorder(R) \<and>

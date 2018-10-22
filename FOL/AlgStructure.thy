@@ -32,7 +32,7 @@ lemma binary_fun_eval [rewrite]:
   "F = binary_fun_of(S,f) \<Longrightarrow> F \<in> S \<times> S \<rightarrow> S \<Longrightarrow> \<langle>x,y\<rangle> \<in> source(F) \<Longrightarrow> F`\<langle>x,y\<rangle> = f(x,y)" by auto2
 setup {* del_prfstep_thm @{thm binary_fun_of_def} *}
 
-section {* Components of an algebraic structure *}
+section \<open>Components of an algebraic structure\<close>
 
 (* 0 and +, for additive structures. *)
 definition "zero_name = succ(succ(succ(\<emptyset>)))"
@@ -52,7 +52,7 @@ notation one ("\<one>\<^sub>_" [96] 95)
 setup {* add_field_data (@{term one_name}, @{term one}) *}
 setup {* add_field_data (@{term times_fun_name}, @{term times_fun}) *}
 
-section {* Notation for plus and times. *}
+section \<open>Notation for plus and times.\<close>
   
 definition plus :: "[i, i, i] \<Rightarrow> i" where [rewrite_bidir]:
   "plus(G,x,y) = plus_fun(G)`\<langle>x,y\<rangle>"
@@ -64,7 +64,7 @@ definition times :: "[i, i, i] \<Rightarrow> i" where [rewrite_bidir]:
 abbreviation times_notation ("(_/ *\<^sub>_ _)" [70,70,71] 70) where "x *\<^sub>G y \<equiv> times(G,x,y)"
 setup {* register_wellform_data ("x *\<^sub>G y", ["x \<in>. G", "y \<in>. G"]) *}
 
-section {* Abelian group structure *}
+section \<open>Abelian group structure\<close>
 
 definition is_abgroup_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_abgroup_raw(G) \<longleftrightarrow> \<zero>\<^sub>G \<in>. G \<and> plus_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)"
@@ -118,7 +118,7 @@ lemma abgroup_eq [backward]:
 setup {* del_prfstep_thm @{thm abgroup_form_def} *}
 setup {* del_prfstep_thm @{thm plus_def} *}
 
-section {* Group structure *}
+section \<open>Group structure\<close>
 
 definition is_group_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_group_raw(G) \<longleftrightarrow> \<one>\<^sub>G \<in>. G \<and> times_fun(G) \<in> carrier(G) \<times> carrier(G) \<rightarrow> carrier(G)"
@@ -172,7 +172,7 @@ lemma group_eq [backward]:
 setup {* del_prfstep_thm @{thm group_form_def} *}
 setup {* del_prfstep_thm @{thm times_def} *}
 
-section {* Ring structure *}
+section \<open>Ring structure\<close>
 
 definition is_ring_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ring_raw(R) \<longleftrightarrow> is_abgroup_raw(R) \<and> is_group_raw(R)"
@@ -215,7 +215,7 @@ lemma ring_eq [backward]:
   "ring_form(R) \<Longrightarrow> ring_form(S) \<Longrightarrow> eq_str_ring(R,S) \<Longrightarrow> R = S" by auto2
 setup {* del_prfstep_thm @{thm ring_form_def} *}
 
-section {* Ordered ring structure *}
+section \<open>Ordered ring structure\<close>
   
 definition is_ord_ring_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_ring_raw(R) \<longleftrightarrow> is_ring_raw(R) \<and> raworder(R)"
@@ -265,7 +265,7 @@ lemma ord_ring_eq [backward]:
   "ord_ring_form(R) \<Longrightarrow> ord_ring_form(S) \<Longrightarrow> eq_str_ord_ring(R,S) \<Longrightarrow> R = S" by auto2
 setup {* del_prfstep_thm @{thm ord_ring_form_def} *}
 
-section {* Predicates on additive structure *}
+section \<open>Predicates on additive structure\<close>
 
 definition is_add_id :: "i \<Rightarrow> o" where [rewrite]:
   "is_add_id(G) \<longleftrightarrow> is_abgroup_raw(G) \<and> (\<forall>x\<in>.G. \<zero>\<^sub>G +\<^sub>G x = x)"
@@ -297,7 +297,7 @@ lemma is_plus_assoc_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_plus_assoc(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_plus_assoc(H)" by auto2
 setup {* del_prfstep_thm @{thm plus_assoc_right} *}
 
-section {* Predicates on multiplicative structure *}
+section \<open>Predicates on multiplicative structure\<close>
   
 definition is_mult_id :: "i \<Rightarrow> o" where [rewrite]:
   "is_mult_id(G) \<longleftrightarrow> (\<forall>x\<in>.G. \<one>\<^sub>G *\<^sub>G x = x \<and> x *\<^sub>G \<one>\<^sub>G = x)"
@@ -333,7 +333,7 @@ lemma is_times_assoc_group_prop [forward]:
   "is_group_raw(H) \<Longrightarrow> is_times_assoc(G) \<Longrightarrow> eq_str_group(G,H) \<Longrightarrow> is_times_assoc(H)" by auto2
 setup {* del_prfstep_thm @{thm times_assoc_right} *}
 
-section {* Predicates on ring structure *}
+section \<open>Predicates on ring structure\<close>
 
 definition is_left_distrib :: "i \<Rightarrow> o" where [rewrite]:
   "is_left_distrib(R) \<longleftrightarrow> is_ring_raw(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. \<forall>z\<in>.R. x *\<^sub>R (y +\<^sub>R z) = x *\<^sub>R y +\<^sub>R x *\<^sub>R z)"
@@ -367,7 +367,7 @@ lemma is_right_distrib_ring_prop [forward]:
   "is_ring_raw(H) \<Longrightarrow> is_right_distrib(G) \<Longrightarrow> eq_str_ring(G,H) \<Longrightarrow> is_right_distrib(H)" by auto2
 setup {* del_prfstep_thm @{thm right_distribD} *}
 
-section {* Predicates on ordered ring structure *}
+section \<open>Predicates on ordered ring structure\<close>
 
 definition ord_ring_add_left :: "i \<Rightarrow> o" where [rewrite]:
   "ord_ring_add_left(R) \<longleftrightarrow> (\<forall>a\<in>.R. \<forall>b c. b \<le>\<^sub>R c \<longrightarrow> a +\<^sub>R b \<le>\<^sub>R a +\<^sub>R c)"

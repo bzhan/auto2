@@ -11,7 +11,7 @@ theory BST_Impl
   imports SepAuto DataStrs.BST
 begin
 
-subsection {* Tree nodes *}
+subsection \<open>Tree nodes\<close>
 
 datatype ('a, 'b) node =
   Node (lsub: "('a, 'b) node ref option") (key: 'a) (val: 'b) (rsub: "('a, 'b) node ref option")
@@ -48,9 +48,9 @@ setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
 type_synonym ('a, 'b) btree = "('a, 'b) node ref option"
 
-subsection {* Operations *}
+subsection \<open>Operations\<close>
 
-subsubsection {* Basic operations *}
+subsubsection \<open>Basic operations\<close>
 
 definition tree_empty :: "('a, 'b) btree Heap" where
   "tree_empty = return None"
@@ -71,7 +71,7 @@ definition btree_constr ::
 lemma btree_constr_rule [hoare_triple]:
   "<btree lt lp * btree rt rp> btree_constr lp k v rp <btree (tree.Node lt k v rt)>" by auto2
 
-subsubsection {* Insertion *}
+subsubsection \<open>Insertion\<close>
 
 partial_function (heap) btree_insert ::
   "'a::{heap,linorder} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -97,7 +97,7 @@ lemma btree_insert_to_fun [hoare_triple]:
    <btree (tree_insert k v t)>"
 @proof @induct t arbitrary b @qed
 
-subsubsection {* Deletion *}
+subsubsection \<open>Deletion\<close>
 
 partial_function (heap) btree_del_min :: "('a::heap, 'b::heap) btree \<Rightarrow> (('a \<times> 'b) \<times> ('a, 'b) btree) Heap" where
   "btree_del_min b = (case b of
@@ -158,7 +158,7 @@ lemma btree_delete_to_fun [hoare_triple]:
    <btree (tree_delete x t)>\<^sub>t"
 @proof @induct t arbitrary b @qed
 
-subsubsection {* Search *}
+subsubsection \<open>Search\<close>
 
 partial_function (heap) btree_search ::
   "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> 'b option Heap" where
@@ -176,7 +176,7 @@ lemma btree_search_correct [hoare_triple]:
    <\<lambda>r. btree t b * \<up>(r = tree_search t x)>"
 @proof @induct t arbitrary b @qed
 
-subsection {* Outer interface *}
+subsection \<open>Outer interface\<close>
 
 definition btree_map :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) node ref option \<Rightarrow> assn" where
   "btree_map M p = (\<exists>\<^sub>At. btree t p * \<up>(tree_sorted t) * \<up>(M = tree_map t))"

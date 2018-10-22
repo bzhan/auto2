@@ -9,7 +9,7 @@ theory Coset
   imports Group EquivRel
 begin
 
-section {* Normal subgroups *}
+section \<open>Normal subgroups\<close>
 
 definition is_normal_subgroup_set :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "is_normal_subgroup_set(G,H) \<longleftrightarrow> (
@@ -26,7 +26,7 @@ lemma is_normal_subgroup_setD3 [typing]:
   "a \<in>. G \<Longrightarrow> is_normal_subgroup_set(G,H) \<Longrightarrow> h \<in> H \<Longrightarrow> inv(G,a) *\<^sub>G h *\<^sub>G a \<in> H"
 @proof @have "a = inv(G, inv(G,a))" @qed
 
-section {* Cosets as equivalence classes *}
+section \<open>Cosets as equivalence classes\<close>
   
 definition rcoset_equiv :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "rcoset_equiv(G,H) = Equiv(carrier(G), \<lambda>x y. \<exists>h\<in>H. h *\<^sub>G x = y)"
@@ -122,7 +122,7 @@ lemma rcoset_inv_prop [rewrite]:
    rcoset_mult(G,H,rcoset_inv(G,H,x),x) = rcoset_id(G,H)" by auto2
 setup {* del_prfstep_thm @{thm rcoset_inv_def} *}
 
-section {* Construction of the quotient group *}
+section \<open>Construction of the quotient group\<close>
   
 definition quotient_group :: "i \<Rightarrow> i \<Rightarrow> i" (infix "'/'/\<^sub>G" 90) where [rewrite]:
   "G //\<^sub>G H = Group(rcoset_quot(G,H), rcoset_id(G,H), \<lambda>x y. rcoset_mult(G,H,x,y))"
@@ -150,7 +150,7 @@ lemma quotient_group_is_group:
 @qed
 setup {* add_forward_prfstep_cond @{thm quotient_group_is_group} [with_term "?G //\<^sub>G ?H"] *}
 
-section {* Canonical surjection *}
+section \<open>Canonical surjection\<close>
 
 definition qsurj_group :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "qsurj_group(G,H) = Mor(G, G //\<^sub>G H, \<lambda>x. equiv_class(rcoset_equiv(G,H), x))"
@@ -182,7 +182,7 @@ lemma qsurj_group_eq_iff2 [forward]:
    p = qsurj_group(G,H) \<Longrightarrow>
    x \<in> source(p) \<Longrightarrow> y \<in> source(p) \<Longrightarrow> p`x = p`y \<Longrightarrow> x \<sim>\<^sub>R y" by auto2
 
-section {* Kernel is a normal subgroup *}
+section \<open>Kernel is a normal subgroup\<close>
 
 definition kernel :: "i \<Rightarrow> i" where [rewrite]:
   "kernel(f) = {x\<in>source(f). f`x = one(target_str(f))}"
@@ -195,7 +195,7 @@ lemma kernel_is_normal_subgroup:
   "is_group_hom(f) \<Longrightarrow> is_normal_subgroup_set(source_str(f), kernel(f))" by auto2
 setup {* add_forward_prfstep_cond @{thm kernel_is_normal_subgroup} [with_term "kernel(?f)"] *}
   
-section {* First isomorphism theorem *}
+section \<open>First isomorphism theorem\<close>
       
 lemma exists_induced_group_mor [backward]:
   "is_normal_subgroup_set(G,K) \<Longrightarrow> f \<in> G \<rightharpoonup>\<^sub>G H \<Longrightarrow> K \<subseteq> kernel(f) \<Longrightarrow>

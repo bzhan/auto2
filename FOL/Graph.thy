@@ -9,7 +9,7 @@ theory Graph
   imports Set
 begin
 
-section {* Graphs *}
+section \<open>Graphs\<close>
 
 definition is_graph :: "i \<Rightarrow> o" where [rewrite]:
   "is_graph(G) \<longleftrightarrow> (\<forall>x\<in>G. x = \<langle>fst(x),snd(x)\<rangle>)"

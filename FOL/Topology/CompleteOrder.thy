@@ -9,7 +9,7 @@ theory CompleteOrder
   imports SeqRing
 begin
 
-section {* Cauchy completeness *}
+section \<open>Cauchy completeness\<close>
   
 definition cauchy_complete_field :: "i \<Rightarrow> o" where [rewrite]:
   "cauchy_complete_field(R) \<longleftrightarrow> (is_ord_field(R) \<and> (\<forall>X\<in>seqs(R). cauchy(X) \<longrightarrow> converges(X)))"
@@ -22,7 +22,7 @@ lemma cauchy_completeI [forward]:
   "is_ord_field(R) \<Longrightarrow> \<forall>X\<in>seqs(R). cauchy(X) \<longrightarrow> converges(X) \<Longrightarrow> cauchy_complete_field(R)" by auto2
 setup {* del_prfstep_thm @{thm cauchy_complete_field_def} *}
 
-section {* Monotone convergence theorem *}
+section \<open>Monotone convergence theorem\<close>
 
 lemma seq_has_increment_induct [backward1]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> N \<in> nat \<Longrightarrow> a >\<^sub>R \<zero>\<^sub>R \<Longrightarrow>
@@ -59,7 +59,7 @@ lemma monotone_decr_converges [forward]:
    cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> converges(X)"
 @proof @have "upper_bounded(seq_neg(X))" @have "seq_incr(seq_neg(X))" @qed
 
-section {* A simple test for vanishing of sequences *}
+section \<open>A simple test for vanishing of sequences\<close>
 
 definition half_seq :: "i \<Rightarrow> o" where [rewrite]:
   "half_seq(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>n\<in>.\<nat>. \<bar>X`(n +\<^sub>\<nat> 1)\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R /\<^sub>R 2\<^sub>R)"
@@ -104,7 +104,7 @@ lemma half_seq_vanishes [forward]:
 @qed
 setup {* del_prfstep_thm @{thm ord_field_divide_le_trans2} *}
   
-section {* Dedekind cut *}
+section \<open>Dedekind cut\<close>
 
 (* A dedekind cut is a set that is closed downward and has no greatest element *)
 definition dedekind_cut :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
@@ -173,7 +173,7 @@ lemma dedekind_complete [resolve]:
   @end
 @qed
 
-section {* Least upper bound property *}
+section \<open>Least upper bound property\<close>
 
 lemma least_upper_bound_complete [forward]:
   "cauchy_complete_field(R) \<Longrightarrow> is_archimedean(R) \<Longrightarrow> S \<noteq> \<emptyset> \<Longrightarrow> upper_bound(R,S) \<noteq> \<emptyset> \<Longrightarrow> has_sup(R,S)"

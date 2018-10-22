@@ -7,7 +7,7 @@ theory WellOrder
   imports Interval Wfrec
 begin
 
-section {* Operation of adjoining a greatest element to an order *}
+section \<open>Operation of adjoining a greatest element to an order\<close>
   
 (* Abbreviated to ++ in this theory only *)
 definition adjoin_greatest :: "[i, i] \<Rightarrow> i"  (infix "++" 55) where [rewrite]:
@@ -55,7 +55,7 @@ lemma adjoin_greatest_less_interval [rewrite]:
 lemma adjoin_greatest_less_interval2 [rewrite]:
   "linorder(M) \<Longrightarrow> a \<notin> carrier(M) \<Longrightarrow> x \<in>. M \<Longrightarrow> less_interval(M ++ a,x) = less_interval(M,x)" by auto2
 
-section {* Well-ordered sets *}  (* Bourbaki III.2.1 *)
+section \<open>Well-ordered sets\<close>  (* Bourbaki III.2.1 *)
 
 (* Definition of well_order *)
 definition well_order :: "i \<Rightarrow> o" where [rewrite]:
@@ -242,7 +242,7 @@ lemma well_order_family_segments2:
   @have "less_interval(R,x) = less_interval(union_rel(X),x)"
 @qed
 
-section {* Zermelo's Theorem *}  (* Bourbaki III.2.3 *)
+section \<open>Zermelo's Theorem\<close>  (* Bourbaki III.2.3 *)
 
 (* Set of relations on subsets of E. *)
 definition suborder_space :: "i \<Rightarrow> i" where [rewrite]:
@@ -358,7 +358,7 @@ lemma wellorder_theorem [resolve]:
 
 no_notation adjoin_greatest (infix "++" 55)
 
-section {* Zorn's lemma *}  (* Bourbaki III.2.4 *)
+section \<open>Zorn's lemma\<close>  (* Bourbaki III.2.4 *)
 
 definition inductive_order :: "i \<Rightarrow> o" where [rewrite]:
   "inductive_order(R) \<longleftrightarrow> (order(R) \<and>

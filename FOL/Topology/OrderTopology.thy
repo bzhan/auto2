@@ -9,7 +9,7 @@ theory OrderTopology
   imports Topology Auto2_FOL.Interval Auto2_FOL.AlgStructure
 begin
 
-section {* Set with at least two element *}
+section \<open>Set with at least two element\<close>
   
 definition card_ge2 :: "i \<Rightarrow> o" where [rewrite]:
   "card_ge2(X) \<longleftrightarrow> (\<exists>a\<in>X. \<exists>b\<in>X. a \<noteq> b)"
@@ -19,7 +19,7 @@ lemma card_ge2_D1 [resolve]: "card_ge2(X) \<Longrightarrow> \<exists>a\<in>X. \<
 lemma card_ge2_D2 [resolve]: "card_ge2(X) \<Longrightarrow> a \<in> X \<Longrightarrow> \<exists>b\<in>X. b \<noteq> a" by auto2
 setup {* del_prfstep_thm @{thm card_ge2_def} *}
   
-section {* Order topology *}
+section \<open>Order topology\<close>
 
 definition ord_basis :: "i \<Rightarrow> i" where [rewrite]:
   "ord_basis(X) = ((\<Union>a\<in>.X. \<Union>b\<in>.X. {open_interval(X,a,b)}) \<union>
@@ -119,7 +119,7 @@ lemma order_top_is_openD_unbounded [backward2]:
 setup {* fold del_prfstep_thm [@{thm order_topology_has_basis}, @{thm order_topology_def}] *}
 setup {* add_resolve_prfstep @{thm order_topology_has_basis} *}
   
-section {* Data structure for order topology *}
+section \<open>Data structure for order topology\<close>
   
 definition is_ord_top_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_top_raw(R) \<longleftrightarrow> is_top_space_raw(R) \<and> raworder(R)"
@@ -165,7 +165,7 @@ lemma order_top_from_order_is_ord_top [backward]:
   "linorder(X) \<Longrightarrow> card_ge2(carrier(X)) \<Longrightarrow> order_topology(order_top_from_order(X))" by auto2
 setup {* add_prfstep_check_req ("order_top_from_order(X)", "order_topology(order_top_from_order(X))") *}
 
-section {* Defining topology on an ordered ring *}
+section \<open>Defining topology on an ordered ring\<close>
 
 definition OrdRingTop :: "[i, i, i \<Rightarrow> i \<Rightarrow> i, i, i \<Rightarrow> i \<Rightarrow> i, i \<Rightarrow> i \<Rightarrow> o, i] \<Rightarrow> i" where [rewrite]:
   "OrdRingTop(S,z,f,u,g,r,T) = Struct({\<langle>carrier_name,S\<rangle>, \<langle>open_sets_name,T\<rangle>,
@@ -193,7 +193,7 @@ lemma ord_top_ring_eval [rewrite]:
   "R = OrdRingTop(S,z,f,u,g,r,T) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> r(x,y)" by auto2+
 setup {* del_prfstep_thm @{thm OrdRingTop_def} *}
 
-section {* Order topology from an ordered ring *}
+section \<open>Order topology from an ordered ring\<close>
   
 definition ord_ring_top_from_ord_ring :: "i \<Rightarrow> i" where [rewrite]:
   "ord_ring_top_from_ord_ring(R) =
@@ -213,7 +213,7 @@ lemma ord_ring_top_from_ord_ring_is_ord_top [backward]:
   "is_ord_ring_raw(R) \<Longrightarrow> linorder(R) \<Longrightarrow> card_ge2(carrier(R)) \<Longrightarrow>
    order_topology(ord_ring_top_from_ord_ring(R))" by auto2
 
-section {* Subspace on order topology *}
+section \<open>Subspace on order topology\<close>
   
 definition order_convex :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "order_convex(X,A) \<longleftrightarrow> (A \<subseteq> carrier(X) \<and> (\<forall>a\<in>A. \<forall>b\<in>A. closed_interval(X,a,b) \<subseteq> A))"

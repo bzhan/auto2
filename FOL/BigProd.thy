@@ -9,7 +9,7 @@ theory BigProd
   imports Coverings
 begin
 
-section {* Product of a family of sets *}  (* Bourbaki II.5.3 *)
+section \<open>Product of a family of sets\<close>  (* Bourbaki II.5.3 *)
 
 definition projf :: "[i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
   "projf(I,B,a) = Fun(Pi(I,B), B(a), \<lambda>f. f`a)"
@@ -116,7 +116,7 @@ lemma reindex_prod_is_bij:
   @have "inverse_pair(reindex_prod(u,\<lambda>a. B`a), reindex_prod(inverse(u), (\<lambda>a. B`(u`a))))"
 @qed
 
-section {* Partial products *}  (* Bourbaki II.5.4 *)
+section \<open>Partial products\<close>  (* Bourbaki II.5.4 *)
 
 definition projf_set :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "projf_set(I,J,B) = Fun(Pi(I,B), Pi(J,B), \<lambda>f. proj_set(f,J))"
@@ -174,7 +174,7 @@ lemma prod_subset2:
   @end
 @qed
 
-section {* Associativity of products *}  (* Bourbaki II.5.5 *)
+section \<open>Associativity of products\<close>  (* Bourbaki II.5.5 *)
 
 definition prod_assoc_fun :: "[i, i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "prod_assoc_fun(I,J,X) =
@@ -242,7 +242,7 @@ lemma prod_assoc_fun_bijective:
    prod_assoc_fun(I,J,X) \<in> Pi(I,X) \<cong> Pi(source(J), \<lambda>a. Pi(J`a, X))"
 @proof @have "inverse_pair(prod_assoc_fun(I,J,X), prod_assoc_fun_inv(I,J,X))" @qed
 
-section {* Distributivity formulae *}  (* Bourbaki II.5.6 *)
+section \<open>Distributivity formulae\<close>  (* Bourbaki II.5.6 *)
 
 (* L is an overall index set. J is a mapping from b\<in>L to index sets J(b).
    X(b) is a family of sets indexed by J(b). If L and each J(b) are nonempty,
@@ -313,7 +313,7 @@ lemma prod_set_disjoint [backward1]:
   @obtain x where "x \<in> Pi(I,X) \<inter> Pi(I,Y)" @have "x`a \<in> X(a) \<inter> Y(a)"
 @qed
 
-section {* Extension of mappings to products *}  (* Bourbaki II.5.7 *)
+section \<open>Extension of mappings to products\<close>  (* Bourbaki II.5.7 *)
 
 definition ext_prod_fun :: "[i, i \<Rightarrow> i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
   "ext_prod_fun(I,X,Y,F) = Fun(Pi(I,X), Pi(I,Y), \<lambda>u. Tup(I, \<lambda>a. (F`a)`(u`a)))"

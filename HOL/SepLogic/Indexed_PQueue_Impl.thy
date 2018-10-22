@@ -22,7 +22,7 @@ fun idx_pqueue :: "'a::heap idx_pqueue \<Rightarrow> 'a indexed_pqueue \<Rightar
   "idx_pqueue (xs, m) (Indexed_PQueue pq idx) = (dyn_array xs pq * idx \<mapsto>\<^sub>a m)"
 setup {* add_rewrite_ent_rule @{thm idx_pqueue.simps} *}
 
-subsection {* Basic operations *}
+subsection \<open>Basic operations\<close>
 
 definition idx_pqueue_empty :: "nat \<Rightarrow> 'a::heap indexed_pqueue Heap" where
   "idx_pqueue_empty k = do {
@@ -128,7 +128,7 @@ lemma has_key_idx_pqueue_rule [hoare_triple]:
 setup {* del_prfstep_thm @{thm idx_pqueue.simps} *}
 setup {* del_simple_datatype "indexed_pqueue" *}
 
-subsection {* Bubble up and down *}
+subsection \<open>Bubble up and down\<close>
 
 partial_function (heap) idx_bubble_down :: "'a::{heap,linorder} indexed_pqueue \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "idx_bubble_down a k = do {
@@ -189,7 +189,7 @@ lemma idx_bubble_up_rule [hoare_triple]:
   @unfold "idx_bubble_up_fun (xs, m) k" @end
 @qed
 
-subsection {* Main operations *}
+subsection \<open>Main operations\<close>
 
 definition delete_min_idx_pqueue :: "'a::{heap,linorder} indexed_pqueue \<Rightarrow> ((nat \<times> 'a) \<times> 'a indexed_pqueue) Heap" where
   "delete_min_idx_pqueue p = do {
@@ -245,7 +245,7 @@ lemma update_idx_pqueue_rule [hoare_triple]:
    <idx_pqueue (update_idx_pqueue_fun k v (xs, m))>\<^sub>t"
 @proof @unfold "update_idx_pqueue_fun k v (xs, m)" @qed
 
-subsection {* Outer interface *}
+subsection \<open>Outer interface\<close>
 
 definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue_map M n p = (\<exists>\<^sub>Axs m. idx_pqueue (xs, m) p *

@@ -62,7 +62,7 @@ ML_file "arith.ML"
 ML_file "order.ML"
 ML_file "order_test.ML"
 
-setup {* register_wellform_data ("(a::nat) - b", ["a \<ge> b"]) *}
+setup \<open>register_wellform_data ("(a::nat) - b", ["a \<ge> b"])\<close>
 setup {* add_prfstep_check_req ("(a::nat) - b", "(a::nat) \<ge> b") *}
 
 (* Normalize any expression to "a - b" form. *)

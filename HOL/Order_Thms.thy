@@ -5,7 +5,7 @@
   Setup for proof steps related to ordering.
 *)
 
-section {* Setup for ordering *}
+section \<open>Setup for ordering\<close>
 
 theory Order_Thms
   imports Logic_Thms HOL.Rat
@@ -14,7 +14,7 @@ begin
 ML_file "util_arith.ML"
 setup {* Consts.add_const_data ("NUMC", UtilArith.is_numc) *}
 
-subsection {* Results in class order or preorder *}
+subsection \<open>Results in class order or preorder\<close>
 
 setup {* add_forward_prfstep_cond @{thm Orderings.order_class.order.trans} [with_filt (not_type_filter "a" natT)] *}
 setup {* add_forward_prfstep_cond @{thm Orderings.order_class.order.strict_trans} [with_filt (not_type_filter "a" natT)] *}
@@ -24,7 +24,7 @@ setup {* add_resolve_prfstep @{thm Orderings.order_class.order.irrefl} *}
 setup {* add_forward_prfstep_cond @{thm Orderings.le_neq_trans} [with_cond "?a \<noteq> ?b"] *}
 setup {* add_forward_prfstep_cond @{thm Orderings.order_antisym} [with_filt (order_filter "x" "y"), with_cond "?x \<noteq> ?y"] *}
 
-subsection {* Rewriting of negation, in linorder *}
+subsection \<open>Rewriting of negation, in linorder\<close>
 
 setup {* fold add_gen_prfstep [
   ("not_less",
@@ -37,7 +37,7 @@ setup {* fold add_gen_prfstep [
     WithScore 1])]
 *}
 
-subsection {* Properties of max and min (in linorder) *}
+subsection \<open>Properties of max and min (in linorder)\<close>
 
 setup {* add_rewrite_rule @{thm min.commute} *}
 setup {* add_rewrite_rule @{thm min.idem} *}
@@ -57,13 +57,13 @@ setup {* add_backward2_prfstep @{thm max.mono} *}
 setup {* add_rewrite_rule @{thm max.absorb1} *}
 setup {* add_rewrite_rule @{thm max.absorb2} *}
 
-subsection {* Min *}
+subsection \<open>Min\<close>
 
 setup {* add_backward_prfstep @{thm Min_in} *}
 setup {* add_backward_prfstep @{thm Min_le} *}
 setup {* add_backward2_prfstep @{thm Min_eqI} *}
 
-subsection {* Existence of numbers satisfying inequalities *}
+subsection \<open>Existence of numbers satisfying inequalities\<close>
 
 theorem exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
 setup {* fold add_resolve_prfstep [@{thm lt_ex}, @{thm gt_ex}] *}

@@ -11,7 +11,7 @@ theory IntervalTree_Impl
   imports SepAuto DataStrs.Interval_Tree
 begin
 
-subsection {* Interval and IdxInterval *}
+subsection \<open>Interval and IdxInterval\<close>
 
 fun interval_encode :: "('a::heap) interval \<Rightarrow> nat" where
   "interval_encode (Interval l h) = to_nat (l, h)"
@@ -31,7 +31,7 @@ instance idx_interval :: (heap) heap
   apply (case_tac x, simp_all, case_tac y, simp_all)
   ..
 
-subsection {* Tree nodes *}
+subsection \<open>Tree nodes\<close>
 
 datatype 'a node =
   Node (lsub: "'a node ref option") (val: "'a idx_interval") (tmax: nat) (rsub: "'a node ref option")
@@ -68,9 +68,9 @@ setup {* fold del_prfstep_thm @{thms int_tree.simps} *}
 
 type_synonym int_tree = "nat node ref option"
 
-subsection {* Operations *}
+subsection \<open>Operations\<close>
 
-subsubsection {* Basic operation *}
+subsubsection \<open>Basic operation\<close>
 
 definition int_tree_empty :: "int_tree Heap" where
   "int_tree_empty = return None"
@@ -122,7 +122,7 @@ lemma int_tree_constr_rule [hoare_triple]:
    <int_tree (interval_tree.Node lt v (max3 v (interval_tree.tmax lt) (interval_tree.tmax rt)) rt)>"
   by auto2
 
-subsubsection {* Insertion *}
+subsubsection \<open>Insertion\<close>
   
 partial_function (heap) insert_impl :: "nat idx_interval \<Rightarrow> int_tree \<Rightarrow> int_tree Heap" where
   "insert_impl v b = (case b of
@@ -148,7 +148,7 @@ lemma int_tree_insert_to_fun [hoare_triple]:
    <int_tree (insert v t)>"
 @proof @induct t arbitrary b @qed
 
-subsubsection {* Deletion *}
+subsubsection \<open>Deletion\<close>
 
 partial_function (heap) int_tree_del_min :: "int_tree \<Rightarrow> (nat idx_interval \<times> int_tree) Heap" where
   "int_tree_del_min b = (case b of
@@ -212,7 +212,7 @@ lemma int_tree_delete_to_fun [hoare_triple]:
    <int_tree (delete x t)>\<^sub>t"
 @proof @induct t arbitrary b @qed
 
-subsubsection {* Search *}
+subsubsection \<open>Search\<close>
 
 partial_function (heap) search_impl :: "nat interval \<Rightarrow> int_tree \<Rightarrow> bool Heap" where
   "search_impl x b = (case b of
@@ -240,7 +240,7 @@ lemma search_impl_correct [hoare_triple]:
   @endgoal @end
 @qed
 
-subsection {* Outer interface *}
+subsection \<open>Outer interface\<close>
 
 definition int_tree_set :: "nat idx_interval set \<Rightarrow> int_tree \<Rightarrow> assn" where
   "int_tree_set S p = (\<exists>\<^sub>At. int_tree t p * \<up>(is_interval_tree t) * \<up>(S = tree_set t))"

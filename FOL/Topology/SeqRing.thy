@@ -9,7 +9,7 @@ theory SeqRing
   imports Sequence
 begin
 
-section {* Construction of the ring of sequences *}
+section \<open>Construction of the ring of sequences\<close>
 
 definition seq_ring :: "i \<Rightarrow> i" where [rewrite]:
   "seq_ring(R) = Ring(seqs(R), Seq(R,\<lambda>n. \<zero>\<^sub>R), \<lambda>X Y. Seq(R,\<lambda>n. X`n +\<^sub>R Y`n),
@@ -73,7 +73,7 @@ lemma eval_seq_inverse [rewrite]:
    seq_inverse(X)`n = inv(R,X`n)" by auto2
 setup {* del_prfstep_thm @{thm seq_inverse_def} *}
 
-section {* Property on vanishes condition *}
+section \<open>Property on vanishes condition\<close>
 
 lemma vanishes_add:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow>
@@ -146,7 +146,7 @@ lemma vanishes_limit_equal [forward]:
   @end
 @qed
 
-section {* Property on Cauchy condition *}
+section \<open>Property on Cauchy condition\<close>
   
 lemma cauchy_add:
   "is_ord_field(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> X \<in>. S \<Longrightarrow> Y \<in>. S \<Longrightarrow>
@@ -245,7 +245,7 @@ lemma seq_inverse_is_inverse [backward]:
   @end
 @qed
 
-section {* Positive sequences *}
+section \<open>Positive sequences\<close>
   
 definition pos_seq :: "i \<Rightarrow> o" where [rewrite]:
   "pos_seq(X) \<longleftrightarrow> (let R = target_str(X) in \<exists>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n >\<^sub>R r)"
@@ -324,7 +324,7 @@ lemma nonneg_seq_add:
 @qed
 setup {* add_forward_prfstep_cond @{thm nonneg_seq_add} [with_term "?X +\<^sub>?S ?Y"] *}
 
-section {* Characterization of non-positive sequences *}
+section \<open>Characterization of non-positive sequences\<close>
   
 lemma pos_seq_not_vanish [resolve]:
   "ord_field_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> pos_seq(X) \<Longrightarrow> \<not>vanishes(X)"
@@ -368,7 +368,7 @@ lemma not_positive [rewrite]:
    nonneg_seq(-\<^sub>S X) \<longleftrightarrow> (\<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. X`n \<le>\<^sub>R r)" by auto2
 setup {* fold del_prfstep_thm [@{thm not_positive_to_nonneg_uminus}, @{thm not_positive'}] *}
 
-section {* Constant sequences *}
+section \<open>Constant sequences\<close>
   
 lemma seq_const_zero [rewrite_bidir]:
   "is_ord_ring(R) \<Longrightarrow> S = seq_ring(R) \<Longrightarrow> {\<zero>\<^sub>R}\<^sub>R = \<zero>\<^sub>S" by auto2

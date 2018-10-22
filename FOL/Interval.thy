@@ -9,7 +9,7 @@ theory Interval
   imports OrderRel
 begin
 
-section {* Intervals *}  (* Bourbaki III.1.13 *)
+section \<open>Intervals\<close>  (* Bourbaki III.1.13 *)
 
 definition closed_interval :: "[i, i, i] \<Rightarrow> i" where [rewrite]:
   "closed_interval(R,a,b) = {x \<in>. R. a \<le>\<^sub>R x \<and> x \<le>\<^sub>R b}"
@@ -87,7 +87,7 @@ lemma greater_interval_eq_str [rewrite]:
   "eq_str_order(X,Y) \<Longrightarrow> a \<in>. X \<Longrightarrow> greater_interval(X,a) = greater_interval(Y,a)" by auto2
 setup {* del_prfstep_thm @{thm greater_interval_def} *}
 
-section {* Intersection of intervals *}
+section \<open>Intersection of intervals\<close>
   
 lemma open_interval_inter [rewrite]:
   "linorder(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> c \<in>. R \<Longrightarrow> d \<in>. R \<Longrightarrow>
@@ -125,13 +125,13 @@ lemma greater_greater_interval_inter [rewrite]:
   "linorder(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow>
    greater_interval(R,a) \<inter> greater_interval(R,b) = greater_interval(R,max(R,a,b))" by auto2
   
-section {* Union of intervals *}
+section \<open>Union of intervals\<close>
   
 lemma open_closed_open_union [rewrite]:
   "linorder(X) \<Longrightarrow> a <\<^sub>X b \<Longrightarrow> b <\<^sub>X c \<Longrightarrow>
    open_closed_interval(X,a,b) \<union> closed_open_interval(X,b,c) = open_interval(X,a,c)" by auto2
 
-section {* Complement of intervals *}
+section \<open>Complement of intervals\<close>
 
 lemma order_ge_compl [rewrite]:
   "linorder(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> carrier(R) \<midarrow> ge_interval(R,a) = less_interval(R,a)" by auto2
@@ -150,7 +150,7 @@ lemma ge_compl_is_less' [forward]:
    S = less_interval(R,a)"
 @proof @have "S = carrier(R) \<midarrow> (carrier(R) \<midarrow> S)" @qed
     
-section {* Inclusion results on intervals *}
+section \<open>Inclusion results on intervals\<close>
 
 lemma open_interval_contain [backward]:
   "order(R) \<Longrightarrow> a \<ge>\<^sub>R c \<Longrightarrow> b \<le>\<^sub>R d \<Longrightarrow> open_interval(R,a,b) \<subseteq> open_interval(R,c,d)" by auto2
@@ -173,7 +173,7 @@ lemma open_closed_sub_greater [resolve]:
 lemma open_closed_sub_less [backward]:
   "linorder(X) \<Longrightarrow> a <\<^sub>X q \<Longrightarrow> open_closed_interval(X,p,a) \<subseteq> less_interval(X,q)" by auto2
 
-section {* Intervals on suborder *}
+section \<open>Intervals on suborder\<close>
   
 lemma less_interval_suborder [rewrite]:
   "linorder(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> x \<in> A \<Longrightarrow>
@@ -187,7 +187,7 @@ lemma open_interval_suborder [rewrite]:
   "linorder(X) \<Longrightarrow> A \<subseteq> carrier(X) \<Longrightarrow> x \<in> A \<Longrightarrow> y \<in> A \<Longrightarrow>
    open_interval(suborder(X,A),x,y) = A \<inter> open_interval(X,x,y)" by auto2
 
-section {* Other results *}
+section \<open>Other results\<close>
 
 (* Intervals with one boundary are distinct *)
 lemma less_interval_neq [backward]:
@@ -211,7 +211,7 @@ lemma less_interval_rel_eq_trans [forward]:
     @have "less_interval_rel(less_interval_rel(R,x),y) = less_interval_rel(R,y)" @end
 @qed
 
-section {* Intervals inherit a number of order properties *}
+section \<open>Intervals inherit a number of order properties\<close>
   
 lemma dense_order_closed_interval:
   "linorder(R) \<Longrightarrow> dense_order(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> b \<in>. R \<Longrightarrow> S = suborder(R,closed_interval(R,a,b)) \<Longrightarrow> 

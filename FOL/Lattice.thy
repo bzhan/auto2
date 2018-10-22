@@ -149,7 +149,7 @@ lemma lattice_distributive1 [resolve]:
 lemma lattice_distributive2 [resolve]:
   "lattice(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> y \<in>. R \<Longrightarrow> z \<in>. R \<Longrightarrow> x \<squnion>\<^sub>R (y \<sqinter>\<^sub>R z) \<le>\<^sub>R (x \<squnion>\<^sub>R y) \<sqinter>\<^sub>R (x \<squnion>\<^sub>R z)" by auto2
 
-section {* Examples of lattices *}
+section \<open>Examples of lattices\<close>
 
 (* The subset ordering on the power set of S is a lattice. Join and meet
    is given by union and intersection, respectively.
@@ -228,7 +228,7 @@ lemma product_ord_meet_eval [rewrite]:
 lemma product_ord_distrib_lattice [forward]:
   "distributive_lattice(R) \<Longrightarrow> distributive_lattice(S) \<Longrightarrow> distributive_lattice(R \<times>\<^sub>O S)" by auto2
 
-section {* Other examples *}
+section \<open>Other examples\<close>
 
 lemma join_eq_str [forward]:
   "join_semilattice(R) \<Longrightarrow> eq_str_order(R,S) \<Longrightarrow> join_semilattice(S)"
@@ -261,7 +261,7 @@ lemma join_eval_ord_isomorphism [rewrite]:
   @end
 @qed
 
-section {* Modular lattices *}
+section \<open>Modular lattices\<close>
 
 definition modular_lattice :: "i \<Rightarrow> o" where [rewrite]:
   "modular_lattice(R) \<longleftrightarrow> (lattice(R) \<and> (\<forall>x y. x \<le>\<^sub>R y \<longrightarrow> (\<forall>z\<in>.R. x \<squnion>\<^sub>R (y \<sqinter>\<^sub>R z) = y \<sqinter>\<^sub>R (x \<squnion>\<^sub>R z))))"

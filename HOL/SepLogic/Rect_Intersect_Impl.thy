@@ -11,7 +11,7 @@ theory Rect_Intersect_Impl
   imports DataStrs.Rect_Intersect IntervalTree_Impl Quicksort_Impl
 begin
 
-subsection {* Operations *}
+subsection \<open>Operations\<close>
 
 fun operation_encode :: "('a::heap) operation \<Rightarrow> nat" where
   "operation_encode oper =
@@ -25,7 +25,7 @@ instance operation :: (heap) heap
   apply (simp add: operation.case_eq_if)
   ..
 
-subsection {* Initial state *}
+subsection \<open>Initial state\<close>
 
 definition rect_inter_init :: "nat rectangle list \<Rightarrow> nat operation array Heap" where
   "rect_inter_init rects = do {

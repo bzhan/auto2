@@ -9,7 +9,7 @@ theory RealTopology
   imports Real Connected
 begin
 
-section {* Open intervals *}
+section \<open>Open intervals\<close>
   
 lemma open_interval_to_abs [rewrite]:
   "is_ord_ring(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> a \<in>. R \<Longrightarrow> y \<in> open_interval(R,x -\<^sub>R a, x +\<^sub>R a) \<longleftrightarrow> (y \<in>. R \<and> \<bar>y -\<^sub>R x\<bar>\<^sub>R <\<^sub>R a)"
@@ -18,7 +18,7 @@ lemma open_interval_to_abs [rewrite]:
   @have "y -\<^sub>R x <\<^sub>R a" @have "y -\<^sub>R x >\<^sub>R -\<^sub>R a"
 @qed
       
-section {* Topology on real numbers *}
+section \<open>Topology on real numbers\<close>
 
 lemma real_topology_is_openD [backward]:
   "is_open(\<real>,U) \<Longrightarrow> x \<in> U \<Longrightarrow> \<exists>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> c \<longrightarrow> y \<in> U"
@@ -47,7 +47,7 @@ lemma real_topology_is_openI [forward]:
     @have "\<forall>y\<in>open_interval(\<real>,x -\<^sub>\<real> c, x +\<^sub>\<real> c). y \<in> U" @end
 @qed
 
-section {* Topology on real2 *}
+section \<open>Topology on real2\<close>
 
 definition real2 :: i where [rewrite_bidir]:
   "real2 = real \<times> real"
@@ -84,7 +84,7 @@ lemma real2_topology_is_openD [backward]:
 setup {* del_prfstep_thm @{thm real2_topology_def} *}
 setup {* add_rewrite_rule_back @{thm real2_topology_def} *}
 
-section {* Continuous maps on the reals *}
+section \<open>Continuous maps on the reals\<close>
   
 definition real_fun :: "i \<Rightarrow> o" where [rewrite]:
   "real_fun(f) \<longleftrightarrow> (f \<in> \<real> \<rightharpoonup> \<real>)"
@@ -128,7 +128,7 @@ lemma real_fun_continuousD' [backward]:
    \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>. \<bar>y -\<^sub>\<real> x\<bar>\<^sub>\<real> <\<^sub>\<real> d \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c"
 @proof @have "real_continuous_at(f,x)" @qed
 
-section {* Continuous maps from real2 to real *}
+section \<open>Continuous maps from real2 to real\<close>
 
 definition real2_continuous_at :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "real2_continuous_at(f,x) \<longleftrightarrow> (\<forall>c>\<^sub>\<real>\<zero>\<^sub>\<real>. \<exists>d>\<^sub>\<real>\<zero>\<^sub>\<real>. \<forall>y\<in>.\<real>\<^sup>2. real2_dist_bound(x,y,d) \<longrightarrow> \<bar>f`y -\<^sub>\<real> f`x\<bar>\<^sub>\<real> <\<^sub>\<real> c)"
@@ -165,7 +165,7 @@ lemma real2_fun_continuousD [resolve]:
   @end
 @qed
 
-section {* Continuity of addition and multiplication *}
+section \<open>Continuity of addition and multiplication\<close>
 
 definition real_add :: i where [rewrite]:
   "real_add = Mor(\<real>\<^sup>2, \<real>, \<lambda>\<langle>x,y\<rangle>. x +\<^sub>\<real> y)"
@@ -275,7 +275,7 @@ lemma real_divide_const_continuous [backward]:
   @have "Mor(X,\<real>,\<lambda>x. f(x) /\<^sub>\<real> c) = Mor(X,\<real>,\<lambda>x. f(x) *\<^sub>\<real> (1\<^sub>\<real> /\<^sub>\<real> c))"
 @qed
 
-section {* Continuity and convergent sequences *}
+section \<open>Continuity and convergent sequences\<close>
   
 lemma continuous_on_converge_seq [backward]:
   "real_fun(f) \<Longrightarrow> continuous(f) \<Longrightarrow> X \<in> seqs(\<real>) \<Longrightarrow> converges_to(X,s) \<Longrightarrow>
@@ -288,7 +288,7 @@ lemma continuous_on_converge_seq [backward]:
   @end
 @qed
 
-section {* Intermediate value theorem *}
+section \<open>Intermediate value theorem\<close>
 
 lemma real_connected [forward]: "connected(\<real>)" by auto2
 
@@ -311,7 +311,7 @@ lemma intermediate_value_theorem [backward1]:
   @have "closed_interval(\<real>,f`a,f`b) \<subseteq> f``I"
 @qed
 
-section {* Rempe-Gillen's challenge *}
+section \<open>Rempe-Gillen's challenge\<close>
 
 definition incr_arg_fun :: "i \<Rightarrow> o" where [rewrite]:
   "incr_arg_fun(f) \<longleftrightarrow> (let S = source_str(f) in \<forall>x\<in>.S. f`x >\<^sub>S x)"

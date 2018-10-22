@@ -9,7 +9,7 @@ theory MetricSpaces
   imports RealTopology
 begin
 
-section {* Metric spaces *}
+section \<open>Metric spaces\<close>
 
 definition "metric_fun_name = succ(succ(\<emptyset>))"
 definition "metric_fun(X) = graph_eval(X, metric_fun_name)"
@@ -92,7 +92,7 @@ lemma open_ball_subset [backward]:
     @have "dist(X,y,z) <\<^sub>\<real> a +\<^sub>\<real> dist(X,y,x)" @end
 @qed
 
-section {* Metric topology *}
+section \<open>Metric topology\<close>
   
 definition metric_basis :: "i \<Rightarrow> i" where [rewrite]:
   "metric_basis(X) = (\<Union>x\<in>.X. \<Union>a\<in>.\<real>. {open_ball(X,x,a)})"

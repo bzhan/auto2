@@ -10,7 +10,7 @@ theory Int
   imports Nat Ring EquivRel
 begin
 
-section {* Integers as a quotient set *}
+section \<open>Integers as a quotient set\<close>
 
 definition int_rel_space :: i where [rewrite]:
   "int_rel_space = nat\<times>nat"
@@ -45,7 +45,7 @@ definition int :: i where int_def [rewrite_bidir]:
 
 abbreviation Int :: "i \<Rightarrow> i" where "Int(p) \<equiv> equiv_class(\<R>,p)"
 
-section {* Integers as a ring *}
+section \<open>Integers as a ring\<close>
   
 definition int_add_raw :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "int_add_raw(p,q) = \<langle>fst(p)+\<^sub>\<nat>fst(q),snd(p)+\<^sub>\<nat>snd(q)\<rangle>"
@@ -95,7 +95,7 @@ setup {* fold del_prfstep_thm [@{thm int_ring_def}, @{thm int_ord_ring_def}] *}
 lemma int_choose_rep: "x \<in>. \<int> \<Longrightarrow> x = Int(rep(\<R>,x))" by auto2
 setup {* add_rewrite_rule_cond @{thm int_choose_rep} [with_filt (size1_filter "x")] *}
 
-section {* Addition on integers *}
+section \<open>Addition on integers\<close>
 
 lemma int_add_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Int(x) +\<^sub>\<int> Int(y) = Int(int_add_raw(x,y))"
@@ -121,7 +121,7 @@ setup {* del_prfstep_thm @{thm int_evals(3)} *}
 lemma int_add_comm [forward]: "is_plus_comm(\<int>)" by auto2
 lemma int_add_assoc [forward]: "is_plus_assoc(\<int>)" by auto2
 
-section {* Multiplication on integers *}
+section \<open>Multiplication on integers\<close>
 
 lemma int_mult_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Int(x) *\<^sub>\<int> Int(y) = Int(int_mult_raw(x,y))"
@@ -148,13 +148,13 @@ lemma int_mult_comm [forward]: "is_times_comm(\<int>)" by auto2
 lemma int_mult_assoc [forward]: "is_times_assoc(\<int>)" by auto2
 lemma int_distrib_l [forward]: "is_left_distrib(\<int>)" by auto2
 
-section {* 0 and 1 *}
+section \<open>0 and 1\<close>
 
 lemma int_is_add_id [forward]: "is_add_id(\<int>)" by auto2
 lemma int_is_mult_id [forward]: "is_mult_id(\<int>)" by auto2
 lemma int_zero_neq_one [resolve]: "\<zero>\<^sub>\<int> \<noteq> \<one>\<^sub>\<int>" by auto2
 
-section {* Negation and subtraction on integers *}
+section \<open>Negation and subtraction on integers\<close>
   
 definition int_neg_raw :: "i \<Rightarrow> i" where [rewrite]:
   "int_neg_raw(p) = \<langle>snd(p), fst(p)\<rangle>"
@@ -168,7 +168,7 @@ lemma int_has_add_inverse [forward]: "has_add_inverse(\<int>)"
   
 lemma int_is_comm_ring [forward]: "is_comm_ring(\<int>)" by auto2
 
-section {* Nonnegative integers *}
+section \<open>Nonnegative integers\<close>
 
 lemma nonneg_int_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> nonneg_int(Int(x)) \<longleftrightarrow> nonneg_int_raw(x)"
@@ -199,7 +199,7 @@ lemma int_is_ord_ring [forward]: "is_ord_ring(\<int>)"
 @proof @have "nonneg_compat(\<int>, nonneg_ints)" @qed
 setup {* del_prfstep_thm @{thm int_is_ord_ring_prep} *}
 
-section {* Integers as integral domain *}
+section \<open>Integers as integral domain\<close>
 
 lemma int_is_domain_raw [forward]:
   "x1 \<in>. \<nat> \<Longrightarrow> y1 \<in>. \<nat> \<Longrightarrow> x2 \<in>. \<nat> \<Longrightarrow> y2 \<in>. \<nat> \<Longrightarrow>
@@ -217,7 +217,7 @@ lemma int_is_domain_raw [forward]:
 
 lemma int_is_domain [forward]: "integral_domain(\<int>)" by auto2
 
-section {* Integer as a difference of two natural numbers *}
+section \<open>Integer as a difference of two natural numbers\<close>
 
 lemma int_of_nat [rewrite]: "n \<in> nat \<Longrightarrow> of_nat(\<int>,n) = Int(\<langle>n,0\<rangle>)"
 @proof @var_induct "n \<in> nat" @qed
@@ -233,7 +233,7 @@ lemma int_is_diff [backward]:
   @have "n = of_nat(\<int>,fst(p)) -\<^sub>\<int> of_nat(\<int>,snd(p))"
 @qed
 
-section {* Definition of int\_act *}
+section \<open>Definition of int\_act\<close>
 
 definition int_act_raw :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "int_act_raw(R,p,x) = nat_act(R,fst(p),x) -\<^sub>R nat_act(R,snd(p),x)"
@@ -288,7 +288,7 @@ setup {* fold del_prfstep_thm [@{thm int_choose_rep}, @{thm int_neg_eval}, @{thm
 no_notation int_rel ("\<R>")
 hide_const Int
 
-section {* Further properties of int\_act *}
+section \<open>Further properties of int\_act\<close>
 
 lemma int_act_add [rewrite_bidir]:
   "is_abgroup(R) \<Longrightarrow> x \<in>. \<int> \<Longrightarrow> y \<in>. \<int> \<Longrightarrow> r \<in>. R \<Longrightarrow> int_act(R,x +\<^sub>\<int> y,r) = int_act(R,x,r) +\<^sub>R int_act(R,y,r)"
@@ -334,7 +334,7 @@ lemma int_act_mult [rewrite_bidir]:
   @have "(za -\<^sub>\<int> zb) *\<^sub>\<int> (zc -\<^sub>\<int> zd) = (za *\<^sub>\<int> zc +\<^sub>\<int> zb *\<^sub>\<int> zd) -\<^sub>\<int> (za *\<^sub>\<int> zd +\<^sub>\<int> zb *\<^sub>\<int> zc)"
 @qed
 
-section {* Definition of of\_int *}
+section \<open>Definition of of\_int\<close>
 
 definition of_int :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite_bidir]:
   "of_int(R,z) = int_act(R,z,\<one>\<^sub>R)"

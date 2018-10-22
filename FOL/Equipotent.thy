@@ -9,7 +9,7 @@ theory Equipotent
   imports Functions Wfrec
 begin
 
-section {* Gluing together two functions *}
+section \<open>Gluing together two functions\<close>
 
 (* Glue together two functions *)
 definition glue_function2 :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
@@ -49,7 +49,7 @@ lemma glue_function2_image1 [rewrite]:
   @end
 @qed
 
-section {* Equipotent condition *}
+section \<open>Equipotent condition\<close>
 
 definition equipotent :: "i \<Rightarrow> i \<Rightarrow> o"  (infix "\<approx>\<^sub>S" 50) where [rewrite]:
   "S \<approx>\<^sub>S T \<longleftrightarrow> (\<exists>f. f \<in> S \<cong> T)"
@@ -159,7 +159,7 @@ lemma pow_le_potent [resolve]:
   @have "injective(f)" @have "f \<in> S \<rightarrow> Pow(S)"
 @qed
 
-section {* Schroeder-Bernstein Theorem *}
+section \<open>Schroeder-Bernstein Theorem\<close>
 
 lemma schroeder_bernstein [forward]:
   "X \<lesssim>\<^sub>S Y \<Longrightarrow> Y \<lesssim>\<^sub>S X \<Longrightarrow> X \<approx>\<^sub>S Y"

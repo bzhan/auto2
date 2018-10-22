@@ -9,7 +9,7 @@ theory PathHomotopy
   imports Homotopy
 begin
 
-section {* Paths and homotopy between paths *}
+section \<open>Paths and homotopy between paths\<close>
 
 definition is_path :: "i \<Rightarrow> o" where [rewrite_bidir]:
   "is_path(f) \<longleftrightarrow> (f \<in> I \<rightharpoonup>\<^sub>T target_str(f))"
@@ -82,7 +82,7 @@ lemma path_homotopy_trans [forward]:
   @have "is_path_homotopy(f,h,compose_homotopy(f,g,h,F,G))"
 @qed
 
-section {* Product of paths *}
+section \<open>Product of paths\<close>
   
 definition path_product :: "i \<Rightarrow> i \<Rightarrow> i"  (infixl "\<star>" 70) where [rewrite]:
   "f \<star> g = glue_morphism(I, f \<circ>\<^sub>m interval_lower, g \<circ>\<^sub>m interval_upper)"
@@ -114,7 +114,7 @@ lemma path_product_comp [rewrite]:
   "is_path(f) \<Longrightarrow> is_path(g) \<Longrightarrow> continuous(h) \<Longrightarrow> target_str(f) = target_str(g) \<Longrightarrow> f`(1\<^sub>\<real>) = g`(0\<^sub>\<real>) \<Longrightarrow>
    target_str(f \<star> g) = source_str(h) \<Longrightarrow> (h \<circ>\<^sub>m (f \<star> g)) = (h \<circ>\<^sub>m f) \<star> (h \<circ>\<^sub>m g)" by auto2
 
-section {* Path homotopy respects product *}
+section \<open>Path homotopy respects product\<close>
 
 definition homotopy_left_half :: "i \<Rightarrow> i" where [rewrite]:
   "homotopy_left_half(F) = F \<circ>\<^sub>m prod_top_map(interval_lower,id_mor(I))"
@@ -187,7 +187,7 @@ lemma path_homotopy_comp2 [backward]:
   @have "is_path_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)"
 @qed
 
-section {* Interval is simply connected *}
+section \<open>Interval is simply connected\<close>
 
 definition linear_homotopy :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "linear_homotopy(f,g) = Mor(I \<times>\<^sub>T I, I, \<lambda>\<langle>s,t\<rangle>. (1\<^sub>\<real> -\<^sub>\<real> t) *\<^sub>\<real> (f`s) +\<^sub>\<real> t *\<^sub>\<real> (g`s))"
@@ -241,7 +241,7 @@ lemma interval_simply_connected [forward]: "simply_connected(I)"
     @have "is_path_homotopy(f,g,linear_homotopy(f,g))" @end
 @qed
 
-section {* Groupoid properties of product *}
+section \<open>Groupoid properties of product\<close>
 
 definition I1a :: i where [rewrite]: "I1a = subspace(I1,closed_interval(\<real>,0\<^sub>\<real>,1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>))"
 definition I1b :: i where [rewrite]: "I1b = subspace(I1,closed_interval(\<real>,1\<^sub>\<real> /\<^sub>\<real> 4\<^sub>\<real>, 1\<^sub>\<real> /\<^sub>\<real> 2\<^sub>\<real>))"

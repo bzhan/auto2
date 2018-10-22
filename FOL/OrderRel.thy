@@ -9,7 +9,7 @@ theory OrderRel
   imports Morphism
 begin
 
-section {* Transitive relations *}
+section \<open>Transitive relations\<close>
 
 definition trans :: "i \<Rightarrow> o" where [rewrite]:
   "trans(R) \<longleftrightarrow> (
@@ -21,7 +21,7 @@ lemma transD [forward]:
   "trans(R) \<Longrightarrow> x \<le>\<^sub>R y \<Longrightarrow> y \<le>\<^sub>R z \<Longrightarrow> x \<le>\<^sub>R z" by auto2+
 setup {* del_prfstep_thm_eqforward @{thm trans_def} *}
 
-section {* Preorder and order relations *}  (* Bourbaki III.1.1 -- III.1.2 *)
+section \<open>Preorder and order relations\<close>  (* Bourbaki III.1.1 -- III.1.2 *)
 
 definition refl_order :: "i \<Rightarrow> o" where [rewrite]:
   "refl_order(R) \<longleftrightarrow> raworder(R) \<and> (\<forall>x\<in>.R. x \<le>\<^sub>R x)"
@@ -65,7 +65,7 @@ lemma subset_order_eval [rewrite]:
   "R = subset_order(S) \<Longrightarrow> x \<le>\<^sub>R y \<longleftrightarrow> (x \<in>. R \<and> y \<in>. R \<and> x \<subseteq> y)" by auto2
 setup {* del_prfstep_thm @{thm subset_order_def} *}
 
-section {* Notations for order relations *}  (* Bourbaki III.1.3 *)
+section \<open>Notations for order relations\<close>  (* Bourbaki III.1.3 *)
 
 definition less :: "[i, i, i] \<Rightarrow> o" where [rewrite]:
   "less(R,x,y) \<longleftrightarrow> (x \<le>\<^sub>R y \<and> x \<noteq> y)"
@@ -114,7 +114,7 @@ lemma less_eq_str [rewrite]: "eq_str_order(X,Y) \<Longrightarrow> a <\<^sub>X b 
 
 setup {* del_prfstep_thm @{thm less_def} *}
 
-section {* Isomorphism between orders *}
+section \<open>Isomorphism between orders\<close>
 
 definition is_ord_mor :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_mor(f) \<longleftrightarrow> is_morphism(f) \<and> preorder(source_str(f)) \<and> preorder(target_str(f))"
@@ -159,7 +159,7 @@ lemma order_iso [forward]: "order(R) \<Longrightarrow> ord_isomorphic(R,S) \<Lon
 @qed
 setup {* del_prfstep_thm @{thm ord_isomorphic_def} *}
   
-section {* Ordering on subsets and products *}  (* Bourbaki III.1.4 *)
+section \<open>Ordering on subsets and products\<close>  (* Bourbaki III.1.4 *)
 
 (* Define relation on subsets in general *)
 definition suborder :: "[i, i] \<Rightarrow> i" where [rewrite]:
@@ -220,7 +220,7 @@ lemma prod_rel_eval [rewrite]:
   "S = prod_rel(I,R) \<Longrightarrow> x \<in>. S \<Longrightarrow> y \<in>. S \<Longrightarrow> x \<le>\<^sub>S y \<longleftrightarrow> (\<forall>a\<in>I. le(R`a,x`a,y`a))" by auto2
 setup {* del_prfstep_thm @{thm prod_rel_def} *}
 
-section {* Increasing mappings *}  (* Bourbaki III.1.5 *)
+section \<open>Increasing mappings\<close>  (* Bourbaki III.1.5 *)
 
 definition incr :: "i \<Rightarrow> o" where [rewrite]:
   "incr(f) \<longleftrightarrow> (let R = source_str(f) in let S = target_str(f) in
@@ -263,7 +263,7 @@ lemma two_decr_funs_prop:
   "decr(u) \<Longrightarrow> decr(v) \<Longrightarrow> mor_form(u) \<Longrightarrow> mor_form(v) \<Longrightarrow> u \<in> R \<rightharpoonup> S \<Longrightarrow> v \<in> S \<rightharpoonup> R \<Longrightarrow>
    \<forall>x\<in>.R. v`(u`x) = x \<Longrightarrow> \<forall>x\<in>.S. u`(v`x) = x \<Longrightarrow> u \<circ>\<^sub>m v \<circ>\<^sub>m u = u \<and> v \<circ>\<^sub>m u \<circ>\<^sub>m v = v" by auto2
 
-section {* Maximal and minimal elements *}  (* Bourbaki III.1.6 *)
+section \<open>Maximal and minimal elements\<close>  (* Bourbaki III.1.6 *)
 
 definition maximal :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "maximal(R,x) \<longleftrightarrow> (x \<in>. R \<and> (\<forall>a\<in>.R. a \<ge>\<^sub>R x \<longrightarrow> a = x))"
@@ -275,7 +275,7 @@ definition minimal :: "[i, i] \<Rightarrow> o" where [rewrite]:
 lemma singleton_minimal:
   "x \<in> S \<Longrightarrow> minimal(subset_order(Pow(S)\<midarrow>{\<emptyset>}),{x})" by auto2
     
-section {* Greatest and least elements *}  (* Bourbaki III.1.7 *)
+section \<open>Greatest and least elements\<close>  (* Bourbaki III.1.7 *)
 
 (* We define the more general notion of greatest/least element of a subset, to
    prepare for definition of sup and inf later. *)
@@ -384,7 +384,7 @@ lemma greatest_is_cofinal:
 lemma least_is_coinitial:
   "order(R) \<Longrightarrow> has_least(R,carrier(R)) \<Longrightarrow> coinitial(R,{least(R,carrier(R))})" by auto2
 
-section {* Upper and lower bounds *}  (* Bourbaki III.1.8 *)
+section \<open>Upper and lower bounds\<close>  (* Bourbaki III.1.8 *)
 
 definition upper_bound :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "upper_bound(R,X) = {y\<in>.R. \<forall>x\<in>X. x \<le>\<^sub>R y}"
@@ -427,7 +427,7 @@ lemma lower_bound_least:
 lemma lower_bound_least':
   "order(R) \<Longrightarrow> lower_bound(R,carrier(R)) = {a} \<Longrightarrow> least(R,carrier(R)) = a \<and> has_least(R,carrier(R))" by auto2
 
-section {* Supremum and infimum *}  (* Bourbaki III.1.9 *)
+section \<open>Supremum and infimum\<close>  (* Bourbaki III.1.9 *)
 
 (* Definitions of sup and inf *)
 definition has_sup :: "[i, i] \<Rightarrow> o" where [rewrite]:
@@ -505,7 +505,7 @@ lemma sup_subset2:
   "order(R) \<Longrightarrow> F \<subseteq> carrier(R) \<Longrightarrow> A \<subseteq> F \<Longrightarrow> has_sup(R,A) \<Longrightarrow> sup(R,A) \<in> F \<Longrightarrow>
    has_sup(suborder(R,F),A) \<and> sup(suborder(R,F),A) = sup(R,A)" by auto2
 
-section {* Directed sets *}  (* Bourbaki III.1.10 *)
+section \<open>Directed sets\<close>  (* Bourbaki III.1.10 *)
 
 definition right_directed :: "i \<Rightarrow> o" where [rewrite]:
   "right_directed(R) \<longleftrightarrow> order(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. \<exists>z\<in>.R. z \<ge>\<^sub>R x \<and> z \<ge>\<^sub>R y)"
@@ -539,7 +539,7 @@ lemma right_directed_cofinal:
   @end
 @qed
 
-section {* Totally ordered sets *}  (* Bourbaki III.1.12 *)
+section \<open>Totally ordered sets\<close>  (* Bourbaki III.1.12 *)
 
 definition linorder :: "i \<Rightarrow> o" where [rewrite]:
   "linorder(R) \<longleftrightarrow> (order(R) \<and> (\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<or> x \<ge>\<^sub>R y))"
@@ -586,7 +586,7 @@ lemma supD_alt [backward1]:
   "linorder(R) \<Longrightarrow> has_sup(R,X) \<Longrightarrow> c \<in>. R \<Longrightarrow> c <\<^sub>R sup(R,X) \<Longrightarrow>
    \<exists>x\<in>X. c <\<^sub>R x \<and> x \<le>\<^sub>R sup(R,X)" by auto2
 
-section {* Maximum *}
+section \<open>Maximum\<close>
   
 definition max :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where max_def [rewrite]:
   "max(R,x,y) = (if x \<ge>\<^sub>R y then x else y)"
@@ -615,7 +615,7 @@ lemma linorder_has_max3:
 setup {* add_backward_prfstep_cond @{thm linorder_has_max3} [
   with_filt (order_filter "x" "y"), with_filt (order_filter "y" "z")] *}
 
-section {* Minimum *}
+section \<open>Minimum\<close>
   
 definition min :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where min_def [rewrite]:
   "min(R,x,y) = (if x \<le>\<^sub>R y then x else y)"
@@ -654,7 +654,7 @@ lemma eq_linorder_order_less [backward1]:
   @have (@rule) "\<forall>x\<in>.R. \<forall>y\<in>.R. x \<le>\<^sub>R y \<longrightarrow> x \<le>\<^sub>S y" @with @case "x = y" @end
 @qed
 
-section {* Directed family of ordering *}
+section \<open>Directed family of ordering\<close>
 
 (* This development is used in Bourbaki III.2.1 *)
 definition is_suborder :: "[i, i] \<Rightarrow> o" where [rewrite]:
@@ -759,7 +759,7 @@ lemma union_rel_linorder [backward]:
     @obtain "S\<in>X" where "x \<in>. S" "y \<in>. S" @end
 @qed
 
-section {* Linear continuum *}
+section \<open>Linear continuum\<close>
   
 definition order_unbounded :: "i \<Rightarrow> o" where [rewrite]:
   "order_unbounded(R) \<longleftrightarrow> (\<forall>x\<in>.R. (\<exists>y. y <\<^sub>R x) \<and> (\<exists>y. y >\<^sub>R x))"

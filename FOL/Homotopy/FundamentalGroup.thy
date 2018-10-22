@@ -9,7 +9,7 @@ theory FundamentalGroup
   imports PathHomotopy
 begin
 
-section {* Definition of fundamental group *}
+section \<open>Definition of fundamental group\<close>
 
 definition is_loop :: "i \<Rightarrow> o" where [rewrite]:
   "is_loop(f) \<longleftrightarrow> (is_path(f) \<and> f`(0\<^sub>\<real>) = f`(1\<^sub>\<real>))"
@@ -80,7 +80,7 @@ lemma fundamental_group_evals [rewrite]:
    f *\<^sub>G g = equiv_class(\<R>,rep(\<R>,f) \<star> rep(\<R>,g))" by auto2+
 setup {* del_prfstep_thm @{thm fundamental_group_def} *}
 
-section {* Multiplication on the fundamental group *}
+section \<open>Multiplication on the fundamental group\<close>
   
 lemma fundamental_group_mult_compat [resolve]:
   "is_top_space(X) \<Longrightarrow> x \<in>. X \<Longrightarrow> compat_meta_bin(loop_space_rel(X,x), \<lambda>f g. f \<star> g)" by auto2
@@ -131,7 +131,7 @@ setup {* fold del_prfstep_thm [@{thm fundamental_group_mult_assoc},
   @{thm fundamental_group_mult_id}, @{thm fundamental_group_mult_id2},
   @{thm fundamental_group_inv2}] *}
 
-section {* Morphisms on fundamental groups *}
+section \<open>Morphisms on fundamental groups\<close>
 
 definition induced_mor :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "induced_mor(k,x) =

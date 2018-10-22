@@ -58,7 +58,7 @@ lemma equiv_eq [backward]:
 setup {* fold del_prfstep_thm [
   @{thm rawequiv_def}, @{thm rawequiv_space_def}, @{thm Equiv_def}, @{thm eq_sim_def}] *}
 
-section {* Equivalence relation *}  (* Bourbaki II.6.1 *)
+section \<open>Equivalence relation\<close>  (* Bourbaki II.6.1 *)
 
 (* Self-contained condition for equiv. *)
 definition equiv :: "i \<Rightarrow> o" where [rewrite]:
@@ -89,7 +89,7 @@ lemma equiv_spaceI [backward]:
   "equiv(R) \<Longrightarrow> R \<in> equiv_space(carrier(R))" by auto2
 setup {* del_prfstep_thm @{thm equiv_space_def} *}
 
-section {* Quotient construction *}  (* Bourbaki II.6.2 *)
+section \<open>Quotient construction\<close>  (* Bourbaki II.6.2 *)
 
 (* Equivalence relation induced by a function *)
 definition fun_equiv :: "i \<Rightarrow> i" where [rewrite]:
@@ -202,7 +202,7 @@ definition partition_mem :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
 definition partition_equiv :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "partition_equiv(X,u,v) \<longleftrightarrow> (u \<in> \<Union>X \<and> v \<in> \<Union>X \<and> (partition_mem(X,u) = partition_mem(X,u)))"
 
-section {* Predicate compatible with an equivalence relation *}  (* Bourbaki II.6.3 *)
+section \<open>Predicate compatible with an equivalence relation\<close>  (* Bourbaki II.6.3 *)
 
 definition compat_pred :: "[i \<Rightarrow> o, i] \<Rightarrow> o" where [rewrite]:
   "compat_pred(P,R) \<longleftrightarrow> (\<forall>x y. P(x) \<longrightarrow> x \<sim>\<^sub>R y \<longrightarrow> P(y))"
@@ -222,7 +222,7 @@ lemma induced_pred_iff:
   "equiv(R) \<Longrightarrow> x \<in> source(qsurj(R)) \<Longrightarrow> compat_pred(P,R) \<Longrightarrow>
    induced_pred(P,R,qsurj(R)`x) \<longleftrightarrow> P(x)" by auto2
 
-section {* Saturated subsets *}  (* Bourbaki II.6.4 *)
+section \<open>Saturated subsets\<close>  (* Bourbaki II.6.4 *)
 
 definition saturated_subset :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "saturated_subset(R,A) \<longleftrightarrow> (A \<subseteq> carrier(R) \<and> compat_pred(\<lambda>x. x\<in>A, R))"
@@ -272,7 +272,7 @@ lemma saturation_subset_alt [resolve]:
 lemma saturation_subset_union:
   "equiv(R) \<Longrightarrow> saturation_subset(R,\<Union>a\<in>I. X(a)) = (\<Union>a\<in>I. saturation_subset(R,X(a)))" by auto2
 
-section {* Mappings compatible with an equivalence relation *}  (* Bourbaki II.6.5 *)
+section \<open>Mappings compatible with an equivalence relation\<close>  (* Bourbaki II.6.5 *)
 
 definition compat_fun :: "[i, i] \<Rightarrow> o" where [rewrite]:
   "compat_fun(f,R) \<longleftrightarrow> (source(f) = carrier(R) \<and> (\<forall>x y. x \<sim>\<^sub>R y \<longrightarrow> f`x = f`y))"
@@ -358,7 +358,7 @@ lemma induced_fun_double_prop:
    induced_fun_double(f,R,S) \<in> source(f)//R \<rightarrow> target(f)//S \<and>
    qsurj(S) \<circ> f = induced_fun_double(f,R,S) \<circ> qsurj(R)" by auto2
 
-section {* Inverse image of an equivalence relation *}  (* Bourbaki II.6.6 *)
+section \<open>Inverse image of an equivalence relation\<close>  (* Bourbaki II.6.6 *)
 
 definition vImage_equiv :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "vImage_equiv(f,S) = fun_equiv(qsurj(S) \<circ> f)"
@@ -403,7 +403,7 @@ lemma second_isomorphism_theorem:
   @end
 @qed
   
-section {* Quotients of equivalence relations *}  (* Bourbaki II.6.7 *)
+section \<open>Quotients of equivalence relations\<close>  (* Bourbaki II.6.7 *)
 
 (* Finer condition can be defined on all relations *)
 definition finer_rel :: "[i, i] \<Rightarrow> o" where [rewrite]:
@@ -465,7 +465,7 @@ lemma equiv_is_quotient_rel:
   @have (@rule) "\<forall>y\<in>target(qsurj(S)). \<exists>x\<in>source(qsurj(S)). qsurj(S)`x = y"
 @qed
 
-section {* Product of two equivalence relations *}  (* Bourbaki II.6.8 *)
+section \<open>Product of two equivalence relations\<close>  (* Bourbaki II.6.8 *)
 
 definition prod_equiv :: "[i, i] \<Rightarrow> i" where [rewrite]:
   "prod_equiv(R,S) = Equiv(carrier(R)\<times>carrier(S), \<lambda>p q. fst(p) \<sim>\<^sub>R fst(q) \<and> snd(p) \<sim>\<^sub>S snd(q))"
@@ -491,7 +491,7 @@ lemma prod_quotient_isomorphism:
   @have "fun_equiv(qsurj(R) \<times>\<^sub>f qsurj(S)) = prod_equiv(R,S)"
 @qed
 
-section {* Compatible binary operators *}
+section \<open>Compatible binary operators\<close>
 
 (* A (meta) binary operator is compatible with a (object) equivalence relation. *)
 definition compat_meta_bin :: "[i, i \<Rightarrow> i \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:

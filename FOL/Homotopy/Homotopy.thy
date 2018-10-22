@@ -9,7 +9,7 @@ theory Homotopy
   imports FOL_Topology.RealTopology
 begin
 
-section {* Automation for intervals *}
+section \<open>Automation for intervals\<close>
   
 lemma closed_interval_memI:
   "is_ord_field(R) \<Longrightarrow> a \<le>\<^sub>R x \<Longrightarrow> x \<le>\<^sub>R b \<Longrightarrow> x \<in> closed_interval(R,a,b)" by auto2
@@ -35,7 +35,7 @@ lemma closed_interval_times:
 
 ML_file "interval_steps.ML"
 
-section {* Commonly used intervals *}
+section \<open>Commonly used intervals\<close>
 
 definition interval :: i   ("I") where [rewrite]:
   "interval = subspace(\<real>, closed_interval(\<real>,0\<^sub>\<real>,1\<^sub>\<real>))"
@@ -99,7 +99,7 @@ setup {* del_prfstep_thm @{thm interval_upper_def} *}
 setup {* del_prfstep_thm @{thm interval_def} *}
 setup {* add_rewrite_rule_back @{thm interval_def} *}
 
-section {* Homotopy between two continuous functions from X to Y *}
+section \<open>Homotopy between two continuous functions from X to Y\<close>
 
 definition is_homotopy :: "[i, i, i] \<Rightarrow> o" where [rewrite]:
   "is_homotopy(f,g,F) \<longleftrightarrow> (let S = source_str(f) in let T = target_str(f) in
@@ -250,7 +250,7 @@ lemma homotopic_comp2 [backward]:
   @have "is_homotopy(h \<circ>\<^sub>m f, h \<circ>\<^sub>m g, h \<circ>\<^sub>m F)"
 @qed
     
-section {* Homotopy equivalence between two spaces *}
+section \<open>Homotopy equivalence between two spaces\<close>
   
 definition homotopy_equiv_pair :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "homotopy_equiv_pair(f,g) \<longleftrightarrow> (continuous(f) \<and> continuous(g) \<and>

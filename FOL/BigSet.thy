@@ -9,7 +9,7 @@ theory BigSet
   imports Functions
 begin
 
-section {* Big union *}
+section \<open>Big union\<close>
 
 lemma Union_mem_D: "x \<in> A \<Longrightarrow> A \<in> S \<Longrightarrow> x \<in> \<Union>(S)" by auto2
 
@@ -23,12 +23,12 @@ lemma Union_Int_subset: "\<Union>(A \<inter> B) \<subseteq> \<Union>(A) \<inter>
 
 lemma Union_disjoint: "\<Union>(C) \<inter> A = \<emptyset> \<longleftrightarrow> (\<forall>B\<in>C. B \<inter> A = \<emptyset>)" by auto2
 
-section {* Big intersection *}
+section \<open>Big intersection\<close>
 
 lemma Inter_Un_distrib:
   "A \<noteq> \<emptyset> \<Longrightarrow> B \<noteq> \<emptyset> \<Longrightarrow> \<Inter>(A \<union> B) = \<Inter>(A) \<inter> \<Inter>(B)" by auto2
 
-section {* Parametrized union and intersection *}  (* Bourbaki II.4.1 -- II.4.4 *)
+section \<open>Parametrized union and intersection\<close>  (* Bourbaki II.4.1 -- II.4.4 *)
 
 lemma UN_surj [rewrite]:
   "surjective(f) \<Longrightarrow> is_function(B) \<Longrightarrow> f \<in> K \<rightarrow> I \<Longrightarrow> (\<Union>x\<in>K. B`(f`x)) = (\<Union>x\<in>I. B`x)"
@@ -71,7 +71,7 @@ lemma UN_complement:
 lemma INT_complement [rewrite]:
   "I \<noteq> \<emptyset> \<Longrightarrow> E \<midarrow> (\<Inter>a\<in>I. X(a)) = (\<Union>a\<in>I. E \<midarrow> X(a))" by auto2
 
-section {* Union and intersection of two sets *}  (* Bourbaki II.4.5 *)
+section \<open>Union and intersection of two sets\<close>  (* Bourbaki II.4.5 *)
 
 lemma Un_to_UN [rewrite_back]:
   "A \<union> B = (\<Union>{A, B})" by auto2
@@ -106,7 +106,7 @@ lemma Diff_vImage [rewrite]:
 lemma Int_image_eq [rewrite]:
   "injective(f) \<Longrightarrow> X \<subseteq> source(f) \<Longrightarrow> f `` (source(f) \<midarrow> X) = image(f) \<midarrow> f `` X" by auto2
 
-section {* Finite roducts *}
+section \<open>Finite roducts\<close>
   
 lemma prod_inter [rewrite]:
   "(A \<times> B) \<inter> (C \<times> D) = (A \<inter> C) \<times> (B \<inter> D)" by auto2

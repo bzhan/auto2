@@ -9,7 +9,7 @@ theory Group
   imports AlgStructure Morphism
 begin
 
-section {* Monoids *}
+section \<open>Monoids\<close>
   
 definition is_monoid :: "i \<Rightarrow> o" where [rewrite]:
   "is_monoid(G) \<longleftrightarrow> is_mult_id(G) \<and> is_times_assoc(G)"
@@ -24,7 +24,7 @@ lemma is_monoid_group_prop [forward]:
 
 ML_file "alg_monoid.ML"
   
-section {* Units and multiplicative inverse *}
+section \<open>Units and multiplicative inverse\<close>
 
 definition units :: "i \<Rightarrow> i" where [rewrite]:
   "units(G) = {x \<in>. G. (\<exists>y\<in>.G. y *\<^sub>G x = \<one>\<^sub>G \<and> x *\<^sub>G y = \<one>\<^sub>G)}"
@@ -89,7 +89,7 @@ lemma unit_inv_comm:
 setup {* fold del_prfstep_thm @{thms invD} *}
 setup {* fold add_rewrite_rule @{thms invD} *}
 
-section {* Definition of groups *}
+section \<open>Definition of groups\<close>
 
 definition is_group :: "i \<Rightarrow> o" where [rewrite]:
   "is_group(G) \<longleftrightarrow> is_monoid(G) \<and> carrier(G) = units(G)"
@@ -130,7 +130,7 @@ lemma move_inv_l [rewrite]:
   "is_group(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> z \<in>. G \<Longrightarrow> inv(G,x) *\<^sub>G y = z \<Longrightarrow> x *\<^sub>G z = y"
 @proof @have "z = inv(G,x) *\<^sub>G (x *\<^sub>G z)" @qed
 
-section {* Subgroups *}
+section \<open>Subgroups\<close>
 
 definition subset_mult_closed :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "subset_mult_closed(G,H) \<longleftrightarrow> (\<forall>x\<in>H. \<forall>y\<in>H. x *\<^sub>G y \<in> H)"
@@ -185,7 +185,7 @@ lemma subgroup_inv [rewrite]:
 lemma subgroup_non_empty [resolve]: "\<not>is_subgroup_set(G,\<emptyset>)"
 @proof @contradiction @have "\<one>\<^sub>G \<in> \<emptyset>" @qed
 
-section {* Direct products *}
+section \<open>Direct products\<close>
   
 definition group_prod :: "i \<Rightarrow> i \<Rightarrow> i"  (infixr "\<times>\<^sub>G" 80) where [rewrite]:
   "G \<times>\<^sub>G H = Group(carrier(G)\<times>carrier(H), \<langle>\<one>\<^sub>G,\<one>\<^sub>H\<rangle>, \<lambda>x y. \<langle>fst(x) *\<^sub>G fst(y), snd(x) *\<^sub>H snd(y)\<rangle>)"
@@ -226,7 +226,7 @@ lemma group_prod_inv [rewrite]:
   "is_group(G) \<Longrightarrow> is_group(H) \<Longrightarrow> K = G \<times>\<^sub>G H \<Longrightarrow> \<langle>x,y\<rangle> \<in> units(K) \<Longrightarrow>
    inv(K, \<langle>x,y\<rangle>) = \<langle>inv(G,x), inv(H,y)\<rangle>" by auto2
 
-section {* Homomorphisms and Isomorphisms *}
+section \<open>Homomorphisms and Isomorphisms\<close>
 
 definition is_group_hom :: "i \<Rightarrow> o" where [rewrite]:
   "is_group_hom(f) \<longleftrightarrow> (let S = source_str(f) in let T = target_str(f) in
@@ -295,7 +295,7 @@ lemma iso_sym [typing]:
   @have (@rule) "\<forall>y\<in>target(g). \<exists>x\<in>source(g). g`x = y"
 @qed
 
-section {* Image of a homomorphism *}
+section \<open>Image of a homomorphism\<close>
   
 lemma image_is_subgroup:
   "is_group_hom(f) \<Longrightarrow> H = target_str(f) \<Longrightarrow> is_subgroup_set(H, image(f))"

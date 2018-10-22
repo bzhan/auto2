@@ -5,7 +5,7 @@
   A simple application of union-find for graph connectivity.
 *)
 
-section {* Connectedness for a set of undirected edges. *}
+section \<open>Connectedness for a set of undirected edges.\<close>
 
 theory Connectivity
   imports Union_Find

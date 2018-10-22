@@ -23,7 +23,7 @@ setup {* add_prfstep_check_req ("lfp(D,h)", "bnd_mono(D,h)") *}
 definition gfp :: "i \<Rightarrow> (i \<Rightarrow> i) \<Rightarrow> i" where [rewrite]:
   "gfp(D,h) = \<Union>({X \<in> Pow(D). X \<subseteq> h(X)})"
 
-section {* Monotone operators *}
+section \<open>Monotone operators\<close>
 
 lemma bnd_monoD1 [forward]: "bnd_mono(D,h) \<Longrightarrow> h(D) \<subseteq> D" by auto2
 lemma bnd_monoD2 [backward2]: "bnd_mono(D,h) \<Longrightarrow> W \<subseteq> X \<Longrightarrow> X \<subseteq> D \<Longrightarrow> h(W) \<subseteq> h(X)" by auto2
@@ -32,7 +32,7 @@ setup {* del_prfstep_thm_eqforward @{thm bnd_mono_def} *}
 lemma bnd_mono_subset: "bnd_mono(D,h) \<Longrightarrow> X \<subseteq> D \<Longrightarrow> h(X) \<subseteq> D" by auto2
 lemma bnd_mono_Un: "bnd_mono(D,h) \<Longrightarrow> A \<subseteq> D \<Longrightarrow> B \<subseteq> D \<Longrightarrow> h(A) \<union> h(B) \<subseteq> h(A \<union> B)" by auto2
 
-section {* Knaster-Tarski Theorem using lfp *}
+section \<open>Knaster-Tarski Theorem using lfp\<close>
 
 lemma lfp_set_nonempty [backward2]:
   "h(A) \<subseteq> A \<Longrightarrow> A \<subseteq> D \<Longrightarrow> {X \<in> Pow(D). h(X) \<subseteq> X} \<noteq> \<emptyset>"
@@ -51,7 +51,7 @@ lemma lfp_unfold [rewrite]:
   "bnd_mono(D,h) \<Longrightarrow> h(lfp(D,h)) = lfp(D,h)"
 @proof @have  "h(lfp(D,h)) \<subseteq> lfp(D,h)" @qed
 
-section {* General induction rule for least fixed points *}
+section \<open>General induction rule for least fixed points\<close>
 
 (* Induction rule: given predicate P and let A be the subset of lfp that satisfies P.
    If everything in h(A) also satisfies P, then in fact A = lfp. *)
@@ -74,7 +74,7 @@ lemma lfp_cong:
   "\<forall>X. X \<subseteq> D \<longrightarrow> h(X) = h'(X) \<Longrightarrow> lfp(D,h) = lfp(D,h')" by auto2
 setup {* del_prfstep_thm @{thm lfp_def} *}
 
-section {* Knaster-Tarski Theorem using gfp *}
+section \<open>Knaster-Tarski Theorem using gfp\<close>
 
 (* Any fixed point of h is contained in gfp(D,h). *)
 lemma gfp_upperbound [backward]:
@@ -89,7 +89,7 @@ lemma gfp_unfold [rewrite]:
   "bnd_mono(D,h) \<Longrightarrow> h(gfp(D,h)) = gfp(D,h)"
 @proof @have "gfp(D,h) \<subseteq> h(gfp(D,h))" @qed
 
-section {* General induction rule for greatest fixed points *}
+section \<open>General induction rule for greatest fixed points\<close>
 
 lemma gfp_weak_coinduct:
   "a \<in> X \<Longrightarrow> X \<subseteq> h(X) \<Longrightarrow> X \<subseteq> D \<Longrightarrow> a \<in> gfp(D,h)" by auto2
@@ -104,7 +104,7 @@ lemma gfp_mono:
   "bnd_mono(D,h) \<Longrightarrow> D \<subseteq> E \<Longrightarrow> \<forall>X. X \<subseteq> D \<longrightarrow> h(X) \<subseteq> i(X) \<Longrightarrow> gfp(D,h) \<subseteq> gfp(E,i)" by auto2
 setup {* del_prfstep_thm @{thm gfp_def} *}
 
-section {* Transitive closure *}
+section \<open>Transitive closure\<close>
 
 definition rtrans_cl :: "i \<Rightarrow> i" where [rewrite]:
   "rtrans_cl(r) = lfp(gr_field(r)\<times>gr_field(r), \<lambda>s. gr_id(gr_field(r)) \<union> (r \<circ>\<^sub>g s))"

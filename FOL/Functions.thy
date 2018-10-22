@@ -9,7 +9,7 @@ theory Functions
   imports Choice
 begin
 
-section {* Functions *}  (* Bourbaki II.3.4 -- II.3.6 *)
+section \<open>Functions\<close>  (* Bourbaki II.3.4 -- II.3.6 *)
 
 (* Image under a function *)
 definition image_on :: "i \<Rightarrow> i \<Rightarrow> i" (infixl "``" 90) where [rewrite]:
@@ -69,7 +69,7 @@ lemma empty_fun_space [rewrite]: "A \<rightarrow> B = \<emptyset> \<longleftrigh
   @end
 @qed
 
-section {* Important examples of functions *}
+section \<open>Important examples of functions\<close>
 
 (* Identity function *)
 definition id_fun :: "i \<Rightarrow> i" where [rewrite]:
@@ -164,7 +164,7 @@ lemma proj2_fun_is_function [typing]: "proj2_fun(A,B) \<in> A\<times>B \<rightar
 lemma proj2_fun_eval [rewrite]: "p \<in> source(proj2_fun(A,B)) \<Longrightarrow> proj2_fun(A,B)`p = snd(p)" by auto2
 setup {* del_prfstep_thm @{thm proj2_fun_def} *}
 
-section {* Composition of functions *}  (* Bourbaki II.3.7 *)
+section \<open>Composition of functions\<close>  (* Bourbaki II.3.7 *)
 
 (* Composition of two functions. *)
 definition fun_comp :: "i \<Rightarrow> i \<Rightarrow> i"  (infixr "\<circ>" 60) where [rewrite]:
@@ -198,7 +198,7 @@ lemma func_vImage_comp [rewrite]:
    (g \<circ> f) -`` V = f -`` (g -`` V)" by auto2
 setup {* add_rewrite_rule_back_cond @{thm func_vImage_comp} [with_term "?g \<circ> ?f"] *}
 
-section {* Injective, surjective, and bijective functions. *}
+section \<open>Injective, surjective, and bijective functions.\<close>
 
 definition injective :: "i \<Rightarrow> o" where [rewrite]:
   "injective(f) \<longleftrightarrow> (is_function(f) \<and> (\<forall>x\<in>source(f). \<forall>y\<in>source(f). f`x = f`y \<longrightarrow> x=y))"
@@ -307,7 +307,7 @@ lemma swap_bij: "Fun(A\<times>B, B\<times>A, \<lambda>p. \<langle>snd(p),fst(p)\
 lemma pair_bij: "Fun(A, A\<times>{b}, \<lambda>x. \<langle>x,b\<rangle>) \<in> A \<cong> A\<times>{b}" by auto2
 lemma rpair_bij: "Fun(A, {b}\<times>A, \<lambda>x. \<langle>b,x\<rangle>) \<in> A \<cong> {b}\<times>A" by auto2
 
-section {* Inverse function *}
+section \<open>Inverse function\<close>
 
 definition inverse :: "i \<Rightarrow> i" where [rewrite]:
   "inverse(f) = Fun(target(f),source(f), \<lambda>y. THE x. x\<in>source(f) \<and> f`x=y)"
@@ -344,7 +344,7 @@ lemma inverse_is_left_inv [rewrite]:
 lemma inverse_is_right_inv [rewrite]:
   "bijective(f) \<Longrightarrow> f \<circ> inverse(f) = id_fun(target(f))" by auto2
 
-section {* Left and right inverses *}  (* Bourbaki II.3.8 *)
+section \<open>Left and right inverses\<close>  (* Bourbaki II.3.8 *)
 
 (* Left and right inverses always exists, but that takes more work. *)
 lemma has_left_inverse_inj [forward]:
@@ -497,7 +497,7 @@ lemma exists_pullback_inj:
   @end
 @qed
 
-section {* Inverse pair *}
+section \<open>Inverse pair\<close>
 
 (* Two functions are inverses of each other. This pattern occurs very frequently. *)
 definition inverse_pair :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
@@ -522,7 +522,7 @@ lemma inverse_pair_inverse [rewrite]: "func_form(g) \<Longrightarrow> inverse_pa
 lemma inverse_pair_inverse2 [rewrite]: "func_form(f) \<Longrightarrow> inverse_pair(f,g) \<Longrightarrow> inverse(g) = f"
 @proof @have "g \<circ> f = id_fun(source(f))" @qed
 
-section {* Function of two arguments *}  (* Bourbaki II.3.9 *)
+section \<open>Function of two arguments\<close>  (* Bourbaki II.3.9 *)
 
 (* We consider functions on product sets only. *)
 
@@ -595,7 +595,7 @@ lemma prod_inverse [resolve]:
   @have "inverse_pair(inverse(u) \<times>\<^sub>f inverse(v), u \<times>\<^sub>f v)"
 @qed
 
-section {* Extension of a function to Pow *}  (* Bourbaki II.5.1 *)
+section \<open>Extension of a function to Pow\<close>  (* Bourbaki II.5.1 *)
 
 definition pow_ext :: "i \<Rightarrow> i" where [rewrite]:
   "pow_ext(f) = Fun(Pow(source(f)), Pow(target(f)), \<lambda>X. f `` X)"
@@ -634,7 +634,7 @@ lemma pow_ext_inj [forward]:
   @end
 @qed
 
-section {* Map on function spaces *}  (* Bourbaki II.5.2 *)
+section \<open>Map on function spaces\<close>  (* Bourbaki II.5.2 *)
 
 (* Define left and right composition separately. *)
 

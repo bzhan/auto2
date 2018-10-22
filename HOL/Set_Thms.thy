@@ -5,19 +5,19 @@
   Setup of proof steps related to sets.
 *)
 
-section {* Setup for sets and multisets *}
+section \<open>Setup for sets and multisets\<close>
 
 theory Set_Thms
 imports Logic_Thms "HOL-Library.Multiset"
 begin
 
-subsection {* Set *}
+subsection \<open>Set\<close>
 
-subsubsection {* Injective functions *}
+subsubsection \<open>Injective functions\<close>
 
 setup {* add_backward_prfstep @{thm injI} *}
 
-subsubsection {* AC property of intersection and union *}
+subsubsection \<open>AC property of intersection and union\<close>
 
 setup {* fold ACUtil.add_ac_data [
   {cfhead = @{cterm inf}, unit = SOME @{cterm inf},
@@ -29,12 +29,12 @@ setup {* fold ACUtil.add_ac_data [
    unitl_th = @{thm sup_bot_left}, unitr_th = @{thm sup_bot_right}}]
 *}
 
-subsubsection {* Collection and bounded quantification *}
+subsubsection \<open>Collection and bounded quantification\<close>
 
 setup {* add_rewrite_rule @{thm Set.mem_Collect_eq} *}
 lemma ball_single [rewrite]: "(\<forall>x\<in>{x}. P x) = P x" by auto
 
-subsubsection {* Membership *}
+subsubsection \<open>Membership\<close>
 
 setup {* add_rewrite_rule @{thm Set.singleton_iff} *} 
 setup {* add_forward_prfstep (equiv_forward_th @{thm Set.empty_iff}) *}
@@ -43,7 +43,7 @@ lemma non_empty_exist_elt [backward]: "U \<noteq> {} \<Longrightarrow> \<exists>
 lemma non_univ_exist_compl [backward]: "U \<noteq> UNIV \<Longrightarrow> \<exists>x. x \<notin> U" by blast
 setup {* add_resolve_prfstep @{thm Set.UNIV_I} *}
 
-subsubsection {* Insert *}
+subsubsection \<open>Insert\<close>
 
 setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.insert_iff}) [with_cond "?A \<noteq> {}"] *}
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Set.insert_iff})
@@ -52,14 +52,14 @@ setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Set.insert_subset}) [w
 setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.insert_subset})
   [with_score 500, with_cond "?A \<noteq> {}"] *}
 
-subsubsection {* Extensionality *}
+subsubsection \<open>Extensionality\<close>
 
 lemma set_ext [forward]: "\<forall>a. a \<in> S \<longleftrightarrow> a \<in> T \<Longrightarrow> S = T" by auto
 setup {* add_backward_prfstep_cond @{thm set_ext} [with_score 500, with_filt (order_filter "S" "T")] *}
 
 lemma set_pair_ext [forward]: "\<forall>a b. (a, b) \<in> S \<longleftrightarrow> (a, b) \<in> T \<Longrightarrow> S = T" by auto
 
-subsubsection {* Union *}
+subsubsection \<open>Union\<close>
 
 setup {* add_forward_prfstep_cond (equiv_forward_th @{thm Set.Un_iff}) [with_score 500] *}
 setup {* add_backward_prfstep (equiv_backward_th @{thm Set.Un_iff}) *}
@@ -77,7 +77,7 @@ setup {* add_forward_prfstep_cond @{thm UnI2_single} [with_term "?A \<union> {?b
   
 lemma union_single_eq [rewrite, backward]: "x \<in> p \<Longrightarrow> {x} \<union> p = p" by auto
 
-subsubsection {* Intersection *}
+subsubsection \<open>Intersection\<close>
 
 setup {* add_forward_prfstep (equiv_forward_th @{thm Set.Int_iff}) *}
 setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.Int_iff}) [with_score 500] *}
@@ -88,7 +88,7 @@ setup {* add_rewrite_rule @{thm Set.Int_absorb} *}
 lemma set_disjoint_mp [forward, backward2]: "A \<inter> B = {} \<Longrightarrow> p \<in> A \<Longrightarrow> p \<notin> B" by auto
 lemma set_disjoint_single [rewrite]: "{x} \<inter> B = {} \<longleftrightarrow> x \<notin> B" by simp
 
-subsubsection {* subset *}
+subsubsection \<open>subset\<close>
 
 setup {* add_forward_prfstep @{thm subsetI} *}
 setup {* add_backward_prfstep_cond @{thm subsetI} [with_score 500] *}
@@ -105,7 +105,7 @@ setup {* add_backward2_prfstep @{thm Set.Un_least} *}
 lemma subset_union_same1 [backward]: "B \<subseteq> C \<Longrightarrow> A \<union> B \<subseteq> A \<union> C" by auto
 lemma subset_union_same2 [backward]: "A \<subseteq> B \<Longrightarrow> A \<union> C \<subseteq> B \<union> C" by auto
 
-subsubsection {* Diff *}
+subsubsection \<open>Diff\<close>
 
 setup {* add_forward_prfstep (equiv_forward_th @{thm Set.Diff_iff}) *}
 setup {* add_backward_prfstep_cond (equiv_backward_th @{thm Set.Diff_iff}) [with_score 500] *}
@@ -123,7 +123,7 @@ lemma member_notin [forward]: "x \<in> S - {y} \<Longrightarrow> x \<noteq> y" b
 lemma member_notin_contra: "x \<in> S \<Longrightarrow> x \<noteq> y \<Longrightarrow> x \<in> S - {y}" by simp
 setup {* add_forward_prfstep_cond @{thm member_notin_contra} [with_term "?S - {?y}"] *}
 
-subsubsection {* Results on finite sets *}
+subsubsection \<open>Results on finite sets\<close>
 
 setup {* add_resolve_prfstep @{thm Finite_Set.finite.emptyI} *}
 lemma set_finite_single [resolve]: "finite {x}" by simp
@@ -134,7 +134,7 @@ setup {* add_forward_prfstep @{thm finite_atLeastAtMost} *}
 setup {* add_forward_prfstep @{thm rev_finite_subset} *}
 setup {* add_backward1_prfstep @{thm rev_finite_subset} *}
 
-subsubsection {* Cardinality *}
+subsubsection \<open>Cardinality\<close>
 
 setup {* add_rewrite_rule @{thm card_empty} *}
 lemma card_emptyD [rewrite]: "finite S \<Longrightarrow> card S = 0 \<Longrightarrow> S = {}" by simp
@@ -142,14 +142,14 @@ lemma card_minus1 [rewrite]: "x \<in> S \<Longrightarrow> card (S - {x}) = card 
 setup {* add_forward_prfstep @{thm finite_Diff} *}
 setup {* add_resolve_prfstep @{thm card_mono} *}
 
-subsubsection {* Image set *}
+subsubsection \<open>Image set\<close>
 
 setup {* add_rewrite_rule @{thm Set.image_Un} *}
 setup {* add_rewrite_rule @{thm image_set_diff} *}
 
-subsection {* Multiset *}
+subsection \<open>Multiset\<close>
 
-subsubsection {* Basic properties *}
+subsubsection \<open>Basic properties\<close>
 
 lemma mset_member_empty [resolve]: "\<not>p \<in># {#}" by simp
 lemma mem_multiset_single [rewrite]: "x \<in># {#y#} \<longleftrightarrow> x = y" by simp
@@ -165,7 +165,7 @@ setup {* add_forward_prfstep_cond @{thm multi_member_this2} [with_term "?XS + {#
 setup {* add_backward_prfstep @{thm Multiset.subset_mset.add_left_mono} *}
 setup {* add_backward_prfstep @{thm Multiset.subset_mset.add_right_mono} *}
 
-subsubsection {* Case checking and induction *}
+subsubsection \<open>Case checking and induction\<close>
 
 lemma multi_nonempty_split' [resolve]: "M \<noteq> {#} \<Longrightarrow> \<exists>M' m. M = M' + {#m#}"
   using multi_nonempty_split by auto
@@ -175,7 +175,7 @@ lemma multi_member_split' [backward]: "x \<in># M \<Longrightarrow> \<exists>M'.
 
 setup {* add_strong_induct_rule @{thm full_multiset_induct} *}
 
-subsubsection {* Results on mset *}
+subsubsection \<open>Results on mset\<close>
 
 setup {* add_rewrite_rule @{thm set_mset_empty} *}
 setup {* add_rewrite_rule @{thm set_mset_single} *}
@@ -189,7 +189,7 @@ setup {* add_rewrite_rule @{thm prod_mset_empty} *}
 setup {* add_rewrite_rule @{thm prod_mset_singleton} *}
 setup {* add_rewrite_rule @{thm prod_mset_Un} *}
 
-subsubsection {* Set interval *}
+subsubsection \<open>Set interval\<close>
 
 setup {* add_rewrite_rule @{thm Set_Interval.ord_class.lessThan_iff} *}
 setup {* add_rewrite_rule @{thm Set_Interval.ord_class.atLeastAtMost_iff} *}

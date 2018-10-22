@@ -11,7 +11,7 @@ theory RBTree_Impl
   imports DataStrs.RBTree SepAuto
 begin
 
-subsection {* Tree nodes *}
+subsection \<open>Tree nodes\<close>
 
 datatype ('a, 'b) rbt_node =
   Node (lsub: "('a, 'b) rbt_node ref option") (cl: color) (key: 'a) (val: 'b) (rsub: "('a, 'b) rbt_node ref option")
@@ -58,9 +58,9 @@ setup {* fold del_prfstep_thm @{thms btree.simps} *}
 
 type_synonym ('a, 'b) btree = "('a, 'b) rbt_node ref option"
 
-subsection {* Operations *}
+subsection \<open>Operations\<close>
 
-subsubsection {* Basic operations *}
+subsubsection \<open>Basic operations\<close>
 
 definition tree_empty :: "('a, 'b) btree Heap" where
   "tree_empty = return None"
@@ -122,7 +122,7 @@ lemma paint_rule [hoare_triple]:
    <\<lambda>_. btree (RBTree.paint c t) p>"
 @proof @case "t = Leaf" @qed
 
-subsubsection {* Rotation *}
+subsubsection \<open>Rotation\<close>
 
 definition btree_rotate_l :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_rotate_l p = (case p of
@@ -160,7 +160,7 @@ lemma btree_rotate_r_rule [hoare_triple]:
    btree_rotate_r p
    <btree (rbt.Node a c1 x v (rbt.Node b c2 y w c))>" by auto2
 
-subsubsection {* Balance *}
+subsubsection \<open>Balance\<close>
 
 definition btree_balanceR :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balanceR p = (case p of None \<Rightarrow> return None | Some pp \<Rightarrow> do {
@@ -222,7 +222,7 @@ lemma balance_to_fun [hoare_triple]:
    <btree (balance l k v r)>"
 @proof @unfold "balance l k v r" @qed
 
-subsubsection {* Insertion *}
+subsubsection \<open>Insertion\<close>
 
 partial_function (heap) rbt_ins ::
   "'a::{heap,ord} \<Rightarrow> 'b::heap \<Rightarrow> ('a, 'b) btree \<Rightarrow> ('a, 'b) btree Heap" where
@@ -273,7 +273,7 @@ lemma rbt_insert_to_fun [hoare_triple]:
    rbt_insert k v p
    <btree (RBTree.rbt_insert k v t)>" by auto2
 
-subsubsection {* Search *}
+subsubsection \<open>Search\<close>
 
 partial_function (heap) rbt_search ::
   "'a::{heap,linorder} \<Rightarrow> ('a, 'b::heap) btree \<Rightarrow> 'b option Heap" where
@@ -291,7 +291,7 @@ lemma btree_search_correct [hoare_triple]:
    <\<lambda>r. btree t b * \<up>(r = RBTree.rbt_search t x)>"
 @proof @induct t arbitrary b @qed
   
-subsubsection {* Delete *}
+subsubsection \<open>Delete\<close>
   
 definition btree_balL :: "('a::heap, 'b::heap) btree \<Rightarrow> ('a, 'b) btree Heap" where
   "btree_balL p = (case p of
@@ -487,7 +487,7 @@ lemma rbt_delete_to_fun [hoare_triple]:
    rbt_delete k p
    <btree (RBTree.delete k t)>\<^sub>t" by auto2
 
-subsection {* Outer interface *}
+subsection \<open>Outer interface\<close>
 
 definition rbt_map_assn :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) rbt_node ref option \<Rightarrow> assn" where
   "rbt_map_assn M p = (\<exists>\<^sub>At. btree t p * \<up>(is_rbt t) * \<up>(rbt_sorted t) * \<up>(M = rbt_map t))"

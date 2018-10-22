@@ -9,7 +9,7 @@ theory Finite
   imports Nat
 begin
 
-section {* Set of first n natural numbers *}
+section \<open>Set of first n natural numbers\<close>
 
 definition nat_less_range :: "i \<Rightarrow> i" where [rewrite]:
   "nat_less_range(n) = {x\<in>.\<nat>. x <\<^sub>\<nat> n}"
@@ -43,7 +43,7 @@ lemma equipotent_nat_less_range [forward]:
   @end
 @qed
 
-section {* Cardinality on finite sets *}
+section \<open>Cardinality on finite sets\<close>
   
 definition finite :: "i \<Rightarrow> o" where [rewrite]:
   "finite(X) \<longleftrightarrow> (\<exists>n\<in>nat. X \<approx>\<^sub>S [n])"
@@ -107,7 +107,7 @@ lemma card_cons [rewrite]:
 
 no_notation nat_less_range ("[_]")
 
-section {* Induction on finite sets *}
+section \<open>Induction on finite sets\<close>
 
 lemma card_Suc_elim [resolve]:
   "finite(F) \<Longrightarrow> n \<in>. \<nat> \<Longrightarrow> card(F) = n +\<^sub>\<nat> 1 \<Longrightarrow> \<exists>a F'. F = cons(a,F') \<and> a \<notin> F' \<and> finite(F') \<and> card(F') = n"
@@ -147,7 +147,7 @@ lemma finite_nonempty_induct [var_induct]:
   @end
 @qed
 
-section {* Applications *}
+section \<open>Applications\<close>
 
 lemma subset_finite [forward]: "finite(A) \<Longrightarrow> B \<subseteq> A \<Longrightarrow> finite(B)"
 @proof
@@ -171,7 +171,7 @@ lemma image_finite [forward]: "is_function(f) \<Longrightarrow> finite(A) \<Long
   @end
 @qed
 
-section {* Finite sets contain greatest element *}
+section \<open>Finite sets contain greatest element\<close>
   
 lemma has_greatest_singleton [backward]:
   "linorder(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> has_greatest(R,{a})"
@@ -186,7 +186,7 @@ lemma finite_set_has_greatest [backward]:
 @proof @var_induct "finite(X) \<and> X \<noteq> \<emptyset>" @qed
 setup {* add_forward_prfstep_cond @{thm finite_set_has_greatest} [with_term "greatest(?R,?X)"] *}
 
-section {* Other consequences of induction *}
+section \<open>Other consequences of induction\<close>
 
 lemma ex_least_nat_less [backward1]:
   "n \<in> nat \<Longrightarrow> \<not>P(0) \<Longrightarrow> P(n) \<Longrightarrow> \<exists>k<\<^sub>\<nat>n. (\<forall>i\<le>\<^sub>\<nat>k. \<not>P(i)) \<and> P(k +\<^sub>\<nat> 1)"

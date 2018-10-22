@@ -14,7 +14,7 @@ theory Arrays_Impl
   imports SepAuto DataStrs.Arrays_Ex
 begin
 
-subsection {* Array copy *}
+subsection \<open>Array copy\<close>
 
 fun array_copy :: "'a::heap array \<Rightarrow> 'a array \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "array_copy a b 0 = (return ())"
@@ -31,7 +31,7 @@ lemma array_copy_rule [hoare_triple]:
    <\<lambda>_. a \<mapsto>\<^sub>a as * b \<mapsto>\<^sub>a Arrays_Ex.array_copy as bs n>"
 @proof @induct n @qed
 
-subsection {* Swap *}
+subsection \<open>Swap\<close>
 
 definition swap :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "swap a i j = do {
@@ -48,7 +48,7 @@ lemma swap_rule [hoare_triple]:
    swap p i j
    <\<lambda>_. p \<mapsto>\<^sub>a list_swap xs i j>" by auto2
 
-subsection {* Reverse *}
+subsection \<open>Reverse\<close>
 
 fun rev :: "'a::heap array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "rev a i j = (if i < j then do {

@@ -11,7 +11,7 @@ theory Real
   imports CompleteOrder Auto2_FOL.Rat OrderTopology
 begin
 
-section {* Real numbers as a quotient set *}
+section \<open>Real numbers as a quotient set\<close>
 
 abbreviation seq_ring_rat :: i where
   "seq_ring_rat \<equiv> seq_ring(\<rat>)"
@@ -50,7 +50,7 @@ definition real :: i where real_def [rewrite_bidir]:
   
 abbreviation Real :: "i \<Rightarrow> i" where "Real(X) \<equiv> equiv_class(\<R>,X)"
 
-section {* Real numbers as a ring *}
+section \<open>Real numbers as a ring\<close>
 
 definition nonneg_real :: "i \<Rightarrow> o" where [rewrite]:
   "nonneg_real(x) \<longleftrightarrow> nonneg_seq(rep(\<R>,x))"
@@ -104,7 +104,7 @@ lemma seq_const_in_cauchy_seqs [typing]: "r \<in>. \<rat> \<Longrightarrow> {r}\
 lemma real_choose_rep: "x \<in>. \<real> \<Longrightarrow> x = Real(rep(\<R>,x))" by auto2
 setup {* add_rewrite_rule_cond @{thm real_choose_rep} [with_filt (size1_filter "x")] *}
 
-section {* Addition on real numbers *}
+section \<open>Addition on real numbers\<close>
   
 lemma real_add_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Real(x) +\<^sub>\<real> Real(y) = Real(x +\<^sub>S y)"
@@ -114,7 +114,7 @@ setup {* del_prfstep_thm @{thm real_evals(3)} *}
 lemma real_add_comm [forward]: "is_plus_comm(\<real>)" by auto2
 lemma real_add_assoc [forward]: "is_plus_assoc(\<real>)" by auto2
 
-section {* Multiplication on real numbers *}
+section \<open>Multiplication on real numbers\<close>
 
 lemma real_mult_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> y \<in>. \<R> \<Longrightarrow> Real(x) *\<^sub>\<real> Real(y) = Real(x *\<^sub>S y)"
@@ -133,23 +133,23 @@ lemma real_mult_comm [forward]: "is_times_comm(\<real>)" by auto2
 lemma real_mult_assoc [forward]: "is_times_assoc(\<real>)" by auto2
 lemma real_distrib_l [forward]: "is_left_distrib(\<real>)" by auto2
 
-section {* 0 and 1 *}
+section \<open>0 and 1\<close>
   
 lemma real_is_add_id [forward]: "is_add_id(\<real>)" by auto2
 lemma real_is_mult_id [forward]: "is_mult_id(\<real>)" by auto2
 lemma real_zero_neq_one [resolve]: "\<zero>\<^sub>\<real> \<noteq> \<one>\<^sub>\<real>" by auto2
 
-section {* Negation on real numbers *}
+section \<open>Negation on real numbers\<close>
 
 lemma real_is_comm_ring [forward]: "is_comm_ring(\<real>)"
 @proof @have "\<forall>x\<in>.\<real>. x +\<^sub>\<real> Real(-\<^sub>S rep(\<R>,x)) = \<zero>\<^sub>\<real>" @qed
 
-section {* Inverse in real numbers *}
+section \<open>Inverse in real numbers\<close>
 
 lemma real_is_field [forward]: "is_field(\<real>)"
 @proof @have "\<forall>x\<in>.\<real>. x \<noteq> \<zero>\<^sub>\<real> \<longrightarrow> x *\<^sub>\<real> Real(seq_inverse(rep(\<R>,x))) = \<one>\<^sub>\<real>" @qed
 
-section {* Nonnegative real numbers *}
+section \<open>Nonnegative real numbers\<close>
 
 lemma real_neg_eval [rewrite]: "x \<in>. \<R> \<Longrightarrow> -\<^sub>\<real> Real(x) = Real(-\<^sub>S x)"
 @proof @have "Real(x) +\<^sub>\<real> Real(-\<^sub>S x) = \<zero>\<^sub>\<real>" @qed
@@ -167,7 +167,7 @@ lemma real_is_ord_field [forward]: "is_ord_field(\<real>)"
 @qed
 setup {* del_prfstep_thm @{thm real_is_ord_field_prep} *}
 
-section {* of\_nat, of\_int, of\_rat in terms of sequences *}
+section \<open>of\_nat, of\_int, of\_rat in terms of sequences\<close>
 
 lemma real_of_nat [rewrite]:
   "n \<in> nat \<Longrightarrow> of_nat(\<real>,n) = Real({of_nat(\<rat>,n)}\<^sub>\<rat>)"
@@ -213,7 +213,7 @@ lemma real_of_rat [backward]:
 setup {* fold del_prfstep_thm [@{thm real_of_nat}, @{thm real_of_int}] *}
 setup {* del_prfstep_thm @{thm real_choose_rep} *}
 
-section {* Ordering on real numbers *}
+section \<open>Ordering on real numbers\<close>
 
 lemma le_Real1 [rewrite]:
   "X \<in>. \<R> \<Longrightarrow> Y \<in>. \<R> \<Longrightarrow> Real(X) \<le>\<^sub>\<real> Real(Y) \<longleftrightarrow> nonneg_seq(Y -\<^sub>S X)" by auto2
@@ -333,7 +333,7 @@ lemma converges_to_in_rat [resolve]:
     @obtain "k\<in>.\<nat>" where "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R \<le>\<^sub>R of_rat(R,r)" @end
 @qed
 
-section {* A sequence that converges to zero *}
+section \<open>A sequence that converges to zero\<close>
 
 definition err :: i where [rewrite]:
   "err = Seq(\<rat>, \<lambda>n. inv(\<rat>,of_nat(\<rat>,n +\<^sub>\<nat> 1)))"
@@ -356,7 +356,7 @@ lemma err_converge_to_zero [backward]: "r >\<^sub>\<rat> \<zero>\<^sub>\<rat> \<
 @qed
 setup {* del_prfstep_thm @{thm err_def} *}
 
-section {* Cauchy completeness of real numbers *}
+section \<open>Cauchy completeness of real numbers\<close>
 
 (* We start by defining, for each Cauchy sequence X of real numbers, a "diagonal"
    sequence for the double sequence of representatives of X. *)

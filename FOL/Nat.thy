@@ -10,7 +10,7 @@ theory Nat
   imports Ordinal Semiring Equipotent
 begin
 
-section {* Axiom of infinity *}
+section \<open>Axiom of infinity\<close>
 
 axiomatization Inf :: "i" where
   infinity: "\<emptyset> \<in> Inf \<and> (\<forall>y\<in>Inf. succ(y) \<in> Inf)"
@@ -20,7 +20,7 @@ lemma infinityD1 [typing2]: "\<emptyset> \<in> Inf" by auto2
 lemma infinityD2 [typing]: "y \<in> Inf \<Longrightarrow> succ(y) \<in> Inf" by auto2
 setup {* del_prfstep_thm @{thm infinity} *}
 
-section {* Definition of natural numbers *}
+section \<open>Definition of natural numbers\<close>
 
 definition Zero ("0") where [rewrite]: "0 = \<emptyset>"
 
@@ -47,7 +47,7 @@ lemma nat_SucI [typing]: "n \<in> nat \<Longrightarrow> Suc(n) \<in> nat" by aut
 lemma nat_Suc_not_zero [resolve]: "0 \<noteq> Suc(n)" by auto2
 lemma nat_Suc_inj [forward]: "Suc(a) = Suc(b) \<Longrightarrow> a = b" by auto2
 
-section {* Natural numbers as an ordinal *}
+section \<open>Natural numbers as an ordinal\<close>
 
 (* First infinite cardinal. *)
 definition omega_ord :: i  ("\<omega>") where [rewrite]:
@@ -109,7 +109,7 @@ abbreviation Three ("3") where "3 \<equiv> Suc(2)"
 abbreviation Four ("4") where "4 \<equiv> Suc(3)"
 abbreviation Five ("5") where "5 \<equiv> Suc(4)"
 
-section {* Defining functions on natural numbers *}
+section \<open>Defining functions on natural numbers\<close>
 
 definition nat_case :: "[i, i \<Rightarrow> i, i] \<Rightarrow> i" where [rewrite]:
   "nat_case(a,b,k) = (THE y. k = 0 \<and> y = a \<or> (\<exists>x. k = Suc(x) \<and> y = b(x)))"
@@ -141,7 +141,7 @@ lemma nat_rec_type [backward]:
 
 setup {* fold del_prfstep_thm [@{thm Zero_def}, @{thm Suc_def}] *}
 
-section {* Natural numbers as an ordered semiring *}
+section \<open>Natural numbers as an ordered semiring\<close>
 
 (* Recursion on x:
     nat_add(0,y) = y
@@ -189,7 +189,7 @@ setup {* fold add_rewrite_rule @{thms nat_evals(1,2)} *}
 setup {* del_prfstep_thm @{thm nat_ring_def} *}
 setup {* add_var_induct_data_with_prem (@{term_pat "?n \<in>. \<nat>"}, @{thm nat_induct}) *}
 
-section {* Addition on natural numbers *}
+section \<open>Addition on natural numbers\<close>
 
 setup {* add_rewrite_rule @{thm nat_evals(3)} *}
 lemma nat_add_0_left [rewrite]: "x \<in>. \<nat> \<Longrightarrow> 0 +\<^sub>\<nat> x = x" by auto2
@@ -210,7 +210,7 @@ lemma nat_add_1 [rewrite_bidir]:
 lemma nat_add_comm [rewrite]: "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> x +\<^sub>\<nat> y = y +\<^sub>\<nat> x"
 @proof @var_induct "x \<in>. \<nat>" @qed
 
-section {* Multiplication on natural numbers *}
+section \<open>Multiplication on natural numbers\<close>
 
 setup {* fold add_rewrite_rule @{thms nat_evals(3,4)} *}
 lemma nat_mult_0_left [rewrite]: "x \<in>. \<nat> \<Longrightarrow> 0 *\<^sub>\<nat> x = 0" by auto2
@@ -276,7 +276,7 @@ lemma nat_mult_nonzero [forward]:
 @proof @var_induct "y \<in>. \<nat>" @qed
 setup {* del_prfstep_thm @{thm nat_mult_Suc_right} *}
 
-section {* Ordering on natural numbers *}
+section \<open>Ordering on natural numbers\<close>
 
 setup {* fold add_rewrite_rule @{thms nat_evals(3,5)} *}
 lemma nat_leD [backward]: "x \<le>\<^sub>\<nat> y \<Longrightarrow> \<exists>p\<in>.\<nat>. y = x +\<^sub>\<nat> p" by auto2
@@ -408,7 +408,7 @@ lemma nat_mult_cancel_right [forward]:
   "x \<in>. \<nat> \<Longrightarrow> y \<in>. \<nat> \<Longrightarrow> z \<in>. \<nat> \<Longrightarrow> z \<noteq> 0 \<Longrightarrow> x *\<^sub>\<nat> z = y *\<^sub>\<nat> z \<Longrightarrow> x = y"
 @proof @have "x *\<^sub>\<nat> z = z *\<^sub>\<nat> x" @have "y *\<^sub>\<nat> z = z *\<^sub>\<nat> y" @qed
 
-section {* Subtraction in natural numbers *}
+section \<open>Subtraction in natural numbers\<close>
 
 setup {* add_backward2_prfstep @{thm minusI} *}
 lemma nat_minusI [resolve]:
@@ -426,7 +426,7 @@ setup {* add_rewrite_rule (conj_right_th @{thm nat_minus_prop}) *}
 
 ML_file "nat_arith.ML"
 
-section {* Replace lemmas about Suc(x) with x + 1 *}
+section \<open>Replace lemmas about Suc(x) with x + 1\<close>
 
 setup {* fold del_prfstep_thm [@{thm nat_Suc_inj}] *}
 
@@ -450,7 +450,7 @@ lemma nat_induct' [var_induct]:
 setup {* add_var_induct_data_with_prem (@{term_pat "?n \<in>. \<nat>"}, @{thm nat_induct'}) *}
 setup {* del_prfstep_thm @{thm nat_add_1} *}
 
-section {* Other induction principles *}
+section \<open>Other induction principles\<close>
 
 lemma nat_induct_k [var_induct]:
   "n \<ge>\<^sub>\<nat> k \<Longrightarrow> P(k) \<Longrightarrow> \<forall>x\<in>nat. x \<ge>\<^sub>\<nat> k \<longrightarrow> P(x) \<longrightarrow> P(x +\<^sub>\<nat> 1) \<Longrightarrow> P(n)"
@@ -472,7 +472,7 @@ lemma nat_double_induct [script_induct]:
   @end
 @qed
 
-section {* Definition of power *}
+section \<open>Definition of power\<close>
   
 definition power :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "power(R,b,e) = nat_rec(\<one>\<^sub>R, \<lambda>_ p. p *\<^sub>R b, e)"
@@ -484,7 +484,7 @@ lemma power_Suc [rewrite]: "e \<in> nat \<Longrightarrow> b ^\<^sub>R (e +\<^sub
 lemma power_type [typing]: "is_group_raw(R) \<Longrightarrow> e \<in> nat \<Longrightarrow> b \<in>. R \<Longrightarrow> b ^\<^sub>R e \<in>. R" by auto2
 setup {* del_prfstep_thm @{thm power_def} *}
 
-section {* n-fold composition *}
+section \<open>n-fold composition\<close>
   
 (* nfold(f,0,x) = x
  | nfold(f,Suc(n),x) = f`(nfold(f,n,x))
@@ -499,7 +499,7 @@ lemma nfold_type [typing]:
   "is_function(f) \<Longrightarrow> source(f) = target(f) \<Longrightarrow> x \<in> source(f) \<Longrightarrow> n \<in> nat \<Longrightarrow> nfold(f,n,x) \<in> source(f)" by auto2
 setup {* del_prfstep_thm @{thm nfold_def} *}
 
-section {* Action of natural numbers on an abelian group *}
+section \<open>Action of natural numbers on an abelian group\<close>
 
 (* Recursion on n:
     nat_act(R,0,x) = 0

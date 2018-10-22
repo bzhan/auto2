@@ -9,7 +9,7 @@ theory Connected
   imports ProductTopology OrderTopology
 begin
 
-section {* Connected spaces *}
+section \<open>Connected spaces\<close>
 
 definition separation :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "separation(X,U,V) \<longleftrightarrow> (is_open(X,U) \<and> is_open(X,V) \<and> U \<noteq> \<emptyset> \<and> V \<noteq> \<emptyset> \<and> U \<inter> V = \<emptyset> \<and> U \<union> V = carrier(X))"
@@ -103,7 +103,7 @@ lemma connected_is_top_prop2 [forward]:
   "connected(X) \<Longrightarrow> eq_str_top(X,Y) \<Longrightarrow> connected(Y)"
 @proof @have "homeomorphic(X,Y)" @qed
 
-section {* Connected-ness on product spaces *}
+section \<open>Connected-ness on product spaces\<close>
  
 lemma product_connected [forward]:
   "connected(X) \<Longrightarrow> connected(Y) \<Longrightarrow> connected(X \<times>\<^sub>T Y)"
@@ -127,7 +127,7 @@ lemma product_connected [forward]:
   @end
 @qed
 
-section {* Connected-ness on order topology *}
+section \<open>Connected-ness on order topology\<close>
 
 lemma connected_convex [resolve]:
   "order_topology(X) \<Longrightarrow> connected_subset(X,A) \<Longrightarrow> order_convex(X,A)"

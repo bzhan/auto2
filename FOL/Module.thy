@@ -21,7 +21,7 @@ definition mtimes :: "[i, i, i] \<Rightarrow> i" where [rewrite_bidir]:
 abbreviation mtimes_notation ("(_/ \<bullet>\<^sub>_ _)" [70,70,71] 70) where "a \<bullet>\<^sub>M x \<equiv> mtimes(M,a,x)"
 setup {* register_wellform_data ("a \<bullet>\<^sub>M x", ["x \<in>. M", "a \<in>. mod_ring(M)"]) *}
 
-section {* Module structure *}
+section \<open>Module structure\<close>
   
 definition is_mod_raw :: "i \<Rightarrow> o" where [rewrite]:
   "is_mod_raw(M) \<longleftrightarrow> is_abgroup_raw(M) \<and> is_ring(mod_ring(M)) \<and>
@@ -90,7 +90,7 @@ lemma mod_eq [backward]:
   "mod_form(M) \<Longrightarrow> mod_form(N) \<Longrightarrow> eq_str_mod(M,N) \<Longrightarrow> M = N" by auto2
 setup {* del_prfstep_thm @{thm mod_form_def} *}
 
-section {* Definition of a module *}
+section \<open>Definition of a module\<close>
   
 definition is_mod :: "i \<Rightarrow> o" where [rewrite]:
   "is_mod(M) \<longleftrightarrow> (let R = mod_ring(M) in
@@ -112,7 +112,7 @@ lemma is_modD2 [rewrite]:
   by auto2+
 setup {* del_prfstep_thm_eqforward @{thm is_mod_def} *}
 
-section {* Every abelian group is a module *}
+section \<open>Every abelian group is a module\<close>
 
 definition mod_of_abgroup :: "i \<Rightarrow> i" where [rewrite]:
   "mod_of_abgroup(R) = LMod(carrier(R),\<int>,\<zero>\<^sub>R, \<lambda>x y. x +\<^sub>R y, \<lambda>a x. int_act(R,a,x))"

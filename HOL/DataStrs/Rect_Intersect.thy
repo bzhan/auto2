@@ -13,7 +13,7 @@ theory Rect_Intersect
   imports Interval_Tree
 begin
 
-subsection {* Definition of rectangles *}
+subsection \<open>Definition of rectangles\<close>
 
 datatype 'a rectangle = Rectangle (xint: "'a interval") (yint: "'a interval")
 setup {* add_simple_datatype "rectangle" *}
@@ -35,7 +35,7 @@ definition is_rect_overlap :: "('a::linorder) rectangle \<Rightarrow> ('a::linor
 definition has_rect_overlap :: "('a::linorder) rectangle list \<Rightarrow> bool" where [rewrite]:
   "has_rect_overlap As \<longleftrightarrow> (\<exists>i<length As. \<exists>j<length As. i \<noteq> j \<and> is_rect_overlap (As ! i) (As ! j))"
 
-subsection {* INS / DEL operations *}
+subsection \<open>INS / DEL operations\<close>
 
 datatype 'a operation =
   INS (pos: 'a) (op_idx: nat) (op_int: "'a interval")
@@ -84,7 +84,7 @@ lemma operation_lessI [backward]:
 
 setup {* fold del_prfstep_thm [@{thm less_eq}, @{thm less}] *}
 
-subsection {* Set of operations corresponding to a list of rectangles *}
+subsection \<open>Set of operations corresponding to a list of rectangles\<close>
 
 fun ins_op :: "'a rectangle list \<Rightarrow> nat \<Rightarrow> ('a::linorder) operation" where
   "ins_op rects i = INS (low (yint (rects ! i))) i (xint (rects ! i))"
@@ -160,7 +160,7 @@ lemma all_ops_nonempty [backward]: "rects \<noteq> [] \<Longrightarrow> all_ops 
 
 setup {* del_prfstep_thm @{thm all_ops_def} *}
 
-subsection {* Applying a set of operations *}
+subsection \<open>Applying a set of operations\<close>
 
 definition apply_ops_k :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> nat set" where [rewrite]:
   "apply_ops_k rects k = (let ops = all_ops rects in
@@ -245,7 +245,7 @@ definition has_overlap_lst :: "('a::linorder) rectangle list \<Rightarrow> bool"
 lemma has_overlap_equiv [rewrite]:
   "is_rect_list rects \<Longrightarrow> has_overlap_lst rects \<longleftrightarrow> has_rect_overlap rects" by auto2
 
-subsection {* Implementation of apply\_ops\_k *}
+subsection \<open>Implementation of apply\_ops\_k\<close>
 
 lemma apply_ops_k_next1 [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow> is_INS (ops ! n) \<Longrightarrow>

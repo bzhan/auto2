@@ -9,7 +9,7 @@ theory Sequence
   imports Auto2_FOL.Abs Auto2_FOL.Finite
 begin
 
-section {* Definition of sequences as morphisms from Nat *}
+section \<open>Definition of sequences as morphisms from Nat\<close>
 
 definition is_sequence :: "i \<Rightarrow> o" where [rewrite]:
   "is_sequence(X) \<longleftrightarrow> (mor_form(X) \<and> source_str(X) = \<nat>)"
@@ -62,7 +62,7 @@ lemma ord_field_seq_iff [forward]:
   "is_sequence(X) \<Longrightarrow> is_ord_field(target_str(X)) \<Longrightarrow> ord_field_seq(X)" by auto2+
 setup {* del_prfstep_thm @{thm ord_field_seq_def} *}
 
-section {* Negation on sequences *}
+section \<open>Negation on sequences\<close>
 
 definition seq_neg :: "i \<Rightarrow> i" where [rewrite]:
   "seq_neg(X) = (let R = target_str(X) in Seq(R, \<lambda>n. -\<^sub>R X`n))"
@@ -78,7 +78,7 @@ setup {* del_prfstep_thm @{thm seq_neg_def} *}
 lemma seq_neg_neg [rewrite]:
   "is_sequence(X) \<Longrightarrow> is_ord_ring(target_str(X)) \<Longrightarrow> seq_neg(seq_neg(X)) = X" by auto2
 
-section {* Upper and lower bounds *}
+section \<open>Upper and lower bounds\<close>
   
 definition upper_bounded :: "i \<Rightarrow> o" where [rewrite]:
   "upper_bounded(X) \<longleftrightarrow> (let R = target_str(X) in \<exists>r\<in>.R. \<forall>n\<in>.\<nat>. X`n \<le>\<^sub>R r)"
@@ -111,7 +111,7 @@ lemma lower_bounded_is_neg_upper [rewrite]:
     @obtain "r\<in>.R" where "\<forall>n\<in>.\<nat>. r \<ge>\<^sub>R seq_neg(X)`n" @have "\<forall>n\<in>.\<nat>. -\<^sub>R r \<le>\<^sub>R X`n" @end
 @qed
 
-section {* Boundedness on sequences *}
+section \<open>Boundedness on sequences\<close>
 
 definition bounded :: "i \<Rightarrow> o" where bounded_def [rewrite]:
   "bounded(X) \<longleftrightarrow> (let R = target_str(X) in \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>n\<in>.\<nat>. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r)"
@@ -155,7 +155,7 @@ lemma bounded_less_on_tail [forward]:
   "ord_ring_seq(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> k \<in>. \<nat> \<Longrightarrow> \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r \<Longrightarrow> bounded(X)"
 @proof @have "\<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R r" @qed
 
-section {* Vanishes condition on sequences *}
+section \<open>Vanishes condition on sequences\<close>
   
 definition vanishes :: "i \<Rightarrow> o" where [rewrite]:
   "vanishes(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)"
@@ -179,7 +179,7 @@ lemma not_vanishesD [backward]:
   "ord_ring_seq(X) \<Longrightarrow> \<not>vanishes(X) \<Longrightarrow> R = target_str(X) \<Longrightarrow> \<exists>r>\<^sub>R\<zero>\<^sub>R. \<forall>k\<in>.\<nat>. \<exists>n\<ge>\<^sub>\<nat>k. r \<le>\<^sub>R \<bar>X`n\<bar>\<^sub>R"
 @proof @obtain r where "r >\<^sub>R \<zero>\<^sub>R" "\<not>(\<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n\<bar>\<^sub>R <\<^sub>R r)" @qed
 
-section {* Cauchy condition on sequences *}
+section \<open>Cauchy condition on sequences\<close>
 
 definition cauchy :: "i \<Rightarrow> o" where [rewrite]:
   "cauchy(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>m\<ge>\<^sub>\<nat>k. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`m -\<^sub>R X`n\<bar>\<^sub>R <\<^sub>R r)"
@@ -278,7 +278,7 @@ lemma cauchy_not_vanishes [backward]:
   @have "\<forall>n\<ge>\<^sub>\<nat>k. b <\<^sub>R \<bar>X`n\<bar>\<^sub>R"
 @qed
 
-section {* Convergence of sequences, limits *}
+section \<open>Convergence of sequences, limits\<close>
   
 definition converges_to :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "converges_to(X,s) \<longleftrightarrow> (let R = target_str(X) in s \<in>. R \<and> (\<forall>r>\<^sub>R\<zero>\<^sub>R. \<exists>k\<in>.\<nat>. \<forall>n\<ge>\<^sub>\<nat>k. \<bar>X`n -\<^sub>R s\<bar>\<^sub>R <\<^sub>R r))"
@@ -360,7 +360,7 @@ lemma converges_neg' [forward]:
   "is_sequence(X) \<Longrightarrow> is_ord_ring(target_str(X)) \<Longrightarrow> converges(seq_neg(X)) \<Longrightarrow> converges(X)"
 @proof @have "seq_neg(seq_neg(X)) = X" @qed
   
-section {* Constant sequences *}
+section \<open>Constant sequences\<close>
   
 definition seq_const :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "seq_const(R,x) = Seq(R,\<lambda>_. x)"
@@ -376,7 +376,7 @@ lemma seq_const_eval [rewrite]:
   "is_ord_ring(R) \<Longrightarrow> n \<in> source({x}\<^sub>R) \<Longrightarrow> x \<in>. R \<Longrightarrow> {x}\<^sub>R`n = x" by auto2
 setup {* del_prfstep_thm @{thm seq_const_def} *}
 
-section {* Increasing and decreasing sequences *}
+section \<open>Increasing and decreasing sequences\<close>
   
 definition seq_incr :: "i \<Rightarrow> o" where [rewrite]:
   "seq_incr(X) \<longleftrightarrow> (let R = target_str(X) in \<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> X`n \<ge>\<^sub>R X`m)"
@@ -434,7 +434,7 @@ lemma seq_abs_decrI' [forward]:
   @have "\<forall>m n. n \<ge>\<^sub>\<nat> m \<longrightarrow> \<bar>X`n\<bar>\<^sub>R \<le>\<^sub>R \<bar>X`m\<bar>\<^sub>R" @with
     @have "m \<in> nat" @var_induct n in "n \<ge>\<^sub>\<nat> m" @end
 @qed
-section {* Inductive definition of sequences *}
+section \<open>Inductive definition of sequences\<close>
 
 definition rec_type_cond :: "[i, i, [i, i] \<Rightarrow> i] \<Rightarrow> o" where [rewrite]:
   "rec_type_cond(S,a,b) \<longleftrightarrow> (a \<in> S \<and> (\<forall>m\<in>nat. \<forall>p\<in>S. b(m,p)\<in>S))"

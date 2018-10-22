@@ -344,7 +344,7 @@ lemma InterS_iff [rewrite]:
 setup {* del_prfstep_thm @{thm UnionS_def} *}
 setup {* del_prfstep_thm @{thm InterS_def} *}
 
-section {* Sigma *}
+section \<open>Sigma\<close>
 
 definition Sigma :: "[i, i \<Rightarrow> i] \<Rightarrow> i" where [rewrite]:
   "Sigma(A,B) = (\<Union>x\<in>A. \<Union>y\<in>B(x). {\<langle>x,y\<rangle>})"

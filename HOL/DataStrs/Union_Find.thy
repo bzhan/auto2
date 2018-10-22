@@ -12,7 +12,7 @@ theory Union_Find
   imports Partial_Equiv_Rel
 begin
 
-subsection {* Representing a partial equivalence relation using rep\_of array *}
+subsection \<open>Representing a partial equivalence relation using rep\_of array\<close>
 
 function (domintros) rep_of where
   "rep_of l i = (if l ! i = i then i else rep_of l (l ! i))" by auto
@@ -73,7 +73,7 @@ lemma ufa_\<alpha>_equiv [forward]: "part_equiv (ufa_\<alpha> l)" by auto2
 
 lemma ufa_\<alpha>_refl [rewrite]: "(i, i) \<in> ufa_\<alpha> l \<longleftrightarrow> i < length l" by auto2
 
-subsection {* Operations on rep\_of array *}
+subsection \<open>Operations on rep\_of array\<close>
 
 definition uf_init_rel :: "nat \<Rightarrow> (nat \<times> nat) set" where [rewrite]:
   "uf_init_rel n = ufa_\<alpha> [0..<n]"

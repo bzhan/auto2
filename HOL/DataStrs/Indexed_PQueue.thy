@@ -14,7 +14,7 @@ theory Indexed_PQueue
   imports Arrays_Ex Mapping_Str
 begin
 
-subsection {* Successor functions, eq-pred predicate *}
+subsection \<open>Successor functions, eq-pred predicate\<close>
 
 fun s1 :: "nat \<Rightarrow> nat" where "s1 m = 2 * m + 1"
 fun s2 :: "nat \<Rightarrow> nat" where "s2 m = 2 * m + 2"
@@ -52,7 +52,7 @@ setup {* add_forward_prfstep_cond @{thm eq_pred_cases} [with_cond "?i \<noteq> s
 lemma eq_pred_le [forward]: "eq_pred i j \<Longrightarrow> i \<le> j"
 @proof @prop_induct "eq_pred i j" @qed
 
-subsection {* Heap property *}
+subsection \<open>Heap property\<close>
 
 (* The corresponding tree is a heap. *)
 definition is_heap :: "('a \<times> 'b::linorder) list \<Rightarrow> bool" where [rewrite]:
@@ -63,7 +63,7 @@ lemma is_heapD:
 setup {* add_forward_prfstep_cond @{thm is_heapD} [with_term "?xs ! ?j"] *}
 setup {* del_prfstep_thm_eqforward @{thm is_heap_def} *}
 
-subsection {* Bubble-down *}
+subsection \<open>Bubble-down\<close>
 
 (* The corresponding tree is a heap, except k is not necessarily smaller than its descendents. *)
 definition is_heap_partial1 :: "('a \<times> 'b::linorder) list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
@@ -86,7 +86,7 @@ lemma bubble_down3:
    snd (xs ! k) > snd (xs ! s2 k) \<Longrightarrow> xs' = list_swap xs k (s2 k) \<Longrightarrow> is_heap_partial1 xs' (s2 k)" by auto2
 setup {* add_forward_prfstep_cond @{thm bubble_down3} [with_term "?xs'"] *}
 
-subsection {* Bubble-up *}
+subsection \<open>Bubble-up\<close>
 
 fun par :: "nat \<Rightarrow> nat" where
   "par m = (m - 1) div 2"
@@ -126,7 +126,7 @@ lemma bubble_up2 [forward]:
    is_heap xs" by auto2
 setup {* del_prfstep_thm @{thm p_cases} *}
 
-subsection {* Indexed priority queue *}
+subsection \<open>Indexed priority queue\<close>
 
 type_synonym 'a idx_pqueue = "(nat \<times> 'a) list \<times> nat option list"
 
@@ -174,7 +174,7 @@ lemma has_index_distinct [forward]:
   @have "\<forall>i<length xs. \<forall>j<length xs. i \<noteq> j \<longrightarrow> xs ! i \<noteq> xs ! j"
 @qed
 
-subsection {* Basic operations on indexed\_queue *}
+subsection \<open>Basic operations on indexed\_queue\<close>
 
 fun idx_pqueue_swap_fun :: "(nat \<times> 'a) list \<times> nat option list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) list \<times> nat option list" where
   "idx_pqueue_swap_fun (xs, m) i j = (
@@ -214,7 +214,7 @@ lemma idx_pqueue_pop_correct [forward_arg]:
   @have "fst (xs ! length (butlast xs)) < length m"  (* TODO: remove? *)
 @qed
 
-subsection {* Bubble up and down *}
+subsection \<open>Bubble up and down\<close>
 
 function idx_bubble_down_fun :: "'a::linorder idx_pqueue \<Rightarrow> nat \<Rightarrow> 'a idx_pqueue" where
   "idx_bubble_down_fun (xs, m) k = (
@@ -284,7 +284,7 @@ lemma idx_bubble_up_fun_correct2 [forward]:
   @unfold "idx_bubble_up_fun (xs, m) k" @end
 @qed
 
-subsection {* Main operations *}
+subsection \<open>Main operations\<close>
 
 fun delete_min_idx_pqueue_fun :: "'a::linorder idx_pqueue \<Rightarrow> (nat \<times> 'a) \<times> 'a idx_pqueue" where
   "delete_min_idx_pqueue_fun (xs, m) = (

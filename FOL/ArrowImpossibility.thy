@@ -10,7 +10,7 @@ theory ArrowImpossibility
   imports WellOrder Finite
 begin
 
-section {* Sets with at least three elements *}
+section \<open>Sets with at least three elements\<close>
   
 definition distinct3 :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "distinct3(X,a,b,c) \<longleftrightarrow> (a \<in> X \<and> b \<in> X \<and> c \<in> X \<and> a \<noteq> b \<and> a \<noteq> c \<and> b \<noteq> c)"
@@ -37,7 +37,7 @@ notation less ("prefer")
 abbreviation "eq_prefer(R,a,b,S,a',b') \<equiv> (prefer(R,a,b) \<longleftrightarrow> prefer(S,a',b'))"
 abbreviation "prefer3(R,a,b,c) \<equiv> a <\<^sub>R b \<and> b <\<^sub>R c"
 
-section {* Linear ordering *}
+section \<open>Linear ordering\<close>
   
 definition linorder_space :: "i \<Rightarrow> i" where [rewrite]:
   "linorder_space(S) = {R \<in> raworder_space(S). linorder(R)}"
@@ -119,7 +119,7 @@ lemma complete_Lin_mk_bot [backward]:
    \<exists>R'\<in>linorder_space(S). eq_prefer(R,a,b,R',a,b) \<and> prefer(R',c,a) \<and> prefer(R',c,b)"
 @proof @let "R' = mk_bot(R,c)" @qed
 
-section {* Profiles and policies *}
+section \<open>Profiles and policies\<close>
   
 definition Prof :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "Prof(I,Cs) = I \<rightarrow> linorder_space(Cs)"
@@ -157,7 +157,7 @@ setup {* del_prfstep_thm_str "@invbackward" @{thm dictator_def} *}
 definition arrow_conds :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "arrow_conds(I,Cs,F) \<longleftrightarrow> (F \<in> Policy(I,Cs) \<and> unanimity(I,Cs,F) \<and> IIA(I,Cs,F))"
 
-section {* Strict neutrality *}
+section \<open>Strict neutrality\<close>
   
 (* Generalization of IIA (which is when a = a', b = b') *)
 definition strict_neutral :: "[i, i, i, i, i, i, i] \<Rightarrow> o" where [rewrite]:
@@ -243,7 +243,7 @@ lemma strict_neutrality [backward2]:
   @have "strict_neutral(I,Cs,F,a,b',a',b')"
 @qed
 
-section {* Arrow's theorem *}
+section \<open>Arrow's theorem\<close>
 
 lemma Arrow: "finite(I) \<Longrightarrow> card_ge3(Cs) \<Longrightarrow> arrow_conds(I,Cs,F) \<Longrightarrow> \<exists>i\<in>I. dictator(I,Cs,F,i)"
 @proof

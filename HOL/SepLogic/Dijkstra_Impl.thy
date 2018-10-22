@@ -21,7 +21,7 @@ fun dstate :: "state \<Rightarrow> dijkstra_state \<Rightarrow> assn" where
   "dstate (State e M) (Dijkstra_State a pq) = a \<mapsto>\<^sub>a e * idx_pqueue_map M (length e) pq"
 setup {* add_rewrite_ent_rule @{thm dstate.simps} *}
 
-subsection {* Basic operations *}
+subsection \<open>Basic operations\<close>
 
 fun dstate_pq_init :: "graph \<Rightarrow> nat \<Rightarrow> nat indexed_pqueue Heap" where
   "dstate_pq_init G 0 = idx_pqueue_empty (size G)"
@@ -113,7 +113,7 @@ lemma dijkstra_extract_min_rule [hoare_triple]:
 
 setup {* del_prfstep_thm @{thm dstate.simps} *}
 
-subsection {* Main operations *}
+subsection \<open>Main operations\<close>
 
 fun dijkstra_step_impl :: "graph \<Rightarrow> dijkstra_state \<Rightarrow> dijkstra_state Heap" where
   "dijkstra_step_impl G (Dijkstra_State a pq) = do {

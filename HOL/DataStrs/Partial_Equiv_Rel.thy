@@ -6,7 +6,7 @@
   Collections/Lib/Partial_Equivalence_Relation in the AFP.
 *)
 
-section {* Partial equivalence relation *}
+section \<open>Partial equivalence relation\<close>
 
 theory Partial_Equiv_Rel
   imports Auto2_HOL.Auto2_Main
@@ -20,7 +20,7 @@ lemma part_equivD1 [forward]: "part_equiv R \<Longrightarrow> sym R" by auto2
 lemma part_equivD2 [forward]: "part_equiv R \<Longrightarrow> trans R" by auto2
 setup {* del_prfstep_thm_eqforward @{thm part_equiv_def} *}
 
-subsection {* Combining two elements in a partial equivalence relation *}
+subsection \<open>Combining two elements in a partial equivalence relation\<close>
 
 definition per_union :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a \<Rightarrow> ('a \<times> 'a) set" where [rewrite]:
   "per_union R a b = R \<union> { (x,y). (x,a)\<in>R \<and> (b,y)\<in>R } \<union> { (x,y). (x,b)\<in>R \<and> (a,y)\<in>R }"

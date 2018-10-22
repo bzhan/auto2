@@ -9,7 +9,7 @@ theory Divides
   imports Nat
 begin
 
-section {* Divisibility *}
+section \<open>Divisibility\<close>
   
 definition divides :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "divides(R,a,b) \<longleftrightarrow> (a \<in>. R \<and> b \<in>. R \<and> (\<exists>k\<in>.R. b = a *\<^sub>R k))"
@@ -39,7 +39,7 @@ lemma divides_zero [resolve]:
   "is_semiring(R) \<Longrightarrow> a \<in>. R \<Longrightarrow> divides(R,a,\<zero>\<^sub>R)"
 @proof @have "\<zero>\<^sub>R = a *\<^sub>R \<zero>\<^sub>R" @qed
 
-section {* Divides on natural numbers *}
+section \<open>Divides on natural numbers\<close>
 
 lemma nat_divides_cancel [forward]:
   "a \<in>. \<nat> \<Longrightarrow> b \<in>. \<nat> \<Longrightarrow> c \<in>. \<nat> \<Longrightarrow> c \<noteq> 0 \<Longrightarrow>
@@ -63,7 +63,7 @@ definition even :: "i \<Rightarrow> o" where [rewrite]:
 definition odd :: "i \<Rightarrow> o" where [rewrite]:
   "odd(x) \<longleftrightarrow> (\<not>divides(\<nat>,2,x))"
   
-section {* Quotient and Remainder *}
+section \<open>Quotient and Remainder\<close>
 
 lemma quotient_remainder_theorem:
   "m >\<^sub>\<nat> 0 \<Longrightarrow> n \<in> nat \<Longrightarrow> \<exists>q\<in>nat. \<exists>r\<in>nat. n = m *\<^sub>\<nat> q +\<^sub>\<nat> r \<and> 0 \<le>\<^sub>\<nat> r \<and> r <\<^sub>\<nat> m"
@@ -77,7 +77,7 @@ lemma quotient_remainder_theorem:
   @have "n = (m *\<^sub>\<nat> (q +\<^sub>\<nat> \<one>\<^sub>\<nat>)) +\<^sub>\<nat> r"
 @qed
 
-section {* Prime *}
+section \<open>Prime\<close>
 
 definition prime :: "i \<Rightarrow> o" where [rewrite]:
   "prime(p) \<longleftrightarrow> (p >\<^sub>\<nat> 1 \<and> (\<forall>m. divides(\<nat>,m,p) \<longrightarrow> m = 1 \<or> m = p))"

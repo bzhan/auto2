@@ -9,7 +9,7 @@ theory AbGroup
   imports AlgStructure
 begin
 
-section {* Monoids *}
+section \<open>Monoids\<close>
 
 definition is_ab_monoid :: "i \<Rightarrow> o" where [rewrite]:
   "is_ab_monoid(G) \<longleftrightarrow> (is_abgroup_raw(G) \<and> is_add_id(G) \<and> is_plus_comm(G) \<and> is_plus_assoc(G))"
@@ -24,7 +24,7 @@ setup {* del_prfstep_thm_eqforward @{thm is_ab_monoid_def} *}
 lemma is_ab_monoid_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_ab_monoid(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_ab_monoid(H)" by auto2
 
-section {* Abelian groups *}
+section \<open>Abelian groups\<close>
   
 definition has_add_inverse :: "i \<Rightarrow> o" where [rewrite]:
   "has_add_inverse(G) \<longleftrightarrow> (\<forall>x\<in>.G. \<exists>y\<in>.G. x +\<^sub>G y = \<zero>\<^sub>G)"
@@ -51,7 +51,7 @@ setup {* del_prfstep_thm_eqforward @{thm is_abgroup_def} *}
 lemma is_abgroup_abgroup_prop [forward]:
   "is_abgroup_raw(H) \<Longrightarrow> is_abgroup(G) \<Longrightarrow> eq_str_abgroup(G,H) \<Longrightarrow> is_abgroup(H)" by auto2
 
-section {* Negation and subtraction *}
+section \<open>Negation and subtraction\<close>
 
 setup {* fold add_rewrite_rule [@{thm plus_commD}, @{thm plus_assoc_left}] *}
 
@@ -148,7 +148,7 @@ lemma minus_eq_zero_same [forward]:
   "is_abgroup(G) \<Longrightarrow> x \<in>. G \<Longrightarrow> y \<in>. G \<Longrightarrow> x -\<^sub>G y = \<zero>\<^sub>G \<Longrightarrow> x = y"
 @proof @have "x -\<^sub>G y = x +\<^sub>G -\<^sub>G y" @qed
 
-section {* Subset of an abelian group *}
+section \<open>Subset of an abelian group\<close>
   
 definition nonzero_elts :: "i \<Rightarrow> i" where [rewrite]:
   "nonzero_elts(R) = {x\<in>.R. x \<noteq> \<zero>\<^sub>R}"

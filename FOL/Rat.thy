@@ -10,7 +10,7 @@ theory Rat
   imports Int Field
 begin
 
-section {* Definition of rational numbers *}
+section \<open>Definition of rational numbers\<close>
 
 definition rat_rel_space :: i where [rewrite]:
   "rat_rel_space = carrier(\<int>)\<times>pos_elts(\<int>)"
@@ -46,7 +46,7 @@ definition rat :: i where [rewrite_bidir]:
   
 abbreviation Rat :: "i \<Rightarrow> i" where "Rat(p) \<equiv> equiv_class(\<R>,p)"
 
-section {* Rationals as a ring *}
+section \<open>Rationals as a ring\<close>
 
 definition rat_mult_raw :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "rat_mult_raw(p,q) = \<langle>fst(p)*\<^sub>\<int>fst(q),snd(p)*\<^sub>\<int>snd(q)\<rangle>"
@@ -99,7 +99,7 @@ lemma rat_one_raw_mem [typing]: "\<langle>\<one>\<^sub>\<int>,\<one>\<^sub>\<int
 lemma rat_choose_rep: "r \<in>. \<rat> \<Longrightarrow> r = Rat(rep(\<R>,r))" by auto2
 setup {* add_rewrite_rule_cond @{thm rat_choose_rep} [with_filt (size1_filter "r")] *}
 
-section {* Multiplication on rationals *}
+section \<open>Multiplication on rationals\<close>
 
 lemma rat_mult_raw_type [typing]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> rat_mult_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>) \<in>. \<R>" by auto2
@@ -128,7 +128,7 @@ setup {* del_prfstep_thm @{thm rat_evals(4)} *}
 lemma rat_mult_comm [forward]: "is_times_comm(\<rat>)" by auto2
 lemma rat_mult_assoc [forward]: "is_times_assoc(\<rat>)" by auto2
 
-section {* Addition on rationals *}
+section \<open>Addition on rationals\<close>
 
 lemma rat_add_raw_type [typing]:
   "\<langle>a,b\<rangle> \<in>. \<R> \<Longrightarrow> \<langle>c,d\<rangle> \<in>. \<R> \<Longrightarrow> rat_add_raw(\<langle>a,b\<rangle>,\<langle>c,d\<rangle>) \<in>. \<R>" by auto2
@@ -176,13 +176,13 @@ lemma rat_distrib_l_raw [resolve]:
 lemma rat_distrib_l [forward]: "is_left_distrib(\<rat>)" by auto2
 setup {* del_prfstep_thm @{thm rat_distrib_l_raw} *}
 
-section {* 0 and 1 *}
+section \<open>0 and 1\<close>
   
 lemma rat_is_add_id [forward]: "is_add_id(\<rat>)" by auto2
 lemma rat_is_mult_id [forward]: "is_mult_id(\<rat>)" by auto2
 lemma rat_zero_neq_one [resolve]: "\<zero>\<^sub>\<rat> \<noteq> \<one>\<^sub>\<rat>" by auto2
 
-section {* Negation on rationals *}
+section \<open>Negation on rationals\<close>
   
 definition rat_neg_raw :: "i \<Rightarrow> i" where [rewrite]:
   "rat_neg_raw(p) = \<langle>-\<^sub>\<int> fst(p), snd(p)\<rangle>"
@@ -203,7 +203,7 @@ lemma rat_has_add_inverse [forward]: "has_add_inverse(\<rat>)"
 
 lemma rat_is_comm_ring [forward]: "is_comm_ring(\<rat>)" by auto2
 
-section {* Inverse in rationals *}
+section \<open>Inverse in rationals\<close>
 
 definition rat_inverse_raw :: "i \<Rightarrow> i" where [rewrite]:
   "rat_inverse_raw(p) = (if fst(p) >\<^sub>\<int> \<zero>\<^sub>\<int> then \<langle>snd(p),fst(p)\<rangle> else \<langle>-\<^sub>\<int> snd(p), -\<^sub>\<int> fst(p)\<rangle>)"
@@ -234,7 +234,7 @@ lemma rat_inverse_raw_mult_inv [rewrite]:
 lemma rat_is_field [forward]: "is_field(\<rat>)"
 @proof @have "\<forall>x\<in>.\<rat>. x \<noteq> \<zero>\<^sub>\<rat> \<longrightarrow> x *\<^sub>\<rat> rat_inverse(x) = \<one>\<^sub>\<rat>" @qed
 
-section {* Nonnegative rationals *}
+section \<open>Nonnegative rationals\<close>
 
 lemma nonneg_rat_eval [rewrite]:
   "x \<in>. \<R> \<Longrightarrow> nonneg_rat(Rat(x)) \<longleftrightarrow> nonneg_rat_raw(x)" by auto2
@@ -251,7 +251,7 @@ lemma rat_is_ord_field [forward]: "is_ord_field(\<rat>)"
 @proof @have "nonneg_compat(\<rat>, nonneg_rats)" @qed
 setup {* del_prfstep_thm @{thm rat_is_ord_field_prep} *}
 
-section {* Rational as a quotient of two integers *}
+section \<open>Rational as a quotient of two integers\<close>
 
 lemma rat_of_nat [rewrite]:
   "n \<in> nat \<Longrightarrow> of_nat(\<rat>,n) = Rat(\<langle>of_nat(\<int>,n),1\<^sub>\<int>\<rangle>)"
@@ -284,7 +284,7 @@ lemma rat_is_quotient [backward]:
 
 setup {* fold del_prfstep_thm [@{thm rat_neg_eval}, @{thm rat_neg_raw_def}] *}
 
-section {* Definition of of\_rat *}
+section \<open>Definition of of\_rat\<close>
   
 definition of_rat_raw :: "i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "of_rat_raw(R,p) = of_int(R,fst(p)) /\<^sub>R of_int(R,snd(p))"
@@ -344,7 +344,7 @@ setup {* fold del_prfstep_thm [@{thm rat_choose_rep}, @{thm rat_inverse_eval},
 no_notation rat_rel ("\<R>")
 hide_const Rat
 
-section {* Further properties *}
+section \<open>Further properties\<close>
   
 lemma of_rat_mult [rewrite_bidir]:
   "is_ord_field(R) \<Longrightarrow> x \<in>. \<rat> \<Longrightarrow> y \<in>. \<rat> \<Longrightarrow> of_rat(R,x) *\<^sub>R of_rat(R,y) = of_rat(R,x *\<^sub>\<rat> y)"
@@ -423,7 +423,7 @@ lemma ord_field_of_rat_positive:
 @proof @have "of_rat(R,r) >\<^sub>R of_rat(R,0\<^sub>\<rat>)" @qed
 setup {* add_forward_prfstep_cond @{thm ord_field_of_rat_positive} [with_term "of_rat(?R,?r)"] *}
 
-section {* Rationals is an archimedean field *}
+section \<open>Rationals is an archimedean field\<close>
 
 lemma int_has_of_nat_ge [forward]: "is_archimedean(\<int>)"
 @proof
@@ -461,7 +461,7 @@ lemma is_archimedeanI_pos_of_rat [forward]:
   @end
 @qed
 
-section {* More properties of archimedean fields *}
+section \<open>More properties of archimedean fields\<close>
   
 lemma is_archimedeanD_rat [backward]:
   "is_archimedean(R) \<Longrightarrow> is_field(R) \<Longrightarrow> x \<in>. R \<Longrightarrow> \<exists>r\<in>.\<rat>. of_rat(R,r) >\<^sub>R x"

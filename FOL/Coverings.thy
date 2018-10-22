@@ -9,7 +9,7 @@ theory Coverings
   imports Functions
 begin
 
-section {* Coverings *}  (* Bourbaki II.4.6 *)
+section \<open>Coverings\<close>  (* Bourbaki II.4.6 *)
 
 definition is_covering :: "i \<Rightarrow> i \<Rightarrow> o" where [rewrite]:
   "is_covering(E,X) \<longleftrightarrow> (\<forall>x\<in>E. \<exists>a\<in>source(X). x \<in> X`a)"
@@ -89,7 +89,7 @@ lemma glue_fun_on_covering [backward1]: "is_function(X) \<Longrightarrow> I = so
   @end
 @qed
 
-section {* Partitions *}  (* Bourbaki II.4.7 *)
+section \<open>Partitions\<close>  (* Bourbaki II.4.7 *)
 
 lemma singleton_disjoint [backward]: "a \<noteq> b \<Longrightarrow> {a} \<inter> {b} = \<emptyset>" by auto2
 
@@ -150,7 +150,7 @@ setup {* add_forward_prfstep_cond @{thm glue_partition_fun_prop} [with_term "glu
 setup {* add_prfstep_check_req ("glue_partition_fun(E,X,D,F)", "\<forall>a\<in>source(X). F(a) \<in> X`a \<rightarrow> D") *}
 setup {* del_prfstep_thm @{thm glue_partition_fun_def} *}
 
-section {* Sum of a family of sets *}  (* Bourbaki II.4.8 *)
+section \<open>Sum of a family of sets\<close>  (* Bourbaki II.4.8 *)
 
 (* Version of Sigma for object functions *)
 definition Sigma' :: "i \<Rightarrow> i" where [rewrite]:

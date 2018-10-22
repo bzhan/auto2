@@ -9,7 +9,7 @@ theory Field
   imports Ring
 begin
 
-section {* Fields *}
+section \<open>Fields\<close>
 
 definition is_field :: "i \<Rightarrow> o" where [rewrite]:
   "is_field(R) \<longleftrightarrow> (is_comm_ring(R) \<and> (\<forall>x\<in>.R. x \<noteq> \<zero>\<^sub>R \<longleftrightarrow> x \<in> units(R)))"
@@ -37,7 +37,7 @@ lemma field_is_integral_domain [forward]:
     @contradiction @have "x *\<^sub>R y \<in> units(R)" @end
 @qed
 
-section {* Ordered fields *}
+section \<open>Ordered fields\<close>
   
 definition is_ord_field :: "i \<Rightarrow> o" where [rewrite]:
   "is_ord_field(R) \<longleftrightarrow> (is_ord_ring(R) \<and> is_field(R))"
@@ -136,7 +136,7 @@ lemma ord_field_quotient_less [backward]:
   "is_ord_field(R) \<Longrightarrow> a \<ge>\<^sub>R 0\<^sub>R \<Longrightarrow> b \<ge>\<^sub>R 1\<^sub>R \<Longrightarrow> a /\<^sub>R b \<le>\<^sub>R a"
 @proof @have "(a /\<^sub>R b) *\<^sub>R b = a *\<^sub>R 1\<^sub>R" @case "(a /\<^sub>R b) *\<^sub>R b >\<^sub>R a *\<^sub>R b" @qed
 
-section {* Fields of characteristic zero *}
+section \<open>Fields of characteristic zero\<close>
 
 lemma ord_field_char_zero [backward]:
   "is_ord_field(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> n \<noteq> 0 \<Longrightarrow> of_nat(R,n) \<in> units(R)"
@@ -150,7 +150,7 @@ lemma ord_field_exists_sum2 [backward]:
   "is_ord_field(R) \<Longrightarrow> r >\<^sub>R \<zero>\<^sub>R \<Longrightarrow> \<exists>s t. s >\<^sub>R \<zero>\<^sub>R \<and> t >\<^sub>R \<zero>\<^sub>R \<and> r = s +\<^sub>R t"
 @proof @have "r = r /\<^sub>R 2\<^sub>R +\<^sub>R r /\<^sub>R 2\<^sub>R" @qed
 
-section {* Archimedean Fields *}
+section \<open>Archimedean Fields\<close>
   
 definition is_archimedean :: "i \<Rightarrow> o" where [rewrite]:
   "is_archimedean(R) \<longleftrightarrow> (is_ord_ring(R) \<and> (\<forall>x\<in>.R. \<exists>n\<in>nat. of_nat(R,n) \<ge>\<^sub>R x))"
@@ -202,7 +202,7 @@ lemma power_two_unbounded [backward]:
   @obtain "n\<in>nat" where "of_nat(R,n) >\<^sub>R M" @have "2\<^sub>R ^\<^sub>R n >\<^sub>R of_nat(R,n)"
 @qed
 
-section {* Averages *}
+section \<open>Averages\<close>
 
 definition avg :: "i \<Rightarrow> i \<Rightarrow> i \<Rightarrow> i" where [rewrite]:
   "avg(R,a,b) = (a +\<^sub>R b) /\<^sub>R 2\<^sub>R"
@@ -234,7 +234,7 @@ lemma ord_field_dense [forward]: "is_ord_field(R) \<Longrightarrow> dense_order(
 @qed
 setup {* del_prfstep_thm @{thm avg_def} *}
 
-section {* Comparison of rational numbers *}
+section \<open>Comparison of rational numbers\<close>
   
 lemma ord_ring_of_nat_ge_zero' [backward]:
   "is_ord_ring(R) \<Longrightarrow> n \<in> nat \<Longrightarrow> of_nat(R,n) \<ge>\<^sub>R 0\<^sub>R" by auto2
