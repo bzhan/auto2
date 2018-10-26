@@ -11,7 +11,7 @@
 section \<open>Implementation of the indexed priority queue\<close>
 
 theory Indexed_PQueue_Impl
-  imports DynamicArray DataStrs.Indexed_PQueue
+  imports DynamicArray "../DataStrs/Indexed_PQueue"
 begin
 
 datatype 'a indexed_pqueue =

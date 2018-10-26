@@ -11,7 +11,7 @@
 section \<open>Implementation of arrays\<close>
 
 theory Arrays_Impl
-  imports SepAuto DataStrs.Arrays_Ex
+  imports SepAuto "../DataStrs/Arrays_Ex"
 begin
 
 subsection \<open>Array copy\<close>

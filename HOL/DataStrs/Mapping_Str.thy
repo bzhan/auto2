@@ -9,7 +9,7 @@
 section \<open>Mapping\<close>
 
 theory Mapping_Str
-  imports Auto2_HOL.Auto2_Main
+  imports "../Auto2_Main"
 begin
 
 datatype ('a, 'b) map = Map "'a \<Rightarrow> 'b option"

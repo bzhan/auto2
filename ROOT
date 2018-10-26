@@ -8,19 +8,12 @@ session Auto2_HOL = HOL +
     "HOL-Library"
     "HOL-Imperative_HOL"
   theories
+  (* Core setup *)
     "HOL/Auto2_Test"
     "HOL/Pelletier"
     "HOL/Primes_Ex"
-  document_files
-    "root.tex"
 
-session DataStrs = Auto2_HOL +
-  description {*
-    Functional data structures.
-  *}
-  sessions
-    "Auto2_HOL"
-  theories
+  (* Functional programs *)
     "HOL/DataStrs/BST"
     "HOL/DataStrs/Lists_Ex"
     "HOL/DataStrs/Connectivity"
@@ -30,17 +23,10 @@ session DataStrs = Auto2_HOL +
     "HOL/DataStrs/Indexed_PQueue"
     "HOL/DataStrs/RBTree"
     "HOL/DataStrs/Rect_Intersect"
-  document_files
-    "root.tex"
 
-session SepLogic = DataStrs +
-  description {*
-    Separation logic.
-  *}
-  sessions
-    "DataStrs"
-  theories
+  (* Imperative programs *)
     "HOL/SepLogic/Sep_Examples"
+
   document_files
     "root.tex"
 

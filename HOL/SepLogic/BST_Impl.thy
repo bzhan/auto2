@@ -8,7 +8,7 @@
 section \<open>Implementation of binary search tree\<close>
 
 theory BST_Impl
-  imports SepAuto DataStrs.BST
+  imports SepAuto "../DataStrs/BST"
 begin
 
 subsection \<open>Tree nodes\<close>

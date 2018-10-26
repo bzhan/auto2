@@ -8,7 +8,7 @@
 section \<open>Implementation of rectangle intersection\<close>
 
 theory Rect_Intersect_Impl
-  imports DataStrs.Rect_Intersect IntervalTree_Impl Quicksort_Impl
+  imports "../DataStrs/Rect_Intersect" IntervalTree_Impl Quicksort_Impl
 begin
 
 subsection \<open>Operations\<close>

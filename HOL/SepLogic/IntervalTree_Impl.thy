@@ -8,7 +8,7 @@
 section \<open>Implementation of interval tree\<close>
 
 theory IntervalTree_Impl
-  imports SepAuto DataStrs.Interval_Tree
+  imports SepAuto "../DataStrs/Interval_Tree"
 begin
 
 subsection \<open>Interval and IdxInterval\<close>

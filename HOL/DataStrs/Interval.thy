@@ -8,7 +8,7 @@
 section \<open>Intervals\<close>
 
 theory Interval
-  imports Auto2_HOL.Auto2_Main
+  imports "../Auto2_Main"
 begin
 
 subsection \<open>Definition of interval\<close>

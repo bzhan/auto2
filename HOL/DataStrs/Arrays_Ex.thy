@@ -8,7 +8,7 @@
 section \<open>Arrays\<close>
 
 theory Arrays_Ex
-  imports Auto2_HOL.Auto2_Main
+  imports "../Auto2_Main"
 begin
 
 subsection \<open>List swap\<close>

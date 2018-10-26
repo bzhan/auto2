@@ -9,7 +9,7 @@
 section \<open>Partial equivalence relation\<close>
 
 theory Partial_Equiv_Rel
-  imports Auto2_HOL.Auto2_Main
+  imports "../Auto2_Main"
 begin
   
 definition part_equiv :: "('a \<times> 'a) set \<Rightarrow> bool" where [rewrite]:

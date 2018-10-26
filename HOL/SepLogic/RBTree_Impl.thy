@@ -8,7 +8,7 @@
 section \<open>Implementation of red-black tree\<close>
 
 theory RBTree_Impl
-  imports DataStrs.RBTree SepAuto
+  imports SepAuto "../DataStrs/RBTree"
 begin
 
 subsection \<open>Tree nodes\<close>

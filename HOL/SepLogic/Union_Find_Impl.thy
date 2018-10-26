@@ -9,7 +9,7 @@
 section \<open>Implementation of union find\<close>
 
 theory Union_Find_Impl
-  imports DataStrs.Union_Find SepAuto
+  imports SepAuto "../DataStrs/Union_Find"
 begin
 
 type_synonym uf = "nat array \<times> nat array"
