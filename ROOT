@@ -7,13 +7,16 @@ session Auto2_HOL = HOL +
   sessions
     "HOL-Library"
     "HOL-Imperative_HOL"
-  theories
-  (* Core setup *)
+  theories [document = false]
+    (* Core setup *)
     "HOL/Auto2_Test"
+
+  theories
+    (* Simple examples *)
     "HOL/Pelletier"
     "HOL/Primes_Ex"
 
-  (* Functional programs *)
+    (* Functional programs *)
     "HOL/DataStrs/BST"
     "HOL/DataStrs/Lists_Ex"
     "HOL/DataStrs/Connectivity"
@@ -24,11 +27,21 @@ session Auto2_HOL = HOL +
     "HOL/DataStrs/RBTree"
     "HOL/DataStrs/Rect_Intersect"
 
-  (* Imperative programs *)
+    (* Imperative programs *)
+    "HOL/SepLogic/LinkedList"
+    "HOL/SepLogic/BST_Impl"
+    "HOL/SepLogic/RBTree_Impl"
+    "HOL/SepLogic/Quicksort_Impl"
+    "HOL/SepLogic/Connectivity_Impl"
+    "HOL/SepLogic/Dijkstra_Impl"
+    "HOL/SepLogic/Rect_Intersect_Impl"
+
+  theories [document = false]
     "HOL/SepLogic/Sep_Examples"
 
   document_files
     "root.tex"
+    "root.bib"
 
 session Auto2_FOL = FOL +
   description {*
