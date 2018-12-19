@@ -152,7 +152,8 @@ definition dijkstra :: "graph \<Rightarrow> dijkstra_state Heap" where
     p \<leftarrow> dstate_init G;
     dijkstra_loop G (size G - 1) p }"
 
-lemma dijkstra_correct [hoare_triple]:
+text \<open>Correctness of Dijkstra's algorithm.\<close>
+theorem dijkstra_correct [hoare_triple]:
   "size G > 0 \<Longrightarrow>
    <emp>
    dijkstra G

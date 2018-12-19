@@ -65,7 +65,7 @@ setup \<open>add_backward2_prfstep @{thm Min_eqI}\<close>
 
 subsection \<open>Existence of numbers satisfying inequalities\<close>
 
-theorem exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
+lemma exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
 setup \<open>fold add_resolve_prfstep [@{thm lt_ex}, @{thm gt_ex}]\<close>
 setup \<open>add_backward_prfstep @{thm dense}\<close>
 

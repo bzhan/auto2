@@ -310,7 +310,7 @@ setup \<open>del_prfstep_thm_eqforward @{thm hoare_triple_def}\<close>
 abbreviation hoare_triple' :: "assn \<Rightarrow> 'r Heap \<Rightarrow> ('r \<Rightarrow> assn) \<Rightarrow> bool" ("<_> _ <_>\<^sub>t") where
   "<P> c <Q>\<^sub>t \<equiv> <P> c <\<lambda>r. Q r * true>"
 
-lemma frame_rule [backward]:
+theorem frame_rule [backward]:
   "<P> c <Q> \<Longrightarrow> <P * R> c <\<lambda>x. Q x * R>"
 @proof
   @have "\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P * R \<longrightarrow> run c (Some h) \<sigma> r \<longrightarrow>
@@ -325,7 +325,7 @@ lemma frame_rule [backward]:
 text \<open>This is the last use of the definition of separating conjunction.\<close>
 setup \<open>del_prfstep_thm @{thm mod_star_conv}\<close>
 
-lemma bind_rule:
+theorem bind_rule:
   "<P> f <Q> \<Longrightarrow> \<forall>x. <Q x> g x <R> \<Longrightarrow> <P> f \<bind> g <R>"
 @proof
   @have "\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P \<longrightarrow> run (f \<bind> g) (Some h) \<sigma> r \<longrightarrow>

@@ -122,15 +122,16 @@ lemma tree_insert_in_traverse [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse (insert x t) = ordered_insert x (in_traverse t)"
 @proof @induct t @qed
 
-lemma tree_insert_on_set [rewrite]:
-  "tree_sorted t \<Longrightarrow> tree_set (insert it t) = {it} \<union> tree_set t" by auto2
-
 lemma tree_insert_max_inv [forward]:
   "tree_max_inv t \<Longrightarrow> tree_max_inv (insert x t)"
 @proof @induct t @qed
 
-lemma tree_insert_all_inv [forward]:
+text \<open>Correctness of insertion.\<close>
+theorem tree_insert_all_inv [forward]:
   "is_interval_tree t \<Longrightarrow> is_interval (int it) \<Longrightarrow> is_interval_tree (insert it t)" by auto2
+
+theorem tree_insert_on_set [rewrite]:
+  "tree_sorted t \<Longrightarrow> tree_set (insert it t) = {it} \<union> tree_set t" by auto2
 
 subsection \<open>Deletion on trees\<close>
 
@@ -206,12 +207,13 @@ lemma tree_delete_in_traverse [rewrite]:
 lemma tree_delete_max_inv [forward]:
   "tree_max_inv t \<Longrightarrow> tree_max_inv (delete x t)"
 @proof @induct t @qed
-    
-lemma tree_delete_all_inv [forward]:
+
+text \<open>Correctness of deletion.\<close>
+theorem tree_delete_all_inv [forward]:
   "is_interval_tree t \<Longrightarrow> is_interval_tree (delete x t)"
 @proof @have "tree_set (delete x t) \<subseteq> tree_set t" @qed
 
-lemma tree_delete_on_set [rewrite]:
+theorem tree_delete_on_set [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_set (delete x t) = tree_set t - {x}" by auto2
 
 subsection \<open>Search on interval trees\<close>
@@ -224,7 +226,8 @@ fun search :: "interval_tree \<Rightarrow> nat interval \<Rightarrow> bool" wher
     else search r x)"
 setup \<open>fold add_rewrite_rule @{thms search.simps}\<close>
 
-lemma search_correct [rewrite]:
+text \<open>Correctness of search\<close>
+theorem search_correct [rewrite]:
   "is_interval_tree t \<Longrightarrow> is_interval x \<Longrightarrow> search t x \<longleftrightarrow> has_overlap (tree_set t) x"
 @proof
   @induct t @with

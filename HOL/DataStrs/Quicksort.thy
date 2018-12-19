@@ -159,8 +159,12 @@ lemma quicksort_sorts [forward_arg]:
   @unfold "quicksort xs l r"
 @qed
 
-lemma quicksort_sorts_all [rewrite]:
-  "xs \<noteq> [] \<Longrightarrow> xs' = quicksort xs 0 (length xs - 1) \<Longrightarrow> xs' = sort xs"
-@proof @have "sublist 0 (length xs - 1 + 1) xs' = xs'" @qed
+text \<open>Main result: correctness of functional quicksort.\<close>
+theorem quicksort_sorts_all [rewrite]:
+  "xs \<noteq> [] \<Longrightarrow> quicksort xs 0 (length xs - 1) = sort xs"
+@proof
+  @let "xs' = quicksort xs 0 (length xs - 1)"
+  @have "sublist 0 (length xs - 1 + 1) xs' = xs'"
+@qed
 
 end

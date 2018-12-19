@@ -242,6 +242,8 @@ lemma search_impl_correct [hoare_triple]:
 
 subsection \<open>Outer interface\<close>
 
+text \<open>Express Hoare triples for operations on interval tree in terms of
+  the set of intervals represented by the tree.\<close>
 definition int_tree_set :: "nat idx_interval set \<Rightarrow> int_tree \<Rightarrow> assn" where
   "int_tree_set S p = (\<exists>\<^sub>At. int_tree t p * \<up>(is_interval_tree t) * \<up>(S = tree_set t))"
 setup \<open>add_rewrite_ent_rule @{thm int_tree_set_def}\<close>

@@ -178,6 +178,8 @@ lemma btree_search_correct [hoare_triple]:
 
 subsection \<open>Outer interface\<close>
 
+text \<open>Express Hoare triples for operations on binary search tree in terms of
+  the mapping represented by the tree.\<close>
 definition btree_map :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) node ref option \<Rightarrow> assn" where
   "btree_map M p = (\<exists>\<^sub>At. btree t p * \<up>(tree_sorted t) * \<up>(M = tree_map t))"
 setup \<open>add_rewrite_ent_rule @{thm btree_map_def}\<close>

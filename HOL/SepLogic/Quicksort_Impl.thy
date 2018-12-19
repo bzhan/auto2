@@ -72,6 +72,7 @@ definition quicksort_all :: "('a::{heap,linorder}) array \<Rightarrow> unit Heap
      else quicksort a 0 (n - 1)
    }"
 
+text \<open>Correctness of quicksort.\<close>
 theorem quicksort_sorts_basic [hoare_triple]:
   "<a \<mapsto>\<^sub>a xs>
    quicksort_all a

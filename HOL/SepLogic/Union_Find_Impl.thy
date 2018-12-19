@@ -25,7 +25,8 @@ definition uf_init :: "nat \<Rightarrow> uf Heap" where
      return (szl, l)
    }"
 
-lemma uf_init_rule [hoare_triple]:
+text \<open>Correctness of uf_init.\<close>
+theorem uf_init_rule [hoare_triple]:
   "<emp> uf_init n <is_uf n (uf_init_rel n)>" by auto2
   
 partial_function (heap) uf_rep_of :: "nat array \<Rightarrow> nat \<Rightarrow> nat Heap" where
@@ -85,7 +86,8 @@ definition uf_cmp :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool 
     }
   }"
 
-lemma uf_cmp_rule [hoare_triple]:
+text \<open>Correctness of compare.\<close>
+theorem uf_cmp_rule [hoare_triple]:
   "<is_uf n R u>
    uf_cmp u i j
    <\<lambda>r. is_uf n R u * \<up>(r \<longleftrightarrow> (i,j)\<in>R)>" by auto2
@@ -110,7 +112,8 @@ definition uf_union :: "uf \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> uf 
     }
   }"
 
-lemma uf_union_rule [hoare_triple]:
+text \<open>Correctness of union.\<close>
+theorem uf_union_rule [hoare_triple]:
   "i < n \<Longrightarrow> j < n \<Longrightarrow>
    <is_uf n R u>
    uf_union u i j

@@ -64,7 +64,7 @@ lemma is_rbt_rec [forward]: "is_rbt (Node l c k v r) \<Longrightarrow> is_rbt l 
 
 subsection \<open>Balancedness of RBT\<close>
 
-(* TODO: Remove after having general normalization procedure for nats. *)
+(* TODO: remove after having general normalization procedure for nats. *)
 lemma two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 
 fun min_depth :: "('a, 'b) rbt \<Rightarrow> nat" where
@@ -77,6 +77,7 @@ fun max_depth :: "('a, 'b) rbt \<Rightarrow> nat" where
 | "max_depth (Node l c k v r) = max (max_depth l) (max_depth r) + 1"
 setup \<open>fold add_rewrite_rule @{thms max_depth.simps}\<close>
 
+text \<open>Balancedness of red-black trees.\<close>
 theorem rbt_balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_depth t + 1"
 @proof
   @induct t for "is_rbt t \<longrightarrow> black_depth t \<le> min_depth t" @with
@@ -255,6 +256,7 @@ subsection \<open>Insert function\<close>
 definition rbt_insert :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "rbt_insert x v t = paint B (ins x v t)"
 
+text \<open>Correctness results for insertion.\<close>
 theorem insert_is_rbt [forward]:
   "is_rbt t \<Longrightarrow> is_rbt (rbt_insert x v t)" by auto2
 
@@ -274,6 +276,7 @@ fun rbt_search :: "('a::ord, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b option" w
    else rbt_search r x)"
 setup \<open>fold add_rewrite_rule @{thms rbt_search.simps}\<close>
 
+text \<open>Correctness of search\<close>
 theorem rbt_search_correct [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
 @proof @induct t @qed
@@ -452,6 +455,7 @@ lemma del_in_traverse_pairs [rewrite]:
 definition delete :: "'a::linorder \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "delete x t = paint B (del x t)"
 
+text \<open>Correctness results for deletion.\<close>
 theorem delete_is_rbt [forward]:
   "is_rbt t \<Longrightarrow> is_rbt (delete x t)" by auto2
 

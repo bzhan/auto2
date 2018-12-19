@@ -35,7 +35,8 @@ lemma connected_rel_imp_correct [hoare_triple]:
 
 subsection \<open>Connectedness tests\<close>
 
-lemma uf_cmp_correct [hoare_triple]:
+text \<open>Correctness of the algorithm for detecting connectivity.\<close>
+theorem uf_cmp_correct [hoare_triple]:
   "<is_uf n (connected_rel n S) p>
    uf_cmp p i j
    <\<lambda>r. is_uf n (connected_rel n S) p * \<up>(r \<longleftrightarrow> has_path n S i j)>" by auto2

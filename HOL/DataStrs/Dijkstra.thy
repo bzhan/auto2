@@ -321,7 +321,8 @@ lemma card_start_state [rewrite]:
   "size G > 0 \<Longrightarrow> card (unknown_set (dijkstra_start_state G)) = size G - 1"
 @proof @have "0 \<in> verts G" @qed
 
-lemma dijkstra_start_inv [backward]:
+text \<open>Starting start of Dijkstra's algorithm satisfies the invariant.\<close>
+theorem dijkstra_start_inv [backward]:
   "size G > 0 \<Longrightarrow> inv G (dijkstra_start_state G)"
 @proof
   @let "V = {0::nat}"
@@ -370,7 +371,8 @@ lemma dijkstra_step_unknown_set [rewrite]:
 lemma dijkstra_step_known_set [rewrite]:
   "inv G S \<Longrightarrow> m \<in> unknown_set S \<Longrightarrow> known_set (dijkstra_step G m S) = known_set S \<union> {m}" by auto2
 
-lemma dijkstra_step_preserves_inv [backward]:
+text \<open>One step of Dijkstra's algorithm preserves the invariant.\<close>
+theorem dijkstra_step_preserves_inv [backward]:
   "inv G S \<Longrightarrow> is_heap_min m (heap S) \<Longrightarrow> inv G (dijkstra_step G m S)"
 @proof
   @let "V = known_set S" "V' = V \<union> {m}"

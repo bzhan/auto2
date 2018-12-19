@@ -64,7 +64,8 @@ lemma rev_to_fun [hoare_triple]:
    <\<lambda>_. p \<mapsto>\<^sub>a rev_swap xs i j>"
 @proof @fun_induct "rev_swap xs i j" @unfold "rev_swap xs i j" @qed
 
-lemma rev_is_rev [hoare_triple]:
+text \<open>Correctness of imperative reverse.\<close>
+theorem rev_is_rev [hoare_triple]:
   "xs \<noteq> [] \<Longrightarrow>
    <p \<mapsto>\<^sub>a xs>
    rev p 0 (length xs - 1)

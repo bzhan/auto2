@@ -101,6 +101,7 @@ lemma insert_in_traverse_pairs [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse_pairs (tree_insert x v t) = ordered_insert_pairs x v (in_traverse_pairs t)"
 @proof @induct t @qed
 
+text \<open>Correctness results for insertion.\<close>
 theorem insert_sorted [forward]:
   "tree_sorted t \<Longrightarrow> tree_sorted (tree_insert x v t)" by auto2
 
@@ -142,6 +143,7 @@ lemma tree_delete_in_traverse_pairs [rewrite]:
   "tree_sorted t \<Longrightarrow> in_traverse_pairs (tree_delete x t) = remove_elt_pairs x (in_traverse_pairs t)"
 @proof @induct t @qed
 
+text \<open>Correctness results for deletion.\<close>
 theorem tree_delete_sorted [forward]:
   "tree_sorted t \<Longrightarrow> tree_sorted (tree_delete x t)" by auto2
 
@@ -158,6 +160,7 @@ fun tree_search :: "('a::ord, 'b) tree \<Rightarrow> 'a \<Rightarrow> 'b option"
    else tree_search r x)"
 setup \<open>fold add_rewrite_rule @{thms tree_search.simps}\<close>
 
+text \<open>Correctness of search.\<close>
 theorem tree_search_correct [rewrite]:
   "tree_sorted t \<Longrightarrow> tree_search t x = (tree_map t)\<langle>x\<rangle>"
 @proof @induct t @qed

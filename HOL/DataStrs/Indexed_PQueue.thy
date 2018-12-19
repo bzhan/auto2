@@ -305,7 +305,8 @@ lemma hd_last_swap_eval_last [rewrite]:
   @have "last xs' = xs' ! (length xs - 1)"
 @qed
 
-lemma delete_min_idx_pqueue_correct2:
+text \<open>Correctness of delete-min.\<close>
+theorem delete_min_idx_pqueue_correct2:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> res = delete_min_idx_pqueue_fun (xs, m) \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
    is_heap (fst (snd res)) \<and> fst res = hd xs \<and> length (snd (snd res)) = length m \<and>
    map_of_alist (fst (snd res)) = delete_map (fst (fst res)) (map_of_alist xs)"
@@ -325,7 +326,8 @@ lemma insert_idx_pqueue_correct [forward_arg]:
    index_of_pqueue (insert_idx_pqueue_fun k v (xs, m))"
 @proof @unfold "insert_idx_pqueue_fun k v (xs, m)" @qed
 
-lemma insert_idx_pqueue_correct2:
+text \<open>Correctness of insertion.\<close>
+theorem insert_idx_pqueue_correct2:
   "index_of_pqueue (xs, m) \<Longrightarrow> is_heap xs \<Longrightarrow> k < length m \<Longrightarrow> \<not>has_key_alist xs k \<Longrightarrow>
    r = insert_idx_pqueue_fun k v (xs, m) \<Longrightarrow>
    is_heap (fst r) \<and> length (snd r) = length m \<and>
@@ -356,7 +358,8 @@ lemma update_idx_pqueue_correct [forward_arg]:
   @have "index_of_pqueue (xs', m)"
 @qed
 
-lemma update_idx_pqueue_correct2:
+text \<open>Correctness of update.\<close>
+theorem update_idx_pqueue_correct2:
   "index_of_pqueue (xs, m) \<Longrightarrow> is_heap xs \<Longrightarrow> k < length m \<Longrightarrow>
    r = update_idx_pqueue_fun k v (xs, m) \<Longrightarrow>
    is_heap (fst r) \<and> length (snd r) = length m \<and>

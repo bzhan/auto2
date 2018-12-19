@@ -489,6 +489,8 @@ lemma rbt_delete_to_fun [hoare_triple]:
 
 subsection \<open>Outer interface\<close>
 
+text \<open>Express Hoare triples for operations on red-black tree in terms of
+  the mapping represented by the tree.\<close>
 definition rbt_map_assn :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) rbt_node ref option \<Rightarrow> assn" where
   "rbt_map_assn M p = (\<exists>\<^sub>At. btree t p * \<up>(is_rbt t) * \<up>(rbt_sorted t) * \<up>(M = rbt_map t))"
 setup \<open>add_rewrite_ent_rule @{thm rbt_map_assn_def}\<close>

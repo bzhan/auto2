@@ -143,7 +143,8 @@ lemma connected_rel_ind_rule [rewrite]:
   @endgoal @end
 @qed
 
-lemma connected_rel_ind_compute [rewrite]:
+text \<open>Correctness of the functional algorithm.\<close>
+theorem connected_rel_ind_compute [rewrite]:
   "is_valid_graph n (set es) \<Longrightarrow>
    connected_rel_ind n es (length es) = connected_rel n (set es)" by auto2
 

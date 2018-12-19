@@ -43,7 +43,7 @@ partial_function (heap) gcd_impl :: "nat \<Rightarrow> nat \<Rightarrow> nat Hea
 
 text \<open>The program is sufficiently simple that we can prove the Hoare triple
   directly (without going through the functional program).\<close>
-lemma gcd_impl_correct:
+theorem gcd_impl_correct:
   "<emp> gcd_impl a b <\<lambda>r. \<up>(r = gcd a b)>"
 @proof
   @fun_induct "gcd_fun a b"

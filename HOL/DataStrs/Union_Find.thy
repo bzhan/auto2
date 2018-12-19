@@ -99,8 +99,9 @@ lemma ufa_union_aux [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow>
    i < length l' \<Longrightarrow> rep_of l' i = (if rep_of l i = rep_of l x then rep_of l y else rep_of l i)"
 @proof @prop_induct "ufa_invar l \<and> i < length l" @qed
-  
-lemma ufa_union_correct [rewrite]:
+
+text \<open>Correctness of union operation.\<close>
+theorem ufa_union_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> y < length l \<Longrightarrow> l' = ufa_union l x y \<Longrightarrow>
    ufa_\<alpha> l' = per_union (ufa_\<alpha> l) x y"
 @proof
@@ -128,7 +129,8 @@ lemma ufa_compress_aux [rewrite]:
    rep_of l' i = rep_of l i"
 @proof @prop_induct "ufa_invar l \<and> i < length l" @qed
 
-lemma ufa_compress_correct [rewrite]:
+text \<open>Correctness of compress operation.\<close>
+theorem ufa_compress_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> ufa_\<alpha> (ufa_compress l x) = ufa_\<alpha> l" by auto2
 
 setup \<open>del_prfstep_thm @{thm rep_of_iff}\<close>

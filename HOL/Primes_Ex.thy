@@ -35,7 +35,7 @@ lemma prime_dvd_mult_nat: "prime p \<Longrightarrow> p dvd m * n \<Longrightarro
 setup \<open>add_forward_prfstep_cond @{thm prime_dvd_mult_nat}
   (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"])\<close>
 
-theorem prime_dvd_intro: "prime p \<Longrightarrow> p * q = m * n \<Longrightarrow> p dvd m \<or> p dvd n"
+lemma prime_dvd_intro: "prime p \<Longrightarrow> p * q = m * n \<Longrightarrow> p dvd m \<or> p dvd n"
 @proof @have "p dvd m * n" @qed
 setup \<open>add_forward_prfstep_cond @{thm prime_dvd_intro}
   (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"])\<close>
@@ -88,12 +88,13 @@ lemma prime_power_mult: "prime p \<Longrightarrow> x * y = p ^ k \<Longrightarro
 
 subsection \<open>Infinitude of primes\<close>
 
-theorem bigger_prime [resolve]: "\<exists>p. prime p \<and> n < p"
+lemma bigger_prime [resolve]: "\<exists>p. prime p \<and> n < p"
 @proof
   @obtain p where "prime p" "p dvd fact n + 1"
   @case "n \<ge> p" @with @have "(p::nat) dvd fact n" @end
 @qed
 
+text \<open>Infinitude of prime numbers.\<close>
 theorem primes_infinite: "\<not> finite {p. prime p}"
 @proof
   @obtain b where "prime b" "Max {p. prime p} < b"
@@ -101,6 +102,7 @@ theorem primes_infinite: "\<not> finite {p. prime p}"
 
 subsection \<open>Existence and uniqueness of prime factorization\<close>
 
+text \<open>Existence of prime factorization.\<close>
 theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<in>#M. prime p) \<and> n = (\<Prod>i\<in>#M. i)"
 @proof
   @strong_induct n
@@ -114,7 +116,7 @@ theorem factorization_exists: "n > 0 \<Longrightarrow> \<exists>M. (\<forall>p\<
   @have "n = (\<Prod>i\<in>#(M+K). i)"
 @qed
 
-theorem prime_dvd_multiset [backward1]: "prime p \<Longrightarrow> p dvd (\<Prod>i\<in>#M. i) \<Longrightarrow> \<exists>n. n\<in>#M \<and> p dvd n"
+lemma prime_dvd_multiset [backward1]: "prime p \<Longrightarrow> p dvd (\<Prod>i\<in>#M. i) \<Longrightarrow> \<exists>n. n\<in>#M \<and> p dvd n"
 @proof
   @strong_induct M
   @case "M = {#}"
@@ -122,7 +124,7 @@ theorem prime_dvd_multiset [backward1]: "prime p \<Longrightarrow> p dvd (\<Prod
   @contradiction @apply_induct_hyp M'
 @qed
   
-theorem factorization_unique_aux:
+lemma factorization_unique_aux:
   "\<forall>p\<in>#M. prime p \<Longrightarrow> \<forall>p\<in>#N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) dvd (\<Prod>i\<in>#N. i) \<Longrightarrow> M \<subseteq># N"
 @proof
   @strong_induct M arbitrary N
@@ -137,6 +139,7 @@ theorem factorization_unique_aux:
 @qed
 setup \<open>add_forward_prfstep_cond @{thm factorization_unique_aux} [with_cond "?M \<noteq> ?N"]\<close>
 
+text \<open>Uniqueness of prime factorization.\<close>
 theorem factorization_unique:
   "\<forall>p\<in>#M. prime p \<Longrightarrow> \<forall>p\<in>#N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) = (\<Prod>i\<in>#N. i) \<Longrightarrow> M = N"
 @proof @have "M \<subseteq># N" @qed

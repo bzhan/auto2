@@ -247,6 +247,8 @@ lemma update_idx_pqueue_rule [hoare_triple]:
 
 subsection \<open>Outer interface\<close>
 
+text \<open>Express Hoare triples for indexed priority queue operations in terms of
+  the mapping represented by the queue.\<close>
 definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue_map M n p = (\<exists>\<^sub>Axs m. idx_pqueue (xs, m) p *
       \<up>(index_of_pqueue (xs, m)) * \<up>(is_heap xs) * \<up>(M = map_of_alist xs) * \<up>(n = length m))"
@@ -259,30 +261,30 @@ lemma heap_implies_hd_min2 [resolve]:
   @have "snd (hd xs) \<le> snd (xs ! i)"
 @qed
 
-lemma idx_pqueue_empty_map [hoare_triple]:
+theorem idx_pqueue_empty_map [hoare_triple]:
   "<emp>
    idx_pqueue_empty n
    <idx_pqueue_map empty_map n>" by auto2
 
-lemma delete_min_idx_pqueue_map [hoare_triple]:
+theorem delete_min_idx_pqueue_map [hoare_triple]:
   "<idx_pqueue_map M n p * \<up>(M \<noteq> empty_map)>
    delete_min_idx_pqueue p
    <\<lambda>(x, r). idx_pqueue_map (delete_map (fst x) M) n r * \<up>(fst x < n) *
                 \<up>(is_heap_min (fst x) M) * \<up>(M\<langle>fst x\<rangle> = Some (snd x))>" by auto2
 
-lemma insert_idx_pqueue_map [hoare_triple]:
+theorem insert_idx_pqueue_map [hoare_triple]:
   "k < n \<Longrightarrow> k \<notin> keys_of M \<Longrightarrow>
    <idx_pqueue_map M n p>
    insert_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 
-lemma has_key_idx_pqueue_map [hoare_triple]:
+theorem has_key_idx_pqueue_map [hoare_triple]:
   "k < n \<Longrightarrow>
    <idx_pqueue_map M n p>
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue_map M n p * \<up>(r \<longleftrightarrow> k \<in> keys_of M)>" by auto2
 
-lemma update_idx_pqueue_map [hoare_triple]:
+theorem update_idx_pqueue_map [hoare_triple]:
   "k < n \<Longrightarrow>
    <idx_pqueue_map M n p>
    update_idx_pqueue k v p

@@ -107,7 +107,8 @@ definition rect_inter_all :: "nat rectangle list \<Rightarrow> bool Heap" where
        b \<leftarrow> int_tree_empty;
        rect_inter_impl a b 0 })"
 
-lemma rect_inter_all_correct:
+text \<open>Correctness of rectangle intersection algorithm.\<close>
+theorem rect_inter_all_correct:
   "is_rect_list rects \<Longrightarrow>
    <emp>
    rect_inter_all rects

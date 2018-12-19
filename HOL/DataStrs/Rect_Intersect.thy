@@ -302,7 +302,8 @@ lemma rect_inter_correct_ind [rewrite]:
   @case "n = length ops - 1"
 @qed
 
-lemma rect_inter_correct [rewrite]:
+text \<open>Correctness of functional algorithm.\<close>
+theorem rect_inter_correct [rewrite]:
   "is_rect_list rects \<Longrightarrow> rect_inter rects {} 0 \<longleftrightarrow> has_rect_overlap rects"
 @proof
   @have "{} = xints_of rects (apply_ops_k rects 0)"
