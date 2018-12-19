@@ -92,11 +92,11 @@ lemma partition_partitions2 [forward]:
 setup \<open>del_prfstep_thm @{thm partition_def}\<close>
 
 lemma quicksort_term1:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> fst (partition xs l r) - (l + 1) < r - l"
+  "\<not>r \<le> l \<Longrightarrow> \<not> length xs \<le> r \<Longrightarrow> x = partition xs l r \<Longrightarrow> (p, xs1) = x \<Longrightarrow> p - Suc l < r - l"
 @proof @have "fst (partition xs l r) - l - 1 < r - l" @qed
 
 lemma quicksort_term2:
-  "l < r \<Longrightarrow> r < length xs \<Longrightarrow> r - (fst (partition xs l r) + 1) < r - l"
+  "\<not>r \<le> l \<Longrightarrow> \<not> length xs \<le> r \<Longrightarrow> x = partition xs l r \<Longrightarrow> (p, xs2) = x \<Longrightarrow> r - Suc p < r - l"
 @proof @have "r - fst (partition xs l r) - 1 < r - l" @qed
 
 subsection \<open>Quicksort function\<close>
@@ -110,9 +110,8 @@ function quicksort :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \
       xs2 = quicksort xs1 l (p - 1)
     in
       quicksort xs2 (p + 1) r)"
-  by auto termination apply (relation "measure (\<lambda>(a, l, r). (r - l))") apply auto
-  apply (metis quicksort_term1 Suc_eq_plus1 fst_conv not_le_imp_less)
-  by (metis quicksort_term2 Suc_eq_plus1 fst_conv not_le_imp_less)
+  by auto termination apply (relation "measure (\<lambda>(a, l, r). (r - l))") 
+  by (auto simp add: quicksort_term1 quicksort_term2)
 
 lemma quicksort_basic [rewrite_arg]:
   "mset (quicksort xs l r) = mset xs \<and> outer_remains xs (quicksort xs l r) l r"
