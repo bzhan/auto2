@@ -28,6 +28,7 @@ session Auto2_HOL = HOL +
     "HOL/DataStrs/Rect_Intersect"
 
     (* Imperative programs *)
+    "HOL/SepLogic/GCD_Impl"
     "HOL/SepLogic/LinkedList"
     "HOL/SepLogic/BST_Impl"
     "HOL/SepLogic/RBTree_Impl"

@@ -9,6 +9,10 @@ theory Sep_Examples
 
 imports
 
+(* Tutorial *)
+
+  GCD_Impl
+
 (* Inductive data structures *)
 
   (* Linked lists *)
