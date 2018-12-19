@@ -62,7 +62,7 @@ lemma inorder_sorted [rewrite]:
   "tree_sorted t \<longleftrightarrow> strict_sorted (in_traverse t)"
 @proof @induct t @qed
 
-(* Use definition in terms of in_traverse from now on. *)
+text \<open>Use definition in terms of in_traverse from now on.\<close>
 setup \<open>fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps})\<close>
 
 subsection \<open>Invariant on the maximum\<close>
@@ -88,7 +88,7 @@ lemma tmax_exists [backward]:
   @endgoal @end
 @qed
 
-(* For insertion *)
+text \<open>For insertion\<close>
 lemma max3_insert [rewrite]: "max3 it 0 0 = high (int it)" by auto2
 
 setup \<open>del_prfstep_thm @{thm max3_def}\<close>

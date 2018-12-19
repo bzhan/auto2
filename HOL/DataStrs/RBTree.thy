@@ -64,7 +64,7 @@ lemma is_rbt_rec [forward]: "is_rbt (Node l c k v r) \<Longrightarrow> is_rbt l 
 
 subsection \<open>Balancedness of RBT\<close>
 
-(* Remove after having general normalization procedure for nats. *)
+(* TODO: Remove after having general normalization procedure for nats. *)
 lemma two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 
 fun min_depth :: "('a, 'b) rbt \<Rightarrow> nat" where

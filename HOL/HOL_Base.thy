@@ -30,15 +30,15 @@ theorem backward1_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\
 theorem backward2_conv: "(A \<Longrightarrow> B \<Longrightarrow> C) \<equiv> (\<not>C \<Longrightarrow> A \<Longrightarrow> \<not>B)" by (rule equal_intr_rule) auto
 theorem resolve_conv: "(A \<Longrightarrow> B) \<equiv> (\<not>B \<Longrightarrow> A \<Longrightarrow> False)" by (rule equal_intr_rule) auto
 
-(* Quantifiers: swapping out of ALL or EX *)
+text \<open>Quantifiers: swapping out of ALL or EX.\<close>
 theorem swap_ex_conj: "(P \<and> (\<exists>x. Q x)) \<longleftrightarrow> (\<exists>x. P \<and> Q x)" by auto
 theorem swap_all_disj: "(P \<or> (\<forall>x. Q x)) \<longleftrightarrow> (\<forall>x. P \<or> Q x)" by auto
 
-(* Use these instead of original versions to keep names in abstractions. *)
+text \<open>Use these instead of original versions to keep names in abstractions.\<close>
 theorem Bex_def': "(\<exists>x\<in>S. P x) \<longleftrightarrow> (\<exists>x. x \<in> S \<and> P x)" by auto
 theorem Ball_def': "(\<forall>x\<in>S. P x) \<longleftrightarrow> (\<forall>x. x \<in> S \<longrightarrow> P x)" by auto
 
-(* Taking conjunction of assumptions *)
+text \<open>Taking conjunction of assumptions.\<close>
 lemma atomize_conjL: "(A \<Longrightarrow> B \<Longrightarrow> PROP C) \<equiv> (A \<and> B \<Longrightarrow> PROP C)" by (rule equal_intr_rule) auto
 
 end

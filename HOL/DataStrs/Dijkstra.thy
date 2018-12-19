@@ -30,7 +30,7 @@ setup \<open>add_rewrite_rule @{thm valid_graph.simps}\<close>
 
 subsection \<open>Paths on graphs\<close>
 
-(* The set of vertices less than n. *)
+text \<open>The set of vertices less than n.\<close>
 definition verts :: "graph \<Rightarrow> nat set" where
   "verts G = {i. i < size G}"
 
@@ -115,7 +115,7 @@ lemma shortest_init [resolve]: "n \<in> verts G \<Longrightarrow> is_shortest_pa
 
 subsection \<open>Interior points\<close>
 
-(* List of interior points *)
+text \<open>List of interior points\<close>
 definition int_pts :: "nat list \<Rightarrow> nat set" where [rewrite]:
   "int_pts p = set (butlast p)"
 
@@ -128,7 +128,7 @@ definition path_set_on :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarro
 lemma path_set_on_mem [rewrite]:
   "p \<in> path_set_on G m n V \<longleftrightarrow> p \<in> path_set G m n \<and> int_pts p \<subseteq> V" by (simp add: path_set_on_def)
 
-(* Version of shortest path on a set of points *)
+text \<open>Version of shortest path on a set of points\<close>
 definition is_shortest_path_on :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat list \<Rightarrow> nat set \<Rightarrow> bool" where [rewrite]:
   "is_shortest_path_on G m n p V \<longleftrightarrow>
     (p \<in> path_set_on G m n V \<and> (\<forall>p'\<in>path_set_on G m n V. path_weight G p' \<ge> path_weight G p))"
@@ -270,9 +270,8 @@ lemma derive_dist_on [backward2]:
 
 subsection \<open>Invariant for the Dijkstra's algorithm\<close>
 
-(* The state consists of an array maintaining the best estimates,
-   and a heap containing estimates for the unknown vertices.
- *)
+text \<open>The state consists of an array maintaining the best estimates,
+  and a heap containing estimates for the unknown vertices.\<close>
 datatype state = State (est: "nat list") (heap: "(nat, nat) map")
 setup \<open>add_simple_datatype "state"\<close>
 
@@ -282,8 +281,8 @@ definition unknown_set :: "state \<Rightarrow> nat set" where [rewrite]:
 definition known_set :: "state \<Rightarrow> nat set" where [rewrite]:
   "known_set S = {..<length (est S)} - unknown_set S"
 
-(* Invariant: for every vertex, the estimate is at least the shortest distance.
-   Furthermore, for the known vertices the estimate is exact. *)
+text \<open>Invariant: for every vertex, the estimate is at least the shortest distance.
+  Furthermore, for the known vertices the estimate is exact.\<close>
 definition inv :: "graph \<Rightarrow> state \<Rightarrow> bool" where [rewrite]:
   "inv G S \<longleftrightarrow> (let V = known_set S; W = unknown_set S; M = heap S in
       (length (est S) = size G \<and> known_dists G V \<and>

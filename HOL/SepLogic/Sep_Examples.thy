@@ -9,48 +9,35 @@ theory Sep_Examples
 
 imports
 
-(* Tutorial *)
+  GCD_Impl \<comment> \<open>Tutorial\<close>
 
-  GCD_Impl
+  \<comment> \<open>Inductive data structures\<close>
 
-(* Inductive data structures *)
+  LinkedList \<comment> \<open>Linked lists\<close>
+  
+  BST_Impl \<comment> \<open>Binary search tree\<close>
 
-  (* Linked lists *)
-  LinkedList
-  
-  (* Binary search tree *)
-  BST_Impl
-  
-  (* Red-black tree *)
-  RBTree_Impl
+  RBTree_Impl \<comment> \<open>Red-black tree\<close>
 
-(* Array algorithms *)
+  \<comment> \<open>Array algorithms\<close>
 
-  (* Standard procedure on arrays *)
-  Arrays_Impl
-  
-  (* Dynamic array *)
-  DynamicArray
-  
-  (* Quicksort *)
-  Quicksort_Impl
-  
-  (* Indexed priority queue *)
-  Indexed_PQueue_Impl
-  
-  (* Union-find *)
-  Union_Find_Impl
+  Arrays_Impl \<comment> \<open>Standard procedure on arrays\<close>
 
-(* Applications *)
+  DynamicArray \<comment> \<open>Dynamic array\<close>
+  
+  Quicksort_Impl \<comment> \<open>Quicksort\<close>
+  
+  Indexed_PQueue_Impl \<comment> \<open>Indexed priority queue\<close>
+  
+  Union_Find_Impl \<comment> \<open>Union-find\<close>
 
-  (* Connectivity on graphs *)
-  Connectivity_Impl
+  \<comment> \<open>Applications\<close>
+
+  Connectivity_Impl \<comment> \<open>Connectivity on graphs\<close>
   
-  (* Dijkstra's algorithm *)
-  Dijkstra_Impl
+  Dijkstra_Impl \<comment> \<open>Dijkstra's algorithm\<close>
   
-  (* Rectangular intersection *)
-  Rect_Intersect_Impl
+  Rect_Intersect_Impl \<comment> \<open>Rectangular intersection\<close>
 
 begin
 

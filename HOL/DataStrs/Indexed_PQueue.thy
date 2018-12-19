@@ -54,7 +54,7 @@ lemma eq_pred_le [forward]: "eq_pred i j \<Longrightarrow> i \<le> j"
 
 subsection \<open>Heap property\<close>
 
-(* The corresponding tree is a heap. *)
+text \<open>The corresponding tree is a heap\<close>
 definition is_heap :: "('a \<times> 'b::linorder) list \<Rightarrow> bool" where [rewrite]:
   "is_heap xs = (\<forall>i j. eq_pred i j \<longrightarrow> j < length xs \<longrightarrow> snd (xs ! i) \<le> snd (xs ! j))"
 
@@ -65,11 +65,11 @@ setup \<open>del_prfstep_thm_eqforward @{thm is_heap_def}\<close>
 
 subsection \<open>Bubble-down\<close>
 
-(* The corresponding tree is a heap, except k is not necessarily smaller than its descendents. *)
+text \<open>The corresponding tree is a heap, except k is not necessarily smaller than its descendents.\<close>
 definition is_heap_partial1 :: "('a \<times> 'b::linorder) list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "is_heap_partial1 xs k = (\<forall>i j. eq_pred i j \<longrightarrow> i \<noteq> k \<longrightarrow> j < length xs \<longrightarrow> snd (xs ! i) \<le> snd (xs ! j))"
 
-(* Two cases of switching with s1 k. *)
+text \<open>Two cases of switching with s1 k.\<close>
 lemma bubble_down1:
   "s1 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) > snd (xs ! s1 k) \<Longrightarrow>
    snd (xs ! s1 k) \<le> snd (xs ! s2 k) \<Longrightarrow> is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
@@ -80,7 +80,7 @@ lemma bubble_down2:
    s2 k \<ge> length xs \<Longrightarrow> is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
 setup \<open>add_forward_prfstep_cond @{thm bubble_down2} [with_term "list_swap ?xs ?k (s1 ?k)"]\<close>
 
-(* One case of switching with s2 k. *)
+text \<open>One case of switching with s2 k.\<close>
 lemma bubble_down3:
   "s2 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! s1 k) > snd (xs ! s2 k) \<Longrightarrow>
    snd (xs ! k) > snd (xs ! s2 k) \<Longrightarrow> xs' = list_swap xs k (s2 k) \<Longrightarrow> is_heap_partial1 xs' (s2 k)" by auto2
@@ -113,7 +113,7 @@ lemma heap_implies_hd_min [resolve]:
   @have "eq_pred (par i) i"
 @qed
 
-(* The corresponding tree is a heap, except k is not necessarily greater than its ancestors. *)
+text \<open>The corresponding tree is a heap, except k is not necessarily greater than its ancestors.\<close>
 definition is_heap_partial2 :: "('a \<times> 'b::linorder) list \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "is_heap_partial2 xs k = (\<forall>i j. eq_pred i j \<longrightarrow> j < length xs \<longrightarrow> j \<noteq> k \<longrightarrow> snd (xs ! i) \<le> snd (xs ! j))"
 

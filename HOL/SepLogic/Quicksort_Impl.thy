@@ -29,7 +29,7 @@ lemma part1_to_fun [hoare_triple]:
    <\<lambda>rs. p \<mapsto>\<^sub>a snd (Quicksort.part1 xs l r a) * \<up>(rs = fst (Quicksort.part1 xs l r a))>"
 @proof @fun_induct "Quicksort.part1 xs l r a" @unfold "Quicksort.part1 xs l r a" @qed
 
-(* Partition function. *)
+text \<open>Partition function\<close>
 definition partition :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat Heap" where
   "partition a l r = do {
      p \<leftarrow> Array.nth a r;
@@ -46,7 +46,7 @@ lemma partition_to_fun [hoare_triple]:
    <\<lambda>rs. a \<mapsto>\<^sub>a snd (Quicksort.partition xs l r) * \<up>(rs = fst (Quicksort.partition xs l r))>"
 @proof @unfold "Quicksort.partition xs l r" @qed
 
-(* Quicksort function *)
+text \<open>Quicksort function\<close>
 partial_function (heap) quicksort :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> unit Heap" where
   "quicksort a l r = do {
      len \<leftarrow> Array.len a;

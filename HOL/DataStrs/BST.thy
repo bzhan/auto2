@@ -66,7 +66,7 @@ lemma inorder_pairs_sorted [rewrite]:
   "tree_sorted t \<longleftrightarrow> strict_sorted (map fst (in_traverse_pairs t))"
 @proof @induct t @qed
 
-(* Use definition in terms of in_traverse from now on. *)
+text \<open>Use definition in terms of in_traverse from now on.\<close>
 setup \<open>fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps})\<close>
 
 subsection \<open>Rotation on trees\<close>

@@ -123,7 +123,6 @@ theorem p39: "\<not>(\<exists>x. \<forall>y. F(y,x) \<longleftrightarrow> \<not>
   @case "F(x,x)"
 @qed
 
-(* Note there is a typo in the original text. *)
 theorem p40: "\<exists>y. \<forall>x. F(x,y) \<longleftrightarrow> F(x,x) \<Longrightarrow> \<not>(\<forall>x. \<exists>y. \<forall>z. F(z,y) \<longleftrightarrow> \<not>F(z,x))"
 @proof
   @obtain A where "\<forall>x. F(x,A) \<longleftrightarrow> F(x,x)"

@@ -23,7 +23,7 @@ fun in_range :: "(heap \<times> addr set) \<Rightarrow> bool" where
   "in_range (h,as) \<longleftrightarrow> (\<forall>a\<in>as. a < lim h)"
 setup \<open>add_rewrite_rule @{thm in_range.simps}\<close>
 
-(* Two heaps agree on a set of addresses. *)
+text \<open>Two heaps agree on a set of addresses.\<close>
 definition relH :: "addr set \<Rightarrow> heap \<Rightarrow> heap \<Rightarrow> bool" where [rewrite]:
   "relH as h h' = (in_range (h, as) \<and> in_range (h', as) \<and>
      (\<forall>t. \<forall>a\<in>as. refs h t a = refs h' t a \<and> arrays h t a = arrays h' t a))"
@@ -322,7 +322,7 @@ lemma frame_rule [backward]:
   @end
 @qed
 
-(* This is the last use of the definition of separating conjunction. *)
+text \<open>This is the last use of the definition of separating conjunction.\<close>
 setup \<open>del_prfstep_thm @{thm mod_star_conv}\<close>
 
 lemma bind_rule:
@@ -331,13 +331,13 @@ lemma bind_rule:
   @have "\<forall>h as \<sigma> r. pHeap h as \<Turnstile> P \<longrightarrow> run (f \<bind> g) (Some h) \<sigma> r \<longrightarrow>
                     (\<sigma> \<noteq> None \<and> pHeap (the \<sigma>) (new_addrs h as (the \<sigma>)) \<Turnstile> R r \<and>
                      relH {a . a < lim h \<and> a \<notin> as} h (the \<sigma>) \<and> lim h \<le> lim (the \<sigma>))" @with
-    (* First step from h to h' *)
+    \<comment> \<open>First step from h to h'\<close>
     @obtain \<sigma>' r' where "run f (Some h) \<sigma>' r'"
     @obtain h' where "\<sigma>' = Some h'"
     @let "as' = new_addrs h as h'"
     @have "pHeap h' as' \<Turnstile> Q r'"
 
-    (* Second step from h' to h'' *)
+    \<comment> \<open>Second step from h' to h''\<close>
     @have "run (g r') (Some h') \<sigma> r"
     @obtain h'' where "\<sigma> = Some h''"
     @let "as'' = new_addrs h' as' h''"
@@ -346,7 +346,7 @@ lemma bind_rule:
   @end
 @qed
 
-(* Actual statement used: *)
+text \<open>Actual statement used:\<close>
 lemma bind_rule':
   "<P> f <Q> \<Longrightarrow> \<not> <P> f \<bind> g <R> \<Longrightarrow> \<exists>x. \<not> <Q x> g x <R>" using bind_rule by blast
 
@@ -372,7 +372,7 @@ lemma post_rule:
 
 setup \<open>fold del_prfstep_thm [@{thm entailsD}, @{thm entails_frame}, @{thm frame_rule}]\<close>
 
-(* Actual statement used: *)
+text \<open>Actual statement used:\<close>
 lemma post_rule':
   "<P> f <Q> \<Longrightarrow> \<not> <P> f <R> \<Longrightarrow> \<exists>x. \<not> (Q x \<Longrightarrow>\<^sub>A R x)" using post_rule by blast
 
@@ -381,7 +381,7 @@ lemma norm_pre_pure_iff2: "<\<up>b> c <Q> \<longleftrightarrow> (b \<longrightar
 
 subsection \<open>Hoare triples for atomic commands\<close>
 
-(* First, those that do not modify the heap. *)
+text \<open>First, those that do not modify the heap.\<close>
 setup \<open>add_rewrite_rule @{thm execute_assert(1)}\<close>
 lemma assert_rule:
   "<\<up>(R x)> assert R x <\<lambda>r. \<up>(r = x)>" by auto2
@@ -406,7 +406,7 @@ setup \<open>add_rewrite_rule @{thm execute_freeze}\<close>
 lemma freeze_rule:
   "<a \<mapsto>\<^sub>a xs> Array.freeze a <\<lambda>r. a \<mapsto>\<^sub>a xs * \<up>(r = xs)>" by auto2
 
-(* Next, the update rules. *)
+text \<open>Next, the update rules.\<close>
 setup \<open>add_rewrite_rule @{thm Ref.lim_set}\<close>
 lemma Array_lim_set [rewrite]: "lim (Array.set p xs h) = lim h" by (simp add: Array.set_def)
 
@@ -421,7 +421,7 @@ setup \<open>add_rewrite_rule @{thm execute_update}\<close>
 lemma update_rule:
   "<p \<mapsto>\<^sub>r y> p := x <\<lambda>r. p \<mapsto>\<^sub>r x>" by auto2
 
-(* Finally, the allocation rules. *)
+text \<open>Finally, the allocation rules.\<close>
 lemma lim_set_gen [rewrite]: "lim (h\<lparr>lim := l\<rparr>) = l" by simp
 
 lemma Array_alloc_def' [rewrite]: 
@@ -470,7 +470,7 @@ setup \<open>del_simple_datatype "pheap"\<close>
 
 subsection \<open>Definition of procedures\<close>
 
-(* ASCII abbreviations for ML files. *)
+text \<open>ASCII abbreviations for ML files.\<close>
 abbreviation (input) ex_assn_ascii :: "('a \<Rightarrow> assn) \<Rightarrow> assn" (binder "EXA" 11)
   where "ex_assn_ascii \<equiv> ex_assn"
 
@@ -502,7 +502,7 @@ setup \<open>fold add_hoare_triple_prfstep [
   @{thm return_rule}, @{thm ref_rule}, @{thm lookup_rule}, @{thm new_rule},
   @{thm of_list_rule}, @{thm length_rule}, @{thm freeze_rule}]\<close>
 
-(* Some simple tests *)
+text \<open>Some simple tests\<close>
 
 theorem "<emp> ref x <\<lambda>r. r \<mapsto>\<^sub>r x>" by auto2
 theorem "<a \<mapsto>\<^sub>r x> ref x <\<lambda>r. a \<mapsto>\<^sub>r x * r \<mapsto>\<^sub>r x>" by auto2

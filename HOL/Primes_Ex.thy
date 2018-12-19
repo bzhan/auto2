@@ -24,8 +24,7 @@ lemma primeD2: "prime p \<Longrightarrow> m dvd p \<Longrightarrow> m = 1 \<or> 
 setup \<open>add_forward_prfstep_cond @{thm primeD2} [with_cond "?m \<noteq> 1", with_cond "?m \<noteq> ?p"]\<close>
 setup \<open>del_prfstep_thm_eqforward @{thm prime_def}\<close>
 
-(* Exists a prime p. *)
-theorem exists_prime [resolve]: "\<exists>p. prime p"
+lemma exists_prime [resolve]: "\<exists>p. prime p"
 @proof @have "prime 2" @qed
 
 lemma prime_odd_nat: "prime p \<Longrightarrow> p > 2 \<Longrightarrow> odd p" by auto2
