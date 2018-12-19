@@ -21,8 +21,8 @@ definition prime :: "nat \<Rightarrow> bool" where [rewrite]:
 
 lemma primeD1 [forward]: "prime p \<Longrightarrow> 1 < p" by auto2
 lemma primeD2: "prime p \<Longrightarrow> m dvd p \<Longrightarrow> m = 1 \<or> m = p" by auto2
-setup {* add_forward_prfstep_cond @{thm primeD2} [with_cond "?m \<noteq> 1", with_cond "?m \<noteq> ?p"] *}
-setup {* del_prfstep_thm_eqforward @{thm prime_def} *}
+setup \<open>add_forward_prfstep_cond @{thm primeD2} [with_cond "?m \<noteq> 1", with_cond "?m \<noteq> ?p"]\<close>
+setup \<open>del_prfstep_thm_eqforward @{thm prime_def}\<close>
 
 (* Exists a prime p. *)
 theorem exists_prime [resolve]: "\<exists>p. prime p"
@@ -33,13 +33,13 @@ lemma prime_odd_nat: "prime p \<Longrightarrow> p > 2 \<Longrightarrow> odd p" b
 lemma prime_imp_coprime_nat [backward2]: "prime p \<Longrightarrow> \<not> p dvd n \<Longrightarrow> coprime p n" by auto2
 
 lemma prime_dvd_mult_nat: "prime p \<Longrightarrow> p dvd m * n \<Longrightarrow> p dvd m \<or> p dvd n" by auto2
-setup {* add_forward_prfstep_cond @{thm prime_dvd_mult_nat}
-  (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
+setup \<open>add_forward_prfstep_cond @{thm prime_dvd_mult_nat}
+  (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"])\<close>
 
 theorem prime_dvd_intro: "prime p \<Longrightarrow> p * q = m * n \<Longrightarrow> p dvd m \<or> p dvd n"
 @proof @have "p dvd m * n" @qed
-setup {* add_forward_prfstep_cond @{thm prime_dvd_intro}
-  (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"]) *}
+setup \<open>add_forward_prfstep_cond @{thm prime_dvd_intro}
+  (with_conds ["?m \<noteq> ?p", "?n \<noteq> ?p", "?m \<noteq> ?p * ?m'", "?n \<noteq> ?p * ?n'"])\<close>
 
 lemma prime_dvd_mult_eq_nat: "prime p \<Longrightarrow> p dvd m * n = (p dvd m \<or> p dvd n)" by auto2
 
@@ -51,7 +51,7 @@ lemma not_prime_eq_prod_nat [backward1]: "n > 1 \<Longrightarrow> \<not> prime n
 @qed
 
 lemma prime_dvd_power_nat: "prime p \<Longrightarrow> p dvd x^n \<Longrightarrow> p dvd x" by auto2
-setup {* add_forward_prfstep_cond @{thm prime_dvd_power_nat} [with_cond "?p \<noteq> ?x"] *}
+setup \<open>add_forward_prfstep_cond @{thm prime_dvd_power_nat} [with_cond "?p \<noteq> ?x"]\<close>
 
 lemma prime_dvd_power_nat_iff: "prime p \<Longrightarrow> n > 0 \<Longrightarrow> p dvd x^n \<longleftrightarrow> p dvd x" by auto2
 
@@ -136,11 +136,11 @@ theorem factorization_unique_aux:
   @have "(\<Prod>i\<in>#M'. i) dvd (\<Prod>i\<in>#N'. i)"
   @apply_induct_hyp M' N'
 @qed
-setup {* add_forward_prfstep_cond @{thm factorization_unique_aux} [with_cond "?M \<noteq> ?N"] *}
+setup \<open>add_forward_prfstep_cond @{thm factorization_unique_aux} [with_cond "?M \<noteq> ?N"]\<close>
 
 theorem factorization_unique:
   "\<forall>p\<in>#M. prime p \<Longrightarrow> \<forall>p\<in>#N. prime p \<Longrightarrow> (\<Prod>i\<in>#M. i) = (\<Prod>i\<in>#N. i) \<Longrightarrow> M = N"
 @proof @have "M \<subseteq># N" @qed
-setup {* del_prfstep_thm @{thm factorization_unique_aux} *}
+setup \<open>del_prfstep_thm @{thm factorization_unique_aux}\<close>
 
 end

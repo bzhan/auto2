@@ -18,7 +18,7 @@ definition part_equiv :: "('a \<times> 'a) set \<Rightarrow> bool" where [rewrit
 lemma part_equivI [forward]: "sym R \<Longrightarrow> trans R \<Longrightarrow> part_equiv R" by auto2
 lemma part_equivD1 [forward]: "part_equiv R \<Longrightarrow> sym R" by auto2
 lemma part_equivD2 [forward]: "part_equiv R \<Longrightarrow> trans R" by auto2
-setup {* del_prfstep_thm_eqforward @{thm part_equiv_def} *}
+setup \<open>del_prfstep_thm_eqforward @{thm part_equiv_def}\<close>
 
 subsection \<open>Combining two elements in a partial equivalence relation\<close>
 
@@ -27,7 +27,7 @@ definition per_union :: "('a \<times> 'a) set \<Rightarrow> 'a \<Rightarrow> 'a 
 
 lemma per_union_memI1 [backward]:
   "(x, y) \<in> R \<Longrightarrow> (x, y) \<in> per_union R a b" by (simp add: per_union_def)
-setup {* add_forward_prfstep_cond @{thm per_union_memI1} [with_term "per_union ?R ?a ?b"] *}
+setup \<open>add_forward_prfstep_cond @{thm per_union_memI1} [with_term "per_union ?R ?a ?b"]\<close>
 
 lemma per_union_memI2 [backward]:
   "(x, a) \<in> R \<Longrightarrow> (b, y) \<in> R \<Longrightarrow> (x, y) \<in> per_union R a b" by (simp add: per_union_def)
@@ -38,8 +38,8 @@ lemma per_union_memI3 [backward]:
 lemma per_union_memD:
   "(x, y) \<in> per_union R a b \<Longrightarrow> (x, y) \<in> R \<or> ((x, a) \<in> R \<and> (b, y) \<in> R) \<or> ((x, b) \<in> R \<and> (a, y) \<in> R)"
   by (simp add: per_union_def)
-setup {* add_forward_prfstep_cond @{thm per_union_memD} [with_cond "?x \<noteq> ?y", with_filt (order_filter "x" "y")] *}
-setup {* del_prfstep_thm @{thm per_union_def} *}
+setup \<open>add_forward_prfstep_cond @{thm per_union_memD} [with_cond "?x \<noteq> ?y", with_filt (order_filter "x" "y")]\<close>
+setup \<open>del_prfstep_thm @{thm per_union_def}\<close>
 
 lemma per_union_is_trans [forward]:
   "trans R \<Longrightarrow> trans (per_union R a b)" by auto2

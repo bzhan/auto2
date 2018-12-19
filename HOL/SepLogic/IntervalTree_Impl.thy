@@ -35,7 +35,7 @@ subsection \<open>Tree nodes\<close>
 
 datatype 'a node =
   Node (lsub: "'a node ref option") (val: "'a idx_interval") (tmax: nat) (rsub: "'a node ref option")
-setup {* fold add_rewrite_rule @{thms node.sel} *}
+setup \<open>fold add_rewrite_rule @{thms node.sel}\<close>
 
 fun node_encode :: "('a::heap) node \<Rightarrow> nat" where
   "node_encode (Node l v m r) = to_nat (l, v, m, r)"
@@ -50,7 +50,7 @@ fun int_tree :: "interval_tree \<Rightarrow> nat node ref option \<Rightarrow> a
   "int_tree Tip p = \<up>(p = None)"
 | "int_tree (interval_tree.Node lt v m rt) (Some p) = (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp v m rp * int_tree lt lp * int_tree rt rp)"
 | "int_tree (interval_tree.Node lt v m rt) None = false"
-setup {* fold add_rewrite_ent_rule @{thms int_tree.simps} *}
+setup \<open>fold add_rewrite_ent_rule @{thms int_tree.simps}\<close>
 
 lemma int_tree_Tip [forward_ent]: "int_tree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
@@ -63,8 +63,8 @@ lemma int_tree_none: "emp \<Longrightarrow>\<^sub>A int_tree interval_tree.Tip N
 lemma int_tree_constr_ent:
   "p \<mapsto>\<^sub>r Node lp v m rp * int_tree lt lp * int_tree rt rp \<Longrightarrow>\<^sub>A int_tree (interval_tree.Node lt v m rt) (Some p)" by auto2
 
-setup {* fold add_entail_matcher [@{thm int_tree_none}, @{thm int_tree_constr_ent}] *}
-setup {* fold del_prfstep_thm @{thms int_tree.simps} *}
+setup \<open>fold add_entail_matcher [@{thm int_tree_none}, @{thm int_tree_constr_ent}]\<close>
+setup \<open>fold del_prfstep_thm @{thms int_tree.simps}\<close>
 
 type_synonym int_tree = "nat node ref option"
 
@@ -244,7 +244,7 @@ subsection \<open>Outer interface\<close>
 
 definition int_tree_set :: "nat idx_interval set \<Rightarrow> int_tree \<Rightarrow> assn" where
   "int_tree_set S p = (\<exists>\<^sub>At. int_tree t p * \<up>(is_interval_tree t) * \<up>(S = tree_set t))"
-setup {* add_rewrite_ent_rule @{thm int_tree_set_def} *}
+setup \<open>add_rewrite_ent_rule @{thm int_tree_set_def}\<close>
 
 theorem int_tree_empty_rule [hoare_triple]:
   "<emp> int_tree_empty <int_tree_set {}>" by auto2
@@ -264,6 +264,6 @@ theorem int_tree_search_rule [hoare_triple]:
    search_impl x b
    <\<lambda>r. int_tree_set S b * \<up>(r \<longleftrightarrow> has_overlap S x)>" by auto2
 
-setup {* del_prfstep_thm @{thm int_tree_set_def} *}
+setup \<open>del_prfstep_thm @{thm int_tree_set_def}\<close>
 
 end

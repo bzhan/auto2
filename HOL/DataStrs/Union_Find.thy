@@ -17,24 +17,24 @@ subsection \<open>Representing a partial equivalence relation using rep\_of arra
 function (domintros) rep_of where
   "rep_of l i = (if l ! i = i then i else rep_of l (l ! i))" by auto
 
-setup {* register_wellform_data ("rep_of l i", ["i < length l"]) *}
-setup {* add_backward_prfstep @{thm rep_of.domintros} *}
-setup {* add_rewrite_rule @{thm rep_of.psimps} *}
-setup {* add_prop_induct_rule @{thm rep_of.pinduct} *}
+setup \<open>register_wellform_data ("rep_of l i", ["i < length l"])\<close>
+setup \<open>add_backward_prfstep @{thm rep_of.domintros}\<close>
+setup \<open>add_rewrite_rule @{thm rep_of.psimps}\<close>
+setup \<open>add_prop_induct_rule @{thm rep_of.pinduct}\<close>
 
 definition ufa_invar :: "nat list \<Rightarrow> bool" where [rewrite]:
   "ufa_invar l = (\<forall>i<length l. rep_of_dom (l, i) \<and> l ! i < length l)"
 
 lemma ufa_invarD:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of_dom (l, i) \<and> l ! i < length l" by auto2
-setup {* add_forward_prfstep_cond @{thm ufa_invarD} [with_term "?l ! ?i"] *}
-setup {* del_prfstep_thm_eqforward @{thm ufa_invar_def} *}
+setup \<open>add_forward_prfstep_cond @{thm ufa_invarD} [with_term "?l ! ?i"]\<close>
+setup \<open>del_prfstep_thm_eqforward @{thm ufa_invar_def}\<close>
 
 lemma rep_of_id [rewrite]: "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> l ! i = i \<Longrightarrow> rep_of l i = i" by auto2
 
 lemma rep_of_iff [rewrite]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of l i = (if l ! i = i then i else rep_of l (l ! i))" by auto2
-setup {* del_prfstep_thm @{thm rep_of.psimps} *}
+setup \<open>del_prfstep_thm @{thm rep_of.psimps}\<close>
 
 lemma rep_of_min [rewrite]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> l ! (rep_of l i) = rep_of l i"
@@ -45,7 +45,7 @@ lemma rep_of_induct:
    \<forall>i<length l. l ! i = i \<longrightarrow> P l i \<Longrightarrow>
    \<forall>i<length l. l ! i \<noteq> i \<longrightarrow> P l (l ! i) \<longrightarrow> P l i \<Longrightarrow> P l i"
 @proof @prop_induct "rep_of_dom (l, i)" @qed
-setup {* add_prop_induct_rule @{thm rep_of_induct} *}
+setup \<open>add_prop_induct_rule @{thm rep_of_induct}\<close>
 
 lemma rep_of_bound [forward_arg1]:
   "ufa_invar l \<Longrightarrow> i < length l \<Longrightarrow> rep_of l i < length l"
@@ -67,7 +67,7 @@ lemma ufa_\<alpha>_memI [backward, forward_arg]:
 lemma ufa_\<alpha>_memD [forward]:
   "(x, y) \<in> ufa_\<alpha> l \<Longrightarrow> x < length l \<and> y < length l \<and> rep_of l x = rep_of l y"
   by (simp add: ufa_\<alpha>_def)
-setup {* del_prfstep_thm @{thm ufa_\<alpha>_def} *}
+setup \<open>del_prfstep_thm @{thm ufa_\<alpha>_def}\<close>
 
 lemma ufa_\<alpha>_equiv [forward]: "part_equiv (ufa_\<alpha> l)" by auto2
 
@@ -131,6 +131,6 @@ lemma ufa_compress_aux [rewrite]:
 lemma ufa_compress_correct [rewrite]:
   "ufa_invar l \<Longrightarrow> x < length l \<Longrightarrow> ufa_\<alpha> (ufa_compress l x) = ufa_\<alpha> l" by auto2
 
-setup {* del_prfstep_thm @{thm rep_of_iff} *}
+setup \<open>del_prfstep_thm @{thm rep_of_iff}\<close>
 
 end

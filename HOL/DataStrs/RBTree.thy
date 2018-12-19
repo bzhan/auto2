@@ -21,11 +21,11 @@ datatype ('a, 'b) rbt =
 where
   "cl Leaf = B"
 
-setup {* add_resolve_prfstep @{thm color.distinct(1)} *}
-setup {* add_resolve_prfstep @{thm rbt.distinct(1)} *}
-setup {* fold add_rewrite_rule @{thms rbt.sel} *}
-setup {* add_forward_prfstep @{thm rbt.collapse} *}
-setup {* add_var_induct_rule @{thm rbt.induct} *}
+setup \<open>add_resolve_prfstep @{thm color.distinct(1)}\<close>
+setup \<open>add_resolve_prfstep @{thm rbt.distinct(1)}\<close>
+setup \<open>fold add_rewrite_rule @{thms rbt.sel}\<close>
+setup \<open>add_forward_prfstep @{thm rbt.collapse}\<close>
+setup \<open>add_var_induct_rule @{thm rbt.induct}\<close>
 
 lemma not_R [forward]: "c \<noteq> R \<Longrightarrow> c = B" using color.exhaust by blast
 lemma not_B [forward]: "c \<noteq> B \<Longrightarrow> c = R" using color.exhaust by blast
@@ -37,27 +37,27 @@ fun black_depth :: "('a, 'b) rbt \<Rightarrow> nat" where
   "black_depth Leaf = 0"
 | "black_depth (Node l R k v r) = black_depth l"
 | "black_depth (Node l B k v r) = black_depth l + 1"
-setup {* fold add_rewrite_rule @{thms black_depth.simps} *}
+setup \<open>fold add_rewrite_rule @{thms black_depth.simps}\<close>
 
 fun cl_inv :: "('a, 'b) rbt \<Rightarrow> bool" where
   "cl_inv Leaf = True"
 | "cl_inv (Node l R k v r) = (cl_inv l \<and> cl_inv r \<and> cl l = B \<and> cl r = B)"
 | "cl_inv (Node l B k v r) = (cl_inv l \<and> cl_inv r)"
-setup {* fold add_rewrite_rule @{thms cl_inv.simps} *}
+setup \<open>fold add_rewrite_rule @{thms cl_inv.simps}\<close>
 
 fun bd_inv :: "('a, 'b) rbt \<Rightarrow> bool" where
   "bd_inv Leaf = True"
 | "bd_inv (Node l c k v r) = (bd_inv l \<and> bd_inv r \<and> black_depth l = black_depth r)"
-setup {* fold add_rewrite_rule @{thms bd_inv.simps} *}
+setup \<open>fold add_rewrite_rule @{thms bd_inv.simps}\<close>
 
 definition is_rbt :: "('a, 'b) rbt \<Rightarrow> bool" where [rewrite]:
   "is_rbt t = (cl_inv t \<and> bd_inv t)"
 
 lemma cl_invI: "cl_inv l \<Longrightarrow> cl_inv r \<Longrightarrow> cl_inv (Node l B k v r)" by auto2
-setup {* add_forward_prfstep_cond @{thm cl_invI} [with_term "Node ?l B ?k ?v ?r"] *}
+setup \<open>add_forward_prfstep_cond @{thm cl_invI} [with_term "Node ?l B ?k ?v ?r"]\<close>
 
 lemma bd_invI: "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> black_depth l = black_depth r \<Longrightarrow> bd_inv (Node l c k v r)" by auto2
-setup {* add_forward_prfstep_cond @{thm bd_invI} [with_term "Node ?l ?c ?k ?v ?r"] *}
+setup \<open>add_forward_prfstep_cond @{thm bd_invI} [with_term "Node ?l ?c ?k ?v ?r"]\<close>
 
 lemma is_rbt_rec [forward]: "is_rbt (Node l c k v r) \<Longrightarrow> is_rbt l \<and> is_rbt r"
 @proof @case "c = R" @qed
@@ -70,12 +70,12 @@ lemma two_distrib [rewrite]: "(2::nat) * (a + 1) = 2 * a + 2" by simp
 fun min_depth :: "('a, 'b) rbt \<Rightarrow> nat" where
   "min_depth Leaf = 0"
 | "min_depth (Node l c k v r) = min (min_depth l) (min_depth r) + 1"
-setup {* fold add_rewrite_rule @{thms min_depth.simps} *}
+setup \<open>fold add_rewrite_rule @{thms min_depth.simps}\<close>
 
 fun max_depth :: "('a, 'b) rbt \<Rightarrow> nat" where
   "max_depth Leaf = 0"
 | "max_depth (Node l c k v r) = max (max_depth l) (max_depth r) + 1"
-setup {* fold add_rewrite_rule @{thms max_depth.simps} *}
+setup \<open>fold add_rewrite_rule @{thms max_depth.simps}\<close>
 
 theorem rbt_balanced: "is_rbt t \<Longrightarrow> max_depth t \<le> 2 * min_depth t + 1"
 @proof
@@ -94,7 +94,7 @@ subsection \<open>Definition and basic properties of cl\_inv'\<close>
 fun cl_inv' :: "('a, 'b) rbt \<Rightarrow> bool" where
   "cl_inv' Leaf = True"
 | "cl_inv' (Node l c k v r) = (cl_inv l \<and> cl_inv r)"
-setup {* fold add_rewrite_rule @{thms cl_inv'.simps} *}
+setup \<open>fold add_rewrite_rule @{thms cl_inv'.simps}\<close>
 
 lemma cl_inv'B [forward, backward1]:
   "cl_inv' t \<Longrightarrow> cl t = B \<Longrightarrow> cl_inv t"
@@ -114,29 +114,29 @@ subsection \<open>Set of keys, sortedness\<close>
 fun rbt_in_traverse :: "('a, 'b) rbt \<Rightarrow> 'a list" where
   "rbt_in_traverse Leaf = []"
 | "rbt_in_traverse (Node l c k v r) = rbt_in_traverse l @ k # rbt_in_traverse r"
-setup {* fold add_rewrite_rule @{thms rbt_in_traverse.simps} *}
+setup \<open>fold add_rewrite_rule @{thms rbt_in_traverse.simps}\<close>
 
 fun rbt_set :: "('a, 'b) rbt \<Rightarrow> 'a set" where
   "rbt_set Leaf = {}"
 | "rbt_set (Node l c k v r) = {k} \<union> rbt_set l \<union> rbt_set r"
-setup {* fold add_rewrite_rule @{thms rbt_set.simps} *}
+setup \<open>fold add_rewrite_rule @{thms rbt_set.simps}\<close>
 
 fun rbt_in_traverse_pairs :: "('a, 'b) rbt \<Rightarrow> ('a \<times> 'b) list" where
   "rbt_in_traverse_pairs Leaf = []"
 | "rbt_in_traverse_pairs (Node l c k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r"
-setup {* fold add_rewrite_rule @{thms rbt_in_traverse_pairs.simps} *}
+setup \<open>fold add_rewrite_rule @{thms rbt_in_traverse_pairs.simps}\<close>
 
 lemma rbt_in_traverse_fst [rewrite]: "map fst (rbt_in_traverse_pairs t) = rbt_in_traverse t"
 @proof @induct t @qed
 
 definition rbt_map :: "('a, 'b) rbt \<Rightarrow> ('a, 'b) map" where
   "rbt_map t = map_of_alist (rbt_in_traverse_pairs t)"
-setup {* add_rewrite_rule @{thm rbt_map_def} *}
+setup \<open>add_rewrite_rule @{thm rbt_map_def}\<close>
 
 fun rbt_sorted :: "('a::linorder, 'b) rbt \<Rightarrow> bool" where
   "rbt_sorted Leaf = True"
 | "rbt_sorted (Node l c k v r) = ((\<forall>x\<in>rbt_set l. x < k) \<and> (\<forall>x\<in>rbt_set r. k < x) \<and> rbt_sorted l \<and> rbt_sorted r)"
-setup {* fold add_rewrite_rule @{thms rbt_sorted.simps} *}
+setup \<open>fold add_rewrite_rule @{thms rbt_sorted.simps}\<close>
 
 lemma rbt_sorted_lr [forward]:
   "rbt_sorted (Node l c k v r) \<Longrightarrow> rbt_sorted l \<and> rbt_sorted r" by auto2
@@ -149,7 +149,7 @@ lemma rbt_inorder_sorted [rewrite]:
   "rbt_sorted t \<longleftrightarrow> strict_sorted (map fst (rbt_in_traverse_pairs t))"
 @proof @induct t @qed
 
-setup {* fold del_prfstep_thm (@{thms rbt_set.simps} @ @{thms rbt_sorted.simps}) *}
+setup \<open>fold del_prfstep_thm (@{thms rbt_set.simps} @ @{thms rbt_sorted.simps})\<close>
 
 subsection \<open>Balance function\<close>
 
@@ -170,8 +170,8 @@ definition balance :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarr
       else if cl rl = R then Node (Node (lsub l) B (key l) (val l) (lsub rl)) R (key rl) (val rl) (Node (rsub rl) B k v r)
       else balanceR l k v r
     else balanceR l k v r)"
-setup {* register_wellform_data ("balance l k v r", ["black_depth l = black_depth r"]) *}
-setup {* add_prfstep_check_req ("balance l k v r", "black_depth l = black_depth r") *}
+setup \<open>register_wellform_data ("balance l k v r", ["black_depth l = black_depth r"])\<close>
+setup \<open>add_prfstep_check_req ("balance l k v r", "black_depth l = black_depth r")\<close>
 
 lemma balance_non_Leaf [resolve]: "balance l k v r \<noteq> Leaf" by auto2
 
@@ -196,7 +196,7 @@ lemma balanceR_inorder_pairs [rewrite]:
 lemma balance_inorder_pairs [rewrite]:
   "rbt_in_traverse_pairs (balance l k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r" by auto2
 
-setup {* fold del_prfstep_thm [@{thm balanceR_def}, @{thm balance_def}] *}
+setup \<open>fold del_prfstep_thm [@{thm balanceR_def}, @{thm balance_def}]\<close>
 
 subsection \<open>ins function\<close>
 
@@ -211,7 +211,7 @@ fun ins :: "'a::order \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> 
      (if x = y then Node l R x v r
       else if x < y then Node (ins x v l) R y w r
       else Node l R y w (ins x v r)))"
-setup {* fold add_rewrite_rule @{thms ins.simps} *}
+setup \<open>fold add_rewrite_rule @{thms ins.simps}\<close>
 
 lemma ins_non_Leaf [resolve]: "ins x v t \<noteq> Leaf"
 @proof @case "t = Leaf" @qed
@@ -225,7 +225,7 @@ lemma cl_inv_ins [forward]:
 lemma bd_inv_ins:
   "bd_inv t \<Longrightarrow> bd_inv (ins x v t) \<and> black_depth t = black_depth (ins x v t)"
 @proof @induct t @qed
-setup {* add_forward_prfstep_cond (conj_left_th @{thm bd_inv_ins}) [with_term "ins ?x ?v ?t"] *}
+setup \<open>add_forward_prfstep_cond (conj_left_th @{thm bd_inv_ins}) [with_term "ins ?x ?v ?t"]\<close>
 
 lemma ins_inorder_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (ins x v t) = ordered_insert_pairs x v (rbt_in_traverse_pairs t)"
@@ -236,9 +236,9 @@ subsection \<open>Paint function\<close>
 fun paint :: "color \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where
   "paint c Leaf = Leaf"
 | "paint c (Node l c' x v r) = Node l c x v r"
-setup {* fold add_rewrite_rule @{thms paint.simps} *}
-setup {* register_wellform_data ("paint c t", ["t \<noteq> Leaf"]) *}
-setup {* add_prfstep_check_req ("paint c t", "t \<noteq> Leaf") *}
+setup \<open>fold add_rewrite_rule @{thms paint.simps}\<close>
+setup \<open>register_wellform_data ("paint c t", ["t \<noteq> Leaf"])\<close>
+setup \<open>add_prfstep_check_req ("paint c t", "t \<noteq> Leaf")\<close>
 
 lemma paint_cl_inv' [forward]: "cl_inv' t \<Longrightarrow> cl_inv' (paint c t)" by auto2
 
@@ -272,7 +272,7 @@ fun rbt_search :: "('a::ord, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b option" w
   (if x = y then Some w
    else if x < y then rbt_search l x
    else rbt_search r x)"
-setup {* fold add_rewrite_rule @{thms rbt_search.simps} *}
+setup \<open>fold add_rewrite_rule @{thms rbt_search.simps}\<close>
 
 theorem rbt_search_correct [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_search t x = (rbt_map t)\<langle>x\<rangle>"
@@ -289,8 +289,8 @@ definition balL :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow>
    else if cl lr = B then
      Node (Node l B k v (lsub lr)) R (key lr) (val lr) (balance (rsub lr) (key r) (val r) (paint R (rsub r)))
    else Node l R k v r)"
-setup {* register_wellform_data ("balL l k v r", ["black_depth l + 1 = black_depth r"]) *}
-setup {* add_prfstep_check_req ("balL l k v r", "black_depth l + 1 = black_depth r") *}
+setup \<open>register_wellform_data ("balL l k v r", ["black_depth l + 1 = black_depth r"])\<close>
+setup \<open>add_prfstep_check_req ("balL l k v r", "black_depth l + 1 = black_depth r")\<close>
   
 definition balR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" where [rewrite]:
   "balR l k v r = (let rl = rsub l in
@@ -301,8 +301,8 @@ definition balR :: "('a, 'b) rbt \<Rightarrow> 'a \<Rightarrow> 'b \<Rightarrow>
    else if cl rl = B then
      Node (balance (paint R (lsub l)) (key l) (val l) (lsub rl)) R (key rl) (val rl) (Node (rsub rl) B k v r)
    else Node l R k v r)"
-setup {* register_wellform_data ("balR l k v r", ["black_depth l = black_depth r + 1"]) *}
-setup {* add_prfstep_check_req ("balR l k v r", "black_depth l = black_depth r + 1") *}
+setup \<open>register_wellform_data ("balR l k v r", ["black_depth l = black_depth r + 1"])\<close>
+setup \<open>add_prfstep_check_req ("balR l k v r", "black_depth l = black_depth r + 1")\<close>
 
 lemma balL_bd [forward_arg]:
   "bd_inv l \<Longrightarrow> bd_inv r \<Longrightarrow> cl r = B \<Longrightarrow> black_depth l + 1 = black_depth r \<Longrightarrow>
@@ -334,7 +334,7 @@ lemma balL_in_traverse_pairs [rewrite]:
 lemma balR_in_traverse_pairs [rewrite]:
   "rbt_in_traverse_pairs (balR l k v r) = rbt_in_traverse_pairs l @ (k, v) # rbt_in_traverse_pairs r" by auto2
 
-setup {* fold del_prfstep_thm [@{thm balL_def}, @{thm balR_def}] *}
+setup \<open>fold del_prfstep_thm [@{thm balL_def}, @{thm balR_def}]\<close>
 
 subsection \<open>Combine\<close>
 
@@ -360,7 +360,7 @@ fun combine :: "('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) r
            balL l1 k1 v1 (Node tm B k2 v2 r2)
      else
        Node (combine (Node l1 c1 k1 v1 r1) l2) R k2 v2 r2)"
-setup {* fold add_rewrite_rule @{thms combine.simps(1,2)} *}
+setup \<open>fold add_rewrite_rule @{thms combine.simps(1,2)}\<close>
 
 lemma combine_bd [forward_arg]:
   "bd_inv lt \<Longrightarrow> bd_inv rt \<Longrightarrow> black_depth lt = black_depth rt \<Longrightarrow>
@@ -383,7 +383,7 @@ lemma combine_cl:
       @have "cl (Node (combine r1 l2) B k2 v2 r2) = B" @end @end @end
   @endgoal @end
 @qed
-setup {* add_forward_prfstep_cond @{thm combine_cl} [with_term "combine ?lt ?rt"] *}
+setup \<open>add_forward_prfstep_cond @{thm combine_cl} [with_term "combine ?lt ?rt"]\<close>
 
 lemma combine_in_traverse_pairs [rewrite]:
   "rbt_in_traverse_pairs (combine lt rt) = rbt_in_traverse_pairs lt @ rbt_in_traverse_pairs rt"
@@ -415,7 +415,7 @@ fun del :: "'a::linorder \<Rightarrow> ('a, 'b) rbt \<Rightarrow> ('a, 'b) rbt" 
        if r = Leaf then Node l R k v Leaf
        else if cl r = B then balR l k v (del x r)
        else Node l R k v (del x r))"
-setup {* add_rewrite_rule @{thm del.simps(1)} *}
+setup \<open>add_rewrite_rule @{thm del.simps(1)}\<close>
 
 lemma del_bd [forward_arg]:
   "bd_inv t \<Longrightarrow> cl_inv t \<Longrightarrow> bd_inv (del x t) \<and> (
@@ -439,7 +439,7 @@ lemma del_cl:
     @case "x = k" @case "x < k"
   @endgoal @end
 @qed
-setup {* add_forward_prfstep_cond @{thm del_cl} [with_term "del ?x ?t"] *}
+setup \<open>add_forward_prfstep_cond @{thm del_cl} [with_term "del ?x ?t"]\<close>
 
 lemma del_in_traverse_pairs [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_in_traverse_pairs (del x t) = remove_elt_pairs x (rbt_in_traverse_pairs t)"
@@ -461,9 +461,9 @@ theorem delete_sorted [forward]:
 theorem delete_rbt_map [rewrite]:
   "rbt_sorted t \<Longrightarrow> rbt_map (delete x t) = delete_map x (rbt_map t)" by auto2
 
-setup {* del_prfstep "RBTree.balance_case" *}
-setup {* del_prfstep "RBTree.balL_case" *}
-setup {* del_prfstep "RBTree.balR_case" *}
-setup {* del_prfstep "RBTree.paint_case" *}
+setup \<open>del_prfstep "RBTree.balance_case"\<close>
+setup \<open>del_prfstep "RBTree.balL_case"\<close>
+setup \<open>del_prfstep "RBTree.balR_case"\<close>
+setup \<open>del_prfstep "RBTree.paint_case"\<close>
 
 end

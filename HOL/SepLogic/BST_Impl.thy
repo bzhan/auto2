@@ -15,7 +15,7 @@ subsection \<open>Tree nodes\<close>
 
 datatype ('a, 'b) node =
   Node (lsub: "('a, 'b) node ref option") (key: 'a) (val: 'b) (rsub: "('a, 'b) node ref option")
-setup {* fold add_rewrite_rule @{thms node.sel} *}
+setup \<open>fold add_rewrite_rule @{thms node.sel}\<close>
 
 fun node_encode :: "('a::heap, 'b::heap) node \<Rightarrow> nat" where
   "node_encode (Node l k v r) = to_nat (l, k, v, r)"
@@ -30,7 +30,7 @@ fun btree :: "('a::heap, 'b::heap) tree \<Rightarrow> ('a, 'b) node ref option \
   "btree Tip p = \<up>(p = None)"
 | "btree (tree.Node lt k v rt) (Some p) = (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp)"
 | "btree (tree.Node lt k v rt) None = false"
-setup {* fold add_rewrite_ent_rule @{thms btree.simps} *}
+setup \<open>fold add_rewrite_ent_rule @{thms btree.simps}\<close>
 
 lemma btree_Tip [forward_ent]: "btree Tip p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
@@ -43,8 +43,8 @@ lemma btree_none: "emp \<Longrightarrow>\<^sub>A btree tree.Tip None" by auto2
 lemma btree_constr_ent:
   "p \<mapsto>\<^sub>r Node lp k v rp * btree lt lp * btree rt rp \<Longrightarrow>\<^sub>A btree (tree.Node lt k v rt) (Some p)" by auto2
 
-setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
-setup {* fold del_prfstep_thm @{thms btree.simps} *}
+setup \<open>fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}]\<close>
+setup \<open>fold del_prfstep_thm @{thms btree.simps}\<close>
 
 type_synonym ('a, 'b) btree = "('a, 'b) node ref option"
 
@@ -180,7 +180,7 @@ subsection \<open>Outer interface\<close>
 
 definition btree_map :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) node ref option \<Rightarrow> assn" where
   "btree_map M p = (\<exists>\<^sub>At. btree t p * \<up>(tree_sorted t) * \<up>(M = tree_map t))"
-setup {* add_rewrite_ent_rule @{thm btree_map_def} *}
+setup \<open>add_rewrite_ent_rule @{thm btree_map_def}\<close>
 
 theorem btree_empty_rule_map [hoare_triple]:
   "<emp> tree_empty <btree_map empty_map>" by auto2

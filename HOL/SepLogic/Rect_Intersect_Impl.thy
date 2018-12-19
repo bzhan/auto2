@@ -33,10 +33,10 @@ definition rect_inter_init :: "nat rectangle list \<Rightarrow> nat operation ar
      quicksort_all p;
      return p }"
 
-setup {* add_rewrite_rule @{thm all_ops_def} *}
+setup \<open>add_rewrite_rule @{thm all_ops_def}\<close>
 lemma rect_inter_init_rule [hoare_triple]:
   "<emp> rect_inter_init rects <\<lambda>p. p \<mapsto>\<^sub>a all_ops rects>" by auto2
-setup {* del_prfstep_thm @{thm all_ops_def} *}
+setup \<open>del_prfstep_thm @{thm all_ops_def}\<close>
 
 definition rect_inter_next :: "nat operation array \<Rightarrow> int_tree \<Rightarrow> nat \<Rightarrow> int_tree Heap" where
   "rect_inter_next a b k = do {
@@ -50,7 +50,7 @@ lemma op_int_is_interval:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
    is_interval (op_int (ops ! k))"
 @proof @have "ops ! k \<in> set ops" @case "is_INS (ops ! k)" @qed
-setup {* add_forward_prfstep_cond @{thm op_int_is_interval} [with_term "op_int (?ops ! ?k)"] *}
+setup \<open>add_forward_prfstep_cond @{thm op_int_is_interval} [with_term "op_int (?ops ! ?k)"]\<close>
 
 lemma rect_inter_next_rule [hoare_triple]:
   "is_rect_list rects \<Longrightarrow> k < length (all_ops rects) \<Longrightarrow>

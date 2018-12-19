@@ -46,18 +46,18 @@ ML_file "unfolding.ML"
 ML_file "induct_outer.ML"
 ML_file "extra_hol.ML"
 
-method_setup auto2 = {* Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac) *} "auto2 prover"
+method_setup auto2 = \<open>Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac)\<close> "auto2 prover"
 
-attribute_setup forward = {* setup_attrib add_forward_prfstep *}
-attribute_setup backward = {* setup_attrib add_backward_prfstep *}
-attribute_setup backward1 = {* setup_attrib add_backward1_prfstep *}
-attribute_setup backward2 = {* setup_attrib add_backward2_prfstep *}
-attribute_setup resolve = {* setup_attrib add_resolve_prfstep *}
-attribute_setup rewrite = {* setup_attrib add_rewrite_rule *}
-attribute_setup rewrite_back = {* setup_attrib add_rewrite_rule_back *}
-attribute_setup rewrite_bidir = {* setup_attrib add_rewrite_rule_bidir *}
-attribute_setup forward_arg1 = {* setup_attrib add_forward_arg1_prfstep *}
-attribute_setup forward_arg = {* setup_attrib add_forward_arg_prfstep *}
-attribute_setup rewrite_arg = {* setup_attrib add_rewrite_arg_rule *}
+attribute_setup forward = \<open>setup_attrib add_forward_prfstep\<close>
+attribute_setup backward = \<open>setup_attrib add_backward_prfstep\<close>
+attribute_setup backward1 = \<open>setup_attrib add_backward1_prfstep\<close>
+attribute_setup backward2 = \<open>setup_attrib add_backward2_prfstep\<close>
+attribute_setup resolve = \<open>setup_attrib add_resolve_prfstep\<close>
+attribute_setup rewrite = \<open>setup_attrib add_rewrite_rule\<close>
+attribute_setup rewrite_back = \<open>setup_attrib add_rewrite_rule_back\<close>
+attribute_setup rewrite_bidir = \<open>setup_attrib add_rewrite_rule_bidir\<close>
+attribute_setup forward_arg1 = \<open>setup_attrib add_forward_arg1_prfstep\<close>
+attribute_setup forward_arg = \<open>setup_attrib add_forward_arg_prfstep\<close>
+attribute_setup rewrite_arg = \<open>setup_attrib add_rewrite_arg_rule\<close>
 
 end

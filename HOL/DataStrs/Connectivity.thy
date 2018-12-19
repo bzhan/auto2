@@ -15,7 +15,7 @@ fun is_path :: "nat \<Rightarrow> (nat \<times> nat) set \<Rightarrow> nat list 
   "is_path n S [] = False"
 | "is_path n S (x # xs) =
    (if xs = [] then x < n else ((x, hd xs) \<in> S \<or> (hd xs, x) \<in> S) \<and> is_path n S xs)"
-setup {* fold add_rewrite_rule @{thms is_path.simps} *}
+setup \<open>fold add_rewrite_rule @{thms is_path.simps}\<close>
 
 definition has_path :: "nat \<Rightarrow> (nat \<times> nat) set \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "has_path n S i j \<longleftrightarrow> (\<exists>p. is_path n S p \<and> hd p = i \<and> last p = j)"
@@ -35,8 +35,8 @@ definition joinable :: "nat list \<Rightarrow> nat list \<Rightarrow> bool" wher
 
 definition path_join :: "nat list \<Rightarrow> nat list \<Rightarrow> nat list" where [rewrite]:
   "path_join p q = p @ tl q"
-setup {* register_wellform_data ("path_join p q", ["joinable p q"]) *}
-setup {* add_prfstep_check_req ("path_join p q", "joinable p q") *}
+setup \<open>register_wellform_data ("path_join p q", ["joinable p q"])\<close>
+setup \<open>add_prfstep_check_req ("path_join p q", "joinable p q")\<close>
 
 lemma path_join_hd [rewrite]: "p \<noteq> [] \<Longrightarrow> hd (path_join p q) = hd p" by auto2
 
@@ -132,7 +132,7 @@ fun connected_rel_ind :: "nat \<Rightarrow> (nat \<times> nat) list \<Rightarrow
 | "connected_rel_ind n es (Suc k) =
    (let R = connected_rel_ind n es k; p = es ! k in
       per_union R (fst p) (snd p))"
-setup {* fold add_rewrite_rule @{thms connected_rel_ind.simps} *}
+setup \<open>fold add_rewrite_rule @{thms connected_rel_ind.simps}\<close>
 
 lemma connected_rel_ind_rule [rewrite]:
   "is_valid_graph n (set es) \<Longrightarrow> k \<le> length es \<Longrightarrow>

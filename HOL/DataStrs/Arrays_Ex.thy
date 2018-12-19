@@ -15,13 +15,13 @@ subsection \<open>List swap\<close>
 
 definition list_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where [rewrite]:
   "list_swap xs i j = xs[i := xs ! j, j := xs ! i]"
-setup {* register_wellform_data ("list_swap xs i j", ["i < length xs", "j < length xs"]) *}
-setup {* add_prfstep_check_req ("list_swap xs i j", "i < length xs \<and> j < length xs") *}
+setup \<open>register_wellform_data ("list_swap xs i j", ["i < length xs", "j < length xs"])\<close>
+setup \<open>add_prfstep_check_req ("list_swap xs i j", "i < length xs \<and> j < length xs")\<close>
 
 lemma list_swap_eval:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow>
    (list_swap xs i j) ! k = (if k = i then xs ! j else if k = j then xs ! i else xs ! k)" by auto2
-setup {* add_rewrite_rule_cond @{thm list_swap_eval} [with_cond "?k \<noteq> ?i", with_cond "?k \<noteq> ?j"] *}
+setup \<open>add_rewrite_rule_cond @{thm list_swap_eval} [with_cond "?k \<noteq> ?i", with_cond "?k \<noteq> ?j"]\<close>
 
 lemma list_swap_eval_triv [rewrite]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> (list_swap xs i j) ! i = xs ! j"
@@ -35,8 +35,8 @@ lemma mset_list_swap [rewrite]:
 
 lemma set_list_swap [rewrite]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> set (list_swap xs i j) = set xs" by auto2
-setup {* del_prfstep_thm @{thm list_swap_def} *}
-setup {* add_rewrite_rule_back @{thm list_swap_def} *}
+setup \<open>del_prfstep_thm @{thm list_swap_def}\<close>
+setup \<open>add_rewrite_rule_back @{thm list_swap_def}\<close>
 
 subsection \<open>Reverse\<close>
 
@@ -46,8 +46,8 @@ lemma rev_nth [rewrite]:
 
 fun rev_swap :: "'a list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a list" where
   "rev_swap xs i j = (if i < j then rev_swap (list_swap xs i j) (i + 1) (j - 1) else xs)"
-setup {* register_wellform_data ("rev_swap xs i j", ["j < length xs"]) *}
-setup {* add_prfstep_check_req ("rev_swap xs i j", "j < length xs") *}
+setup \<open>register_wellform_data ("rev_swap xs i j", ["j < length xs"])\<close>
+setup \<open>add_prfstep_check_req ("rev_swap xs i j", "j < length xs")\<close>
 
 lemma rev_swap_length [rewrite_arg]:
   "j < length xs \<Longrightarrow> length (rev_swap xs i j) = length xs"
@@ -70,9 +70,9 @@ subsection \<open>Copy one array to the beginning of another\<close>
 fun array_copy :: "'a list \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> 'a list" where
   "array_copy xs xs' 0 = xs'"
 | "array_copy xs xs' (Suc n) = list_update (array_copy xs xs' n) n (xs ! n)"
-setup {* fold add_rewrite_rule @{thms array_copy.simps} *}
-setup {* register_wellform_data ("array_copy xs xs' n", ["n \<le> length xs", "n \<le> length xs'"]) *}
-setup {* add_prfstep_check_req ("array_copy xs xs' n", "n \<le> length xs \<and> n \<le> length xs'") *}
+setup \<open>fold add_rewrite_rule @{thms array_copy.simps}\<close>
+setup \<open>register_wellform_data ("array_copy xs xs' n", ["n \<le> length xs", "n \<le> length xs'"])\<close>
+setup \<open>add_prfstep_check_req ("array_copy xs xs' n", "n \<le> length xs \<and> n \<le> length xs'")\<close>
 
 lemma array_copy_length [rewrite_arg]:
   "n \<le> length xs \<Longrightarrow> n \<le> length xs' \<Longrightarrow> length (array_copy xs xs' n) = length xs'"
@@ -89,8 +89,8 @@ subsection \<open>Sublist\<close>
 
 definition sublist :: "nat \<Rightarrow> nat \<Rightarrow> 'a list \<Rightarrow> 'a list" where [rewrite]:
   "sublist l r xs = drop l (take r xs)"
-setup {* register_wellform_data ("sublist l r xs", ["l \<le> r", "r \<le> length xs"]) *}
-setup {* add_prfstep_check_req ("sublist l r xs", "l \<le> r \<and> r \<le> length xs") *}
+setup \<open>register_wellform_data ("sublist l r xs", ["l \<le> r", "r \<le> length xs"])\<close>
+setup \<open>add_prfstep_check_req ("sublist l r xs", "l \<le> r \<and> r \<le> length xs")\<close>
 
 lemma length_sublist [rewrite_arg]:
   "r \<le> length xs \<Longrightarrow> length (sublist l r xs) = r - l" by auto2
@@ -107,7 +107,7 @@ lemma sublist_0 [rewrite]:
 lemma sublist_drop [rewrite]:
   "sublist l r (drop n xs) = sublist (l + n) (r + n) xs" by auto2
 
-setup {* del_prfstep_thm @{thm sublist_def} *}
+setup \<open>del_prfstep_thm @{thm sublist_def}\<close>
 
 lemma sublist_single [rewrite]:
   "l + 1 \<le> length xs \<Longrightarrow> sublist l (l + 1) xs = [xs ! l]"
@@ -133,7 +133,7 @@ lemma sublist_Cons [rewrite]:
 lemma sublist_equalityI:
   "i \<le> j \<Longrightarrow> j \<le> length xs \<Longrightarrow> length xs = length ys \<Longrightarrow>
    \<forall>k. i \<le> k \<longrightarrow> k < j \<longrightarrow> xs ! k = ys ! k \<Longrightarrow> sublist i j xs = sublist i j ys" by auto2
-setup {* add_backward2_prfstep_cond @{thm sublist_equalityI} [with_filt (order_filter "xs" "ys")] *}
+setup \<open>add_backward2_prfstep_cond @{thm sublist_equalityI} [with_filt (order_filter "xs" "ys")]\<close>
 
 lemma set_sublist [resolve]:
   "j \<le> length xs \<Longrightarrow> x \<in> set (sublist i j xs) \<Longrightarrow> \<exists>k. k \<ge> i \<and> k < j \<and> x = xs ! k"
@@ -159,15 +159,15 @@ lemma list_update_set_length [rewrite_arg]:
 
 lemma list_update_set_nth [rewrite]:
   "xs' = list_update_set S f xs \<Longrightarrow> i < length xs' \<Longrightarrow> xs' ! i = (if S i then f i else xs ! i)" by auto2
-setup {* del_prfstep_thm @{thm list_update_set_def} *}
+setup \<open>del_prfstep_thm @{thm list_update_set_def}\<close>
 
 fun list_update_set_impl :: "(nat \<Rightarrow> bool) \<Rightarrow> (nat \<Rightarrow> 'a) \<Rightarrow> 'a list \<Rightarrow> nat \<Rightarrow> 'a list" where
   "list_update_set_impl S f xs 0 = xs"
 | "list_update_set_impl S f xs (Suc k) =
    (let xs' = list_update_set_impl S f xs k in
       if S k then xs' [k := f k] else xs')"
-setup {* fold add_rewrite_rule @{thms list_update_set_impl.simps} *}
-setup {* register_wellform_data ("list_update_set_impl S f xs n", ["n \<le> length xs"]) *}
+setup \<open>fold add_rewrite_rule @{thms list_update_set_impl.simps}\<close>
+setup \<open>register_wellform_data ("list_update_set_impl S f xs n", ["n \<le> length xs"])\<close>
 
 lemma list_update_set_impl_ind [rewrite]:
   "n \<le> length xs \<Longrightarrow> list_update_set_impl S f xs n =

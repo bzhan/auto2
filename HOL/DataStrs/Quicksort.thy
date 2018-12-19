@@ -30,7 +30,7 @@ lemma outer_remains_sublist [backward2]:
   "outer_remains xs xs' l r \<Longrightarrow> r < i \<Longrightarrow> drop i xs = drop i xs'"
   "i \<le> j \<Longrightarrow> j \<le> length xs \<Longrightarrow> outer_remains xs xs' l r \<Longrightarrow> j \<le> l \<Longrightarrow> sublist i j xs = sublist i j xs'"
   "i \<le> j \<Longrightarrow> j \<le> length xs \<Longrightarrow> outer_remains xs xs' l r \<Longrightarrow> i > r \<Longrightarrow> sublist i j xs = sublist i j xs'" by auto2+
-setup {* del_prfstep_thm_eqforward @{thm outer_remains_def} *}
+setup \<open>del_prfstep_thm_eqforward @{thm outer_remains_def}\<close>
 
 subsection \<open>part1 function\<close>  
 
@@ -41,14 +41,14 @@ function part1 :: "('a::linorder) list \<Rightarrow> nat \<Rightarrow> nat \<Rig
      else part1 (list_swap xs l r) l (r - 1) a)"
   by auto
   termination by (relation "measure (\<lambda>(_,l,r,_). r - l)") auto
-setup {* register_wellform_data ("part1 xs l r a", ["r < length xs"]) *}
-setup {* add_prfstep_check_req ("part1 xs l r a", "r < length xs") *}
+setup \<open>register_wellform_data ("part1 xs l r a", ["r < length xs"])\<close>
+setup \<open>add_prfstep_check_req ("part1 xs l r a", "r < length xs")\<close>
 
 lemma part1_basic:
   "r < length xs \<Longrightarrow> l \<le> r \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow>
    outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r"
 @proof @fun_induct "part1 xs l r a" @unfold "part1 xs l r a" @qed
-setup {* add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"] *}
+setup \<open>add_forward_prfstep_cond @{thm part1_basic} [with_term "part1 ?xs ?l ?r ?a"]\<close>
 
 lemma part1_partitions1 [backward]:
   "r < length xs \<Longrightarrow> (rs, xs') = part1 xs l r a \<Longrightarrow> l \<le> i \<Longrightarrow> i < rs \<Longrightarrow> xs' ! i \<le> a"
@@ -67,12 +67,12 @@ definition partition :: "('a::linorder list) \<Rightarrow> nat \<Rightarrow> nat
       m' = if xs' ! m \<le> p then m + 1 else m
     in
       (m', list_swap xs' m' r))"
-setup {* register_wellform_data ("partition xs l r", ["l < r", "r < length xs"]) *}
+setup \<open>register_wellform_data ("partition xs l r", ["l < r", "r < length xs"])\<close>
 
 lemma partition_basic:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> (rs, xs') = partition xs l r \<Longrightarrow>
    outer_remains xs xs' l r \<and> mset xs' = mset xs \<and> l \<le> rs \<and> rs \<le> r" by auto2
-setup {* add_forward_prfstep_cond @{thm partition_basic} [with_term "partition ?xs ?l ?r"] *}
+setup \<open>add_forward_prfstep_cond @{thm partition_basic} [with_term "partition ?xs ?l ?r"]\<close>
   
 lemma partition_partitions1 [forward]:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> (rs, xs') = partition xs l r \<Longrightarrow>
@@ -89,7 +89,7 @@ lemma partition_partitions2 [forward]:
   @let "xs' = snd (part1 xs l (r - 1) p)"
   @case "xs' ! m \<le> p"
 @qed
-setup {* del_prfstep_thm @{thm partition_def} *}
+setup \<open>del_prfstep_thm @{thm partition_def}\<close>
 
 lemma quicksort_term1:
   "l < r \<Longrightarrow> r < length xs \<Longrightarrow> fst (partition xs l r) - (l + 1) < r - l"

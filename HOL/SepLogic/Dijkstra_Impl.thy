@@ -15,11 +15,11 @@ theory Dijkstra_Impl
 begin
 
 datatype dijkstra_state = Dijkstra_State (est_a: "nat array") (heap_pq: "nat indexed_pqueue")
-setup {* add_simple_datatype "dijkstra_state" *}
+setup \<open>add_simple_datatype "dijkstra_state"\<close>
 
 fun dstate :: "state \<Rightarrow> dijkstra_state \<Rightarrow> assn" where
   "dstate (State e M) (Dijkstra_State a pq) = a \<mapsto>\<^sub>a e * idx_pqueue_map M (length e) pq"
-setup {* add_rewrite_ent_rule @{thm dstate.simps} *}
+setup \<open>add_rewrite_ent_rule @{thm dstate.simps}\<close>
 
 subsection \<open>Basic operations\<close>
 
@@ -111,7 +111,7 @@ lemma dijkstra_extract_min_rule [hoare_triple]:
    dijkstra_extract_min (Dijkstra_State a pq)
    <\<lambda>(m, r). dstate (State e (delete_map m M)) r * \<up>(m < length e) * \<up>(is_heap_min m M)>\<^sub>t" by auto2
 
-setup {* del_prfstep_thm @{thm dstate.simps} *}
+setup \<open>del_prfstep_thm @{thm dstate.simps}\<close>
 
 subsection \<open>Main operations\<close>
 

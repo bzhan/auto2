@@ -16,7 +16,7 @@ begin
 subsection \<open>Definition of rectangles\<close>
 
 datatype 'a rectangle = Rectangle (xint: "'a interval") (yint: "'a interval")
-setup {* add_simple_datatype "rectangle" *}
+setup \<open>add_simple_datatype "rectangle"\<close>
 
 definition is_rect :: "('a::linorder) rectangle \<Rightarrow> bool" where [rewrite]:
   "is_rect rect \<longleftrightarrow> is_interval (xint rect) \<and> is_interval (yint rect)"
@@ -25,9 +25,9 @@ definition is_rect_list :: "('a::linorder) rectangle list \<Rightarrow> bool" wh
   "is_rect_list rects \<longleftrightarrow> (\<forall>i<length rects. is_rect (rects ! i))"
 
 lemma is_rect_listD: "is_rect_list rects \<Longrightarrow> i < length rects \<Longrightarrow> is_rect (rects ! i)" by auto2
-setup {* add_forward_prfstep_cond @{thm is_rect_listD} [with_term "?rects ! ?i"] *}
+setup \<open>add_forward_prfstep_cond @{thm is_rect_listD} [with_term "?rects ! ?i"]\<close>
 
-setup {* del_prfstep_thm_eqforward @{thm is_rect_list_def} *}
+setup \<open>del_prfstep_thm_eqforward @{thm is_rect_list_def}\<close>
 
 definition is_rect_overlap :: "('a::linorder) rectangle \<Rightarrow> ('a::linorder) rectangle \<Rightarrow> bool" where [rewrite]:
   "is_rect_overlap A B \<longleftrightarrow> (is_overlap (xint A) (xint B) \<and> is_overlap (yint A) (yint B))"
@@ -40,12 +40,12 @@ subsection \<open>INS / DEL operations\<close>
 datatype 'a operation =
   INS (pos: 'a) (op_idx: nat) (op_int: "'a interval")
 | DEL (pos: 'a) (op_idx: nat) (op_int: "'a interval")
-setup {* fold add_rewrite_rule_back @{thms operation.collapse} *}
-setup {* fold add_rewrite_rule @{thms operation.sel} *}
-setup {* fold add_rewrite_rule @{thms operation.case} *}
-setup {* add_resolve_prfstep @{thm operation.distinct(1)} *}
-setup {* add_forward_prfstep_cond @{thm operation.disc(1)} [with_term "INS ?x11.0 ?x12.0 ?x13.0"] *}
-setup {* add_forward_prfstep_cond @{thm operation.disc(2)} [with_term "DEL ?x21.0 ?x22.0 ?x23.0"] *}
+setup \<open>fold add_rewrite_rule_back @{thms operation.collapse}\<close>
+setup \<open>fold add_rewrite_rule @{thms operation.sel}\<close>
+setup \<open>fold add_rewrite_rule @{thms operation.case}\<close>
+setup \<open>add_resolve_prfstep @{thm operation.distinct(1)}\<close>
+setup \<open>add_forward_prfstep_cond @{thm operation.disc(1)} [with_term "INS ?x11.0 ?x12.0 ?x13.0"]\<close>
+setup \<open>add_forward_prfstep_cond @{thm operation.disc(2)} [with_term "DEL ?x21.0 ?x22.0 ?x23.0"]\<close>
 
 instantiation operation :: (linorder) linorder begin
 
@@ -70,7 +70,7 @@ instance proof
     using local.less_eq by fastforce
 qed end
 
-setup {* fold add_rewrite_rule [@{thm less_eq}, @{thm less}] *}
+setup \<open>fold add_rewrite_rule [@{thm less_eq}, @{thm less}]\<close>
 
 lemma operation_leD [forward]:
   "(a::('a::linorder operation)) \<le> b \<Longrightarrow> pos a \<le> pos b" by auto2
@@ -82,17 +82,17 @@ lemma operation_lessI [backward]:
   @have "is_INS (DEL p2 n2 i2) = False"
 @qed
 
-setup {* fold del_prfstep_thm [@{thm less_eq}, @{thm less}] *}
+setup \<open>fold del_prfstep_thm [@{thm less_eq}, @{thm less}]\<close>
 
 subsection \<open>Set of operations corresponding to a list of rectangles\<close>
 
 fun ins_op :: "'a rectangle list \<Rightarrow> nat \<Rightarrow> ('a::linorder) operation" where
   "ins_op rects i = INS (low (yint (rects ! i))) i (xint (rects ! i))"
-setup {* add_rewrite_rule @{thm ins_op.simps} *}
+setup \<open>add_rewrite_rule @{thm ins_op.simps}\<close>
 
 fun del_op :: "'a rectangle list \<Rightarrow> nat \<Rightarrow> ('a::linorder) operation" where
   "del_op rects i = DEL (high (yint (rects ! i))) i (xint (rects ! i))"
-setup {* add_rewrite_rule @{thm del_op.simps} *}
+setup \<open>add_rewrite_rule @{thm del_op.simps}\<close>
 
 definition ins_ops :: "'a rectangle list \<Rightarrow> ('a::linorder) operation list" where [rewrite]:
   "ins_ops rects = list (\<lambda>i. ins_op rects i) (length rects)"
@@ -147,31 +147,31 @@ lemma set_all_ops_del [forward]:
 
 lemma ins_in_set_all_ops:
   "i < length rects \<Longrightarrow> ins_op rects i \<in> set (all_ops rects)" by auto2
-setup {* add_forward_prfstep_cond @{thm ins_in_set_all_ops} [with_term "ins_op ?rects ?i"] *}
+setup \<open>add_forward_prfstep_cond @{thm ins_in_set_all_ops} [with_term "ins_op ?rects ?i"]\<close>
 
 lemma del_in_set_all_ops:
   "i < length rects \<Longrightarrow> del_op rects i \<in> set (all_ops rects)" by auto2
-setup {* add_forward_prfstep_cond @{thm del_in_set_all_ops} [with_term "del_op ?rects ?i"] *}
+setup \<open>add_forward_prfstep_cond @{thm del_in_set_all_ops} [with_term "del_op ?rects ?i"]\<close>
 
 lemma all_ops_sorted [forward]: "sorted (all_ops rects)" by auto2
 
 lemma all_ops_nonempty [backward]: "rects \<noteq> [] \<Longrightarrow> all_ops rects \<noteq> []"
 @proof @have "length (all_ops rects) > 0" @qed
 
-setup {* del_prfstep_thm @{thm all_ops_def} *}
+setup \<open>del_prfstep_thm @{thm all_ops_def}\<close>
 
 subsection \<open>Applying a set of operations\<close>
 
 definition apply_ops_k :: "('a::linorder) rectangle list \<Rightarrow> nat \<Rightarrow> nat set" where [rewrite]:
   "apply_ops_k rects k = (let ops = all_ops rects in
      {i. i < length rects \<and> (\<exists>j<k. ins_op rects i = ops ! j) \<and> \<not>(\<exists>j<k. del_op rects i = ops ! j)})"
-setup {* register_wellform_data ("apply_ops_k rects k", ["k < length (all_ops rects)"]) *}
+setup \<open>register_wellform_data ("apply_ops_k rects k", ["k < length (all_ops rects)"])\<close>
 
 lemma apply_ops_set_mem [rewrite]:
   "ops = all_ops rects \<Longrightarrow>
    i \<in> apply_ops_k rects k \<longleftrightarrow> (i < length rects \<and> (\<exists>j<k. ins_op rects i = ops ! j) \<and> \<not>(\<exists>j<k. del_op rects i = ops ! j))"
   by auto2
-setup {* del_prfstep_thm @{thm apply_ops_k_def} *}
+setup \<open>del_prfstep_thm @{thm apply_ops_k_def}\<close>
 
 definition xints_of :: "'a rectangle list \<Rightarrow> nat set \<Rightarrow> (('a::linorder) idx_interval) set" where [rewrite]:
   "xints_of rect is = (\<lambda>i. IdxInterval (xint (rect ! i)) i) ` is"
@@ -187,7 +187,7 @@ definition has_overlap_at_k :: "('a::linorder) rectangle list \<Rightarrow> nat 
   "has_overlap_at_k rects k \<longleftrightarrow> (
     let S = apply_ops_k rects k; ops = all_ops rects in
       is_INS (ops ! k) \<and> has_overlap (xints_of rects S) (op_int (ops ! k)))"
-setup {* register_wellform_data ("has_overlap_at_k rects k", ["k < length (all_ops rects)"]) *}
+setup \<open>register_wellform_data ("has_overlap_at_k rects k", ["k < length (all_ops rects)"])\<close>
 
 lemma has_overlap_at_k_equiv [forward]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> k < length ops \<Longrightarrow>
@@ -269,7 +269,7 @@ definition apply_ops_k_next :: "('a::linorder) rectangle list \<Rightarrow> 'a i
    (case ops ! k of
       INS p n i \<Rightarrow> S \<union> {IdxInterval i n}
     | DEL p n i \<Rightarrow> S - {IdxInterval i n}))"
-setup {* add_rewrite_rule @{thm apply_ops_k_next_def} *}
+setup \<open>add_rewrite_rule @{thm apply_ops_k_next_def}\<close>
 
 lemma apply_ops_k_next_is_correct [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow>

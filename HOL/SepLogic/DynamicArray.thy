@@ -12,13 +12,13 @@ theory DynamicArray
 begin
 
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (aref: "'a array")
-setup {* add_simple_datatype "dynamic_array" *}
+setup \<open>add_simple_datatype "dynamic_array"\<close>
 
 subsection \<open>Raw assertion\<close>
 
 fun dyn_array_raw :: "'a::heap list \<times> nat \<Rightarrow> 'a dynamic_array \<Rightarrow> assn" where
   "dyn_array_raw (xs, n) (Dyn_Array m a) = (a \<mapsto>\<^sub>a xs * \<up>(m = n))"
-setup {* add_rewrite_ent_rule @{thm dyn_array_raw.simps} *}
+setup \<open>add_rewrite_ent_rule @{thm dyn_array_raw.simps}\<close>
 
 definition dyn_array_new :: "'a::heap dynamic_array Heap" where
   "dyn_array_new = do {
@@ -42,7 +42,7 @@ fun double_length :: "'a::heap dynamic_array \<Rightarrow> 'a dynamic_array Heap
 fun double_length_fun :: "'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
   "double_length_fun (xs, n) =
     (Arrays_Ex.array_copy xs (replicate (2 * n + 1) undefined) n, n)"
-setup {* add_rewrite_rule @{thm double_length_fun.simps} *}
+setup \<open>add_rewrite_rule @{thm double_length_fun.simps}\<close>
 
 lemma double_length_rule' [hoare_triple]:
   "length xs = n \<Longrightarrow>
@@ -58,7 +58,7 @@ fun push_array_basic :: "'a \<Rightarrow> 'a::heap dynamic_array \<Rightarrow> '
 
 fun push_array_basic_fun :: "'a \<Rightarrow> 'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
   "push_array_basic_fun x (xs, n) = (list_update xs n x, n + 1)"
-setup {* add_rewrite_rule @{thm push_array_basic_fun.simps} *}
+setup \<open>add_rewrite_rule @{thm push_array_basic_fun.simps}\<close>
 
 lemma push_array_basic_rule' [hoare_triple]:
   "n < length xs \<Longrightarrow>
@@ -123,14 +123,14 @@ lemma pop_array_rule' [hoare_triple]:
    pop_array p
    <\<lambda>(x, r). dyn_array_raw (xs, n - 1) r * \<up>(x = xs ! (n - 1))>" by auto2
 
-setup {* del_prfstep_thm @{thm dyn_array_raw.simps} *}
-setup {* del_simple_datatype "dynamic_array" *}
+setup \<open>del_prfstep_thm @{thm dyn_array_raw.simps}\<close>
+setup \<open>del_simple_datatype "dynamic_array"\<close>
 
 fun push_array_fun :: "'a \<Rightarrow> 'a::heap list \<times> nat \<Rightarrow> 'a list \<times> nat" where
   "push_array_fun x (xs, n) = (
      if n < length xs then push_array_basic_fun x (xs, n)
      else push_array_basic_fun x (double_length_fun (xs, n)))"
-setup {* add_rewrite_rule @{thm push_array_fun.simps} *}
+setup \<open>add_rewrite_rule @{thm push_array_fun.simps}\<close>
 
 lemma push_array_rule' [hoare_triple]:
   "n \<le> length xs \<Longrightarrow>
@@ -142,7 +142,7 @@ subsection \<open>Abstract assertion\<close>
 
 fun abs_array :: "'a::heap list \<times> nat \<Rightarrow> 'a list" where
   "abs_array (xs, n) = take n xs"
-setup {* add_rewrite_rule @{thm abs_array.simps} *}
+setup \<open>add_rewrite_rule @{thm abs_array.simps}\<close>
 
 lemma double_length_abs [rewrite]:
   "length xs = n \<Longrightarrow> abs_array (double_length_fun (xs, n)) = abs_array (xs, n)" by auto2
@@ -189,7 +189,7 @@ lemma pop_array_rule [hoare_triple]:
    <\<lambda>(x, r). dyn_array (butlast xs) r * \<up>(x = last xs)>"
 @proof @have "last xs = xs ! (length xs - 1)" @qed
 
-setup {* del_prfstep_thm @{thm dyn_array_def} *}
+setup \<open>del_prfstep_thm @{thm dyn_array_def}\<close>
 
 subsection \<open>Derived operations\<close>
 

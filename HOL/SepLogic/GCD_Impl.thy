@@ -14,7 +14,7 @@ declare [[print_trace]]
 
 (* Property of gcd that justifies the recursive computation. Add as a
    right-to-left rewrite rule. *)
-setup {* add_rewrite_rule_back @{thm gcd_red_nat} *}
+setup \<open>add_rewrite_rule_back @{thm gcd_red_nat}\<close>
 
 (* Functional version of gcd. *)
 fun gcd_fun :: "nat \<Rightarrow> nat \<Rightarrow> nat" where
@@ -22,7 +22,7 @@ fun gcd_fun :: "nat \<Rightarrow> nat \<Rightarrow> nat" where
 
 (* The fun package automatically generates induction rule upon showing
    termination. This adds the induction rule for the @fun_induct command. *)
-setup {* add_fun_induct_rule (@{term gcd_fun}, @{thm gcd_fun.induct}) *}
+setup \<open>add_fun_induct_rule (@{term gcd_fun}, @{thm gcd_fun.induct})\<close>
 
 lemma gcd_fun_correct:
   "gcd_fun a b = gcd a b"

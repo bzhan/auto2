@@ -26,7 +26,7 @@ fun weight :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" wher
 
 fun valid_graph :: "graph \<Rightarrow> bool" where
   "valid_graph (Graph G) \<longleftrightarrow> (\<forall>i<length G. length (G ! i) = length G)"
-setup {* add_rewrite_rule @{thm valid_graph.simps} *}
+setup \<open>add_rewrite_rule @{thm valid_graph.simps}\<close>
 
 subsection \<open>Paths on graphs\<close>
 
@@ -49,18 +49,18 @@ definition joinable :: "graph \<Rightarrow> nat list \<Rightarrow> nat list \<Ri
 
 definition path_join :: "graph \<Rightarrow> nat list \<Rightarrow> nat list \<Rightarrow> nat list" where [rewrite]:
   "path_join G p q = p @ tl q"
-setup {* register_wellform_data ("path_join G p q", ["joinable G p q"]) *}
-setup {* add_prfstep_check_req ("path_join G p q", "joinable G p q") *}
+setup \<open>register_wellform_data ("path_join G p q", ["joinable G p q"])\<close>
+setup \<open>add_prfstep_check_req ("path_join G p q", "joinable G p q")\<close>
 
 lemma path_join_is_path:
   "joinable G p q \<Longrightarrow> is_path G (path_join G p q)"
 @proof @have "q = hd q # tl q" @qed
-setup {* add_forward_prfstep_cond @{thm path_join_is_path} [with_term "path_join ?G ?p ?q"] *}
+setup \<open>add_forward_prfstep_cond @{thm path_join_is_path} [with_term "path_join ?G ?p ?q"]\<close>
 
 fun path_weight :: "graph \<Rightarrow> nat list \<Rightarrow> nat" where
   "path_weight G [] = 0"
 | "path_weight G (x # xs) = (if xs = [] then 0 else weight G x (hd xs) + path_weight G xs)"
-setup {* fold add_rewrite_rule @{thms path_weight.simps} *}
+setup \<open>fold add_rewrite_rule @{thms path_weight.simps}\<close>
 
 lemma path_weight_singleton [rewrite]: "path_weight G [x] = 0" by auto2
 lemma path_weight_doubleton [rewrite]: "path_weight G [m, n] = weight G m n" by auto2
@@ -77,7 +77,7 @@ lemma path_set_mem [rewrite]:
 
 lemma path_join_set: "joinable G p q \<Longrightarrow> path_join G p q \<in> path_set G (hd p) (last q)"
 @proof @have "q = hd q # tl q" @case "tl q = []" @qed
-setup {* add_forward_prfstep_cond @{thm path_join_set} [with_term "path_join ?G ?p ?q"] *}
+setup \<open>add_forward_prfstep_cond @{thm path_join_set} [with_term "path_join ?G ?p ?q"]\<close>
 
 subsection \<open>Shortest paths\<close>
 
@@ -90,7 +90,7 @@ lemma is_shortest_pathD1 [forward]:
 
 lemma is_shortest_pathD2 [forward]:
   "is_shortest_path G m n p \<Longrightarrow> p' \<in> path_set G m n \<Longrightarrow> path_weight G p' \<ge> path_weight G p" by auto2
-setup {* del_prfstep_thm_eqforward @{thm is_shortest_path_def} *}
+setup \<open>del_prfstep_thm_eqforward @{thm is_shortest_path_def}\<close>
 
 definition has_dist :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> bool" where [rewrite]:
   "has_dist G m n \<longleftrightarrow> (\<exists>p. is_shortest_path G m n p)"
@@ -98,18 +98,18 @@ definition has_dist :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 
 lemma has_distI [forward]: "is_shortest_path G m n p \<Longrightarrow> has_dist G m n" by auto2
 lemma has_distD [resolve]: "has_dist G m n \<Longrightarrow> \<exists>p. is_shortest_path G m n p" by auto2
 lemma has_dist_to_in_verts [forward]: "has_dist G u v \<Longrightarrow> u \<in> verts G \<and> v \<in> verts G" by auto2
-setup {* del_prfstep_thm @{thm has_dist_def} *}
+setup \<open>del_prfstep_thm @{thm has_dist_def}\<close>
 
 definition dist :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat" where [rewrite]:
   "dist G m n = path_weight G (SOME p. is_shortest_path G m n p)"
-setup {* register_wellform_data ("dist G m n", ["has_dist G m n"]) *}
+setup \<open>register_wellform_data ("dist G m n", ["has_dist G m n"])\<close>
 
 lemma dist_eq [rewrite]:
   "is_shortest_path G m n p \<Longrightarrow> dist G m n = path_weight G p" by auto2
 
 lemma distD [forward]:
   "has_dist G m n \<Longrightarrow> p \<in> path_set G m n \<Longrightarrow> path_weight G p \<ge> dist G m n" by auto2
-setup {* del_prfstep_thm @{thm dist_def} *}
+setup \<open>del_prfstep_thm @{thm dist_def}\<close>
 
 lemma shortest_init [resolve]: "n \<in> verts G \<Longrightarrow> is_shortest_path G n n [n]" by auto2
 
@@ -138,25 +138,25 @@ lemma is_shortest_path_onD1 [forward]:
 
 lemma is_shortest_path_onD2 [forward]:
   "is_shortest_path_on G m n p V \<Longrightarrow> p' \<in> path_set_on G m n V \<Longrightarrow> path_weight G p' \<ge> path_weight G p" by auto2
-setup {* del_prfstep_thm_eqforward @{thm is_shortest_path_on_def} *}
+setup \<open>del_prfstep_thm_eqforward @{thm is_shortest_path_on_def}\<close>
 
 definition has_dist_on :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat set \<Rightarrow> bool" where [rewrite]:
   "has_dist_on G m n V \<longleftrightarrow> (\<exists>p. is_shortest_path_on G m n p V)"
 
 lemma has_dist_onI [forward]: "is_shortest_path_on G m n p V \<Longrightarrow> has_dist_on G m n V" by auto2
 lemma has_dist_onD [resolve]: "has_dist_on G m n V \<Longrightarrow> \<exists>p. is_shortest_path_on G m n p V" by auto2
-setup {* del_prfstep_thm @{thm has_dist_on_def} *}
+setup \<open>del_prfstep_thm @{thm has_dist_on_def}\<close>
 
 definition dist_on :: "graph \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> nat set \<Rightarrow> nat" where [rewrite]:
   "dist_on G m n V = path_weight G (SOME p. is_shortest_path_on G m n p V)"
-setup {* register_wellform_data ("dist_on G m n V", ["has_dist_on G m n V"]) *}
+setup \<open>register_wellform_data ("dist_on G m n V", ["has_dist_on G m n V"])\<close>
 
 lemma dist_on_eq [rewrite]:
   "is_shortest_path_on G m n p V \<Longrightarrow> dist_on G m n V = path_weight G p" by auto2
 
 lemma dist_onD [forward]:
   "has_dist_on G m n V \<Longrightarrow> p \<in> path_set_on G m n V \<Longrightarrow> path_weight G p \<ge> dist_on G m n V" by auto2
-setup {* del_prfstep_thm @{thm dist_on_def} *}
+setup \<open>del_prfstep_thm @{thm dist_on_def}\<close>
 
 subsection \<open>Two splitting lemmas\<close>
 
@@ -274,7 +274,7 @@ subsection \<open>Invariant for the Dijkstra's algorithm\<close>
    and a heap containing estimates for the unknown vertices.
  *)
 datatype state = State (est: "nat list") (heap: "(nat, nat) map")
-setup {* add_simple_datatype "state" *}
+setup \<open>add_simple_datatype "state"\<close>
 
 definition unknown_set :: "state \<Rightarrow> nat set" where [rewrite]:
   "unknown_set S = keys_of (heap S)"
@@ -296,7 +296,7 @@ lemma invE1 [forward]: "inv G S \<Longrightarrow> length (est S) = size G \<and>
 lemma invE2 [forward]: "inv G S \<Longrightarrow> i \<in> known_set S \<Longrightarrow> est S ! i = dist G 0 i" by auto2
 lemma invE3 [forward]: "inv G S \<Longrightarrow> i \<in> verts G \<Longrightarrow> est S ! i = dist_on G 0 i (known_set S)" by auto2
 lemma invE4 [rewrite]: "inv G S \<Longrightarrow> i \<in> unknown_set S \<Longrightarrow> (heap S)\<langle>i\<rangle> = Some (est S ! i)" by auto2
-setup {* del_prfstep_thm_str "@eqforward" @{thm inv_def} *}
+setup \<open>del_prfstep_thm_str "@eqforward" @{thm inv_def}\<close>
 
 lemma inv_unknown_set [rewrite]:
   "inv G S \<Longrightarrow> unknown_set S = verts G - known_set S" by auto2
@@ -310,7 +310,7 @@ definition dijkstra_start_state :: "graph \<Rightarrow> state" where [rewrite]:
   "dijkstra_start_state G =
      State (list (\<lambda>i. if i = 0 then 0 else weight G 0 i) (size G))
            (map_constr (\<lambda>i. i > 0) (\<lambda>i. weight G 0 i) (size G))"
-setup {* register_wellform_data ("dijkstra_start_state G", ["size G > 0"]) *}
+setup \<open>register_wellform_data ("dijkstra_start_state G", ["size G > 0"])\<close>
 
 lemma dijkstra_start_known_set [rewrite]:
   "size G > 0 \<Longrightarrow> known_set (dijkstra_start_state G) = {0}" by auto2
@@ -352,8 +352,8 @@ fun dijkstra_step :: "graph \<Rightarrow> nat \<Rightarrow> state \<Rightarrow> 
          e' = list_update_set (\<lambda>i. i \<in> keys_of M') (\<lambda>i. min (e ! m + weight G m i) (e ! i)) e;
          M'' = map_update_all (\<lambda>i. e' ! i) M'
      in State e' M'')"
-setup {* add_rewrite_rule @{thm dijkstra_step.simps} *}
-setup {* register_wellform_data ("dijkstra_step G m S", ["inv G S", "m \<in> unknown_set S"]) *}
+setup \<open>add_rewrite_rule @{thm dijkstra_step.simps}\<close>
+setup \<open>register_wellform_data ("dijkstra_step G m S", ["inv G S", "m \<in> unknown_set S"])\<close>
 
 lemma has_dist_on_larger [backward1]:
   "has_dist G m n \<Longrightarrow> has_dist_on G m n V \<Longrightarrow> dist_on G m n V = dist G m n \<Longrightarrow>
@@ -396,6 +396,6 @@ lemma is_dijkstra_stepD1 [forward]:
 
 lemma is_dijkstra_stepD2 [forward]:
   "inv G S \<Longrightarrow> is_dijkstra_step G S S' \<Longrightarrow> card (unknown_set S') = card (unknown_set S) - 1" by auto2
-setup {* del_prfstep_thm @{thm is_dijkstra_step_def} *}
+setup \<open>del_prfstep_thm @{thm is_dijkstra_step_def}\<close>
 
 end

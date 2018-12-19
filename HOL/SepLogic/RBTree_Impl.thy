@@ -15,7 +15,7 @@ subsection \<open>Tree nodes\<close>
 
 datatype ('a, 'b) rbt_node =
   Node (lsub: "('a, 'b) rbt_node ref option") (cl: color) (key: 'a) (val: 'b) (rsub: "('a, 'b) rbt_node ref option")
-setup {* fold add_rewrite_rule @{thms rbt_node.sel} *}
+setup \<open>fold add_rewrite_rule @{thms rbt_node.sel}\<close>
 
 fun color_encode :: "color \<Rightarrow> nat" where
   "color_encode B = 0"
@@ -40,7 +40,7 @@ fun btree :: "('a::heap, 'b::heap) rbt \<Rightarrow> ('a, 'b) rbt_node ref optio
   "btree Leaf p = \<up>(p = None)"
 | "btree (rbt.Node lt c k v rt) (Some p) = (\<exists>\<^sub>Alp rp. p \<mapsto>\<^sub>r Node lp c k v rp * btree lt lp * btree rt rp)"
 | "btree (rbt.Node lt c k v rt) None = false"
-setup {* fold add_rewrite_ent_rule @{thms btree.simps} *}
+setup \<open>fold add_rewrite_ent_rule @{thms btree.simps}\<close>
 
 lemma btree_Leaf [forward_ent]: "btree Leaf p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
 
@@ -53,8 +53,8 @@ lemma btree_none: "emp \<Longrightarrow>\<^sub>A btree Leaf None" by auto2
 lemma btree_constr_ent:
   "p \<mapsto>\<^sub>r Node lp c k v rp * btree lt lp * btree rt rp \<Longrightarrow>\<^sub>A btree (rbt.Node lt c k v rt) (Some p)" by auto2
 
-setup {* fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}] *}
-setup {* fold del_prfstep_thm @{thms btree.simps} *}
+setup \<open>fold add_entail_matcher [@{thm btree_none}, @{thm btree_constr_ent}]\<close>
+setup \<open>fold del_prfstep_thm @{thms btree.simps}\<close>
 
 type_synonym ('a, 'b) btree = "('a, 'b) rbt_node ref option"
 
@@ -491,7 +491,7 @@ subsection \<open>Outer interface\<close>
 
 definition rbt_map_assn :: "('a, 'b) map \<Rightarrow> ('a::{heap,linorder}, 'b::heap) rbt_node ref option \<Rightarrow> assn" where
   "rbt_map_assn M p = (\<exists>\<^sub>At. btree t p * \<up>(is_rbt t) * \<up>(rbt_sorted t) * \<up>(M = rbt_map t))"
-setup {* add_rewrite_ent_rule @{thm rbt_map_assn_def} *}
+setup \<open>add_rewrite_ent_rule @{thm rbt_map_assn_def}\<close>
 
 theorem rbt_empty_rule [hoare_triple]:
   "<emp> tree_empty <rbt_map_assn empty_map>" by auto2

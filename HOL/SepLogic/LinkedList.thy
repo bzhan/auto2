@@ -16,7 +16,7 @@ begin
 subsection \<open>List Assertion\<close>
 
 datatype 'a node = Node (val: "'a") (nxt: "'a node ref option")
-setup {* fold add_rewrite_rule @{thms node.sel} *}
+setup \<open>fold add_rewrite_rule @{thms node.sel}\<close>
 
 fun node_encode :: "'a::heap node \<Rightarrow> nat" where
   "node_encode (Node x r) = to_nat (x, r)"
@@ -31,7 +31,7 @@ fun os_list :: "'a::heap list \<Rightarrow> 'a node ref option \<Rightarrow> ass
   "os_list [] p = \<up>(p = None)"
 | "os_list (x # l) (Some p) = (\<exists>\<^sub>Aq. p \<mapsto>\<^sub>r Node x q * os_list l q)"
 | "os_list (x # l) None = false"
-setup {* fold add_rewrite_ent_rule @{thms os_list.simps} *}
+setup \<open>fold add_rewrite_ent_rule @{thms os_list.simps}\<close>
 
 lemma os_list_empty [forward_ent]:
   "os_list [] p \<Longrightarrow>\<^sub>A \<up>(p = None)" by auto2
@@ -45,8 +45,8 @@ lemma os_list_none: "emp \<Longrightarrow>\<^sub>A os_list [] None" by auto2
 lemma os_list_constr_ent:
   "p \<mapsto>\<^sub>r Node x q * os_list l q \<Longrightarrow>\<^sub>A os_list (x # l) (Some p)" by auto2
 
-setup {* fold add_entail_matcher [@{thm os_list_none}, @{thm os_list_constr_ent}] *}
-setup {* fold del_prfstep_thm @{thms os_list.simps} *}
+setup \<open>fold add_entail_matcher [@{thm os_list_none}, @{thm os_list_constr_ent}]\<close>
+setup \<open>fold del_prfstep_thm @{thms os_list.simps}\<close>
 
 ML_file "list_matcher_test.ML"
 
@@ -108,7 +108,7 @@ lemma os_reverse_rule:
 
 subsection \<open>Remove\<close>
 
-setup {* fold add_rewrite_rule @{thms removeAll.simps} *}
+setup \<open>fold add_rewrite_rule @{thms removeAll.simps}\<close>
 
 partial_function (heap) os_rem :: "'a::heap \<Rightarrow> 'a node ref option \<Rightarrow> 'a node ref option Heap" where
   "os_rem x b = (case b of 
@@ -147,12 +147,12 @@ fun list_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "list_insert x [] = [x]"
 | "list_insert x (y # ys) = (
     if x \<le> y then x # (y # ys) else y # list_insert x ys)"
-setup {* fold add_rewrite_rule @{thms list_insert.simps} *}
+setup \<open>fold add_rewrite_rule @{thms list_insert.simps}\<close>
 
 lemma list_insert_length:
   "length (list_insert x xs) = length xs + 1"
 @proof @induct xs @qed
-setup {* add_forward_prfstep_cond @{thm list_insert_length} [with_term "list_insert ?x ?xs"] *}
+setup \<open>add_forward_prfstep_cond @{thm list_insert_length} [with_term "list_insert ?x ?xs"]\<close>
 
 lemma list_insert_mset [rewrite]:
   "mset (list_insert x xs) = {#x#} + mset xs"
@@ -186,7 +186,7 @@ subsection \<open>Insertion sort\<close>
 fun insert_sort :: "'a::ord list \<Rightarrow> 'a list" where
   "insert_sort [] = []"
 | "insert_sort (x # xs) = list_insert x (insert_sort xs)"
-setup {* fold add_rewrite_rule @{thms insert_sort.simps} *}
+setup \<open>fold add_rewrite_rule @{thms insert_sort.simps}\<close>
 
 lemma insert_sort_mset [rewrite]:
   "mset (insert_sort xs) = mset xs"
@@ -229,7 +229,7 @@ fun merge_list :: "('a::ord) list \<Rightarrow> 'a list \<Rightarrow> 'a list" w
 | "merge_list (x # xs) (y # ys) = (
     if x \<le> y then x # (merge_list xs (y # ys))
     else y # (merge_list (x # xs) ys))"
-setup {* fold add_rewrite_rule @{thms merge_list.simps} *}
+setup \<open>fold add_rewrite_rule @{thms merge_list.simps}\<close>
 
 lemma merge_list_correct [rewrite]:
   "set (merge_list xs ys) = set xs \<union> set ys"
@@ -317,7 +317,7 @@ lemma filter_os_list2_rule [hoare_triple]:
   "<os_list xs b> filter_os_list2 f b <\<lambda>r. os_list xs b * os_list (filter f xs) r>"
 @proof @induct xs arbitrary b @qed
 
-setup {* fold add_rewrite_rule @{thms List.fold_simps} *}
+setup \<open>fold add_rewrite_rule @{thms List.fold_simps}\<close>
 
 partial_function (heap) fold_os_list :: "('a::heap \<Rightarrow> 'b \<Rightarrow> 'b) \<Rightarrow> 'a os_list \<Rightarrow> 'b \<Rightarrow> 'b Heap" where
   "fold_os_list f b x = (case b of

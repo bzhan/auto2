@@ -14,7 +14,7 @@ begin
 subsection \<open>Definition of interval\<close>
 
 datatype 'a interval = Interval (low: 'a) (high: 'a)
-setup {* add_simple_datatype "interval" *}
+setup \<open>add_simple_datatype "interval"\<close>
 
 instantiation interval :: (linorder) linorder begin
 
@@ -41,7 +41,7 @@ definition is_interval :: "('a::linorder) interval \<Rightarrow> bool" where [re
 subsection \<open>Definition of interval with an index\<close>
 
 datatype 'a idx_interval = IdxInterval (int: "'a interval") (idx: nat)
-setup {* add_simple_datatype "idx_interval" *}
+setup \<open>add_simple_datatype "idx_interval"\<close>
 
 instantiation idx_interval :: (linorder) linorder begin
 

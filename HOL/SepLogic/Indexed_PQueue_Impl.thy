@@ -16,11 +16,11 @@ begin
 
 datatype 'a indexed_pqueue =
   Indexed_PQueue (pqueue: "(nat \<times> 'a) dynamic_array") (index: "nat option array")
-setup {* add_simple_datatype "indexed_pqueue" *}
+setup \<open>add_simple_datatype "indexed_pqueue"\<close>
 
 fun idx_pqueue :: "'a::heap idx_pqueue \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue (xs, m) (Indexed_PQueue pq idx) = (dyn_array xs pq * idx \<mapsto>\<^sub>a m)"
-setup {* add_rewrite_ent_rule @{thm idx_pqueue.simps} *}
+setup \<open>add_rewrite_ent_rule @{thm idx_pqueue.simps}\<close>
 
 subsection \<open>Basic operations\<close>
 
@@ -125,8 +125,8 @@ lemma has_key_idx_pqueue_rule [hoare_triple]:
    has_key_idx_pqueue k p
    <\<lambda>r. idx_pqueue (xs, m) p * \<up>(r \<longleftrightarrow> has_key_alist xs k)>" by auto2
 
-setup {* del_prfstep_thm @{thm idx_pqueue.simps} *}
-setup {* del_simple_datatype "indexed_pqueue" *}
+setup \<open>del_prfstep_thm @{thm idx_pqueue.simps}\<close>
+setup \<open>del_simple_datatype "indexed_pqueue"\<close>
 
 subsection \<open>Bubble up and down\<close>
 
@@ -250,7 +250,7 @@ subsection \<open>Outer interface\<close>
 definition idx_pqueue_map :: "(nat, 'a::{heap,linorder}) map \<Rightarrow> nat \<Rightarrow> 'a indexed_pqueue \<Rightarrow> assn" where
   "idx_pqueue_map M n p = (\<exists>\<^sub>Axs m. idx_pqueue (xs, m) p *
       \<up>(index_of_pqueue (xs, m)) * \<up>(is_heap xs) * \<up>(M = map_of_alist xs) * \<up>(n = length m))"
-setup {* add_rewrite_ent_rule @{thm idx_pqueue_map_def} *}
+setup \<open>add_rewrite_ent_rule @{thm idx_pqueue_map_def}\<close>
 
 lemma heap_implies_hd_min2 [resolve]:
   "is_heap xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> (map_of_alist xs)\<langle>k\<rangle> = Some v \<Longrightarrow> snd (hd xs) \<le> v"
@@ -288,6 +288,6 @@ lemma update_idx_pqueue_map [hoare_triple]:
    update_idx_pqueue k v p
    <idx_pqueue_map (M {k \<rightarrow> v}) n>\<^sub>t" by auto2
 
-setup {* del_prfstep_thm @{thm idx_pqueue_map_def} *}
+setup \<open>del_prfstep_thm @{thm idx_pqueue_map_def}\<close>
 
 end

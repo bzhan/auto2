@@ -24,7 +24,7 @@ subsection \<open>Linear time version of rev\<close>
 fun itrev :: "'a list \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "itrev []       ys = ys"
 | "itrev (x # xs) ys = itrev xs (x # ys)"
-setup {* fold add_rewrite_rule @{thms itrev.simps} *}
+setup \<open>fold add_rewrite_rule @{thms itrev.simps}\<close>
 
 lemma itrev_eq_rev: "itrev x [] = rev x"
 @proof
@@ -36,7 +36,7 @@ subsection \<open>Strict sorted\<close>
 fun strict_sorted :: "'a::linorder list \<Rightarrow> bool" where
   "strict_sorted [] = True"
 | "strict_sorted (x # ys) = ((\<forall>y\<in>set ys. x < y) \<and> strict_sorted ys)"
-setup {* fold add_rewrite_rule @{thms strict_sorted.simps} *}
+setup \<open>fold add_rewrite_rule @{thms strict_sorted.simps}\<close>
 
 lemma strict_sorted_appendI [backward]:
   "strict_sorted xs \<and> strict_sorted ys \<and> (\<forall>x\<in>set xs. \<forall>y\<in>set ys. x < y) \<Longrightarrow> strict_sorted (xs @ ys)"
@@ -61,7 +61,7 @@ fun ordered_insert :: "'a::ord \<Rightarrow> 'a list \<Rightarrow> 'a list" wher
     if x = y then (y # ys)
     else if x < y then x # (y # ys)
     else y # ordered_insert x ys)"
-setup {* fold add_rewrite_rule @{thms ordered_insert.simps} *}
+setup \<open>fold add_rewrite_rule @{thms ordered_insert.simps}\<close>
 
 lemma ordered_insert_set [rewrite]:
   "set (ordered_insert x ys) = {x} \<union> set ys"
@@ -83,7 +83,7 @@ subsection \<open>Deleting an element\<close>
 fun remove_elt_list :: "'a \<Rightarrow> 'a list \<Rightarrow> 'a list" where
   "remove_elt_list x [] = []"
 | "remove_elt_list x (y # ys) = (if y = x then remove_elt_list x ys else y # remove_elt_list x ys)"
-setup {* fold add_rewrite_rule @{thms remove_elt_list.simps} *}
+setup \<open>fold add_rewrite_rule @{thms remove_elt_list.simps}\<close>
 
 lemma remove_elt_list_set [rewrite]:
   "set (remove_elt_list x ys) = set ys - {x}"
@@ -115,7 +115,7 @@ fun ordered_insert_pairs :: "'a::ord \<Rightarrow> 'b \<Rightarrow> ('a \<times>
     if x = fst y then ((x, v) # ys)
     else if x < fst y then (x, v) # (y # ys)
     else y # ordered_insert_pairs x v ys)"
-setup {* fold add_rewrite_rule @{thms ordered_insert_pairs.simps} *}
+setup \<open>fold add_rewrite_rule @{thms ordered_insert_pairs.simps}\<close>
 
 lemma ordered_insert_pairs_map [rewrite]:
   "map_of_alist (ordered_insert_pairs x v ys) = update_map (map_of_alist ys) x v"
@@ -141,7 +141,7 @@ subsection \<open>Deleting from a list of pairs\<close>
 fun remove_elt_pairs :: "'a \<Rightarrow> ('a \<times> 'b) list \<Rightarrow> ('a \<times> 'b) list" where
   "remove_elt_pairs x [] = []"
 | "remove_elt_pairs x (y # ys) = (if fst y = x then ys else y # remove_elt_pairs x ys)"
-setup {* fold add_rewrite_rule @{thms remove_elt_pairs.simps} *}
+setup \<open>fold add_rewrite_rule @{thms remove_elt_pairs.simps}\<close>
 
 lemma remove_elt_pairs_map [rewrite]:
   "strict_sorted (map fst ys) \<Longrightarrow> map_of_alist (remove_elt_pairs x ys) = delete_map x (map_of_alist ys)"

@@ -23,18 +23,18 @@ lemma s_inj [forward]:
   "s1 m = s1 m' \<Longrightarrow> m = m'" "s2 m = s2 m' \<Longrightarrow> m = m'" by auto
 lemma s_neq [resolve]:
   "s1 m \<noteq> s2 m'" "s1 m > m" "s2 m > m" "s2 m > s1 m" using s1.simps s2.simps by presburger+
-setup {* add_forward_prfstep_cond @{thm s_neq(2)} [with_term "s1 ?m"] *}
-setup {* add_forward_prfstep_cond @{thm s_neq(3)} [with_term "s2 ?m"] *}
-setup {* add_forward_prfstep_cond @{thm s_neq(4)} [with_term "s2 ?m", with_term "s1 ?m"] *}
+setup \<open>add_forward_prfstep_cond @{thm s_neq(2)} [with_term "s1 ?m"]\<close>
+setup \<open>add_forward_prfstep_cond @{thm s_neq(3)} [with_term "s2 ?m"]\<close>
+setup \<open>add_forward_prfstep_cond @{thm s_neq(4)} [with_term "s2 ?m", with_term "s1 ?m"]\<close>
 
 inductive eq_pred :: "nat \<Rightarrow> nat \<Rightarrow> bool" where
   "eq_pred n n"
 | "eq_pred n m \<Longrightarrow> eq_pred n (s1 m)"
 | "eq_pred n m \<Longrightarrow> eq_pred n (s2 m)"
-setup {* add_case_induct_rule @{thm eq_pred.cases} *}
-setup {* add_prop_induct_rule @{thm eq_pred.induct} *}
-setup {* add_resolve_prfstep @{thm eq_pred.intros(1)} *}
-setup {* fold add_backward_prfstep @{thms eq_pred.intros(2,3)} *}
+setup \<open>add_case_induct_rule @{thm eq_pred.cases}\<close>
+setup \<open>add_prop_induct_rule @{thm eq_pred.induct}\<close>
+setup \<open>add_resolve_prfstep @{thm eq_pred.intros(1)}\<close>
+setup \<open>fold add_backward_prfstep @{thms eq_pred.intros(2,3)}\<close>
 
 lemma eq_pred_parent1 [forward]:
   "eq_pred i (s1 k) \<Longrightarrow> i \<noteq> s1 k \<Longrightarrow> eq_pred i k"
@@ -47,7 +47,7 @@ lemma eq_pred_parent2 [forward]:
 lemma eq_pred_cases:
   "eq_pred i j \<Longrightarrow> eq_pred (s1 i) j \<or> eq_pred (s2 i) j \<or> j = i \<or> j = s1 i \<or> j = s2 i"
 @proof @prop_induct "eq_pred i j" @qed
-setup {* add_forward_prfstep_cond @{thm eq_pred_cases} [with_cond "?i \<noteq> s1 ?k", with_cond "?i \<noteq> s2 ?k"] *}
+setup \<open>add_forward_prfstep_cond @{thm eq_pred_cases} [with_cond "?i \<noteq> s1 ?k", with_cond "?i \<noteq> s2 ?k"]\<close>
 
 lemma eq_pred_le [forward]: "eq_pred i j \<Longrightarrow> i \<le> j"
 @proof @prop_induct "eq_pred i j" @qed
@@ -60,8 +60,8 @@ definition is_heap :: "('a \<times> 'b::linorder) list \<Rightarrow> bool" where
 
 lemma is_heapD:
   "is_heap xs \<Longrightarrow> j < length xs \<Longrightarrow> eq_pred i j \<Longrightarrow> snd (xs ! i) \<le> snd (xs ! j)" by auto2
-setup {* add_forward_prfstep_cond @{thm is_heapD} [with_term "?xs ! ?j"] *}
-setup {* del_prfstep_thm_eqforward @{thm is_heap_def} *}
+setup \<open>add_forward_prfstep_cond @{thm is_heapD} [with_term "?xs ! ?j"]\<close>
+setup \<open>del_prfstep_thm_eqforward @{thm is_heap_def}\<close>
 
 subsection \<open>Bubble-down\<close>
 
@@ -73,37 +73,37 @@ definition is_heap_partial1 :: "('a \<times> 'b::linorder) list \<Rightarrow> na
 lemma bubble_down1:
   "s1 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) > snd (xs ! s1 k) \<Longrightarrow>
    snd (xs ! s1 k) \<le> snd (xs ! s2 k) \<Longrightarrow> is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
-setup {* add_forward_prfstep_cond @{thm bubble_down1} [with_term "list_swap ?xs ?k (s1 ?k)"] *}
+setup \<open>add_forward_prfstep_cond @{thm bubble_down1} [with_term "list_swap ?xs ?k (s1 ?k)"]\<close>
 
 lemma bubble_down2:
   "s1 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! k) > snd (xs ! s1 k) \<Longrightarrow>
    s2 k \<ge> length xs \<Longrightarrow> is_heap_partial1 (list_swap xs k (s1 k)) (s1 k)" by auto2
-setup {* add_forward_prfstep_cond @{thm bubble_down2} [with_term "list_swap ?xs ?k (s1 ?k)"] *}
+setup \<open>add_forward_prfstep_cond @{thm bubble_down2} [with_term "list_swap ?xs ?k (s1 ?k)"]\<close>
 
 (* One case of switching with s2 k. *)
 lemma bubble_down3:
   "s2 k < length xs \<Longrightarrow> is_heap_partial1 xs k \<Longrightarrow> snd (xs ! s1 k) > snd (xs ! s2 k) \<Longrightarrow>
    snd (xs ! k) > snd (xs ! s2 k) \<Longrightarrow> xs' = list_swap xs k (s2 k) \<Longrightarrow> is_heap_partial1 xs' (s2 k)" by auto2
-setup {* add_forward_prfstep_cond @{thm bubble_down3} [with_term "?xs'"] *}
+setup \<open>add_forward_prfstep_cond @{thm bubble_down3} [with_term "?xs'"]\<close>
 
 subsection \<open>Bubble-up\<close>
 
 fun par :: "nat \<Rightarrow> nat" where
   "par m = (m - 1) div 2"
-setup {* register_wellform_data ("par m", ["m \<noteq> 0"]) *}
+setup \<open>register_wellform_data ("par m", ["m \<noteq> 0"])\<close>
 
 lemma ps_inverse [rewrite]: "par (s1 k) = k" "par (s2 k) = k" by simp+
 
 lemma p_basic: "m \<noteq> 0 \<Longrightarrow> par m < m" by auto
-setup {* add_forward_prfstep_cond @{thm p_basic} [with_term "par ?m"] *}
+setup \<open>add_forward_prfstep_cond @{thm p_basic} [with_term "par ?m"]\<close>
 
 lemma p_cases: "m \<noteq> 0 \<Longrightarrow> m = s1 (par m) \<or> m = s2 (par m)" by auto
-setup {* add_forward_prfstep_cond @{thm p_cases} [with_term "par ?m"] *}
+setup \<open>add_forward_prfstep_cond @{thm p_cases} [with_term "par ?m"]\<close>
 
 lemma eq_pred_p_next:
   "i \<noteq> 0 \<Longrightarrow> eq_pred i j \<Longrightarrow> eq_pred (par i) j"
 @proof @prop_induct "eq_pred i j" @qed
-setup {* add_forward_prfstep_cond @{thm eq_pred_p_next} [with_term "par ?i"] *}
+setup \<open>add_forward_prfstep_cond @{thm eq_pred_p_next} [with_term "par ?i"]\<close>
 
 lemma heap_implies_hd_min [resolve]:
   "is_heap xs \<Longrightarrow> i < length xs \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> snd (hd xs) \<le> snd (xs ! i)"
@@ -124,7 +124,7 @@ lemma bubble_up1 [forward]:
 lemma bubble_up2 [forward]:
   "k < length xs \<Longrightarrow> is_heap_partial2 xs k \<Longrightarrow> snd (xs ! k) \<ge> snd (xs ! par k) \<Longrightarrow> k \<noteq> 0 \<Longrightarrow>
    is_heap xs" by auto2
-setup {* del_prfstep_thm @{thm p_cases} *}
+setup \<open>del_prfstep_thm @{thm p_cases}\<close>
 
 subsection \<open>Indexed priority queue\<close>
 
@@ -134,12 +134,12 @@ fun index_of_pqueue :: "'a idx_pqueue \<Rightarrow> bool" where
   "index_of_pqueue (xs, m) = (
     (\<forall>i<length xs. fst (xs ! i) < length m \<and> m ! (fst (xs ! i)) = Some i) \<and>
     (\<forall>i. \<forall>k<length m. m ! k = Some i \<longrightarrow> i < length xs \<and> fst (xs ! i) = k))"
-setup {* add_rewrite_rule @{thm index_of_pqueue.simps} *}
+setup \<open>add_rewrite_rule @{thm index_of_pqueue.simps}\<close>
 
 lemma index_of_pqueueD1:
   "i < length xs \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
    fst (xs ! i) < length m \<and> m ! (fst (xs ! i)) = Some i" by auto2
-setup {* add_forward_prfstep_cond @{thm index_of_pqueueD1} [with_term "?xs ! ?i"] *}
+setup \<open>add_forward_prfstep_cond @{thm index_of_pqueueD1} [with_term "?xs ! ?i"]\<close>
 
 lemma index_of_pqueueD2 [forward]:
   "k < length m \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
@@ -148,7 +148,7 @@ lemma index_of_pqueueD2 [forward]:
 lemma index_of_pqueueD3 [forward]:
   "index_of_pqueue (xs, m) \<Longrightarrow> p \<in> set xs \<Longrightarrow> fst p < length m"
 @proof @obtain i where "i < length xs" "xs ! i = p" @qed
-setup {* del_prfstep_thm_eqforward @{thm index_of_pqueue.simps} *}
+setup \<open>del_prfstep_thm_eqforward @{thm index_of_pqueue.simps}\<close>
 
 lemma has_index_unique_key [forward]:
   "index_of_pqueue (xs, m) \<Longrightarrow> unique_keys_set (set xs)"
@@ -246,7 +246,7 @@ lemma idx_bubble_down_fun_correct:
   @end
   @case "s1 k < length xs" @end
 @qed
-setup {* add_forward_prfstep_cond @{thm idx_bubble_down_fun_correct} [with_term "?r"] *}
+setup \<open>add_forward_prfstep_cond @{thm idx_bubble_down_fun_correct} [with_term "?r"]\<close>
 
 lemma idx_bubble_down_fun_correct2 [forward]:
   "index_of_pqueue x \<Longrightarrow> index_of_pqueue (idx_bubble_down_fun x k)"
@@ -275,7 +275,7 @@ lemma idx_bubble_up_fun_correct:
   @subgoal "(x = (xs, m), k = k)"
   @unfold "idx_bubble_up_fun (xs, m) k" @end
 @qed
-setup {* add_forward_prfstep_cond @{thm idx_bubble_up_fun_correct} [with_term "?r"] *}
+setup \<open>add_forward_prfstep_cond @{thm idx_bubble_up_fun_correct} [with_term "?r"]\<close>
 
 lemma idx_bubble_up_fun_correct2 [forward]:
   "index_of_pqueue x \<Longrightarrow> index_of_pqueue (idx_bubble_up_fun x k)"
@@ -296,7 +296,7 @@ lemma delete_min_idx_pqueue_correct:
   "index_of_pqueue (xs, m) \<Longrightarrow> xs \<noteq> [] \<Longrightarrow> res = delete_min_idx_pqueue_fun (xs, m) \<Longrightarrow>
    index_of_pqueue (snd res)"
 @proof @unfold "delete_min_idx_pqueue_fun (xs, m)" @qed
-setup {* add_forward_prfstep_cond @{thm delete_min_idx_pqueue_correct} [with_term "?res"] *}
+setup \<open>add_forward_prfstep_cond @{thm delete_min_idx_pqueue_correct} [with_term "?res"]\<close>
 
 lemma hd_last_swap_eval_last [rewrite]:
   "xs \<noteq> [] \<Longrightarrow> last (list_swap xs 0 (length xs - 1)) = hd xs"
@@ -313,7 +313,7 @@ lemma delete_min_idx_pqueue_correct2:
   @let "xs' = list_swap xs 0 (length xs - 1)"
   @have "is_heap_partial1 (butlast xs') 0"
 @qed
-setup {* add_forward_prfstep_cond @{thm delete_min_idx_pqueue_correct2} [with_term "?res"] *}
+setup \<open>add_forward_prfstep_cond @{thm delete_min_idx_pqueue_correct2} [with_term "?res"]\<close>
 
 fun insert_idx_pqueue_fun :: "nat \<Rightarrow> 'a::linorder \<Rightarrow> 'a idx_pqueue \<Rightarrow> 'a idx_pqueue" where
   "insert_idx_pqueue_fun k v x = (
@@ -333,7 +333,7 @@ lemma insert_idx_pqueue_correct2:
 @proof @unfold "insert_idx_pqueue_fun k v (xs, m)"
   @have "is_heap_partial2 (xs @ [(k, v)]) (length xs)"
 @qed
-setup {* add_forward_prfstep_cond @{thm insert_idx_pqueue_correct2} [with_term "?r"] *}
+setup \<open>add_forward_prfstep_cond @{thm insert_idx_pqueue_correct2} [with_term "?r"]\<close>
 
 fun update_idx_pqueue_fun :: "nat \<Rightarrow> 'a::linorder \<Rightarrow> 'a idx_pqueue \<Rightarrow> 'a idx_pqueue" where
   "update_idx_pqueue_fun k v (xs, m) = (
@@ -371,6 +371,6 @@ lemma update_idx_pqueue_correct2:
   @end
   @have "is_heap_partial2 xs' i"
 @qed
-setup {* add_forward_prfstep_cond @{thm update_idx_pqueue_correct2} [with_term "?r"] *}
+setup \<open>add_forward_prfstep_cond @{thm update_idx_pqueue_correct2} [with_term "?r"]\<close>
 
 end
