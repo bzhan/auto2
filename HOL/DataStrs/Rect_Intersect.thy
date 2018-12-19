@@ -289,7 +289,7 @@ function rect_inter :: "nat rectangle list \<Rightarrow> nat idx_interval set \<
   by auto
   termination by (relation "measure (\<lambda>(rects,S,k). length (all_ops rects) - k)") auto
 
-lemma rect_inter_step_correct_ind [rewrite]:
+lemma rect_inter_correct_ind [rewrite]:
   "is_rect_list rects \<Longrightarrow> ops = all_ops rects \<Longrightarrow> n < length ops \<Longrightarrow>
    rect_inter rects (xints_of rects (apply_ops_k rects n)) n \<longleftrightarrow>
    (\<exists>k<length ops. k \<ge> n \<and> has_overlap_at_k rects k)"
@@ -302,7 +302,7 @@ lemma rect_inter_step_correct_ind [rewrite]:
   @case "n = length ops - 1"
 @qed
 
-lemma rect_inter_step_correct [rewrite]:
+lemma rect_inter_correct [rewrite]:
   "is_rect_list rects \<Longrightarrow> rect_inter rects {} 0 \<longleftrightarrow> has_rect_overlap rects"
 @proof
   @have "{} = xints_of rects (apply_ops_k rects 0)"
