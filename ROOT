@@ -16,6 +16,11 @@ session Auto2_HOL = HOL +
     "HOL/Pelletier"
     "HOL/Primes_Ex"
 
+session Auto2_Imperative_HOL = Auto2_HOL +
+  description {*
+    Application of auto2 to verify functional and imperative programs.
+  *}
+  theories
     (* Functional programs *)
     "HOL/Functional/BST"
     "HOL/Functional/Lists_Ex"

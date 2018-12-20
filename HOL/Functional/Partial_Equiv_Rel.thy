@@ -6,7 +6,7 @@
 section \<open>Partial equivalence relation\<close>
 
 theory Partial_Equiv_Rel
-  imports "../Auto2_Main"
+  imports "Auto2_HOL.Auto2_Main"
 begin
   
 text \<open>

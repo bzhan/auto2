@@ -4,7 +4,7 @@
 *)
 
 theory SepLogic_Base
-  imports "../Auto2_Main"
+  imports "Auto2_HOL.Auto2_Main"
 begin
 
 text \<open>
