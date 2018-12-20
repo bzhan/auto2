@@ -1,8 +1,6 @@
 (*
   File: Interval.thy
   Author: Bohua Zhan
-
-  Basic definition of intervals.
 *)
 
 section \<open>Intervals\<close>
@@ -10,6 +8,8 @@ section \<open>Intervals\<close>
 theory Interval
   imports "../Auto2_Main"
 begin
+
+text \<open>Basic definition of intervals.\<close>
 
 subsection \<open>Definition of interval\<close>
 

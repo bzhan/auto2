@@ -1,8 +1,6 @@
 (*
   File: IntervalTree_Impl.thy
   Author: Bohua Zhan
-
-  Imperative version of interval tree.
 *)
 
 section \<open>Implementation of interval tree\<close>
@@ -10,6 +8,8 @@ section \<open>Implementation of interval tree\<close>
 theory IntervalTree_Impl
   imports SepAuto "../DataStrs/Interval_Tree"
 begin
+
+text \<open>Imperative version of interval tree.\<close>
 
 subsection \<open>Interval and IdxInterval\<close>
 

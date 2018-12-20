@@ -1,9 +1,6 @@
 (*
   File: Mapping_Str.thy
   Author: Bohua Zhan
-
-  Basic definitions of a mapping. Here, we enclose the mapping inside
-  a structure, to make evaluation a first-order concept.
 *)
 
 section \<open>Mapping\<close>
@@ -11,6 +8,11 @@ section \<open>Mapping\<close>
 theory Mapping_Str
   imports "../Auto2_Main"
 begin
+
+text \<open>
+  Basic definitions of a mapping. Here, we enclose the mapping inside
+  a structure, to make evaluation a first-order concept.
+\<close>
 
 datatype ('a, 'b) map = Map "'a \<Rightarrow> 'b option"
 

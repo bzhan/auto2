@@ -1,11 +1,6 @@
 (*
   File: Interval_Tree.thy
   Author: Bohua Zhan
-
-  Functional version of interval tree. This is an augmented data
-  structure on top of regular binary search trees (see BST.thy).
-  See Section 14.3 of "Introduction to Algorithms" by Cormen, Leiserson,
-  Rivest and Stein for a reference.
 *)
 
 section \<open>Interval tree\<close>
@@ -13,6 +8,13 @@ section \<open>Interval tree\<close>
 theory Interval_Tree
   imports Lists_Ex Interval
 begin
+
+text \<open>
+  Functional version of interval tree. This is an augmented data
+  structure on top of regular binary search trees (see BST.thy).
+  See Section 14.3 of "Introduction to Algorithms" by Cormen, Leiserson,
+  Rivest and Stein for a reference.
+\<close>
 
 subsection \<open>Definition of an interval tree\<close>
 

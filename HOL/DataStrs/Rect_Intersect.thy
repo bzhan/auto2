@@ -1,10 +1,6 @@
 (*
   File: Rect_Intersect.thy
   Author: Bohua Zhan
-
-  Functional version of algorithm for detecting rectangle intersection.
-  See Exercise 14.3-7 in "Introduction to Algorithms" by Cormen,
-  Leiserson, Rivest, and Stein for a reference.
 *)
 
 section \<open>Rectangle intersection\<close>
@@ -12,6 +8,12 @@ section \<open>Rectangle intersection\<close>
 theory Rect_Intersect
   imports Interval_Tree
 begin
+
+text \<open>
+  Functional version of algorithm for detecting rectangle intersection.
+  See Exercise 14.3-7 in "Introduction to Algorithms" by Cormen,
+  Leiserson, Rivest, and Stein for a reference.
+\<close>
 
 subsection \<open>Definition of rectangles\<close>
 

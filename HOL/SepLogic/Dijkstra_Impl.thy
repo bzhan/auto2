@@ -1,11 +1,6 @@
 (*
   File: Dijkstra_Impl.thy
   Author: Bohua Zhan
-
-  Imperative implementation of Dijkstra's shortest path algorithm.
-
-  The algorithm is also verified in the AFP entry Dijkstra_Shortest_Path
-  by Benedikt Nordhoff and Peter Lammich.
 *)
 
 section \<open>Implementation of Dijkstra's algorithm\<close>
@@ -13,6 +8,13 @@ section \<open>Implementation of Dijkstra's algorithm\<close>
 theory Dijkstra_Impl
   imports Indexed_PQueue_Impl "../DataStrs/Dijkstra"
 begin
+
+text \<open>
+  Imperative implementation of Dijkstra's shortest path algorithm.
+
+  The algorithm is also verified in the AFP entry Dijkstra_Shortest_Path
+  by Benedikt Nordhoff and Peter Lammich.
+\<close>
 
 datatype dijkstra_state = Dijkstra_State (est_a: "nat array") (heap_pq: "nat indexed_pqueue")
 setup \<open>add_simple_datatype "dijkstra_state"\<close>

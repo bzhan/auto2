@@ -1,13 +1,13 @@
 (*
   File: GCD_Impl.thy
   Author: Bohua Zhan
-
-  A tutorial example for computation of GCD.
 *)
 
 theory GCD_Impl
   imports SepAuto
 begin
+
+text \<open>A tutorial example for computation of GCD.\<close>
 
 text \<open>Turn on auto2's trace\<close>
 declare [[print_trace]]

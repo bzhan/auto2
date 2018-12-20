@@ -1,9 +1,6 @@
 (*
   File: Partial_Equiv_Rel.thy
   Author: Bohua Zhan
-
-  Partial equivalence relations, following
-  Collections/Lib/Partial_Equivalence_Relation in the AFP.
 *)
 
 section \<open>Partial equivalence relation\<close>
@@ -12,6 +9,11 @@ theory Partial_Equiv_Rel
   imports "../Auto2_Main"
 begin
   
+text \<open>
+  Partial equivalence relations, following
+  Collections/Lib/Partial_Equivalence_Relation in the AFP.
+\<close>
+
 definition part_equiv :: "('a \<times> 'a) set \<Rightarrow> bool" where [rewrite]:
   "part_equiv R \<longleftrightarrow> sym R \<and> trans R"
 

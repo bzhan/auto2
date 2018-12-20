@@ -1,8 +1,6 @@
 (*
   File: BST_Impl.thy
   Author: Bohua Zhan
-
-  Imperative version of binary search trees.
 *)
 
 section \<open>Implementation of binary search tree\<close>
@@ -10,6 +8,8 @@ section \<open>Implementation of binary search tree\<close>
 theory BST_Impl
   imports SepAuto "../DataStrs/BST"
 begin
+
+text \<open>Imperative version of binary search trees.\<close>
 
 subsection \<open>Tree nodes\<close>
 

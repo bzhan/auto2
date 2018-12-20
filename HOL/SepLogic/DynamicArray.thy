@@ -1,8 +1,6 @@
 (*
   File: DynamicArray.thy
   Author: Bohua Zhan
-
-  Dynamically allocated arrays.
 *)
 
 section \<open>Implementation of dynamic arrays\<close>
@@ -10,6 +8,8 @@ section \<open>Implementation of dynamic arrays\<close>
 theory DynamicArray
   imports Arrays_Impl
 begin
+
+text \<open>Dynamically allocated arrays.\<close>
 
 datatype 'a dynamic_array = Dyn_Array (alen: nat) (aref: "'a array")
 setup \<open>add_simple_datatype "dynamic_array"\<close>

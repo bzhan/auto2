@@ -1,11 +1,6 @@
 (*
   File: Indexed_PQueue_Impl.thy
   Author: Bohua Zhan
-
-  Imperative implementation of indexed priority queue.
-
-  The data structure is also verified in the AFP entry Refine_Imperative_HOL
-  by Peter Lammich.
 *)
 
 section \<open>Implementation of the indexed priority queue\<close>
@@ -13,6 +8,13 @@ section \<open>Implementation of the indexed priority queue\<close>
 theory Indexed_PQueue_Impl
   imports DynamicArray "../DataStrs/Indexed_PQueue"
 begin
+
+text \<open>
+  Imperative implementation of indexed priority queue.
+
+  The data structure is also verified in the AFP entry Refine_Imperative_HOL
+  by Peter Lammich.
+\<close>
 
 datatype 'a indexed_pqueue =
   Indexed_PQueue (pqueue: "(nat \<times> 'a) dynamic_array") (index: "nat option array")

@@ -1,11 +1,6 @@
 (*
   File: Indexed_PQueue.thy
   Author: Bohua Zhan
-
-  Verification of indexed priority queue: functional part.
-
-  The data structure is also verified in the AFP entry
-  Refine_Imperative_HOL by Peter Lammich.
 *)
 
 section \<open>Indexed priority queues\<close>
@@ -13,6 +8,13 @@ section \<open>Indexed priority queues\<close>
 theory Indexed_PQueue
   imports Arrays_Ex Mapping_Str
 begin
+
+text \<open>
+  Verification of indexed priority queue: functional part.
+
+  The data structure is also verified in the AFP entry
+  Refine_Imperative_HOL by Peter Lammich.
+\<close>
 
 subsection \<open>Successor functions, eq-pred predicate\<close>
 

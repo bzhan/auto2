@@ -1,7 +1,15 @@
 (*
   File: Lists_Ex.thy
   Author: Bohua Zhan
+*)
 
+section \<open>Lists\<close>
+
+theory Lists_Ex
+  imports Mapping_Str
+begin
+
+text \<open>
   Examples on lists. The itrev example comes from Section 2.4 in
   "Programming and Proving in Isabelle/HOL".
 
@@ -11,13 +19,7 @@
   Correctness Proofs for Functional Search Trees" by Tobias Nipkow,
   is that showing sorted-ness and preservation of multisets for trees
   should be done on the in-order traversal of the tree.
-*)
-
-section \<open>Lists\<close>
-
-theory Lists_Ex
-  imports Mapping_Str
-begin
+\<close>
 
 subsection \<open>Linear time version of rev\<close>
 

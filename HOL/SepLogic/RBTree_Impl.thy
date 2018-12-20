@@ -1,8 +1,6 @@
 (*
   File: RBTree_Impl.thy
   Author: Bohua Zhan
-
-  Verification of imperative red-black trees.
 *)
 
 section \<open>Implementation of red-black tree\<close>
@@ -10,6 +8,10 @@ section \<open>Implementation of red-black tree\<close>
 theory RBTree_Impl
   imports SepAuto "../DataStrs/RBTree"
 begin
+
+text \<open>
+  Verification of imperative red-black trees.
+\<close>
 
 subsection \<open>Tree nodes\<close>
 

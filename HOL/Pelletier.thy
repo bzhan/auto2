@@ -1,9 +1,6 @@
 (*
   File: Pelletier.thy
   Author: Bohua Zhan
-
-  Pelletier's problems. From the paper "Seventy-five problems for testing
-  automatic theorem provers" by Francis Jeffry Pelletier.
 *)
 
 section \<open>Pelletier's problems\<close>
@@ -11,6 +8,11 @@ section \<open>Pelletier's problems\<close>
 theory Pelletier
   imports Logic_Thms
 begin
+
+text \<open>
+  Pelletier's problems. From the paper "Seventy-five problems for testing
+  automatic theorem provers" by Francis Jeffry Pelletier.
+\<close>
 
 theorem p1: "(p \<longrightarrow> q) \<longleftrightarrow> (\<not>q \<longrightarrow> \<not>p)" by auto2
 

@@ -1,10 +1,6 @@
 (*
   File: Quicksort.thy
   Author: Bohua Zhan
-
-  Functional version of quicksort.
-
-  Code for quicksort is largely based on HOL/Imperative_HOL/ex/Imperative_Quicksort.thy.
 *)
 
 section \<open>Quicksort\<close>
@@ -12,6 +8,12 @@ section \<open>Quicksort\<close>
 theory Quicksort
   imports Arrays_Ex
 begin
+
+text \<open>
+  Functional version of quicksort.
+
+  Code for quicksort is largely based on HOL/Imperative_HOL/ex/Imperative_Quicksort.thy.
+\<close>
 
 subsection \<open>Outer remains\<close>
   

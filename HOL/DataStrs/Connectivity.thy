@@ -1,8 +1,6 @@
 (*
   File: Connectivity.thy
   Author: Bohua Zhan
-
-  A simple application of union-find for graph connectivity.
 *)
 
 section \<open>Connectedness for a set of undirected edges.\<close>
@@ -10,6 +8,8 @@ section \<open>Connectedness for a set of undirected edges.\<close>
 theory Connectivity
   imports Union_Find
 begin
+
+text \<open>A simple application of union-find for graph connectivity.\<close>
 
 fun is_path :: "nat \<Rightarrow> (nat \<times> nat) set \<Rightarrow> nat list \<Rightarrow> bool" where
   "is_path n S [] = False"

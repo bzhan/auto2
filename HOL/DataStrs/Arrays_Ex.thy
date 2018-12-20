@@ -1,8 +1,6 @@
 (*
   File: Arrays_Ex.thy
   Author: Bohua Zhan
-
-  Basic examples for arrays.
 *)
 
 section \<open>Arrays\<close>
@@ -10,6 +8,8 @@ section \<open>Arrays\<close>
 theory Arrays_Ex
   imports "../Auto2_Main"
 begin
+
+text \<open>Basic examples for arrays.\<close>
 
 subsection \<open>List swap\<close>
 

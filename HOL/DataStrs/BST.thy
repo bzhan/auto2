@@ -1,9 +1,6 @@
 (*
   File: BST.thy
   Author: Bohua Zhan
-
-  Verification of functional programs on binary search trees. For
-  basic technique, see comments in Lists_Ex.thy.
 *)
 
 section \<open>Binary search tree\<close>
@@ -11,6 +8,11 @@ section \<open>Binary search tree\<close>
 theory BST
   imports Lists_Ex
 begin
+
+text \<open>
+  Verification of functional programs on binary search trees. For
+  basic technique, see comments in Lists_Ex.thy.
+\<close>
 
 subsection \<open>Definition and setup for trees\<close>
 

@@ -1,9 +1,6 @@
 (*
   File: RBTree.thy
   Author: Bohua Zhan
-
-  Verification of functional red-black trees. For general technique,
-  see Lists_Ex.thy.
 *)
 
 section \<open>Red-black trees\<close>
@@ -11,6 +8,11 @@ section \<open>Red-black trees\<close>
 theory RBTree
   imports Lists_Ex
 begin
+
+text \<open>
+  Verification of functional red-black trees. For general technique,
+  see Lists_Ex.thy.
+\<close>
 
 subsection \<open>Definition of RBT\<close>
 

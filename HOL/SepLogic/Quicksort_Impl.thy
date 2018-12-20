@@ -1,9 +1,6 @@
 (*
   File: Quicksort_Impl.thy
   Author: Bohua Zhan
-
-  Imperative implementation of quicksort. Also verified in
-  Imperative_HOL/ex/Imperative_Quicksort in the Isabelle library.
 *)
 
 section \<open>Implementation of quicksort\<close>
@@ -11,6 +8,11 @@ section \<open>Implementation of quicksort\<close>
 theory Quicksort_Impl
   imports Arrays_Impl "../DataStrs/Quicksort"
 begin
+
+text \<open>
+  Imperative implementation of quicksort. Also verified in
+  Imperative_HOL/ex/Imperative_Quicksort in the Isabelle library.
+\<close>
 
 partial_function (heap) part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> nat Heap" where
   "part1 a l r p = (

@@ -1,10 +1,6 @@
 (*
   File: LinkedList.thy
   Author: Bohua Zhan
-
-  Examples in linked lists. Definitions and some of the examples are
-  based on List_Seg and Open_List theories in the AFP entry
-  Separation_Logic_Imperative_HOL by Lammich and Meis.
 *)
 
 section \<open>Implementation of linked list\<close>
@@ -12,6 +8,12 @@ section \<open>Implementation of linked list\<close>
 theory LinkedList
   imports SepAuto
 begin
+
+text \<open>
+  Examples in linked lists. Definitions and some of the examples are
+  based on List_Seg and Open_List theories in the AFP entry
+  Separation_Logic_Imperative_HOL by Lammich and Meis.
+\<close>
 
 subsection \<open>List Assertion\<close>
 
