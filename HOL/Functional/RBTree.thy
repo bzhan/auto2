@@ -11,7 +11,7 @@ begin
 
 text \<open>
   Verification of functional red-black trees. For general technique,
-  see Lists_Ex.thy.
+  see Lists\_Ex.thy.
 \<close>
 
 subsection \<open>Definition of RBT\<close>

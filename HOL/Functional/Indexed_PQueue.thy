@@ -13,7 +13,7 @@ text \<open>
   Verification of indexed priority queue: functional part.
 
   The data structure is also verified in the AFP entry
-  Refine_Imperative_HOL by Peter Lammich.
+  Refine\_Imperative\_HOL by Peter Lammich.
 \<close>
 
 subsection \<open>Successor functions, eq-pred predicate\<close>

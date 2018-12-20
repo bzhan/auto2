@@ -21,7 +21,7 @@ fun gcd_fun :: "nat \<Rightarrow> nat \<Rightarrow> nat" where
   "gcd_fun a b = (if b = 0 then a else gcd_fun b (a mod b))"
 
 text \<open>The fun package automatically generates induction rule upon showing
-  termination. This adds the induction rule for the @fun_induct command.\<close>
+  termination. This adds the induction rule for the @fun\_induct command.\<close>
 setup \<open>add_fun_induct_rule (@{term gcd_fun}, @{thm gcd_fun.induct})\<close>
 
 lemma gcd_fun_correct:

@@ -64,7 +64,7 @@ lemma inorder_sorted [rewrite]:
   "tree_sorted t \<longleftrightarrow> strict_sorted (in_traverse t)"
 @proof @induct t @qed
 
-text \<open>Use definition in terms of in_traverse from now on.\<close>
+text \<open>Use definition in terms of in\_traverse from now on.\<close>
 setup \<open>fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps})\<close>
 
 subsection \<open>Invariant on the maximum\<close>

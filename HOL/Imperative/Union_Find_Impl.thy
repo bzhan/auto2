@@ -11,7 +11,7 @@ begin
 
 text \<open>
   Development follows theory Union_Find of AFP entry
-  Separation_Logic_Imperative_HOL by Lammich and Meis.
+  Separation\_Logic\_Imperative\_HOL by Lammich and Meis.
 \<close>
 
 type_synonym uf = "nat array \<times> nat array"
@@ -27,7 +27,7 @@ definition uf_init :: "nat \<Rightarrow> uf Heap" where
      return (szl, l)
    }"
 
-text \<open>Correctness of uf_init.\<close>
+text \<open>Correctness of uf\_init.\<close>
 theorem uf_init_rule [hoare_triple]:
   "<emp> uf_init n <is_uf n (uf_init_rel n)>" by auto2
   

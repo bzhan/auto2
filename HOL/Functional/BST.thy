@@ -11,7 +11,7 @@ begin
 
 text \<open>
   Verification of functional programs on binary search trees. For
-  basic technique, see comments in Lists_Ex.thy.
+  basic technique, see comments in Lists\_Ex.thy.
 \<close>
 
 subsection \<open>Definition and setup for trees\<close>
@@ -68,7 +68,7 @@ lemma inorder_pairs_sorted [rewrite]:
   "tree_sorted t \<longleftrightarrow> strict_sorted (map fst (in_traverse_pairs t))"
 @proof @induct t @qed
 
-text \<open>Use definition in terms of in_traverse from now on.\<close>
+text \<open>Use definition in terms of in\_traverse from now on.\<close>
 setup \<open>fold del_prfstep_thm (@{thms tree_set.simps} @ @{thms tree_sorted.simps})\<close>
 
 subsection \<open>Rotation on trees\<close>

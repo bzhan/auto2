@@ -13,7 +13,7 @@ text \<open>
   Elementary number theory of primes, up to the proof of infinitude
   of primes and the unique factorization theorem.
 
-  Follows the development in HOL/Computational_Algebra/Primes.thy.
+  Follows the development in HOL/Computational\_Algebra/Primes.thy.
 \<close>
 
 subsection \<open>Basic definition\<close>

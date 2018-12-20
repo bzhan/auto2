@@ -11,7 +11,7 @@ begin
   
 text \<open>
   Partial equivalence relations, following
-  Collections/Lib/Partial_Equivalence_Relation in the AFP.
+  Collections/Lib/Partial\_Equivalence\_Relation in the AFP.
 \<close>
 
 definition part_equiv :: "('a \<times> 'a) set \<Rightarrow> bool" where [rewrite]:

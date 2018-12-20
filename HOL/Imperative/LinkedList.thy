@@ -11,8 +11,8 @@ begin
 
 text \<open>
   Examples in linked lists. Definitions and some of the examples are
-  based on List_Seg and Open_List theories in the AFP entry
-  Separation_Logic_Imperative_HOL by Lammich and Meis.
+  based on List\_Seg and Open\_List theories in the AFP entry
+  Separation\_Logic\_Imperative\_HOL by Lammich and Meis.
 \<close>
 
 subsection \<open>List Assertion\<close>

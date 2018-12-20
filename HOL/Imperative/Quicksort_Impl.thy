@@ -11,7 +11,7 @@ begin
 
 text \<open>
   Imperative implementation of quicksort. Also verified in
-  Imperative_HOL/ex/Imperative_Quicksort in the Isabelle library.
+  Imperative\_HOL/ex/Imperative\_Quicksort in the Isabelle library.
 \<close>
 
 partial_function (heap) part1 :: "'a::{heap,linorder} array \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> 'a \<Rightarrow> nat Heap" where

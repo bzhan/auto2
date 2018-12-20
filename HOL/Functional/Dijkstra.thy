@@ -12,7 +12,7 @@ begin
 text \<open>
   Verification of Dijkstra's algorithm: function part.
 
-  The algorithm is also verified in the AFP entry Dijkstra_Shortest_Path
+  The algorithm is also verified in the AFP entry Dijkstra\_Shortest\_Path
   by Benedikt Nordhoff and Peter Lammich.
 \<close>
 
