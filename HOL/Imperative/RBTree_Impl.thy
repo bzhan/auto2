@@ -6,7 +6,7 @@
 section \<open>Implementation of red-black tree\<close>
 
 theory RBTree_Impl
-  imports SepAuto "../DataStrs/RBTree"
+  imports SepAuto "../Functional/RBTree"
 begin
 
 text \<open>

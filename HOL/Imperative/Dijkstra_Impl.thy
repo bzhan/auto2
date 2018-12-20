@@ -6,7 +6,7 @@
 section \<open>Implementation of Dijkstra's algorithm\<close>
 
 theory Dijkstra_Impl
-  imports Indexed_PQueue_Impl "../DataStrs/Dijkstra"
+  imports Indexed_PQueue_Impl "../Functional/Dijkstra"
 begin
 
 text \<open>

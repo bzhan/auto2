@@ -6,7 +6,7 @@
 section \<open>Implementation of union find\<close>
 
 theory Union_Find_Impl
-  imports SepAuto "../DataStrs/Union_Find"
+  imports SepAuto "../Functional/Union_Find"
 begin
 
 text \<open>

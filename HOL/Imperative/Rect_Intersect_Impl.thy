@@ -6,7 +6,7 @@
 section \<open>Implementation of rectangle intersection\<close>
 
 theory Rect_Intersect_Impl
-  imports "../DataStrs/Rect_Intersect" IntervalTree_Impl Quicksort_Impl
+  imports "../Functional/Rect_Intersect" IntervalTree_Impl Quicksort_Impl
 begin
 
 text \<open>Imperative version of rectangle-intersection algorithm.\<close>

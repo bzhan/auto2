@@ -6,7 +6,7 @@
 section \<open>Implementation of the indexed priority queue\<close>
 
 theory Indexed_PQueue_Impl
-  imports DynamicArray "../DataStrs/Indexed_PQueue"
+  imports DynamicArray "../Functional/Indexed_PQueue"
 begin
 
 text \<open>

@@ -6,7 +6,7 @@
 section \<open>Implementation of binary search tree\<close>
 
 theory BST_Impl
-  imports SepAuto "../DataStrs/BST"
+  imports SepAuto "../Functional/BST"
 begin
 
 text \<open>Imperative version of binary search trees.\<close>

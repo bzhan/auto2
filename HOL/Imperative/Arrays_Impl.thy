@@ -6,7 +6,7 @@
 section \<open>Implementation of arrays\<close>
 
 theory Arrays_Impl
-  imports SepAuto "../DataStrs/Arrays_Ex"
+  imports SepAuto "../Functional/Arrays_Ex"
 begin
 
 text \<open>

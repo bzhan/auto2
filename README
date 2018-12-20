@@ -18,11 +18,11 @@ AUTO2, a saturation-based heuristic prover for higher-order logic (ITP
 
 Description of the examples:
 
-- HOL/DataStrs: verification of functional programs. Include material
+- HOL/Functional: verification of functional programs. Include material
   on lists, trees, priority queue, Dijkstra's algorithm, and rectangle
   intersection.
 
-- HOL/SepLogic: verification of imperative programs using separation
+- HOL/Imperative: verification of imperative programs using separation
   logic. Foundation of separation logic, and several of the examples,
   follow "A Separation Logic Framework for Imperative HOL" in Isabelle
   AFP.

@@ -17,28 +17,28 @@ session Auto2_HOL = HOL +
     "HOL/Primes_Ex"
 
     (* Functional programs *)
-    "HOL/DataStrs/BST"
-    "HOL/DataStrs/Lists_Ex"
-    "HOL/DataStrs/Connectivity"
-    "HOL/DataStrs/Dijkstra"
-    "HOL/DataStrs/Interval_Tree"
-    "HOL/DataStrs/Quicksort"
-    "HOL/DataStrs/Indexed_PQueue"
-    "HOL/DataStrs/RBTree"
-    "HOL/DataStrs/Rect_Intersect"
+    "HOL/Functional/BST"
+    "HOL/Functional/Lists_Ex"
+    "HOL/Functional/Connectivity"
+    "HOL/Functional/Dijkstra"
+    "HOL/Functional/Interval_Tree"
+    "HOL/Functional/Quicksort"
+    "HOL/Functional/Indexed_PQueue"
+    "HOL/Functional/RBTree"
+    "HOL/Functional/Rect_Intersect"
 
     (* Imperative programs *)
-    "HOL/SepLogic/GCD_Impl"
-    "HOL/SepLogic/LinkedList"
-    "HOL/SepLogic/BST_Impl"
-    "HOL/SepLogic/RBTree_Impl"
-    "HOL/SepLogic/Quicksort_Impl"
-    "HOL/SepLogic/Connectivity_Impl"
-    "HOL/SepLogic/Dijkstra_Impl"
-    "HOL/SepLogic/Rect_Intersect_Impl"
+    "HOL/Imperative/GCD_Impl"
+    "HOL/Imperative/LinkedList"
+    "HOL/Imperative/BST_Impl"
+    "HOL/Imperative/RBTree_Impl"
+    "HOL/Imperative/Quicksort_Impl"
+    "HOL/Imperative/Connectivity_Impl"
+    "HOL/Imperative/Dijkstra_Impl"
+    "HOL/Imperative/Rect_Intersect_Impl"
 
   theories [document = false]
-    "HOL/SepLogic/Sep_Examples"
+    "HOL/Imperative/Sep_Examples"
 
   document_files
     "root.tex"

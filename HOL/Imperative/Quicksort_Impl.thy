@@ -6,7 +6,7 @@
 section \<open>Implementation of quicksort\<close>
 
 theory Quicksort_Impl
-  imports Arrays_Impl "../DataStrs/Quicksort"
+  imports Arrays_Impl "../Functional/Quicksort"
 begin
 
 text \<open>

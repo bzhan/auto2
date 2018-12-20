@@ -2,7 +2,7 @@
   File: Sep_Examples.thy
   Author: Bohua Zhan
 
-  Overall directory of examples in SepLogic.
+  Overall directory of examples in Imperative.
 *)
 
 theory Sep_Examples

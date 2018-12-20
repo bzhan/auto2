@@ -6,7 +6,7 @@
 section \<open>Implementation of interval tree\<close>
 
 theory IntervalTree_Impl
-  imports SepAuto "../DataStrs/Interval_Tree"
+  imports SepAuto "../Functional/Interval_Tree"
 begin
 
 text \<open>Imperative version of interval tree.\<close>

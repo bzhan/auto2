@@ -6,7 +6,7 @@
 section \<open>Implementation of connectivity on graphs\<close>
 
 theory Connectivity_Impl
-  imports Union_Find_Impl "../DataStrs/Connectivity"
+  imports Union_Find_Impl "../Functional/Connectivity"
 begin
 
 text \<open>Imperative version of graph-connectivity example.\<close>
