@@ -11,7 +11,7 @@ begin
 
 text \<open>
   Examples in linked lists. Definitions and some of the examples are
-  based on List\_Seg and Open\_List theories in \cite{seplogic-afp}
+  based on List\_Seg and Open\_List theories in \cite{Separation_Logic_Imperative_HOL-AFP}
   by Lammich and Meis.
 \<close>
 

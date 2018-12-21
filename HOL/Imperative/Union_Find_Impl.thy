@@ -11,7 +11,7 @@ begin
 
 text \<open>
   Development follows theory Union\_Find in
-  \cite{seplogic-afp} by Lammich and Meis.
+  \cite{Separation_Logic_Imperative_HOL-AFP} by Lammich and Meis.
 \<close>
 
 type_synonym uf = "nat array \<times> nat array"

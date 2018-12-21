@@ -10,9 +10,8 @@ theory Indexed_PQueue
 begin
 
 text \<open>
-  Verification of indexed priority queue: functional part.
-
-  The data structure is also verified by Lammich in
+  Verification of indexed priority queue: functional part. The data
+  structure is also verified by Lammich in
   \cite{Refine_Imperative_HOL-AFP}.
 \<close>
 

@@ -12,8 +12,8 @@ begin
 text \<open>
   Functional version of quicksort.
 
-  Implementation of quicksort is largely based on
-  HOL/Imperative\_HOL/ex/Imperative\_Quicksort.thy in the Isabelle
+  Implementation of quicksort is largely based on theory
+  Imperative\_Quicksort in HOL/Imperative\_HOL/ex in the Isabelle
   library.
 \<close>
 

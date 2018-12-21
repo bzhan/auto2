@@ -10,9 +10,8 @@ theory Dijkstra_Impl
 begin
 
 text \<open>
-  Imperative implementation of Dijkstra's shortest path algorithm.
-
-  The algorithm is also verified by Nordhoff and Lammich in
+  Imperative implementation of Dijkstra's shortest path algorithm. The
+  algorithm is also verified by Nordhoff and Lammich in
   \cite{Dijkstra_Shortest_Path-AFP}.
 \<close>
 

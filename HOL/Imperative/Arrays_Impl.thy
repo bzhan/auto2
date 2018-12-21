@@ -12,8 +12,8 @@ begin
 text \<open>
   Imperative implementations of common array operations.
 
-  Imperative reverse on arrays is also verified in
-  Imperative\_HOL/ex/Imperative\_Reverse in the Isabelle library.
+  Imperative reverse on arrays is also verified in theory Imperative\_Reverse
+  in Imperative\_HOL/ex in the Isabelle library.
 \<close>
 
 subsection \<open>Array copy\<close>

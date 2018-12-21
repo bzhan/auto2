@@ -10,7 +10,7 @@ theory Union_Find
 begin
 
 text \<open>
-  Development follows theory Union\_Find in \cite{seplogic-afp}.
+  Development follows theory Union\_Find in \cite{Separation_Logic_Imperative_HOL-AFP}.
 \<close>
 
 subsection \<open>Representing a partial equivalence relation using rep\_of array\<close>

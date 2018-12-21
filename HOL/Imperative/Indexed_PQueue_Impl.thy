@@ -10,10 +10,8 @@ theory Indexed_PQueue_Impl
 begin
 
 text \<open>
-  Imperative implementation of indexed priority queue.
-
-  The data structure is also verified in \cite{Refine_Imperative_HOL-AFP}
-  by Peter Lammich.
+  Imperative implementation of indexed priority queue. The data structure
+  is also verified in \cite{Refine_Imperative_HOL-AFP} by Peter Lammich.
 \<close>
 
 datatype 'a indexed_pqueue =
