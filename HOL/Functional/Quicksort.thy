@@ -12,7 +12,9 @@ begin
 text \<open>
   Functional version of quicksort.
 
-  Code for quicksort is largely based on HOL/Imperative\_HOL/ex/Imperative\_Quicksort.thy.
+  Implementation of quicksort is largely based on
+  HOL/Imperative\_HOL/ex/Imperative\_Quicksort.thy in the Isabelle
+  library.
 \<close>
 
 subsection \<open>Outer remains\<close>

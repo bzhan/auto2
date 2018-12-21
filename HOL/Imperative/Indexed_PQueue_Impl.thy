@@ -12,7 +12,7 @@ begin
 text \<open>
   Imperative implementation of indexed priority queue.
 
-  The data structure is also verified in the AFP entry Refine\_Imperative\_HOL
+  The data structure is also verified in \cite{Refine_Imperative_HOL-AFP}
   by Peter Lammich.
 \<close>
 

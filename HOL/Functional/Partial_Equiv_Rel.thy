@@ -10,8 +10,8 @@ theory Partial_Equiv_Rel
 begin
   
 text \<open>
-  Partial equivalence relations, following
-  Collections/Lib/Partial\_Equivalence\_Relation in the AFP.
+  Partial equivalence relations, following theory
+  Lib/Partial\_Equivalence\_Relation in \cite{Collections-AFP}.
 \<close>
 
 definition part_equiv :: "('a \<times> 'a) set \<Rightarrow> bool" where [rewrite]:

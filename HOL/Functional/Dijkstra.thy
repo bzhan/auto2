@@ -12,8 +12,8 @@ begin
 text \<open>
   Verification of Dijkstra's algorithm: function part.
 
-  The algorithm is also verified in the AFP entry Dijkstra\_Shortest\_Path
-  by Benedikt Nordhoff and Peter Lammich.
+  The algorithm is also verified by Nordhoff and Lammich in
+  \cite{Dijkstra_Shortest_Path-AFP}.
 \<close>
 
 subsection \<open>Graphs\<close>

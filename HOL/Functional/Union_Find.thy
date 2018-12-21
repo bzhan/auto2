@@ -10,8 +10,7 @@ theory Union_Find
 begin
 
 text \<open>
-  Development follows theory Union\_Find of AFP entry
-  Separation\_Logic\_Imperative\_HOL by Lammich and Meis.
+  Development follows theory Union\_Find in \cite{seplogic-afp}.
 \<close>
 
 subsection \<open>Representing a partial equivalence relation using rep\_of array\<close>

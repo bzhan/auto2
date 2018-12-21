@@ -11,8 +11,7 @@ begin
 
 text \<open>
   Functional version of algorithm for detecting rectangle intersection.
-  See Exercise 14.3-7 in "Introduction to Algorithms" by Cormen,
-  Leiserson, Rivest, and Stein for a reference.
+  See \cite[Exercise 14.3-7]{cormen2009introduction} for a reference.
 \<close>
 
 subsection \<open>Definition of rectangles\<close>

@@ -12,8 +12,8 @@ begin
 text \<open>
   Imperative implementation of Dijkstra's shortest path algorithm.
 
-  The algorithm is also verified in the AFP entry Dijkstra\_Shortest\_Path
-  by Benedikt Nordhoff and Peter Lammich.
+  The algorithm is also verified by Nordhoff and Lammich in
+  \cite{Dijkstra_Shortest_Path-AFP}.
 \<close>
 
 datatype dijkstra_state = Dijkstra_State (est_a: "nat array") (heap_pq: "nat indexed_pqueue")

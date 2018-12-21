@@ -12,8 +12,8 @@ begin
 text \<open>
   Verification of indexed priority queue: functional part.
 
-  The data structure is also verified in the AFP entry
-  Refine\_Imperative\_HOL by Peter Lammich.
+  The data structure is also verified by Lammich in
+  \cite{Refine_Imperative_HOL-AFP}.
 \<close>
 
 subsection \<open>Successor functions, eq-pred predicate\<close>

@@ -10,13 +10,12 @@ theory Lists_Ex
 begin
 
 text \<open>
-  Examples on lists. The itrev example comes from Section 2.4 in
-  "Programming and Proving in Isabelle/HOL".
+  Examples on lists. The itrev example comes from
+  \cite[Section 2.4]{prog-prove}.
 
   The development here of insertion and deletion on lists is
   essential for verifying functional binary search trees and
-  red-black trees. The idea, following "Automatic Functional
-  Correctness Proofs for Functional Search Trees" by Tobias Nipkow,
+  red-black trees. The idea, following Nipkow~\cite{nipkow16},
   is that showing sorted-ness and preservation of multisets for trees
   should be done on the in-order traversal of the tree.
 \<close>
