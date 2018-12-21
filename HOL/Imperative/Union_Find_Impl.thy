@@ -10,7 +10,7 @@ theory Union_Find_Impl
 begin
 
 text \<open>
-  Development follows theory Union_Find of AFP entry
+  Development follows theory Union\_Find of AFP entry
   Separation\_Logic\_Imperative\_HOL by Lammich and Meis.
 \<close>
 

@@ -10,7 +10,7 @@ theory SepAuto
 begin
 
 text \<open>
-  Separation logic for Imperative_HOL, and setup of auto2.
+  Separation logic for Imperative\_HOL, and setup of auto2.
 
   The development of separation logic here follows
   Separation\_Logic\_Imperative\_HOL (by Lammich and Meis) in the AFP.

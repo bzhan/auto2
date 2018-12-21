@@ -12,7 +12,7 @@ begin
 text \<open>
   Functional version of quicksort.
 
-  Code for quicksort is largely based on HOL/Imperative\_HOL/ex/Imperative_Quicksort.thy.
+  Code for quicksort is largely based on HOL/Imperative\_HOL/ex/Imperative\_Quicksort.thy.
 \<close>
 
 subsection \<open>Outer remains\<close>
