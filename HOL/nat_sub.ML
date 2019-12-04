@@ -38,7 +38,7 @@ struct
 
 val fheads = [@{term "(+) :: (nat => nat => nat)"},
               @{term "(-) :: (nat => nat => nat)"},
-              @{term "( * ) :: (nat => nat => nat)"}]
+              @{term "(*) :: (nat => nat => nat)"}]
 
 val plus_info = Nat_Util.plus_ac_on_typ @{theory} natT
 val is_numc = UtilArith.is_numc

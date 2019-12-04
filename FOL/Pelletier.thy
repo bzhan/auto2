@@ -207,10 +207,10 @@ theorem p55:
    \<forall>x. H(a,x) \<longrightarrow> \<not>H(c,x) \<Longrightarrow>
    \<forall>x. x \<noteq> b \<longrightarrow> H(a,x) \<Longrightarrow>
    \<forall>x. \<not>R(x,a) \<longrightarrow> H(b,x) \<Longrightarrow>
-   \<forall>x. H(a,x) \<longrightarrow> H(b,x) \<Longrightarrow>  (* typo in text *)
+   \<forall>x. H(a,x) \<longrightarrow> H(b,x) \<Longrightarrow>
    \<forall>x. \<exists>y. \<not>H(x,y) \<Longrightarrow>
    a \<noteq> b \<Longrightarrow>
-   K(a,a)"
+   K(a,a)" (* typo in text *)
 @proof
   @case "K(b,a)" @with @have "\<forall>x. H(b,x)" @end
 @qed

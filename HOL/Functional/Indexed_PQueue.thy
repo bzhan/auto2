@@ -179,7 +179,7 @@ subsection \<open>Basic operations on indexed\_queue\<close>
 
 fun idx_pqueue_swap_fun :: "(nat \<times> 'a) list \<times> nat option list \<Rightarrow> nat \<Rightarrow> nat \<Rightarrow> (nat \<times> 'a) list \<times> nat option list" where
   "idx_pqueue_swap_fun (xs, m) i j = (
-    list_swap xs i j, (m [fst (xs ! i) := Some j] [fst (xs ! j) := Some i]))"
+    list_swap xs i j, ((m [fst (xs ! i) := Some j]) [fst (xs ! j) := Some i]))"
 
 lemma index_of_pqueue_swap [forward_arg]:
   "i < length xs \<Longrightarrow> j < length xs \<Longrightarrow> index_of_pqueue (xs, m) \<Longrightarrow>
