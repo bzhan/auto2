@@ -143,7 +143,7 @@ fun index_reps ctxt =
     end
 
 fun declare_term str ctxt =
-    Variable.auto_fixes (Syntax.read_term ctxt str) ctxt
+    Proof_Context.augment (Syntax.read_term ctxt str) ctxt
 
 (* First part: test internal functions. *)
 

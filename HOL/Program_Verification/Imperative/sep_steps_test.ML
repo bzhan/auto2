@@ -8,7 +8,7 @@
 local
   open SepUtil
   val ctxt = @{context}
-  val ctxt' = ctxt |> fold Variable.auto_fixes [
+  val ctxt' = ctxt |> fold Proof_Context.augment [
         Free ("P", assnT), Free ("Q", assnT), Free ("R", assnT),
         Free ("S", natT --> assnT), Free ("T", natT --> assnT)]
 in

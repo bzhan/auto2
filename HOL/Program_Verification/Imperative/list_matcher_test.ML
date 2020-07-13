@@ -35,7 +35,7 @@ local
             @{term "[x::nat]"},
             @{term "[xs::nat list, ys, zs]"}]
 
-  val ctxt' = ctxt |> fold Variable.auto_fixes ts
+  val ctxt' = ctxt |> fold Proof_Context.augment ts
                    |> RewriteTable.add_term ([], Thm.cterm_of ctxt (Free ("P", assnT))) |> snd
                    |> add_rewrite [] ("n1", "None::nat node ref option") |> snd
                    |> add_rewrite [] ("s1", "Some pp") |> snd

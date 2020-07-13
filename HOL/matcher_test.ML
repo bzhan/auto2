@@ -45,10 +45,10 @@ fun add_prim_id (prim_id, id) ctxt =
     end
 
 fun declare_term str ctxt =
-    Variable.auto_fixes (Syntax.read_term ctxt str) ctxt
+    Proof_Context.augment (Syntax.read_term ctxt str) ctxt
 
 fun declare_pat str ctxt =
-    Variable.auto_fixes (Proof_Context.read_term_pattern ctxt str) ctxt
+    Proof_Context.augment (Proof_Context.read_term_pattern ctxt str) ctxt
 
 fun add_rewrite id (str1, str2) ctxt =
     let
