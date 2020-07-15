@@ -13,7 +13,7 @@ theory Auto2_HOL
     and "@induct" "@fun_induct" "@case_induct" "@prop_induct" "@cases" :: prf_decl % "proof"
     and "@apply_induct_hyp" :: prf_decl % "proof"
     and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
-    and "@qed" :: prf_decl % "proof"
+    and "@qed" :: qed_block % "proof"
     and "@with" "where" "arbitrary" "@rule" :: quasi_command
 begin
 
