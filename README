@@ -2,7 +2,7 @@ AUTO2 - a best-first-search theorem prover implemented in Isabelle
 
 Please see doc.pdf for documentation.
 
-Current version of the program works with Isabelle2017.
+Current version of the program works with Isabelle2020.
 
 Papers:
 

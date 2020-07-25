@@ -10,7 +10,7 @@ theory Auto2_FOL
   keywords "@proof" :: prf_block % "proof"
     and "@have" "@case" "@obtain" "@let" "@contradiction" :: prf_decl % "proof"
     and "@subgoal" "@endgoal" "@end" :: prf_decl % "proof"
-    and "@qed" :: prf_decl % "proof"
+    and "@qed" :: qed_block % "proof"
     and "@induct" "@strong_induct" "@var_induct" :: prf_decl % "proof"
     and "@with" "where" "arbitrary" "@rule" :: quasi_command
 begin

@@ -94,7 +94,7 @@ setup \<open>add_forward_prfstep @{thm subsetI}\<close>
 setup \<open>add_backward_prfstep_cond @{thm subsetI} [with_score 500]\<close>
 
 setup \<open>add_resolve_prfstep @{thm empty_subsetI}\<close>
-setup \<open>add_forward_prfstep @{thm set_mp}\<close>
+setup \<open>add_forward_prfstep @{thm subsetD}\<close>
 lemma subset_single [rewrite]: "{a} \<subseteq> B \<longleftrightarrow> a \<in> B" by simp
 setup \<open>add_resolve_prfstep @{thm Set.basic_monos(1)}\<close>
 setup \<open>add_resolve_prfstep @{thm Set.Un_upper1}\<close>

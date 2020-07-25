@@ -1,12 +1,8 @@
-(*
-  File: Auto2_HOL.thy
-  Author: Bohua Zhan
-
-  Main file for auto2 setup in HOL.
-*)
-
-theory Auto2_HOL
-  imports HOL_Base
+\<^marker>\<open>creator "Kevin Kappelmann"\<close>
+chapter \<open>Auto2 for Isabelle/Set\<close>
+theory Auto2_Set
+  (*imports HOL_Base*)
+  imports HOL.HOL
   keywords "@proof" :: prf_block % "proof"
     and "@have" "@case" "@obtain" "@let" "@contradiction" "@strong_induct" :: prf_decl % "proof"
     and "@unfold" :: prf_decl % "proof"
