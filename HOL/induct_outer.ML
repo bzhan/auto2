@@ -38,7 +38,6 @@ struct
 structure Data = Theory_Data (
   type T = ((term * thm) list) Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
   val merge = Symtab.merge_list (eq_fst (op =))
 )
 

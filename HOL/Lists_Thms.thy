@@ -37,8 +37,8 @@ lemma append_is_empty [forward]: "xs @ ys = [] \<Longrightarrow> xs = [] \<and> 
 
 lemma cons_to_append [rewrite_back]: "a # b = [a] @ b" by simp
 
-ML_file "list_ac.ML"
-ML_file "list_ac_test.ML"
+ML_file \<open>list_ac.ML\<close>
+ML_file \<open>list_ac_test.ML\<close>
 
 subsection \<open>Showing two lists are equal\<close>
 
@@ -78,40 +78,52 @@ setup \<open>add_rewrite_rule @{thm List.nth_Cons'}\<close>
 setup \<open>add_rewrite_rule @{thm List.nth_append}\<close>
 setup \<open>add_forward_prfstep_cond @{thm nth_mem} [with_term "?xs ! ?n"]\<close>
 
-subsection \<open>sorted\<close>
+subsection \<open>sorted\<close> (*TEMPORARY VERSION BY BOHUA pending a treatment of sorted_wrt*)
+
+definition sorted :: "'a::linorder list \<Rightarrow> bool" where
+ "sorted = List.sorted"
+declare sorted_def[simp]
 
 lemma sorted_Nil [resolve]: "sorted []" by simp
 lemma sorted_single [resolve]: "sorted [x]" by simp
-setup \<open>add_backward_prfstep (equiv_backward_th @{thm sorted.simps(2)})\<close>
+
+lemma sorted_simps2: "sorted (x # ys) = (Ball (set ys) ((\<le>) x) \<and> sorted ys)" by simp
+setup \<open>add_backward_prfstep (equiv_backward_th @{thm sorted_simps2})\<close>
 
 lemma sorted_ConsD1 [forward]: "sorted (x # xs) \<Longrightarrow> sorted xs"
-  using sorted.simps(2) by blast
+ using sorted_simps(2) by simp
 lemma sorted_ConsD2 [forward, backward2]: "sorted (x # xs) \<Longrightarrow> y \<in> set xs \<Longrightarrow> x \<le> y"
-  using sorted.simps(2) by blast
+ using sorted_simps(2) by simp
 
 lemma sorted_appendI [backward]:
-  "sorted xs \<and> sorted ys \<and> (\<forall>x\<in>set xs. \<forall>y\<in>set ys. x \<le> y) \<Longrightarrow> sorted (xs @ ys)"
-  by (simp add: sorted_append)
+ "sorted xs \<and> sorted ys \<and> (\<forall>x\<in>set xs. \<forall>y\<in>set ys. x \<le> y) \<Longrightarrow> sorted (xs @ ys)"
+ by (simp add: sorted_append)
 
 lemma sorted_appendE [forward]: "sorted (xs @ ys) \<Longrightarrow> sorted xs \<and> sorted ys"
-  by (simp add: sorted_append)
+ by (simp add: sorted_append)
 
 lemma sorted_appendE2 [forward]:
-  "sorted (xs @ ys) \<Longrightarrow> x \<in> set xs \<Longrightarrow> \<forall>y\<in>set ys. x \<le> y"
-  using sorted_append by blast
+ "sorted (xs @ ys) \<Longrightarrow> x \<in> set xs \<Longrightarrow> \<forall>y\<in>set ys. x \<le> y"
+ using sorted_append by (simp add: sorted_append)
 
 lemma sorted_nth_mono' [backward]:
-  "sorted xs \<Longrightarrow> j < length xs \<Longrightarrow> i \<le> j \<Longrightarrow> xs ! i \<le> xs ! j" using sorted_nth_mono by auto
+ "sorted xs \<Longrightarrow> j < length xs \<Longrightarrow> i \<le> j \<Longrightarrow> xs ! i \<le> xs ! j"
+ using sorted_nth_mono by auto
 
 lemma sorted_nth_mono_less [forward]:
-  "sorted xs \<Longrightarrow> i < length xs \<Longrightarrow> xs ! i < xs ! j \<Longrightarrow> i < j" by (meson leD not_le_imp_less sorted_nth_mono)
+ "sorted xs \<Longrightarrow> i < length xs \<Longrightarrow> xs ! i < xs ! j \<Longrightarrow> i < j"
+ by (meson leD not_le_imp_less sorted_nth_mono')
 
 subsection \<open>sort\<close>
 
+lemma sorted_sort: "sorted (sort xs)" by simp
 setup \<open>add_forward_prfstep_cond @{thm sorted_sort} [with_term "sort ?xs"]\<close>
 setup \<open>add_rewrite_rule @{thm length_sort}\<close>
 setup \<open>add_rewrite_rule @{thm mset_sort}\<close>
 setup \<open>add_rewrite_rule @{thm set_sort}\<close>
+
+lemma properties_for_sort:
+ "mset ys = mset xs \<Longrightarrow> sorted ys \<Longrightarrow> sort xs = ys" using properties_for_sort by simp
 setup \<open>add_backward_prfstep @{thm properties_for_sort}\<close>
 lemma sort_Nil [rewrite]: "sort [] = []" by auto
 lemma sort_singleton [rewrite]: "sort [a] = [a]" by auto

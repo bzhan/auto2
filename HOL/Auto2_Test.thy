@@ -9,12 +9,12 @@ theory Auto2_Test
   imports Auto2_Main
 begin
 
-ML_file "util_test.ML"
-ML_file "rewrite_test.ML"
-ML_file "matcher_test.ML"
-ML_file "normalize_test.ML"
-ML_file "logic_steps_test.ML"
+ML_file \<open>util_test.ML\<close>
+ML_file \<open>rewrite_test.ML\<close>
+ML_file \<open>matcher_test.ML\<close>
+ML_file \<open>normalize_test.ML\<close>
+ML_file \<open>logic_steps_test.ML\<close>
 
-ML_file "acdata_test.ML"
+ML_file \<open>acdata_test.ML\<close>
 
 end

@@ -353,8 +353,8 @@ lemma update_idx_pqueue_correct [forward_arg]:
   "index_of_pqueue (xs, m) \<Longrightarrow> k < length m \<Longrightarrow>
    index_of_pqueue (update_idx_pqueue_fun k v (xs, m))"
 @proof @unfold "update_idx_pqueue_fun k v (xs, m)"
-  @let "i = the (m ! k)"
-  @let "xs' = list_update xs i (k, v)"
+  @let "i' = the (m ! k)"
+  @let "xs' = list_update xs i' (k, v)"
   @case "m ! k = None"
   @have "index_of_pqueue (xs', m)"
 @qed

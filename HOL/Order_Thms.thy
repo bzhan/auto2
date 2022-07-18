@@ -11,16 +11,16 @@ theory Order_Thms
   imports Logic_Thms HOL.Rat
 begin
 
-ML_file "util_arith.ML"
+ML_file \<open>util_arith.ML\<close>
 setup \<open>Consts.add_const_data ("NUMC", UtilArith.is_numc)\<close>
 
 subsection \<open>Results in class order or preorder\<close>
 
-setup \<open>add_forward_prfstep_cond @{thm Orderings.order_class.order.trans} [with_filt (not_type_filter "a" natT)]\<close>
-setup \<open>add_forward_prfstep_cond @{thm Orderings.order_class.order.strict_trans} [with_filt (not_type_filter "a" natT)]\<close>
-setup \<open>add_forward_prfstep_cond @{thm Orderings.order_le_less_trans} [with_filt (not_type_filter "x" natT)]\<close>
-setup \<open>add_forward_prfstep_cond @{thm Orderings.order_less_le_trans} [with_filt (not_type_filter "x" natT)]\<close>
-setup \<open>add_resolve_prfstep @{thm Orderings.order_class.order.irrefl}\<close>
+setup \<open>add_forward_prfstep_cond @{thm order.trans} [with_filt (not_type_filter "a" natT)]\<close>
+setup \<open>add_forward_prfstep_cond @{thm order.strict_trans} [with_filt (not_type_filter "a" natT)]\<close>
+setup \<open>add_forward_prfstep_cond @{thm order_le_less_trans} [with_filt (not_type_filter "x" natT)]\<close>
+setup \<open>add_forward_prfstep_cond @{thm order_less_le_trans} [with_filt (not_type_filter "x" natT)]\<close>
+setup \<open>add_resolve_prfstep @{thm order.irrefl}\<close>
 setup \<open>add_forward_prfstep_cond @{thm Orderings.le_neq_trans} [with_cond "?a \<noteq> ?b"]\<close>
 setup \<open>add_forward_prfstep_cond @{thm Orderings.order_antisym} [with_filt (order_filter "x" "y"), with_cond "?x \<noteq> ?y"]\<close>
 
@@ -65,7 +65,7 @@ setup \<open>add_backward2_prfstep @{thm Min_eqI}\<close>
 
 subsection \<open>Existence of numbers satisfying inequalities\<close>
 
-lemma exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
+theorem exists_ge [resolve]: "\<exists>k. k \<ge> (i::('a::order))" by auto
 setup \<open>fold add_resolve_prfstep [@{thm lt_ex}, @{thm gt_ex}]\<close>
 setup \<open>add_backward_prfstep @{thm dense}\<close>
 

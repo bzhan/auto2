@@ -525,13 +525,12 @@ fun normalize_meta_horn ctxt ct =
 (* Deconstruct a horn clause !!v_i. A_i ==> B into (v_i, (A_i, B)). *)
 fun strip_meta_horn t =
     case t of
-        Const (@{const_name Pure.all}, _) $ Abs (abs as (_, T, _)) =>
+        Const (@{const_name Pure.all}, _) $ (u as Abs _) =>
         let
-          val (x, body) = Term.dest_abs abs
-          val var = Free (x, T)
+          val (v, body) = Term.dest_abs_global u
           val (vars, (assums, concl)) = strip_meta_horn body
         in
-          (var :: vars, (assums, concl))
+          (Free v :: vars, (assums, concl))
         end
       | @{const Pure.imp} $ P $ Q =>
         let
@@ -634,7 +633,7 @@ fun subst_thm_thy thy (tyinsts, insts) th =
           ((v, Envir.subst_type tyinsts T), Thm.global_cterm_of thy u)
       val ts = map process_tenv (Vartab.dest insts)
     in
-      th |> Drule.instantiate_normalize (tys, ts)
+      th |> Drule.instantiate_normalize (TVars.make tys, Vars.make ts)
     end
 
 fun subst_thm ctxt (tyinsts, insts) th =
@@ -865,7 +864,7 @@ fun test_conv ctxt cv err_str (str1, str2) =
 (* term_pat and typ_pat, from Isabelle Cookbook. *)
 val term_pat_setup =
     let
-      val parser = Args.context -- Scan.lift Args.embedded_inner_syntax
+      val parser = Args.context -- Scan.lift Parse.embedded_inner_syntax
       fun term_pat (ctxt, str) =
           str |> Proof_Context.read_term_pattern ctxt
               |> ML_Syntax.print_term
@@ -876,7 +875,7 @@ val term_pat_setup =
 
 val cterm_pat_setup =
     let
-      val parser = Args.context -- Scan.lift Args.embedded_inner_syntax
+      val parser = Args.context -- Scan.lift Parse.embedded_inner_syntax
       fun cterm_pat (ctxt, str) =
           str |> Proof_Context.read_term_pattern ctxt
               |> ML_Syntax.print_term
@@ -888,7 +887,7 @@ val cterm_pat_setup =
 
 val type_pat_setup =
     let
-      val parser = Args.context -- Scan.lift Args.embedded_inner_syntax
+      val parser = Args.context -- Scan.lift Parse.embedded_inner_syntax
       fun typ_pat (ctxt, str) =
           let
             val ctxt' = Proof_Context.set_mode Proof_Context.mode_schematic ctxt

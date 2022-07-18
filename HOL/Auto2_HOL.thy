@@ -17,34 +17,34 @@ theory Auto2_HOL
     and "@with" "where" "arbitrary" "@rule" :: quasi_command
 begin
 
-ML_file "../util.ML"
-ML_file "../util_base.ML"
-ML_file "auto2_hol.ML"
-ML_file "../util_logic.ML"
-ML_file "../box_id.ML"
-ML_file "../consts.ML"
-ML_file "../property.ML"
-ML_file "../wellform.ML"
-ML_file "../wfterm.ML"
-ML_file "../rewrite.ML"
-ML_file "../propertydata.ML"
-ML_file "../matcher.ML"
-ML_file "../items.ML"
-ML_file "../wfdata.ML"
-ML_file "../auto2_data.ML"
-ML_file "../status.ML"
-ML_file "../normalize.ML"
-ML_file "../proofsteps.ML"
-ML_file "../auto2_state.ML"
-ML_file "../logic_steps.ML"
-ML_file "../auto2.ML"
-ML_file "../auto2_outer.ML"
+ML_file \<open>../util.ML\<close>
+ML_file \<open>../util_base.ML\<close>
+ML_file \<open>auto2_hol.ML\<close>
+ML_file \<open>../util_logic.ML\<close>
+ML_file \<open>../box_id.ML\<close>
+ML_file \<open>../consts.ML\<close>
+ML_file \<open>../property.ML\<close>
+ML_file \<open>../wellform.ML\<close>
+ML_file \<open>../wfterm.ML\<close>
+ML_file \<open>../rewrite.ML\<close>
+ML_file \<open>../propertydata.ML\<close>
+ML_file \<open>../matcher.ML\<close>
+ML_file \<open>../items.ML\<close>
+ML_file \<open>../wfdata.ML\<close>
+ML_file \<open>../auto2_data.ML\<close>
+ML_file \<open>../status.ML\<close>
+ML_file \<open>../normalize.ML\<close>
+ML_file \<open>../proofsteps.ML\<close>
+ML_file \<open>../auto2_state.ML\<close>
+ML_file \<open>../logic_steps.ML\<close>
+ML_file \<open>../auto2.ML\<close>
+ML_file \<open>../auto2_outer.ML\<close>
 
-ML_file "acdata.ML"
-ML_file "ac_steps.ML"
-ML_file "unfolding.ML"
-ML_file "induct_outer.ML"
-ML_file "extra_hol.ML"
+ML_file \<open>acdata.ML\<close>
+ML_file \<open>ac_steps.ML\<close>
+ML_file \<open>unfolding.ML\<close>
+ML_file \<open>induct_outer.ML\<close>
+ML_file \<open>extra_hol.ML\<close>
 
 method_setup auto2 = \<open>Scan.succeed (SIMPLE_METHOD o Auto2.auto2_tac)\<close> "auto2 prover"
 

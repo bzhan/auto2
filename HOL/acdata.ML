@@ -53,7 +53,6 @@ struct
 structure Data = Theory_Data (
   type T = ac_info Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
   val merge = Symtab.merge (fn (info1, info2) => #cfhead info1 aconvc #cfhead info2)
 )
 

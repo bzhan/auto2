@@ -340,7 +340,7 @@ fun qed_cmd state =
                    |> fold Thm.forall_intr (rev (map (Thm.cterm_of ctxt) vars))
       val new_prop = Thm.implies_elim prop th
 
-      val method = K (CONTEXT_TACTIC (PRIMITIVE (K new_prop)))
+      val method = K (Context_Tactic.CONTEXT_TACTIC (PRIMITIVE (K new_prop)))
     in
       state |> Proof.map_contexts (Auto2_State.map_head_th (K new_prop))
             |> Proof.refine_singleton (Method.Basic (K method))

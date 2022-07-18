@@ -238,7 +238,7 @@ and match ctxt bd_vars (t, cu) (instsp as (_, (_, inst))) =
                 NONE => []
               | SOME (instsp'' as (_, (tyinst', _))) =>
                 let
-                  val (cv, cu') = Thm.dest_abs (SOME Name.uu) cu
+                  val (cv, cu') = Thm.dest_abs_global cu
                   val v = Thm.term_of cv
                   val t'' = Envir.subst_term_types tyinst' t'
                   val t_free = Term.subst_bound (v, t'')
@@ -386,7 +386,7 @@ and pre_match ctxt (t, cu) =
         | (Abs (_, T, t'), Abs (_, U, _)) =>
           if not (pre_match_type ctxt (T, U)) then false
           else let
-            val (cv, cu') = Thm.dest_abs (SOME Name.uu) cu
+            val (cv, cu') = Thm.dest_abs_global cu
             val t'' = subst_bound (Thm.term_of cv, t')
           in
             pre_match ctxt (t'', cu')

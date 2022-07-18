@@ -38,7 +38,6 @@ struct
 structure UpdateData = Theory_Data (
   type T = (thm list) Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
   val merge = Symtab.merge_list Thm.eq_thm_prop
 )
 
@@ -49,7 +48,6 @@ structure UpdateData = Theory_Data (
 structure UpdateFunData = Theory_Data (
   type T = (thm list) Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
   val merge = Symtab.merge_list Thm.eq_thm_prop
 )
 
@@ -60,7 +58,6 @@ structure UpdateFunData = Theory_Data (
 structure FieldData = Theory_Data (
   type T = unit Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
   val merge = Symtab.merge (K true)
 )
 

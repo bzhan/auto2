@@ -5,10 +5,9 @@
   Normalization procedure for facts obtained during a proof.
 *)
 
-type normalizer = Proof.context -> raw_item -> raw_item list
-
 signature NORMALIZER =
 sig
+  type normalizer = Proof.context -> raw_item -> raw_item list
   val add_normalizer: string * normalizer -> theory -> theory
   val add_th_normalizer:
       string * (Proof.context -> thm -> thm list) -> theory -> theory
@@ -31,15 +30,18 @@ structure Normalizer : NORMALIZER =
 struct
 
 (* Keeps list of normalizers. *)
-structure Data = Theory_Data (
-  type T = normalizer Symtab.table;
+
+type normalizer = Proof.context -> raw_item -> raw_item list;
+
+structure Data = Theory_Data
+(
+  type T = (normalizer * serial) Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
+  val merge = Symtab.merge (eq_snd op =)
 )
 
 fun add_normalizer (norm_name, norm_fun) =
-    Data.map (Symtab.update_new (norm_name, norm_fun))
+    Data.map (Symtab.update_new (norm_name, (norm_fun, serial ())))
 
 (* Apply norm_fun: thm -> thm list to any PROP item. *)
 fun th_normalizer norm_fun ctxt ritem =
@@ -81,7 +83,7 @@ fun rewr_normalizer eq_th ctxt ritem =
 fun add_rewr_normalizer (norm_name, eq_th) =
     add_normalizer (norm_name, rewr_normalizer eq_th)
 
-fun get_normalizers thy = Symtab.dest (Data.get thy)
+fun get_normalizers thy = Symtab.dest (Data.get thy) |> map (apsnd #1)
 
 fun normalize ctxt ritem =
     let
@@ -106,11 +108,11 @@ fun normalize_keep ctxt ritem =
 
 (* Normalization of variable definition *)
 
-structure InjStructData = Theory_Data (
+structure InjStructData = Theory_Data
+(
   type T = thm Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
+  val merge = Symtab.merge Thm.eq_thm
 )
 
 fun add_inj_struct_data th thy =

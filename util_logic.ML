@@ -518,22 +518,21 @@ fun force_abs_form t =
 fun strip_obj_horn t =
     if is_obj_all t then
       case t of
-          _ $ Abs (abs as (_, T, _)) =>
+          _ $ (u as Abs _) =>
           let
-            val (x, body) = Term.dest_abs abs
-            val var = Free (x, T)
+            val (v, body) = Term.dest_abs_global u
             val (vars, (assum, concl)) = strip_obj_horn body
           in
-            (var :: vars, (assum, concl))
+            (Free v :: vars, (assum, concl))
           end
         | f $ arg => strip_obj_horn (f $ force_abs_form arg)
         | _ => raise Fail "strip_obj_horn"
     else if is_ball t then
       case t of
-          _ $ S $ Abs (abs as (_, T, _)) =>
+          _ $ S $ (u as Abs _) =>
           let
-            val (x, body) = Term.dest_abs abs
-            val var = Free (x, T)
+            val (v, body) = Term.dest_abs_global u
+            val var = Free v
             val mem = mk_mem (var, S)
             val (vars, (assum, concl)) = strip_obj_horn body
           in
@@ -602,13 +601,12 @@ fun normalize_exists ctxt ct =
 fun strip_exists t =
     if is_ex t then
       case t of
-          _ $ Abs (abs as (_, T, _)) =>
+          _ $ (u as Abs _) =>
           let
-            val (x, body) = Term.dest_abs abs
-            val var = Free (x, T)
+            val (v, body) = Term.dest_abs_global u
             val (vars, body') = strip_exists body
           in
-            (var :: vars, body')
+            (Free v :: vars, body')
           end
         | _ => raise Fail "strip_exists"
     else
@@ -619,7 +617,7 @@ fun prove_by_tac tac ctxt ths goal =
     let
       val goal' = Logic.list_implies (map Thm.prop_of ths, mk_Trueprop goal)
     in
-      ths MRS (Goal.prove ctxt [] [] goal' (K (tac ctxt 1)))
+      ths MRS (Goal.prove ctxt [] [] goal' (HEADGOAL o tac o #context))
     end
 
 fun contra_by_tac tac ctxt ths = prove_by_tac tac ctxt ths bFalse

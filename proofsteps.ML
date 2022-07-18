@@ -178,8 +178,7 @@ fun apply_pat_r ctxt ((_, inst), ths) (pat_r, th) =
               raise Fail "apply_pat_r: conclusion mismatch"
 
       (* Rewrite on subterms, top sweep order. *)
-      fun rewr_top eq_th =
-          Conv.top_sweep_conv (K (Conv.rewr_conv eq_th)) ctxt
+      fun rewr_top eq_th = Conv.top_sweep_rewrs_conv [eq_th] ctxt
     in
       th' |> apply_to_thm (Conv.every_conv (map rewr_top eqs))
     end
@@ -506,7 +505,6 @@ struct
 structure Data = Theory_Data (
   type T = proofstep list;
   val empty = [];
-  val extend = I;
   fun merge (ps1, ps2) = Library.merge ProofStep.eq_prfstep (ps1, ps2)
 )
 

@@ -22,21 +22,21 @@ struct
 (* Table of detectors for constants, each registered under a
    descriptive name.
  *)
-structure Data = Theory_Data (
-  type T = (term -> bool) Symtab.table;
+structure Data = Theory_Data
+(
+  type T = ((term -> bool) * serial) Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
-  val merge = Symtab.merge pointer_eq
+  val merge = Symtab.merge (eq_snd op =);
 )
 
 fun add_const_data (str, f) =
-    Data.map (Symtab.update_new (str, f))
+    Data.map (Symtab.update_new (str, (f, serial ())))
 
 fun detect_const thy t =
     let
       val data = Symtab.dest (Data.get thy)
     in
-      get_first (fn (str, f) => if f t then SOME str else NONE) data
+      get_first (fn (str, (f, _)) => if f t then SOME str else NONE) data
     end
 
 fun detect_const_ctxt ctxt t =

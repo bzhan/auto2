@@ -332,7 +332,7 @@ fun find_ritem_exact (st as {ctxt, ...}) id ritem =
                 if ty_str <> ty_str2 then false else
                 case shadow_fn of
                     NONE => eq_list (op aconv) (tname, map Thm.term_of tname2)
-                  | SOME f => f ctxt id (tname, tname2)
+                  | SOME (f, _) => f ctxt id (tname, tname2)
           in
             exists eq_item (get_all_items_at_id st id)
           end

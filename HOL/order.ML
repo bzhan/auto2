@@ -32,7 +32,7 @@ sig
   val to_normal_th: order_type -> thm -> thm
   val th_to_ritem: thm -> raw_item
   val th_to_normed_ritems: thm -> raw_item list
-  val nat_order_normalizer: normalizer
+  val nat_order_normalizer: Normalizer.normalizer
   val nat_eq_diff_prfstep: proofstep
 
   val get_nat_order_info: box_item -> order_info

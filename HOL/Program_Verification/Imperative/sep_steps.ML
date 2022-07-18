@@ -117,7 +117,6 @@ fun normalize_entail_goal_cv ctxt ct =
 structure Data = Theory_Data (
   type T = thm Symtab.table;
   val empty = Symtab.empty;
-  val extend = I;
   val merge = Symtab.merge (op Thm.eq_thm_prop)
 )
 

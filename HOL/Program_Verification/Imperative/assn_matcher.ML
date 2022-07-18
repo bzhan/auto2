@@ -35,11 +35,11 @@ end
 (* Due to strange interaction between functors and Theory_Data, this
    must be put outside.
  *)
-structure MatchData = Theory_Data (
-  type T = assn_matcher list
+structure MatchData = Theory_Data
+(
+  type T = (assn_matcher * serial) list
   val empty = []
-  val extend = I;
-  val merge = merge (op pointer_eq)
+  val merge = Library.merge (eq_snd op =)
 )
 
 functor AssnMatcher(SepUtil: SEP_UTIL): ASSN_MATCHER =
@@ -49,7 +49,7 @@ open SepUtil
 
 (* Matching in the forward direction *)
 
-fun add_assn_matcher matcher = MatchData.map (cons matcher)
+fun add_assn_matcher matcher = MatchData.map (cons (matcher, serial ()))
 
 (* Assume pat is not in the form A * B. Match pat with one or more
    terms of t. Return theorem of form t ==> pat(s) * t'.
@@ -83,7 +83,7 @@ fun assn_match_term ctxt (pat, ct) (id, inst) =
               raise Fail "assn_match_term"
           end
     in
-      (maps apply_matcher (MatchData.get thy))
+      (maps (apply_matcher o #1) (MatchData.get thy))
           |> map process_res
     end
 

@@ -184,11 +184,11 @@ type item_output = Proof.context -> term list * thm -> string
      proposition.
  *)
 type item_io_info = {
-  prop_matchers: item_matcher list,
-  typed_matchers: item_matcher list,
-  term_fn: (term list -> term list) option,
-  output_fn: item_output option,
-  shadow_fn: (Proof.context -> box_id -> term list * cterm list -> bool) option
+  prop_matchers: (item_matcher * serial) list,
+  typed_matchers: (item_matcher * serial) list,
+  term_fn: ((term list -> term list) * serial) option,
+  output_fn: (item_output * serial) option,
+  shadow_fn: ((Proof.context -> box_id -> term list * cterm list -> bool) * serial) option
 }
 
 datatype match_arg = PropMatch of term
@@ -246,34 +246,32 @@ structure ItemIO : ITEM_IO =
 struct
 
 fun add_prop_matcher_to_info
-        mtch {prop_matchers, typed_matchers, term_fn, output_fn, shadow_fn} =
-    {prop_matchers = mtch :: prop_matchers, typed_matchers = typed_matchers,
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn, shadow_fn} : item_io_info =
+    {prop_matchers = (mtch, serial ()) :: prop_matchers, typed_matchers = typed_matchers,
      term_fn = term_fn, output_fn = output_fn, shadow_fn = shadow_fn}
 
 fun add_typed_matcher_to_info
-        mtch {prop_matchers, typed_matchers, term_fn, output_fn, shadow_fn} =
-    {prop_matchers = prop_matchers, typed_matchers = mtch :: typed_matchers,
+        mtch {prop_matchers, typed_matchers, term_fn, output_fn, shadow_fn} : item_io_info =
+    {prop_matchers = prop_matchers, typed_matchers = (mtch, serial ()) :: typed_matchers,
      term_fn = term_fn, output_fn = output_fn, shadow_fn = shadow_fn}
 
-fun join_infos (
-  {prop_matchers = pm1, typed_matchers = tm1, term_fn = tf1, output_fn = of1,
-   shadow_fn = sf1},
-  {prop_matchers = pm2, typed_matchers = tm2, term_fn = tf2, output_fn = of2,
-   shadow_fn = sf2}) =
-    {prop_matchers = merge pointer_eq (pm1, pm2),
-     typed_matchers = merge pointer_eq (tm1, tm2),
-     term_fn = (if pointer_eq (tf1, tf2) then tf1
-                else raise Fail "join_infos: term_fn non-equal"),
-     output_fn = (if pointer_eq (of1, of2) then of1
-                  else raise Fail "join_infos: output_fn non-equal"),
-     shadow_fn = (if pointer_eq (sf1, sf2) then sf1
-                  else raise Fail "join_infos: shadow_fn non-equal")}
-
-structure Data = Theory_Data (
+structure Data = Theory_Data
+(
   type T = item_io_info Symtab.table
   val empty = Symtab.empty
-  val extend = I;
-  val merge = Symtab.join (fn _ => join_infos)
+  val merge = Symtab.join (fn _ =>
+    fn ({prop_matchers = pm1, typed_matchers = tm1, term_fn = tf1, output_fn = of1,
+         shadow_fn = sf1},
+       {prop_matchers = pm2, typed_matchers = tm2, term_fn = tf2, output_fn = of2,
+         shadow_fn = sf2}) =>
+    {prop_matchers = Library.merge (eq_snd op =) (pm1, pm2),
+     typed_matchers = Library.merge (eq_snd op =) (tm1, tm2),
+     term_fn = (if eq_option (eq_snd op =) (tf1, tf2) then tf1
+                else raise Fail "join_infos: term_fn non-equal"),
+     output_fn = (if eq_option (eq_snd op =) (of1, of2) then of1
+                  else raise Fail "join_infos: output_fn non-equal"),
+     shadow_fn = (if eq_option (eq_snd op =) (sf1, sf2) then sf1
+                  else raise Fail "join_infos: shadow_fn non-equal")})
 )
 
 fun pat_of_match_arg arg =
@@ -325,11 +323,16 @@ fun is_side_match arg =
               | WellFormMatch _ => true
               | _ => false
 
+fun identify NONE = NONE
+  | identify (SOME x) = (SOME (x, serial ()))
+
 fun add_item_type (ty_str, term_fn, output_fn, shadow_fn) =
     let
-      val item_info = {prop_matchers = [], typed_matchers = [],
-                       term_fn = term_fn, output_fn = output_fn,
-                       shadow_fn = shadow_fn}
+      val item_info : item_io_info =
+        {prop_matchers = [], typed_matchers = [],
+         term_fn = identify term_fn,
+         output_fn = identify output_fn,
+         shadow_fn = identify shadow_fn}
     in
       Data.map (Symtab.update_new (ty_str, item_info))
     end
@@ -344,8 +347,8 @@ fun get_io_info thy ty_str =
     the (Symtab.lookup (Data.get thy) ty_str)
     handle Option.Option => raise Fail ("get_io_info: not found " ^ ty_str)
 
-fun get_prop_matchers thy ty_str = #prop_matchers (get_io_info thy ty_str)
-fun get_typed_matchers thy ty_str = #typed_matchers (get_io_info thy ty_str)
+fun get_prop_matchers thy ty_str = #prop_matchers (get_io_info thy ty_str) |> map fst
+fun get_typed_matchers thy ty_str = #typed_matchers (get_io_info thy ty_str) |> map fst
 
 (* Prop-matching with a PROP item. *)
 val prop_matcher =
@@ -561,10 +564,10 @@ fun pre_match_arg ctxt arg (item as {ty_str, ...}) =
           Term.is_Var pat orelse
           (is_neg pat andalso Term.is_Var (get_neg pat)) orelse
           not (Util.is_pattern pat) orelse
-          exists (fn f => f pat item ctxt) (map #pre_match prop_matchers)
+          exists (fn f => f pat item ctxt) (map (#pre_match o fst) prop_matchers)
         | TypedMatch (_, pat) =>
           not (Util.is_pattern pat) orelse
-          exists (fn f => f pat item ctxt) (map #pre_match typed_matchers)
+          exists (fn f => f pat item ctxt) (map (#pre_match o fst) typed_matchers)
         | TypedUniv _ => true
         | PropertyMatch _ =>
           raise Fail "pre_match_arg: should not be called on PropertyMatch."
@@ -587,10 +590,10 @@ fun match_arg ctxt arg (item as {id, ty_str, ...}) (id', inst) =
     in
       case arg of
           PropMatch _ => maps (fn f => f pat item ctxt (id'', inst))
-                              (map #match prop_matchers)
+                              (map (#match o fst) prop_matchers)
         | TypedUniv _ => [((id'', inst), true_th)]
         | TypedMatch _ => maps (fn f => f pat item ctxt (id'', inst))
-                               (map #match typed_matchers)
+                               (map (#match o fst) typed_matchers)
         | PropertyMatch _ =>
           raise Fail "match_arg: should not be called on PropertyMatch."
         | WellFormMatch _ =>
@@ -616,7 +619,7 @@ fun rewr_terms_of_item ctxt (ty_str, tname) =
     in
       case term_fn of
           NONE => tname
-        | SOME f => f tname
+        | SOME (f, _) => f tname
     end
 
 fun output_prop_fn ctxt (_, th) = Thm.prop_of th |> Syntax.string_of_term ctxt
@@ -628,7 +631,7 @@ fun string_of_item_info ctxt (ty_str, ts, th) =
     in
       case output_fn of
           NONE => ty_str ^ " " ^ (Util.string_of_terms ctxt ts)
-        | SOME f => f ctxt (ts, th)
+        | SOME (f, _) => f ctxt (ts, th)
     end
 
 fun string_of_raw_item ctxt ritem =

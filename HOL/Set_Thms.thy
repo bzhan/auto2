@@ -136,7 +136,7 @@ setup \<open>add_backward1_prfstep @{thm rev_finite_subset}\<close>
 
 subsubsection \<open>Cardinality\<close>
 
-setup \<open>add_rewrite_rule @{thm card_empty}\<close>
+setup \<open>add_rewrite_rule @{thm card.empty}\<close>
 lemma card_emptyD [rewrite]: "finite S \<Longrightarrow> card S = 0 \<Longrightarrow> S = {}" by simp
 lemma card_minus1 [rewrite]: "x \<in> S \<Longrightarrow> card (S - {x}) = card S - 1" by (simp add: card_Diff_subset)
 setup \<open>add_forward_prfstep @{thm finite_Diff}\<close>
